@@ -264,6 +264,80 @@ python import_waypoints.py myworld.vcdbs shared_waypoints.json --owner "your-pla
 
 ---
 
+## Waypoint Remover
+
+`delete_waypoints.py` removes waypoints directly from a `.vcdbs` save file. By default it deletes **all** waypoints. Use filter options to target only specific ones.
+
+> **Warning:** This modifies your save file. A timestamped backup is created automatically unless `--no-backup` is used. Always make sure the game is **not running** when deleting.
+
+### Usage
+
+```bash
+python delete_waypoints.py <save_file> [options]
+```
+
+### Arguments
+
+| Argument | Description |
+|---|---|
+| `save_file` | Path to the `.vcdbs` save file |
+| `--filter`, `-f` | Delete waypoints whose title contains this term (case-insensitive) |
+| `--icon`, `-i` | Delete waypoints with this icon (e.g. `circle`, `bee`, `home`) |
+| `--owner`, `-o` | Delete waypoints owned by this player UID (substring match) |
+| `--pinned` | Delete only pinned waypoints |
+| `--unpinned` | Delete only unpinned waypoints |
+| `--color` | Delete waypoints with this exact color (e.g. `#FFFF6600`) |
+| `--guid` | Delete a single waypoint by its exact GUID |
+| `--config`, `-c` | Path to `serverconfig.json` (auto-detected if omitted) |
+| `--no-backup` | Skip creating a backup before modifying the save |
+| `--dry-run` | Show what would be deleted without modifying anything |
+
+### Examples
+
+**Delete all waypoints:**
+```bash
+python delete_waypoints.py myworld.vcdbs
+```
+```
+Save:    myworld.vcdbs
+Filters: none (deleting ALL waypoints)
+
+Total waypoints:   17
+To be deleted:     17
+Remaining after:   0
+
+Waypoints to delete:
+  - Home Base  (home, 12 68 -45, pinned)
+  - Iron Deposit  (pick, -303 42 187, unpinned)
+  - Trader Village  (star, 540 71 -821, pinned)
+  ...
+
+Backup:  myworld.vcdbs.backup_20260418_161500
+Done! Deleted 17 waypoints. 0 remaining.
+```
+
+**Delete only waypoints matching a title:**
+```bash
+python delete_waypoints.py myworld.vcdbs --filter "trader"
+```
+
+**Delete all unpinned circle waypoints:**
+```bash
+python delete_waypoints.py myworld.vcdbs --icon circle --unpinned
+```
+
+**Delete a single waypoint by GUID:**
+```bash
+python delete_waypoints.py myworld.vcdbs --guid "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+```
+
+**Preview without modifying:**
+```bash
+python delete_waypoints.py myworld.vcdbs --filter "old" --dry-run
+```
+
+---
+
 ## How it works
 
 1. Opens the `.vcdbs` file (a SQLite database) and reads the `gamedata` blob
