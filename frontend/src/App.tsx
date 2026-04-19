@@ -13,9 +13,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import "./index.css";
 
 const categories = [
+  { value: "/general", label: "General" },
   { value: "/singleplayer", label: "Singleplayer" },
   { value: "/multiplayer", label: "Multiplayer" },
-  { value: "/general", label: "General" },
 ] as const;
 
 const subTabs: Record<string, { value: string; label: string }[]> = {
@@ -36,7 +36,7 @@ function getActiveCategory(pathname: string) {
   for (const cat of categories) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
-  return "/singleplayer";
+  return "/general";
 }
 
 function AppContent() {
@@ -75,7 +75,7 @@ function AppContent() {
             <Tabs>
               <TabsList variant="line">
                 {activeSubs.map((t) => (
-                  <NavLink key={t.value} to={t.value}>
+                  <NavLink key={t.value} to={t.value} end>
                     {({ isActive }) => (
                       <TabsTrigger
                         value={t.value}
@@ -93,7 +93,7 @@ function AppContent() {
       </header>
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <Routes>
-          <Route path="/" element={<Navigate to="/singleplayer/extract" replace />} />
+          <Route path="/" element={<Navigate to="/general" replace />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
           <Route path="/singleplayer/extract" element={<ExtractPage />} />
           <Route path="/singleplayer/import" element={<ImportPage />} />
@@ -118,16 +118,24 @@ function GeneralPage() {
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <p>
-          A web toolkit for managing Vintage Story waypoints. Choose a category above to get started.
+          A web toolkit for managing Vintage Story waypoints and map data. Choose a category above to get started.
         </p>
         <div className="grid gap-3">
           <div>
             <p className="font-medium text-foreground">Singleplayer</p>
-            <p>Extract, import, delete, and generate commands for waypoints from your <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.vcdbs</code> save files.</p>
+            <ul className="list-disc list-inside space-y-1 ml-1">
+              <li><strong>Extract</strong> &mdash; pull waypoints out of your <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.vcdbs</code> save file into JSON.</li>
+              <li><strong>Import</strong> &mdash; write waypoints back into a save file (append or replace).</li>
+              <li><strong>Commands</strong> &mdash; generate <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">/waypoint addati</code> chat commands from a JSON list.</li>
+              <li><strong>Delete</strong> &mdash; remove matching waypoints from a save file by name, icon, or colour.</li>
+            </ul>
           </div>
           <div>
             <p className="font-medium text-foreground">Multiplayer</p>
-            <p>Identify which map database files in your Maps folder belong to which server.</p>
+            <ul className="list-disc list-inside space-y-1 ml-1">
+              <li><strong>Identify Maps</strong> &mdash; figure out which <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache files belong to which server using your client log.</li>
+              <li><strong>Map Viewer</strong> &mdash; render and explore a cached map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as an interactive image.</li>
+            </ul>
           </div>
         </div>
       </CardContent>
