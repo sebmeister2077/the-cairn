@@ -3,7 +3,7 @@ import { getMapStats, renderMap } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ZoomIn, ZoomOut, Maximize, Download } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Download, Crosshair } from "lucide-react";
 
 interface MapStats {
   pieces: number;
@@ -30,6 +30,12 @@ export function MapViewPage() {
   const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  const zoomRef = useRef(zoom);
+  const panRef = useRef(pan);
+
+  // Keep refs in sync with state so non-React listeners see current values
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => { panRef.current = pan; }, [pan]);
 
   // Cleanup object URL on unmount or when image changes
   useEffect(() => {
@@ -38,18 +44,32 @@ export function MapViewPage() {
     };
   }, [imageUrl]);
 
+  // Zoom toward a specific point (in container-local coordinates)
+  const zoomToward = useCallback((focalX: number, focalY: number, newZoom: number) => {
+    const oldZoom = zoomRef.current;
+    const oldPan = panRef.current;
+    const clamped = Math.min(Math.max(newZoom, 0.1), 20);
+    const scale = clamped / oldZoom;
+    setPan({
+      x: focalX - (focalX - oldPan.x) * scale,
+      y: focalY - (focalY - oldPan.y) * scale,
+    });
+    setZoom(clamped);
+  }, []);
+
   // Non-passive wheel listener to prevent page scroll inside the map viewer
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      const rect = el.getBoundingClientRect();
       const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      setZoom((z) => Math.min(Math.max(z * factor, 0.1), 20));
+      zoomToward(e.clientX - rect.left, e.clientY - rect.top, zoomRef.current * factor);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [imageUrl]);
+  }, [imageUrl, zoomToward]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -111,9 +131,30 @@ export function MapViewPage() {
     a.click();
   }
 
-  // Zoom controls
-  const zoomIn = useCallback(() => setZoom((z) => Math.min(z * 1.5, 20)), []);
-  const zoomOut = useCallback(() => setZoom((z) => Math.max(z / 1.5, 0.1)), []);
+  // Center the view on game coordinates X:0, Z:0
+  const centerOnOrigin = useCallback((currentZoom?: number) => {
+    const el = containerRef.current;
+    if (!el || !stats || imgNatural.w === 0) return;
+    const z = currentZoom ?? zoom;
+    const rect = el.getBoundingClientRect();
+    const imgX = ((0 - stats.start_x) / stats.width_blocks) * imgNatural.w;
+    const imgY = ((0 - stats.start_z) / stats.height_blocks) * imgNatural.h;
+    setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
+  }, [stats, imgNatural, zoom]);
+
+  // Zoom controls – anchor on viewport center
+  const zoomIn = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    zoomToward(rect.width / 2, rect.height / 2, zoomRef.current * 1.5);
+  }, [zoomToward]);
+  const zoomOut = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    zoomToward(rect.width / 2, rect.height / 2, zoomRef.current / 1.5);
+  }, [zoomToward]);
   const resetView = useCallback(() => {
     setZoom(1);
     setPan({ x: 0, y: 0 });
@@ -222,6 +263,9 @@ export function MapViewPage() {
               <Button type="button" variant="outline" size="sm" onClick={resetView} title="Reset view">
                 <Maximize className="size-4" />
               </Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => centerOnOrigin()} title="Center on 0, 0">
+                <Crosshair className="size-4" />
+              </Button>
               <span className="text-xs text-muted-foreground ml-2">
                 Scroll to zoom · Drag to pan
               </span>
@@ -242,8 +286,15 @@ export function MapViewPage() {
                 draggable={false}
                 className="absolute select-none"
                 onLoad={() => {
-                  if (imgRef.current) {
-                    setImgNatural({ w: imgRef.current.naturalWidth, h: imgRef.current.naturalHeight });
+                  if (imgRef.current && containerRef.current && stats) {
+                    const w = imgRef.current.naturalWidth;
+                    const h = imgRef.current.naturalHeight;
+                    setImgNatural({ w, h });
+                    // Auto-center on origin (0, 0)
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const imgX = ((0 - stats.start_x) / stats.width_blocks) * w;
+                    const imgY = ((0 - stats.start_z) / stats.height_blocks) * h;
+                    setPan({ x: rect.width / 2 - imgX, y: rect.height / 2 - imgY });
                   }
                 }}
                 style={{
