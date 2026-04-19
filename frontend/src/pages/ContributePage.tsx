@@ -1,4 +1,5 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getContributeInfo,
   contributeMap,
@@ -40,29 +41,37 @@ interface ContributeInfo {
 }
 
 export function ContributePage() {
+  const queryClient = useQueryClient();
+
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [contributor, setContributor] = useState("");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
   const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [info, setInfo] = useState<ContributeInfo | null>(null);
-  const [infoLoading, setInfoLoading] = useState(true);
+
+  // Contribute info via React Query
+  const infoQuery = useQuery<ContributeInfo>({
+    queryKey: ["contribute-info"],
+    queryFn: () => getContributeInfo(),
+  });
+  const info = infoQuery.data ?? null;
+  const infoLoading = infoQuery.isLoading;
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
 
-  // Admin action state
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [actionError, setActionError] = useState("");
-
-  useEffect(() => {
-    const ctrl = new AbortController();
-    loadInfo(ctrl.signal);
-    return () => ctrl.abort();
-  }, []);
+  const previewQuery = useQuery<Blob>({
+    queryKey: ["contribute-preview", previewId],
+    queryFn: () => getContributePreview(previewId!),
+    enabled: !!previewId,
+  });
+  const previewBlob = previewQuery.data ?? null;
+  const previewUrl = useMemo(
+    () => (previewBlob ? URL.createObjectURL(previewBlob) : null),
+    [previewBlob],
+  );
+  const previewLoading = previewQuery.isFetching;
 
   useEffect(() => {
     return () => {
@@ -70,18 +79,9 @@ export function ContributePage() {
     };
   }, [previewUrl]);
 
-  async function loadInfo(signal?: AbortSignal) {
-    setInfoLoading(true);
-    try {
-      const data = await getContributeInfo(signal);
-      setInfo(data);
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      // silent
-    } finally {
-      setInfoLoading(false);
-    }
-  }
+  // Admin action state
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -97,7 +97,7 @@ export function ContributePage() {
         setUploadProgress(pct),
       );
       setUploadResult(data.message as string);
-      loadInfo();
+      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
@@ -106,27 +106,11 @@ export function ContributePage() {
   }
 
   async function handlePreview(id: string) {
-    if (previewId === id && previewUrl) {
-      // Toggle off
+    if (previewId === id) {
       setPreviewId(null);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
       return;
     }
-
     setPreviewId(id);
-    setPreviewLoading(true);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-
-    try {
-      const blob = await getContributePreview(id);
-      setPreviewUrl(URL.createObjectURL(blob));
-    } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Preview failed");
-    } finally {
-      setPreviewLoading(false);
-    }
   }
 
   async function handleApprove(id: string) {
@@ -134,13 +118,8 @@ export function ContributePage() {
     setActionError("");
     try {
       await approveContribution(id);
-      // Clean up preview if it was for this one
-      if (previewId === id) {
-        setPreviewId(null);
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
-      loadInfo();
+      if (previewId === id) setPreviewId(null);
+      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Approve failed");
     } finally {
@@ -153,12 +132,8 @@ export function ContributePage() {
     setActionError("");
     try {
       await rejectContribution(id);
-      if (previewId === id) {
-        setPreviewId(null);
-        if (previewUrl) URL.revokeObjectURL(previewUrl);
-        setPreviewUrl(null);
-      }
-      loadInfo();
+      if (previewId === id) setPreviewId(null);
+      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Reject failed");
     } finally {

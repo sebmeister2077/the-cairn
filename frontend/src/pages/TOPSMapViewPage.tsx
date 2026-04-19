@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getTopsMapStats, renderTopsMap } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,11 +16,64 @@ interface MapStats {
   start_z: number;
 }
 
+const STALE_TIME = 60 * 60 * 1000; // 1 hour
+
 export function TOPSMapViewPage() {
-  const [stats, setStats] = useState<MapStats | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState("");
+  const queryClient = useQueryClient();
+
+  const statsQuery = useQuery<MapStats>({
+    queryKey: ["tops-map-stats"],
+    queryFn: getTopsMapStats,
+    staleTime: STALE_TIME,
+  });
+
+  const imageQuery = useQuery<Blob>({
+    queryKey: ["tops-map-render"],
+    queryFn: () => renderTopsMap(),
+    staleTime: STALE_TIME,
+    enabled: statsQuery.isSuccess,
+  });
+
+  const stats = statsQuery.data ?? null;
+  const imageBlob = imageQuery.data ?? null;
+  const baseImageUrl = useMemo(
+    () => (imageBlob ? URL.createObjectURL(imageBlob) : null),
+    [imageBlob],
+  );
+
+  // Enhanced image overrides the base when the user zooms in
+  const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
+  const imageUrl = enhancedUrl ?? baseImageUrl;
+
+  // Revoke base object URL when it changes
+  useEffect(() => {
+    return () => {
+      if (baseImageUrl) URL.revokeObjectURL(baseImageUrl);
+    };
+  }, [baseImageUrl]);
+
+  // Clear enhanced URL when base image changes (e.g. after reload)
+  useEffect(() => {
+    if (enhancedUrl) {
+      URL.revokeObjectURL(enhancedUrl);
+      setEnhancedUrl(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseImageUrl]);
+
+  // Derive loading / error from query states
+  const loading = statsQuery.isFetching
+    ? "Reading global server map…"
+    : imageQuery.isFetching
+      ? "Rendering map image… This may take a moment for large maps."
+      : "";
+  const error =
+    statsQuery.error instanceof Error
+      ? statsQuery.error.message
+      : imageQuery.error instanceof Error
+        ? imageQuery.error.message
+        : "";
+
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -36,51 +90,6 @@ export function TOPSMapViewPage() {
 
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   useEffect(() => { panRef.current = pan; }, [pan]);
-
-  useEffect(() => {
-    return () => {
-      if (imageUrl) URL.revokeObjectURL(imageUrl);
-    };
-  }, [imageUrl]);
-
-  // Auto-load the map on mount
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setError("");
-      setLoading("Reading global server map…");
-      try {
-        const s = await getTopsMapStats();
-        if (cancelled) return;
-        setStats(s);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to read map database");
-        setLoading("");
-        return;
-      }
-
-      setLoading("Rendering map image… This may take a moment for large maps.");
-      try {
-        const blob = await renderTopsMap();
-        if (cancelled) return;
-        const url = URL.createObjectURL(blob);
-        setImageUrl(url);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        setRenderedMaxDim(4096);
-      } catch (err) {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to render map");
-      } finally {
-        if (!cancelled) setLoading("");
-      }
-    }
-
-    load();
-    return () => { cancelled = true; };
-  }, []);
 
   // Auto-enhance
   useEffect(() => {
@@ -123,9 +132,9 @@ export function TOPSMapViewPage() {
         setImgNatural({ w: newW, h: newH });
         setRenderedMaxDim(target);
 
-        const oldUrl = imageUrl;
-        setImageUrl(newUrl);
-        URL.revokeObjectURL(oldUrl);
+        const oldEnhanced = enhancedUrl;
+        setEnhancedUrl(newUrl);
+        if (oldEnhanced) URL.revokeObjectURL(oldEnhanced);
       } catch {
         // silently ignore
       } finally {
@@ -167,44 +176,18 @@ export function TOPSMapViewPage() {
   }, [imageUrl, zoomToward]);
 
   function handleReload() {
-    setStats(null);
-    if (imageUrl) URL.revokeObjectURL(imageUrl);
-    setImageUrl(null);
-    setError("");
-    setLoading("");
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setHoverCoords(null);
     setRenderedMaxDim(4096);
     setEnhancing(false);
     enhanceAbortRef.current?.abort();
-
-    // Re-trigger load
-    (async () => {
-      setLoading("Reading global server map…");
-      try {
-        const s = await getTopsMapStats();
-        setStats(s);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to read map database");
-        setLoading("");
-        return;
-      }
-
-      setLoading("Rendering map image… This may take a moment for large maps.");
-      try {
-        const blob = await renderTopsMap();
-        const url = URL.createObjectURL(blob);
-        setImageUrl(url);
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
-        setRenderedMaxDim(4096);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to render map");
-      } finally {
-        setLoading("");
-      }
-    })();
+    if (enhancedUrl) {
+      URL.revokeObjectURL(enhancedUrl);
+      setEnhancedUrl(null);
+    }
+    queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["tops-map-render"] });
   }
 
   function handleDownload() {
