@@ -92,7 +92,7 @@ export function ImportPage() {
           <div className="grid grid-cols-3 gap-2 items-end">
             <div>
               <Label>Mode</Label>
-              <Select value={mode} onValueChange={setMode}>
+              <Select value={mode} onValueChange={(v) => v !== null && setMode(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
