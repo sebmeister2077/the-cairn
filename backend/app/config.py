@@ -32,7 +32,17 @@ class Settings:
     ]
 
     # Upload limit (bytes)
-    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(100 * 1024 * 1024)))
+    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(4 * 1024 * 1024 * 1024)))  # 4 GB
+
+    # Contribute feature
+    CONTRIBUTE_MAP_ID: str = os.environ.get(
+        "CONTRIBUTE_MAP_ID", "48bd1c98-4ee0-414a-b584-a3628278d99d"
+    )
+    CONTRIBUTE_DATA_DIR: str = os.environ.get(
+        "CONTRIBUTE_DATA_DIR",
+        str(Path(__file__).resolve().parent.parent / "contribute-data"),
+    )
+    ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
 
 settings = Settings()

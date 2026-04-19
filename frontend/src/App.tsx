@@ -9,6 +9,7 @@ import { CommandsPage } from "@/pages/CommandsPage";
 import { DeletePage } from "@/pages/DeletePage";
 import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import { MapViewPage } from "@/pages/MapViewPage";
+import { ContributePage } from "@/pages/ContributePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import "./index.css";
 
@@ -28,6 +29,7 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
   "/multiplayer": [
     { value: "/multiplayer/identify", label: "Identify Maps" },
     { value: "/multiplayer/map-viewer", label: "Map Viewer" },
+    { value: "/multiplayer/contribute", label: "Contribute" },
   ],
   "/general": [],
 };
@@ -44,6 +46,7 @@ function AppContent() {
   const location = useLocation();
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = subTabs[activeCategory] ?? [];
+  const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,14 +58,13 @@ function AppContent() {
           </Button>
         </div>
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">
-          <Tabs>
+          <Tabs value={activeCategory}>
             <TabsList>
               {categories.map((c) => (
                 <NavLink key={c.value} to={c.value} end={false}>
                   {() => (
                     <TabsTrigger
                       value={c.value}
-                      data-state={activeCategory === c.value ? "active" : "inactive"}
                     >
                       {c.label}
                     </TabsTrigger>
@@ -72,14 +74,13 @@ function AppContent() {
             </TabsList>
           </Tabs>
           {activeSubs.length > 0 && (
-            <Tabs>
+            <Tabs value={activeSub}>
               <TabsList variant="line">
                 {activeSubs.map((t) => (
                   <NavLink key={t.value} to={t.value} end>
-                    {({ isActive }) => (
+                    {() => (
                       <TabsTrigger
                         value={t.value}
-                        data-state={isActive ? "active" : "inactive"}
                       >
                         {t.label}
                       </TabsTrigger>
@@ -102,6 +103,7 @@ function AppContent() {
           <Route path="/multiplayer" element={<Navigate to="/multiplayer/identify" replace />} />
           <Route path="/multiplayer/identify" element={<IdentifyMapsPage />} />
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
+          <Route path="/multiplayer/contribute" element={<ContributePage />} />
           <Route path="/general" element={<GeneralPage />} />
         </Routes>
       </main>
@@ -135,6 +137,7 @@ function GeneralPage() {
             <ul className="list-disc list-inside space-y-1 ml-1">
               <li><strong>Identify Maps</strong> &mdash; figure out which <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache files belong to which server using your client log.</li>
               <li><strong>Map Viewer</strong> &mdash; render and explore a cached map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as an interactive image.</li>
+              <li><strong>Contribute</strong> &mdash; upload your map cache to help build a shared community map for your server.</li>
             </ul>
           </div>
         </div>

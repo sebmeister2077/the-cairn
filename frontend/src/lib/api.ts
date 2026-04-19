@@ -1,4 +1,7 @@
 const API_BASE = "/api";
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL
+    ? `${import.meta.env.VITE_BACKEND_URL}/api`
+    : "http://localhost:8001/api";
 
 function getApiKey(): string {
     return localStorage.getItem("api_key") ?? "";
@@ -94,4 +97,75 @@ export async function renderMap(formData: FormData, maxDimension?: number): Prom
     });
     await handleResponse(res);
     return res.blob();
+}
+
+export async function getContributeInfo(signal?: AbortSignal) {
+    const res = await fetch(`${API_BASE}/contribute/info`, {
+        headers: { "X-API-Key": getApiKey() },
+        signal,
+    });
+    return (await handleResponse(res)).json();
+}
+
+export function contributeMap(
+    file: File,
+    contributor: string,
+    onProgress?: (percent: number) => void,
+): Promise<Record<string, unknown>> {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const params = new URLSearchParams();
+        if (contributor) params.set("contributor", contributor);
+        const qs = params.toString();
+        // Send directly to backend — Vite proxy buffers the entire body which stalls large uploads
+        xhr.open("POST", `${BACKEND_BASE}/contribute${qs ? `?${qs}` : ""}`);
+        xhr.setRequestHeader("X-API-Key", getApiKey());
+        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && onProgress) {
+                onProgress(Math.round((e.loaded / e.total) * 100));
+            }
+        };
+
+        xhr.onload = () => {
+            try {
+                const body = JSON.parse(xhr.responseText);
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    resolve(body);
+                } else {
+                    reject(new Error(body.detail ?? `HTTP ${xhr.status}`));
+                }
+            } catch {
+                reject(new Error(`HTTP ${xhr.status}`));
+            }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.send(file);
+    });
+}
+
+export async function getContributePreview(contributionId: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/contribute/preview/${contributionId}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    await handleResponse(res);
+    return res.blob();
+}
+
+export async function approveContribution(contributionId: string) {
+    const res = await fetch(`${API_BASE}/contribute/${contributionId}/approve`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function rejectContribution(contributionId: string) {
+    const res = await fetch(`${API_BASE}/contribute/${contributionId}/reject`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
 }
