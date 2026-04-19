@@ -8,6 +8,7 @@ import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
 import { DeletePage } from "@/pages/DeletePage";
 import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
+import { MapViewPage } from "@/pages/MapViewPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import "./index.css";
 
@@ -26,6 +27,7 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
   ],
   "/multiplayer": [
     { value: "/multiplayer/identify", label: "Identify Maps" },
+    { value: "/multiplayer/map-viewer", label: "Map Viewer" },
   ],
   "/general": [],
 };
@@ -99,6 +101,7 @@ function AppContent() {
           <Route path="/singleplayer/delete" element={<DeletePage />} />
           <Route path="/multiplayer" element={<Navigate to="/multiplayer/identify" replace />} />
           <Route path="/multiplayer/identify" element={<IdentifyMapsPage />} />
+          <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/general" element={<GeneralPage />} />
         </Routes>
       </main>

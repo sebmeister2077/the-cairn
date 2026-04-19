@@ -1,7 +1,13 @@
 """Application settings loaded from environment variables."""
 
 import os
+from pathlib import Path
 from typing import List
+
+from dotenv import load_dotenv
+
+# Load .env from the backend directory
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 class Settings:

@@ -21,15 +21,16 @@ Web application for extracting, importing, deleting, and generating commands for
 
 ```bash
 pip install -r backend/requirements.txt
+```
 
-# Set environment variables (PowerShell)
-$env:API_KEYS="your-secret-key-1,your-secret-key-2"
-$env:ALLOWED_ORIGINS="http://localhost:5173"
+Copy the example `.env` file and set your API keys:
 
-# Set environment variables (bash)
-# export API_KEYS="your-secret-key-1,your-secret-key-2"
-# export ALLOWED_ORIGINS="http://localhost:5173"
+```bash
+cp backend/.env.example backend/.env
+# Edit backend/.env with your own API keys
+```
 
+```bash
 # Run (from project root)
 python -m uvicorn app.main:app --reload --app-dir backend
 ```
@@ -57,6 +58,8 @@ All endpoints require an `X-API-Key` header. Rate limited to 5 requests per hour
 | GET | `/api/health` | Health check |
 
 ## Environment Variables
+
+Set these in `backend/.env` (see `backend/.env.example`). Environment variables also work and take precedence over the `.env` file.
 
 | Variable | Default | Description |
 |----------|---------|-------------|

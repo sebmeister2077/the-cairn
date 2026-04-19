@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import extract, import_wp, delete, commands
+from .routes import extract, import_wp, delete, commands, mapview
 
 app = FastAPI(
     title="Vintage Story Waypoint Tools",
@@ -24,6 +24,7 @@ app.include_router(extract.router, prefix="/api")
 app.include_router(import_wp.router, prefix="/api")
 app.include_router(delete.router, prefix="/api")
 app.include_router(commands.router, prefix="/api")
+app.include_router(mapview.router, prefix="/api")
 
 
 @app.get("/api/health")

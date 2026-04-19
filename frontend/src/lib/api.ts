@@ -73,3 +73,22 @@ export async function generateCommands(formData: FormData) {
     });
     return (await handleResponse(res)).json();
 }
+
+export async function getMapStats(formData: FormData) {
+    const res = await fetch(`${API_BASE}/map-stats`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+        body: formData,
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function renderMap(formData: FormData): Promise<Blob> {
+    const res = await fetch(`${API_BASE}/map-render`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+        body: formData,
+    });
+    await handleResponse(res);
+    return res.blob();
+}
