@@ -7,6 +7,7 @@ import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
 import { DeletePage } from "@/pages/DeletePage";
+import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import "./index.css";
 
 const tabs = [
@@ -14,6 +15,7 @@ const tabs = [
   { value: "/import", label: "Import" },
   { value: "/commands", label: "Commands" },
   { value: "/delete", label: "Delete" },
+  { value: "/identify", label: "Identify Maps" },
 ] as const;
 
 function AppContent() {
@@ -50,6 +52,7 @@ function AppContent() {
           <Route path="/import" element={<ImportPage />} />
           <Route path="/commands" element={<CommandsPage />} />
           <Route path="/delete" element={<DeletePage />} />
+          <Route path="/identify" element={<IdentifyMapsPage />} />
         </Routes>
       </main>
       <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} />
