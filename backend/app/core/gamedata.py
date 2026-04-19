@@ -22,27 +22,30 @@ def read_gamedata_blob(save_bytes):
     Returns:
         The raw gamedata blob (bytes), or None if not found.
     """
-    # sqlite3 can open a file path but not raw bytes directly.
-    # Write to a temporary in-memory path via a named temp approach.
-    # Actually, sqlite3 supports `:memory:` but not loading from bytes.
-    # We'll use a URI with a shared cache trick — but simplest is a temp file.
     import tempfile
     import os
 
     fd, tmp_path = tempfile.mkstemp(suffix=".vcdbs")
+    conn = None
     try:
-        os.write(fd, save_bytes)
-        os.close(fd)
+        with os.fdopen(fd, "wb") as f:
+            f.write(save_bytes)
         conn = sqlite3.connect(tmp_path)
         cur = conn.cursor()
         cur.execute("SELECT data FROM gamedata WHERE savegameid=1")
         row = cur.fetchone()
         conn.close()
+        conn = None
         if not row:
             return None
         return row[0]
     finally:
-        os.unlink(tmp_path)
+        if conn is not None:
+            conn.close()
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 def write_gamedata_blob(save_bytes, new_data):
@@ -59,18 +62,25 @@ def write_gamedata_blob(save_bytes, new_data):
     import os
 
     fd, tmp_path = tempfile.mkstemp(suffix=".vcdbs")
+    conn = None
     try:
-        os.write(fd, save_bytes)
-        os.close(fd)
+        with os.fdopen(fd, "wb") as f:
+            f.write(save_bytes)
         conn = sqlite3.connect(tmp_path)
         cur = conn.cursor()
         cur.execute("UPDATE gamedata SET data=? WHERE savegameid=1", (new_data,))
         conn.commit()
         conn.close()
+        conn = None
         with open(tmp_path, "rb") as f:
             return f.read()
     finally:
-        os.unlink(tmp_path)
+        if conn is not None:
+            conn.close()
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
 
 def extract_markers_data(gamedata_blob):
