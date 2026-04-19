@@ -12,6 +12,8 @@ interface MapStats {
   height_chunks: number;
   width_blocks: number;
   height_blocks: number;
+  start_x: number;
+  start_z: number;
 }
 
 export function MapViewPage() {
@@ -142,9 +144,9 @@ export function MapViewPage() {
         const imgX = (mx - pan.x) / zoom;
         const imgY = (my - pan.y) / zoom;
         if (imgX >= 0 && imgX < imgNatural.w && imgY >= 0 && imgY < imgNatural.h) {
-          // Map image pixel → block coordinate
-          const blockX = Math.floor((imgX / imgNatural.w) * stats.width_blocks);
-          const blockZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks);
+          // Map image pixel → game block coordinate
+          const blockX = Math.floor((imgX / imgNatural.w) * stats.width_blocks + stats.start_x);
+          const blockZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks + stats.start_z);
           setHoverCoords({ x: blockX, z: blockZ });
         } else {
           setHoverCoords(null);

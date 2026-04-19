@@ -17,6 +17,7 @@ BYTES_PER_PIXEL = 11  # 0x08 tag (1) + 10-byte varint (0xFF alpha → always 10)
 STANDARD_BLOB_SIZE = TILE_PIXELS * BYTES_PER_PIXEL  # 11264
 POSITION_BITS = 27
 POSITION_MASK = (1 << POSITION_BITS) - 1
+DEFAULT_MAP_MIDDLE = 512000  # VS default world center in blocks (1024000 / 2)
 
 
 def decode_position(pos: int) -> tuple[int, int]:
@@ -233,6 +234,8 @@ def get_map_stats(db_bytes: bytes) -> dict:
             "height_chunks": max_z - min_z + 1,
             "width_blocks": (max_x - min_x + 1) * TILE_SIZE,
             "height_blocks": (max_z - min_z + 1) * TILE_SIZE,
+            "start_x": min_x * TILE_SIZE - DEFAULT_MAP_MIDDLE,
+            "start_z": min_z * TILE_SIZE - DEFAULT_MAP_MIDDLE,
         }
 
     finally:
