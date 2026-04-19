@@ -120,7 +120,7 @@ function GeneralPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>VS Waypoint Tools</CardTitle>
+        <CardTitle>VS Waypoint & Map Tools</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <p>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, type FormEvent } from "react";
 import { extractDBFromLogs, type MapFileInfo, type ServerMapResult } from "@/lib/identify-maps";
-import { ClipboardCopy, Check } from "lucide-react";
+import { ClipboardCopy, Check, HelpCircle } from "lucide-react";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -95,34 +95,40 @@ export function IdentifyMapsPage() {
         </p>
       </CardHeader>
       <CardContent className="grid gap-6">
-        <div className="rounded-md border bg-muted/40 px-4 py-3 text-sm space-y-2">
-          <p className="font-medium">Where to find the files</p>
-          <div className="grid gap-1.5 text-muted-foreground">
-            {[
-              { label: "Logs", path: String.raw`%AppData%\VintagestoryData\Logs` },
-              { label: "Maps", path: String.raw`%AppData%\VintagestoryData\Maps` },
-              { label: "Settings", path: String.raw`%AppData%\VintagestoryData\clientsettings.json` },
-            ].map(({ label, path }) => (
-              <div key={label} className="flex items-center gap-2">
-                <span className="font-medium text-foreground w-16 shrink-0">{label}:</span>
-                <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono select-all">
-                  {path}
-                </code>
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors shrink-0"
-                  onClick={() => copyPath(path)}
-                  title="Copy path"
-                >
-                  {copied === path ? <Check className="size-3.5" /> : <ClipboardCopy className="size-3.5" />}
-                </button>
-              </div>
-            ))}
+        <details className="group rounded-md border text-sm">
+          <summary className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-muted-foreground hover:text-foreground select-none [&::-webkit-details-marker]:hidden list-none">
+            <HelpCircle className="h-4 w-4 shrink-0" />
+            <span>Where can I find these files?</span>
+            <svg className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div className="border-t px-3 py-3 space-y-3 text-muted-foreground">
+            <div className="grid gap-1.5">
+              {[
+                { label: "Logs", path: String.raw`%AppData%\VintagestoryData\Logs` },
+                { label: "Maps", path: String.raw`%AppData%\VintagestoryData\Maps` },
+                { label: "Settings", path: String.raw`%AppData%\VintagestoryData\clientsettings.json` },
+              ].map(({ label, path }) => (
+                <div key={label} className="flex items-center gap-2">
+                  <span className="font-medium text-foreground w-16 shrink-0">{label}:</span>
+                  <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono select-all">
+                    {path}
+                  </code>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors shrink-0"
+                    onClick={() => copyPath(path)}
+                    title="Copy path"
+                  >
+                    {copied === path ? <Check className="size-3.5" /> : <ClipboardCopy className="size-3.5" />}
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="text-xs">
+              Paste these paths directly into File Explorer's address bar.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Paste these paths directly into File Explorer's address bar.
-          </p>
-        </div>
+        </details>
 
         <form onSubmit={handleSubmit} className="grid gap-4">
           <FileUpload

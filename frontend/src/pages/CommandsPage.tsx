@@ -2,9 +2,11 @@ import { useState, type FormEvent } from "react";
 import { generateCommands } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function CommandsPage() {
   const [saveFile, setSaveFile] = useState<File | null>(null);
@@ -76,14 +78,15 @@ export function CommandsPage() {
             accept=".json"
             onChange={setConfigFile}
           />
+          <SaveFileHelp />
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label htmlFor="title">Title filter</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Combobox id="title" value={title} onChange={setTitle} suggestions={[]} placeholder="e.g. trader" />
             </div>
             <div>
               <Label htmlFor="icon">Icon filter</Label>
-              <Input id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} />
+              <Combobox id="icon" value={icon} onChange={setIcon} suggestions={VS_WAYPOINT_ICONS} placeholder="e.g. circle" />
             </div>
           </div>
           <Button type="submit" disabled={(!saveFile && !wpFile) || loading}>

@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { HelpTip } from "@/components/ui/help-tip";
+import { SaveFileHelp } from "@/components/SaveFileHelp";
 import {
   Select,
   SelectContent,
@@ -89,6 +91,7 @@ export function ImportPage() {
             accept=".json"
             onChange={setConfigFile}
           />
+          <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2 items-end">
             <div>
               <Label>Mode</Label>
@@ -103,7 +106,7 @@ export function ImportPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="owner">Owner UID (optional)</Label>
+              <Label htmlFor="owner">Owner UID (optional)<HelpTip text="The owner UID is the unique player ID to assign to imported waypoints. In singleplayer this is your player UID. Leave blank to keep the original owner from the waypoint data." /></Label>
               <Input
                 id="owner"
                 value={owner}
@@ -116,7 +119,7 @@ export function ImportPage() {
                 checked={newGuids}
                 onCheckedChange={setNewGuids}
               />
-              <Label htmlFor="guids">New GUIDs</Label>
+              <Label htmlFor="guids">New GUIDs<HelpTip text="Generate new unique identifiers for each imported waypoint. Enable this to avoid conflicts if the waypoints already exist in your save file." /></Label>
             </div>
           </div>
           <Button type="submit" disabled={!saveFile || !wpFile || loading}>

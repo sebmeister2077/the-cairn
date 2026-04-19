@@ -1,0 +1,23 @@
+/** Known Vintage Story waypoint icon names. */
+export const VS_WAYPOINT_ICONS: string[] = [
+    "bee",
+    "cave",
+    "home",
+    "star1",
+    "star2",
+    "spiral",
+    "thunderbolt",
+    "pick",
+    "rocks",
+    "ore",
+    "vessel",
+    "trader",
+    "player",
+    "mushroom",
+    "circle",
+    "flower",
+    "ruins",
+    "airlock",
+    "select",
+    "ladder",
+];

@@ -1,11 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useState, useMemo, type FormEvent } from "react";
 import { extractWaypoints } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { WaypointTable } from "@/components/WaypointTable";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
+import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function ExtractPage() {
   const [saveFile, setSaveFile] = useState<File | null>(null);
@@ -16,6 +19,19 @@ export function ExtractPage() {
   const [waypoints, setWaypoints] = useState<unknown[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const titleSuggestions = useMemo(
+    () => [...new Set((waypoints as { title?: string }[]).map((w) => w.title).filter(Boolean) as string[])],
+    [waypoints]
+  );
+  const ownerSuggestions = useMemo(
+    () => [...new Set((waypoints as { owner?: string }[]).map((w) => w.owner).filter(Boolean) as string[])],
+    [waypoints]
+  );
+  const iconSuggestions = useMemo(() => {
+    const fromData = (waypoints as { icon?: string }[]).map((w) => w.icon).filter(Boolean) as string[];
+    return [...new Set([...VS_WAYPOINT_ICONS, ...fromData])];
+  }, [waypoints]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -70,18 +86,19 @@ export function ExtractPage() {
             accept=".json"
             onChange={setConfigFile}
           />
+          <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label htmlFor="title">Title filter</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Combobox id="title" value={title} onChange={setTitle} suggestions={titleSuggestions} placeholder="e.g. trader" />
             </div>
             <div>
               <Label htmlFor="icon">Icon filter</Label>
-              <Input id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} />
+              <Combobox id="icon" value={icon} onChange={setIcon} suggestions={iconSuggestions} placeholder="e.g. circle" />
             </div>
             <div>
-              <Label htmlFor="owner">Owner filter</Label>
-              <Input id="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
+              <Label htmlFor="owner">Owner filter<HelpTip text="The owner is the unique player ID stored with each waypoint. In singleplayer this is your player UID. Filter to show only waypoints belonging to a specific player." /></Label>
+              <Combobox id="owner" value={owner} onChange={setOwner} suggestions={ownerSuggestions} />
             </div>
           </div>
           <Button type="submit" disabled={!saveFile || loading}>

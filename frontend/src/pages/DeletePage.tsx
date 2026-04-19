@@ -3,9 +3,13 @@ import { deleteWaypoints } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { HelpTip } from "@/components/ui/help-tip";
+import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function DeletePage() {
   const [saveFile, setSaveFile] = useState<File | null>(null);
@@ -86,18 +90,19 @@ export function DeletePage() {
             accept=".json"
             onChange={setConfigFile}
           />
+          <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label htmlFor="title">Title filter</Label>
-              <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Combobox id="title" value={title} onChange={setTitle} suggestions={[]} placeholder="e.g. trader" />
             </div>
             <div>
               <Label htmlFor="icon">Icon filter</Label>
-              <Input id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} />
+              <Combobox id="icon" value={icon} onChange={setIcon} suggestions={VS_WAYPOINT_ICONS} placeholder="e.g. circle" />
             </div>
             <div>
-              <Label htmlFor="owner">Owner filter</Label>
-              <Input id="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
+              <Label htmlFor="owner">Owner filter<HelpTip text="The owner is the unique player ID stored with each waypoint. In singleplayer this is your player UID. Filter to delete only waypoints belonging to a specific player." /></Label>
+              <Combobox id="owner" value={owner} onChange={setOwner} suggestions={[]} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 items-end">
@@ -106,7 +111,7 @@ export function DeletePage() {
               <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="guid">GUID</Label>
+              <Label htmlFor="guid">GUID<HelpTip text="The GUID is a unique identifier for each individual waypoint (e.g. 740f7877-971f-...). Use this to target a single specific waypoint for deletion." /></Label>
               <Input id="guid" value={guid} onChange={(e) => setGuid(e.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
