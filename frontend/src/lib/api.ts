@@ -99,6 +99,24 @@ export async function renderMap(formData: FormData, maxDimension?: number): Prom
     return res.blob();
 }
 
+export async function getTopsMapStats() {
+    const res = await fetch(`${API_BASE}/tops-map-stats`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function renderTopsMap(maxDimension?: number): Promise<Blob> {
+    const params = new URLSearchParams();
+    if (maxDimension) params.set("max_dimension", String(maxDimension));
+    const qs = params.toString();
+    const res = await fetch(`${API_BASE}/tops-map-render${qs ? `?${qs}` : ""}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    await handleResponse(res);
+    return res.blob();
+}
+
 export async function getContributeInfo(signal?: AbortSignal) {
     const res = await fetch(`${API_BASE}/contribute/info`, {
         headers: { "X-API-Key": getApiKey() },

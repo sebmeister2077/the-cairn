@@ -1,6 +1,5 @@
-import { useState, useRef, useCallback, useEffect, type FormEvent } from "react";
-import { getMapStats, renderMap } from "@/lib/api";
-import { FileUpload } from "@/components/FileUpload";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { getTopsMapStats, renderTopsMap } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ZoomIn, ZoomOut, Maximize, Download, Crosshair, Loader2 } from "lucide-react";
@@ -16,8 +15,7 @@ interface MapStats {
   start_z: number;
 }
 
-export function MapViewPage() {
-  const [dbFile, setDbFile] = useState<File | null>(null);
+export function TOPSMapViewPage() {
   const [stats, setStats] = useState<MapStats | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -36,50 +34,76 @@ export function MapViewPage() {
   const zoomRef = useRef(zoom);
   const panRef = useRef(pan);
 
-  // Keep refs in sync with state so non-React listeners see current values
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
   useEffect(() => { panRef.current = pan; }, [pan]);
 
-  // Cleanup object URL on unmount or when image changes
   useEffect(() => {
     return () => {
       if (imageUrl) URL.revokeObjectURL(imageUrl);
     };
   }, [imageUrl]);
 
-  // Auto-enhance: when zoomed in enough that pixels are stretched, request a
-  // higher-resolution render from the server and swap the image in-place.
+  // Auto-load the map on mount
   useEffect(() => {
-    if (!imageUrl || !dbFile || !stats || imgNatural.w === 0) return;
+    let cancelled = false;
 
-    // The viewport shows imgNatural.w pixels at CSS zoom; the "effective" pixel
-    // density the user sees is zoom * imgNatural.w / stats.width_blocks.
-    // We want roughly 1 rendered-pixel per screen-pixel in the viewport.
+    async function load() {
+      setError("");
+      setLoading("Reading global server map…");
+      try {
+        const s = await getTopsMapStats();
+        if (cancelled) return;
+        setStats(s);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to read map database");
+        setLoading("");
+        return;
+      }
+
+      setLoading("Rendering map image… This may take a moment for large maps.");
+      try {
+        const blob = await renderTopsMap();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        setImageUrl(url);
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+        setRenderedMaxDim(4096);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to render map");
+      } finally {
+        if (!cancelled) setLoading("");
+      }
+    }
+
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Auto-enhance
+  useEffect(() => {
+    if (!imageUrl || !stats || imgNatural.w === 0) return;
+
     const el = containerRef.current;
     if (!el) return;
     const viewportW = el.clientWidth;
-    // How many image pixels are visible horizontally?
     const visibleImgPx = viewportW / zoom;
-    // The desired resolution so that those visible pixels fill the viewport 1:1
     const neededMaxDim = Math.ceil((imgNatural.w / visibleImgPx) * viewportW);
-    // Only re-render if we need >1.8× more than what we have, up to 16384
     const target = Math.min(16384, Math.max(4096, neededMaxDim));
     if (target <= renderedMaxDim * 1.8) return;
 
     const timer = setTimeout(async () => {
-      // Abort any in-flight enhance
       enhanceAbortRef.current?.abort();
       const abort = new AbortController();
       enhanceAbortRef.current = abort;
 
       setEnhancing(true);
       try {
-        const fd = new FormData();
-        fd.append("db_file", dbFile);
-        const blob = await renderMap(fd, target);
+        const blob = await renderTopsMap(target);
         if (abort.signal.aborted) return;
 
-        // Create the new image and figure out its natural size before swapping
         const newUrl = URL.createObjectURL(blob);
         const tmpImg = new window.Image();
         tmpImg.src = newUrl;
@@ -92,37 +116,31 @@ export function MapViewPage() {
         const newW = tmpImg.naturalWidth;
         const newH = tmpImg.naturalHeight;
         const oldW = imgNatural.w;
-        const oldH = imgNatural.h;
 
-        // Adjust pan so the viewport stays in the same place
         const scaleW = newW / oldW;
-        const scaleH = newH / oldH;
-        setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
-        setZoom((z) => z / scaleW); // counteract the larger image
+        setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleW }));
+        setZoom((z) => z / scaleW);
         setImgNatural({ w: newW, h: newH });
         setRenderedMaxDim(target);
 
-        // Swap URLs
         const oldUrl = imageUrl;
         setImageUrl(newUrl);
         URL.revokeObjectURL(oldUrl);
       } catch {
-        // silently ignore — user still has the current image
+        // silently ignore
       } finally {
         if (!abort.signal.aborted) setEnhancing(false);
       }
-    }, 800); // debounce 800ms
+    }, 800);
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, imgNatural.w, renderedMaxDim]);
 
-  // Cleanup enhance on unmount
   useEffect(() => {
     return () => { enhanceAbortRef.current?.abort(); };
   }, []);
 
-  // Zoom toward a specific point (in container-local coordinates)
   const zoomToward = useCallback((focalX: number, focalY: number, newZoom: number) => {
     const oldZoom = zoomRef.current;
     const oldPan = panRef.current;
@@ -135,7 +153,6 @@ export function MapViewPage() {
     setZoom(clamped);
   }, []);
 
-  // Non-passive wheel listener to prevent page scroll inside the map viewer
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -149,49 +166,7 @@ export function MapViewPage() {
     return () => el.removeEventListener("wheel", onWheel);
   }, [imageUrl, zoomToward]);
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!dbFile) return;
-
-    setError("");
-    setStats(null);
-    if (imageUrl) {
-      URL.revokeObjectURL(imageUrl);
-      setImageUrl(null);
-    }
-
-    // Step 1: Get stats
-    setLoading("Reading map database…");
-    try {
-      const fd = new FormData();
-      fd.append("db_file", dbFile);
-      const s = await getMapStats(fd);
-      setStats(s);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to read map database");
-      setLoading("");
-      return;
-    }
-
-    // Step 2: Render image
-    setLoading("Rendering map image… This may take a moment for large maps.");
-    try {
-      const fd = new FormData();
-      fd.append("db_file", dbFile);
-      const blob = await renderMap(fd);
-      const url = URL.createObjectURL(blob);
-      setImageUrl(url);
-      setZoom(1);
-      setPan({ x: 0, y: 0 });
-      setRenderedMaxDim(4096);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to render map");
-    } finally {
-      setLoading("");
-    }
-  }
-
-  function handleReset() {
+  function handleReload() {
     setStats(null);
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(null);
@@ -203,17 +178,43 @@ export function MapViewPage() {
     setRenderedMaxDim(4096);
     setEnhancing(false);
     enhanceAbortRef.current?.abort();
+
+    // Re-trigger load
+    (async () => {
+      setLoading("Reading global server map…");
+      try {
+        const s = await getTopsMapStats();
+        setStats(s);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to read map database");
+        setLoading("");
+        return;
+      }
+
+      setLoading("Rendering map image… This may take a moment for large maps.");
+      try {
+        const blob = await renderTopsMap();
+        const url = URL.createObjectURL(blob);
+        setImageUrl(url);
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+        setRenderedMaxDim(4096);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to render map");
+      } finally {
+        setLoading("");
+      }
+    })();
   }
 
   function handleDownload() {
     if (!imageUrl) return;
     const a = document.createElement("a");
     a.href = imageUrl;
-    a.download = dbFile ? dbFile.name.replace(/\.db$/, "-map.png") : "map.png";
+    a.download = "tops-server-map.png";
     a.click();
   }
 
-  // Center the view on game coordinates X:0, Z:0
   const centerOnOrigin = useCallback((currentZoom?: number) => {
     const el = containerRef.current;
     if (!el || !stats || imgNatural.w === 0) return;
@@ -224,7 +225,6 @@ export function MapViewPage() {
     setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
   }, [stats, imgNatural, zoom]);
 
-  // Zoom controls – anchor on viewport center
   const zoomIn = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -242,7 +242,6 @@ export function MapViewPage() {
     setPan({ x: 0, y: 0 });
   }, []);
 
-  // Pan via mouse drag
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button !== 0) return;
@@ -258,16 +257,13 @@ export function MapViewPage() {
         setPan({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
       }
 
-      // Compute block coordinates under cursor
       if (containerRef.current && stats && imgNatural.w > 0) {
         const rect = containerRef.current.getBoundingClientRect();
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
-        // Convert screen coords → image pixel coords
         const imgX = (mx - pan.x) / zoom;
         const imgY = (my - pan.y) / zoom;
         if (imgX >= 0 && imgX < imgNatural.w && imgY >= 0 && imgY < imgNatural.h) {
-          // Map image pixel → game block coordinate
           const blockX = Math.floor((imgX / imgNatural.w) * stats.width_blocks + stats.start_x);
           const blockZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks + stats.start_z);
           setHoverCoords({ x: blockX, z: blockZ });
@@ -288,39 +284,37 @@ export function MapViewPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Local Map Viewer</CardTitle>
+        <CardTitle>TOPS Map Viewer</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Upload a multiplayer map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file
-          to render and explore the world map your client has cached.
+          Explore the community-contributed global server map built from player contributions.
         </p>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <form onSubmit={handleSubmit} className="grid gap-4">
-          <FileUpload
-            id="dbfile"
-            label="Map database (.db)"
-            accept=".db"
-            required
-            onChange={setDbFile}
-          />
-          <div className="flex gap-2">
-            <Button type="submit" disabled={!dbFile || !!loading}>
-              {loading || "Render Map"}
+        <div className="flex gap-2">
+          {loading && (
+            <Button disabled>
+              <Loader2 className="size-4 mr-1 animate-spin" />
+              {loading}
             </Button>
-            {imageUrl && (
-              <>
-                <Button type="button" variant="outline" onClick={handleDownload}>
-                  <Download className="size-4 mr-1" />
-                  Download PNG
-                </Button>
-                <Button type="button" variant="outline" onClick={handleReset}>
-                  Clear
-                </Button>
-              </>
-            )}
-          </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-        </form>
+          )}
+          {!loading && imageUrl && (
+            <>
+              <Button type="button" variant="outline" onClick={handleDownload}>
+                <Download className="size-4 mr-1" />
+                Download PNG
+              </Button>
+              <Button type="button" variant="outline" onClick={handleReload}>
+                Reload
+              </Button>
+            </>
+          )}
+          {!loading && !imageUrl && error && (
+            <Button type="button" onClick={handleReload}>
+              Retry
+            </Button>
+          )}
+        </div>
+        {error && <p className="text-red-500 text-sm">{error}</p>}
 
         {stats && (
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
@@ -370,7 +364,7 @@ export function MapViewPage() {
               <img
                 ref={imgRef}
                 src={imageUrl}
-                alt="Vintage Story world map"
+                alt="TOPS global server map"
                 draggable={false}
                 className="absolute select-none"
                 onLoad={() => {
@@ -378,7 +372,6 @@ export function MapViewPage() {
                     const w = imgRef.current.naturalWidth;
                     const h = imgRef.current.naturalHeight;
                     setImgNatural({ w, h });
-                    // Auto-center on origin (0, 0)
                     const rect = containerRef.current.getBoundingClientRect();
                     const imgX = ((0 - stats.start_x) / stats.width_blocks) * w;
                     const imgY = ((0 - stats.start_z) / stats.height_blocks) * h;

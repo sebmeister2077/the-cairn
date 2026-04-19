@@ -9,6 +9,7 @@ import { CommandsPage } from "@/pages/CommandsPage";
 import { DeletePage } from "@/pages/DeletePage";
 import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import { MapViewPage } from "@/pages/MapViewPage";
+import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import "./index.css";
@@ -28,7 +29,8 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
   ],
   "/multiplayer": [
     { value: "/multiplayer/identify", label: "Identify Maps" },
-    { value: "/multiplayer/map-viewer", label: "Map Viewer" },
+    { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
+    { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
     { value: "/multiplayer/contribute", label: "Contribute" },
   ],
   "/general": [],
@@ -103,6 +105,7 @@ function AppContent() {
           <Route path="/multiplayer" element={<Navigate to="/multiplayer/identify" replace />} />
           <Route path="/multiplayer/identify" element={<IdentifyMapsPage />} />
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
+          <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
           <Route path="/general" element={<GeneralPage />} />
         </Routes>
@@ -136,7 +139,8 @@ function GeneralPage() {
             <p className="font-medium text-foreground">Multiplayer</p>
             <ul className="list-disc list-inside space-y-1 ml-1">
               <li><strong>Identify Maps</strong> &mdash; figure out which <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache files belong to which server using your client log.</li>
-              <li><strong>Map Viewer</strong> &mdash; render and explore a cached map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as an interactive image.</li>
+              <li><strong>Local Map Viewer</strong> &mdash; render and explore a cached map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as an interactive image.</li>
+              <li><strong>TOPS Map Viewer</strong> &mdash; explore the community-contributed global server map.</li>
               <li><strong>Contribute</strong> &mdash; upload your map cache to help build a shared community map for your server.</li>
             </ul>
           </div>
