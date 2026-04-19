@@ -83,7 +83,10 @@ export async function getMapStats(formData: FormData) {
     return (await handleResponse(res)).json();
 }
 
-export async function renderMap(formData: FormData): Promise<Blob> {
+export async function renderMap(formData: FormData, maxDimension?: number): Promise<Blob> {
+    if (maxDimension) {
+        formData.set("max_dimension", String(maxDimension));
+    }
     const res = await fetch(`${API_BASE}/map-render`, {
         method: "POST",
         headers: { "X-API-Key": getApiKey() },

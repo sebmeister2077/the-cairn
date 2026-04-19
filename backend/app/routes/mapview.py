@@ -1,6 +1,6 @@
 """POST /api/map-render — Render a Vintage Story map .db file as a PNG image."""
 
-from fastapi import APIRouter, Depends, File, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse, Response
 
 from ..auth import verify_api_key
@@ -29,13 +29,15 @@ async def map_stats(
 @router.post("/map-render")
 async def map_render(
     db_file: UploadFile = File(..., description=".db map database file"),
+    max_dimension: int = Form(4096, description="Max output dimension in pixels (capped at 16384)"),
     api_key: str = Depends(verify_api_key),
 ):
     check_rate_limit(api_key)
     db_bytes = await db_file.read()
+    clamped_dim = max(256, min(max_dimension, 16384))
 
     try:
-        png_bytes = render_map_png(db_bytes)
+        png_bytes = render_map_png(db_bytes, max_dimension=clamped_dim)
     except ValueError as e:
         return JSONResponse(status_code=400, content={"detail": str(e)})
 

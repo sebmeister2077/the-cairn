@@ -3,7 +3,7 @@ import { getMapStats, renderMap } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ZoomIn, ZoomOut, Maximize, Download, Crosshair } from "lucide-react";
+import { ZoomIn, ZoomOut, Maximize, Download, Crosshair, Loader2 } from "lucide-react";
 
 interface MapStats {
   pieces: number;
@@ -28,6 +28,9 @@ export function MapViewPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
   const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 });
+  const [renderedMaxDim, setRenderedMaxDim] = useState(4096);
+  const [enhancing, setEnhancing] = useState(false);
+  const enhanceAbortRef = useRef<AbortController | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const zoomRef = useRef(zoom);
@@ -43,6 +46,81 @@ export function MapViewPage() {
       if (imageUrl) URL.revokeObjectURL(imageUrl);
     };
   }, [imageUrl]);
+
+  // Auto-enhance: when zoomed in enough that pixels are stretched, request a
+  // higher-resolution render from the server and swap the image in-place.
+  useEffect(() => {
+    if (!imageUrl || !dbFile || !stats || imgNatural.w === 0) return;
+
+    // The viewport shows imgNatural.w pixels at CSS zoom; the "effective" pixel
+    // density the user sees is zoom * imgNatural.w / stats.width_blocks.
+    // We want roughly 1 rendered-pixel per screen-pixel in the viewport.
+    const el = containerRef.current;
+    if (!el) return;
+    const viewportW = el.clientWidth;
+    // How many image pixels are visible horizontally?
+    const visibleImgPx = viewportW / zoom;
+    // The desired resolution so that those visible pixels fill the viewport 1:1
+    const neededMaxDim = Math.ceil((imgNatural.w / visibleImgPx) * viewportW);
+    // Only re-render if we need >1.8× more than what we have, up to 16384
+    const target = Math.min(16384, Math.max(4096, neededMaxDim));
+    if (target <= renderedMaxDim * 1.8) return;
+
+    const timer = setTimeout(async () => {
+      // Abort any in-flight enhance
+      enhanceAbortRef.current?.abort();
+      const abort = new AbortController();
+      enhanceAbortRef.current = abort;
+
+      setEnhancing(true);
+      try {
+        const fd = new FormData();
+        fd.append("db_file", dbFile);
+        const blob = await renderMap(fd, target);
+        if (abort.signal.aborted) return;
+
+        // Create the new image and figure out its natural size before swapping
+        const newUrl = URL.createObjectURL(blob);
+        const tmpImg = new window.Image();
+        tmpImg.src = newUrl;
+        await new Promise<void>((res, rej) => {
+          tmpImg.onload = () => res();
+          tmpImg.onerror = () => rej();
+        });
+        if (abort.signal.aborted) { URL.revokeObjectURL(newUrl); return; }
+
+        const newW = tmpImg.naturalWidth;
+        const newH = tmpImg.naturalHeight;
+        const oldW = imgNatural.w;
+        const oldH = imgNatural.h;
+
+        // Adjust pan so the viewport stays in the same place
+        const scaleW = newW / oldW;
+        const scaleH = newH / oldH;
+        setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
+        setZoom((z) => z / scaleW); // counteract the larger image
+        setImgNatural({ w: newW, h: newH });
+        setRenderedMaxDim(target);
+
+        // Swap URLs
+        const oldUrl = imageUrl;
+        setImageUrl(newUrl);
+        URL.revokeObjectURL(oldUrl);
+      } catch {
+        // silently ignore — user still has the current image
+      } finally {
+        if (!abort.signal.aborted) setEnhancing(false);
+      }
+    }, 800); // debounce 800ms
+
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, imgNatural.w, renderedMaxDim]);
+
+  // Cleanup enhance on unmount
+  useEffect(() => {
+    return () => { enhanceAbortRef.current?.abort(); };
+  }, []);
 
   // Zoom toward a specific point (in container-local coordinates)
   const zoomToward = useCallback((focalX: number, focalY: number, newZoom: number) => {
@@ -105,6 +183,7 @@ export function MapViewPage() {
       setImageUrl(url);
       setZoom(1);
       setPan({ x: 0, y: 0 });
+      setRenderedMaxDim(4096);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to render map");
     } finally {
@@ -121,6 +200,9 @@ export function MapViewPage() {
     setZoom(1);
     setPan({ x: 0, y: 0 });
     setHoverCoords(null);
+    setRenderedMaxDim(4096);
+    setEnhancing(false);
+    enhanceAbortRef.current?.abort();
   }
 
   function handleDownload() {
@@ -269,6 +351,12 @@ export function MapViewPage() {
               <span className="text-xs text-muted-foreground ml-2">
                 Scroll to zoom · Drag to pan
               </span>
+              {enhancing && (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
+                  <Loader2 className="size-3 animate-spin" />
+                  Enhancing…
+                </span>
+              )}
             </div>
             <div
               ref={containerRef}
