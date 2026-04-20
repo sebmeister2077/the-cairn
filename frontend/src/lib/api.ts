@@ -1,9 +1,8 @@
-const configuredBackendBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
+const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
+const API_BASE = configuredApiBase || "/api";
 
-const API_BASE = "/api"
-
-// For the contribute endpoint, we want to send directly to the backend when configured to avoid CORS issues with large file uploads; otherwise, we use API_BASE which may be proxied in development or point to local routes.
-const UPLOAD_API_BASE = configuredBackendBase ? `${configuredBackendBase}/api` : API_BASE;
+// For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
+const UPLOAD_API_BASE = API_BASE;
 
 function getApiKey(): string {
     return localStorage.getItem("api_key") ?? "";
