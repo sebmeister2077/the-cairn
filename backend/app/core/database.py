@@ -8,6 +8,7 @@ Tables:
 
 from contextlib import contextmanager
 from datetime import datetime, timezone
+import json
 from typing import List, Optional
 
 import psycopg2
@@ -165,6 +166,7 @@ def get_approved_log(limit: int = 20) -> List[dict]:
 # ---------------------------------------------------------------------------
 
 TILE_COUNT_KEY = "tile_count"
+TOPS_MAP_STATS_KEY = "tops_map_stats"
 
 
 def get_state(key: str) -> Optional[str]:
@@ -192,3 +194,20 @@ def get_cached_tile_count() -> int:
 
 def set_cached_tile_count(count: int):
     set_state(TILE_COUNT_KEY, str(count))
+
+
+def get_tops_map_stats() -> Optional[dict]:
+    """Get cached TOPS map stats JSON from app_state."""
+    val = get_state(TOPS_MAP_STATS_KEY)
+    if not val:
+        return None
+    try:
+        parsed = json.loads(val)
+        return parsed if isinstance(parsed, dict) else None
+    except (json.JSONDecodeError, TypeError):
+        return None
+
+
+def set_tops_map_stats(stats: dict):
+    """Persist TOPS map stats JSON in app_state."""
+    set_state(TOPS_MAP_STATS_KEY, json.dumps(stats))

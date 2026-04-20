@@ -4,6 +4,7 @@ Stores:
   - globalservermap.db   → the combined community map
   - pending/{id}.db      → individual pending contribution databases
     - pending/{id}.png     → rendered preview images for pending contributions
+    - cache/tops-map-*.png → pre-rendered TOPS map viewer images
 """
 
 import boto3
@@ -79,6 +80,7 @@ def object_exists(key: str) -> bool:
 # ---------------------------------------------------------------------------
 
 COMBINED_DB_KEY = "globalservermap.db"
+TOPS_MAP_CACHE_DIM = 4096
 
 
 def pending_db_key(contribution_id: str) -> str:
@@ -87,3 +89,7 @@ def pending_db_key(contribution_id: str) -> str:
 
 def pending_preview_key(contribution_id: str) -> str:
     return f"pending/{contribution_id}.png"
+
+
+def tops_map_cache_key(max_dimension: int = TOPS_MAP_CACHE_DIM) -> str:
+    return f"cache/tops-map-{max_dimension}.png"

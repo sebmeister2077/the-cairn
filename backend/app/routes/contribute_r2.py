@@ -479,6 +479,11 @@ async def contribute_approve(
     try:
         stats = _merge_into_combined(pending_tmp, combined_tmp)
 
+        # Refresh cached TOPS stats from the merged local DB file.
+        from ..core.mapdb import get_map_stats
+        with open(combined_tmp, "rb") as f:
+            db.set_tops_map_stats(get_map_stats(f.read()))
+
         # Upload updated combined DB back to R2
         _upload_from_path(combined_tmp, r2_storage.COMBINED_DB_KEY)
     finally:
