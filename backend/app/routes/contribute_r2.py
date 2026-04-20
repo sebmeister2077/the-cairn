@@ -2,7 +2,7 @@
 
 POST /api/contribute          — upload a .db (saved as pending in R2)
 GET  /api/contribute/info     — map ID, combined stats, pending & approved list
-GET  /api/contribute/preview/:id — render a preview PNG (combined + new tiles highlighted)
+GET  /api/contribute/preview/:id — render/cached preview PNG (combined + new tiles highlighted)
 POST /api/contribute/:id/approve — admin-only: merge pending contribution
 POST /api/contribute/:id/reject  — admin-only: discard pending contribution
 
@@ -404,7 +404,10 @@ async def contribute_preview(
     contribution_id: str,
     api_key: str = Depends(verify_api_key),
 ):
-    """Render a preview PNG: combined map + new tiles from this contribution highlighted."""
+    """Return preview PNG for a pending contribution.
+
+    First request renders and stores preview in R2; later requests serve cached PNG.
+    """
     check_rate_limit(api_key)
 
     meta = db.get_contribution(contribution_id)
@@ -412,6 +415,20 @@ async def contribute_preview(
         return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
 
     pending_key = r2_storage.pending_db_key(contribution_id)
+    preview_key = r2_storage.pending_preview_key(contribution_id)
+
+    # Serve cached preview when available.
+    if r2_storage.object_exists(preview_key):
+        png_bytes = r2_storage.download_bytes(preview_key)
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": f"inline; filename={contribution_id}.png",
+                "X-Preview-Cache": "hit",
+            },
+        )
+
     if not r2_storage.object_exists(pending_key):
         return JSONResponse(status_code=404, content={"detail": "Contribution database missing"})
 
@@ -420,6 +437,7 @@ async def contribute_preview(
     pending_tmp = _download_to_temp(pending_key)
     try:
         png_bytes = _render_preview(combined_tmp, pending_tmp)
+        r2_storage.upload_bytes(preview_key, png_bytes, content_type="image/png")
     except ValueError as e:
         return JSONResponse(status_code=400, content={"detail": str(e)})
     finally:
@@ -429,7 +447,10 @@ async def contribute_preview(
     return Response(
         content=png_bytes,
         media_type="image/png",
-        headers={"Content-Disposition": "inline; filename=preview.png"},
+        headers={
+            "Content-Disposition": f"inline; filename={contribution_id}.png",
+            "X-Preview-Cache": "miss",
+        },
     )
 
 
@@ -475,6 +496,7 @@ async def contribute_approve(
 
     # Remove pending .db from R2
     r2_storage.delete_object(pending_key)
+    r2_storage.delete_object(r2_storage.pending_preview_key(contribution_id))
 
     return {"message": "Contribution approved and merged", **stats}
 
@@ -496,6 +518,7 @@ async def contribute_reject(
 
     # Delete .db from R2
     r2_storage.delete_object(r2_storage.pending_db_key(contribution_id))
+    r2_storage.delete_object(r2_storage.pending_preview_key(contribution_id))
 
     # Delete metadata from Supabase
     db.delete_contribution(contribution_id)

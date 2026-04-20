@@ -3,6 +3,7 @@
 Stores:
   - globalservermap.db   → the combined community map
   - pending/{id}.db      → individual pending contribution databases
+    - pending/{id}.png     → rendered preview images for pending contributions
 """
 
 import boto3
@@ -82,3 +83,7 @@ COMBINED_DB_KEY = "globalservermap.db"
 
 def pending_db_key(contribution_id: str) -> str:
     return f"pending/{contribution_id}.db"
+
+
+def pending_preview_key(contribution_id: str) -> str:
+    return f"pending/{contribution_id}.png"
