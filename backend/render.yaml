@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: vs-waypoint-tools-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Set these in the Render dashboard — do NOT commit real values here
+      - key: API_KEYS
+        sync: false
+      - key: ADMIN_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false           # e.g. https://your-frontend.vercel.app
+      - key: CONTRIBUTE_MAP_ID
+        sync: false
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
