@@ -1,7 +1,9 @@
-const API_BASE = "/api";
-const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL
-    ? `${import.meta.env.VITE_BACKEND_URL}/api`
-    : "http://localhost:8001/api";
+const configuredBackendBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
+
+const API_BASE = (configuredBackendBase ? `${configuredBackendBase}/api` : "/api");
+
+// For the contribute endpoint, we want to send directly to the backend when configured to avoid CORS issues with large file uploads; otherwise, we use API_BASE which may be proxied in development or point to local routes.
+const UPLOAD_API_BASE = configuredBackendBase ? `${configuredBackendBase}/api` : API_BASE;
 
 function getApiKey(): string {
     return localStorage.getItem("api_key") ?? "";
@@ -135,8 +137,8 @@ export function contributeMap(
         const params = new URLSearchParams();
         if (contributor) params.set("contributor", contributor);
         const qs = params.toString();
-        // Send directly to backend — Vite proxy buffers the entire body which stalls large uploads
-        xhr.open("POST", `${BACKEND_BASE}/contribute${qs ? `?${qs}` : ""}`);
+        // Send directly to backend when configured; otherwise use API_BASE (dev proxy/local routes)
+        xhr.open("POST", `${UPLOAD_API_BASE}/contribute${qs ? `?${qs}` : ""}`);
         xhr.setRequestHeader("X-API-Key", getApiKey());
         xhr.setRequestHeader("Content-Type", "application/octet-stream");
 
