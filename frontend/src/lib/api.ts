@@ -1,6 +1,6 @@
 const configuredBackendBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 
-const API_BASE = (configuredBackendBase ? `${configuredBackendBase}/api` : "/api");
+const API_BASE = "/api"
 
 // For the contribute endpoint, we want to send directly to the backend when configured to avoid CORS issues with large file uploads; otherwise, we use API_BASE which may be proxied in development or point to local routes.
 const UPLOAD_API_BASE = configuredBackendBase ? `${configuredBackendBase}/api` : API_BASE;
