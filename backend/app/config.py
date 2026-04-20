@@ -44,5 +44,18 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
+    # Cloudflare R2
+    R2_ACCOUNT_ID: str = os.environ.get("R2_ACCOUNT_ID", "")
+    R2_ACCESS_KEY_ID: str = os.environ.get("R2_ACCESS_KEY_ID", "")
+    R2_SECRET_ACCESS_KEY: str = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+    R2_BUCKET_NAME: str = os.environ.get("R2_BUCKET_NAME", "vs-waypoints")
+
+    @property
+    def R2_ENDPOINT_URL(self) -> str:
+        return f"https://{self.R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+
+    # Supabase PostgreSQL
+    SUPABASE_DB_URL: str = os.environ.get("SUPABASE_DB_URL", "")
+
 
 settings = Settings()

@@ -1,15 +1,32 @@
 """FastAPI application entry point."""
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .routes import extract, import_wp, delete, commands, mapview, contribute, tops_map
+from .core.database import init_db, ensure_schema, close_db
+from .routes import extract, import_wp, delete, commands, mapview
+from .routes import contribute_r2 as contribute
+from .routes import tops_map_r2 as tops_map
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: initialise Supabase connection pool + schema
+    init_db()
+    ensure_schema()
+    yield
+    # Shutdown: close connections
+    close_db()
+
 
 app = FastAPI(
     title="Vintage Story Waypoint Tools",
     version="1.0.0",
     description="Web API for extracting, importing, deleting, and generating commands for Vintage Story waypoints.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

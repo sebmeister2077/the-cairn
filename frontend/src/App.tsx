@@ -55,7 +55,7 @@ function AppContent() {
     <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-semibold">VS Waypoint Tools</h1>
+          <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
           <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
             API Key
           </Button>
