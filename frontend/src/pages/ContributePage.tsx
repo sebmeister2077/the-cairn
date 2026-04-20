@@ -19,7 +19,8 @@ import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle } from "luci
 interface PendingContribution {
   id: string;
   contributor: string;
-  timestamp: string;
+  created_at: string;
+  timestamp?: string;
   tile_count: number;
   status: string;
 }
@@ -297,7 +298,7 @@ export function ContributePage() {
                     <div className="text-sm font-medium">{p.contributor}</div>
                     <div className="text-xs text-muted-foreground">
                       {p.tile_count.toLocaleString()} tiles &middot;{" "}
-                      {new Date(p.timestamp).toLocaleDateString()}
+                      {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
                   </div>
