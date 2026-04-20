@@ -4,6 +4,14 @@ const API_BASE = configuredApiBase || "/api";
 // For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
 const UPLOAD_API_BASE = API_BASE;
 
+if (import.meta.env.PROD && !configuredApiBase) {
+    console.warn("[api] VITE_API_BASE is not set. Falling back to /api on current origin.");
+}
+
+if (import.meta.env.DEV) {
+    console.info(`[api] API base resolved to: ${API_BASE}`);
+}
+
 function getApiKey(): string {
     return localStorage.getItem("api_key") ?? "";
 }
