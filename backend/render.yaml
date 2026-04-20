@@ -3,6 +3,9 @@ services:
     name: vs-waypoint-tools-api
     runtime: python
     rootDir: backend
+    buildFilter:
+      paths:
+        - backend/**
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
