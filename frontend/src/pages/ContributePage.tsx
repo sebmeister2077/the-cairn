@@ -49,6 +49,7 @@ export function ContributePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
   const [uploadResult, setUploadResult] = useState<string | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   // Contribute info via React Query
   const infoQuery = useQuery<ContributeInfo>({
@@ -97,6 +98,8 @@ export function ContributePage() {
         setUploadProgress(pct),
       );
       setUploadResult(data.message as string);
+      setDbFile(null);
+      setFileInputKey((prev) => prev + 1);
       queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -226,6 +229,7 @@ export function ContributePage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <FileUpload
+              key={fileInputKey}
               id="contribute-db"
               label="Map Database (.db)"
               accept=".db"
