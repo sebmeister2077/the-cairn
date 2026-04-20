@@ -1,10 +1,12 @@
 """Contribute endpoints — players upload map .db files for admin review.
 
-POST /api/contribute          — upload a .db (saved as pending in R2)
-GET  /api/contribute/info     — map ID, combined stats, pending & approved list
-GET  /api/contribute/preview/:id — render/cached preview PNG (combined + new tiles highlighted)
-POST /api/contribute/:id/approve — admin-only: merge pending contribution
-POST /api/contribute/:id/reject  — admin-only: discard pending contribution
+POST /api/contribute/upload-url    — get a presigned R2 upload URL
+POST /api/contribute/complete      — validate uploaded object and register it
+POST /api/contribute               — legacy direct upload path
+GET  /api/contribute/info          — map ID, combined stats, pending & approved list
+GET  /api/contribute/preview/:id   — render/cached preview PNG (combined + new tiles highlighted)
+POST /api/contribute/:id/approve   — admin-only: merge pending contribution
+POST /api/contribute/:id/reject    — admin-only: discard pending contribution
 
 Storage:
   - .db files are stored in Cloudflare R2
@@ -19,6 +21,7 @@ from typing import Optional, Set
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel
 
 from ..auth import verify_api_key
 from ..config import settings
@@ -29,6 +32,18 @@ router = APIRouter()
 
 MAPPIECE_TABLE = "mappiece"
 BLOCKIDMAPPING_TABLE = "blockidmapping"
+UPLOAD_URL_TTL_SECONDS = 15 * 60
+
+
+class ContributeUploadInitRequest(BaseModel):
+    contributor: str = ""
+    file_name: str = "map.db"
+    size_bytes: int = 0
+
+
+class ContributeUploadCompleteRequest(BaseModel):
+    contribution_id: str
+    contributor: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -38,21 +53,22 @@ BLOCKIDMAPPING_TABLE = "blockidmapping"
 def _download_to_temp(r2_key: str) -> str:
     """Download an R2 object to a temp file and return its path.
     Caller is responsible for deleting the temp file."""
-    data = r2_storage.download_bytes(r2_key)
     fd, path = tempfile.mkstemp(suffix=".db")
     try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
+        os.close(fd)
+        r2_storage.download_to_path(r2_key, path)
     except Exception:
-        os.unlink(path)
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
         raise
     return path
 
 
 def _upload_from_path(local_path: str, r2_key: str):
     """Upload a local file to R2."""
-    with open(local_path, "rb") as f:
-        r2_storage.upload_bytes(r2_key, f.read())
+    r2_storage.upload_file(local_path, r2_key)
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +141,58 @@ def _validate_upload(path: str) -> int:
         return count
     finally:
         conn.close()
+
+
+def _normalise_contributor(contributor: str) -> str:
+    trimmed = (contributor or "").strip()
+    return trimmed[:50]
+
+
+def _finalize_uploaded_contribution(contribution_id: str, contributor: str) -> dict:
+    pending_key = r2_storage.pending_db_key(contribution_id)
+
+    existing = db.get_contribution(contribution_id)
+    if existing:
+        return {
+            "message": "Upload already completed — pending admin approval",
+            "contribution_id": contribution_id,
+            "contributor": existing.get("contributor") or "Anonymous",
+            "tile_count": existing.get("tile_count", 0),
+        }
+
+    try:
+        total_size = r2_storage.get_object_size(pending_key)
+    except FileNotFoundError:
+        raise ValueError("Uploaded file not found in storage")
+
+    if total_size == 0:
+        r2_storage.delete_object(pending_key)
+        raise ValueError("Empty upload")
+    if total_size > settings.MAX_UPLOAD_SIZE:
+        r2_storage.delete_object(pending_key)
+        raise ValueError("File too large")
+
+    tmp_path = _download_to_temp(pending_key)
+    try:
+        tile_count = _validate_upload(tmp_path)
+    except ValueError:
+        r2_storage.delete_object(pending_key)
+        raise
+    finally:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+
+    contributor_name = _normalise_contributor(contributor)
+    db.create_contribution(contribution_id, contributor_name, tile_count)
+
+    return {
+        "message": "Upload received — pending admin approval",
+        "contribution_id": contribution_id,
+        "contributor": contributor_name or "Anonymous",
+        "tile_count": tile_count,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -348,6 +416,61 @@ async def contribute_info(api_key: str = Depends(verify_api_key)):
     }
 
 
+@router.post("/contribute/upload-url")
+async def contribute_upload_url(
+    payload: ContributeUploadInitRequest,
+    api_key: str = Depends(verify_api_key),
+):
+    """Create a presigned upload URL so the browser can upload directly to R2."""
+    check_rate_limit(api_key)
+
+    if payload.size_bytes <= 0:
+        return JSONResponse(status_code=400, content={"detail": "Empty upload"})
+    if payload.size_bytes > settings.MAX_UPLOAD_SIZE:
+        return JSONResponse(status_code=413, content={"detail": "File too large"})
+    if payload.file_name and not payload.file_name.lower().endswith(".db"):
+        return JSONResponse(status_code=400, content={"detail": "Only .db map files are supported"})
+
+    contribution_id = uuid.uuid4().hex[:12]
+    pending_key = r2_storage.pending_db_key(contribution_id)
+
+    return {
+        "contribution_id": contribution_id,
+        "upload_method": "PUT",
+        "upload_url": r2_storage.generate_presigned_upload_url(
+            pending_key,
+            expires_seconds=UPLOAD_URL_TTL_SECONDS,
+            content_type="application/octet-stream",
+        ),
+        "upload_headers": {
+            "Content-Type": "application/octet-stream",
+        },
+        "expires_in_seconds": UPLOAD_URL_TTL_SECONDS,
+    }
+
+
+@router.post("/contribute/complete")
+async def contribute_complete(
+    payload: ContributeUploadCompleteRequest,
+    api_key: str = Depends(verify_api_key),
+):
+    """Validate an uploaded R2 object and register it as a pending contribution."""
+    check_rate_limit(api_key)
+
+    contribution_id = payload.contribution_id.strip()
+    if not contribution_id:
+        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
+
+    try:
+        return _finalize_uploaded_contribution(contribution_id, payload.contributor)
+    except ValueError as e:
+        detail = str(e)
+        status = 413 if detail == "File too large" else 400
+        if detail == "Uploaded file not found in storage":
+            status = 404
+        return JSONResponse(status_code=status, content={"detail": detail})
+
+
 @router.post("/contribute")
 async def contribute_upload(
     request: Request,
@@ -373,25 +496,16 @@ async def contribute_upload(
             os.unlink(tmp_path)
             return JSONResponse(status_code=400, content={"detail": "Empty upload"})
 
-        try:
-            tile_count = _validate_upload(tmp_path)
-        except ValueError as e:
-            return JSONResponse(status_code=400, content={"detail": str(e)})
-
         cid = uuid.uuid4().hex[:12]
 
         # Upload to R2
         _upload_from_path(tmp_path, r2_storage.pending_db_key(cid))
-
-        # Save metadata to Supabase
-        db.create_contribution(cid, contributor, tile_count)
-
-        return {
-            "message": "Upload received — pending admin approval",
-            "contribution_id": cid,
-            "contributor": contributor or "Anonymous",
-            "tile_count": tile_count,
-        }
+        try:
+            return _finalize_uploaded_contribution(cid, contributor)
+        except ValueError as e:
+            detail = str(e)
+            status = 413 if detail == "File too large" else 400
+            return JSONResponse(status_code=status, content={"detail": detail})
     finally:
         try:
             os.unlink(tmp_path)
@@ -480,9 +594,8 @@ async def contribute_approve(
         stats = _merge_into_combined(pending_tmp, combined_tmp)
 
         # Refresh cached TOPS stats from the merged local DB file.
-        from ..core.mapdb import get_map_stats
-        with open(combined_tmp, "rb") as f:
-            db.set_tops_map_stats(get_map_stats(f.read()))
+        from ..core.mapdb import get_map_stats_from_path
+        db.set_tops_map_stats(get_map_stats_from_path(combined_tmp))
 
         # Upload updated combined DB back to R2
         _upload_from_path(combined_tmp, r2_storage.COMBINED_DB_KEY)

@@ -195,15 +195,11 @@ def render_map_png(db_bytes: bytes, max_dimension: int = 4096) -> bytes:
             pass
 
 
-def get_map_stats(db_bytes: bytes) -> dict:
-    """Get basic stats from a map .db file without rendering."""
-    fd, tmp_path = tempfile.mkstemp(suffix=".db")
+def get_map_stats_from_path(db_path: str) -> dict:
+    """Get basic stats from a map .db file path without rendering."""
     conn = None
     try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(db_bytes)
-
-        conn = sqlite3.connect(tmp_path)
+        conn = sqlite3.connect(db_path)
         cur = conn.cursor()
 
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mappiece'")
@@ -241,6 +237,16 @@ def get_map_stats(db_bytes: bytes) -> dict:
     finally:
         if conn is not None:
             conn.close()
+
+
+def get_map_stats(db_bytes: bytes) -> dict:
+    """Get basic stats from a map .db file without rendering."""
+    fd, tmp_path = tempfile.mkstemp(suffix=".db")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(db_bytes)
+        return get_map_stats_from_path(tmp_path)
+    finally:
         try:
             os.unlink(tmp_path)
         except OSError:

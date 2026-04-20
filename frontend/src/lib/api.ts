@@ -1,5 +1,5 @@
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
-const API_BASE = configuredApiBase ? (configuredApiBase + "/api") : "/api";
+const API_BASE = configuredApiBase || "/api";
 
 // For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
 const UPLOAD_API_BASE = API_BASE;
@@ -126,43 +126,92 @@ export async function getContributeInfo(signal?: AbortSignal) {
     return (await handleResponse(res)).json();
 }
 
-export function contributeMap(
+interface ContributeUploadSession {
+    contribution_id: string;
+    upload_method: string;
+    upload_url: string;
+    upload_headers?: Record<string, string>;
+}
+
+function uploadFileToUrl(
+    session: ContributeUploadSession,
     file: File,
-    contributor: string,
     onProgress?: (percent: number) => void,
-): Promise<Record<string, unknown>> {
+): Promise<void> {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        const params = new URLSearchParams();
-        if (contributor) params.set("contributor", contributor);
-        const qs = params.toString();
-        // Send directly to backend when configured; otherwise use API_BASE (dev proxy/local routes)
-        xhr.open("POST", `${UPLOAD_API_BASE}/contribute${qs ? `?${qs}` : ""}`);
-        xhr.setRequestHeader("X-API-Key", getApiKey());
-        xhr.setRequestHeader("Content-Type", "application/octet-stream");
+        xhr.open(session.upload_method || "PUT", session.upload_url);
+
+        for (const [headerName, headerValue] of Object.entries(session.upload_headers ?? {})) {
+            xhr.setRequestHeader(headerName, headerValue);
+        }
 
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && onProgress) {
-                onProgress(Math.round((e.loaded / e.total) * 100));
+                onProgress(Math.min(Math.round((e.loaded / e.total) * 95), 95));
             }
         };
 
         xhr.onload = () => {
-            try {
-                const body = JSON.parse(xhr.responseText);
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(body);
-                } else {
-                    reject(new Error(body.detail ?? `HTTP ${xhr.status}`));
-                }
-            } catch {
-                reject(new Error(`HTTP ${xhr.status}`));
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve();
+                return;
             }
+
+            let detail = `Upload failed (${xhr.status})`;
+            try {
+                const body = JSON.parse(xhr.responseText) as { detail?: string };
+                if (body.detail) detail = body.detail;
+            } catch {
+                if (xhr.responseText) {
+                    detail = xhr.responseText;
+                }
+            }
+            reject(new Error(detail));
         };
 
-        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.onerror = () => reject(new Error("Network error during direct upload"));
         xhr.send(file);
     });
+}
+
+export async function contributeMap(
+    file: File,
+    contributor: string,
+    onProgress?: (percent: number) => void,
+): Promise<Record<string, unknown>> {
+    const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+        },
+        body: JSON.stringify({
+            contributor,
+            file_name: file.name,
+            size_bytes: file.size,
+        }),
+    });
+    const uploadSession = (await handleResponse(initRes)).json() as Promise<ContributeUploadSession>;
+    const session = await uploadSession;
+
+    await uploadFileToUrl(session, file, onProgress);
+    onProgress?.(98);
+
+    const completeRes = await fetch(`${UPLOAD_API_BASE}/contribute/complete`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+        },
+        body: JSON.stringify({
+            contribution_id: session.contribution_id,
+            contributor,
+        }),
+    });
+
+    onProgress?.(100);
+    return (await handleResponse(completeRes)).json();
 }
 
 export async function getContributePreview(contributionId: string): Promise<Blob> {

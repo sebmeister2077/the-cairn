@@ -7,6 +7,8 @@ Stores:
     - cache/tops-map-*.png → pre-rendered TOPS map viewer images
 """
 
+import os
+
 import boto3
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
@@ -47,6 +49,17 @@ def upload_bytes(key: str, data: bytes, content_type: str = "application/octet-s
     )
 
 
+def upload_file(local_path: str, key: str, content_type: str = "application/octet-stream"):
+    """Upload a local file to R2 without reading it all into memory."""
+    with open(local_path, "rb") as file_obj:
+        _get_client().upload_fileobj(
+            file_obj,
+            _bucket(),
+            key,
+            ExtraArgs={"ContentType": content_type},
+        )
+
+
 def download_bytes(key: str) -> bytes:
     """Download an object from R2 as bytes. Raises FileNotFoundError if missing."""
     try:
@@ -56,6 +69,50 @@ def download_bytes(key: str) -> bytes:
         if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
             raise FileNotFoundError(f"R2 object not found: {key}")
         raise
+
+
+def download_to_path(key: str, local_path: str):
+    """Download an object from R2 to a local file path."""
+    try:
+        with open(local_path, "wb") as file_obj:
+            _get_client().download_fileobj(_bucket(), key, file_obj)
+    except ClientError as e:
+        try:
+            os.unlink(local_path)
+        except OSError:
+            pass
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {key}")
+        raise
+
+
+def get_object_size(key: str) -> int:
+    """Return object size in bytes. Raises FileNotFoundError if missing."""
+    try:
+        resp = _get_client().head_object(Bucket=_bucket(), Key=key)
+        return int(resp.get("ContentLength", 0))
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {key}")
+        raise
+
+
+def generate_presigned_upload_url(
+    key: str,
+    *,
+    expires_seconds: int = 900,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """Generate a presigned PUT URL for direct browser uploads to R2."""
+    return _get_client().generate_presigned_url(
+        "put_object",
+        Params={
+            "Bucket": _bucket(),
+            "Key": key,
+            "ContentType": content_type,
+        },
+        ExpiresIn=expires_seconds,
+    )
 
 
 def delete_object(key: str):
