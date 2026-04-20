@@ -18,6 +18,7 @@ interface MapStats {
 
 export function MapViewPage() {
   const [dbFile, setDbFile] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [stats, setStats] = useState<MapStats | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -192,6 +193,8 @@ export function MapViewPage() {
   }
 
   function handleReset() {
+    setDbFile(null);
+    setFileInputKey((k) => k + 1);
     setStats(null);
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(null);
@@ -297,6 +300,7 @@ export function MapViewPage() {
       <CardContent className="grid gap-4">
         <form onSubmit={handleSubmit} className="grid gap-4">
           <FileUpload
+            key={fileInputKey}
             id="dbfile"
             label="Map database (.db)"
             accept=".db"
