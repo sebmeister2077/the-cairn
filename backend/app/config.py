@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
@@ -26,10 +26,11 @@ class Settings:
 
     # CORS
     ALLOWED_ORIGINS: List[str] = [
-        o.strip()
+        o.strip().rstrip("/")
         for o in os.environ.get("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
         if o.strip()
     ]
+    ALLOWED_ORIGIN_REGEX: Optional[str] = os.environ.get("ALLOWED_ORIGIN_REGEX", "").strip() or None
 
     # Upload limit (bytes)
     MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(4 * 1024 * 1024 * 1024)))  # 4 GB

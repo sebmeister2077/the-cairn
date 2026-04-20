@@ -16,6 +16,8 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false           # e.g. https://your-frontend.vercel.app
+      - key: ALLOWED_ORIGIN_REGEX
+        sync: false           # e.g. https://.*\.vercel\.app
       - key: CONTRIBUTE_MAP_ID
         sync: false
       - key: R2_ACCOUNT_ID
