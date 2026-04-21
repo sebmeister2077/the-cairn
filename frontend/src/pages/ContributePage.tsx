@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback, type FormEvent, type MouseEvent as ReactMouseEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getContributeInfo,
@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle } from "lucide-react";
+import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, ZoomIn, ZoomOut, Maximize } from "lucide-react";
 
 interface PendingContribution {
   id: string;
@@ -62,6 +62,15 @@ export function ContributePage() {
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
+  const [previewZoom, setPreviewZoom] = useState(1);
+  const [previewPan, setPreviewPan] = useState({ x: 0, y: 0 });
+  const [previewDragging, setPreviewDragging] = useState(false);
+  const [previewDragStart, setPreviewDragStart] = useState({ x: 0, y: 0 });
+  const [previewImgNatural, setPreviewImgNatural] = useState({ w: 0, h: 0 });
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const previewImgRef = useRef<HTMLImageElement>(null);
+  const previewZoomRef = useRef(previewZoom);
+  const previewPanRef = useRef(previewPan);
 
   const previewQuery = useQuery<Blob>({
     queryKey: ["contribute-preview", previewId],
@@ -80,6 +89,96 @@ export function ContributePage() {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  useEffect(() => { previewZoomRef.current = previewZoom; }, [previewZoom]);
+  useEffect(() => { previewPanRef.current = previewPan; }, [previewPan]);
+
+  const centerPreview = useCallback((zoomLevel?: number) => {
+    const el = previewContainerRef.current;
+    const w = previewImgNatural.w;
+    const h = previewImgNatural.h;
+    if (!el || w === 0 || h === 0) return;
+    const z = zoomLevel ?? previewZoomRef.current;
+    const rect = el.getBoundingClientRect();
+    setPreviewPan({
+      x: (rect.width - w * z) / 2,
+      y: (rect.height - h * z) / 2,
+    });
+  }, [previewImgNatural]);
+
+  const zoomPreviewToward = useCallback((focalX: number, focalY: number, newZoom: number) => {
+    const oldZoom = previewZoomRef.current;
+    const oldPan = previewPanRef.current;
+    const clamped = Math.min(Math.max(newZoom, 0.1), 20);
+    const scale = clamped / oldZoom;
+    setPreviewPan({
+      x: focalX - (focalX - oldPan.x) * scale,
+      y: focalY - (focalY - oldPan.y) * scale,
+    });
+    setPreviewZoom(clamped);
+  }, []);
+
+  const resetPreviewView = useCallback(() => {
+    setPreviewZoom(1);
+    centerPreview(1);
+  }, [centerPreview]);
+
+  const zoomPreviewIn = useCallback(() => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    zoomPreviewToward(rect.width / 2, rect.height / 2, previewZoomRef.current * 1.5);
+  }, [zoomPreviewToward]);
+
+  const zoomPreviewOut = useCallback(() => {
+    const el = previewContainerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    zoomPreviewToward(rect.width / 2, rect.height / 2, previewZoomRef.current / 1.5);
+  }, [zoomPreviewToward]);
+
+  const handlePreviewMouseDown = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    setPreviewDragging(true);
+    const pan = previewPanRef.current;
+    setPreviewDragStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+  }, []);
+
+  const handlePreviewMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!previewDragging) return;
+    setPreviewPan({ x: e.clientX - previewDragStart.x, y: e.clientY - previewDragStart.y });
+  }, [previewDragging, previewDragStart]);
+
+  const stopPreviewDrag = useCallback(() => {
+    setPreviewDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (previewId) {
+      setPreviewZoom(1);
+      setPreviewPan({ x: 0, y: 0 });
+      setPreviewImgNatural({ w: 0, h: 0 });
+    }
+  }, [previewId]);
+
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    if (!el || !previewId) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      zoomPreviewToward(
+        e.clientX - rect.left,
+        e.clientY - rect.top,
+        previewZoomRef.current * factor,
+      );
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [previewId, zoomPreviewToward]);
 
   // Admin action state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -348,11 +447,55 @@ export function ContributePage() {
                       <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
                       <span>Green-highlighted areas are new tiles from this contribution</span>
                     </div>
-                    <img
-                      src={previewUrl}
-                      alt="Merge preview"
-                      className="w-full h-auto"
-                    />
+                    <div className="flex items-center gap-1 p-2 border-b bg-muted/20">
+                      <Button type="button" variant="outline" size="sm" onClick={zoomPreviewOut} title="Zoom out">
+                        <ZoomOut className="size-4" />
+                      </Button>
+                      <span className="text-xs text-muted-foreground w-14 text-center">
+                        {Math.round(previewZoom * 100)}%
+                      </span>
+                      <Button type="button" variant="outline" size="sm" onClick={zoomPreviewIn} title="Zoom in">
+                        <ZoomIn className="size-4" />
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={resetPreviewView} title="Reset view">
+                        <Maximize className="size-4" />
+                      </Button>
+                      <span className="text-xs text-muted-foreground ml-2">Scroll to zoom · Drag to pan</span>
+                    </div>
+                    <div
+                      ref={previewContainerRef}
+                      className="relative overflow-hidden bg-black/90"
+                      style={{ height: "60vh", cursor: previewDragging ? "grabbing" : "grab", touchAction: "none" }}
+                      onMouseDown={handlePreviewMouseDown}
+                      onMouseMove={handlePreviewMouseMove}
+                      onMouseUp={stopPreviewDrag}
+                      onMouseLeave={stopPreviewDrag}
+                    >
+                      <img
+                        ref={previewImgRef}
+                        src={previewUrl}
+                        alt="Merge preview"
+                        draggable={false}
+                        className="absolute select-none"
+                        onLoad={() => {
+                          if (!previewImgRef.current) return;
+                          const w = previewImgRef.current.naturalWidth;
+                          const h = previewImgRef.current.naturalHeight;
+                          setPreviewImgNatural({ w, h });
+                          const el = previewContainerRef.current;
+                          if (!el) return;
+                          const rect = el.getBoundingClientRect();
+                          setPreviewPan({ x: (rect.width - w) / 2, y: (rect.height - h) / 2 });
+                          setPreviewZoom(1);
+                        }}
+                        style={{
+                          transformOrigin: "0 0",
+                          transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewZoom})`,
+                          imageRendering: previewZoom > 2 ? "pixelated" : "auto",
+                          maxWidth: "none",
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
