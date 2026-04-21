@@ -9,19 +9,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { setApiKey, getStoredApiKey } from "@/lib/api";
+import { setApiKey, getStoredApiKey, checkAdminStatus, setStoredIsAdmin } from "@/lib/api";
 
 export function ApiKeyDialog({
   open,
   onClose,
+  onAdminStatusChange,
 }: {
   open: boolean;
   onClose: () => void;
+  onAdminStatusChange: (isAdmin: boolean) => void;
 }) {
   const [key, setKey] = useState(getStoredApiKey());
+  const [loading, setLoading] = useState(false);
 
-  function handleSave() {
+  async function handleSave() {
+    setLoading(true);
     setApiKey(key.trim());
+    const isAdmin = await checkAdminStatus();
+    setStoredIsAdmin(isAdmin);
+    onAdminStatusChange(isAdmin);
+    setLoading(false);
     onClose();
   }
 
@@ -44,7 +52,9 @@ export function ApiKeyDialog({
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
         </div>
-        <Button onClick={handleSave}>Save</Button>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? "Saving…" : "Save"}
+        </Button>
       </DialogContent>
     </Dialog>
   );

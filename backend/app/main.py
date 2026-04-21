@@ -5,6 +5,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from fastapi import Depends
+
+from .auth import verify_api_key
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
 from .routes import extract, import_wp, delete, commands, mapview
@@ -50,3 +53,10 @@ app.include_router(contribute.router, prefix="/api")
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/me")
+async def me(api_key: str = Depends(verify_api_key)):
+    """Return basic info about the authenticated key, including admin status."""
+    is_admin = bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
+    return {"is_admin": is_admin}

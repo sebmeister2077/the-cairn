@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
@@ -13,6 +14,7 @@ import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getStoredIsAdmin } from "@/lib/api";
 import "./index.css";
 
 const categories = [
@@ -46,6 +48,7 @@ function getActiveCategory(pathname: string) {
 
 function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const location = useLocation();
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = subTabs[activeCategory] ?? [];
@@ -56,9 +59,16 @@ function AppContent() {
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
-          <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
-            API Key
-          </Button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Badge variant="default" className="bg-amber-500 text-white hover:bg-amber-500">
+                Admin
+              </Badge>
+            )}
+            <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
+              API Key
+            </Button>
+          </div>
         </div>
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">
           <Tabs value={activeCategory}>
@@ -111,7 +121,7 @@ function AppContent() {
           <Route path="/general" element={<GeneralPage />} />
         </Routes>
       </main>
-      <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} />
+      <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} onAdminStatusChange={setIsAdmin} />
     </div>
   );
 }

@@ -16,6 +16,27 @@ export function getStoredApiKey(): string {
     return getApiKey();
 }
 
+export function getStoredIsAdmin(): boolean {
+    return localStorage.getItem("is_admin") === "true";
+}
+
+export function setStoredIsAdmin(value: boolean) {
+    localStorage.setItem("is_admin", value ? "true" : "false");
+}
+
+export async function checkAdminStatus(): Promise<boolean> {
+    try {
+        const res = await fetch(`${API_BASE}/me`, {
+            headers: { "X-API-Key": getApiKey() },
+        });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return !!data.is_admin;
+    } catch {
+        return false;
+    }
+}
+
 async function handleResponse(res: Response) {
     if (!res.ok) {
         const body = await res.json().catch(() => ({ detail: res.statusText }));
