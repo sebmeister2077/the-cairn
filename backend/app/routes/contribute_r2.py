@@ -149,7 +149,7 @@ def _normalise_contributor(contributor: str) -> str:
     return trimmed[:50]
 
 
-def _finalize_uploaded_contribution(contribution_id: str, contributor: str) -> dict:
+def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_key: str = "") -> dict:
     pending_key = r2_storage.pending_db_key(contribution_id)
 
     existing = db.get_contribution(contribution_id)
@@ -186,7 +186,7 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str) -> d
             pass
 
     contributor_name = _normalise_contributor(contributor)
-    db.create_contribution(contribution_id, contributor_name, tile_count)
+    db.create_contribution(contribution_id, contributor_name, tile_count, api_key)
 
     return {
         "message": "Upload received — pending admin approval",
@@ -393,16 +393,17 @@ def _render_preview(combined_path: str, upload_path: str, max_dimension: int = 2
 
 @router.get("/contribute/info")
 async def contribute_info(api_key: str = Depends(verify_api_key)):
-    """Map ID, combined tile count, pending contributions, and approved log."""
+    """Map ID, combined tile count, pending contributions and approved log."""
     check_rate_limit(api_key)
 
     total_tiles = db.get_cached_tile_count()
-    pending = db.list_pending_contributions()
+    pending = db.list_pending_contributions(requesting_key=api_key)
+    withdrawn = db.list_withdrawn_contributions(requesting_key=api_key)
     approved = db.get_approved_log(limit=20)
 
     # Serialise datetimes for JSON
-    for row in pending:
-        for k in ("created_at", "approved_at"):
+    for row in pending + withdrawn:
+        for k in ("created_at", "approved_at", "withdrawn_at"):
             if row.get(k) and hasattr(row[k], "isoformat"):
                 row[k] = row[k].isoformat()
     for row in approved:
@@ -413,6 +414,7 @@ async def contribute_info(api_key: str = Depends(verify_api_key)):
         "map_id": settings.CONTRIBUTE_MAP_ID,
         "total_tiles": total_tiles,
         "pending": pending,
+        "withdrawn": withdrawn,
         "approved": approved,
     }
 
@@ -447,6 +449,8 @@ async def contribute_upload_url(
             "Content-Type": "application/octet-stream",
         },
         "expires_in_seconds": UPLOAD_URL_TTL_SECONDS,
+        # Return the api_key so /complete can be associated with the same key
+        "_api_key": api_key,
     }
 
 
@@ -463,7 +467,7 @@ async def contribute_complete(
         return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
 
     try:
-        return _finalize_uploaded_contribution(contribution_id, payload.contributor)
+        return _finalize_uploaded_contribution(contribution_id, payload.contributor, api_key)
     except ValueError as e:
         detail = str(e)
         status = 413 if detail == "File too large" else 400
@@ -502,7 +506,7 @@ async def contribute_upload(
         # Upload to R2
         _upload_from_path(tmp_path, r2_storage.pending_db_key(cid))
         try:
-            return _finalize_uploaded_contribution(cid, contributor)
+            return _finalize_uploaded_contribution(cid, contributor, api_key)
         except ValueError as e:
             detail = str(e)
             status = 413 if detail == "File too large" else 400
@@ -631,6 +635,37 @@ async def contribute_approve(
     else:
         result["archive_warning"] = "Contribution approved but DB archive move failed"
     return result
+
+
+@router.post("/contribute/{contribution_id}/withdraw")
+async def contribute_withdraw(
+    contribution_id: str,
+    api_key: str = Depends(verify_api_key),
+):
+    """Owner: soft-delete a pending contribution.
+
+    Removes the .db file from R2, anonymises the contributor name, and marks
+    the contribution as 'withdrawn'. The record remains visible on the frontend.
+    """
+    meta = db.get_contribution(contribution_id)
+    if not meta:
+        return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
+    if meta.get("status") != "pending":
+        return JSONResponse(
+            status_code=409,
+            content={"detail": "Only pending contributions can be withdrawn"},
+        )
+    if meta.get("submitted_by_key") != api_key:
+        return JSONResponse(status_code=403, content={"detail": "You did not submit this contribution"})
+
+    # Remove the .db and any cached preview from R2
+    r2_storage.delete_object(r2_storage.pending_db_key(contribution_id))
+    r2_storage.delete_object(r2_storage.pending_preview_key(contribution_id))
+
+    # Soft-delete in DB (anonymise + status='withdrawn')
+    db.withdraw_contribution(contribution_id, api_key)
+
+    return {"message": "Contribution withdrawn"}
 
 
 @router.post("/contribute/{contribution_id}/reject")

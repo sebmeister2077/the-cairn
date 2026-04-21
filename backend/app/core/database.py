@@ -101,6 +101,10 @@ CREATE TABLE IF NOT EXISTS api_keys (
 _MIGRATIONS_SQL = """
 ALTER TABLE api_keys
 ADD COLUMN IF NOT EXISTS usage_count BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS submitted_by_key TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
 """
 
 
@@ -117,13 +121,13 @@ def ensure_schema():
 # Contributions CRUD
 # ---------------------------------------------------------------------------
 
-def create_contribution(cid: str, contributor: str, tile_count: int):
+def create_contribution(cid: str, contributor: str, tile_count: int, api_key: str = ""):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO contributions (id, contributor, tile_count, status)
-                   VALUES (%s, %s, %s, 'pending')""",
-                (cid, contributor or "Anonymous", tile_count),
+                """INSERT INTO contributions (id, contributor, tile_count, status, submitted_by_key)
+                   VALUES (%s, %s, %s, 'pending', %s)""",
+                (cid, contributor or "Anonymous", tile_count, api_key or None),
             )
 
 
@@ -135,13 +139,45 @@ def get_contribution(cid: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
-def list_pending_contributions() -> List[dict]:
+def list_pending_contributions(requesting_key: str = "") -> List[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 "SELECT * FROM contributions WHERE status = 'pending' ORDER BY created_at"
             )
-            return [dict(r) for r in cur.fetchall()]
+            rows = [dict(r) for r in cur.fetchall()]
+    for row in rows:
+        row["is_mine"] = bool(requesting_key and row.get("submitted_by_key") == requesting_key)
+    return rows
+
+
+def list_withdrawn_contributions(requesting_key: str = "") -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM contributions WHERE status = 'withdrawn' ORDER BY withdrawn_at DESC"
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+    for row in rows:
+        row["is_mine"] = bool(requesting_key and row.get("submitted_by_key") == requesting_key)
+    return rows
+
+
+def withdraw_contribution(cid: str, api_key: str) -> bool:
+    """Soft-delete a pending contribution owned by api_key.
+    Anonymises the contributor name and marks as withdrawn.
+    Returns True if the row was updated, False if not found/not owned.
+    """
+    now = datetime.now(timezone.utc)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                   SET status = 'withdrawn', contributor = '[Withdrawn]', withdrawn_at = %s
+                   WHERE id = %s AND status = 'pending' AND submitted_by_key = %s""",
+                (now, cid, api_key),
+            )
+            return cur.rowcount > 0
 
 
 def mark_approved(cid: str, tiles_new: int, tiles_existing: int, combined_total: int):

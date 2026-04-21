@@ -282,6 +282,14 @@ export async function rejectContribution(contributionId: string) {
     return (await handleResponse(res)).json();
 }
 
+export async function withdrawContribution(contributionId: string) {
+    const res = await fetch(`${API_BASE}/contribute/${contributionId}/withdraw`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
 // ---------------------------------------------------------------------------
 // Admin — dynamic API key management
 // ---------------------------------------------------------------------------

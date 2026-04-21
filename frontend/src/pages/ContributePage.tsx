@@ -6,6 +6,7 @@ import {
   getContributePreview,
   approveContribution,
   rejectContribution,
+  withdrawContribution,
   getStoredIsAdmin,
   getStoredCanContribute,
 } from "@/lib/api";
@@ -16,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, ZoomIn, ZoomOut, Maximize, Undo2 } from "lucide-react";
 
 interface PendingContribution {
   id: string;
@@ -25,6 +26,13 @@ interface PendingContribution {
   timestamp?: string;
   tile_count: number;
   status: string;
+  is_mine: boolean;
+}
+
+interface WithdrawnEntry {
+  id: string;
+  withdrawn_at: string;
+  is_mine: boolean;
 }
 
 interface ApprovedEntry {
@@ -40,6 +48,7 @@ interface ContributeInfo {
   map_id: string;
   total_tiles: number;
   pending: PendingContribution[];
+  withdrawn: WithdrawnEntry[];
   approved: ApprovedEntry[];
 }
 
@@ -274,6 +283,20 @@ export function ContributePage() {
     }
   }
 
+  async function handleWithdraw(id: string) {
+    setActionLoading(id);
+    setActionError("");
+    try {
+      await withdrawContribution(id);
+      if (previewId === id) setPreviewId(null);
+      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : "Withdraw failed");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
       {/* Upload card */}
@@ -445,6 +468,22 @@ export function ContributePage() {
                       )}
                       Preview
                     </Button>
+                    {p.is_mine && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleWithdraw(p.id)}
+                        disabled={actionLoading === p.id}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        {actionLoading === p.id ? (
+                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Undo2 className="mr-1 h-3.5 w-3.5" />
+                        )}
+                        Withdraw
+                      </Button>
+                    )}
                     {isAdmin && (
                       <>
                         <Button
@@ -534,6 +573,38 @@ export function ContributePage() {
                 )}
               </div>
             ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Withdrawn contributions — only shown to users with a withdrawn own entry */}
+      {info && info.withdrawn && info.withdrawn.filter((w) => w.is_mine).length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+              <Undo2 className="h-4 w-4" />
+              Withdrawn Contributions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {info.withdrawn
+                .filter((w) => w.is_mine)
+                .map((w) => (
+                  <div
+                    key={w.id}
+                    className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0 opacity-60"
+                  >
+                    <div>
+                      <span className="font-medium text-muted-foreground">[Withdrawn]</span>
+                      <span className="text-xs text-muted-foreground ml-2 font-mono">{w.id}</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(w.withdrawn_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                ))}
+            </div>
           </CardContent>
         </Card>
       )}
