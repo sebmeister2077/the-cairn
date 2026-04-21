@@ -132,6 +132,26 @@ def object_exists(key: str) -> bool:
         return False
 
 
+def copy_object(source_key: str, destination_key: str):
+    """Copy an object within R2. Raises FileNotFoundError if source is missing."""
+    try:
+        _get_client().copy_object(
+            Bucket=_bucket(),
+            Key=destination_key,
+            CopySource={"Bucket": _bucket(), "Key": source_key},
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {source_key}")
+        raise
+
+
+def move_object(source_key: str, destination_key: str):
+    """Move an object within R2 by copying then deleting the source."""
+    copy_object(source_key, destination_key)
+    delete_object(source_key)
+
+
 # ---------------------------------------------------------------------------
 # Key helpers — centralise path conventions
 # ---------------------------------------------------------------------------
@@ -146,6 +166,10 @@ def pending_db_key(contribution_id: str) -> str:
 
 def pending_preview_key(contribution_id: str) -> str:
     return f"pending/{contribution_id}.png"
+
+
+def archived_db_key(contribution_id: str) -> str:
+    return f"archived/{contribution_id}.db"
 
 
 def tops_map_cache_key(max_dimension: int = TOPS_MAP_CACHE_DIM) -> str:

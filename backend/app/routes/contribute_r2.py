@@ -612,11 +612,24 @@ async def contribute_approve(
     )
     db.set_cached_tile_count(stats["combined_total"])
 
-    # Remove pending .db from R2
-    r2_storage.delete_object(pending_key)
+    # Move approved .db into archive storage
+    archived_key = r2_storage.archived_db_key(contribution_id)
+    archive_moved = False
+    try:
+        r2_storage.move_object(pending_key, archived_key)
+        archive_moved = True
+    except Exception:
+        # Do not fail approval if archive move fails; keep pending object as fallback.
+        archive_moved = False
+
     r2_storage.delete_object(r2_storage.pending_preview_key(contribution_id))
 
-    return {"message": "Contribution approved and merged", **stats}
+    result = {"message": "Contribution approved and merged", **stats}
+    if archive_moved:
+        result["archived_db_key"] = archived_key
+    else:
+        result["archive_warning"] = "Contribution approved but DB archive move failed"
+    return result
 
 
 @router.post("/contribute/{contribution_id}/reject")
