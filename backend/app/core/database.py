@@ -84,6 +84,23 @@ CREATE TABLE IF NOT EXISTS app_state (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS api_keys (
+    key             TEXT PRIMARY KEY,
+    name            TEXT NOT NULL DEFAULT '',
+    permissions     TEXT NOT NULL DEFAULT 'read',
+    consume_once    BOOLEAN NOT NULL DEFAULT FALSE,
+    bound_identity  TEXT,
+    revoked         BOOLEAN NOT NULL DEFAULT FALSE,
+    usage_count     BIGINT NOT NULL DEFAULT 0,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_used_at    TIMESTAMPTZ
+);
+"""
+
+_MIGRATIONS_SQL = """
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS usage_count BIGINT NOT NULL DEFAULT 0;
 """
 
 
@@ -92,6 +109,8 @@ def ensure_schema():
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(_SCHEMA_SQL)
+            # Backfill schema changes for existing deployments.
+            cur.execute(_MIGRATIONS_SQL)
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +225,74 @@ def get_tops_map_stats() -> Optional[dict]:
         return parsed if isinstance(parsed, dict) else None
     except (json.JSONDecodeError, TypeError):
         return None
+
+
+# ---------------------------------------------------------------------------
+# DB availability check
+# ---------------------------------------------------------------------------
+
+def is_available() -> bool:
+    """Return True if the connection pool has been initialised."""
+    return _pool is not None
+
+
+# ---------------------------------------------------------------------------
+# API Keys CRUD
+# ---------------------------------------------------------------------------
+
+def create_api_key(key: str, name: str, permissions: str, consume_once: bool) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO api_keys (key, name, permissions, consume_once)
+                   VALUES (%s, %s, %s, %s)
+                   RETURNING *""",
+                (key, name, permissions, consume_once),
+            )
+            row = cur.fetchone()
+            return dict(row)
+
+
+def list_api_keys() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM api_keys ORDER BY created_at DESC")
+            rows = cur.fetchall()
+            return [dict(r) for r in rows]
+
+
+def get_api_key(key: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM api_keys WHERE key = %s", (key,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def bind_api_key(key: str, identity: str):
+    """Bind a consume-once key to the first user's identity (only if not yet bound)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE api_keys SET bound_identity = %s WHERE key = %s AND bound_identity IS NULL",
+                (identity, key),
+            )
+
+
+def touch_api_key(key: str):
+    """Update last_used_at timestamp and increment usage counter."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE api_keys SET last_used_at = now(), usage_count = usage_count + 1 WHERE key = %s",
+                (key,),
+            )
+
+
+def revoke_api_key(key: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE api_keys SET revoked = TRUE WHERE key = %s", (key,))
 
 
 def set_tops_map_stats(stats: dict):

@@ -13,6 +13,7 @@ from .core.database import init_db, ensure_schema, close_db
 from .routes import extract, import_wp, delete, commands, mapview
 from .routes import contribute_r2 as contribute
 from .routes import tops_map_r2 as tops_map
+from .routes import admin
 
 
 @asynccontextmanager
@@ -48,6 +49,7 @@ app.include_router(commands.router, prefix="/api")
 app.include_router(mapview.router, prefix="/api")
 app.include_router(tops_map.router, prefix="/api")
 app.include_router(contribute.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 @app.get("/api/health")

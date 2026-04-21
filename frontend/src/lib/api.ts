@@ -1,4 +1,4 @@
-const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
+﻿const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 const API_BASE = configuredApiBase || "/api";
 
 // For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
@@ -257,4 +257,51 @@ export async function rejectContribution(contributionId: string) {
         headers: { "X-API-Key": getApiKey() },
     });
     return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Admin — dynamic API key management
+// ---------------------------------------------------------------------------
+
+export interface ApiKeyRecord {
+    key: string;
+    name: string;
+    permissions: "read" | "contribute";
+    consume_once: boolean;
+    bound_identity: string | null;
+    revoked: boolean;
+    created_at: string;
+    last_used_at: string | null;
+}
+
+export async function listApiKeys(): Promise<ApiKeyRecord[]> {
+    const res = await fetch(`${API_BASE}/admin/keys`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function createApiKey(data: {
+    name: string;
+    permissions: "read" | "contribute";
+    consume_once: boolean;
+}): Promise<ApiKeyRecord> {
+    const res = await fetch(`${API_BASE}/admin/keys`, {
+        method: "POST",
+        headers: {
+            "X-API-Key": getApiKey(),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function revokeApiKey(key: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/keys/${encodeURIComponent(key)}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    if (res.status === 204) return;
+    await handleResponse(res);
 }

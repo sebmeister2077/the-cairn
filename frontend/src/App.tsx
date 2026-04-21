@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,15 +13,18 @@ import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
+import { ApiKeysPage } from "@/pages/ApiKeysPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStoredIsAdmin } from "@/lib/api";
+import { getStoredIsAdmin, setApiKey, checkAdminStatus, setStoredIsAdmin } from "@/lib/api";
 import "./index.css";
 
-const categories = [
+const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
   { value: "/singleplayer", label: "Singleplayer" },
   { value: "/multiplayer", label: "Multiplayer" },
-] as const;
+];
+
+const ADMIN_CATEGORY = { value: "/manage", label: "Manage" };
 
 const subTabs: Record<string, { value: string; label: string }[]> = {
   "/singleplayer": [
@@ -37,10 +40,13 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/multiplayer/contribute", label: "Contribute" },
   ],
   "/general": [],
+  "/manage": [
+    { value: "/manage/api-keys", label: "API Keys" },
+  ],
 };
 
 function getActiveCategory(pathname: string) {
-  for (const cat of categories) {
+  for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
   return "/general";
@@ -50,6 +56,21 @@ function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const keyParam = params.get("key");
+    if (keyParam) {
+      setApiKey(keyParam.trim());
+      checkAdminStatus().then((admin) => {
+        setStoredIsAdmin(admin);
+        setIsAdmin(admin);
+      });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
+
+  const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = subTabs[activeCategory] ?? [];
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
@@ -76,9 +97,7 @@ function AppContent() {
               {categories.map((c) => (
                 <NavLink key={c.value} to={c.value} end={false}>
                   {() => (
-                    <TabsTrigger
-                      value={c.value}
-                    >
+                    <TabsTrigger value={c.value}>
                       {c.label}
                     </TabsTrigger>
                   )}
@@ -92,9 +111,7 @@ function AppContent() {
                 {activeSubs.map((t) => (
                   <NavLink key={t.value} to={t.value} end>
                     {() => (
-                      <TabsTrigger
-                        value={t.value}
-                      >
+                      <TabsTrigger value={t.value}>
                         {t.label}
                       </TabsTrigger>
                     )}
@@ -107,7 +124,7 @@ function AppContent() {
       </header>
       <main className="container mx-auto px-4 py-6 max-w-3xl">
         <Routes>
-          <Route path="/" element={<Navigate to="/general" replace />} />
+          <Route path="/" element={<GeneralPage />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
           <Route path="/singleplayer/extract" element={<ExtractPage />} />
           <Route path="/singleplayer/import" element={<ImportPage />} />
@@ -118,6 +135,8 @@ function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
+          <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
+          <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/general" element={<GeneralPage />} />
         </Routes>
       </main>

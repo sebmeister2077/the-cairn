@@ -24,6 +24,7 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
 from ..auth import verify_api_key
+from ..auth import verify_api_key, verify_contribute_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, database as db
@@ -419,7 +420,7 @@ async def contribute_info(api_key: str = Depends(verify_api_key)):
 @router.post("/contribute/upload-url")
 async def contribute_upload_url(
     payload: ContributeUploadInitRequest,
-    api_key: str = Depends(verify_api_key),
+    api_key: str = Depends(verify_contribute_permission),
 ):
     """Create a presigned upload URL so the browser can upload directly to R2."""
     check_rate_limit(api_key)
@@ -452,7 +453,7 @@ async def contribute_upload_url(
 @router.post("/contribute/complete")
 async def contribute_complete(
     payload: ContributeUploadCompleteRequest,
-    api_key: str = Depends(verify_api_key),
+    api_key: str = Depends(verify_contribute_permission),
 ):
     """Validate an uploaded R2 object and register it as a pending contribution."""
     check_rate_limit(api_key)
@@ -475,7 +476,7 @@ async def contribute_complete(
 async def contribute_upload(
     request: Request,
     contributor: str = Query("", description="Optional contributor name"),
-    api_key: str = Depends(verify_api_key),
+    api_key: str = Depends(verify_contribute_permission),
 ):
     """Upload a .db map file. Validated and stored in R2 as pending."""
     check_rate_limit(api_key)

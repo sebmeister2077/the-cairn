@@ -6,6 +6,7 @@ import {
   getContributePreview,
   approveContribution,
   rejectContribution,
+  getStoredIsAdmin,
 } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ interface ContributeInfo {
 
 export function ContributePage() {
   const queryClient = useQueryClient();
+  const isAdmin = getStoredIsAdmin();
 
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [contributor, setContributor] = useState("");
@@ -415,28 +417,32 @@ export function ContributePage() {
                       )}
                       Preview
                     </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleApprove(p.id)}
-                      disabled={actionLoading === p.id}
-                    >
-                      {actionLoading === p.id ? (
-                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Check className="mr-1 h-3.5 w-3.5" />
-                      )}
-                      Approve
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleReject(p.id)}
-                      disabled={actionLoading === p.id}
-                    >
-                      <XIcon className="mr-1 h-3.5 w-3.5" />
-                      Reject
-                    </Button>
+                    {isAdmin && (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleApprove(p.id)}
+                          disabled={actionLoading === p.id}
+                        >
+                          {actionLoading === p.id ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          Approve
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleReject(p.id)}
+                          disabled={actionLoading === p.id}
+                        >
+                          <XIcon className="mr-1 h-3.5 w-3.5" />
+                          Reject
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
 
