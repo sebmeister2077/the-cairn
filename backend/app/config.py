@@ -45,6 +45,9 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
+    # Secret salt used to hash IP addresses before storing them (GDPR)
+    IP_HASH_SALT: str = os.environ.get("IP_HASH_SALT", "")
+
     # Cloudflare R2
     R2_ACCOUNT_ID: str = os.environ.get("R2_ACCOUNT_ID", "")
     R2_ACCESS_KEY_ID: str = os.environ.get("R2_ACCESS_KEY_ID", "")

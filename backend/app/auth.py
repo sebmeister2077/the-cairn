@@ -1,5 +1,7 @@
 """API key authentication dependencies."""
 
+import hashlib
+import hmac
 from typing import Optional
 
 from fastapi import Header, HTTPException, Request
@@ -13,6 +15,16 @@ def _get_client_ip(request: Request) -> str:
     if forwarded_for:
         return forwarded_for.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+def _hash_ip(ip: str) -> str:
+    """Return a non-reversible HMAC-SHA256 digest of the IP address.
+
+    Uses IP_HASH_SALT from config so the digest cannot be brute-forced
+    against a public rainbow table.  The raw IP is never persisted.
+    """
+    salt = settings.IP_HASH_SALT.encode() if settings.IP_HASH_SALT else b"default-salt-change-me"
+    return hmac.new(salt, ip.encode(), hashlib.sha256).hexdigest()
 
 
 def _resolve_key(key: str, request: Request) -> Optional[dict]:
@@ -34,11 +46,11 @@ def _resolve_key(key: str, request: Request) -> Optional[dict]:
         record = db.get_api_key(key)
         if record and not record["revoked"]:
             if record["consume_once"]:
-                client_ip = _get_client_ip(request)
+                client_ip_hash = _hash_ip(_get_client_ip(request))
                 bound = record.get("bound_identity")
                 if bound is None:
-                    db.bind_api_key(key, client_ip)
-                elif bound != client_ip:
+                    db.bind_api_key(key, client_ip_hash)
+                elif bound != client_ip_hash:
                     raise HTTPException(
                         status_code=401,
                         detail="API key is locked to another user",
