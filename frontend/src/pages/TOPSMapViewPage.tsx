@@ -222,8 +222,8 @@ export function TOPSMapViewPage() {
   }, [zoomToward]);
   const resetView = useCallback(() => {
     setZoom(1);
-    setPan({ x: 0, y: 0 });
-  }, []);
+    centerOnOrigin(1);
+  }, [centerOnOrigin]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
