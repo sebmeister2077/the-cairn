@@ -1,6 +1,8 @@
 """FastAPI application entry point."""
 
 from contextlib import asynccontextmanager
+import logging
+from time import perf_counter
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,14 +16,30 @@ from .routes import tops_map_r2 as tops_map
 from .routes import admin
 
 
+logger = logging.getLogger("uvicorn.error")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    startup_started = perf_counter()
+    logger.info("Startup begin")
+
     # Startup: initialise Supabase connection pool + schema
+    step_started = perf_counter()
     init_db()
+    logger.info("Startup step init_db completed in %.3fs", perf_counter() - step_started)
+
+    step_started = perf_counter()
     ensure_schema()
-    yield
-    # Shutdown: close connections
-    close_db()
+    logger.info("Startup step ensure_schema completed in %.3fs", perf_counter() - step_started)
+    logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
+
+    try:
+        yield
+    finally:
+        shutdown_started = perf_counter()
+        close_db()
+        logger.info("Shutdown close_db completed in %.3fs", perf_counter() - shutdown_started)
 
 
 app = FastAPI(

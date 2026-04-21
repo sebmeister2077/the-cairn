@@ -4,7 +4,7 @@ import hashlib
 import hmac
 from typing import Optional
 
-from fastapi import Header, HTTPException, Request
+from fastapi import Header, HTTPException, Query, Request
 
 from .config import settings
 from .core import database as db
@@ -93,6 +93,22 @@ async def verify_contribute_permission(
             detail="This API key does not have contribute permission",
         )
     return x_api_key
+
+
+async def verify_api_key_header_or_query(
+    request: Request,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    api_key: Optional[str] = Query(None),
+) -> str:
+    """Validate an API key supplied in either the header or query string."""
+    resolved_key = x_api_key or api_key
+    if not resolved_key:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    info = _resolve_key(resolved_key, request)
+    if info is None:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+    return resolved_key
 
 
 async def require_admin(

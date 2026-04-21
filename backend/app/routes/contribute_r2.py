@@ -18,13 +18,13 @@ import sqlite3
 import tempfile
 import uuid
 from typing import Optional, Set
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from ..auth import verify_api_key
-from ..auth import verify_api_key, verify_contribute_permission
+from ..auth import verify_api_key, verify_api_key_header_or_query, verify_contribute_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, database as db
@@ -392,7 +392,7 @@ def _render_preview(combined_path: str, upload_path: str, max_dimension: int = 2
 # ===========================================================================
 
 @router.get("/contribute/info")
-async def contribute_info(api_key: str = Depends(verify_api_key)):
+async def contribute_info(request: Request, api_key: str = Depends(verify_api_key)):
     """Map ID, combined tile count, pending contributions and approved log."""
     check_rate_limit(api_key)
 
@@ -406,6 +406,9 @@ async def contribute_info(api_key: str = Depends(verify_api_key)):
         for k in ("created_at", "approved_at", "withdrawn_at"):
             if row.get(k) and hasattr(row[k], "isoformat"):
                 row[k] = row[k].isoformat()
+    for row in pending:
+        query = urlencode({"api_key": api_key})
+        row["preview_image_url"] = f"{request.url_for('contribute_preview', contribution_id=row['id'])}?{query}"
     for row in approved:
         if row.get("approved_at") and hasattr(row["approved_at"], "isoformat"):
             row["approved_at"] = row["approved_at"].isoformat()
@@ -521,7 +524,7 @@ async def contribute_upload(
 @router.get("/contribute/preview/{contribution_id}")
 async def contribute_preview(
     contribution_id: str,
-    api_key: str = Depends(verify_api_key),
+    api_key: str = Depends(verify_api_key_header_or_query),
 ):
     """Return preview PNG for a pending contribution.
 

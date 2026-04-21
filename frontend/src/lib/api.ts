@@ -21,7 +21,8 @@ export function getStoredIsAdmin(): boolean {
 }
 
 export function getStoredCanContribute(): boolean {
-    return localStorage.getItem("can_contribute") === "true";
+    return localStorage.getItem("can_contribute") === "true"
+        || localStorage.getItem("is_admin") === "true";
 }
 
 export function setStoredIsAdmin(value: boolean) {
