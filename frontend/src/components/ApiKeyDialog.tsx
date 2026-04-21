@@ -9,7 +9,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { setApiKey, getStoredApiKey, checkAdminStatus, setStoredIsAdmin } from "@/lib/api";
+import {
+  setApiKey,
+  getStoredApiKey,
+  checkAuthStatus,
+  setStoredIsAdmin,
+  setStoredCanContribute,
+} from "@/lib/api";
 
 export function ApiKeyDialog({
   open,
@@ -26,9 +32,10 @@ export function ApiKeyDialog({
   async function handleSave() {
     setLoading(true);
     setApiKey(key.trim());
-    const isAdmin = await checkAdminStatus();
-    setStoredIsAdmin(isAdmin);
-    onAdminStatusChange(isAdmin);
+    const status = await checkAuthStatus();
+    setStoredIsAdmin(status.is_admin);
+    setStoredCanContribute(status.can_contribute);
+    onAdminStatusChange(status.is_admin);
     setLoading(false);
     onClose();
   }

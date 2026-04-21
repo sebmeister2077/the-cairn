@@ -7,6 +7,7 @@ import {
   approveContribution,
   rejectContribution,
   getStoredIsAdmin,
+  getStoredCanContribute,
 } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,33 @@ interface ContributeInfo {
 export function ContributePage() {
   const queryClient = useQueryClient();
   const isAdmin = getStoredIsAdmin();
+  const canContribute = getStoredCanContribute();
+
+  if (!canContribute) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            Contribute Map Data
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            This page lets players upload their local Vintage Story map cache so admins can
+            review and merge new tiles into the shared community map.
+          </p>
+          <div className="rounded-md border bg-muted/30 p-3">
+            <p className="font-medium text-foreground">Access required</p>
+            <p className="mt-1">
+              Your current API key does not have contribute permission.
+              Please request a <strong>Read &amp; Contribute</strong> key from an admin.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [contributor, setContributor] = useState("");

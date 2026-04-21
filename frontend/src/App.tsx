@@ -15,7 +15,13 @@ import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { ApiKeysPage } from "@/pages/ApiKeysPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getStoredIsAdmin, setApiKey, checkAdminStatus, setStoredIsAdmin } from "@/lib/api";
+import {
+  getStoredIsAdmin,
+  setApiKey,
+  checkAuthStatus,
+  setStoredIsAdmin,
+  setStoredCanContribute,
+} from "@/lib/api";
 import "./index.css";
 
 const BASE_CATEGORIES = [
@@ -62,9 +68,10 @@ function AppContent() {
     const keyParam = params.get("key");
     if (keyParam) {
       setApiKey(keyParam.trim());
-      checkAdminStatus().then((admin) => {
-        setStoredIsAdmin(admin);
-        setIsAdmin(admin);
+      checkAuthStatus().then((status) => {
+        setStoredIsAdmin(status.is_admin);
+        setStoredCanContribute(status.can_contribute);
+        setIsAdmin(status.is_admin);
       });
       window.history.replaceState({}, "", window.location.pathname);
     }

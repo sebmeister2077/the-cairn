@@ -20,21 +20,44 @@ export function getStoredIsAdmin(): boolean {
     return localStorage.getItem("is_admin") === "true";
 }
 
+export function getStoredCanContribute(): boolean {
+    return localStorage.getItem("can_contribute") === "true";
+}
+
 export function setStoredIsAdmin(value: boolean) {
     localStorage.setItem("is_admin", value ? "true" : "false");
 }
 
-export async function checkAdminStatus(): Promise<boolean> {
+export function setStoredCanContribute(value: boolean) {
+    localStorage.setItem("can_contribute", value ? "true" : "false");
+}
+
+export interface AuthStatus {
+    is_admin: boolean;
+    can_contribute: boolean;
+}
+
+export async function checkAuthStatus(): Promise<AuthStatus> {
     try {
         const res = await fetch(`${API_BASE}/me`, {
             headers: { "X-API-Key": getApiKey() },
         });
-        if (!res.ok) return false;
+        if (!res.ok) {
+            return { is_admin: false, can_contribute: false };
+        }
         const data = await res.json();
-        return !!data.is_admin;
+        return {
+            is_admin: !!data.is_admin,
+            can_contribute: !!data.can_contribute,
+        };
     } catch {
-        return false;
+        return { is_admin: false, can_contribute: false };
     }
+}
+
+export async function checkAdminStatus(): Promise<boolean> {
+    const status = await checkAuthStatus();
+    return status.is_admin;
 }
 
 async function handleResponse(res: Response) {

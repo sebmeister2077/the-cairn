@@ -2,12 +2,10 @@
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from fastapi import Depends
-
-from .auth import verify_api_key
+from .auth import verify_api_key_info
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
 from .routes import extract, import_wp, delete, commands, mapview
@@ -58,7 +56,10 @@ async def health():
 
 
 @app.get("/api/me")
-async def me(api_key: str = Depends(verify_api_key)):
-    """Return basic info about the authenticated key, including admin status."""
-    is_admin = bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
-    return {"is_admin": is_admin}
+async def me(info: dict = Depends(verify_api_key_info)):
+    """Return capabilities for the currently authenticated API key."""
+    can_contribute = info.get("permissions") == "contribute"
+    return {
+        "is_admin": bool(info.get("is_admin")),
+        "can_contribute": can_contribute,
+    }

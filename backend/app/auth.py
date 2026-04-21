@@ -54,10 +54,19 @@ async def verify_api_key(
     x_api_key: str = Header(..., alias="X-API-Key"),
 ) -> str:
     """FastAPI dependency that validates the X-API-Key header."""
+    await verify_api_key_info(request, x_api_key)
+    return x_api_key
+
+
+async def verify_api_key_info(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+) -> dict:
+    """Validate key and return resolved key metadata."""
     info = _resolve_key(x_api_key, request)
     if info is None:
         raise HTTPException(status_code=401, detail="Invalid API key")
-    return x_api_key
+    return info
 
 
 async def verify_contribute_permission(
@@ -65,9 +74,7 @@ async def verify_contribute_permission(
     x_api_key: str = Header(..., alias="X-API-Key"),
 ) -> str:
     """Like verify_api_key but also requires 'contribute' permission."""
-    info = _resolve_key(x_api_key, request)
-    if info is None:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+    info = await verify_api_key_info(request, x_api_key)
     if info.get("permissions") != "contribute":
         raise HTTPException(
             status_code=403,
