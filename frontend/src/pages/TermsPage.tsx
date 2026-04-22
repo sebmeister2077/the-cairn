@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const LAST_UPDATED = "April 23, 2026";
-const CONTACT_EMAIL = "contact@example.com"; // TODO: replace with real contact
+const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com"; 
 
 export function TermsPage() {
     return (
@@ -103,9 +103,35 @@ export function TermsPage() {
                 <section className="space-y-2">
                     <h2 className="text-base font-semibold text-foreground">7. Intellectual property</h2>
                     <ul className="list-disc pl-5 space-y-1">
-                        <li>The Service's source code is licensed under the GNU General Public License v2.0. See the project's <code className="rounded bg-muted px-1 text-xs">LICENSE</code> file.</li>
-                        <li>“Vintage Story” is a trademark of Anego Studios. This Service is an unofficial fan project and is not affiliated with or endorsed by Anego Studios.</li>
-                        <li>The community-map dataset's licence is to be confirmed; until specified, treat it as “all rights reserved by the operator and contributors collectively” for redistribution purposes.</li>
+                        <li>
+                            The Service, including its source code, design,
+                            and content, is the proprietary property of the
+                            operator. <strong>All rights reserved.</strong> No
+                            licence, express or implied, is granted to you to
+                            copy, modify, distribute, sublicense, reverse
+                            engineer, or create derivative works of the
+                            Service or its source code, except as expressly
+                            permitted by the operator in writing or by
+                            applicable law.
+                        </li>
+                        <li>
+                            Your right to use the Service is a limited,
+                            personal, non-transferable, non-exclusive, and
+                            revocable permission to access the hosted Service
+                            in accordance with these Terms. It does not
+                            transfer any ownership of the Service to you.
+                        </li>
+                        <li>
+                            “Vintage Story” is a trademark of Anego Studios.
+                            This Service is an unofficial fan project and is
+                            not affiliated with or endorsed by Anego Studios.
+                        </li>
+                        <li>
+                            The community-map dataset's licence is to be
+                            confirmed; until specified, treat it as “all
+                            rights reserved by the operator and contributors
+                            collectively” for redistribution purposes.
+                        </li>
                     </ul>
                 </section>
 
@@ -159,10 +185,12 @@ export function TermsPage() {
                 <section className="space-y-2">
                     <h2 className="text-base font-semibold text-foreground">12. Governing law</h2>
                     <p>
-                        These Terms are governed by the laws of the operator's
-                        country of residence. Disputes will be resolved in the
-                        competent courts of that jurisdiction. (TODO: replace
-                        with the specific jurisdiction.)
+                        These Terms are governed by the laws of Romania,
+                        without regard to its conflict-of-laws rules. Any
+                        dispute arising out of or in connection with these
+                        Terms or your use of the Service will be subject to
+                        the exclusive jurisdiction of the competent courts of
+                        Romania.
                     </p>
                 </section>
 

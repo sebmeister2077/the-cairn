@@ -12,7 +12,7 @@ Web application for extracting, importing, deleting, and generating commands for
 │   ├── *.py         Original CLI scripts (still functional)
 │   └── README.md    CLI documentation
 ├── frontend/        React + TypeScript + Tailwind + shadcn/ui
-└── LICENSE          GNU GPL v2
+└── LICENSE          Proprietary — all rights reserved
 ```
 
 ## Quick Start
@@ -71,4 +71,7 @@ Set these in `backend/.env` (see `backend/.env.example`). Environment variables 
 
 ## License
 
-GNU General Public License v2.0
+Proprietary. All rights reserved by the operator. The source code is provided
+for reference only; you may not copy, modify, distribute, or use it to operate
+a competing service without the operator's prior written permission. See the
+`LICENSE` file for full terms.

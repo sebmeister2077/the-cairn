@@ -64,7 +64,10 @@ function getActiveCategory(pathname: string) {
   for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
-  return "/general";
+  // Root path (/) defaults to General. Standalone pages like /privacy and
+  // /terms intentionally have no active tab.
+  if (pathname === "/") return "/general";
+  return "";
 }
 
 function AppContent() {
@@ -157,7 +160,7 @@ function AppContent() {
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
@@ -203,7 +206,7 @@ function AppContent() {
           )}
         </nav>
       </header>
-      <main className="container mx-auto px-4 py-6 max-w-3xl">
+      <main className="container mx-auto px-4 py-6 max-w-3xl flex-1 w-full">
         <Routes>
           <Route path="/" element={<GeneralPage />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
