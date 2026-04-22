@@ -20,6 +20,36 @@ POSITION_MASK = (1 << POSITION_BITS) - 1
 DEFAULT_MAP_MIDDLE = 512000  # VS default world center in blocks (1024000 / 2)
 
 
+def _open_mapdb(db_path: str) -> sqlite3.Connection:
+    """Open SQLite DB with conservative memory settings for large map files."""
+    conn = sqlite3.connect(db_path)
+    cur = conn.cursor()
+    # Keep temp data on disk and cap SQLite page cache to reduce RAM pressure.
+    cur.execute("PRAGMA temp_store = FILE")
+    cur.execute("PRAGMA cache_size = -16384")  # 16 MB cache budget
+    return conn
+
+
+def _get_map_bounds(cur: sqlite3.Cursor) -> tuple[int, int, int, int, int]:
+    """Return (count, min_x, max_x, min_z, max_z) from packed positions."""
+    cur.execute(
+        """
+        SELECT
+            COUNT(*),
+            MIN(position & ?),
+            MAX(position & ?),
+            MIN(position >> ?),
+            MAX(position >> ?)
+        FROM mappiece
+        """,
+        (POSITION_MASK, POSITION_MASK, POSITION_BITS, POSITION_BITS),
+    )
+    count, min_x, max_x, min_z, max_z = cur.fetchone()
+    if not count:
+        raise ValueError("Map database is empty")
+    return int(count), int(min_x), int(max_x), int(min_z), int(max_z)
+
+
 def decode_position(pos: int) -> tuple[int, int]:
     return pos & POSITION_MASK, pos >> POSITION_BITS
 
@@ -91,33 +121,27 @@ def _sample_one_pixel(blob: bytes, pixel_index: int = 528) -> tuple:
     return (argb & 0xFF, (argb >> 8) & 0xFF, (argb >> 16) & 0xFF, (argb >> 24) & 0xFF)
 
 
-def render_map_png(db_bytes: bytes, max_dimension: int = 4096) -> bytes:
-    """Render all map pieces from a .db file into a PNG image."""
+def render_map_png_from_path(
+    db_path: str,
+    max_dimension: int = 4096,
+    fast_preview: bool = False,
+) -> bytes:
+    """Render all map pieces from a .db file path into a PNG image.
+
+    fast_preview=True uses one sampled color per tile and paints coarse blocks.
+    """
     from PIL import Image
 
-    fd, tmp_path = tempfile.mkstemp(suffix=".db")
     conn = None
     try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(db_bytes)
-
-        conn = sqlite3.connect(tmp_path)
+        conn = _open_mapdb(db_path)
         cur = conn.cursor()
 
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mappiece'")
         if not cur.fetchone():
             raise ValueError("Not a valid Vintage Story map database (no mappiece table)")
 
-        cur.execute("SELECT position FROM mappiece")
-        positions = [row[0] for row in cur.fetchall()]
-        if not positions:
-            raise ValueError("Map database is empty")
-
-        coords = [decode_position(p) for p in positions]
-        min_x = min(c[0] for c in coords)
-        max_x = max(c[0] for c in coords)
-        min_z = min(c[1] for c in coords)
-        max_z = max(c[1] for c in coords)
+        _, min_x, max_x, min_z, max_z = _get_map_bounds(cur)
 
         w_chunks = max_x - min_x + 1
         h_chunks = max_z - min_z + 1
@@ -134,7 +158,30 @@ def render_map_png(db_bytes: bytes, max_dimension: int = 4096) -> bytes:
         cur.execute("SELECT position, data FROM mappiece")
 
         # Choose strategy based on scale
-        if scale <= TILE_SIZE:
+        if fast_preview:
+            tile_px = max(1, TILE_SIZE // scale)
+            while True:
+                rows = cur.fetchmany(batch_size)
+                if not rows:
+                    break
+                for pos_val, blob in rows:
+                    cx, cz = decode_position(pos_val)
+                    bx = (cx - min_x) * TILE_SIZE // scale
+                    bz = (cz - min_z) * TILE_SIZE // scale
+                    if len(blob) >= STANDARD_BLOB_SIZE:
+                        r, g, b, a = _sample_one_pixel(blob)
+                    else:
+                        r, g, b, a = 0, 0, 0, 255
+
+                    if tile_px == 1:
+                        if 0 <= bx < img_w and 0 <= bz < img_h:
+                            img_arr[bz, bx] = [r, g, b, a]
+                    else:
+                        ex = min(img_w, bx + tile_px)
+                        ez = min(img_h, bz + tile_px)
+                        if ex > bx and ez > bz:
+                            img_arr[bz:ez, bx:ex] = [r, g, b, a]
+        elif scale <= TILE_SIZE:
             # Decode full tiles, subsample with numpy
             while True:
                 rows = cur.fetchmany(batch_size)
@@ -189,6 +236,20 @@ def render_map_png(db_bytes: bytes, max_dimension: int = 4096) -> bytes:
     finally:
         if conn is not None:
             conn.close()
+
+
+def render_map_png(db_bytes: bytes, max_dimension: int = 4096, fast_preview: bool = False) -> bytes:
+    """Render all map pieces from in-memory .db bytes into a PNG image."""
+    fd, tmp_path = tempfile.mkstemp(suffix=".db")
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(db_bytes)
+        return render_map_png_from_path(
+            tmp_path,
+            max_dimension=max_dimension,
+            fast_preview=fast_preview,
+        )
+    finally:
         try:
             os.unlink(tmp_path)
         except OSError:
@@ -199,39 +260,43 @@ def get_map_stats_from_path(db_path: str) -> dict:
     """Get basic stats from a map .db file path without rendering."""
     conn = None
     try:
-        conn = sqlite3.connect(db_path)
+        conn = _open_mapdb(db_path)
         cur = conn.cursor()
 
         cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mappiece'")
         if not cur.fetchone():
             raise ValueError("Not a valid Vintage Story map database")
 
-        cur.execute("SELECT COUNT(*), SUM(LENGTH(data)) FROM mappiece")
-        count, total_bytes = cur.fetchone()
-
-        cur.execute("SELECT position FROM mappiece")
-        chunks = [decode_position(r[0]) for r in cur.fetchall()]
+        cur.execute(
+            """
+            SELECT
+                COUNT(*),
+                SUM(LENGTH(data)),
+                MIN(position & ?),
+                MAX(position & ?),
+                MIN(position >> ?),
+                MAX(position >> ?)
+            FROM mappiece
+            """,
+            (POSITION_MASK, POSITION_MASK, POSITION_BITS, POSITION_BITS),
+        )
+        count, total_bytes, min_x, max_x, min_z, max_z = cur.fetchone()
 
         conn.close()
         conn = None
 
-        if not chunks:
+        if not count:
             return {"pieces": 0, "size_mb": 0}
 
-        min_x = min(c[0] for c in chunks)
-        max_x = max(c[0] for c in chunks)
-        min_z = min(c[1] for c in chunks)
-        max_z = max(c[1] for c in chunks)
-
         return {
-            "pieces": count,
+            "pieces": int(count),
             "size_mb": round((total_bytes or 0) / (1024 * 1024), 1),
-            "width_chunks": max_x - min_x + 1,
-            "height_chunks": max_z - min_z + 1,
-            "width_blocks": (max_x - min_x + 1) * TILE_SIZE,
-            "height_blocks": (max_z - min_z + 1) * TILE_SIZE,
-            "start_x": min_x * TILE_SIZE - DEFAULT_MAP_MIDDLE,
-            "start_z": min_z * TILE_SIZE - DEFAULT_MAP_MIDDLE,
+            "width_chunks": int(max_x - min_x + 1),
+            "height_chunks": int(max_z - min_z + 1),
+            "width_blocks": int(max_x - min_x + 1) * TILE_SIZE,
+            "height_blocks": int(max_z - min_z + 1) * TILE_SIZE,
+            "start_x": int(min_x) * TILE_SIZE - DEFAULT_MAP_MIDDLE,
+            "start_z": int(min_z) * TILE_SIZE - DEFAULT_MAP_MIDDLE,
         }
 
     finally:

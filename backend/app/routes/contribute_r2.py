@@ -18,13 +18,12 @@ import sqlite3
 import tempfile
 import uuid
 from typing import Optional, Set
-from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from ..auth import verify_api_key, verify_api_key_header_or_query, verify_contribute_permission
+from ..auth import verify_api_key, verify_contribute_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, database as db
@@ -407,8 +406,14 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
             if row.get(k) and hasattr(row[k], "isoformat"):
                 row[k] = row[k].isoformat()
     for row in pending:
-        query = urlencode({"api_key": api_key})
-        row["preview_image_url"] = f"{request.url_for('contribute_preview', contribution_id=row['id'])}?{query}"
+        row["preview_image_url"] = str(
+            request.url_for("contribute_preview", contribution_id=row["id"])
+        )
+        preview_key = r2_storage.pending_preview_key(row["id"])
+        row["preview_signed_url"] = r2_storage.generate_presigned_download_url(
+            preview_key,
+            expires_seconds=3 * 24 * 60 * 60,
+        )
     for row in approved:
         if row.get("approved_at") and hasattr(row["approved_at"], "isoformat"):
             row["approved_at"] = row["approved_at"].isoformat()
@@ -524,7 +529,7 @@ async def contribute_upload(
 @router.get("/contribute/preview/{contribution_id}")
 async def contribute_preview(
     contribution_id: str,
-    api_key: str = Depends(verify_api_key_header_or_query),
+    api_key: str = Depends(verify_api_key),
 ):
     """Return preview PNG for a pending contribution.
 

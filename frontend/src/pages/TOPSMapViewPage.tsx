@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getTopsMapStats, renderTopsMap } from "@/lib/api";
+import { getTopsMapStats, renderTopsMap, fetchImageFromSignedUrl } from "@/lib/api";
 import { MapViewer, type MapStats } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +8,14 @@ import { Download, Loader2 } from "lucide-react";
 
 const STALE_TIME = 60 * 60 * 1000; // 1 hour
 
+interface TopsMapStatsResponse extends MapStats {
+  image_signed_url?: string | null;
+}
+
 export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
 
-  const statsQuery = useQuery<MapStats>({
+  const statsQuery = useQuery<TopsMapStatsResponse>({
     queryKey: ["tops-map-stats"],
     queryFn: getTopsMapStats,
     staleTime: STALE_TIME,
@@ -19,7 +23,15 @@ export function TOPSMapViewPage() {
 
   const imageQuery = useQuery<Blob>({
     queryKey: ["tops-map-render"],
-    queryFn: () => renderTopsMap(),
+    queryFn: async () => {
+      const signedUrl = statsQuery.data?.image_signed_url;
+      if (signedUrl) {
+        const blob = await fetchImageFromSignedUrl(signedUrl);
+        if (blob) return blob;
+      }
+      // Fallback: proxy through our backend
+      return renderTopsMap();
+    },
     staleTime: STALE_TIME,
     enabled: statsQuery.isSuccess,
   });

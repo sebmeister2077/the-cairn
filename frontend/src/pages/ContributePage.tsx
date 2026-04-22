@@ -9,6 +9,7 @@ import {
   withdrawContribution,
   getStoredIsAdmin,
   getStoredCanContribute,
+  fetchImageFromSignedUrl,
 } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ interface PendingContribution {
   status: string;
   is_mine: boolean;
   preview_image_url?: string;
+  preview_signed_url?: string;
 }
 
 interface WithdrawnEntry {
@@ -103,11 +105,19 @@ export function ContributePage() {
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
-  const [previewFallbackId, setPreviewFallbackId] = useState<string | null>(null);
   const previewQuery = useQuery<Blob>({
-    queryKey: ["contribute-preview", previewId, previewFallbackId],
-    queryFn: () => getContributePreview(previewId!),
-    enabled: !!previewId && previewFallbackId === previewId,
+    queryKey: ["contribute-preview", previewId],
+    queryFn: async () => {
+      const row = info?.pending.find((p) => p.id === previewId);
+      const signedUrl = row?.preview_signed_url;
+      if (signedUrl) {
+        const blob = await fetchImageFromSignedUrl(signedUrl);
+        if (blob) return blob;
+      }
+      // Fallback: fetch via authenticated proxy
+      return getContributePreview(previewId!);
+    },
+    enabled: !!previewId,
   });
   const previewBlob = previewQuery.data ?? null;
   const previewUrl = useMemo(
@@ -153,11 +163,9 @@ export function ContributePage() {
   async function handlePreview(id: string) {
     if (previewId === id) {
       setPreviewId(null);
-      setPreviewFallbackId(null);
       return;
     }
     setPreviewId(id);
-    setPreviewFallbackId(null);
   }
 
   async function handleApprove(id: string) {
@@ -422,15 +430,10 @@ export function ContributePage() {
                 {previewId === p.id && (
                   <div className="rounded-md border overflow-hidden bg-black/5">
                     <MapViewer
-                      imageUrl={previewFallbackId === p.id ? previewUrl : (p.preview_image_url ?? null)}
+                      imageUrl={previewId === p.id ? previewUrl : null}
                       alt="Merge preview"
                       height="60vh"
                       bordered={false}
-                      onImageError={() => {
-                        if (previewFallbackId !== p.id) {
-                          setPreviewFallbackId(p.id);
-                        }
-                      }}
                       legend={
                         <>
                           <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />

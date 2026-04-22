@@ -132,9 +132,16 @@ export async function getMapStats(formData: FormData) {
     return (await handleResponse(res)).json();
 }
 
-export async function renderMap(formData: FormData, maxDimension?: number): Promise<Blob> {
+export async function renderMap(
+    formData: FormData,
+    maxDimension?: number,
+    fastPreview?: boolean,
+): Promise<Blob> {
     if (maxDimension) {
         formData.set("max_dimension", String(maxDimension));
+    }
+    if (fastPreview !== undefined) {
+        formData.set("fast_preview", fastPreview ? "true" : "false");
     }
     const res = await fetch(`${API_BASE}/map-render`, {
         method: "POST",
@@ -150,6 +157,20 @@ export async function getTopsMapStats() {
         headers: { "X-API-Key": getApiKey() },
     });
     return (await handleResponse(res)).json();
+}
+
+/**
+ * Fetch an image from a presigned URL (no auth header — the URL is self-contained).
+ * Falls back to null on network error or non-200 status so callers can degrade gracefully.
+ */
+export async function fetchImageFromSignedUrl(signedUrl: string): Promise<Blob | null> {
+    try {
+        const res = await fetch(signedUrl);
+        if (!res.ok) return null;
+        return res.blob();
+    } catch {
+        return null;
+    }
 }
 
 export async function renderTopsMap(maxDimension?: number): Promise<Blob> {

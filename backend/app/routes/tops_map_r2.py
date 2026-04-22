@@ -30,7 +30,12 @@ async def tops_map_stats(api_key: str = Depends(verify_api_key)):
                 "detail": "TOPS map stats cache is not ready. Run pregenerate_tops_map_cache.py first.",
             },
         )
-    return stats
+    cache_key = r2_storage.tops_map_cache_key(r2_storage.TOPS_MAP_CACHE_DIM)
+    signed_url = r2_storage.generate_presigned_download_url(
+        cache_key,
+        expires_seconds=24 * 60 * 60,
+    )
+    return {**stats, "image_signed_url": signed_url or None}
 
 
 @router.get("/tops-map-render")

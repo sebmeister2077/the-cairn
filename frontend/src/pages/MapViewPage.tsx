@@ -4,6 +4,8 @@ import { MapViewer, type MapStats } from "@/components/MapViewer";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Download, Loader2 } from "lucide-react";
 
 export function MapViewPage() {
@@ -13,6 +15,7 @@ export function MapViewPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState("");
+  const [fastPreview, setFastPreview] = useState(true);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,11 +42,15 @@ export function MapViewPage() {
     }
 
     // Step 2: Render image
-    setLoading("Rendering map image… This may take a moment for large maps.");
+    setLoading(
+      fastPreview
+        ? "Rendering fast preview…"
+        : "Rendering map image… This may take a moment for large maps.",
+    );
     try {
       const fd = new FormData();
       fd.append("db_file", dbFile);
-      const blob = await renderMap(fd);
+      const blob = await renderMap(fd, undefined, fastPreview);
       const url = URL.createObjectURL(blob);
       setImageUrl(url);
     } catch (err) {
@@ -75,8 +82,8 @@ export function MapViewPage() {
     if (!dbFile) throw new Error("no file");
     const fd = new FormData();
     fd.append("db_file", dbFile);
-    return renderMap(fd, maxDim);
-  }, [dbFile]);
+    return renderMap(fd, maxDim, fastPreview);
+  }, [dbFile, fastPreview]);
 
   return (
     <Card>
@@ -97,6 +104,14 @@ export function MapViewPage() {
             required
             onChange={setDbFile}
           />
+          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <Switch
+              checked={fastPreview}
+              onCheckedChange={setFastPreview}
+              aria-label="Fast preview mode"
+            />
+            <Label>Fast preview mode (much faster, lower detail)</Label>
+          </div>
           <div className="flex gap-2">
             <Button type="submit" disabled={!dbFile || !!loading}>
               {loading || "Render Map"}

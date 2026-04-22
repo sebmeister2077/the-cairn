@@ -115,6 +115,36 @@ def generate_presigned_upload_url(
     )
 
 
+# S3v4 presigned GET URLs are capped at 7 days (604800 s).
+_MAX_PRESIGN_SECONDS = 7 * 24 * 60 * 60
+
+
+def generate_presigned_download_url(
+    key: str,
+    *,
+    expires_seconds: int,
+    content_type: str = "image/png",
+) -> str:
+    """Generate a presigned GET URL so clients can fetch an R2 object directly.
+
+    The URL is self-contained — no API key is required by the client.
+    Expiry is clamped to 7 days (S3v4 maximum).
+    Returns an empty string if the object does not exist.
+    """
+    if not object_exists(key):
+        return ""
+    clamped = min(expires_seconds, _MAX_PRESIGN_SECONDS)
+    return _get_client().generate_presigned_url(
+        "get_object",
+        Params={
+            "Bucket": _bucket(),
+            "Key": key,
+            "ResponseContentType": content_type,
+        },
+        ExpiresIn=clamped,
+    )
+
+
 def delete_object(key: str):
     """Delete an object from R2. Silently ignores missing keys."""
     try:

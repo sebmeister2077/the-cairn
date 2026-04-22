@@ -35,6 +35,9 @@ class Settings:
     # Upload limit (bytes)
     MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(4 * 1024 * 1024 * 1024)))  # 4 GB
 
+    # Map render limit (pixels) to bound RGBA buffer size in memory
+    MAP_RENDER_MAX_DIM: int = int(os.environ.get("MAP_RENDER_MAX_DIM", "8192"))
+
     # Contribute feature
     CONTRIBUTE_MAP_ID: str = os.environ.get(
         "CONTRIBUTE_MAP_ID", "48bd1c98-4ee0-414a-b584-a3628278d99d"
