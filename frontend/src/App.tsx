@@ -8,6 +8,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
+import { CookieConsent } from "@/components/CookieConsent";
+import { hasAcceptedStorage } from "@/lib/consent";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
@@ -17,6 +19,8 @@ import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { ApiKeysPage } from "@/pages/ApiKeysPage";
+import { PrivacyPage } from "@/pages/PrivacyPage";
+import { TermsPage } from "@/pages/TermsPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getStoredIsAdmin,
@@ -68,17 +72,26 @@ function AppContent() {
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const location = useLocation();
   const [inviteClaim, setInviteClaim] = useState<{ token: string; status: "idle" | "pending" | "success" | "error"; error?: string; key?: string } | null>(null);
+  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const keyParam = params.get("key");
     if (keyParam) {
-      setApiKey(keyParam.trim());
-      checkAuthStatus().then((status) => {
-        setStoredIsAdmin(status.is_admin);
-        setStoredCanContribute(status.can_contribute);
-        setIsAdmin(status.is_admin);
-      });
+      // Don't write the key to localStorage until the user has consented to
+      // browser storage. If consent isn't given yet, treat the key as an
+      // invite-style claim that's gated behind the consent banner.
+      if (hasAcceptedStorage()) {
+        setApiKey(keyParam.trim());
+        checkAuthStatus().then((status) => {
+          setStoredIsAdmin(status.is_admin);
+          setStoredCanContribute(status.can_contribute);
+          setIsAdmin(status.is_admin);
+        });
+      } else {
+        // Stash the raw key in memory until consent is granted.
+        sessionStorage.setItem("pending_api_key", keyParam.trim());
+      }
       window.history.replaceState({}, "", window.location.pathname);
       return;
     }
@@ -88,10 +101,38 @@ function AppContent() {
       window.history.replaceState({}, "", window.location.pathname);
       // Only show the claim prompt if the user does not already have an API key
       if (!getStoredApiKey()) {
-        setInviteClaim({ token: inviteParam, status: "idle" });
+        if (hasAcceptedStorage()) {
+          setInviteClaim({ token: inviteParam, status: "idle" });
+        } else {
+          // Defer until consent is granted.
+          setPendingInviteToken(inviteParam);
+        }
       }
     }
   }, []);
+
+  function handleConsentChange(value: "accepted" | "declined") {
+    if (value !== "accepted") {
+      setPendingInviteToken(null);
+      sessionStorage.removeItem("pending_api_key");
+      return;
+    }
+    // Apply any deferred direct API key first.
+    const deferredKey = sessionStorage.getItem("pending_api_key");
+    if (deferredKey) {
+      sessionStorage.removeItem("pending_api_key");
+      setApiKey(deferredKey);
+      checkAuthStatus().then((status) => {
+        setStoredIsAdmin(status.is_admin);
+        setStoredCanContribute(status.can_contribute);
+        setIsAdmin(status.is_admin);
+      });
+    }
+    if (pendingInviteToken) {
+      setInviteClaim({ token: pendingInviteToken, status: "idle" });
+      setPendingInviteToken(null);
+    }
+  }
 
   async function handleClaimInvite() {
     if (!inviteClaim) return;
@@ -178,9 +219,25 @@ function AppContent() {
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/general" element={<GeneralPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
         </Routes>
       </main>
+      <footer className="border-t mt-8">
+        <div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2">
+          <span>VS Waypoint &amp; Map Tools &mdash; unofficial fan project.</span>
+          <span className="flex gap-3">
+            <NavLink to="/privacy" className="hover:text-foreground underline-offset-2 hover:underline">Privacy</NavLink>
+            <NavLink to="/terms" className="hover:text-foreground underline-offset-2 hover:underline">Terms</NavLink>
+          </span>
+        </div>
+      </footer>
       <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} onAdminStatusChange={setIsAdmin} />
+
+      {/* Cookie / browser-storage consent. Renders as a blocking modal when an
+          invite link is waiting to be claimed, otherwise as a dismissible
+          bottom banner. The component returns null once a choice is stored. */}
+      <CookieConsent blocking={pendingInviteToken !== null} onChange={handleConsentChange} />
 
       {/* Invite claim dialog */}
       {inviteClaim && (

@@ -1,0 +1,193 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+const LAST_UPDATED = "April 23, 2026";
+const CONTACT_EMAIL = "contact@example.com"; // TODO: replace with real contact
+
+export function TermsPage() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Terms of Use</CardTitle>
+                <p className="text-xs text-muted-foreground">Last updated: {LAST_UPDATED}</p>
+            </CardHeader>
+            <CardContent className="space-y-6 text-sm leading-relaxed text-muted-foreground">
+                <section className="rounded border border-amber-300 bg-amber-50 p-3 text-amber-900">
+                    <strong>Draft notice.</strong> These terms describe how the
+                    operator expects the Service to be used. They are not legal
+                    advice. Questions:{" "}
+                    <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
+                        {CONTACT_EMAIL}
+                    </a>
+                    .
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">1. Acceptance</h2>
+                    <p>
+                        By accessing or using VS Waypoint &amp; Map Tools (the
+                        “Service”), you agree to be bound by these Terms of
+                        Use and our{" "}
+                        <a href="/privacy" className="underline">Privacy Policy</a>.
+                        If you do not agree, do not use the Service.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">2. Eligibility</h2>
+                    <p>
+                        You must be at least 13 years old (16 in the EU) to use
+                        the Service.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">3. API keys</h2>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Access is invite-only. API keys are issued at the operator's discretion.</li>
+                        <li>You are responsible for keeping your API key confidential. Treat it like a password.</li>
+                        <li>The operator may revoke any key at any time, with or without notice, for abuse, suspected unauthorised use, or any other reason.</li>
+                        <li>You must not share your key publicly or use it on behalf of users to whom you have not been authorised to delegate access.</li>
+                    </ul>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">4. Acceptable use</h2>
+                    <p>You agree not to:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>Upload malware, illegal content, or files you do not have the right to share.</li>
+                        <li>Upload save files or map data that belong to other players without their permission.</li>
+                        <li>Attempt to circumvent rate limits, scrape the Service, or carry out denial-of-service attacks.</li>
+                        <li>Reverse-engineer, probe, or attack the infrastructure or other users' data.</li>
+                        <li>Use the Service to violate Vintage Story's EULA or any third party's intellectual property rights.</li>
+                    </ul>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">5. Rate limits</h2>
+                    <p>
+                        The Service applies rate limits (currently 5 requests
+                        per hour per key, by default) to prevent abuse. Limits
+                        may change at any time without notice.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">6. Community map contributions</h2>
+                    <p>
+                        When you submit a map cache file via the{" "}
+                        <strong>Contribute</strong> tool:
+                    </p>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>You warrant that you have the right to upload the data and that doing so does not infringe anyone else's rights.</li>
+                        <li>
+                            You grant the operator a{" "}
+                            <strong>perpetual, irrevocable, worldwide,
+                            royalty-free, sublicensable licence</strong> to
+                            host, display, modify, merge, and redistribute the
+                            contributed data as part of the shared community
+                            map.
+                        </li>
+                        <li>
+                            Approved contributions are <strong>merged
+                            irreversibly</strong> into the community map and
+                            cannot be withdrawn. Please be sure before you
+                            contribute.
+                        </li>
+                        <li>
+                            The operator may reject, delete, or roll back
+                            pending contributions at any time without notice.
+                        </li>
+                    </ul>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">7. Intellectual property</h2>
+                    <ul className="list-disc pl-5 space-y-1">
+                        <li>The Service's source code is licensed under the GNU General Public License v2.0. See the project's <code className="rounded bg-muted px-1 text-xs">LICENSE</code> file.</li>
+                        <li>“Vintage Story” is a trademark of Anego Studios. This Service is an unofficial fan project and is not affiliated with or endorsed by Anego Studios.</li>
+                        <li>The community-map dataset's licence is to be confirmed; until specified, treat it as “all rights reserved by the operator and contributors collectively” for redistribution purposes.</li>
+                    </ul>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">8. Disclaimer of warranties</h2>
+                    <p>
+                        The Service is provided <strong>“AS IS” and “AS
+                        AVAILABLE”</strong>, without warranties of any kind,
+                        express or implied. The operator does not warrant that
+                        the Service will be uninterrupted, error-free, or that
+                        uploads, merges, or generated files will be accurate
+                        or preserved.
+                    </p>
+                    <p>
+                        <strong>Always back up your save files before using
+                        Import, Delete, or any tool that modifies them.</strong>
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">9. Limitation of liability</h2>
+                    <p>
+                        To the maximum extent permitted by law, the operator
+                        is not liable for any direct, indirect, incidental,
+                        special, consequential, or punitive damages arising
+                        from your use of the Service, including but not
+                        limited to save-file corruption, lost waypoints, lost
+                        map data, or service downtime.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">10. Indemnification</h2>
+                    <p>
+                        You agree to indemnify and hold harmless the operator
+                        from any claims, damages, or expenses arising from
+                        content you upload or from your breach of these
+                        Terms.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">11. Termination</h2>
+                    <p>
+                        The operator may suspend or terminate your access to
+                        the Service at any time, with or without notice, for
+                        any reason, including breach of these Terms.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">12. Governing law</h2>
+                    <p>
+                        These Terms are governed by the laws of the operator's
+                        country of residence. Disputes will be resolved in the
+                        competent courts of that jurisdiction. (TODO: replace
+                        with the specific jurisdiction.)
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">13. Changes to these Terms</h2>
+                    <p>
+                        We may update these Terms. Material changes will bump
+                        the consent version, which will re-display the consent
+                        banner. The “Last updated” date at the top of this
+                        page reflects the most recent revision. Continued use
+                        after changes means you accept the new Terms.
+                    </p>
+                </section>
+
+                <section className="space-y-2">
+                    <h2 className="text-base font-semibold text-foreground">14. Contact</h2>
+                    <p>
+                        Questions:{" "}
+                        <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
+                            {CONTACT_EMAIL}
+                        </a>
+                        .
+                    </p>
+                </section>
+            </CardContent>
+        </Card>
+    );
+}
