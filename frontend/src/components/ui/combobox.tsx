@@ -4,6 +4,10 @@ import { cn } from "@/lib/utils";
 interface ComboboxProps {
   value: string;
   onChange: (value: string) => void;
+  /** Called only when the user selects a suggestion (click or Enter). */
+  onSelect?: (value: string) => void;
+  /** Called when the input receives focus. */
+  onFocus?: () => void;
   suggestions: string[];
   placeholder?: string;
   id?: string;
@@ -13,6 +17,8 @@ interface ComboboxProps {
 function Combobox({
   value,
   onChange,
+  onSelect,
+  onFocus,
   suggestions,
   placeholder,
   id,
@@ -76,6 +82,7 @@ function Combobox({
         e.preventDefault();
         if (activeIndex >= 0 && filtered[activeIndex]) {
           onChange(filtered[activeIndex]);
+          onSelect?.(filtered[activeIndex]);
           setOpen(false);
         }
         break;
@@ -102,7 +109,7 @@ function Combobox({
           onChange(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => { setOpen(true); onFocus?.(); }}
         onKeyDown={handleKeyDown}
         className={cn(
           "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80",
@@ -131,6 +138,7 @@ function Combobox({
               onMouseDown={(e) => {
                 e.preventDefault(); // keep focus on input
                 onChange(item);
+                onSelect?.(item);
                 setOpen(false);
               }}
             >
