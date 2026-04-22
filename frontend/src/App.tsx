@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "re
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -305,6 +306,7 @@ export default function App() {
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
     </PersistQueryClientProvider>
   );
 }
