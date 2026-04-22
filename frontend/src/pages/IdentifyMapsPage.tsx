@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   Table,
   TableBody,
@@ -141,7 +142,10 @@ export function IdentifyMapsPage() {
 
           <div className="grid gap-1.5">
             <Label htmlFor="mapfolder">
-              Maps folder
+              <span className="inline-flex items-center">
+                Maps folder
+                <HelpTip text="Used only to match each .db file to a server connection by comparing the file's last updated time with when your log shows that server connection. The page uses file metadata (name, size, last-modified), not map tile contents, for this correlation." />
+              </span>
               <span className="text-muted-foreground ml-1 font-normal">
                 (select your VintagestoryData/Maps directory)
               </span>
