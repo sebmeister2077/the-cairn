@@ -222,30 +222,16 @@ export function TOPSMapViewPage() {
       return getTopsMapLevel(selectedLevel);
     },
     // Reuse the persisted cached URLs while they're still valid; refresh a
-    // couple of minutes before R2's signature expires.
+    // couple of minutes before R2's signature expires. React Query auto-fetches
+    // when an enabled query has stale data, so when staleTime returns 0 (URLs
+    // already expired) we get exactly one refetch on mount; when it returns a
+    // positive value we serve the persisted entry with no network call.
     staleTime: ({ state }) =>
       levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
     gcTime: 7 * 24 * 60 * 60 * 1000,
     enabled: statsQuery.isSuccess && selectedLevel != null,
-    // Always kick off a background refresh on page load so users never paint
-    // with presigned URLs that expired between sessions.
-    refetchOnMount: "always",
     meta: { persist: true },
   });
-
-  // `refetchOnMount: "always"` only triggers when the observer first mounts.
-  // Because this query starts disabled (waiting on stats + selectedLevel),
-  // the observer mounts in a disabled state and React Query doesn't treat the
-  // later `enabled: true` transition as a fresh mount. Manually fire a refetch
-  // the first time the query becomes enabled per session, so persisted-but-
-  // stale URLs get rotated even on the very first page load.
-  const refetchedOnEnableRef = useRef(false);
-  useEffect(() => {
-    if (refetchedOnEnableRef.current) return;
-    if (!statsQuery.isSuccess || selectedLevel == null) return;
-    refetchedOnEnableRef.current = true;
-    levelInfoQuery.refetch();
-  }, [statsQuery.isSuccess, selectedLevel, levelInfoQuery]);
 
   const tileSet = useMemo(
     () => {

@@ -232,29 +232,71 @@ export function MapViewer({
   // Same reset for tile-mode source changes (parent swapped to a different
   // map identity — not just a level upgrade we did internally).
   const adoptedTileIdRef = useRef<string | number | null>(null);
+  // Image dims of the previously-adopted tileSet, used to scale-compensate
+  // pan/zoom when the parent swaps to a different resolution level of the
+  // same world (so the user keeps looking at the same spot).
+  const adoptedTileSizeRef = useRef<{ w: number; h: number } | null>(null);
+  // Image width of the first tileSet adopted in this session. Used as the
+  // "100%" reference for the zoom indicator so the displayed percentage
+  // reflects actual on-screen scale and stays consistent across resolution
+  // swaps (otherwise L1 @ zoom=1 and L4 @ zoom=1 both read 100% despite
+  // being 8× apart visually).
+  const [zoomReferenceWidth, setZoomReferenceWidth] = useState<number>(0);
   useEffect(() => {
     if (!tileSet) return;
     // Case 1: parent has caught up with an id we already enhanced to internally.
     // Drop the internal override but keep current pan/zoom.
     if (enhancedTileSet && tileSet.id === enhancedTileSet.id) {
       adoptedTileIdRef.current = tileSet.id;
+      adoptedTileSizeRef.current = { w: tileSet.imageWidth, h: tileSet.imageHeight };
       setEnhancedTileSet(null);
       return;
     }
     // Case 2: same id we already adopted — nothing to do (e.g. URL rotation).
     if (adoptedTileIdRef.current === tileSet.id) return;
+
+    const prevSize = adoptedTileSizeRef.current;
     adoptedTileIdRef.current = tileSet.id;
+    adoptedTileSizeRef.current = { w: tileSet.imageWidth, h: tileSet.imageHeight };
 
     setEnhancedTileSet(null);
-    setRenderedMaxDim(tileSet.imageWidth || 4096);
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
+    // Preserve the previous threshold so a manual *downgrade* doesn't make
+    // the auto-enhance effect immediately bounce back up to the higher level
+    // (it compares `target <= renderedMaxDim * 1.8`). For upgrades the new
+    // value wins as expected.
+    setRenderedMaxDim((prev) => Math.max(prev, tileSet.imageWidth || 4096));
     setHoverCoords(null);
     setHoveredOverlayIndex(null);
     enhanceAbortRef.current?.abort();
     setEnhancing(false);
-    // Force the centering effect to recenter on the new tileSet.
-    centeredTileIdRef.current = null;
+
+    if (prevSize && prevSize.w > 0 && tileSet.imageWidth > 0) {
+      // Resolution swap of the same world: keep the user's zoom value as-is
+      // (so picking a higher level actually reveals more detail rather than
+      // canceling itself out by zooming out by the same factor), and only
+      // recompute pan so the world point under the viewport center stays
+      // pinned. Math: world point under center, in old image coords, is
+      // imgX_old = (cx - pan_old) / zoom. The same world point in the new
+      // image is imgX_new = imgX_old * scale where scale = newW / oldW.
+      // Choose pan_new so that imgX_new * zoom + pan_new == cx.
+      const scale = tileSet.imageWidth / prevSize.w;
+      const el = containerRef.current;
+      const cx = el ? el.clientWidth / 2 : 0;
+      const cy = el ? el.clientHeight / 2 : 0;
+      const z = zoomRef.current;
+      const oldPan = panRef.current;
+      const imgXNew = ((cx - oldPan.x) / z) * scale;
+      const imgYNew = ((cy - oldPan.y) / z) * scale;
+      setPan({ x: cx - imgXNew * z, y: cy - imgYNew * z });
+      // Suppress re-centering — we already preserved the user's view.
+      centeredTileIdRef.current = tileSet.id;
+    } else {
+      // Initial adoption (no previous tileSet): full reset and re-center.
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      centeredTileIdRef.current = null;
+      setZoomReferenceWidth(tileSet.imageWidth || 0);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileSet?.id]);
 
@@ -339,6 +381,10 @@ export function MapViewer({
   }, []);
 
   // Track container size so the viewport-culling memo can recompute on resize.
+  // Deps include `activeUrl` / `activeTileSet` because the component returns
+  // `null` until one of them is available; on the first render after content
+  // hydrates from localStorage the container is freshly added to the DOM and
+  // we need to (re-)attach the observer at that point.
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -347,7 +393,7 @@ export function MapViewer({
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [activeUrl, activeTileSet]);
 
   // Compute which tiles intersect the visible viewport (plus an overscan
   // margin). Keeps the DOM tile count bounded — typical viewport at level 4
@@ -569,7 +615,11 @@ export function MapViewer({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [activeUrl, zoomToward]);
+    // `activeTileSet` is included so the listener is (re)attached the moment
+    // the container appears in the DOM after tileSet hydrates from cache.
+    // Without it the wheel handler is never bound on the initial render and
+    // the browser scrolls the page instead of zooming the map.
+  }, [activeUrl, activeTileSet, zoomToward]);
 
   const centerView = useCallback((width: number, height: number, currentZoom?: number) => {
     const el = containerRef.current;
@@ -594,14 +644,17 @@ export function MapViewer({
   }, [centerView, stats, imgNatural]);
 
   // Tile-mode initial centering — runs once per tileSet id, after the
-  // container has measured itself. Mirrors the `<img onLoad>` -> centerView
-  // call that the blob path uses.
+  // container has measured itself AND stats have loaded. Mirrors the
+  // `<img onLoad>` -> centerView call that the blob path uses.
+  // We deliberately wait for `stats` so the first centering call uses the
+  // origin-aware branch of `centerView`; otherwise the map snaps to a
+  // corner-anchored position and the ref then prevents any re-centering.
   useEffect(() => {
-    if (!activeTileSet || containerSize.w === 0) return;
+    if (!activeTileSet || containerSize.w === 0 || !stats) return;
     if (centeredTileIdRef.current === activeTileSet.id) return;
     centeredTileIdRef.current = activeTileSet.id;
     centerView(activeTileSet.imageWidth, activeTileSet.imageHeight, zoomRef.current);
-  }, [activeTileSet, containerSize.w, centerView]);
+  }, [activeTileSet, containerSize.w, centerView, stats]);
 
   const zoomIn = useCallback(() => {
     const el = containerRef.current;
@@ -719,9 +772,13 @@ export function MapViewer({
         <Button type="button" variant="outline" size="sm" onClick={zoomOut} title="Zoom out">
           <ZoomOut className="size-4" />
         </Button>
-        <span className="text-xs text-muted-foreground w-14 text-center">
-          {Math.round(zoom * 100)}%
-        </span>
+        {/* <span className="text-xs text-muted-foreground w-14 text-center">
+          {Math.round(
+            (zoomReferenceWidth > 0 && imgNatural.w > 0
+              ? (zoom * imgNatural.w) / zoomReferenceWidth
+              : zoom) * 100,
+          )}%
+        </span> */}
         <Button type="button" variant="outline" size="sm" onClick={zoomIn} title="Zoom in">
           <ZoomIn className="size-4" />
         </Button>
