@@ -184,6 +184,107 @@ export async function renderTopsMap(maxDimension?: number): Promise<Blob> {
     return res.blob();
 }
 
+export interface TopsMapResolutionMeta {
+    level: number;
+    max_dimension: number;
+    status: "complete" | "generating" | "not_generated" | "failed";
+    generated_at?: string | null;
+    size_bytes?: number | null;
+    progress?: number;
+}
+
+export async function getTopsMapLevel(level: number): Promise<TopsMapLevelChunks> {
+    const res = await fetch(`${API_BASE}/tops-map-level/${level}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface TopsMapChunkRef {
+    cx: number;
+    cy: number;
+    url: string;
+}
+
+export interface TopsMapLevelChunks {
+    level: number;
+    max_dimension: number;
+    status: "complete" | "generating" | "not_generated" | "failed";
+    progress: number;
+    generated_at?: string | null;
+    size_bytes?: number | null;
+    chunk_grid: number;
+    image_w: number;
+    image_h: number;
+    chunk_w: number;
+    chunk_h: number;
+    scale: number;
+    width_blocks: number;
+    height_blocks: number;
+    start_x: number;
+    start_z: number;
+    chunks: TopsMapChunkRef[];
+    url_expires_in: number;
+    /** Absolute UTC ISO timestamp of the soonest URL expiry in `chunks`. */
+    expires_at: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Admin — TOPS map multi-resolution generation
+// ---------------------------------------------------------------------------
+
+export interface MapGenerationLevelStatus {
+    status: "complete" | "generating" | "not_generated" | "failed";
+    generated_at: string | null;
+    started_at: string | null;
+    progress: number;
+    current_chunk: string | null;
+    total_chunks: number;
+    completed_chunks: number;
+    size_bytes: number | null;
+    error: string | null;
+}
+
+export interface MapGenerationStatus {
+    levels: Record<string, MapGenerationLevelStatus>;
+    configured_levels: { level: number; max_dimension: number }[];
+    is_running: boolean;
+}
+
+export async function getMapGenerationStatus(): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/generation-status`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function requestMapGeneration(
+    levels?: number[],
+    affectedBounds?: { min_x: number; max_x: number; min_z: number; max_z: number },
+): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/generate`, {
+        method: "POST",
+        headers: {
+            "X-API-Key": getApiKey(),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            levels: levels ?? null,
+            affected_bounds: affectedBounds ?? null,
+        }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function deleteMapLevel(level: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/level/${level}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    if (res.status === 204) return;
+    await handleResponse(res);
+}
+
 export async function getContributeInfo(signal?: AbortSignal) {
     const res = await fetch(`${API_BASE}/contribute/info`, {
         headers: { "X-API-Key": getApiKey() },

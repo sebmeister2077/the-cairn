@@ -1,6 +1,8 @@
 ﻿import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -278,12 +280,31 @@ const queryClient = new QueryClient({
   },
 });
 
+// Persist query cache in localStorage so things like the cached TOPS map
+// chunk URLs survive page reloads. We only persist queries that opt in via
+// `meta.persist === true` to avoid storing huge / non-serialisable payloads
+// (e.g. stitched image Blobs).
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+  key: "vs-waypoints-query-cache",
+});
+
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: TWO_DAYS,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) =>
+            query.state.status === "success" && (query.meta as { persist?: boolean } | undefined)?.persist === true,
+        },
+      }}
+    >
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

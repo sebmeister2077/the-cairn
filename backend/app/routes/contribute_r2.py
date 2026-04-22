@@ -27,6 +27,14 @@ from ..auth import verify_api_key, verify_contribute_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, database as db
+from ..core.mapdb import (
+    POSITION_BITS,
+    POSITION_MASK,
+    TILE_SIZE,
+    DEFAULT_MAP_MIDDLE,
+    RESOLUTION_LEVELS,
+)
+from ..tasks.generate_map_levels import start_job as start_map_generation_job
 
 router = APIRouter()
 
@@ -263,6 +271,37 @@ def _verify_admin_key(api_key: str):
         raise ValueError("No admin API key configured on server")
     if api_key != settings.ADMIN_API_KEY:
         raise ValueError("Forbidden — admin API key required")
+
+
+def _compute_pending_world_bounds(pending_db_path: str):
+    """Return (min_x, max_x, min_z, max_z) in world-block coords for the
+    pending contribution, or None if the DB is empty."""
+    conn = sqlite3.connect(pending_db_path)
+    try:
+        row = conn.execute(
+            f"""
+            SELECT
+                MIN(position & ?),
+                MAX(position & ?),
+                MIN(position >> ?),
+                MAX(position >> ?)
+            FROM {MAPPIECE_TABLE}
+            """,
+            (POSITION_MASK, POSITION_MASK, POSITION_BITS, POSITION_BITS),
+        ).fetchone()
+    finally:
+        conn.close()
+    if not row or row[0] is None:
+        return None
+    min_tx, max_tx, min_tz, max_tz = row
+    # Tile coords → world block coords (each tile = TILE_SIZE blocks; positions
+    # are tile indices around DEFAULT_MAP_MIDDLE which is in raw tile-grid units).
+    return (
+        int(min_tx) * TILE_SIZE,
+        (int(max_tx) + 1) * TILE_SIZE - 1,
+        int(min_tz) * TILE_SIZE,
+        (int(max_tz) + 1) * TILE_SIZE - 1,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -603,7 +642,15 @@ async def contribute_approve(
     # Download both to temp, merge, re-upload combined
     combined_tmp = _ensure_combined_db_temp()
     pending_tmp = _download_to_temp(pending_key)
+    affected_bounds = None
     try:
+        # Capture affected world-block bounds BEFORE merging so we know which
+        # cache chunks to invalidate. Falls back to None on any error → full regen.
+        try:
+            affected_bounds = _compute_pending_world_bounds(pending_tmp)
+        except Exception:
+            affected_bounds = None
+
         stats = _merge_into_combined(pending_tmp, combined_tmp)
 
         # Refresh cached TOPS stats from the merged local DB file.
@@ -624,6 +671,17 @@ async def contribute_approve(
         combined_total=stats["combined_total"],
     )
     db.set_cached_tile_count(stats["combined_total"])
+
+    # Smart cache invalidation — kick off a background regen of all configured
+    # resolution levels, but only for chunks that intersect the contributed
+    # bounding box. Existing chunks outside that area are reused.
+    try:
+        start_map_generation_job(
+            sorted(RESOLUTION_LEVELS.keys()),
+            affected_bounds=affected_bounds,
+        )
+    except Exception:
+        pass
 
     # Move approved .db into archive storage
     archived_key = r2_storage.archived_db_key(contribution_id)

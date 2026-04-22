@@ -107,6 +107,17 @@ CREATE TABLE IF NOT EXISTS invite_links (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
     revoked     BOOLEAN NOT NULL DEFAULT FALSE
 );
+
+CREATE TABLE IF NOT EXISTS tops_map_chunk_urls (
+    level       INTEGER NOT NULL,
+    cx          INTEGER NOT NULL,
+    cy          INTEGER NOT NULL,
+    url         TEXT NOT NULL,
+    expires_at  TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (level, cx, cy)
+);
+CREATE INDEX IF NOT EXISTS idx_tops_map_chunk_urls_expires_at
+    ON tops_map_chunk_urls (expires_at);
 """
 
 _MIGRATIONS_SQL = """
@@ -345,6 +356,82 @@ def revoke_api_key(key: str):
 def set_tops_map_stats(stats: dict):
     """Persist TOPS map stats JSON in app_state."""
     set_state(TOPS_MAP_STATS_KEY, json.dumps(stats))
+
+
+# ---------------------------------------------------------------------------
+# TOPS map presigned chunk URL cache
+# ---------------------------------------------------------------------------
+
+def get_cached_chunk_urls(level: int, min_expires_at: datetime) -> dict:
+    """Return cached presigned URLs for a level whose expiry is still in the future.
+
+    Returns a dict keyed by ``(cx, cy)`` with values ``{"url": str, "expires_at": datetime}``.
+    Rows expiring at/before ``min_expires_at`` are skipped (treat as missing so the
+    caller will regenerate).
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT cx, cy, url, expires_at
+                       FROM tops_map_chunk_urls
+                       WHERE level = %s AND expires_at > %s""",
+                (level, min_expires_at),
+            )
+            rows = cur.fetchall()
+    return {(cx, cy): {"url": url, "expires_at": exp} for cx, cy, url, exp in rows}
+
+
+def upsert_chunk_urls(level: int, items: List[dict]):
+    """Insert/refresh a batch of presigned URLs for ``level``.
+
+    Each item must contain ``cx``, ``cy``, ``url``, ``expires_at`` (datetime).
+    """
+    if not items:
+        return
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            psycopg2.extras.execute_values(
+                cur,
+                """INSERT INTO tops_map_chunk_urls (level, cx, cy, url, expires_at)
+                       VALUES %s
+                       ON CONFLICT (level, cx, cy) DO UPDATE
+                       SET url = EXCLUDED.url, expires_at = EXCLUDED.expires_at""",
+                [(level, it["cx"], it["cy"], it["url"], it["expires_at"]) for it in items],
+            )
+
+
+def delete_expired_chunk_urls(now: Optional[datetime] = None) -> int:
+    """Drop presigned URL rows whose expiry has passed. Returns # rows deleted."""
+    cutoff = now or datetime.now(timezone.utc)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tops_map_chunk_urls WHERE expires_at <= %s",
+                (cutoff,),
+            )
+            return cur.rowcount or 0
+
+
+def delete_chunk_urls_for_level(level: int) -> int:
+    """Drop all cached presigned URLs for ``level``. Returns # rows deleted."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tops_map_chunk_urls WHERE level = %s",
+                (level,),
+            )
+            return cur.rowcount or 0
+
+
+def delete_chunk_url(level: int, cx: int, cy: int) -> bool:
+    """Drop a single cached presigned URL. Returns True if a row was removed."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM tops_map_chunk_urls WHERE level = %s AND cx = %s AND cy = %s",
+                (level, cx, cy),
+            )
+            return (cur.rowcount or 0) > 0
 
 
 # ---------------------------------------------------------------------------

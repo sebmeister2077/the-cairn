@@ -20,6 +20,9 @@ from pydantic import BaseModel
 
 from ..auth import require_admin
 from ..core import database as db
+from ..core import generation_tracker, r2_storage
+from ..core.mapdb import RESOLUTION_LEVELS
+from ..tasks.generate_map_levels import is_job_running, start_job
 
 router = APIRouter()
 
@@ -143,4 +146,99 @@ async def revoke_invite_link(token: str, _: str = Depends(require_admin)):
     if not record:
         raise HTTPException(status_code=404, detail="Invite link not found")
     db.revoke_invite_link(token)
+    return JSONResponse(status_code=204, content=None)
+
+
+# ---------------------------------------------------------------------------
+# TOPS map multi-resolution generation
+# ---------------------------------------------------------------------------
+
+class GenerateMapLevelsRequest(BaseModel):
+    levels: Optional[List[int]] = None  # None = all configured levels
+    affected_bounds: Optional[dict] = None  # {min_x, max_x, min_z, max_z} world blocks
+
+
+def _generation_status_payload() -> dict:
+    status = generation_tracker.get_status()
+    return {
+        "levels": status.get("levels", {}),
+        "configured_levels": [
+            {"level": lvl, "max_dimension": dim}
+            for lvl, dim in sorted(RESOLUTION_LEVELS.items())
+        ],
+        "is_running": is_job_running(),
+    }
+
+
+@router.get("/admin/tops-map/generation-status")
+async def get_map_generation_status(_: str = Depends(require_admin)):
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    return _generation_status_payload()
+
+
+@router.post("/admin/tops-map/generate", status_code=202)
+async def request_map_generation(
+    body: GenerateMapLevelsRequest,
+    _: str = Depends(require_admin),
+):
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="A map generation job is already running",
+        )
+
+    levels = body.levels or list(RESOLUTION_LEVELS.keys())
+    invalid = [lvl for lvl in levels if lvl not in RESOLUTION_LEVELS]
+    if invalid:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown level(s): {invalid}. Valid: {list(RESOLUTION_LEVELS)}",
+        )
+
+    bounds_tuple = None
+    if body.affected_bounds:
+        try:
+            bounds_tuple = (
+                int(body.affected_bounds["min_x"]),
+                int(body.affected_bounds["max_x"]),
+                int(body.affected_bounds["min_z"]),
+                int(body.affected_bounds["max_z"]),
+            )
+        except (KeyError, TypeError, ValueError):
+            raise HTTPException(
+                status_code=400,
+                detail="affected_bounds must include integer min_x/max_x/min_z/max_z",
+            )
+
+    started = start_job(sorted(set(levels)), affected_bounds=bounds_tuple)
+    if not started:
+        raise HTTPException(status_code=409, detail="Could not start generation job")
+
+    return _generation_status_payload()
+
+
+@router.delete("/admin/tops-map/level/{level}", status_code=204)
+async def delete_map_level(level: int, _: str = Depends(require_admin)):
+    """Wipe an entire resolution level's chunks + assembled image from R2.
+
+    Useful for forcing a clean regeneration.
+    """
+    if level not in RESOLUTION_LEVELS:
+        raise HTTPException(status_code=400, detail="Unknown level")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot delete level while generation is running",
+        )
+
+    prefix = f"cache/tops-map-level{level}/"
+    keys = r2_storage.list_keys_with_prefix(prefix)
+    keys.append(r2_storage.tops_map_level_assembled_key(level))
+    r2_storage.delete_keys(keys)
+    db.delete_chunk_urls_for_level(level)
+    generation_tracker.reset_level(level)
     return JSONResponse(status_code=204, content=None)

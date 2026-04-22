@@ -204,3 +204,50 @@ def archived_db_key(contribution_id: str) -> str:
 
 def tops_map_cache_key(max_dimension: int = TOPS_MAP_CACHE_DIM) -> str:
     return f"cache/tops-map-{max_dimension}.png"
+
+
+# ---------------------------------------------------------------------------
+# Multi-resolution TOPS map cache (chunked)
+# ---------------------------------------------------------------------------
+
+def tops_map_level_assembled_key(level: int) -> str:
+    """Final assembled PNG for a resolution level."""
+    return f"cache/tops-map-level{level}.png"
+
+
+def tops_map_level_chunk_key(level: int, cx: int, cy: int) -> str:
+    """Per-chunk PNG within a resolution level (16×16 grid)."""
+    return f"cache/tops-map-level{level}/chunk-{cx}-{cy}.png"
+
+
+def tops_map_level_metadata_key(level: int) -> str:
+    """JSON metadata describing a generated level (geometry, timestamps)."""
+    return f"cache/tops-map-level{level}/metadata.json"
+
+
+def list_keys_with_prefix(prefix: str) -> list:
+    """Return a list of all object keys under the given prefix."""
+    keys = []
+    paginator = _get_client().get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=_bucket(), Prefix=prefix):
+        for obj in page.get("Contents", []) or []:
+            keys.append(obj["Key"])
+    return keys
+
+
+def delete_keys(keys: list):
+    """Delete a batch of object keys (best-effort, ignores missing)."""
+    if not keys:
+        return
+    # S3 delete supports batches of up to 1000 keys per request.
+    client = _get_client()
+    for i in range(0, len(keys), 1000):
+        chunk = keys[i:i + 1000]
+        try:
+            client.delete_objects(
+                Bucket=_bucket(),
+                Delete={"Objects": [{"Key": k} for k in chunk], "Quiet": True},
+            )
+        except ClientError:
+            for k in chunk:
+                delete_object(k)

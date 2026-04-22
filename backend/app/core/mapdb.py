@@ -8,6 +8,7 @@ import io
 import sqlite3
 import tempfile
 import os
+from typing import Iterator, Optional, Tuple, Dict
 
 import numpy as np
 
@@ -18,6 +19,39 @@ STANDARD_BLOB_SIZE = TILE_PIXELS * BYTES_PER_PIXEL  # 11264
 POSITION_BITS = 27
 POSITION_MASK = (1 << POSITION_BITS) - 1
 DEFAULT_MAP_MIDDLE = 512000  # VS default world center in blocks (1024000 / 2)
+
+# ---------------------------------------------------------------------------
+# Multi-resolution caching configuration
+# ---------------------------------------------------------------------------
+
+# Resolution levels for the TOPS map cache. Level 1 = lowest detail (fastest
+# load), higher levels = more detail. Each value is the maximum image dimension
+# (width or height) in pixels. The renderer auto-downscales tiles to fit.
+RESOLUTION_LEVELS: Dict[int, int] = {
+    1: 2048,
+    2: 4096,
+    3: 8192,
+    4: 16384,
+}
+
+# Default level served to non-admin viewers on first load.
+DEFAULT_RESOLUTION_LEVEL = 2
+
+# Number of chunks per side for the chunked grid (CHUNK_GRID_SIZE × CHUNK_GRID_SIZE chunks per level).
+# Allows generating one chunk at a time to keep peak memory low.
+CHUNK_GRID_SIZE = 16
+
+
+def get_level_dimension(level: int) -> int:
+    """Return the max image dimension for a given resolution level."""
+    if level not in RESOLUTION_LEVELS:
+        raise ValueError(f"Unknown resolution level: {level}")
+    return RESOLUTION_LEVELS[level]
+
+
+def get_chunk_pixel_size(level: int) -> int:
+    """Return the size of one chunk (one side) in pixels for a level."""
+    return get_level_dimension(level) // CHUNK_GRID_SIZE
 
 
 def _open_mapdb(db_path: str) -> sqlite3.Connection:
@@ -316,3 +350,304 @@ def get_map_stats(db_bytes: bytes) -> dict:
             os.unlink(tmp_path)
         except OSError:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Chunked multi-resolution rendering
+# ---------------------------------------------------------------------------
+
+def compute_level_geometry(db_path: str, level: int) -> dict:
+    """Compute the rendering geometry for a given resolution level.
+
+    Returns a dict with: scale, image_w, image_h, chunk_w, chunk_h,
+    min_x, min_z (chunk coords), max_x, max_z (chunk coords),
+    width_blocks, height_blocks, start_x, start_z (world block coords).
+    """
+    conn = _open_mapdb(db_path)
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='mappiece'")
+        if not cur.fetchone():
+            raise ValueError("Not a valid Vintage Story map database (no mappiece table)")
+        _, min_x, max_x, min_z, max_z = _get_map_bounds(cur)
+    finally:
+        conn.close()
+
+    max_dim = get_level_dimension(level)
+    w_chunks = max_x - min_x + 1
+    h_chunks = max_z - min_z + 1
+    full_w = w_chunks * TILE_SIZE
+    full_h = h_chunks * TILE_SIZE
+
+    scale = max(1, max(full_w // max_dim, full_h // max_dim))
+    image_w = max(1, full_w // scale)
+    image_h = max(1, full_h // scale)
+
+    # Chunk dimensions — divide image evenly into CHUNK_GRID_SIZE × CHUNK_GRID_SIZE
+    chunk_w = max(1, image_w // CHUNK_GRID_SIZE)
+    chunk_h = max(1, image_h // CHUNK_GRID_SIZE)
+
+    return {
+        "scale": int(scale),
+        "image_w": int(image_w),
+        "image_h": int(image_h),
+        "chunk_w": int(chunk_w),
+        "chunk_h": int(chunk_h),
+        "min_x": int(min_x),
+        "max_x": int(max_x),
+        "min_z": int(min_z),
+        "max_z": int(max_z),
+        "width_blocks": int(w_chunks * TILE_SIZE),
+        "height_blocks": int(h_chunks * TILE_SIZE),
+        "start_x": int(min_x) * TILE_SIZE - DEFAULT_MAP_MIDDLE,
+        "start_z": int(min_z) * TILE_SIZE - DEFAULT_MAP_MIDDLE,
+    }
+
+
+def _chunk_pixel_bounds(geometry: dict, cx: int, cy: int) -> Tuple[int, int, int, int]:
+    """Return (px0, py0, px1, py1) image-pixel bounds for chunk (cx, cy).
+
+    Last column/row absorbs any remainder pixels so the chunks fully cover
+    the image.
+    """
+    chunk_w = geometry["chunk_w"]
+    chunk_h = geometry["chunk_h"]
+    img_w = geometry["image_w"]
+    img_h = geometry["image_h"]
+    px0 = cx * chunk_w
+    py0 = cy * chunk_h
+    px1 = img_w if cx == CHUNK_GRID_SIZE - 1 else min(img_w, px0 + chunk_w)
+    py1 = img_h if cy == CHUNK_GRID_SIZE - 1 else min(img_h, py0 + chunk_h)
+    return px0, py0, px1, py1
+
+
+def world_block_bounds_to_chunk_indices(
+    geometry: dict,
+    min_block_x: int,
+    max_block_x: int,
+    min_block_z: int,
+    max_block_z: int,
+) -> Tuple[int, int, int, int]:
+    """Translate a world-block bounding box into inclusive chunk-grid indices.
+
+    Returns (cx_min, cy_min, cx_max, cy_max). Clamped to [0, CHUNK_GRID_SIZE-1].
+    Useful for partial regeneration after a contribution is merged.
+    """
+    scale = geometry["scale"]
+    chunk_w = geometry["chunk_w"]
+    chunk_h = geometry["chunk_h"]
+    map_origin_block_x = geometry["min_x"] * TILE_SIZE
+    map_origin_block_z = geometry["min_z"] * TILE_SIZE
+
+    # Convert world blocks → image pixels
+    px_min = max(0, (min_block_x - map_origin_block_x)) // scale
+    px_max = max(0, (max_block_x - map_origin_block_x)) // scale
+    py_min = max(0, (min_block_z - map_origin_block_z)) // scale
+    py_max = max(0, (max_block_z - map_origin_block_z)) // scale
+
+    cx_min = max(0, min(CHUNK_GRID_SIZE - 1, int(px_min // chunk_w)))
+    cx_max = max(0, min(CHUNK_GRID_SIZE - 1, int(px_max // chunk_w)))
+    cy_min = max(0, min(CHUNK_GRID_SIZE - 1, int(py_min // chunk_h)))
+    cy_max = max(0, min(CHUNK_GRID_SIZE - 1, int(py_max // chunk_h)))
+    return cx_min, cy_min, cx_max, cy_max
+
+
+def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
+                     geometry: Optional[dict] = None) -> Optional[bytes]:
+    """Render a single chunk (cx, cy) of the map at the given resolution level.
+
+    Returns the PNG bytes for the chunk, or ``None`` if the chunk has no map
+    data (fully transparent). Empty chunks are intentionally not rendered so
+    callers can skip storing/serving them — the frontend stitcher leaves any
+    missing position transparent on its canvas, which gives the same visual
+    result without paying for ~300 extra bytes per blank chunk in storage and
+    bandwidth.
+
+    Strategy: build a full-resolution buffer covering the chunk's block region,
+    plot tiles into it at exact block coordinates, then downsample with a fixed
+    stride. This avoids the subsampling-placement mismatch that occurs when
+    ``scale`` does not divide ``TILE_SIZE`` evenly (which produced visible
+    stripes/cuts in the older per-tile-subsample approach).
+
+    Memory: ``(chunk_arr_h * scale) × (chunk_arr_w * scale) × 4`` bytes peak.
+    For the configured levels and typical world sizes this stays a few MB.
+    """
+    from PIL import Image
+
+    if cx < 0 or cy < 0 or cx >= CHUNK_GRID_SIZE or cy >= CHUNK_GRID_SIZE:
+        raise ValueError(f"Chunk coords out of range: ({cx},{cy})")
+
+    if geometry is None:
+        geometry = compute_level_geometry(db_path, level)
+
+    scale = geometry["scale"]
+    min_x = geometry["min_x"]
+    min_z = geometry["min_z"]
+    px0, py0, px1, py1 = _chunk_pixel_bounds(geometry, cx, cy)
+    chunk_arr_w = px1 - px0
+    chunk_arr_h = py1 - py0
+    if chunk_arr_w <= 0 or chunk_arr_h <= 0:
+        return None
+
+    # Block-coordinate region this chunk covers (relative to map origin).
+    bx0 = px0 * scale
+    by0 = py0 * scale
+    bx1 = bx0 + chunk_arr_w * scale
+    by1 = by0 + chunk_arr_h * scale
+    block_w = bx1 - bx0
+    block_h = by1 - by0
+
+    # Cap the full-resolution buffer to ~64 MB. For typical worlds the
+    # natural buffer is well under this. If exceeded (extreme scale), fall
+    # back to one-pixel-per-tile sampling.
+    MAX_FULLRES_PIXELS = 64 * 1024 * 1024 // 4  # 64 MB / 4 bytes per pixel
+    use_fullres = (block_w * block_h) <= MAX_FULLRES_PIXELS and scale <= TILE_SIZE
+
+    # Full-resolution buffer for this chunk (only when use_fullres).
+    full_arr = (
+        np.zeros((block_h, block_w, 4), dtype=np.uint8) if use_fullres else None
+    )
+    sample_arr = (
+        np.zeros((chunk_arr_h, chunk_arr_w, 4), dtype=np.uint8)
+        if not use_fullres else None
+    )
+
+    # World-tile range that overlaps the block region.
+    tx_lo = min_x + bx0 // TILE_SIZE
+    tx_hi = min_x + (bx1 - 1) // TILE_SIZE
+    tz_lo = min_z + by0 // TILE_SIZE
+    tz_hi = min_z + (by1 - 1) // TILE_SIZE
+
+    conn = _open_mapdb(db_path)
+    try:
+        cur = conn.cursor()
+        # Position layout: (z << POSITION_BITS) | x → z-range maps cleanly
+        # to a position range. Filter x in Python (cheap).
+        pos_min = (tz_lo << POSITION_BITS) | 0
+        pos_max = (tz_hi << POSITION_BITS) | POSITION_MASK
+        cur.execute(
+            "SELECT position, data FROM mappiece WHERE position BETWEEN ? AND ?",
+            (pos_min, pos_max),
+        )
+
+        batch_size = 2000
+        while True:
+            rows = cur.fetchmany(batch_size)
+            if not rows:
+                break
+            for pos_val, blob in rows:
+                tx, tz = decode_position(pos_val)
+                if tx < tx_lo or tx > tx_hi:
+                    continue
+
+                if use_fullres:
+                    if len(blob) == STANDARD_BLOB_SIZE:
+                        tile = decode_tile_numpy(blob)
+                    else:
+                        tile = decode_tile_fallback(blob)
+
+                    # Tile origin in chunk-block coordinates.
+                    tile_bx = (tx - min_x) * TILE_SIZE - bx0
+                    tile_bz = (tz - min_z) * TILE_SIZE - by0
+
+                    # Clip tile to the chunk's full-res buffer.
+                    sx0 = max(0, -tile_bx)
+                    sy0 = max(0, -tile_bz)
+                    ex = min(TILE_SIZE, block_w - tile_bx)
+                    ey = min(TILE_SIZE, block_h - tile_bz)
+                    if ex > sx0 and ey > sy0:
+                        full_arr[
+                            tile_bz + sy0:tile_bz + ey,
+                            tile_bx + sx0:tile_bx + ex,
+                        ] = tile[sy0:ey, sx0:ex]
+                else:
+                    # Extreme scale fallback — one sample pixel per tile.
+                    bx = (tx - min_x) * TILE_SIZE // scale - px0
+                    bz = (tz - min_z) * TILE_SIZE // scale - py0
+                    if 0 <= bx < chunk_arr_w and 0 <= bz < chunk_arr_h:
+                        if len(blob) >= STANDARD_BLOB_SIZE:
+                            r, g, b, a = _sample_one_pixel(blob)
+                        else:
+                            r, g, b, a = 0, 0, 0, 255
+                        sample_arr[bz, bx] = [r, g, b, a]
+    finally:
+        conn.close()
+
+    # Downsample once. Stride sampling matches the legacy renderer's flavor.
+    if not use_fullres:
+        out_arr = sample_arr
+    elif scale == 1:
+        out_arr = full_arr
+    else:
+        out_arr = full_arr[::scale, ::scale]
+        # Defensive: ensure exact target shape.
+        out_arr = out_arr[:chunk_arr_h, :chunk_arr_w]
+
+    # If no tile contributed any non-zero alpha, treat the chunk as empty so
+    # the caller can skip uploading a ~300-byte transparent PNG.
+    if not out_arr[..., 3].any():
+        return None
+
+    img = Image.fromarray(out_arr, "RGBA")
+    out = io.BytesIO()
+    img.save(out, format="PNG", optimize=False)
+    return out.getvalue()
+
+
+def iter_chunk_coords(only_bounds: Optional[Tuple[int, int, int, int]] = None
+                      ) -> Iterator[Tuple[int, int]]:
+    """Yield (cx, cy) chunk coordinates for the grid.
+
+    If only_bounds is provided as (cx_min, cy_min, cx_max, cy_max), only chunks
+    inside that inclusive rectangle are yielded. Otherwise all CHUNK_GRID_SIZE²
+    chunks are yielded.
+    """
+    if only_bounds is None:
+        for cy in range(CHUNK_GRID_SIZE):
+            for cx in range(CHUNK_GRID_SIZE):
+                yield cx, cy
+        return
+    cx_min, cy_min, cx_max, cy_max = only_bounds
+    for cy in range(cy_min, cy_max + 1):
+        for cx in range(cx_min, cx_max + 1):
+            yield cx, cy
+
+
+def assemble_chunks_to_png(chunk_loader, geometry: dict) -> bytes:
+    """Assemble all chunks into a single full-resolution PNG.
+
+    chunk_loader: callable(cx, cy) -> bytes (PNG bytes for that chunk),
+                  or None if the chunk has not been generated yet.
+    Returns the assembled PNG as bytes.
+
+    Memory: peak ~ image_w × image_h × 4 bytes (RGBA buffer).
+    """
+    from PIL import Image
+
+    img_w = geometry["image_w"]
+    img_h = geometry["image_h"]
+    img_arr = np.zeros((img_h, img_w, 4), dtype=np.uint8)
+
+    for cy in range(CHUNK_GRID_SIZE):
+        for cx in range(CHUNK_GRID_SIZE):
+            chunk_png = chunk_loader(cx, cy)
+            if not chunk_png:
+                continue
+            px0, py0, px1, py1 = _chunk_pixel_bounds(geometry, cx, cy)
+            try:
+                with Image.open(io.BytesIO(chunk_png)) as chunk_img:
+                    chunk_img.load()
+                    chunk_rgba = chunk_img.convert("RGBA")
+                    chunk_np = np.asarray(chunk_rgba, dtype=np.uint8)
+            except Exception:
+                continue
+            ch_h, ch_w = chunk_np.shape[:2]
+            ew = min(ch_w, px1 - px0)
+            eh = min(ch_h, py1 - py0)
+            if ew > 0 and eh > 0:
+                img_arr[py0:py0 + eh, px0:px0 + ew] = chunk_np[:eh, :ew]
+
+    out_img = Image.fromarray(img_arr, "RGBA")
+    out = io.BytesIO()
+    out_img.save(out, format="PNG", optimize=False)
+    return out.getvalue()

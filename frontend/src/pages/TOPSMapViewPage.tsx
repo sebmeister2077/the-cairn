@@ -2,29 +2,61 @@ import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
-  renderTopsMap,
-  fetchImageFromSignedUrl,
+  getTopsMapLevel,
   getStoredIsAdmin,
+  type TopsMapResolutionMeta,
+  type TopsMapLevelChunks,
 } from "@/lib/api";
+import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
   MapViewer,
   type MapStats,
   type WorldLineSegment,
   type WorldPointMarker,
 } from "@/components/MapViewer";
+import { AdminResolutionPanel } from "@/components/AdminResolutionPanel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Download, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Download, Loader2, Settings } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const STALE_TIME = 60 * 60 * 1000; // 1 hour
 const TL_FILTER_CENTER = { x: 2250, z: 12500 };
 const TL_FILTER_RADIUS = 500;
+const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
+
+/**
+ * Compute how long (ms) the cached level info should be considered fresh based
+ * on its embedded `expires_at`. We refresh a couple of minutes early so the
+ * frontend never tries to render with URLs that have just expired.
+ */
+function levelInfoStaleTimeMs(info: TopsMapLevelChunks | undefined): number {
+  if (!info?.expires_at) return 0;
+  const expiresAtMs = new Date(info.expires_at).getTime();
+  if (!Number.isFinite(expiresAtMs)) return 0;
+  // Refresh 2 minutes before expiry.
+  return Math.max(0, expiresAtMs - Date.now() - 2 * 60 * 1000);
+}
 
 interface TopsMapStatsResponse extends MapStats {
-  image_signed_url?: string | null;
+  default_level?: number | null;
+  resolutions?: TopsMapResolutionMeta[];
 }
 
 export function TOPSMapViewPage() {
@@ -103,19 +135,71 @@ export function TOPSMapViewPage() {
     staleTime: STALE_TIME,
   });
 
+  // Resolution selection. Defaults to whatever the user picked last, falling
+  // back to the server-recommended default level.
+  const completedLevels = useMemo(
+    () =>
+      (statsQuery.data?.resolutions ?? [])
+        .filter((r) => r.status === "complete")
+        .map((r) => r.level)
+        .sort((a, b) => a - b),
+    [statsQuery.data?.resolutions],
+  );
+
+  const [selectedLevel, setSelectedLevel] = useState<number | null>(() => {
+    const stored = localStorage.getItem(SELECTED_LEVEL_STORAGE_KEY);
+    return stored ? Number(stored) : null;
+  });
+
+  // Pick a sensible level once the resolution list is known.
+  useEffect(() => {
+    if (!statsQuery.data) return;
+    if (completedLevels.length === 0) {
+      setSelectedLevel(null);
+      return;
+    }
+    const desired = selectedLevel ?? statsQuery.data.default_level ?? completedLevels[completedLevels.length - 1];
+    if (desired && completedLevels.includes(desired)) {
+      if (selectedLevel !== desired) setSelectedLevel(desired);
+      return;
+    }
+    // Fall back to nearest lower available level, else lowest available.
+    const lower = completedLevels.filter((l) => l <= (desired ?? 0));
+    const next = lower.length > 0 ? Math.max(...lower) : completedLevels[0];
+    setSelectedLevel(next);
+  }, [completedLevels, statsQuery.data, selectedLevel]);
+
+  // Persist user's chosen level.
+  useEffect(() => {
+    if (selectedLevel != null) {
+      localStorage.setItem(SELECTED_LEVEL_STORAGE_KEY, String(selectedLevel));
+    }
+  }, [selectedLevel]);
+
   const imageQuery = useQuery<Blob>({
-    queryKey: ["tops-map-render"],
+    queryKey: ["tops-map-render", selectedLevel],
     queryFn: async () => {
-      const signedUrl = statsQuery.data?.image_signed_url;
-      if (signedUrl) {
-        const blob = await fetchImageFromSignedUrl(signedUrl);
-        if (blob) return blob;
+      if (selectedLevel == null) {
+        throw new Error("No resolution level available yet");
       }
-      // Fallback: proxy through our backend
-      return renderTopsMap();
+      const levelInfo = await queryClient.fetchQuery<TopsMapLevelChunks>({
+        queryKey: ["tops-map-level", selectedLevel],
+        queryFn: () => getTopsMapLevel(selectedLevel),
+        // Reuse the persisted cached URLs while they're still valid.
+        staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
+        gcTime: 7 * 24 * 60 * 60 * 1000,
+        meta: { persist: true },
+      });
+      if (!levelInfo.chunks?.length) {
+        throw new Error("This resolution has no chunks yet");
+      }
+      // Stitch chunks client-side. The browser HTTP cache reuses each chunk
+      // image as long as the presigned URL stays the same (which it does until
+      // the backend rotates it on expiry).
+      return stitchChunksToBlob(levelInfo);
     },
     staleTime: STALE_TIME,
-    enabled: statsQuery.isSuccess,
+    enabled: statsQuery.isSuccess && selectedLevel != null,
   });
 
   const stats = statsQuery.data ?? null;
@@ -257,6 +341,7 @@ export function TOPSMapViewPage() {
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+    queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
     queryClient.invalidateQueries({ queryKey: ["tops-map-render"] });
   }
 
@@ -289,6 +374,34 @@ export function TOPSMapViewPage() {
     a.click();
   }
 
+  // Auto-enhance: when zoomed in past current resolution, fetch the next
+  // higher completed level and stitch it (no-op if already at the top).
+  const enhanceToHigherLevel = useCallback(
+    async (targetMaxDim: number): Promise<Blob> => {
+      const resolutions = statsQuery.data?.resolutions ?? [];
+      const completed = resolutions.filter((r) => r.status === "complete");
+      const candidate =
+        completed.find((r) => r.max_dimension >= targetMaxDim && r.level > (selectedLevel ?? 0))
+        ?? completed[completed.length - 1];
+      if (!candidate) {
+        throw new Error("No higher resolution available");
+      }
+      const info = await queryClient.fetchQuery<TopsMapLevelChunks>({
+        queryKey: ["tops-map-level", candidate.level],
+        queryFn: () => getTopsMapLevel(candidate.level),
+        staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
+        gcTime: 7 * 24 * 60 * 60 * 1000,
+        meta: { persist: true },
+      });
+      if (!info.chunks?.length) throw new Error("Higher-resolution chunks unavailable");
+      const blob = await stitchChunksToBlob(info);
+      // Update selected level so future picks reflect the upgrade.
+      setSelectedLevel(candidate.level);
+      return blob;
+    },
+    [statsQuery.data?.resolutions, selectedLevel, queryClient],
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -298,7 +411,7 @@ export function TOPSMapViewPage() {
         </p>
       </CardHeader>
       <CardContent className="grid gap-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {loading && (
             <Button disabled>
               <Loader2 className="size-4 mr-1 animate-spin" />
@@ -320,6 +433,59 @@ export function TOPSMapViewPage() {
             <Button type="button" onClick={handleReload}>
               Retry
             </Button>
+          )}
+
+          {/* Resolution selector — visible whenever multiple completed levels exist. */}
+          {completedLevels.length > 1 && selectedLevel != null && (
+            <div className="ml-auto flex items-center gap-2">
+              <Label htmlFor="tops-map-resolution" className="text-xs text-muted-foreground">
+                Resolution
+              </Label>
+              <Select
+                value={String(selectedLevel)}
+                onValueChange={(v) => setSelectedLevel(Number(v))}
+              >
+                <SelectTrigger id="tops-map-resolution" className="h-8 w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(statsQuery.data?.resolutions ?? []).map((r) => (
+                    <SelectItem
+                      key={r.level}
+                      value={String(r.level)}
+                      disabled={r.status !== "complete"}
+                    >
+                      L{r.level} · {r.max_dimension.toLocaleString()} px
+                      {r.status !== "complete" ? ` · ${r.status}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {isAdmin && (
+            <Dialog>
+              <DialogTrigger
+                render={
+                  <Button type="button" variant="outline" size="sm">
+                    <Settings className="size-4 mr-1" />
+                    Map cache
+                  </Button>
+                }
+              />
+              <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>TOPS map resolution cache</DialogTitle>
+                </DialogHeader>
+                <AdminResolutionPanel
+                  onLevelComplete={() => {
+                    queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+                    queryClient.invalidateQueries({ queryKey: ["tops-map-render"] });
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           )}
         </div>
         {isAdmin && (
@@ -406,7 +572,7 @@ export function TOPSMapViewPage() {
           overlayPoints={showLandmarks ? landmarkPoints : undefined}
           onOverlaySegmentClick={showTranslocators ? setSelectedTranslocator : undefined}
           focusPoint={landmarkFocusPoint}
-          // enhanceFn={baseImageUrl ? renderTopsMap : undefined}
+          enhanceFn={baseImageUrl && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
         />
       </CardContent>
     </Card>
