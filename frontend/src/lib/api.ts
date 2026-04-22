@@ -358,3 +358,58 @@ export async function revokeApiKey(key: string): Promise<void> {
     if (res.status === 204) return;
     await handleResponse(res);
 }
+
+// ---------------------------------------------------------------------------
+// Admin — invite links
+// ---------------------------------------------------------------------------
+
+export interface InviteLinkRecord {
+    token: string;
+    name: string;
+    permissions: "read" | "contribute";
+    max_uses: number | null;
+    use_count: number;
+    expires_at: string | null;
+    created_at: string;
+    revoked: boolean;
+}
+
+export async function listInviteLinks(): Promise<InviteLinkRecord[]> {
+    const res = await fetch(`${API_BASE}/admin/invite-links`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function createInviteLink(data: {
+    name: string;
+    permissions: "read" | "contribute";
+    max_uses: number | null;
+    expires_in_hours: number | null;
+}): Promise<InviteLinkRecord> {
+    const res = await fetch(`${API_BASE}/admin/invite-links`, {
+        method: "POST",
+        headers: {
+            "X-API-Key": getApiKey(),
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function revokeInviteLink(token: string): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/invite-links/${encodeURIComponent(token)}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    if (res.status === 204) return;
+    await handleResponse(res);
+}
+
+export async function claimInvite(token: string): Promise<{ key: string; permissions: string; invite_name: string }> {
+    const res = await fetch(`${API_BASE}/invite/${encodeURIComponent(token)}/claim`, {
+        method: "POST",
+    });
+    return (await handleResponse(res)).json();
+}

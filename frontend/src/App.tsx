@@ -21,6 +21,8 @@ import {
   checkAuthStatus,
   setStoredIsAdmin,
   setStoredCanContribute,
+  getStoredApiKey,
+  claimInvite,
 } from "@/lib/api";
 import "./index.css";
 
@@ -62,6 +64,7 @@ function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const location = useLocation();
+  const [inviteClaim, setInviteClaim] = useState<{ token: string; status: "idle" | "pending" | "success" | "error"; error?: string; key?: string } | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -74,8 +77,35 @@ function AppContent() {
         setIsAdmin(status.is_admin);
       });
       window.history.replaceState({}, "", window.location.pathname);
+      return;
+    }
+
+    const inviteParam = params.get("invite");
+    if (inviteParam) {
+      window.history.replaceState({}, "", window.location.pathname);
+      // Only show the claim prompt if the user does not already have an API key
+      if (!getStoredApiKey()) {
+        setInviteClaim({ token: inviteParam, status: "idle" });
+      }
     }
   }, []);
+
+  async function handleClaimInvite() {
+    if (!inviteClaim) return;
+    setInviteClaim((prev) => prev && { ...prev, status: "pending" });
+    try {
+      const result = await claimInvite(inviteClaim.token);
+      setApiKey(result.key);
+      const status = await checkAuthStatus();
+      setStoredIsAdmin(status.is_admin);
+      setStoredCanContribute(status.can_contribute);
+      setIsAdmin(status.is_admin);
+      setInviteClaim((prev) => prev && { ...prev, status: "success", key: result.key });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to claim invite";
+      setInviteClaim((prev) => prev && { ...prev, status: "error", error: msg });
+    }
+  }
 
   const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
@@ -148,6 +178,56 @@ function AppContent() {
         </Routes>
       </main>
       <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} onAdminStatusChange={setIsAdmin} />
+
+      {/* Invite claim dialog */}
+      {inviteClaim && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>Claim Your API Key</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {inviteClaim.status === "idle" && (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    You were invited to use this service. Click below to receive your personal API key.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setInviteClaim(null)} className="flex-1">
+                      Dismiss
+                    </Button>
+                    <Button onClick={handleClaimInvite} className="flex-1">
+                      Claim Key
+                    </Button>
+                  </div>
+                </>
+              )}
+              {inviteClaim.status === "pending" && (
+                <p className="text-sm text-muted-foreground text-center py-2">Claiming…</p>
+              )}
+              {inviteClaim.status === "success" && (
+                <>
+                  <p className="text-sm text-emerald-600 font-medium">Your API key has been activated!</p>
+                  <p className="text-xs text-muted-foreground">
+                    Your key is now saved in this browser. You can start using the service.
+                  </p>
+                  <Button onClick={() => setInviteClaim(null)} className="w-full">
+                    Continue
+                  </Button>
+                </>
+              )}
+              {inviteClaim.status === "error" && (
+                <>
+                  <p className="text-sm text-destructive">{inviteClaim.error}</p>
+                  <Button variant="outline" onClick={() => setInviteClaim(null)} className="w-full">
+                    Close
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

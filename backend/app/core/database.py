@@ -96,6 +96,17 @@ CREATE TABLE IF NOT EXISTS api_keys (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     last_used_at    TIMESTAMPTZ
 );
+
+CREATE TABLE IF NOT EXISTS invite_links (
+    token       TEXT PRIMARY KEY,
+    name        TEXT NOT NULL DEFAULT '',
+    permissions TEXT NOT NULL DEFAULT 'read',
+    max_uses    INTEGER,
+    use_count   INTEGER NOT NULL DEFAULT 0,
+    expires_at  TIMESTAMPTZ,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    revoked     BOOLEAN NOT NULL DEFAULT FALSE
+);
 """
 
 _MIGRATIONS_SQL = """
@@ -334,3 +345,64 @@ def revoke_api_key(key: str):
 def set_tops_map_stats(stats: dict):
     """Persist TOPS map stats JSON in app_state."""
     set_state(TOPS_MAP_STATS_KEY, json.dumps(stats))
+
+
+# ---------------------------------------------------------------------------
+# Invite Links CRUD
+# ---------------------------------------------------------------------------
+
+def create_invite_link(
+    token: str,
+    name: str,
+    permissions: str,
+    max_uses: Optional[int],
+    expires_at: Optional[datetime],
+) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO invite_links (token, name, permissions, max_uses, expires_at)
+                   VALUES (%s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (token, name, permissions, max_uses, expires_at),
+            )
+            row = cur.fetchone()
+            return dict(row)
+
+
+def list_invite_links() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM invite_links ORDER BY created_at DESC")
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_invite_link(token: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM invite_links WHERE token = %s", (token,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def revoke_invite_link(token: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE invite_links SET revoked = TRUE WHERE token = %s", (token,))
+
+
+def claim_invite_link(token: str) -> bool:
+    """Atomically increment use_count. Returns False if the link is exhausted."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE invite_links
+                   SET use_count = use_count + 1
+                   WHERE token = %s
+                     AND revoked = FALSE
+                     AND (max_uses IS NULL OR use_count < max_uses)
+                     AND (expires_at IS NULL OR expires_at > now())
+                   """,
+                (token,),
+            )
+            return cur.rowcount > 0
