@@ -10,3 +10,4 @@
 - custom domain
 - have a way to revert already merged changes in the map (e.g. if a user accidentally imports a wrong file, they can revert that import)
 - SSL setup for secure access to the API (low priority, can be added later)
+- Add cookies banner to the frontend to comply with privacy regulations (e.g., GDPR) (Local storage counts as cookies, so we should inform users about it and get their consent before using local storage to persist query data)

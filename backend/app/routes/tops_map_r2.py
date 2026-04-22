@@ -1,6 +1,7 @@
 """GET /api/tops-map-* — Serve the global server map from R2 (globalservermap.db)."""
 
 import json
+import threading
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
@@ -26,6 +27,26 @@ _CHUNK_URL_EXPIRY_SECONDS = 24 * 60 * 60
 # old value still have time to use them before the rotation.
 _CHUNK_URL_REFRESH_BUFFER_SECONDS = 30 * 60
 
+# In-process cache for level metadata.json. The metadata is immutable for the
+# lifetime of a generated level, so re-fetching it from R2 on every request is
+# pure overhead. Cleared by `invalidate_level_metadata_cache(level)` when a
+# level is regenerated or deleted.
+_metadata_cache: dict = {}
+_metadata_lock = threading.Lock()
+
+# Throttle for the opportunistic expired-URL cleanup. Running a DELETE on every
+# request added a Supabase round-trip to the hot path for no reason — once per
+# hour from any request is plenty.
+_EXPIRED_CLEANUP_INTERVAL_SECONDS = 60 * 60
+_last_expired_cleanup_at: datetime = datetime.fromtimestamp(0, tz=timezone.utc)
+_expired_cleanup_lock = threading.Lock()
+
+
+def invalidate_level_metadata_cache(level: int) -> None:
+    """Drop the cached metadata for ``level``. Call when the level is regenerated."""
+    with _metadata_lock:
+        _metadata_cache.pop(level, None)
+
 
 def _read_db() -> bytes:
     """Download globalservermap.db from R2."""
@@ -33,9 +54,36 @@ def _read_db() -> bytes:
 
 
 def _level_metadata(level: int) -> dict:
-    """Load level metadata.json from R2 (geometry needed for stitching)."""
+    """Load level metadata.json from R2 (geometry needed for stitching).
+
+    Cached in process memory after the first successful fetch; invalidated
+    via ``invalidate_level_metadata_cache(level)`` when the level changes.
+    """
+    cached = _metadata_cache.get(level)
+    if cached is not None:
+        return cached
     raw = r2_storage.download_bytes(r2_storage.tops_map_level_metadata_key(level))
-    return json.loads(raw.decode("utf-8"))
+    parsed = json.loads(raw.decode("utf-8"))
+    with _metadata_lock:
+        _metadata_cache[level] = parsed
+    return parsed
+
+
+def _maybe_cleanup_expired_urls() -> None:
+    """Run the expired-URL cleanup at most once per hour across all requests."""
+    global _last_expired_cleanup_at
+    now = datetime.now(timezone.utc)
+    if (now - _last_expired_cleanup_at).total_seconds() < _EXPIRED_CLEANUP_INTERVAL_SECONDS:
+        return
+    with _expired_cleanup_lock:
+        if (now - _last_expired_cleanup_at).total_seconds() < _EXPIRED_CLEANUP_INTERVAL_SECONDS:
+            return
+        _last_expired_cleanup_at = now
+    try:
+        db.delete_expired_chunk_urls()
+    except Exception:
+        # Cleanup is best-effort; don't break the request if Supabase hiccups.
+        pass
 
 
 def _build_chunk_urls(level: int) -> tuple:
@@ -46,8 +94,9 @@ def _build_chunk_urls(level: int) -> tuple:
     is the soonest expiry across the returned URLs (or ``None`` if the level has no
     chunks yet) so the frontend knows when to refetch.
     """
-    # Opportunistic cleanup so the table doesn't accumulate dead rows.
-    db.delete_expired_chunk_urls()
+    # Opportunistic cleanup so the table doesn't accumulate dead rows. Throttled
+    # so this isn't a Supabase round-trip on every request.
+    _maybe_cleanup_expired_urls()
 
     now = datetime.now(timezone.utc)
     refresh_threshold = now + timedelta(seconds=_CHUNK_URL_REFRESH_BUFFER_SECONDS)
@@ -110,7 +159,7 @@ def _available_resolution_levels() -> list:
 
 
 @router.get("/tops-map-stats")
-async def tops_map_stats(api_key: str = Depends(verify_api_key)):
+def tops_map_stats(api_key: str = Depends(verify_api_key)):
     check_rate_limit(api_key)
     stats = db.get_tops_map_stats()
     if not stats:
@@ -143,7 +192,7 @@ async def tops_map_stats(api_key: str = Depends(verify_api_key)):
 
 
 @router.get("/tops-map-level/{level}")
-async def tops_map_level(level: int, api_key: str = Depends(verify_api_key)):
+def tops_map_level(level: int, api_key: str = Depends(verify_api_key)):
     """Return level metadata + presigned URLs for every chunk in the grid.
 
     The frontend stitches the chunks together client-side. If the level isn't
@@ -192,7 +241,7 @@ async def tops_map_level(level: int, api_key: str = Depends(verify_api_key)):
 
 
 @router.get("/tops-map-render")
-async def tops_map_render(
+def tops_map_render(
     max_dimension: int = 4096,
     api_key: str = Depends(verify_api_key),
 ):

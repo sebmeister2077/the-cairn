@@ -11,6 +11,7 @@ import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
   MapViewer,
   type MapStats,
+  type MapTileSet,
   type WorldLineSegment,
   type WorldPointMarker,
 } from "@/components/MapViewer";
@@ -52,6 +53,42 @@ function levelInfoStaleTimeMs(info: TopsMapLevelChunks | undefined): number {
   if (!Number.isFinite(expiresAtMs)) return 0;
   // Refresh 2 minutes before expiry.
   return Math.max(0, expiresAtMs - Date.now() - 2 * 60 * 1000);
+}
+
+/** Returns true if the cached level info's presigned URLs are already past expiry. */
+function isLevelInfoExpired(info: TopsMapLevelChunks | undefined): boolean {
+  if (!info?.expires_at) return false;
+  const expiresAtMs = new Date(info.expires_at).getTime();
+  if (!Number.isFinite(expiresAtMs)) return false;
+  return expiresAtMs <= Date.now();
+}
+
+/**
+ * Convert a level-info payload into the tile set the viewer renders.
+ * Boundary tiles use the remainder dimensions so they line up exactly with
+ * the assembled image bounds.
+ */
+function levelToTileSet(info: TopsMapLevelChunks): MapTileSet {
+  return {
+    // Identity is just the level number. URL rotations keep the same id so
+    // the viewer doesn't reset pan/zoom every time presigned URLs refresh.
+    id: info.level,
+    imageWidth: info.image_w,
+    imageHeight: info.image_h,
+    tiles: info.chunks.map((c) => {
+      const px = c.cx * info.chunk_w;
+      const py = c.cy * info.chunk_h;
+      return {
+        cx: c.cx,
+        cy: c.cy,
+        url: c.url,
+        px,
+        py,
+        w: Math.min(info.chunk_w, info.image_w - px),
+        h: Math.min(info.chunk_h, info.image_h - py),
+      };
+    }),
+  };
 }
 
 interface TopsMapStatsResponse extends MapStats {
@@ -176,57 +213,68 @@ export function TOPSMapViewPage() {
     }
   }, [selectedLevel]);
 
-  const imageQuery = useQuery<Blob>({
-    queryKey: ["tops-map-render", selectedLevel],
-    queryFn: async () => {
+  const levelInfoQuery = useQuery<TopsMapLevelChunks>({
+    queryKey: ["tops-map-level", selectedLevel],
+    queryFn: () => {
       if (selectedLevel == null) {
         throw new Error("No resolution level available yet");
       }
-      const levelInfo = await queryClient.fetchQuery<TopsMapLevelChunks>({
-        queryKey: ["tops-map-level", selectedLevel],
-        queryFn: () => getTopsMapLevel(selectedLevel),
-        // Reuse the persisted cached URLs while they're still valid.
-        staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
-        gcTime: 7 * 24 * 60 * 60 * 1000,
-        meta: { persist: true },
-      });
-      if (!levelInfo.chunks?.length) {
-        throw new Error("This resolution has no chunks yet");
-      }
-      // Stitch chunks client-side. The browser HTTP cache reuses each chunk
-      // image as long as the presigned URL stays the same (which it does until
-      // the backend rotates it on expiry).
-      return stitchChunksToBlob(levelInfo);
+      return getTopsMapLevel(selectedLevel);
     },
-    staleTime: STALE_TIME,
+    // Reuse the persisted cached URLs while they're still valid; refresh a
+    // couple of minutes before R2's signature expires.
+    staleTime: ({ state }) =>
+      levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
+    gcTime: 7 * 24 * 60 * 60 * 1000,
     enabled: statsQuery.isSuccess && selectedLevel != null,
+    // Always kick off a background refresh on page load so users never paint
+    // with presigned URLs that expired between sessions.
+    refetchOnMount: "always",
+    meta: { persist: true },
   });
 
-  const stats = statsQuery.data ?? null;
-  const imageBlob = imageQuery.data ?? null;
-  const baseImageUrl = useMemo(
-    () => (imageBlob ? URL.createObjectURL(imageBlob) : null),
-    [imageBlob],
+  // `refetchOnMount: "always"` only triggers when the observer first mounts.
+  // Because this query starts disabled (waiting on stats + selectedLevel),
+  // the observer mounts in a disabled state and React Query doesn't treat the
+  // later `enabled: true` transition as a fresh mount. Manually fire a refetch
+  // the first time the query becomes enabled per session, so persisted-but-
+  // stale URLs get rotated even on the very first page load.
+  const refetchedOnEnableRef = useRef(false);
+  useEffect(() => {
+    if (refetchedOnEnableRef.current) return;
+    if (!statsQuery.isSuccess || selectedLevel == null) return;
+    refetchedOnEnableRef.current = true;
+    levelInfoQuery.refetch();
+  }, [statsQuery.isSuccess, selectedLevel, levelInfoQuery]);
+
+  const tileSet = useMemo(
+    () => {
+      const info = levelInfoQuery.data;
+      if (!info) return null;
+      // Cached data with already-expired URLs would render as a blank map
+      // (every <img> 403s against R2). Treat it as missing so the user sees
+      // the loading state until the background refetch arrives.
+      if (isLevelInfoExpired(info)) return null;
+      return levelToTileSet(info);
+    },
+    [levelInfoQuery.data],
   );
 
-  // Revoke base object URL when it changes (enhanced URLs are managed by MapViewer)
-  useEffect(() => {
-    return () => {
-      if (baseImageUrl) URL.revokeObjectURL(baseImageUrl);
-    };
-  }, [baseImageUrl]);
+  const stats = statsQuery.data ?? null;
+  const hasMap = tileSet != null;
+  const [downloading, setDownloading] = useState(false);
 
   // Derive loading / error from query states
   const loading = statsQuery.isFetching
     ? "Reading global server map…"
-    : imageQuery.isFetching
-      ? "Rendering map image… This may take a moment for large maps."
+    : levelInfoQuery.isFetching && !tileSet
+      ? "Loading map tiles…"
       : "";
   const error =
     statsQuery.error instanceof Error
       ? statsQuery.error.message
-      : imageQuery.error instanceof Error
-        ? imageQuery.error.message
+      : levelInfoQuery.error instanceof Error
+        ? levelInfoQuery.error.message
         : "";
 
   const visibleTranslocatorSegments = useMemo(() => {
@@ -342,7 +390,6 @@ export function TOPSMapViewPage() {
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
     queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
-    queryClient.invalidateQueries({ queryKey: ["tops-map-render"] });
   }
 
   const landmarkSuggestions = useMemo(
@@ -366,18 +413,34 @@ export function TOPSMapViewPage() {
     }
   }
 
-  function handleDownload() {
-    if (!baseImageUrl) return;
-    const a = document.createElement("a");
-    a.href = baseImageUrl;
-    a.download = "tops-server-map.png";
-    a.click();
+  async function handleDownload() {
+    if (!levelInfoQuery.data || downloading) return;
+    setDownloading(true);
+    try {
+      // Lazy-stitch only on explicit user request — avoids the giant canvas
+      // round-trip during normal viewing.
+      const blob = await stitchChunksToBlob(levelInfoQuery.data);
+      const url = URL.createObjectURL(blob);
+      try {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "tops-server-map.png";
+        a.click();
+      } finally {
+        // Give the browser a tick to start the download before revoking.
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+    } catch (err) {
+      console.error("Failed to assemble PNG for download", err);
+    } finally {
+      setDownloading(false);
+    }
   }
 
   // Auto-enhance: when zoomed in past current resolution, fetch the next
-  // higher completed level and stitch it (no-op if already at the top).
+  // higher completed level and hand its tile set to the viewer (no stitching).
   const enhanceToHigherLevel = useCallback(
-    async (targetMaxDim: number): Promise<Blob> => {
+    async (targetMaxDim: number): Promise<MapTileSet> => {
       const resolutions = statsQuery.data?.resolutions ?? [];
       const completed = resolutions.filter((r) => r.status === "complete");
       const candidate =
@@ -394,10 +457,9 @@ export function TOPSMapViewPage() {
         meta: { persist: true },
       });
       if (!info.chunks?.length) throw new Error("Higher-resolution chunks unavailable");
-      const blob = await stitchChunksToBlob(info);
-      // Update selected level so future picks reflect the upgrade.
+      // Persist the upgrade so future page loads start at the higher level.
       setSelectedLevel(candidate.level);
-      return blob;
+      return levelToTileSet(info);
     },
     [statsQuery.data?.resolutions, selectedLevel, queryClient],
   );
@@ -418,18 +480,22 @@ export function TOPSMapViewPage() {
               {loading}
             </Button>
           )}
-          {!loading && baseImageUrl && (
+          {!loading && hasMap && (
             <>
-              <Button type="button" variant="outline" onClick={handleDownload}>
-                <Download className="size-4 mr-1" />
-                Download PNG
+              <Button type="button" variant="outline" onClick={handleDownload} disabled={downloading}>
+                {downloading ? (
+                  <Loader2 className="size-4 mr-1 animate-spin" />
+                ) : (
+                  <Download className="size-4 mr-1" />
+                )}
+                {downloading ? "Building PNG…" : "Download PNG"}
               </Button>
               <Button type="button" variant="outline" onClick={handleReload}>
                 Reload
               </Button>
             </>
           )}
-          {!loading && !baseImageUrl && error && (
+          {!loading && !hasMap && error && (
             <Button type="button" onClick={handleReload}>
               Retry
             </Button>
@@ -481,7 +547,7 @@ export function TOPSMapViewPage() {
                 <AdminResolutionPanel
                   onLevelComplete={() => {
                     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
-                    queryClient.invalidateQueries({ queryKey: ["tops-map-render"] });
+                    queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
                   }}
                 />
               </DialogContent>
@@ -529,7 +595,7 @@ export function TOPSMapViewPage() {
             </span>
           </div>
         )}
-        {isAdmin && baseImageUrl && (
+        {isAdmin && hasMap && (
           <div className="flex flex-col gap-1">
             <Label htmlFor="landmark-search" className="text-sm">Search landmark</Label>
             <Combobox
@@ -565,14 +631,14 @@ export function TOPSMapViewPage() {
         )}
 
         <MapViewer
-          imageUrl={baseImageUrl}
+          tileSet={tileSet}
           stats={stats}
           alt="TOPS global server map"
           overlaySegments={showTranslocators ? visibleTranslocatorSegments : undefined}
           overlayPoints={showLandmarks ? landmarkPoints : undefined}
           onOverlaySegmentClick={showTranslocators ? setSelectedTranslocator : undefined}
           focusPoint={landmarkFocusPoint}
-          enhanceFn={baseImageUrl && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
+          enhanceTilesFn={hasMap && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
         />
       </CardContent>
     </Card>

@@ -240,5 +240,7 @@ async def delete_map_level(level: int, _: str = Depends(require_admin)):
     keys.append(r2_storage.tops_map_level_assembled_key(level))
     r2_storage.delete_keys(keys)
     db.delete_chunk_urls_for_level(level)
+    from . import tops_map_r2 as _tops_map_r2
+    _tops_map_r2.invalidate_level_metadata_cache(level)
     generation_tracker.reset_level(level)
     return JSONResponse(status_code=204, content=None)

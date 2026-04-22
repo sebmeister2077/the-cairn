@@ -161,6 +161,14 @@ def _generate_level(
         content_type="application/json",
     )
 
+    # Drop the in-process metadata cache so the API serves the new geometry
+    # immediately instead of the stale cached copy.
+    try:
+        from ..routes import tops_map_r2 as _tops_map_r2
+        _tops_map_r2.invalidate_level_metadata_cache(level)
+    except Exception:
+        pass
+
     tracker.mark_complete(level, size_bytes=bytes_written)
     logger.info("Level %s complete: %s bytes across %s chunks",
                 level, bytes_written, total_grid)

@@ -4,6 +4,9 @@ import { ZoomIn, ZoomOut, Maximize, Crosshair, Loader2 } from "lucide-react";
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
+// Render this many extra tile widths around the viewport so panning never
+// reveals empty edges before the next render lands.
+const TILE_OVERSCAN_PX = 256;
 
 export interface MapStats {
   pieces: number;
@@ -30,9 +33,40 @@ export interface WorldPointMarker {
   kind?: string;
 }
 
+export interface MapTile {
+  cx: number;
+  cy: number;
+  url: string;
+  /** Image-space pixel origin of the tile's top-left corner. */
+  px: number;
+  py: number;
+  /** Tile width/height in image-space pixels. */
+  w: number;
+  h: number;
+}
+
+export interface MapTileSet {
+  /** Stable identity. When this changes the viewer treats it as a new map. */
+  id: string | number;
+  tiles: MapTile[];
+  imageWidth: number;
+  imageHeight: number;
+}
+
 interface MapViewerProps {
-  /** Base image URL. When this changes the viewer resets (zoom/pan/enhance). */
-  imageUrl: string | null;
+  /**
+   * Base image URL. Mutually exclusive with `tileSet`. When this changes the
+   * viewer resets (zoom/pan/enhance).
+   */
+  imageUrl?: string | null;
+  /**
+   * Tile-based source. When provided the viewer renders each tile as a
+   * separately positioned `<img>` instead of one giant image, with viewport
+   * culling so only the tiles intersecting the visible area are in the DOM.
+   * Avoids the giant `canvas.toBlob` round-trip needed for the single-image
+   * path.
+   */
+  tileSet?: MapTileSet | null;
   /** Map stats used for coordinate overlay and "center on origin" button. */
   stats?: MapStats | null;
   alt?: string;
@@ -43,6 +77,14 @@ interface MapViewerProps {
    * The function must return a Blob of the map at a higher max dimension.
    */
   enhanceFn?: (maxDim: number) => Promise<Blob>;
+  /**
+   * Tile-mode equivalent of `enhanceFn`. When provided alongside `tileSet`,
+   * the viewer awaits a higher-resolution `MapTileSet` and swaps in place
+   * (with scale compensation), avoiding any monolithic encode/decode.
+   */
+  enhanceTilesFn?: (maxDim: number) => Promise<MapTileSet>;
+  /** Notified after an enhance-tiles swap completes (e.g. so the parent can persist the new level). */
+  onTileSetEnhanced?: (next: MapTileSet) => void;
   /** Extra buttons rendered before the zoom controls in the toolbar. */
   toolbarStart?: React.ReactNode;
   /** Row rendered above the toolbar (e.g. a legend). */
@@ -68,10 +110,13 @@ interface MapViewerProps {
 
 export function MapViewer({
   imageUrl,
+  tileSet,
   stats = null,
   alt = "Map",
   height = "70vh",
   enhanceFn,
+  enhanceTilesFn,
+  onTileSetEnhanced,
   toolbarStart,
   legend,
   bordered = true,
@@ -87,11 +132,18 @@ export function MapViewer({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
-  const [imgNatural, setImgNatural] = useState({ w: 0, h: 0 });
+  // Natural pixel size of the blob-mode `<img>`. In tile mode we derive
+  // dimensions from the tileSet directly (see `imgNatural` below).
+  const [blobImgNatural, setBlobImgNatural] = useState({ w: 0, h: 0 });
   const [hoveredOverlayIndex, setHoveredOverlayIndex] = useState<number | null>(null);
   const [renderedMaxDim, setRenderedMaxDim] = useState(4096);
   const [enhancing, setEnhancing] = useState(false);
   const [enhancedUrl, setEnhancedUrl] = useState<string | null>(null);
+  const [enhancedTileSet, setEnhancedTileSet] = useState<MapTileSet | null>(null);
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  // Tile-mode bookkeeping: which tileSet id we've already centered on, so
+  // URL-rotation refreshes don't re-center repeatedly.
+  const centeredTileIdRef = useRef<string | number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -102,7 +154,19 @@ export function MapViewer({
   const panRef = useRef(pan);
   const enhanceAbortRef = useRef<AbortController | null>(null);
 
-  const activeUrl = enhancedUrl ?? imageUrl;
+  const activeUrl = enhancedUrl ?? imageUrl ?? null;
+  const activeTileSet = enhancedTileSet ?? tileSet ?? null;
+  const isTileMode = activeTileSet != null;
+
+  // Image natural size: derived from the tileSet in tile mode, otherwise from
+  // the loaded `<img>`. Derived (not stored) so we don't trigger an extra
+  // render cycle when the tileSet changes.
+  const imgNatural = useMemo(() => {
+    if (activeTileSet) {
+      return { w: activeTileSet.imageWidth, h: activeTileSet.imageHeight };
+    }
+    return blobImgNatural;
+  }, [activeTileSet, blobImgNatural]);
 
   const projectedOverlaySegments = useMemo(() => {
     if (!stats || !overlaySegments || overlaySegments.length === 0 || imgNatural.w <= 0 || imgNatural.h <= 0) {
@@ -154,7 +218,7 @@ export function MapViewer({
       if (prev) URL.revokeObjectURL(prev);
       return null;
     });
-    setImgNatural({ w: 0, h: 0 });
+    setBlobImgNatural({ w: 0, h: 0 });
     setRenderedMaxDim(4096);
     setZoom(1);
     setPan({ x: 0, y: 0 });
@@ -165,9 +229,41 @@ export function MapViewer({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
+  // Same reset for tile-mode source changes (parent swapped to a different
+  // map identity — not just a level upgrade we did internally).
+  const adoptedTileIdRef = useRef<string | number | null>(null);
+  useEffect(() => {
+    if (!tileSet) return;
+    // Case 1: parent has caught up with an id we already enhanced to internally.
+    // Drop the internal override but keep current pan/zoom.
+    if (enhancedTileSet && tileSet.id === enhancedTileSet.id) {
+      adoptedTileIdRef.current = tileSet.id;
+      setEnhancedTileSet(null);
+      return;
+    }
+    // Case 2: same id we already adopted — nothing to do (e.g. URL rotation).
+    if (adoptedTileIdRef.current === tileSet.id) return;
+    adoptedTileIdRef.current = tileSet.id;
+
+    setEnhancedTileSet(null);
+    setRenderedMaxDim(tileSet.imageWidth || 4096);
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    setHoverCoords(null);
+    setHoveredOverlayIndex(null);
+    enhanceAbortRef.current?.abort();
+    setEnhancing(false);
+    // Force the centering effect to recenter on the new tileSet.
+    centeredTileIdRef.current = null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tileSet?.id]);
+
   // Auto-enhance: when zoomed in far enough, request a higher-resolution render
   useEffect(() => {
-    if (!activeUrl || !enhanceFn || imgNatural.w === 0) return;
+    if (imgNatural.w === 0) return;
+    const enhancer = isTileMode ? enhanceTilesFn : enhanceFn;
+    if (!enhancer) return;
+    if (!isTileMode && !activeUrl) return;
 
     const el = containerRef.current;
     if (!el) return;
@@ -184,6 +280,24 @@ export function MapViewer({
 
       setEnhancing(true);
       try {
+        if (isTileMode && enhanceTilesFn) {
+          const next = await enhanceTilesFn(target);
+          if (abort.signal.aborted) return;
+          const scaleW = next.imageWidth / imgNatural.w;
+          const scaleH = next.imageHeight / imgNatural.h;
+          setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
+          setZoom((z) => z / scaleW);
+          setRenderedMaxDim(target);
+          // Mark this id as already-centered so the centering effect doesn't
+          // re-center after we just scale-compensated the existing view.
+          centeredTileIdRef.current = next.id;
+          setEnhancedTileSet(next);
+          onTileSetEnhanced?.(next);
+          // Suppress unused-var warning when scaleH equals scaleW (typical case).
+          void scaleH;
+          return;
+        }
+        if (!enhanceFn) return;
         const blob = await enhanceFn(target);
         if (abort.signal.aborted) return;
 
@@ -201,12 +315,13 @@ export function MapViewer({
         const scaleH = tmpImg.naturalHeight / imgNatural.h;
         setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
         setZoom((z) => z / scaleW);
-        setImgNatural({ w: tmpImg.naturalWidth, h: tmpImg.naturalHeight });
+        setBlobImgNatural({ w: tmpImg.naturalWidth, h: tmpImg.naturalHeight });
         setRenderedMaxDim(target);
         setEnhancedUrl((old) => {
           if (old) URL.revokeObjectURL(old);
           return newUrl;
         });
+        void scaleH;
       } catch {
         // silently ignore — user retains the current image
       } finally {
@@ -216,12 +331,43 @@ export function MapViewer({
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom, imgNatural.w, renderedMaxDim, enhanceFn]);
+  }, [zoom, imgNatural.w, renderedMaxDim, enhanceFn, enhanceTilesFn, isTileMode]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => { enhanceAbortRef.current?.abort(); };
   }, []);
+
+  // Track container size so the viewport-culling memo can recompute on resize.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const sync = () => setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // Compute which tiles intersect the visible viewport (plus an overscan
+  // margin). Keeps the DOM tile count bounded — typical viewport at level 4
+  // (16384px) shows only a handful of the 256 chunks at any given zoom.
+  const visibleTiles = useMemo(() => {
+    if (!activeTileSet || containerSize.w === 0 || containerSize.h === 0) {
+      return [] as MapTile[];
+    }
+    const viewMinX = (-pan.x - TILE_OVERSCAN_PX) / zoom;
+    const viewMinY = (-pan.y - TILE_OVERSCAN_PX) / zoom;
+    const viewMaxX = (containerSize.w - pan.x + TILE_OVERSCAN_PX) / zoom;
+    const viewMaxY = (containerSize.h - pan.y + TILE_OVERSCAN_PX) / zoom;
+    const out: MapTile[] = [];
+    for (const t of activeTileSet.tiles) {
+      if (t.px + t.w < viewMinX || t.py + t.h < viewMinY) continue;
+      if (t.px > viewMaxX || t.py > viewMaxY) continue;
+      out.push(t);
+    }
+    return out;
+  }, [activeTileSet, containerSize.w, containerSize.h, pan.x, pan.y, zoom]);
 
   // Fly to focusPoint when it changes (new object reference = new navigation intent).
   useEffect(() => {
@@ -447,6 +593,16 @@ export function MapViewer({
     centerView(imgNatural.w, imgNatural.h, currentZoom);
   }, [centerView, stats, imgNatural]);
 
+  // Tile-mode initial centering — runs once per tileSet id, after the
+  // container has measured itself. Mirrors the `<img onLoad>` -> centerView
+  // call that the blob path uses.
+  useEffect(() => {
+    if (!activeTileSet || containerSize.w === 0) return;
+    if (centeredTileIdRef.current === activeTileSet.id) return;
+    centeredTileIdRef.current = activeTileSet.id;
+    centerView(activeTileSet.imageWidth, activeTileSet.imageHeight, zoomRef.current);
+  }, [activeTileSet, containerSize.w, centerView]);
+
   const zoomIn = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -542,7 +698,7 @@ export function MapViewer({
     onOverlaySegmentClick(overlaySegments[hoveredOverlayIndex] ?? null);
   }, [hoveredOverlayIndex, onOverlaySegmentClick, overlaySegments]);
 
-  if (!activeUrl) return null;
+  if (!activeUrl && !activeTileSet) return null;
 
   const canvasClass = [
     "relative overflow-hidden bg-black/90",
@@ -607,27 +763,68 @@ export function MapViewer({
         onMouseLeave={handleMouseLeave}
         onClick={handleOverlayClick}
       >
-        <img
-          ref={imgRef}
-          src={activeUrl}
-          alt={alt}
-          draggable={false}
-          className="absolute select-none"
-          onError={onImageError}
-          onLoad={() => {
-            if (!imgRef.current || !containerRef.current) return;
-            const w = imgRef.current.naturalWidth;
-            const h = imgRef.current.naturalHeight;
-            setImgNatural({ w, h });
-            centerView(w, h, zoomRef.current);
-          }}
-          style={{
-            transformOrigin: "0 0",
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            imageRendering: zoom > 2 ? "pixelated" : "auto",
-            maxWidth: "none",
-          }}
-        />
+        {isTileMode && activeTileSet ? (
+          <div
+            className="absolute select-none"
+            style={{
+              transformOrigin: "0 0",
+              transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
+              width: activeTileSet.imageWidth,
+              height: activeTileSet.imageHeight,
+              imageRendering: zoom > 2 ? "pixelated" : "auto",
+              willChange: "transform",
+            }}
+          >
+            {visibleTiles.map((t) => (
+              <img
+                key={`${activeTileSet.id}:${t.cx}-${t.cy}`}
+                src={t.url}
+                alt=""
+                draggable={false}
+                // NB: do NOT set loading="lazy" here. The browser's lazy-load
+                // heuristic ignores ancestor CSS transforms, so tiles whose
+                // untransformed absolute position falls outside the viewport
+                // (anything beyond the container width on level 4 = most of
+                // them) never get requested. We already cull off-screen tiles
+                // ourselves via `visibleTiles`, so every <img> rendered here
+                // is genuinely on-screen and should fetch eagerly.
+                decoding="async"
+                style={{
+                  position: "absolute",
+                  left: t.px,
+                  top: t.py,
+                  width: t.w,
+                  height: t.h,
+                  pointerEvents: "none",
+                  // Match the parent's image-rendering so per-tile scaling stays consistent.
+                  imageRendering: "inherit",
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <img
+            ref={imgRef}
+            src={activeUrl ?? undefined}
+            alt={alt}
+            draggable={false}
+            className="absolute select-none"
+            onError={onImageError}
+            onLoad={() => {
+              if (!imgRef.current || !containerRef.current) return;
+              const w = imgRef.current.naturalWidth;
+              const h = imgRef.current.naturalHeight;
+              setBlobImgNatural({ w, h });
+              centerView(w, h, zoomRef.current);
+            }}
+            style={{
+              transformOrigin: "0 0",
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              imageRendering: zoom > 2 ? "pixelated" : "auto",
+              maxWidth: "none",
+            }}
+          />
+        )}
         {stats && ((overlaySegments && overlaySegments.length > 0) || (overlayPoints && overlayPoints.length > 0)) && (
           <canvas
             ref={overlayCanvasRef}
