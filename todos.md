@@ -11,3 +11,5 @@
 - have a way to revert already merged changes in the map (e.g. if a user accidentally imports a wrong file, they can revert that import)
 - SSL setup for secure access to the API (low priority, can be added later)
 - Add cookies banner to the frontend to comply with privacy regulations (e.g., GDPR) (Local storage counts as cookies, so we should inform users about it and get their consent before using local storage to persist query data)
+- Add a loading spinner or progress bar to the frontend to indicate when data is being fetched or processed (e.g., when generating map levels or fetching chunk data)
+- Add Dark mode and a centralized theme to the frontend for better user experience

@@ -54,6 +54,12 @@ interface ContributeInfo {
   pending: PendingContribution[];
   withdrawn: WithdrawnEntry[];
   approved: ApprovedEntry[];
+  is_admin?: boolean;
+  can_contribute?: boolean;
+  cooldown_reason?: "pending" | "cooldown" | null;
+  pending_contribution_id?: string | null;
+  next_allowed_at?: string | null;
+  cooldown_days?: number;
 }
 
 export function ContributePage() {
@@ -293,6 +299,49 @@ export function ContributePage() {
 
           <Separator />
 
+          {(() => {
+            if (isAdmin || info?.is_admin) return null;
+            const cooldownDays = info?.cooldown_days ?? 7;
+            const canContribute = info?.can_contribute !== false;
+            const reason = info?.cooldown_reason ?? null;
+            const nextAllowed = info?.next_allowed_at
+              ? new Date(info.next_allowed_at)
+              : null;
+            return (
+              <div
+                className={
+                  "rounded-md border p-3 text-sm space-y-1 " +
+                  (canContribute
+                    ? "bg-muted/30 text-muted-foreground"
+                    : "bg-destructive/10 border-destructive/30 text-destructive")
+                }
+              >
+                <p className="font-medium text-foreground">
+                  Contribution limits
+                </p>
+                <p>
+                  To prevent abuse of server uploads, non-admin contributors may
+                  have <strong>one pending upload at a time</strong>, and must
+                  wait <strong>{cooldownDays} days</strong> after a contribution
+                  is approved before submitting another.
+                </p>
+                {!canContribute && reason === "pending" && (
+                  <p>
+                    You already have a pending contribution awaiting review.
+                    Withdraw it below before submitting a new one.
+                  </p>
+                )}
+                {!canContribute && reason === "cooldown" && nextAllowed && (
+                  <p>
+                    Your last contribution was approved. You can contribute
+                    again on{" "}
+                    <strong>{nextAllowed.toLocaleString()}</strong>.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <FileUpload
               key={fileInputKey}
@@ -301,6 +350,7 @@ export function ContributePage() {
               accept=".db"
               required
               onChange={setDbFile}
+              disabled={!isAdmin && info?.can_contribute === false}
             />
 
             <div className="space-y-2">
@@ -311,10 +361,18 @@ export function ContributePage() {
                 value={contributor}
                 onChange={(e) => setContributor(e.target.value)}
                 maxLength={50}
+                disabled={!isAdmin && info?.can_contribute === false}
               />
             </div>
 
-            <Button type="submit" disabled={!dbFile || uploading}>
+            <Button
+              type="submit"
+              disabled={
+                !dbFile ||
+                uploading ||
+                (!isAdmin && info?.can_contribute === false)
+              }
+            >
               {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Upload for Review
             </Button>

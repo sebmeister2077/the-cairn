@@ -17,9 +17,10 @@ import os
 import sqlite3
 import tempfile
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Set
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
@@ -41,6 +42,10 @@ router = APIRouter()
 MAPPIECE_TABLE = "mappiece"
 BLOCKIDMAPPING_TABLE = "blockidmapping"
 UPLOAD_URL_TTL_SECONDS = 15 * 60
+
+# Non-admin contributors are limited to one pending upload at a time, plus a
+# cooldown after each approval. Admins are exempt.
+CONTRIBUTION_COOLDOWN_DAYS = 7
 
 
 class ContributeUploadInitRequest(BaseModel):
@@ -273,6 +278,76 @@ def _verify_admin_key(api_key: str):
         raise ValueError("Forbidden — admin API key required")
 
 
+def _is_admin_key(api_key: str) -> bool:
+    return bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
+
+
+def _get_contribution_status(api_key: str) -> dict:
+    """Compute whether a non-admin user is currently allowed to contribute.
+
+    Returns a dict shaped for /contribute/info:
+      can_contribute, cooldown_reason ('pending'|'cooldown'|None),
+      pending_contribution_id, next_allowed_at (ISO), cooldown_days.
+    Admins always get can_contribute=True with null reason.
+    """
+    base = {
+        "can_contribute": True,
+        "cooldown_reason": None,
+        "pending_contribution_id": None,
+        "next_allowed_at": None,
+        "cooldown_days": CONTRIBUTION_COOLDOWN_DAYS,
+    }
+    if _is_admin_key(api_key) or not api_key:
+        return base
+
+    pending = db.get_user_pending_contribution(api_key)
+    if pending:
+        return {
+            **base,
+            "can_contribute": False,
+            "cooldown_reason": "pending",
+            "pending_contribution_id": pending.get("id"),
+        }
+
+    last_approval = db.get_user_last_approval(api_key)
+    if last_approval and last_approval.get("approved_at"):
+        approved_at = last_approval["approved_at"]
+        next_allowed = approved_at + timedelta(days=CONTRIBUTION_COOLDOWN_DAYS)
+        if next_allowed > datetime.now(timezone.utc):
+            return {
+                **base,
+                "can_contribute": False,
+                "cooldown_reason": "cooldown",
+                "next_allowed_at": next_allowed.isoformat(),
+            }
+
+    return base
+
+
+def _check_contribution_limits(api_key: str):
+    """Raise HTTPException(429) if a non-admin user is over the contribution limit."""
+    status = _get_contribution_status(api_key)
+    if status["can_contribute"]:
+        return
+    if status["cooldown_reason"] == "pending":
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                "You already have a pending contribution awaiting review. "
+                "Withdraw it before submitting another."
+            ),
+        )
+    if status["cooldown_reason"] == "cooldown":
+        next_allowed = status["next_allowed_at"]
+        raise HTTPException(
+            status_code=429,
+            detail=(
+                f"You can contribute again on {next_allowed}. "
+                f"Limit: one approved contribution per {CONTRIBUTION_COOLDOWN_DAYS} days."
+            ),
+        )
+
+
 def _compute_pending_world_bounds(pending_db_path: str):
     """Return (min_x, max_x, min_z, max_z) in world-block coords for the
     pending contribution, or None if the DB is empty."""
@@ -457,12 +532,16 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         if row.get("approved_at") and hasattr(row["approved_at"], "isoformat"):
             row["approved_at"] = row["approved_at"].isoformat()
 
+    contribution_status = _get_contribution_status(api_key)
+
     return {
         "map_id": settings.CONTRIBUTE_MAP_ID,
         "total_tiles": total_tiles,
         "pending": pending,
         "withdrawn": withdrawn,
         "approved": approved,
+        "is_admin": _is_admin_key(api_key),
+        **contribution_status,
     }
 
 
@@ -473,6 +552,7 @@ async def contribute_upload_url(
 ):
     """Create a presigned upload URL so the browser can upload directly to R2."""
     check_rate_limit(api_key)
+    _check_contribution_limits(api_key)
 
     if payload.size_bytes <= 0:
         return JSONResponse(status_code=400, content={"detail": "Empty upload"})
@@ -508,6 +588,7 @@ async def contribute_complete(
 ):
     """Validate an uploaded R2 object and register it as a pending contribution."""
     check_rate_limit(api_key)
+    _check_contribution_limits(api_key)
 
     contribution_id = payload.contribution_id.strip()
     if not contribution_id:
@@ -531,6 +612,7 @@ async def contribute_upload(
 ):
     """Upload a .db map file. Validated and stored in R2 as pending."""
     check_rate_limit(api_key)
+    _check_contribution_limits(api_key)
 
     fd, tmp_path = tempfile.mkstemp(suffix=".db")
     try:

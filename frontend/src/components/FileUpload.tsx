@@ -7,6 +7,7 @@ interface FileUploadProps {
   label: string;
   accept?: string;
   required?: boolean;
+  disabled?: boolean;
   onChange: (file: File | null) => void;
 }
 
@@ -15,6 +16,7 @@ export function FileUpload({
   label,
   accept,
   required,
+  disabled,
   onChange,
 }: FileUploadProps) {
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -32,6 +34,7 @@ export function FileUpload({
         type="file"
         accept={accept}
         required={required}
+        disabled={disabled}
         onChange={handleChange}
       />
     </div>

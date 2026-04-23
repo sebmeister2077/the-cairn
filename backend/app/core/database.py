@@ -161,6 +161,40 @@ def get_contribution(cid: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
+def get_user_pending_contribution(api_key: str) -> Optional[dict]:
+    """Return the most recent pending (non-withdrawn) contribution submitted by api_key, or None."""
+    if not api_key:
+        return None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM contributions
+                   WHERE submitted_by_key = %s AND status = 'pending' AND withdrawn_at IS NULL
+                   ORDER BY created_at DESC
+                   LIMIT 1""",
+                (api_key,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_user_last_approval(api_key: str) -> Optional[dict]:
+    """Return the most recent approved contribution submitted by api_key, or None."""
+    if not api_key:
+        return None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM contributions
+                   WHERE submitted_by_key = %s AND status = 'approved'
+                   ORDER BY approved_at DESC NULLS LAST
+                   LIMIT 1""",
+                (api_key,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
 def list_pending_contributions(requesting_key: str = "") -> List[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
