@@ -339,6 +339,14 @@ function GeneralPage() {
               <li><strong>Commands</strong> &mdash; generate <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">/waypoint addati</code> chat commands from a JSON list.</li>
               <li><strong>Delete</strong> &mdash; remove matching waypoints from a save file by name, icon, or colour.</li>
             </ul>
+            <p className="text-xs italic mt-2">
+              Singleplayer tools only touch the waypoints table of the
+              <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono mx-1">.vcdbs</code>
+              file you upload &mdash; nothing else is read or modified, and the
+              uploaded file is held in memory only for the duration of the
+              request, then discarded. Your world data never leaves your
+              machine permanently.
+            </p>
           </div>
           <div>
             <p className="font-medium text-foreground">Multiplayer</p>

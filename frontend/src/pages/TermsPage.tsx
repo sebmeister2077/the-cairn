@@ -99,7 +99,14 @@ export function TermsPage() {
                             royalty-free, sublicensable licence</strong> to
                             host, display, modify, merge, and redistribute the
                             contributed data as part of the shared community
-                            map.
+                            map. <strong>Redistribution may take any form
+                            the operator chooses</strong>, including, without
+                            limitation: rendered map images served on this
+                            Service, machine-readable map tiles, statistical
+                            summaries, and — if and when such a feature is
+                            offered — raw or merged map-cache database
+                            files (e.g. <code>.db</code> downloads) that
+                            other users may load into their own game client.
                         </li>
                         <li>
                             Approved contributions are <strong>merged
@@ -107,6 +114,19 @@ export function TermsPage() {
                             cannot be withdrawn. Please be sure before you
                             contribute.
                         </li>
+                        {/* <li>
+                            <strong>Server operators:</strong> if a
+                            contribution containing data from a server you
+                            operate was uploaded without your consent and you
+                            want it removed from the community dataset,
+                            email{" "}
+                            <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
+                                {CONTACT_EMAIL}
+                            </a>
+                            {" "}with enough information to identify the
+                            server (e.g. server name, IP, or a sample
+                            contribution ID) and we will review the request.
+                        </li> */}
                         <li>
                             The operator may reject, delete, or roll back
                             pending contributions at any time without notice.
