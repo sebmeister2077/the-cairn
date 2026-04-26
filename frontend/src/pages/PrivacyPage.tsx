@@ -41,6 +41,14 @@ export function PrivacyPage() {
                         The Service is not affiliated with or endorsed by Anego
                         Studios, the developer of Vintage Story.
                     </p>
+                    <p>
+                        The Service was built by inspecting the byte layout of
+                        the save and map-cache files that <em>Vintage Story</em>
+                        {" "}writes to disk on the user's own machine, plus
+                        publicly available community documentation.{" "}
+                        <strong>No decompiled game code was used</strong> and
+                        the Service contains no game assets.
+                    </p>
                 </section>
 
                 <section className="space-y-2">

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const LAST_UPDATED = "April 23, 2026";
+const LAST_UPDATED = "April 26, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com"; 
 
 export function TermsPage() {
@@ -59,6 +59,20 @@ export function TermsPage() {
                         <li>Attempt to circumvent rate limits, scrape the Service, or carry out denial-of-service attacks.</li>
                         <li>Reverse-engineer, probe, or attack the infrastructure or other users' data.</li>
                         <li>Use the Service to violate Vintage Story's EULA or any third party's intellectual property rights.</li>
+                        <li>
+                            Use the Service as a channel to transmit
+                            messages, communications, advertisements, or any
+                            other information of any kind to other users or
+                            to the public — including, but not limited to,
+                            embedding such content in your account display
+                            name, in-game name (IGN), waypoint titles, or any
+                            other free-text field. The Service is a tool for
+                            map and waypoint data, not a messaging platform.
+                            The operator may, at its sole discretion and
+                            depending on the nature of the content, edit or
+                            remove the offending field, revoke your API key,
+                            and ban your account without notice.
+                        </li>
                     </ul>
                 </section>
 
@@ -125,6 +139,20 @@ export function TermsPage() {
                             “Vintage Story” is a trademark of Anego Studios.
                             This Service is an unofficial fan project and is
                             not affiliated with or endorsed by Anego Studios.
+                        </li>
+                        <li>
+                            <strong>No decompiled game code was used to
+                            build this Service.</strong> All file-format
+                            handling (waypoint <code>.vcdbs</code> saves and
+                            multiplayer map <code>.db</code> caches) was
+                            developed by inspecting the byte layout of the
+                            files those formats produce on disk — i.e. the
+                            output of the user's own game client — and by
+                            referring to publicly available community
+                            documentation. The Service contains no game
+                            assets (textures, models, sounds, official asset
+                            JSONs) and no code copied or translated from
+                            decompiled <em>Vintage Story</em> binaries.
                         </li>
                         <li>
                             The community-map dataset's licence is to be

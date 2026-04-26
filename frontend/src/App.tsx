@@ -170,7 +170,12 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
+          <div className="flex flex-col">
+            <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              Unofficial fan project &mdash; not affiliated with Anego Studios
+            </span>
+          </div>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <Badge variant="default" className="bg-amber-500 text-white hover:bg-amber-500">
@@ -316,6 +321,12 @@ function GeneralPage() {
         <CardTitle>VS Waypoint & Map Tools</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
+        <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <strong>Unofficial fan project.</strong> This site is not
+          affiliated with, endorsed by, or sponsored by Anego Studios, the
+          developers of <em>Vintage Story</em>. “Vintage Story” is a
+          trademark of Anego Studios.
+        </div>
         <p>
           A web toolkit for managing Vintage Story waypoints and map data. Choose a category above to get started.
         </p>

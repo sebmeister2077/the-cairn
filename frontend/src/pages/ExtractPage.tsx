@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { SafetyNotice } from "@/components/SafetyNotice";
 import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function ExtractPage() {
@@ -72,7 +73,8 @@ export function ExtractPage() {
         <CardTitle>Extract Waypoints</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <SafetyNotice mode="read" />
+        <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
             label="Save file (.vcdbs)"

@@ -6,6 +6,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { SafetyNotice } from "@/components/SafetyNotice";
 import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function CommandsPage() {
@@ -59,7 +60,8 @@ export function CommandsPage() {
         <CardTitle>Generate Commands</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <SafetyNotice mode="read" />
+        <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
             label="Save file (.vcdbs)"

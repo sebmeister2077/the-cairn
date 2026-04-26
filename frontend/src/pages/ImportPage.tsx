@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
+import { SafetyNotice } from "@/components/SafetyNotice";
 import {
   Select,
   SelectContent,
@@ -70,7 +71,8 @@ export function ImportPage() {
         <CardTitle>Import Waypoints</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <SafetyNotice mode="modify" />
+        <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
             label="Save file (.vcdbs)"
