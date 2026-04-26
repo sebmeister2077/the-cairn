@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -28,14 +29,25 @@ export function ApiKeyDialog({
 }) {
   const [key, setKey] = useState(getStoredApiKey());
   const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
   async function handleSave() {
     setLoading(true);
-    setApiKey(key.trim());
+    const trimmed = key.trim();
+    const previous = getStoredApiKey();
+    setApiKey(trimmed);
     const status = await checkAuthStatus();
     setStoredIsAdmin(status.is_admin);
     setStoredCanContribute(status.can_contribute);
     onAdminStatusChange(status.is_admin);
+    if (trimmed !== previous) {
+      // The new key may have different permissions (or be valid where the old
+      // one was not). Drop every cached query — including ones currently in an
+      // error state — and force every mounted query to refetch with the new
+      // X-API-Key header.
+      queryClient.removeQueries();
+      await queryClient.invalidateQueries();
+    }
     setLoading(false);
     onClose();
   }

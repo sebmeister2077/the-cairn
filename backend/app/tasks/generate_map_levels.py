@@ -9,6 +9,24 @@ For each requested level:
 The frontend stitches the chunks itself — no big assembled PNG is stored.
 This keeps memory usage bounded to a single chunk's RGBA buffer at a time
 and removes a slow R2 upload from the hot path of generation.
+
+Job scheduling
+--------------
+A single in-process worker thread runs at any time. Regen requests are
+persisted in the ``regen_queue`` Postgres table; producers (contribute
+approvals, admin "regenerate") call :func:`start_job`, which appends a row
+to the queue and starts the worker if it isn't already alive.
+
+The worker (:func:`_worker_loop`) drains the queue, coalesces all rows into
+one work plan per resolution level (union of bounding boxes, or full regen
+if any row demands it), runs one pass, then drains again. Only when a drain
+*under the job lock* returns no rows does the worker exit, which guarantees
+that an enqueue arriving at the wrong moment cannot be lost.
+
+This solves the original race where two contribute approvals landing within
+seconds of each other meant the second one's chunk regen was silently
+skipped because ``start_job`` saw a worker already running and returned
+``False`` without recording the pending bounds anywhere.
 """
 
 from __future__ import annotations
@@ -174,51 +192,202 @@ def _generate_level(
                 level, bytes_written, total_grid)
 
 
-def _run_job(levels: List[int],
-             affected_bounds: Optional[Tuple[int, int, int, int]] = None):
-    """Job entry point — runs in a background thread."""
-    db_path: Optional[str] = None
-    try:
-        db_path = _download_combined_db()
-        for level in levels:
+def _coalesce_queue_entries(
+    rows: List[dict],
+    configured_levels: List[int],
+) -> Dict[int, Optional[Tuple[int, int, int, int]]]:
+    """Collapse a batch of queue rows into a per-level work plan.
+
+    Each row in ``rows`` is a dict from ``database.drain_regen_queue``. The
+    output maps ``level -> bounds``, where ``bounds`` is either:
+      * ``None`` — full regen of that level (some queued row demanded it)
+      * ``(min_x, max_x, min_z, max_z)`` — union bbox of every partial regen
+        request that targeted this level.
+
+    Levels with no rows targeting them are absent from the returned dict.
+    """
+    plan: Dict[int, Optional[Tuple[int, int, int, int]]] = {}
+    full_levels: set = set()
+
+    for row in rows:
+        raw_levels = row.get("levels")
+        if raw_levels is None:
+            target_levels = list(configured_levels)
+        else:
             try:
-                _generate_level(db_path, level, affected_bounds=affected_bounds)
-            except Exception as exc:
-                tracker.mark_failed(level, str(exc))
-                logger.exception("Level %s generation failed", level)
-                # Continue with other levels rather than aborting the batch.
-    except Exception as exc:
-        logger.exception("Map generation job aborted: %s", exc)
-        for level in levels:
-            try:
-                tracker.mark_failed(level, str(exc))
-            except Exception:
-                pass
-    finally:
-        if db_path:
-            try:
-                os.unlink(db_path)
-            except OSError:
-                pass
+                parsed = json.loads(raw_levels)
+                target_levels = [int(l) for l in parsed if int(l) in configured_levels]
+            except (json.JSONDecodeError, TypeError, ValueError):
+                target_levels = list(configured_levels)
+
+        is_full = bool(row.get("full_regen"))
+        bbox = None
+        if not is_full and row.get("min_x") is not None:
+            bbox = (
+                int(row["min_x"]), int(row["max_x"]),
+                int(row["min_z"]), int(row["max_z"]),
+            )
+        # No bbox + not full_regen would be a malformed row → treat as full
+        # to be safe (over-render rather than miss tiles).
+        if bbox is None:
+            is_full = True
+
+        for lvl in target_levels:
+            if is_full or lvl in full_levels:
+                full_levels.add(lvl)
+                plan[lvl] = None
+                continue
+            existing = plan.get(lvl, ...)
+            if existing is None:  # already marked full by an earlier row
+                continue
+            if existing is ...:
+                plan[lvl] = bbox
+            else:
+                # Union the two bounding boxes.
+                ex = existing
+                plan[lvl] = (
+                    min(ex[0], bbox[0]),
+                    max(ex[1], bbox[1]),
+                    min(ex[2], bbox[2]),
+                    max(ex[3], bbox[3]),
+                )
+
+    return plan
 
 
-def start_job(levels: List[int],
-              affected_bounds: Optional[Tuple[int, int, int, int]] = None) -> bool:
-    """Spawn the background generation thread. Returns True on launch,
-    False if a job is already running."""
+def _worker_loop():
+    """Drain the regen queue and run one generation pass per drain.
+
+    Continues looping as long as new work appears between passes, so
+    contributions approved during a long-running render are still picked up
+    in the same worker lifetime. Holds ``_job_lock`` only briefly at the
+    "should I exit?" check, ensuring an enqueue that lands at the wrong
+    moment is not lost: if the post-job drain returns rows, we run another
+    pass; if it returns empty *while we hold the lock*, no new enqueue can
+    sneak in before we clear ``_active_thread``.
+    """
     global _active_thread
+    configured_levels = sorted(RESOLUTION_LEVELS.keys())
+
+    try:
+        while True:
+            try:
+                rows = db.drain_regen_queue()
+            except Exception:
+                logger.exception("Failed to drain regen queue; sleeping out worker")
+                rows = []
+
+            if not rows:
+                # Recheck under the lock so a producer cannot race past us.
+                with _job_lock:
+                    try:
+                        rows = db.drain_regen_queue()
+                    except Exception:
+                        logger.exception("Failed to drain regen queue (locked)")
+                        rows = []
+                    if not rows:
+                        _active_thread = None
+                        return
+
+            plan = _coalesce_queue_entries(rows, configured_levels)
+            if not plan:
+                continue
+
+            db_path: Optional[str] = None
+            try:
+                db_path = _download_combined_db()
+                for lvl in sorted(plan.keys()):
+                    bounds = plan[lvl]
+                    try:
+                        _generate_level(db_path, lvl, affected_bounds=bounds)
+                    except Exception as exc:
+                        tracker.mark_failed(lvl, str(exc))
+                        logger.exception("Level %s generation failed", lvl)
+                        # Continue with remaining levels.
+            except Exception as exc:
+                logger.exception("Map generation pass aborted: %s", exc)
+                for lvl in plan:
+                    try:
+                        tracker.mark_failed(lvl, str(exc))
+                    except Exception:
+                        pass
+            finally:
+                if db_path:
+                    try:
+                        os.unlink(db_path)
+                    except OSError:
+                        pass
+    finally:
+        # Defensive: never leave _active_thread pointing at a finished thread.
+        with _job_lock:
+            if _active_thread is not None and not _active_thread.is_alive():
+                _active_thread = None
+
+
+def start_job(levels: Optional[List[int]] = None,
+              affected_bounds: Optional[Tuple[int, int, int, int]] = None) -> bool:
+    """Enqueue a regeneration request and ensure the worker is running.
+
+    Always succeeds in recording the request (returns True), regardless of
+    whether the worker had to be spawned or one was already running. The
+    boolean return value is preserved for backward compatibility with callers
+    that previously used it as "did we launch a worker?" — its semantics are
+    now "is there a worker that will pick this request up?".
+
+    ``levels=None`` means "all configured levels". ``affected_bounds=None``
+    means "full regen of those levels". Both default to the broadest possible
+    request so a caller who omits everything triggers a full regen of every
+    level.
+    """
+    global _active_thread
+
+    if levels is None:
+        request_levels: Optional[List[int]] = None
+    else:
+        request_levels = [lvl for lvl in levels if lvl in RESOLUTION_LEVELS]
+        if not request_levels:
+            return False
+
+    try:
+        db.enqueue_regen(affected_bounds, request_levels)
+    except Exception:
+        logger.exception("Failed to enqueue regen request")
+        return False
+
     with _job_lock:
         if is_job_running():
-            return False
-        valid_levels = [lvl for lvl in levels if lvl in RESOLUTION_LEVELS]
-        if not valid_levels:
-            return False
+            return True
         thread = threading.Thread(
-            target=_run_job,
-            args=(valid_levels, affected_bounds),
+            target=_worker_loop,
             name="tops-map-generator",
             daemon=True,
         )
         _active_thread = thread
         thread.start()
         return True
+
+
+def resume_pending_work():
+    """Start the worker if the queue has rows but no worker is alive.
+
+    Intended to be called once at FastAPI startup so a process restart
+    mid-pass does not strand previously-enqueued requests.
+    """
+    global _active_thread
+    try:
+        size = db.regen_queue_size()
+    except Exception:
+        logger.exception("Could not check regen queue at startup")
+        return
+    if size <= 0:
+        return
+    with _job_lock:
+        if is_job_running():
+            return
+        thread = threading.Thread(
+            target=_worker_loop,
+            name="tops-map-generator",
+            daemon=True,
+        )
+        _active_thread = thread
+        thread.start()

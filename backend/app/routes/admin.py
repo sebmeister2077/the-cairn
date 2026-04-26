@@ -160,6 +160,10 @@ class GenerateMapLevelsRequest(BaseModel):
 
 def _generation_status_payload() -> dict:
     status = generation_tracker.get_status()
+    try:
+        queue_size = db.regen_queue_size()
+    except Exception:
+        queue_size = 0
     return {
         "levels": status.get("levels", {}),
         "configured_levels": [
@@ -167,6 +171,7 @@ def _generation_status_payload() -> dict:
             for lvl, dim in sorted(RESOLUTION_LEVELS.items())
         ],
         "is_running": is_job_running(),
+        "queued_requests": queue_size,
     }
 
 
@@ -184,12 +189,6 @@ async def request_map_generation(
 ):
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
-
-    if is_job_running():
-        raise HTTPException(
-            status_code=409,
-            detail="A map generation job is already running",
-        )
 
     levels = body.levels or list(RESOLUTION_LEVELS.keys())
     invalid = [lvl for lvl in levels if lvl not in RESOLUTION_LEVELS]
@@ -214,9 +213,11 @@ async def request_map_generation(
                 detail="affected_bounds must include integer min_x/max_x/min_z/max_z",
             )
 
-    started = start_job(sorted(set(levels)), affected_bounds=bounds_tuple)
-    if not started:
-        raise HTTPException(status_code=409, detail="Could not start generation job")
+    # Always enqueue. If a worker is already running, the request will be
+    # drained by it before it exits; if not, ``start_job`` spawns a fresh one.
+    accepted = start_job(sorted(set(levels)), affected_bounds=bounds_tuple)
+    if not accepted:
+        raise HTTPException(status_code=500, detail="Could not enqueue generation request")
 
     return _generation_status_payload()
 

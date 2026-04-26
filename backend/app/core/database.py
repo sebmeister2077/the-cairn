@@ -118,6 +118,27 @@ CREATE TABLE IF NOT EXISTS tops_map_chunk_urls (
 );
 CREATE INDEX IF NOT EXISTS idx_tops_map_chunk_urls_expires_at
     ON tops_map_chunk_urls (expires_at);
+
+-- Pending TOPS-map regeneration requests. The background worker drains this
+-- table at the start of every generation cycle so that approvals which arrive
+-- while a job is already running are not lost.
+--
+-- A row with full_regen=TRUE (and bbox columns NULL) means "rebuild every
+-- chunk for the listed levels". Otherwise the bbox is a world-block bounding
+-- box that should be re-rendered. ``levels`` is a JSON array of resolution
+-- level numbers; NULL means "all configured levels".
+CREATE TABLE IF NOT EXISTS regen_queue (
+    id          BIGSERIAL PRIMARY KEY,
+    min_x       INTEGER,
+    max_x       INTEGER,
+    min_z       INTEGER,
+    max_z       INTEGER,
+    levels      TEXT,
+    full_regen  BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_regen_queue_created_at
+    ON regen_queue (created_at);
 """
 
 _MIGRATIONS_SQL = """
@@ -570,6 +591,73 @@ def delete_chunk_url(level: int, cx: int, cy: int) -> bool:
                 (level, cx, cy),
             )
             return (cur.rowcount or 0) > 0
+
+
+# ---------------------------------------------------------------------------
+# TOPS-map regeneration queue
+#
+# Producers (contribute approvals, admin "regenerate") append a row describing
+# what needs to be re-rendered. The background worker drains the queue at the
+# start of every iteration. This is the mechanism that prevents regeneration
+# requests from being lost when an approval lands while a worker is mid-job.
+# ---------------------------------------------------------------------------
+
+def enqueue_regen(
+    bounds: Optional[tuple],
+    levels: Optional[List[int]],
+):
+    """Record a pending regeneration request.
+
+    ``bounds`` is a world-block ``(min_x, max_x, min_z, max_z)`` tuple, or
+    ``None`` to request a full regen of the listed levels.
+    ``levels`` is a list of resolution level numbers, or ``None`` for "all
+    configured levels". The worker resolves ``None`` against the current
+    ``RESOLUTION_LEVELS`` mapping at drain time.
+    """
+    full = bounds is None
+    if full:
+        min_x = max_x = min_z = max_z = None
+    else:
+        min_x, max_x, min_z, max_z = bounds
+    levels_json = json.dumps(sorted(set(levels))) if levels is not None else None
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO regen_queue
+                       (min_x, max_x, min_z, max_z, levels, full_regen)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (min_x, max_x, min_z, max_z, levels_json, full),
+            )
+
+
+def drain_regen_queue() -> List[dict]:
+    """Atomically remove every row from ``regen_queue`` and return them.
+
+    Implemented as a single ``DELETE ... RETURNING *`` so that two workers
+    cannot race to claim the same rows. The single-process ``_job_lock`` in
+    ``generate_map_levels`` is what serialises *workers*; this query is what
+    makes the *queue claim itself* atomic, so an enqueue that lands between
+    a drain and a "queue is empty so I'm exiting" check is observable on the
+    next drain inside the same lock.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """WITH deleted AS (
+                       DELETE FROM regen_queue RETURNING *
+                   )
+                   SELECT * FROM deleted ORDER BY id"""
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def regen_queue_size() -> int:
+    """Cheap diagnostic — used by the admin status endpoint."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM regen_queue")
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
 
 
 # ---------------------------------------------------------------------------

@@ -55,6 +55,19 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover — startup must not crash
         logger.warning("Account backfill failed (non-fatal): %s", exc)
 
+    # Resume any TOPS-map regeneration work that was queued before the last
+    # shutdown but never picked up by a worker (process restart mid-pass, etc.).
+    step_started = perf_counter()
+    try:
+        from .tasks.generate_map_levels import resume_pending_work
+        resume_pending_work()
+        logger.info(
+            "Startup step resume regen queue completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Could not resume regen queue (non-fatal): %s", exc)
+
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
     try:
