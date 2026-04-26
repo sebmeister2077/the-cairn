@@ -1,7 +1,0 @@
-# TOPS Map contribution improvement plan
-
-
-- when a new map is added on the contribution page, for the admin i want it to be visible how much % of the already existing chunks match, give it a % score and a count of matching tiles (Makes it easier to see if the uploaded map is actually the one wanted to be uploaded or if it is a wrong file, this will help us avoid having to download the file and check it manually) 
-- by default when a map is added only the new chunks are added, old ones remain as is, but in the future we want to be able to select your shole file, and select a region on the map which you want to mark as "Update incoming" and then when the file is added, only the chunks in that region will be updated, this will allow us to update only a part of the map if needed, and not have to worry about the rest of the map being changed by mistake (this will be useful for example if we want to update only the chunks around spawn, or only a specific area of the map)
-- history of contributions should remain in a friendly visible way (Previews should be kept and be visible to normal users for a while (2 weeks by default, for admin can always be visible), and the history of contributions should be visible in the admin panel, this will allow us to see the history of contributions and also to see if there are any issues with the contributions, for example if there are any issues with the files being uploaded, or if there are any issues with the merging process)
-
