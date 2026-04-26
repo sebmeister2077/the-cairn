@@ -175,8 +175,8 @@ CREATE INDEX IF NOT EXISTS idx_ip_bans_expires_at ON ip_bans (expires_at);
 
 CREATE TABLE IF NOT EXISTS user_flags (
     id            BIGSERIAL PRIMARY KEY,
-    flagged_user  TEXT NOT NULL REFERENCES users(api_key) ON DELETE CASCADE,
-    related_user  TEXT REFERENCES users(api_key) ON DELETE SET NULL,
+    flagged_user  TEXT NOT NULL REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE CASCADE,
+    related_user  TEXT REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE SET NULL,
     reason        TEXT NOT NULL,
     metadata      JSONB,
     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -212,6 +212,35 @@ def ensure_schema():
             cur.execute(_MIGRATIONS_SQL)
             # Account-system tables (users, ip_bans, user_flags, audit log).
             cur.execute(_ACCOUNT_SCHEMA_SQL)
+            # Migration: ensure user_flags FKs have ON UPDATE CASCADE so admin
+            # rekey (which updates users.api_key) does not violate the FK.
+            cur.execute("""
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.referential_constraints
+                        WHERE constraint_name = 'user_flags_flagged_user_fkey'
+                          AND update_rule <> 'CASCADE'
+                    ) THEN
+                        ALTER TABLE user_flags
+                            DROP CONSTRAINT user_flags_flagged_user_fkey,
+                            ADD CONSTRAINT user_flags_flagged_user_fkey
+                                FOREIGN KEY (flagged_user) REFERENCES users(api_key)
+                                ON UPDATE CASCADE ON DELETE CASCADE;
+                    END IF;
+                    IF EXISTS (
+                        SELECT 1 FROM information_schema.referential_constraints
+                        WHERE constraint_name = 'user_flags_related_user_fkey'
+                          AND update_rule <> 'CASCADE'
+                    ) THEN
+                        ALTER TABLE user_flags
+                            DROP CONSTRAINT user_flags_related_user_fkey,
+                            ADD CONSTRAINT user_flags_related_user_fkey
+                                FOREIGN KEY (related_user) REFERENCES users(api_key)
+                                ON UPDATE CASCADE ON DELETE SET NULL;
+                    END IF;
+                END$$;
+            """)
 
 
 # ---------------------------------------------------------------------------
