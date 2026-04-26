@@ -19,6 +19,10 @@ import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { ApiKeysPage } from "@/pages/ApiKeysPage";
+import { AdminUsersPage } from "@/pages/AdminUsersPage";
+import { AdminBannedIpsPage } from "@/pages/AdminBannedIpsPage";
+import { AdminFlagsPage } from "@/pages/AdminFlagsPage";
+import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +61,9 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
   "/general": [],
   "/manage": [
     { value: "/manage/api-keys", label: "API Keys" },
+    { value: "/manage/users", label: "Users" },
+    { value: "/manage/banned-ips", label: "Banned IPs" },
+    { value: "/manage/flags", label: "Flags" },
   ],
 };
 
@@ -170,6 +177,9 @@ function AppContent() {
                 Admin
               </Badge>
             )}
+            <NavLink to="/account">
+              <Button variant="ghost" size="sm">Account</Button>
+            </NavLink>
             <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
               API Key
             </Button>
@@ -221,6 +231,10 @@ function AppContent() {
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
+          <Route path="/manage/users" element={<AdminUsersPage />} />
+          <Route path="/manage/banned-ips" element={<AdminBannedIpsPage />} />
+          <Route path="/manage/flags" element={<AdminFlagsPage />} />
+          <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />

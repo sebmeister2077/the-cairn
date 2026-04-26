@@ -127,6 +127,79 @@ ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS submitted_by_key TEXT;
 ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
+ALTER TABLE IF EXISTS users
+ADD COLUMN IF NOT EXISTS show_contributions BOOLEAN NOT NULL DEFAULT FALSE;
+"""
+
+# ---------------------------------------------------------------------------
+# Account system schema (users, ip_bans, user_flags, admin_audit_log).
+# Created in a separate block so the trigram extension is enabled before the
+# GIN indexes that depend on it.
+# ---------------------------------------------------------------------------
+
+_ACCOUNT_SCHEMA_SQL = """
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE TABLE IF NOT EXISTS users (
+    api_key                TEXT PRIMARY KEY REFERENCES api_keys(key) ON DELETE CASCADE,
+    display_name           TEXT NOT NULL UNIQUE,
+    in_game_name           TEXT,
+    is_hireable            BOOLEAN NOT NULL DEFAULT FALSE,
+    is_leaderboard_visible BOOLEAN NOT NULL DEFAULT FALSE,
+    show_contributions     BOOLEAN NOT NULL DEFAULT FALSE,
+    genesis_for_ip         BOOLEAN NOT NULL DEFAULT FALSE,
+    joined_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    terms_accepted_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    terms_version          TEXT NOT NULL DEFAULT 'unknown',
+    deleted_at             TIMESTAMPTZ,
+    name_regen_count       INT NOT NULL DEFAULT 0,
+    last_name_change_at    TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_users_joined_at         ON users (joined_at DESC);
+CREATE INDEX IF NOT EXISTS idx_users_hireable          ON users (is_hireable) WHERE is_hireable;
+CREATE INDEX IF NOT EXISTS idx_users_display_name_trgm ON users USING gin (display_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_users_ingame_trgm       ON users USING gin (in_game_name gin_trgm_ops);
+
+CREATE TABLE IF NOT EXISTS ip_bans (
+    ip_hash      TEXT PRIMARY KEY,
+    reason_code  TEXT NOT NULL,
+    reason       TEXT NOT NULL,
+    admin_notes  TEXT,
+    banned_by    TEXT NOT NULL,
+    banned_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at   TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_ip_bans_expires_at ON ip_bans (expires_at);
+
+CREATE TABLE IF NOT EXISTS user_flags (
+    id            BIGSERIAL PRIMARY KEY,
+    flagged_user  TEXT NOT NULL REFERENCES users(api_key) ON DELETE CASCADE,
+    related_user  TEXT REFERENCES users(api_key) ON DELETE SET NULL,
+    reason        TEXT NOT NULL,
+    metadata      JSONB,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    resolved_at   TIMESTAMPTZ,
+    resolved_by   TEXT,
+    resolution    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_flags_unresolved
+    ON user_flags (flagged_user) WHERE resolved_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_user_flags_created
+    ON user_flags (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    id         BIGSERIAL PRIMARY KEY,
+    admin_key  TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    target     TEXT,
+    metadata   JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON admin_audit_log (created_at DESC);
 """
 
 
@@ -137,6 +210,8 @@ def ensure_schema():
             cur.execute(_SCHEMA_SQL)
             # Backfill schema changes for existing deployments.
             cur.execute(_MIGRATIONS_SQL)
+            # Account-system tables (users, ip_bans, user_flags, audit log).
+            cur.execute(_ACCOUNT_SCHEMA_SQL)
 
 
 # ---------------------------------------------------------------------------

@@ -514,3 +514,279 @@ export async function claimInvite(token: string): Promise<{ key: string; permiss
     });
     return (await handleResponse(res)).json();
 }
+
+// ---------------------------------------------------------------------------
+// Account system
+// ---------------------------------------------------------------------------
+
+export interface AccountUser {
+    display_name: string;
+    in_game_name: string | null;
+    is_hireable: boolean;
+    is_leaderboard_visible: boolean;
+    show_contributions: boolean;
+    genesis_for_ip: boolean;
+    joined_at: string;
+    terms_version: string;
+    terms_accepted_at: string;
+    deleted_at: string | null;
+    name_regen_count: number;
+    last_name_change_at: string | null;
+    last_used_at: string | null;
+    is_banned: boolean;
+    flag_count: number;
+    api_key?: string;
+}
+
+export interface AccountMeResponse {
+    user: AccountUser | null;
+    is_admin: boolean;
+    terms_version_current: string;
+    terms_accepted_current: boolean;
+}
+
+export async function registerAccount(): Promise<{ user: AccountUser; created: boolean }> {
+    const res = await fetch(`${API_BASE}/account/register`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ accept_terms: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function getMyAccount(): Promise<AccountMeResponse> {
+    const res = await fetch(`${API_BASE}/account/me`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function updateMyAccount(payload: {
+    in_game_name?: string;
+    clear_in_game_name?: boolean;
+    is_hireable?: boolean;
+    is_leaderboard_visible?: boolean;
+    show_contributions?: boolean;
+}): Promise<{ user: AccountUser }> {
+    const res = await fetch(`${API_BASE}/account/me`, {
+        method: "PATCH",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function regenerateMyDisplayName(): Promise<{ user: AccountUser }> {
+    const res = await fetch(`${API_BASE}/account/regenerate-name`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function exportMyData(): Promise<unknown> {
+    const res = await fetch(`${API_BASE}/account/export`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function deleteMyAccount(): Promise<{ ok: boolean; tombstone: string }> {
+    const res = await fetch(`${API_BASE}/account/me`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: users ---
+
+export interface AdminUserStats {
+    total: number;
+    active: number;
+    hireable: number;
+    deleted: number;
+    banned: number;
+    active_last_7_days: number;
+    flagged: number;
+}
+
+export interface AdminUserListItem extends AccountUser {
+    api_key: string;
+}
+
+export async function adminListUsers(params: {
+    q?: string;
+    sort?: string;
+    cursor?: number | null;
+    limit?: number;
+    flagged?: boolean;
+    banned?: boolean;
+    genesis?: boolean;
+    include_deleted?: boolean;
+}): Promise<{ users: AdminUserListItem[]; next_cursor: number | null }> {
+    const qs = new URLSearchParams();
+    if (params.q) qs.set("q", params.q);
+    if (params.sort) qs.set("sort", params.sort);
+    if (params.cursor != null) qs.set("cursor", String(params.cursor));
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.flagged) qs.set("flagged", "true");
+    if (params.banned) qs.set("banned", "true");
+    if (params.genesis) qs.set("genesis", "true");
+    if (params.include_deleted === false) qs.set("include_deleted", "false");
+    const res = await fetch(`${API_BASE}/admin/users?${qs.toString()}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetUserStats(refresh: boolean = false): Promise<{ stats: AdminUserStats; cached: boolean }> {
+    const qs = refresh ? "?refresh=true" : "";
+    const res = await fetch(`${API_BASE}/admin/users/stats${qs}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetUser(apiKey: string): Promise<{ user: AdminUserListItem }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetSiblings(apiKey: string): Promise<{ siblings: AdminUserListItem[] }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/siblings`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRegenerateName(apiKey: string): Promise<{ user: AdminUserListItem }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/regenerate-name`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRekeyUser(apiKey: string): Promise<{ new_api_key: string; user: AdminUserListItem }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/rekey`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminReactivateUser(apiKey: string): Promise<{ user: AdminUserListItem }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/reactivate`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminSoftDeleteUser(apiKey: string): Promise<{ ok: boolean; tombstone: string }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminBanPreview(apiKey: string): Promise<{ ip_hash: string | null; affected_users: AdminUserListItem[] }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/ban-preview`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export type BanReasonCode =
+    | "spam" | "impersonation" | "abuse" | "harassment"
+    | "duplicate_account" | "provocative_name" | "other";
+
+export async function adminBanUser(apiKey: string, payload: {
+    reason_code: BanReasonCode;
+    reason: string;
+    admin_notes?: string;
+    duration_days?: number;
+}): Promise<{ ban: IpBan; revoked_keys: number; deleted_users: number }> {
+    const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/ban`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: IP bans ---
+
+export interface IpBan {
+    ip_hash: string;
+    reason_code: string;
+    reason: string;
+    admin_notes: string | null;
+    banned_by: string;
+    banned_at: string;
+    expires_at: string;
+}
+
+export async function adminListIpBans(cursor: number | null = null): Promise<{ bans: IpBan[]; next_cursor: number | null }> {
+    const qs = new URLSearchParams();
+    if (cursor != null) qs.set("cursor", String(cursor));
+    const res = await fetch(`${API_BASE}/admin/ip-bans?${qs.toString()}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminUnbanIp(ipHash: string): Promise<{ ok: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/ip-bans/${encodeURIComponent(ipHash)}`, {
+        method: "DELETE",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: flags ---
+
+export interface UserFlag {
+    id: number;
+    flagged_user: string;
+    related_user: string | null;
+    reason: string;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+    resolved_at: string | null;
+    resolved_by: string | null;
+    resolution: string | null;
+    flagged_display_name: string | null;
+    related_display_name: string | null;
+}
+
+export async function adminListFlags(params: {
+    unresolved_only?: boolean;
+    reason?: string;
+    flagged_user?: string;
+    cursor?: number | null;
+}): Promise<{ flags: UserFlag[]; next_cursor: number | null }> {
+    const qs = new URLSearchParams();
+    if (params.unresolved_only !== false) qs.set("unresolved_only", "true");
+    else qs.set("unresolved_only", "false");
+    if (params.reason) qs.set("reason", params.reason);
+    if (params.flagged_user) qs.set("flagged_user", params.flagged_user);
+    if (params.cursor != null) qs.set("cursor", String(params.cursor));
+    const res = await fetch(`${API_BASE}/admin/flags?${qs.toString()}`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminResolveFlag(flagId: number, resolution: "valid" | "abuse" | "dismissed"): Promise<{ flag: UserFlag }> {
+    const res = await fetch(`${API_BASE}/admin/flags/${flagId}/resolve`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ resolution }),
+    });
+    return (await handleResponse(res)).json();
+}

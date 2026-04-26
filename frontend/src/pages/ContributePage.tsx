@@ -10,6 +10,7 @@ import {
   getStoredIsAdmin,
   getStoredCanContribute,
   fetchImageFromSignedUrl,
+  getMyAccount,
 } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,17 @@ export function ContributePage() {
   });
   const info = infoQuery.data ?? null;
   const infoLoading = infoQuery.isLoading;
+
+  // Current account — used to honour the user's "Show Contributions" preference.
+  const accountQuery = useQuery({
+    queryKey: ["account-me"],
+    queryFn: getMyAccount,
+    retry: false,
+  });
+  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
+  const canSeeContributors = isAdmin || info?.is_admin || showContributions;
+  const displayContributor = (name: string) =>
+    canSeeContributors ? name : "Anonymous";
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -418,7 +430,7 @@ export function ContributePage() {
               <div key={p.id} className="space-y-2">
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div className="space-y-0.5">
-                    <div className="text-sm font-medium">{p.contributor}</div>
+                    <div className="text-sm font-medium">{p.is_mine ? p.contributor : displayContributor(p.contributor)}</div>
                     <div className="text-xs text-muted-foreground">
                       {p.tile_count.toLocaleString()} tiles &middot;{" "}
                       {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
@@ -559,7 +571,7 @@ export function ContributePage() {
                     className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0"
                   >
                     <div>
-                      <span className="font-medium">{a.contributor}</span>
+                      <span className="font-medium">{displayContributor(a.contributor)}</span>
                       <span className="text-muted-foreground ml-2">
                         +{a.tiles_new.toLocaleString()} new tiles
                       </span>

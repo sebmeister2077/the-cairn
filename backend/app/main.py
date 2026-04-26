@@ -10,10 +10,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from .auth import verify_api_key_info
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
+from .core import accounts_db
+from .core.display_names import generate_display_name, FORBIDDEN_SUBSTRINGS
 from .routes import extract, import_wp, delete, commands, mapview
 from .routes import contribute_r2 as contribute
 from .routes import tops_map_r2 as tops_map
 from .routes import admin
+from .routes import admin_users
+from .routes import account
 from .routes import invite
 
 
@@ -33,6 +37,24 @@ async def lifespan(app: FastAPI):
     step_started = perf_counter()
     ensure_schema()
     logger.info("Startup step ensure_schema completed in %.3fs", perf_counter() - step_started)
+
+    # Account-system backfill: create users for legacy api_keys, mark genesis,
+    # seed synthetic admin user. Idempotent — safe to run on every boot.
+    step_started = perf_counter()
+    try:
+        result = accounts_db.backfill_users(
+            name_generator=generate_display_name,
+            forbidden_substrings=FORBIDDEN_SUBSTRINGS,
+            admin_key=settings.ADMIN_API_KEY,
+        )
+        logger.info(
+            "Startup step accounts backfill: created=%d genesis_marked=%d admin_seeded=%s in %.3fs",
+            result["created"], result["genesis_marked"], result["admin_seeded"],
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover — startup must not crash
+        logger.warning("Account backfill failed (non-fatal): %s", exc)
+
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
     try:
@@ -67,6 +89,8 @@ app.include_router(mapview.router, prefix="/api")
 app.include_router(tops_map.router, prefix="/api")
 app.include_router(contribute.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(admin_users.router, prefix="/api")
+app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 
 

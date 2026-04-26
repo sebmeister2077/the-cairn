@@ -8,6 +8,7 @@ from fastapi import Header, HTTPException, Query, Request
 
 from .config import settings
 from .core import database as db
+from .core import accounts_db
 
 
 def _get_client_ip(request: Request) -> str:
@@ -118,3 +119,39 @@ async def require_admin(
     if not settings.ADMIN_API_KEY or x_api_key != settings.ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Admin access required")
     return x_api_key
+
+
+async def require_active_user(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+) -> dict:
+    """FastAPI dependency: validates the API key, ensures the user has an
+    account row that is not soft-deleted, and ensures the request IP is not
+    on the IP-ban list. Returns ``{ "key": str, "user": dict, "info": dict }``.
+
+    The synthetic admin user is allowed even without an account row.
+    """
+    info = _resolve_key(x_api_key, request)
+    if info is None:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    # Always check IP ban first (admin too, so a banned IP can't sneak in via env-var key)
+    ip_hash = _hash_ip(_get_client_ip(request))
+    if accounts_db.is_ip_banned(ip_hash):
+        raise HTTPException(status_code=403, detail="Your IP is banned")
+
+    user = accounts_db.get_user(x_api_key)
+
+    # Admin / legacy env-var keys may not have a users row — that's fine.
+    if user is None:
+        if info.get("is_admin"):
+            return {"key": x_api_key, "user": None, "info": info}
+        raise HTTPException(
+            status_code=403,
+            detail="No account associated with this API key. Register first.",
+        )
+
+    if user.get("deleted_at") is not None:
+        raise HTTPException(status_code=403, detail="Account has been deleted")
+
+    return {"key": x_api_key, "user": user, "info": info}

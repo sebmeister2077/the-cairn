@@ -51,6 +51,18 @@ class Settings:
     # Secret salt used to hash IP addresses before storing them (GDPR)
     IP_HASH_SALT: str = os.environ.get("IP_HASH_SALT", "")
 
+    # Terms of service version. Bump to force re-acceptance on next /me load.
+    TERMS_VERSION: str = os.environ.get("TERMS_VERSION", "2025-01-01")
+
+    # Per-key sub-limit defaults (account system)
+    RATE_LIMIT_REGEN_NAME_MAX: int = int(os.environ.get("RATE_LIMIT_REGEN_NAME_MAX", "3"))
+    RATE_LIMIT_REGEN_NAME_WINDOW: int = int(os.environ.get("RATE_LIMIT_REGEN_NAME_WINDOW", "86400"))
+    RATE_LIMIT_PROFILE_MAX: int = int(os.environ.get("RATE_LIMIT_PROFILE_MAX", "10"))
+    RATE_LIMIT_PROFILE_WINDOW: int = int(os.environ.get("RATE_LIMIT_PROFILE_WINDOW", "3600"))
+
+    # Default duration of an IP ban (days). Admins can override per-ban.
+    IP_BAN_DEFAULT_DAYS: int = int(os.environ.get("IP_BAN_DEFAULT_DAYS", "365"))
+
     # Cloudflare R2
     R2_ACCOUNT_ID: str = os.environ.get("R2_ACCOUNT_ID", "")
     R2_ACCESS_KEY_ID: str = os.environ.get("R2_ACCESS_KEY_ID", "")

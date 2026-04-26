@@ -35,6 +35,27 @@ export function CookieConsent({ blocking = false, onChange }: CookieConsentProps
     if (consent !== null) return null;
 
     function decide(value: ConsentValue) {
+        if (value === "declined") {
+            // User refused browser storage: purge the API key and any related
+            // auth flags from storage, and strip ?key=... from the URL so the
+            // next reload doesn't silently re-store it.
+            try {
+                localStorage.removeItem("api_key");
+                localStorage.removeItem("is_admin");
+                localStorage.removeItem("can_contribute");
+            } catch {
+                // ignore — storage may be disabled
+            }
+            try {
+                const url = new URL(window.location.href);
+                if (url.searchParams.has("key")) {
+                    url.searchParams.delete("key");
+                    window.history.replaceState({}, "", url.toString());
+                }
+            } catch {
+                // ignore — non-browser environment
+            }
+        }
         setStoredConsent(value);
         setConsent(value);
         onChange?.(value);
