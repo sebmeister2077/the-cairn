@@ -26,7 +26,10 @@ export function KeyRow({
 
   const permBadge =
     record.permissions === "contribute" ? (
-      <Badge variant="outline" className="text-blue-600 border-blue-300">
+      <Badge
+        variant="outline"
+        className="text-blue-700 border-blue-300 bg-blue-50 dark:text-blue-300 dark:border-blue-400/40 dark:bg-blue-400/10"
+      >
         Contribute
       </Badge>
     ) : (
@@ -36,13 +39,13 @@ export function KeyRow({
   return (
     <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-3 items-center py-3 border-b last:border-b-0 text-sm">
       <div className="min-w-0">
-        <p className="font-medium truncate">{record.name || <span className="text-muted-foreground italic">Unnamed</span>}</p>
+        <p className="font-medium truncate">
+          {record.name || <span className="text-muted-foreground italic">Unnamed</span>}
+        </p>
         <p className="text-xs text-muted-foreground mt-0.5">
           Created {fmt(record.created_at)}
           {record.last_used_at && <> · Last used {fmt(record.last_used_at)}</>}
-          {record.consume_once && record.bound_identity && (
-            <> · Bound to {record.bound_identity}</>
-          )}
+          {record.consume_once && record.bound_identity && <> · Bound to {record.bound_identity}</>}
         </p>
       </div>
       <div className="flex items-center gap-1.5">
@@ -61,7 +64,10 @@ export function KeyRow({
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => { onRevoke(record.key); setConfirming(false); }}
+              onClick={() => {
+                onRevoke(record.key);
+                setConfirming(false);
+              }}
             >
               Confirm
             </Button>

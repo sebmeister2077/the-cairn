@@ -104,12 +104,12 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
+  --background: oklch(0.19 0.012 270);
+  --foreground: oklch(0.96 0.005 90);
+  --card: oklch(0.235 0.012 270);
+  --card-foreground: oklch(0.96 0.005 90);
+  --popover: oklch(0.235 0.012 270);
+  --popover-foreground: oklch(0.96 0.005 90);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
@@ -137,9 +137,9 @@
   --sidebar-ring: oklch(0.556 0 0);
 
   /* Logo gradient stops (dark mode: brighter gold reads well on dark bg). */
-  --logo-stop-1: #905e26;
+  --logo-stop-1: #da8a2e;
   --logo-stop-2: #f5ec9b;
-  --logo-stop-3: #905e26;
+  --logo-stop-3: #da8a2e;
   --logo-fg: #000000;
 
   /* Semantic status colors (dark mode variants). */
