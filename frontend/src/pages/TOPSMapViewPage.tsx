@@ -507,7 +507,10 @@ export function TOPSMapViewPage() {
                       value={String(r.level)}
                       disabled={r.status !== "complete"}
                     >
-                      L{r.level} · {r.max_dimension.toLocaleString()} px
+                      L{r.level} ·{" "}
+                      {r.level === 5
+                        ? "Full resolution"
+                        : `${r.max_dimension.toLocaleString()} px`}
                       {r.status !== "complete" ? ` · ${r.status}` : ""}
                     </SelectItem>
                   ))}

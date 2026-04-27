@@ -173,7 +173,9 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                             return (
                                 <tr key={level} className="border-t">
                                     <td className="px-3 py-2 font-medium">L{level}</td>
-                                    <td className="px-3 py-2">{max_dimension.toLocaleString()} px</td>
+                                    <td className="px-3 py-2">
+                                        {level === 5 ? "Full resolution" : `${max_dimension.toLocaleString()} px`}
+                                    </td>
                                     <td className="px-3 py-2">
                                         <StatusBadge status={status} />
                                         {status === "failed" && entry?.error && (

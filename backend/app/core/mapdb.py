@@ -33,6 +33,11 @@ RESOLUTION_LEVELS: Dict[int, int] = {
     2: 4096,
     3: 8192,
     4: 16384,
+    # Level 5 — "every pixel" / full resolution. Set well above the largest
+    # plausible explored map side so ``compute_level_geometry`` always picks
+    # scale=1 (1 image pixel per world block). Matches VS's max world size
+    # of 1,024,000 blocks and stays divisible by CHUNK_GRID_SIZE (16).
+    5: 1048576,
 }
 
 # Default level served to non-admin viewers on first load.

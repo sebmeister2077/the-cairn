@@ -23,7 +23,7 @@ The original implementation did exactly that, and it broke as soon as the contri
 The current design replaces the single image with a **grid of independently rendered, independently cached chunks**, pre-rendered at multiple resolution levels and stitched in the browser:
 
 ```
-RESOLUTION_LEVELS = {1: 2048, 2: 4096, 3: 8192, 4: 16384}
+RESOLUTION_LEVELS = {1: 2048, 2: 4096, 3: 8192, 4: 16384, 5: 1048576}  # L5 = 1:1 / full resolution
 CHUNK_GRID_SIZE = 16          # 16×16 = 256 chunks per level
 DEFAULT_RESOLUTION_LEVEL = 2  # what new viewers load first
 ```

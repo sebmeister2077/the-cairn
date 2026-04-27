@@ -58,7 +58,7 @@ The only exception is `render_map_png` (operating on bytes) — that path exists
 Pure rendering parameters; no metadata in the `.db` itself:
 
 ```python
-RESOLUTION_LEVELS = {1: 2048, 2: 4096, 3: 8192, 4: 16384}  # max image dim
+RESOLUTION_LEVELS = {1: 2048, 2: 4096, 3: 8192, 4: 16384, 5: 1048576}  # max image dim; L5 = full resolution (1 pixel per block)
 CHUNK_GRID_SIZE = 16  # 16×16 = 256 chunks per level
 DEFAULT_RESOLUTION_LEVEL = 2
 ```
