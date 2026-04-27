@@ -5,6 +5,38 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Cairn</title>
+    <script>
+      // Pre-paint theme script: applies the saved theme before React renders
+      // to avoid a flash of the wrong color scheme. Mirrors lib/theme.ts.
+      (function () {
+        try {
+          var raw = localStorage.getItem("theme_preference");
+          var pref = "auto";
+          if (raw) {
+            var parts = raw.split(":");
+            if (
+              parts[0] === "1" &&
+              (parts[1] === "auto" || parts[1] === "light" || parts[1] === "dark")
+            ) {
+              pref = parts[1];
+            }
+          }
+          var resolved = pref;
+          if (pref === "auto") {
+            resolved =
+              window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          }
+          var root = document.documentElement;
+          root.classList.toggle("dark", resolved === "dark");
+          root.classList.toggle("light", resolved === "light");
+          root.style.colorScheme = resolved;
+        } catch (e) {
+          /* ignore */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

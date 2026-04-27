@@ -16,14 +16,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 export function AccountPage() {
   const queryClient = useQueryClient();
@@ -43,7 +38,12 @@ export function AccountPage() {
         const msg = e instanceof Error ? e.message : "";
         if (msg.toLowerCase().includes("no account")) {
           setNeedsRegister(true);
-          return { user: null, is_admin: false, terms_version_current: "", terms_accepted_current: false };
+          return {
+            user: null,
+            is_admin: false,
+            terms_version_current: "",
+            terms_accepted_current: false,
+          };
         }
         throw e;
       }
@@ -113,15 +113,12 @@ export function AccountPage() {
         <CardHeader>
           <CardTitle>Create your account</CardTitle>
           <CardDescription>
-            Your API key isn't yet linked to an account. Accept the terms and a
-            random display name will be generated for you.
+            Your API key isn't yet linked to an account. Accept the terms and a random display name
+            will be generated for you.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button
-            onClick={() => registerMut.mutate()}
-            disabled={registerMut.isPending}
-          >
+          <Button onClick={() => registerMut.mutate()} disabled={registerMut.isPending}>
             {registerMut.isPending ? "Creating…" : "Accept terms & create account"}
           </Button>
           {registerMut.error && (
@@ -150,8 +147,8 @@ export function AccountPage() {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            You are signed in as the system admin. The admin key has no user profile.
-            Manage other users under <span className="font-mono">Manage → Users</span>.
+            You are signed in as the system admin. The admin key has no user profile. Manage other
+            users under <span className="font-mono">Manage → Users</span>.
           </p>
         </CardContent>
       </Card>
@@ -178,7 +175,9 @@ export function AccountPage() {
           <div>
             <Label className="text-xs text-muted-foreground">Display name</Label>
             <div className="flex items-center gap-2 mt-1">
-              <code className="rounded bg-muted px-2 py-1 text-sm font-mono">{user.display_name}</code>
+              <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
+                {user.display_name}
+              </code>
               <Button
                 size="sm"
                 variant="outline"
@@ -198,7 +197,9 @@ export function AccountPage() {
           </div>
           <Separator />
           <div className="space-y-1">
-            <Label htmlFor="ign" className="text-xs text-muted-foreground">In-game name (optional)</Label>
+            <Label htmlFor="ign" className="text-xs text-muted-foreground">
+              In-game name (optional)
+            </Label>
             <div className="flex gap-2">
               <Input
                 id="ign"
@@ -263,7 +264,8 @@ export function AccountPage() {
             <div>
               <Label>Show Contributions</Label>
               <p className="text-xs text-muted-foreground">
-                Reveal who submitted each contribution on the Contribute page (e.g. "Made by Alex"). When off, contributors are shown as anonymous. Admins always see the names.
+                Reveal who submitted each contribution on the Contribute page (e.g. "Made by Alex").
+                When off, contributors are shown as anonymous. Admins always see the names.
               </p>
             </div>
             <Switch
@@ -274,13 +276,27 @@ export function AccountPage() {
         </CardContent>
       </Card>
 
+      {/* Appearance */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Appearance</CardTitle>
+          <CardDescription>
+            Choose how Cairn looks. Auto follows your operating system.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <Label>Theme</Label>
+            <ThemeSwitcher />
+          </div>
+        </CardContent>
+      </Card>
+
       {/* API Key */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">API Key</CardTitle>
-          <CardDescription>
-            Your secret access key. Treat it like a password.
-          </CardDescription>
+          <CardDescription>Your secret access key. Treat it like a password.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex gap-2">
@@ -292,7 +308,11 @@ export function AccountPage() {
             <Button size="sm" variant="outline" onClick={() => setShowKey((v) => !v)}>
               {showKey ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => navigator.clipboard.writeText(apiKey)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigator.clipboard.writeText(apiKey)}
+            >
               <Copy className="size-3" />
             </Button>
           </div>
@@ -300,9 +320,20 @@ export function AccountPage() {
             size="sm"
             variant="outline"
             onClick={() => {
-              const blob = new Blob([
-                JSON.stringify({ display_name: user.display_name, api_key: apiKey, exported_at: new Date().toISOString() }, null, 2),
-              ], { type: "application/json" });
+              const blob = new Blob(
+                [
+                  JSON.stringify(
+                    {
+                      display_name: user.display_name,
+                      api_key: apiKey,
+                      exported_at: new Date().toISOString(),
+                    },
+                    null,
+                    2,
+                  ),
+                ],
+                { type: "application/json" },
+              );
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
               a.download = `cairn-recovery-${user.display_name}.json`;
@@ -347,9 +378,8 @@ export function AccountPage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
           <CardDescription>
-            Deleting your account is irreversible without admin assistance.
-            Your API key will be revoked and your contributions will be reattributed
-            to a tombstone identity.
+            Deleting your account is irreversible without admin assistance. Your API key will be
+            revoked and your contributions will be reattributed to a tombstone identity.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">

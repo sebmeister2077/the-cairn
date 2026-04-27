@@ -7,6 +7,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -83,9 +84,17 @@ function getActiveCategory(pathname: string) {
 function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
-  const [passkeyDialog, setPasskeyDialog] = useState<{ mode: PasskeyDialogMode; required: boolean } | null>(null);
+  const [passkeyDialog, setPasskeyDialog] = useState<{
+    mode: PasskeyDialogMode;
+    required: boolean;
+  } | null>(null);
   const location = useLocation();
-  const [inviteClaim, setInviteClaim] = useState<{ token: string; status: "idle" | "pending" | "success" | "error"; error?: string; key?: string } | null>(null);
+  const [inviteClaim, setInviteClaim] = useState<{
+    token: string;
+    status: "idle" | "pending" | "success" | "error";
+    error?: string;
+    key?: string;
+  } | null>(null);
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
 
   // On boot (or after a hot reload) if we already think we're admin but have
@@ -197,8 +206,8 @@ function AppContent() {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">Cairn</h1>
+          <div className="flex flex-col items-start gap-1">
+            <Logo className="h-10 w-auto" />
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Unofficial fan project &mdash; not affiliated with Anego Studios
             </span>
@@ -210,7 +219,9 @@ function AppContent() {
               </Badge>
             )}
             <NavLink to="/account">
-              <Button variant="ghost" size="sm">Account</Button>
+              <Button variant="ghost" size="sm">
+                Account
+              </Button>
             </NavLink>
             <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
               API Key
@@ -222,11 +233,7 @@ function AppContent() {
             <TabsList>
               {categories.map((c) => (
                 <NavLink key={c.value} to={c.value} end={false}>
-                  {() => (
-                    <TabsTrigger value={c.value}>
-                      {c.label}
-                    </TabsTrigger>
-                  )}
+                  {() => <TabsTrigger value={c.value}>{c.label}</TabsTrigger>}
                 </NavLink>
               ))}
             </TabsList>
@@ -236,11 +243,7 @@ function AppContent() {
               <TabsList variant="line">
                 {activeSubs.map((t) => (
                   <NavLink key={t.value} to={t.value} end>
-                    {() => (
-                      <TabsTrigger value={t.value}>
-                        {t.label}
-                      </TabsTrigger>
-                    )}
+                    {() => <TabsTrigger value={t.value}>{t.label}</TabsTrigger>}
                   </NavLink>
                 ))}
               </TabsList>
@@ -276,8 +279,18 @@ function AppContent() {
         <div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2">
           <span>Cairn &mdash; unofficial fan project.</span>
           <span className="flex gap-3">
-            <NavLink to="/privacy" className="hover:text-foreground underline-offset-2 hover:underline">Privacy</NavLink>
-            <NavLink to="/terms" className="hover:text-foreground underline-offset-2 hover:underline">Terms</NavLink>
+            <NavLink
+              to="/privacy"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Privacy
+            </NavLink>
+            <NavLink
+              to="/terms"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Terms
+            </NavLink>
           </span>
         </div>
       </footer>
@@ -285,9 +298,7 @@ function AppContent() {
         open={keyOpen}
         onClose={() => setKeyOpen(false)}
         onAdminStatusChange={setIsAdmin}
-        onAdminPasskeyNeeded={(mode) =>
-          setPasskeyDialog({ mode, required: mode === "assert" })
-        }
+        onAdminPasskeyNeeded={(mode) => setPasskeyDialog({ mode, required: mode === "assert" })}
       />
 
       {passkeyDialog && (
@@ -316,10 +327,15 @@ function AppContent() {
               {inviteClaim.status === "idle" && (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    You were invited to use this service. Click below to receive your personal API key.
+                    You were invited to use this service. Click below to receive your personal API
+                    key.
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setInviteClaim(null)} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={() => setInviteClaim(null)}
+                      className="flex-1"
+                    >
                       Dismiss
                     </Button>
                     <Button onClick={handleClaimInvite} className="flex-1">
@@ -333,7 +349,9 @@ function AppContent() {
               )}
               {inviteClaim.status === "success" && (
                 <>
-                  <p className="text-sm text-emerald-600 font-medium">Your API key has been activated!</p>
+                  <p className="text-sm text-emerald-600 font-medium">
+                    Your API key has been activated!
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     Your key is now saved in this browser. You can start using the service.
                   </p>
@@ -366,39 +384,68 @@ function GeneralPage() {
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <strong>Unofficial fan project.</strong> This site is not
-          affiliated with, endorsed by, or sponsored by Anego Studios, the
-          developers of <em>Vintage Story</em>. “Vintage Story” is a
+          <strong>Unofficial fan project.</strong> This site is not affiliated with, endorsed by, or
+          sponsored by Anego Studios, the developers of <em>Vintage Story</em>. “Vintage Story” is a
           trademark of Anego Studios.
         </div>
         <p>
-          A web toolkit for managing Vintage Story waypoints and map data. Choose a category above to get started.
+          A web toolkit for managing Vintage Story waypoints and map data. Choose a category above
+          to get started.
         </p>
         <div className="grid gap-3">
           <div>
             <p className="font-medium text-foreground">Singleplayer</p>
             <ul className="list-disc list-inside space-y-1 ml-1">
-              <li><strong>Extract</strong> &mdash; pull waypoints out of your <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.vcdbs</code> save file into JSON.</li>
-              <li><strong>Import</strong> &mdash; write waypoints back into a save file (append or replace).</li>
-              <li><strong>Commands</strong> &mdash; generate <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">/waypoint addati</code> chat commands from a JSON list.</li>
-              <li><strong>Delete</strong> &mdash; remove matching waypoints from a save file by name, icon, or colour.</li>
+              <li>
+                <strong>Extract</strong> &mdash; pull waypoints out of your{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.vcdbs</code> save
+                file into JSON.
+              </li>
+              <li>
+                <strong>Import</strong> &mdash; write waypoints back into a save file (append or
+                replace).
+              </li>
+              <li>
+                <strong>Commands</strong> &mdash; generate{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
+                  /waypoint addati
+                </code>{" "}
+                chat commands from a JSON list.
+              </li>
+              <li>
+                <strong>Delete</strong> &mdash; remove matching waypoints from a save file by name,
+                icon, or colour.
+              </li>
             </ul>
             <p className="text-xs italic mt-2">
               Singleplayer tools only touch the waypoints table of the
               <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono mx-1">.vcdbs</code>
-              file you upload &mdash; nothing else is read or modified, and the
-              uploaded file is held in memory only for the duration of the
-              request, then discarded. Your world data never leaves your
-              machine permanently.
+              file you upload &mdash; nothing else is read or modified, and the uploaded file is
+              held in memory only for the duration of the request, then discarded. Your world data
+              never leaves your machine permanently.
             </p>
           </div>
           <div>
             <p className="font-medium text-foreground">Multiplayer</p>
             <ul className="list-disc list-inside space-y-1 ml-1">
-              <li><strong>Identify Maps</strong> &mdash; figure out which <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache files belong to which server using your client log.</li>
-              <li><strong>Local Map Viewer</strong> &mdash; render and explore a cached map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as an interactive image.</li>
-              <li><strong>TOPS Map Viewer</strong> &mdash; explore the community-contributed global server map.</li>
-              <li><strong>Contribute</strong> &mdash; upload your map cache to help build a shared community map for your server.</li>
+              <li>
+                <strong>Identify Maps</strong> &mdash; figure out which{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
+                cache files belong to which server using your client log.
+              </li>
+              <li>
+                <strong>Local Map Viewer</strong> &mdash; render and explore a cached map{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as
+                an interactive image.
+              </li>
+              <li>
+                <strong>TOPS Map Viewer</strong> &mdash; explore the community-contributed global
+                server map.
+              </li>
+              <li>
+                <strong>Contribute</strong> &mdash; upload your map cache to help build a shared
+                community map for your server.
+              </li>
             </ul>
           </div>
         </div>
@@ -436,14 +483,17 @@ export default function App() {
         maxAge: TWO_DAYS,
         dehydrateOptions: {
           shouldDehydrateQuery: (query) =>
-            query.state.status === "success" && (query.meta as { persist?: boolean } | undefined)?.persist === true,
+            query.state.status === "success" &&
+            (query.meta as { persist?: boolean } | undefined)?.persist === true,
         },
       }}
     >
       <BrowserRouter>
         <AppContent />
       </BrowserRouter>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />}
+      {import.meta.env.DEV && (
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      )}
     </PersistQueryClientProvider>
   );
 }
