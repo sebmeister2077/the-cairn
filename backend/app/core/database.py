@@ -250,6 +250,24 @@ ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS affected_min_z INTEGER;
 ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS affected_max_z INTEGER;
+
+-- Phase 2: region-restricted updates. NULL on all four columns ⇒ legacy
+-- gap-fill mode (the default). Otherwise ``(min_x, max_x, min_z, max_z)``
+-- is a world-block bounding box; on approval the merge replaces every tile
+-- inside the region with the upload's version (and captures the previous
+-- bytes into ``undo/<id>.replaced.db`` so revert remains surgical). Tiles
+-- outside the region are untouched.
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS update_region_min_x INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS update_region_max_x INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS update_region_min_z INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS update_region_max_z INTEGER;
+CREATE INDEX IF NOT EXISTS idx_contributions_update_region
+    ON contributions (update_region_min_x)
+    WHERE update_region_min_x IS NOT NULL;
 """
 
 # ---------------------------------------------------------------------------
@@ -376,6 +394,47 @@ def create_contribution(cid: str, contributor: str, tile_count: int, api_key: st
                    VALUES (%s, %s, %s, 'pending', %s)""",
                 (cid, contributor or "Anonymous", tile_count, api_key or None),
             )
+
+
+def set_update_region(
+    cid: str,
+    region: Optional[tuple],
+) -> None:
+    """Persist the Phase-2 region bounds (or clear them when ``region`` is None).
+
+    ``region`` is ``(min_x, max_x, min_z, max_z)`` in world-block coordinates.
+    When set, the approval merge replaces in-region tiles with the upload's
+    bytes (rather than gap-filling).
+    """
+    if region is None:
+        min_x = max_x = min_z = max_z = None
+    else:
+        min_x, max_x, min_z, max_z = region
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET update_region_min_x = %s,
+                           update_region_max_x = %s,
+                           update_region_min_z = %s,
+                           update_region_max_z = %s
+                   WHERE id = %s""",
+                (min_x, max_x, min_z, max_z, cid),
+            )
+
+
+def get_update_region(cid: str) -> Optional[tuple]:
+    """Return ``(min_x, max_x, min_z, max_z)`` or None if the contribution has
+    no Phase-2 region attached (legacy gap-fill)."""
+    row = get_contribution(cid)
+    if not row or row.get("update_region_min_x") is None:
+        return None
+    return (
+        int(row["update_region_min_x"]),
+        int(row["update_region_max_x"]),
+        int(row["update_region_min_z"]),
+        int(row["update_region_max_z"]),
+    )
 
 
 def get_contribution(cid: str) -> Optional[dict]:

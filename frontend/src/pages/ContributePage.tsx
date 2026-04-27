@@ -13,6 +13,8 @@ import {
   getStoredCanContribute,
   fetchImageFromSignedUrl,
   getMyAccount,
+  getTopsMapStats,
+  type ContributionRegion,
 } from "@/lib/api";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -25,6 +27,8 @@ import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, Undo2, Refr
 import { MapViewer } from "@/components/MapViewer";
 import { AdminFeatureFlagsPanel } from "@/components/AdminFeatureFlagsPanel";
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
+import { ContributionRegionPicker } from "@/components/ContributionRegionPicker";
+import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
 
 // Phase 1 — informational match-score result attached to each pending row.
 interface MatchScore {
@@ -47,6 +51,16 @@ interface PendingContribution {
   preview_image_url?: string;
   preview_signed_url?: string;
   match_score?: MatchScore | null;
+  // Phase 2 — region-restricted update bounds (admin-or-owner only) and mode
+  // ("overwrite" | "gap_fill"). The mode is always present; bounds are
+  // redacted from non-admin/non-owner viewers.
+  update_region?: {
+    min_x: number;
+    max_x: number;
+    min_z: number;
+    max_z: number;
+  } | null;
+  update_region_mode?: "overwrite" | "gap_fill";
 }
 
 interface WithdrawnEntry {
@@ -109,6 +123,10 @@ interface ContributeInfo {
   withdraw_limit_per_week?: number;
   withdrawals_used_this_week?: number;
   withdraw_next_allowed_at?: string | null;
+  // Phase 2 — region-restricted update gating
+  region_overwrite_enabled?: boolean;
+  can_use_region_overwrite?: boolean;
+  region_tile_cap_non_admin?: number;
 }
 
 export function ContributePage() {
@@ -149,6 +167,8 @@ export function ContributePage() {
   const [error, setError] = useState("");
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
+  // Phase 2 — region-restricted update state. `null` = legacy gap-fill mode.
+  const [region, setRegion] = useState<ContributionRegion | null>(null);
 
   // Contribute info via React Query. Phase 1: when at least one pending row
   // has a not-yet-ready match score we poll every 5 s so the badge updates
@@ -167,13 +187,34 @@ export function ContributePage() {
   const info = infoQuery.data ?? null;
   const infoLoading = infoQuery.isLoading;
 
+  // Phase 2 — fetch the multi-resolution TOPS map metadata so the region
+  // picker can pick the cheapest complete level. We only enable this query
+  // when the contributor is actually allowed to use region-overwrite, to
+  // avoid hammering the endpoint for everyone.
+  const regionPickerEnabled = info?.can_use_region_overwrite === true;
+  const topsStatsQuery = useQuery<{
+    resolutions?: Array<{
+      level: number;
+      max_dimension: number;
+      status: "complete" | "generating" | "not_generated" | "failed";
+      generated_at?: string | null;
+      size_bytes?: number | null;
+      progress?: number;
+    }>;
+  }>({
+    queryKey: ["tops-map-stats"],
+    queryFn: getTopsMapStats,
+    enabled: regionPickerEnabled,
+    retry: false,
+  });
+  const availableLevels = topsStatsQuery.data?.resolutions ?? [];
+
   // Current account — used to honour the user's "Show Contributions" preference.
   const accountQuery = useQuery({
     queryKey: ["account-me"],
     queryFn: getMyAccount,
     retry: false,
-  });
-  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
+  });  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
   const canSeeContributors = isAdmin || info?.is_admin || showContributions;
   const displayContributor = (name: string) =>
     canSeeContributors ? name : "Anonymous";
@@ -221,12 +262,16 @@ export function ContributePage() {
     setUploadResult(null);
 
     try {
-      const data = await contributeMap(dbFile, contributor, (pct) =>
-        setUploadProgress(pct),
+      const data = await contributeMap(
+        dbFile,
+        contributor,
+        (pct) => setUploadProgress(pct),
+        region,
       );
       setUploadResult(data.message as string);
       setDbFile(null);
       setFileInputKey((prev) => prev + 1);
+      setRegion(null);
       queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -452,6 +497,33 @@ export function ContributePage() {
               />
             </div>
 
+            {regionPickerEnabled && (
+              <div className="space-y-2 rounded border p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <Label className="m-0">
+                    Region overwrite{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      (optional, replaces in-region tiles)
+                    </span>
+                  </Label>
+                  {isAdmin && (
+                    <Badge variant="outline">admin / region_overwrite</Badge>
+                  )}
+                </div>
+                <ContributionRegionPicker
+                  availableLevels={availableLevels}
+                  value={region}
+                  onChange={(r) => setRegion(r)}
+                  tileAreaCap={
+                    isAdmin
+                      ? null
+                      : info?.region_tile_cap_non_admin ?? null
+                  }
+                  disabled={uploading}
+                />
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={
@@ -604,6 +676,32 @@ export function ContributePage() {
                         </>
                       }
                     />
+                  </div>
+                )}
+
+                {/* Phase 2 — region before/after preview (admin/owner only).
+                    The endpoint is gated server-side by feature flag and
+                    owner/admin checks, so we only need to gate the UI on
+                    the presence of `update_region` (which the backend
+                    redacts for non-admin/non-owner viewers anyway). */}
+                {previewId === p.id &&
+                  p.update_region_mode === "overwrite" &&
+                  p.update_region && (
+                    <ContributionBeforeAfter contributionId={p.id} />
+                  )}
+
+                {/* Region badge — visible whenever the upload was a
+                    region-overwrite, even if bounds are redacted. */}
+                {p.update_region_mode === "overwrite" && (
+                  <div className="text-xs text-muted-foreground">
+                    Region overwrite
+                    {p.update_region && (
+                      <>
+                        {" "}— x [{p.update_region.min_x},{" "}
+                        {p.update_region.max_x}], z [{p.update_region.min_z},{" "}
+                        {p.update_region.max_z}]
+                      </>
+                    )}
                   </div>
                 )}
               </div>

@@ -300,6 +300,15 @@ interface ContributeUploadSession {
     upload_headers?: Record<string, string>;
 }
 
+// Phase 2 — region-restricted contribution. World-block coordinates,
+// inclusive on both ends. Send as part of the /contribute/complete body.
+export interface ContributionRegion {
+    min_x: number;
+    max_x: number;
+    min_z: number;
+    max_z: number;
+}
+
 function uploadFileToUrl(
     session: ContributeUploadSession,
     file: File,
@@ -346,6 +355,7 @@ export async function contributeMap(
     file: File,
     contributor: string,
     onProgress?: (percent: number) => void,
+    region?: ContributionRegion | null,
 ): Promise<Record<string, unknown>> {
     const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
         method: "POST",
@@ -365,16 +375,24 @@ export async function contributeMap(
     await uploadFileToUrl(session, file, onProgress);
     onProgress?.(98);
 
+    const completeBody: Record<string, unknown> = {
+        contribution_id: session.contribution_id,
+        contributor,
+    };
+    if (region) {
+        completeBody.update_region_min_x = region.min_x;
+        completeBody.update_region_max_x = region.max_x;
+        completeBody.update_region_min_z = region.min_z;
+        completeBody.update_region_max_z = region.max_z;
+    }
+
     const completeRes = await fetch(`${UPLOAD_API_BASE}/contribute/complete`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
             "X-API-Key": getApiKey(),
         },
-        body: JSON.stringify({
-            contribution_id: session.contribution_id,
-            contributor,
-        }),
+        body: JSON.stringify(completeBody),
     });
 
     onProgress?.(100);
@@ -439,6 +457,52 @@ export async function recomputeMatchScore(contributionId: string) {
         },
     );
     return (await handleResponse(res)).json();
+}
+
+// Phase 2 — preview the in-region tile counts for a candidate region against
+// an already-uploaded pending file. Returns 404 when the
+// ``region_overwrite`` feature flag is off.
+export interface RegionPreviewResult {
+    tiles_in_region: number;
+    tiles_total: number;
+    region_tile_area: number;
+    region_tile_cap: number | null;
+}
+
+export async function previewRegionContribution(
+    contributionId: string,
+    region: ContributionRegion,
+): Promise<RegionPreviewResult> {
+    const res = await fetch(`${API_BASE}/contribute/region-preview`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": getApiKey(),
+        },
+        body: JSON.stringify({
+            contribution_id: contributionId,
+            update_region_min_x: region.min_x,
+            update_region_max_x: region.max_x,
+            update_region_min_z: region.min_z,
+            update_region_max_z: region.max_z,
+        }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// Phase 2 — fetch the cached side-by-side region preview PNG. ``side`` is
+// "before" (combined map cropped to region) or "after" (combined merged
+// with upload, with green/orange tints on the changed tiles).
+export async function getRegionPreviewImage(
+    contributionId: string,
+    side: "before" | "after",
+): Promise<Blob> {
+    const res = await fetch(
+        `${API_BASE}/contribute/preview-region/${contributionId}?side=${side}`,
+        { headers: { "X-API-Key": getApiKey() } },
+    );
+    await handleResponse(res);
+    return res.blob();
 }
 
 // ---------------------------------------------------------------------------

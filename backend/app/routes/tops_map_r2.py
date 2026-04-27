@@ -20,9 +20,10 @@ from ..core import generation_tracker, r2_storage, database as db
 
 router = APIRouter()
 
-# Presigned URLs are short-lived enough to mitigate sharing yet long enough to
-# survive a browsing session and intermediate caches.
-_CHUNK_URL_EXPIRY_SECONDS = 24 * 60 * 60
+# Presigned URLs live for the S3v4 maximum (7 days) so daily visitors almost
+# never trigger a re-sign round-trip. Cached in Postgres via
+# ``tops_map_chunk_urls`` and refreshed within the buffer below.
+_CHUNK_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60
 # Refresh URLs that are within this window of expiring so clients holding the
 # old value still have time to use them before the rotation.
 _CHUNK_URL_REFRESH_BUFFER_SECONDS = 30 * 60

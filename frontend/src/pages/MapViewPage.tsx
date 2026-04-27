@@ -1,5 +1,5 @@
 import { useState, useCallback, type FormEvent } from "react";
-import { getMapStats, renderMap } from "@/lib/api";
+import { getMapStats, getStoredIsAdmin, renderMap } from "@/lib/api";
 import { MapViewer, type MapStats } from "@/components/MapViewer";
 import { FileUpload } from "@/components/FileUpload";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,11 @@ export function MapViewPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState("");
+  const isAdmin = getStoredIsAdmin();
   const [fastPreview, setFastPreview] = useState(true);
+  // Non-admins are locked into fast preview mode (full-detail rendering is too
+  // expensive to expose publicly).
+  const effectiveFastPreview = isAdmin ? fastPreview : true;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -43,14 +47,14 @@ export function MapViewPage() {
 
     // Step 2: Render image
     setLoading(
-      fastPreview
+      effectiveFastPreview
         ? "Rendering fast preview…"
         : "Rendering map image… This may take a moment for large maps.",
     );
     try {
       const fd = new FormData();
       fd.append("db_file", dbFile);
-      const blob = await renderMap(fd, undefined, fastPreview);
+      const blob = await renderMap(fd, undefined, effectiveFastPreview);
       const url = URL.createObjectURL(blob);
       setImageUrl(url);
     } catch (err) {
@@ -82,8 +86,8 @@ export function MapViewPage() {
     if (!dbFile) throw new Error("no file");
     const fd = new FormData();
     fd.append("db_file", dbFile);
-    return renderMap(fd, maxDim, fastPreview);
-  }, [dbFile, fastPreview]);
+    return renderMap(fd, maxDim, effectiveFastPreview);
+  }, [dbFile, effectiveFastPreview]);
 
   return (
     <Card>
@@ -104,14 +108,16 @@ export function MapViewPage() {
             required
             onChange={setDbFile}
           />
-          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-            <Switch
-              checked={fastPreview}
-              onCheckedChange={setFastPreview}
-              aria-label="Fast preview mode"
-            />
-            <Label>Fast preview mode (much faster, lower detail)</Label>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={fastPreview}
+                onCheckedChange={setFastPreview}
+                aria-label="Fast preview mode"
+              />
+              <Label>Fast preview mode (much faster, lower detail)</Label>
+            </div>
+          )}
           <div className="flex gap-2">
             <Button type="submit" disabled={!dbFile || !!loading}>
               {loading || "Render Map"}

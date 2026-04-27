@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
-from ..auth import verify_api_key, verify_contribute_permission
+from ..auth import verify_api_key, verify_contribute_permission, verify_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, accounts_db, database as db
@@ -59,6 +59,24 @@ class ContributeUploadInitRequest(BaseModel):
 class ContributeUploadCompleteRequest(BaseModel):
     contribution_id: str
     contributor: str = ""
+    # Phase 2 — optional region bounds (world-block coords). When set, the
+    # approval merge will overwrite in-region tiles with the upload's bytes
+    # instead of gap-filling. All four must be provided together.
+    update_region_min_x: Optional[int] = None
+    update_region_max_x: Optional[int] = None
+    update_region_min_z: Optional[int] = None
+    update_region_max_z: Optional[int] = None
+
+
+class ContributeRegionPreviewRequest(BaseModel):
+    """Body for ``POST /contribute/region-preview`` — returns the in-region
+    tile counts so the picker can show "X of Y tiles in your file are inside
+    the selected region" before the user commits."""
+    contribution_id: str
+    update_region_min_x: int
+    update_region_max_x: int
+    update_region_min_z: int
+    update_region_max_z: int
 
 
 # ---------------------------------------------------------------------------
@@ -225,19 +243,66 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
 # Merge logic
 # ---------------------------------------------------------------------------
 
-def _merge_into_combined(upload_path: str, combined_path: str, *, added_writer=None) -> dict:
-    """Merge ``upload_path`` into ``combined_path`` (gap-fill, INSERT-or-skip).
+def _merge_into_combined(
+    upload_path: str,
+    combined_path: str,
+    *,
+    added_writer=None,
+    region: Optional[tuple] = None,
+    replaced_db_path: Optional[str] = None,
+) -> dict:
+    """Merge ``upload_path`` into ``combined_path``.
 
-    When ``added_writer`` is supplied it is invoked with each freshly-inserted
-    ``position`` integer in insertion order. Used by Phase 4b to stream the
-    undo log of the contribution to a temp file as we go.
+    Two modes:
+
+    * **Gap-fill (default)** — ``region is None``. Inserts pending tiles only
+      where the combined map has no row at that position. Pre-existing tiles
+      are kept (``INSERT OR IGNORE`` semantics, but driven by an explicit
+      lookup so we can stream undo data).
+    * **Region-overwrite (Phase 2)** — ``region`` is a
+      ``(min_x, max_x, min_z, max_z)`` world-block bounding box. Filters the
+      pending tiles to those that fall inside the region, then for each:
+      records the existing tile bytes (if any) into ``replaced_db_path`` for
+      later revert and ``INSERT OR REPLACE`` the new bytes. Pending tiles
+      outside the region are ignored entirely. Tiles already in combined but
+      outside the region are untouched.
+
+    When ``added_writer`` is supplied it is invoked with each freshly-
+    inserted ``position`` integer in insertion order. Used by Phase 4b to
+    stream the per-contribution undo log.
     """
     combined_conn = sqlite3.connect(combined_path)
     upload_conn = sqlite3.connect(upload_path)
-    try:
+    replaced_conn: Optional[sqlite3.Connection] = None
+    if replaced_db_path is not None:
+        replaced_conn = sqlite3.connect(replaced_db_path)
+        replaced_conn.execute(
+            f"CREATE TABLE IF NOT EXISTS {MAPPIECE_TABLE} "
+            f"(position INTEGER PRIMARY KEY, data BLOB)"
+        )
+        replaced_conn.commit()
+
+    # When a region is set, push the filter into SQL so we don't pull the
+    # whole pending DB across the bus.
+    if region is not None:
+        rmin_x, rmax_x, rmin_z, rmax_z = region
+        tx_min = rmin_x // TILE_SIZE
+        tx_max = rmax_x // TILE_SIZE
+        tz_min = rmin_z // TILE_SIZE
+        tz_max = rmax_z // TILE_SIZE
+        cur = upload_conn.execute(
+            f"""SELECT position, data FROM {MAPPIECE_TABLE}
+                WHERE (position & ?) BETWEEN ? AND ?
+                  AND (position >> ?) BETWEEN ? AND ?""",
+            (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
+        )
+    else:
         cur = upload_conn.execute(f"SELECT position, data FROM {MAPPIECE_TABLE}")
+
+    try:
         added = 0
         skipped = 0
+        replaced = 0
         batch_size = 2000
 
         while True:
@@ -245,12 +310,12 @@ def _merge_into_combined(upload_path: str, combined_path: str, *, added_writer=N
             if not rows:
                 break
             for pos, data in rows:
-                existing = combined_conn.execute(
-                    f"SELECT 1 FROM {MAPPIECE_TABLE} WHERE position = ?", (pos,)
+                existing_row = combined_conn.execute(
+                    f"SELECT data FROM {MAPPIECE_TABLE} WHERE position = ?",
+                    (pos,),
                 ).fetchone()
-                if existing:
-                    skipped += 1
-                else:
+                if existing_row is None:
+                    # Net-new tile in either mode.
                     combined_conn.execute(
                         f"INSERT INTO {MAPPIECE_TABLE} (position, data) VALUES (?, ?)",
                         (pos, data),
@@ -264,9 +329,30 @@ def _merge_into_combined(upload_path: str, combined_path: str, *, added_writer=N
                             # caller is responsible for downgrading
                             # ``revert_supported`` if the writer signals it.
                             pass
+                else:
+                    if region is None:
+                        # Gap-fill: keep the existing tile.
+                        skipped += 1
+                    else:
+                        # Region-overwrite: capture the previous bytes into
+                        # the undo blob, then replace.
+                        if replaced_conn is not None:
+                            replaced_conn.execute(
+                                f"INSERT OR REPLACE INTO {MAPPIECE_TABLE} "
+                                f"(position, data) VALUES (?, ?)",
+                                (pos, existing_row[0]),
+                            )
+                        combined_conn.execute(
+                            f"UPDATE {MAPPIECE_TABLE} SET data = ? WHERE position = ?",
+                            (data, pos),
+                        )
+                        replaced += 1
             combined_conn.commit()
+            if replaced_conn is not None:
+                replaced_conn.commit()
 
-        # blockidmapping
+        # blockidmapping (always merged with INSERT OR IGNORE — these are
+        # global per-world block id assignments, not tile contents).
         try:
             for id_val, data in upload_conn.execute(
                 f"SELECT id, data FROM {BLOCKIDMAPPING_TABLE}"
@@ -284,14 +370,17 @@ def _merge_into_combined(upload_path: str, combined_path: str, *, added_writer=N
         ).fetchone()[0]
 
         return {
-            "tiles_uploaded": added + skipped,
+            "tiles_uploaded": added + skipped + replaced,
             "tiles_new": added,
             "tiles_existing": skipped,
+            "tiles_replaced": replaced,
             "combined_total": after_count,
         }
     finally:
         upload_conn.close()
         combined_conn.close()
+        if replaced_conn is not None:
+            replaced_conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -404,6 +493,103 @@ def _compute_pending_world_bounds(pending_db_path: str):
         int(min_tz) * TILE_SIZE,
         (int(max_tz) + 1) * TILE_SIZE - 1,
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 — region-restricted updates
+# ---------------------------------------------------------------------------
+
+def _normalise_region(
+    min_x: Optional[int],
+    max_x: Optional[int],
+    min_z: Optional[int],
+    max_z: Optional[int],
+) -> Optional[tuple]:
+    """Return a normalised ``(min_x, max_x, min_z, max_z)`` tuple or None.
+
+    Raises ``ValueError`` when only some of the four coords were supplied
+    (callers must send all-or-nothing).
+    """
+    coords = [min_x, max_x, min_z, max_z]
+    none_count = sum(1 for c in coords if c is None)
+    if none_count == 4:
+        return None
+    if none_count != 0:
+        raise ValueError(
+            "All four region bounds must be provided together "
+            "(update_region_min_x, max_x, min_z, max_z)"
+        )
+    a, b, c, d = (int(min_x), int(max_x), int(min_z), int(max_z))
+    if a > b:
+        a, b = b, a
+    if c > d:
+        c, d = d, c
+    return (a, b, c, d)
+
+
+def _region_tile_count(region: tuple) -> int:
+    """Tile-count area of a region (used for the non-admin size cap)."""
+    rmin_x, rmax_x, rmin_z, rmax_z = region
+    tx_min = rmin_x // TILE_SIZE
+    tx_max = rmax_x // TILE_SIZE
+    tz_min = rmin_z // TILE_SIZE
+    tz_max = rmax_z // TILE_SIZE
+    return max(0, tx_max - tx_min + 1) * max(0, tz_max - tz_min + 1)
+
+
+def _check_region_eligibility(api_key: str, region: tuple) -> None:
+    """Enforce the Phase-2 trust model on a region request.
+
+    1. Feature flag must be on (otherwise the route is invisible — 404).
+    2. Caller must be admin OR carry the ``region_overwrite`` permission.
+    3. Non-admin callers are capped at ``MAX_REGION_TILES_NON_ADMIN`` tiles.
+    """
+    if not is_feature_enabled("region_overwrite"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    if _is_admin_key(api_key):
+        return
+    if not verify_permission(api_key, "region_overwrite"):
+        raise HTTPException(
+            status_code=403,
+            detail="This API key lacks the 'region_overwrite' permission",
+        )
+    tiles = _region_tile_count(region)
+    if tiles > settings.MAX_REGION_TILES_NON_ADMIN:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Region too large: {tiles} tiles exceeds the non-admin cap of "
+                f"{settings.MAX_REGION_TILES_NON_ADMIN} tiles."
+            ),
+        )
+
+
+def _count_pending_tiles(pending_db_path: str, region: Optional[tuple] = None) -> tuple:
+    """Return ``(in_region_count, total_count)`` for the pending DB.
+
+    When ``region`` is None, ``in_region_count`` equals ``total_count``.
+    """
+    conn = sqlite3.connect(pending_db_path)
+    try:
+        total = conn.execute(
+            f"SELECT COUNT(*) FROM {MAPPIECE_TABLE}"
+        ).fetchone()[0] or 0
+        if region is None:
+            return int(total), int(total)
+        rmin_x, rmax_x, rmin_z, rmax_z = region
+        tx_min = rmin_x // TILE_SIZE
+        tx_max = rmax_x // TILE_SIZE
+        tz_min = rmin_z // TILE_SIZE
+        tz_max = rmax_z // TILE_SIZE
+        in_region = conn.execute(
+            f"""SELECT COUNT(*) FROM {MAPPIECE_TABLE}
+                WHERE (position & ?) BETWEEN ? AND ?
+                  AND (position >> ?) BETWEEN ? AND ?""",
+            (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
+        ).fetchone()[0] or 0
+        return int(in_region), int(total)
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -525,6 +711,160 @@ def _render_preview(combined_path: str, upload_path: str, max_dimension: int = 2
     out = io.BytesIO()
     img.save(out, format="PNG")
     return out.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 — region-overwrite before/after preview
+# ---------------------------------------------------------------------------
+
+def _render_region_before_after(
+    combined_path: str,
+    upload_path: str,
+    region: tuple,
+    *,
+    max_dimension: int = 2048,
+) -> tuple:
+    """Render a pair of PNGs cropped to the contribution's region.
+
+    * **Before** — the combined map exactly as it stands today, cropped to
+      the region.
+    * **After** — what the combined map will look like once the upload is
+      merged. Tiles newly added in-region tint **green**; tiles that
+      overwrite an existing combined tile tint **orange**. Tiles outside
+      the region are simply not in the crop.
+
+    Returns ``(before_png_bytes, after_png_bytes, stats)`` where ``stats``
+    is ``{"in_region_tiles": int, "added_tiles": int, "replaced_tiles": int}``.
+    """
+    from ..core.mapdb import (
+        TILE_SIZE as _TS,
+        STANDARD_BLOB_SIZE,
+        decode_position,
+        decode_tile_numpy,
+        decode_tile_fallback,
+        _sample_one_pixel,
+    )
+    from PIL import Image
+    import numpy as np
+    import io
+
+    rmin_x, rmax_x, rmin_z, rmax_z = region
+    tx_min = rmin_x // _TS
+    tx_max = rmax_x // _TS
+    tz_min = rmin_z // _TS
+    tz_max = rmax_z // _TS
+
+    w_chunks = max(1, tx_max - tx_min + 1)
+    h_chunks = max(1, tz_max - tz_min + 1)
+    full_w = w_chunks * _TS
+    full_h = h_chunks * _TS
+
+    scale = max(1, max(full_w // max_dimension, full_h // max_dimension))
+    img_w = max(1, full_w // scale)
+    img_h = max(1, full_h // scale)
+
+    before_arr = np.zeros((img_h, img_w, 4), dtype=np.uint8)
+    after_arr = np.zeros((img_h, img_w, 4), dtype=np.uint8)
+
+    def _paint(arr, blob, cx, cz, *, tint=None):
+        if scale <= _TS:
+            if len(blob) == STANDARD_BLOB_SIZE:
+                tile = decode_tile_numpy(blob)
+            else:
+                tile = decode_tile_fallback(blob)
+            if tint is not None:
+                t = tile.astype(np.float32)
+                t[:, :, 0] = t[:, :, 0] * 0.5 + tint[0] * 0.5
+                t[:, :, 1] = t[:, :, 1] * 0.5 + tint[1] * 0.5
+                t[:, :, 2] = t[:, :, 2] * 0.5 + tint[2] * 0.5
+                tile = np.clip(t, 0, 255).astype(np.uint8)
+            if scale == 1:
+                bx = (cx - tx_min) * _TS
+                bz = (cz - tz_min) * _TS
+                ew = min(_TS, img_w - bx)
+                eh = min(_TS, img_h - bz)
+                if ew > 0 and eh > 0:
+                    arr[bz:bz + eh, bx:bx + ew] = tile[:eh, :ew]
+            else:
+                sampled = tile[::scale, ::scale]
+                sh, sw = sampled.shape[:2]
+                bx = (cx - tx_min) * _TS // scale
+                bz = (cz - tz_min) * _TS // scale
+                ew = min(sw, img_w - bx)
+                eh = min(sh, img_h - bz)
+                if ew > 0 and eh > 0:
+                    arr[bz:bz + eh, bx:bx + ew] = sampled[:eh, :ew]
+        else:
+            bx = (cx - tx_min) * _TS // scale
+            bz = (cz - tz_min) * _TS // scale
+            if 0 <= bx < img_w and 0 <= bz < img_h:
+                if len(blob) >= STANDARD_BLOB_SIZE:
+                    r, g, b, a = _sample_one_pixel(blob)
+                else:
+                    r, g, b, a = 0, 0, 0, 255
+                if tint is not None:
+                    r = int(r * 0.5 + tint[0] * 0.5)
+                    g = int(g * 0.5 + tint[1] * 0.5)
+                    b = int(b * 0.5 + tint[2] * 0.5)
+                arr[bz, bx] = [r, g, b, a]
+
+    # Pull the in-region slice of combined.
+    combined_in_region: dict = {}
+    combined_conn = sqlite3.connect(combined_path)
+    try:
+        cur = combined_conn.execute(
+            f"""SELECT position, data FROM {MAPPIECE_TABLE}
+                WHERE (position & ?) BETWEEN ? AND ?
+                  AND (position >> ?) BETWEEN ? AND ?""",
+            (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
+        )
+        for pos, blob in cur:
+            cx, cz = decode_position(pos)
+            combined_in_region[pos] = blob
+            _paint(before_arr, blob, cx, cz)
+            # Seed the "after" image with the existing tile so anything not
+            # touched by the upload looks identical to "before".
+            _paint(after_arr, blob, cx, cz)
+    finally:
+        combined_conn.close()
+
+    added_tiles = 0
+    replaced_tiles = 0
+    in_region_tiles = 0
+
+    upload_conn = sqlite3.connect(upload_path)
+    try:
+        cur = upload_conn.execute(
+            f"""SELECT position, data FROM {MAPPIECE_TABLE}
+                WHERE (position & ?) BETWEEN ? AND ?
+                  AND (position >> ?) BETWEEN ? AND ?""",
+            (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
+        )
+        for pos, blob in cur:
+            in_region_tiles += 1
+            cx, cz = decode_position(pos)
+            if pos in combined_in_region:
+                replaced_tiles += 1
+                # Orange = replacement (existing tile overwritten).
+                _paint(after_arr, blob, cx, cz, tint=(255, 140, 0))
+            else:
+                added_tiles += 1
+                # Green = brand-new tile in this region.
+                _paint(after_arr, blob, cx, cz, tint=(0, 255, 0))
+    finally:
+        upload_conn.close()
+
+    def _to_png(arr):
+        img = Image.fromarray(arr, "RGBA")
+        out = io.BytesIO()
+        img.save(out, format="PNG")
+        return out.getvalue()
+
+    return _to_png(before_arr), _to_png(after_arr), {
+        "in_region_tiles": in_region_tiles,
+        "added_tiles": added_tiles,
+        "replaced_tiles": replaced_tiles,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -684,15 +1024,21 @@ def _compute_match_score(
 def _compute_match_score_for_contribution(cid: str) -> dict:
     """Worker entry point: download both DBs from R2 and run the scorer.
 
+    When the contribution carries a Phase-2 region, the scorer is restricted
+    to in-region tiles so the percentages are meaningful (otherwise a small
+    targeted edit would always score near-100% by virtue of the rest of the
+    upload matching the rest of combined).
+
     Raises on any error so :mod:`backend.app.tasks.match_score` can mark
     the row as failed.
     """
     pending_key = r2_storage.pending_db_key(cid)
+    region = db.get_update_region(cid)
 
     combined_tmp = _ensure_combined_db_temp()
     pending_tmp = _download_to_temp(pending_key)
     try:
-        return _compute_match_score(combined_tmp, pending_tmp)
+        return _compute_match_score(combined_tmp, pending_tmp, region=region)
     finally:
         for p in (combined_tmp, pending_tmp):
             try:
@@ -715,12 +1061,34 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
     withdrawn = db.list_withdrawn_contributions(requesting_key=api_key)
     approved = db.get_approved_log(limit=20)
 
+    is_admin_caller = _is_admin_key(api_key)
+    region_overwrite_on = is_feature_enabled("region_overwrite")
+
     # Serialise datetimes for JSON
     for row in pending + withdrawn:
         for k in ("created_at", "approved_at", "withdrawn_at"):
             if row.get(k) and hasattr(row[k], "isoformat"):
                 row[k] = row[k].isoformat()
     for row in pending:
+        # Phase 2 — extract region bounds, then apply privacy redaction.
+        region_min_x = row.pop("update_region_min_x", None)
+        region_max_x = row.pop("update_region_max_x", None)
+        region_min_z = row.pop("update_region_min_z", None)
+        region_max_z = row.pop("update_region_max_z", None)
+        owns_pending = api_key and row.get("submitted_by_key") == api_key
+        if region_min_x is not None and (is_admin_caller or owns_pending):
+            row["update_region"] = [
+                int(region_min_x), int(region_max_x),
+                int(region_min_z), int(region_max_z),
+            ]
+            row["update_region_mode"] = "overwrite"
+        elif region_min_x is not None:
+            # Bounds redacted from non-owning, non-admin viewers — leak risk.
+            row["update_region"] = None
+            row["update_region_mode"] = "overwrite"
+        else:
+            row["update_region"] = None
+            row["update_region_mode"] = "gap_fill"
         row["preview_image_url"] = str(
             request.url_for("contribute_preview", contribution_id=row["id"])
         )
@@ -828,6 +1196,25 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
                 "preview_signed_url": signed or None,
                 "is_mine": bool(api_key and row.get("submitted_by_key") == api_key),
             }
+            # Phase 2 — region bounds are public on approved rows (the area
+            # is part of the published map by then). Withdrawn rows omit
+            # them — those uploads were never merged.
+            if (
+                row.get("status") == "approved"
+                and row.get("update_region_min_x") is not None
+            ):
+                entry["update_region"] = [
+                    int(row["update_region_min_x"]),
+                    int(row["update_region_max_x"]),
+                    int(row["update_region_min_z"]),
+                    int(row["update_region_max_z"]),
+                ]
+                entry["update_region_mode"] = "overwrite"
+            else:
+                entry["update_region"] = None
+                entry["update_region_mode"] = (
+                    "gap_fill" if row.get("status") == "approved" else None
+                )
             # Phase 4b — surface revert eligibility so the admin UI can show
             # the Revert button only on rows that can actually be reverted.
             if is_admin:
@@ -869,6 +1256,14 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         "revert_enabled": is_feature_enabled("per_contribution_revert"),
         "revert_window_days": settings.REVERT_WINDOW_DAYS,
         "withdraw_limit_per_week": settings.WITHDRAW_LIMIT_PER_WEEK,
+        # Phase 2 — region overwrite gating exposed so the frontend can
+        # show / hide the picker without a separate request.
+        "region_overwrite_enabled": region_overwrite_on,
+        "can_use_region_overwrite": (
+            region_overwrite_on
+            and (is_admin_caller or verify_permission(api_key, "region_overwrite"))
+        ),
+        "region_tile_cap_non_admin": settings.MAX_REGION_TILES_NON_ADMIN,
         **_withdraw_status(api_key),
         **contribution_status,
     }
@@ -924,14 +1319,143 @@ async def contribute_complete(
     if not contribution_id:
         return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
 
+    # Phase 2 — parse + validate the optional region bounds before we touch
+    # the upload. ``_normalise_region`` enforces "all four or none".
     try:
-        return _finalize_uploaded_contribution(contribution_id, payload.contributor, api_key)
+        region = _normalise_region(
+            payload.update_region_min_x,
+            payload.update_region_max_x,
+            payload.update_region_min_z,
+            payload.update_region_max_z,
+        )
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+
+    if region is not None:
+        try:
+            _check_region_eligibility(api_key, region)
+        except HTTPException as e:
+            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    try:
+        result = _finalize_uploaded_contribution(
+            contribution_id, payload.contributor, api_key
+        )
     except ValueError as e:
         detail = str(e)
         status = 413 if detail == "File too large" else 400
         if detail == "Uploaded file not found in storage":
             status = 404
         return JSONResponse(status_code=status, content={"detail": detail})
+
+    # Persist the region after the upload validated. We also reject when the
+    # region contains zero of the upload's tiles — that's almost always a UI
+    # mistake (region drawn over an empty area of the map).
+    if region is not None:
+        pending_key = r2_storage.pending_db_key(contribution_id)
+        tmp_path = _download_to_temp(pending_key)
+        try:
+            in_region, _total = _count_pending_tiles(tmp_path, region)
+        finally:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        if in_region == 0:
+            # Roll the contribution back so the user can retry with a sane
+            # region instead of being stuck with a "pending" row that can
+            # never be approved.
+            db.delete_contribution(contribution_id)
+            r2_storage.delete_object(pending_key)
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "detail": (
+                        "The selected region contains zero tiles from your "
+                        "upload. Adjust the region and try again."
+                    )
+                },
+            )
+        try:
+            db.set_update_region(contribution_id, region)
+        except Exception:
+            # Persisting the region is required; revert the contribution.
+            db.delete_contribution(contribution_id)
+            r2_storage.delete_object(pending_key)
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Failed to persist region selection"},
+            )
+        result["update_region"] = list(region)
+        result["tiles_in_region"] = in_region
+
+    return result
+
+
+@router.post("/contribute/region-preview")
+async def contribute_region_preview(
+    payload: ContributeRegionPreviewRequest,
+    api_key: str = Depends(verify_contribute_permission),
+):
+    """Return ``{tiles_in_region, tiles_total, region_tile_area}`` for a
+    candidate region against an already-uploaded pending file.
+
+    Used by the picker UI to show "1 234 of 56 789 tiles in your file fall
+    inside this region" before the user commits. Hidden behind the
+    ``region_overwrite`` feature flag.
+    """
+    check_rate_limit(api_key)
+
+    try:
+        region = _normalise_region(
+            payload.update_region_min_x,
+            payload.update_region_max_x,
+            payload.update_region_min_z,
+            payload.update_region_max_z,
+        )
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+    if region is None:
+        return JSONResponse(status_code=400, content={"detail": "Region required"})
+
+    try:
+        _check_region_eligibility(api_key, region)
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    cid = payload.contribution_id.strip()
+    if not cid:
+        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
+
+    meta = db.get_contribution(cid)
+    if not meta or meta.get("status") != "pending":
+        return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
+    # Owner-only: don't let another contributor probe somebody else's pending
+    # upload. Admins are exempt.
+    if not _is_admin_key(api_key) and meta.get("submitted_by_key") != api_key:
+        return JSONResponse(status_code=403, content={"detail": "Not your contribution"})
+
+    pending_key = r2_storage.pending_db_key(cid)
+    if not r2_storage.object_exists(pending_key):
+        return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
+
+    tmp = _download_to_temp(pending_key)
+    try:
+        in_region, total = _count_pending_tiles(tmp, region)
+    finally:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+
+    return {
+        "tiles_in_region": in_region,
+        "tiles_total": total,
+        "region_tile_area": _region_tile_count(region),
+        "region_tile_cap": (
+            None if _is_admin_key(api_key) else settings.MAX_REGION_TILES_NON_ADMIN
+        ),
+    }
 
 
 @router.post("/contribute")
@@ -1032,6 +1556,92 @@ async def contribute_preview(
     )
 
 
+@router.get("/contribute/preview-region/{contribution_id}")
+async def contribute_preview_region(
+    contribution_id: str,
+    side: str = Query("before", description="'before' or 'after'"),
+    api_key: str = Depends(verify_api_key),
+):
+    """Phase 2 — render the side-by-side region overwrite preview.
+
+    Two PNGs are produced and cached in R2 next to the contribution:
+    ``pending/<id>.before.png`` and ``pending/<id>.after.png``. Both are
+    cropped to the contribution's region. Newly-added tiles tint green and
+    overwritten tiles tint orange on the "after" image.
+
+    404 when the contribution has no Phase-2 region attached, or when the
+    feature flag is off (so non-admins can't probe the route).
+    """
+    check_rate_limit(api_key)
+
+    if side not in ("before", "after"):
+        return JSONResponse(status_code=400, content={"detail": "side must be 'before' or 'after'"})
+
+    if not is_feature_enabled("region_overwrite"):
+        return JSONResponse(status_code=404, content={"detail": "Not Found"})
+
+    meta = db.get_contribution(contribution_id)
+    if not meta or meta.get("status") != "pending":
+        return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
+
+    region = db.get_update_region(contribution_id)
+    if region is None:
+        return JSONResponse(
+            status_code=404,
+            content={"detail": "Contribution has no region attached"},
+        )
+
+    # Privacy: pending region preview is admin-only (region bounds may be
+    # exploration-sensitive). Owner-of-the-contribution also gets to see it
+    # so they can verify their own selection.
+    if not _is_admin_key(api_key) and meta.get("submitted_by_key") != api_key:
+        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+
+    before_key = r2_storage.region_before_preview_key(contribution_id)
+    after_key = r2_storage.region_after_preview_key(contribution_id)
+    target_key = before_key if side == "before" else after_key
+
+    if r2_storage.object_exists(target_key):
+        png_bytes = r2_storage.download_bytes(target_key)
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={
+                "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
+                "X-Preview-Cache": "hit",
+            },
+        )
+
+    pending_key = r2_storage.pending_db_key(contribution_id)
+    if not r2_storage.object_exists(pending_key):
+        return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
+
+    combined_tmp = _ensure_combined_db_temp()
+    pending_tmp = _download_to_temp(pending_key)
+    try:
+        before_bytes, after_bytes, _stats = _render_region_before_after(
+            combined_tmp, pending_tmp, region
+        )
+        # Cache both halves so the second request (for the other side) is a hit.
+        r2_storage.upload_bytes(before_key, before_bytes, content_type="image/png")
+        r2_storage.upload_bytes(after_key, after_bytes, content_type="image/png")
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+    finally:
+        os.unlink(combined_tmp)
+        os.unlink(pending_tmp)
+
+    payload = before_bytes if side == "before" else after_bytes
+    return Response(
+        content=payload,
+        media_type="image/png",
+        headers={
+            "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
+            "X-Preview-Cache": "miss",
+        },
+    )
+
+
 @router.post("/contribute/{contribution_id}/approve")
 async def contribute_approve(
     contribution_id: str,
@@ -1062,6 +1672,8 @@ async def contribute_approve(
         combined_tmp = _ensure_combined_db_temp()
         pending_tmp = _download_to_temp(pending_key)
         affected_bounds = None
+        # Phase 2 — region overwrite. ``None`` ⇒ legacy gap-fill.
+        update_region = db.get_update_region(contribution_id)
         # Phase 4b — stream every newly-inserted position to a local temp
         # file as ``little-endian uint64`` so a future revert can replay
         # the inverse. We hard-cap the file size to
@@ -1073,6 +1685,19 @@ async def contribute_approve(
         added_file = os.fdopen(added_fd, "wb")
         added_state = {"count": 0, "bytes": 0, "exceeded": False}
         added_max = settings.REVERT_ADDED_BIN_MAX_BYTES
+
+        # Phase 2 — when in region-overwrite mode we also stream the
+        # ``(position, old_data)`` rows we are about to overwrite into a
+        # local temp SQLite, which the revert endpoint can replay.
+        replaced_tmp_path: Optional[str] = None
+        if update_region is not None:
+            rfd, replaced_tmp_path = tempfile.mkstemp(suffix=".replaced.db")
+            os.close(rfd)
+            # mkstemp pre-creates the file; sqlite3 needs a fresh path.
+            try:
+                os.unlink(replaced_tmp_path)
+            except OSError:
+                pass
 
         def _added_writer(position: int) -> None:
             if added_state["exceeded"]:
@@ -1086,14 +1711,22 @@ async def contribute_approve(
 
         try:
             # Capture affected world-block bounds BEFORE merging so we know which
-            # cache chunks to invalidate. Falls back to None on any error → full regen.
-            try:
-                affected_bounds = _compute_pending_world_bounds(pending_tmp)
-            except Exception:
-                affected_bounds = None
+            # cache chunks to invalidate. In region mode the picker bounds ARE
+            # the affected bounds (we don't bother re-deriving from the upload).
+            if update_region is not None:
+                affected_bounds = update_region
+            else:
+                try:
+                    affected_bounds = _compute_pending_world_bounds(pending_tmp)
+                except Exception:
+                    affected_bounds = None
 
             stats = _merge_into_combined(
-                pending_tmp, combined_tmp, added_writer=_added_writer
+                pending_tmp,
+                combined_tmp,
+                added_writer=_added_writer,
+                region=update_region,
+                replaced_db_path=replaced_tmp_path,
             )
 
             # Refresh cached TOPS stats from the merged local DB file.
@@ -1110,14 +1743,15 @@ async def contribute_approve(
             os.unlink(combined_tmp)
             os.unlink(pending_tmp)
 
-        # Phase 4b — persist the undo blob to R2 unless the cap was hit.
+        # Phase 4b — persist the undo blobs to R2 unless the cap was hit.
         # ``revert_supported`` is the single boolean the revert endpoint
         # consults; ``revert_added_count`` powers the confirmation dialog.
         revert_supported = (
-            (not added_state["exceeded"]) and added_state["count"] > 0
+            (not added_state["exceeded"])
+            and (added_state["count"] > 0 or stats["tiles_replaced"] > 0)
         )
         try:
-            if revert_supported:
+            if revert_supported and added_state["count"] > 0:
                 r2_storage.upload_file(
                     added_tmp_path,
                     r2_storage.undo_added_key(contribution_id),
@@ -1128,22 +1762,35 @@ async def contribute_approve(
                 r2_storage.delete_object(
                     r2_storage.undo_added_key(contribution_id)
                 )
+            # Phase 2 replaced.db (only present in region mode and when at
+            # least one tile was actually overwritten).
+            if (
+                revert_supported
+                and replaced_tmp_path is not None
+                and stats["tiles_replaced"] > 0
+                and os.path.exists(replaced_tmp_path)
+            ):
+                r2_storage.upload_file(
+                    replaced_tmp_path,
+                    r2_storage.undo_replaced_key(contribution_id),
+                )
         except Exception:
             # Failed undo upload should not block approval; mark unsupported.
             revert_supported = False
         finally:
-            try:
-                os.unlink(added_tmp_path)
-            except OSError:
-                pass
+            for p in (added_tmp_path, replaced_tmp_path):
+                if p:
+                    try:
+                        os.unlink(p)
+                    except OSError:
+                        pass
 
         try:
             db.set_revert_metadata(
                 contribution_id,
                 revert_supported=revert_supported,
                 added_count=added_state["count"],
-                # Region/overwrite mode (Phase 2) populates this; gap-fill is 0.
-                replaced_count=0,
+                replaced_count=stats["tiles_replaced"],
                 affected_bounds=affected_bounds,
             )
         except Exception:
@@ -1169,7 +1816,11 @@ async def contribute_approve(
             metadata={
                 "tiles_new": stats["tiles_new"],
                 "tiles_existing": stats["tiles_existing"],
+                "tiles_replaced": stats["tiles_replaced"],
                 "combined_total": stats["combined_total"],
+                "update_region": (
+                    list(update_region) if update_region else None
+                ),
             },
         )
     except Exception:
@@ -1208,6 +1859,11 @@ async def contribute_approve(
             # Best-effort — fall back to deleting the pending preview so we
             # never leak it under the old key.
             r2_storage.delete_object(pending_preview_key)
+
+    # Phase 2 — the cached region preview PNGs are tied to the pending
+    # upload and useless after the merge, drop them.
+    r2_storage.delete_object(r2_storage.region_before_preview_key(contribution_id))
+    r2_storage.delete_object(r2_storage.region_after_preview_key(contribution_id))
 
     if is_feature_enabled("public_history"):
         retention_days = (
@@ -1318,6 +1974,9 @@ async def contribute_withdraw(
 
     # Always remove the raw .db immediately — withdraw is privacy-driven.
     r2_storage.delete_object(r2_storage.pending_db_key(contribution_id))
+    # Phase 2 — pending region previews are tied to the upload; clear them.
+    r2_storage.delete_object(r2_storage.region_before_preview_key(contribution_id))
+    r2_storage.delete_object(r2_storage.region_after_preview_key(contribution_id))
 
     # If a preview exists, move it into the history bucket; otherwise nothing
     # to retain. Either way the pending preview key ends up empty.
@@ -1364,6 +2023,9 @@ async def contribute_reject(
     # Delete .db from R2
     r2_storage.delete_object(r2_storage.pending_db_key(contribution_id))
     r2_storage.delete_object(r2_storage.pending_preview_key(contribution_id))
+    # Phase 2 — also clean the cached before/after PNGs.
+    r2_storage.delete_object(r2_storage.region_before_preview_key(contribution_id))
+    r2_storage.delete_object(r2_storage.region_after_preview_key(contribution_id))
 
     # Delete metadata from Supabase
     db.delete_contribution(contribution_id)

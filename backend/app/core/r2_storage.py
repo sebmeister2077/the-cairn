@@ -208,6 +208,23 @@ def history_preview_key(contribution_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Phase 2 — region-overwrite before/after preview pair
+# ---------------------------------------------------------------------------
+
+def region_before_preview_key(contribution_id: str) -> str:
+    """PNG of the combined map cropped to the contribution's region BEFORE
+    the merge would be applied."""
+    return f"pending/{contribution_id}.before.png"
+
+
+def region_after_preview_key(contribution_id: str) -> str:
+    """PNG of the in-memory merged map cropped to the contribution's region —
+    what the combined map would look like AFTER approval. Newly-added tiles
+    tint green; overwritten tiles tint orange."""
+    return f"pending/{contribution_id}.after.png"
+
+
+# ---------------------------------------------------------------------------
 # Phase 4b — per-contribution revert undo data
 # ---------------------------------------------------------------------------
 

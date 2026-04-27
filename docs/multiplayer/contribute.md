@@ -229,6 +229,47 @@ Plus a partial index `idx_contributions_match_score_status` on rows where `statu
 
 The row stays visible in `withdrawn` so the dashboard makes it clear what happened, and so an admin can see "user withdrew before review" patterns. There is no "un-withdraw" — the user has to upload again, which then resets the cooldown the way any new submission does.
 
+## Region-restricted updates (Phase 2)
+
+The legacy contribution flow is **gap-fill only**: an upload can add new tiles to the combined map, but it can never overwrite an existing tile. Phase 2 adds an opt-in **region overwrite** mode where a contributor draws a rectangle on the map and approval replaces every in-region tile with the upload's version (in-region positions outside the upload are *not* deleted — they are simply left unchanged). Out-of-region tiles in the upload are dropped.
+
+### Trust model
+
+Region overwrite is dangerous (it can wipe out other contributors' work inside the box) so it is gated by **two independent checks plus a tile-area cap**:
+
+1. **Feature flag** `region_overwrite` must be on. When off, all Phase-2 endpoints return **404** and the picker is hidden in the UI.
+2. The caller must be **admin** *or* hold the per-key **`region_overwrite` permission** (toggled from the admin Users panel; the permission is in `auth.VALID_KEY_PERMISSIONS`). Non-eligible callers get **403**.
+3. Non-admin callers cannot exceed `MAX_REGION_TILES_NON_ADMIN` tiles (default **65 536** == 256×256 tiles == 8192×8192 blocks). Admins are uncapped. Over-cap requests return **400** with the cap reported in `detail`.
+
+The frontend mirrors this server check by reading `region_overwrite_enabled`, `can_use_region_overwrite`, and `region_tile_cap_non_admin` from `/contribute/info` and only renders the [`ContributionRegionPicker`](../../frontend/src/components/ContributionRegionPicker.tsx) when both flags are true.
+
+### Wire-format
+
+The four bounds are **inclusive world-block coordinates** sent on `/contribute/complete` as `update_region_min_x`, `update_region_max_x`, `update_region_min_z`, `update_region_max_z`. They are normalised (`min/max` swapped if reversed) and validated as all-or-none — a partial set returns 400. Bounds are persisted on the row in the four nullable columns of the same name (added by the migration in `core/database.py`).
+
+### Pipeline
+
+Region overwrite reuses the entire existing pending → approve → audit pipeline; the only behavioural changes are inside [`_merge_into_combined`](../../backend/app/routes/contribute_r2.py) and the surrounding region helpers:
+
+1. **Upload-complete** — `_check_region_eligibility(api_key, region)` runs flag/permission/cap checks. If they pass, the bounds are persisted via `db.set_update_region(cid, region)`. The route then re-streams the pending file to count in-region tiles. **Empty in-region count = 400**, the contribution is rolled back (Supabase row dropped, R2 object deleted) so a misclick can't reserve the user's pending slot. The response includes `update_region` and `tiles_in_region` so the picker can show "0 of N tiles fall inside the region" before the user even tries to approve.
+2. **Pending list** — `/contribute/info` always exposes `update_region_mode` (`"overwrite"` or `"gap_fill"`) on every pending row, but the actual `update_region` bounds are **redacted from non-admin/non-owner viewers** (so a malicious read-only key can't enumerate where contributors are working). The history rows are public domain so they always include the bounds.
+3. **Region preview endpoints** (admin-or-owner only):
+   - `POST /contribute/region-preview` — runs against an already-uploaded pending file. Returns `{tiles_in_region, tiles_total, region_tile_area, region_tile_cap}` so an admin can sanity-check "is the user trying to overwrite anything they actually mapped?" before approving.
+   - `GET /contribute/preview-region/{id}?side=before|after` — returns a pair of cached PNGs cropped to the region. The "after" image tints **green** for newly added tiles and **orange** for tiles being overwritten. Both PNGs are R2-cached under `pending/<id>.before.png` / `pending/<id>.after.png` and rendered lazily on first request via `_render_region_before_after`. The frontend [`ContributionBeforeAfter`](../../frontend/src/components/ContributionBeforeAfter.tsx) component fetches both at once and shows them side-by-side under the existing pending preview when the row is in overwrite mode.
+4. **Approve** — `/contribute/{id}/approve` reads back `db.get_update_region(cid)` and passes it to `_merge_into_combined(..., region=region, replaced_db_path=replaced_tmp_path)`. The merge then:
+   - filters pending positions with `WHERE (position & POSITION_MASK) BETWEEN tx_min AND tx_max AND (position >> POSITION_BITS) BETWEEN tz_min AND tz_max` so out-of-region rows are silently dropped;
+   - uses `INSERT OR REPLACE` (and bookkeeping `UPDATE`s) instead of `INSERT OR IGNORE` so existing tiles are clobbered;
+   - captures every overwritten `(position, old_data)` pair into a temporary SQLite file which is then uploaded as `undo/<id>.replaced.db` so the contribution stays revertable (Phase 4b — see below).
+   - emits `tiles_replaced` alongside `tiles_added` in the merge stats and the `contribution.approve` audit log.
+5. **Match score** — `_compute_match_score_for_contribution` now passes the persisted region down so the score reflects "how well does the in-region subset match the existing combined map?" instead of being skewed by ignored out-of-region rows.
+6. **Cleanup** — reject, withdraw, and approve all delete `pending/<id>.before.png` / `pending/<id>.after.png` from R2 so we never leave region previews dangling.
+
+### Revert interaction (Phase 4b)
+
+Region-overwrite contributions **are revertable**: the `undo/<id>.replaced.db` blob captured during approve is exactly what the existing Phase-4b revert flow needs. When a region revert runs, `db.list_later_region_overwrites(cid, affected_bounds)` is now able to find real conflicts (the four `update_region_*` columns finally exist), so a region revert that would step on a *later* region overwrite returns the standard cascading-conflict warning instead of silently reverting through the conflict.
+
+A region overwrite is marked `revert_supported = false` only if `tiles_added + tiles_replaced > REVERT_ADDED_BIN_MAX_BYTES / 8` — same cap as the legacy gap-fill flow.
+
 ## Approve (merge)
 
 `POST /contribute/{id}/approve` (admin only). This is the only path that mutates `globalservermap.db`. The flow:

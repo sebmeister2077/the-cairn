@@ -94,6 +94,16 @@ class Settings:
     # Display label shown in the user's authenticator app.
     TOTP_ISSUER: str = os.environ.get("TOTP_ISSUER", "VS Waypoints Admin")
 
+    # --- Phase 2: region-restricted updates ---
+    # Hard cap on the rectangle a non-admin contributor with the
+    # ``region_overwrite`` permission may select, expressed in TILES (each
+    # tile is TILE_SIZE blocks square; default 256×256 tiles ≡ 8192×8192
+    # blocks). Admins are exempt. Enforced server-side in
+    # ``/contribute/region-preview`` and ``/contribute/complete``.
+    MAX_REGION_TILES_NON_ADMIN: int = int(
+        os.environ.get("MAX_REGION_TILES_NON_ADMIN", str(256 * 256))
+    )
+
     # Secret salt used to hash IP addresses before storing them (GDPR)
     IP_HASH_SALT: str = os.environ.get("IP_HASH_SALT", "")
 
