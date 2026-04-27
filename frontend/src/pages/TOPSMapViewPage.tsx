@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Loader2, Pin, PinOff, Settings } from "lucide-react";
+import { Download, Layers, Loader2, Pin, PinOff, Settings } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -36,9 +36,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  TLGroupingsDrawer,
+  type TLGroupingsViewMode,
+} from "@/components/tops-map/TLGroupingsDrawer";
+import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
+const GROUPINGS_VIEW_MODE_STORAGE_KEY = "tops-map-tl-groupings-view-mode";
+const GROUPINGS_ACTIVE_STORAGE_KEY = "tops-map-tl-groupings-active";
 
 /**
  * Compute how long (ms) the cached level info should be considered fresh based
@@ -116,6 +123,81 @@ export function TOPSMapViewPage() {
   const translocatorLoadPromiseRef = useRef<Promise<WorldLineSegment[]> | null>(null);
   const landmarkCacheRef = useRef<WorldPointMarker[] | null>(null);
   const landmarkLoadPromiseRef = useRef<Promise<WorldPointMarker[]> | null>(null);
+
+  // Favorite TL groupings (local-only). The groupings themselves persist via
+  // `useTLGroupings`; view-mode + active-selection are persisted separately so
+  // a reload returns the user to the same overlay state.
+  const groupingsStore = useTLGroupings();
+  const [groupingsOpen, setGroupingsOpen] = useState(false);
+  const [groupingsViewMode, setGroupingsViewMode] = useState<TLGroupingsViewMode>(() => {
+    if (typeof window === "undefined") return "all";
+    const stored = window.localStorage.getItem(GROUPINGS_VIEW_MODE_STORAGE_KEY);
+    return stored === "filter" || stored === "highlight" || stored === "all" ? stored : "all";
+  });
+  const [activeGroupingIds, setActiveGroupingIds] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      const raw = window.localStorage.getItem(GROUPINGS_ACTIVE_STORAGE_KEY);
+      if (!raw) return new Set();
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.filter((v): v is string => typeof v === "string"));
+      }
+    } catch {
+      // fall through
+    }
+    return new Set();
+  });
+  const [editingGroupingId, setEditingGroupingId] = useState<string | null>(null);
+
+  // Persist view mode + active selection on change.
+  useEffect(() => {
+    window.localStorage.setItem(GROUPINGS_VIEW_MODE_STORAGE_KEY, groupingsViewMode);
+  }, [groupingsViewMode]);
+  useEffect(() => {
+    window.localStorage.setItem(
+      GROUPINGS_ACTIVE_STORAGE_KEY,
+      JSON.stringify(Array.from(activeGroupingIds)),
+    );
+  }, [activeGroupingIds]);
+
+  const toggleActiveGrouping = useCallback((id: string) => {
+    setActiveGroupingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Stop editing if the grouping disappears (e.g. deleted from the drawer).
+  useEffect(() => {
+    if (editingGroupingId == null) return;
+    if (!groupingsStore.groupings.some((g) => g.id === editingGroupingId)) {
+      setEditingGroupingId(null);
+    }
+  }, [editingGroupingId, groupingsStore.groupings]);
+
+  // Drop any active ids that no longer correspond to a stored grouping.
+  useEffect(() => {
+    setActiveGroupingIds((prev) => {
+      const valid = new Set(groupingsStore.groupings.map((g) => g.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [groupingsStore.groupings]);
+
+  // Auto-enable the translocator overlay when the user enters edit mode —
+  // otherwise there'd be nothing to click on.
+  useEffect(() => {
+    if (editingGroupingId != null && !showTranslocators) setShowTranslocators(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingGroupingId]);
 
   // Shared landmark loader — populates the cache and count without forcing
   // the overlay on. Callers that need the rendered points (overlay toggle or
@@ -348,6 +430,12 @@ export function TOPSMapViewPage() {
 
   const handleTranslocatorClick = useCallback(
     (seg: WorldLineSegment | null) => {
+      // Edit mode: clicks toggle membership of the editing grouping rather
+      // than selecting / pinning.
+      if (editingGroupingId && seg) {
+        groupingsStore.toggleTL(editingGroupingId, tlIdFor(seg));
+        return;
+      }
       // While a TL is pinned, ignore all map clicks (empty space or other TLs)
       // — only the explicit unpin button can clear the selection.
       if (translocatorPinned) return;
@@ -357,7 +445,7 @@ export function TOPSMapViewPage() {
       }
       setSelectedTranslocator(seg);
     },
-    [translocatorPinned],
+    [editingGroupingId, groupingsStore, translocatorPinned],
   );
 
   const handleTranslocatorRightClick = useCallback((seg: WorldLineSegment) => {
@@ -372,11 +460,9 @@ export function TOPSMapViewPage() {
   }, []);
 
   useEffect(() => {
-    if (!showTranslocators) {
-      setTranslocatorSegments([]);
-      return;
-    }
-
+    // Always populate the segments state once the cache is loaded \u2014 the
+    // groupings drawer needs them for "missing" counts and edit-mode
+    // rendering even before the user toggles the overlay on.
     let cancelled = false;
     ensureTranslocatorsLoaded()
       .then((segments) => {
@@ -389,7 +475,7 @@ export function TOPSMapViewPage() {
     return () => {
       cancelled = true;
     };
-  }, [showTranslocators, ensureTranslocatorsLoaded]);
+  }, [ensureTranslocatorsLoaded]);
 
   useEffect(() => {
     if (!showLandmarks) {
@@ -490,6 +576,59 @@ export function TOPSMapViewPage() {
     },
     [statsQuery.data?.resolutions, selectedLevel, queryClient],
   );
+
+  // Derived: the editing grouping object, the union of TLIds across all
+  // currently-active groupings, and the segments / highlight set the viewer
+  // should actually render given the current view mode + edit state.
+  const editingGrouping = useMemo(
+    () =>
+      editingGroupingId == null
+        ? null
+        : (groupingsStore.groupings.find((g) => g.id === editingGroupingId) ?? null),
+    [editingGroupingId, groupingsStore.groupings],
+  );
+
+  const activeTLIdSet = useMemo(() => {
+    const set = new Set<string>();
+    for (const g of groupingsStore.groupings) {
+      if (!activeGroupingIds.has(g.id)) continue;
+      for (const id of g.tlIds) set.add(id);
+    }
+    return set;
+  }, [activeGroupingIds, groupingsStore.groupings]);
+
+  // Segments the viewer renders. In edit mode we always show every TL so the
+  // user can click any of them; otherwise filter mode narrows the set.
+  const visibleTranslocatorSegments = useMemo(() => {
+    if (!showTranslocators) return undefined;
+    if (editingGrouping) return translocatorSegments;
+    if (groupingsViewMode === "filter" && activeTLIdSet.size > 0) {
+      return translocatorSegments.filter((seg) => activeTLIdSet.has(tlIdFor(seg)));
+    }
+    return translocatorSegments;
+  }, [showTranslocators, editingGrouping, groupingsViewMode, activeTLIdSet, translocatorSegments]);
+
+  // Segments the viewer should highlight. In edit mode = current grouping's
+  // members; in highlight mode = active grouping union; otherwise none.
+  const highlightedTranslocatorSegments = useMemo(() => {
+    if (!showTranslocators) return undefined;
+    if (editingGrouping) {
+      const memberSet = new Set(editingGrouping.tlIds);
+      const out = translocatorSegments.filter((seg) => memberSet.has(tlIdFor(seg)));
+      return out.length > 0 ? out : undefined;
+    }
+    if (groupingsViewMode === "highlight" && activeTLIdSet.size > 0) {
+      const out = translocatorSegments.filter((seg) => activeTLIdSet.has(tlIdFor(seg)));
+      return out.length > 0 ? out : undefined;
+    }
+    return undefined;
+  }, [showTranslocators, editingGrouping, groupingsViewMode, activeTLIdSet, translocatorSegments]);
+
+  const filteringActive =
+    !editingGrouping &&
+    groupingsViewMode === "filter" &&
+    activeTLIdSet.size > 0 &&
+    visibleTranslocatorSegments != null;
 
   return (
     <Card>
@@ -597,10 +736,46 @@ export function TOPSMapViewPage() {
           <span className="text-xs text-muted-foreground ml-2">
             TLs found:{" "}
             <span className="font-medium text-foreground">
-              {translocatorCount.toLocaleString()}
+              {filteringActive
+                ? `${(visibleTranslocatorSegments?.length ?? 0).toLocaleString()} / ${translocatorCount.toLocaleString()} shown`
+                : translocatorCount.toLocaleString()}
             </span>
           </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            onClick={() => setGroupingsOpen(true)}
+          >
+            <Layers className="size-4 mr-1" />
+            Groupings
+            {activeGroupingIds.size > 0 && (
+              <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                {activeGroupingIds.size}
+              </span>
+            )}
+          </Button>
         </div>
+        {editingGrouping && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-primary bg-primary/5 px-4 py-3 text-sm">
+            <span>
+              Editing: <span className="font-medium">{editingGrouping.name}</span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              Click TLs on the map to add or remove. {editingGrouping.tlIds.length} selected.
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              className="ml-auto h-7"
+              onClick={() => setEditingGroupingId(null)}
+            >
+              Done
+            </Button>
+          </div>
+        )}
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch
             checked={showLandmarks}
@@ -689,15 +864,36 @@ export function TOPSMapViewPage() {
           tileSet={tileSet}
           stats={stats}
           alt="TOPS global server map"
-          overlaySegments={showTranslocators ? translocatorSegments : undefined}
+          overlaySegments={visibleTranslocatorSegments}
           overlayPoints={showLandmarks ? landmarkPoints : undefined}
           onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
-          onOverlaySegmentRightClick={showTranslocators ? handleTranslocatorRightClick : undefined}
-          highlightedSegment={
-            showTranslocators && translocatorPinned ? selectedTranslocator : undefined
+          onOverlaySegmentRightClick={
+            showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
           }
+          highlightedSegment={
+            showTranslocators && !editingGrouping && translocatorPinned
+              ? selectedTranslocator
+              : undefined
+          }
+          highlightedSegments={highlightedTranslocatorSegments}
           focusPoint={landmarkFocusPoint}
           enhanceTilesFn={hasMap && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
+        />
+        <TLGroupingsDrawer
+          open={groupingsOpen}
+          onOpenChange={setGroupingsOpen}
+          store={groupingsStore}
+          allSegments={translocatorSegments}
+          viewMode={groupingsViewMode}
+          onViewModeChange={setGroupingsViewMode}
+          activeGroupingIds={activeGroupingIds}
+          onToggleActive={toggleActiveGrouping}
+          editingGroupingId={editingGroupingId}
+          onStartEditing={(id) => {
+            setEditingGroupingId(id);
+            setGroupingsOpen(false);
+          }}
+          onStopEditing={() => setEditingGroupingId(null)}
         />
       </CardContent>
     </Card>

@@ -108,6 +108,13 @@ interface MapViewerProps {
    */
   highlightedSegment?: WorldLineSegment | null;
   /**
+   * Optional set of segments to render with the highlighted style. Used by
+   * features like "favorite TL groupings" to emphasise many segments at
+   * once. Membership is determined by exact-coord match against entries in
+   * `overlaySegments`. Combines additively with `highlightedSegment`.
+   */
+  highlightedSegments?: WorldLineSegment[];
+  /**
    * When set to a new object, the viewer pans and zooms to that world coordinate.
    * Pass a new object reference each time to trigger navigation.
    */
@@ -134,6 +141,7 @@ export function MapViewer({
   onOverlaySegmentClick,
   onOverlaySegmentRightClick,
   highlightedSegment,
+  highlightedSegments,
   focusPoint,
   focusZoom = 4,
 }: MapViewerProps) {
@@ -205,26 +213,36 @@ export function MapViewer({
     return projected;
   }, [imgNatural.h, imgNatural.w, overlaySegments, stats]);
 
-  // Index of `highlightedSegment` within `overlaySegments` (and therefore
-  // within `projectedOverlaySegments`, which is built in the same order with
-  // entries skipped only for non-finite coordinates — highlighted segments
-  // by definition have finite coords). Used to draw the hover-style emphasis
-  // for a pinned/externally-selected segment.
-  const highlightedSegmentIndex = useMemo(() => {
-    if (!highlightedSegment || !overlaySegments || overlaySegments.length === 0) return null;
-    for (let i = 0; i < overlaySegments.length; i++) {
-      const s = overlaySegments[i];
-      if (
-        s.x1 === highlightedSegment.x1 &&
-        s.z1 === highlightedSegment.z1 &&
-        s.x2 === highlightedSegment.x2 &&
-        s.z2 === highlightedSegment.z2
-      ) {
-        return i;
+  // Indices within `overlaySegments` (and therefore `projectedOverlaySegments`,
+  // which is built in the same order with entries skipped only for non-finite
+  // coordinates — highlighted segments by definition have finite coords) that
+  // should be drawn with the hover/highlight emphasis. Combines the single
+  // `highlightedSegment` (back-compat) and the `highlightedSegments` list.
+  const highlightedSegmentIndices = useMemo(() => {
+    if (!overlaySegments || overlaySegments.length === 0) {
+      return new Set<number>();
+    }
+    const targets = new Set<string>();
+    if (highlightedSegment) {
+      targets.add(
+        `${highlightedSegment.x1},${highlightedSegment.z1},${highlightedSegment.x2},${highlightedSegment.z2}`,
+      );
+    }
+    if (highlightedSegments) {
+      for (const s of highlightedSegments) {
+        targets.add(`${s.x1},${s.z1},${s.x2},${s.z2}`);
       }
     }
-    return null;
-  }, [highlightedSegment, overlaySegments]);
+    if (targets.size === 0) return new Set<number>();
+    const out = new Set<number>();
+    for (let i = 0; i < overlaySegments.length; i++) {
+      const s = overlaySegments[i];
+      if (targets.has(`${s.x1},${s.z1},${s.x2},${s.z2}`)) {
+        out.add(i);
+      }
+    }
+    return out;
+  }, [highlightedSegment, highlightedSegments, overlaySegments]);
 
   const projectedOverlayPoints = useMemo(() => {
     if (
@@ -563,20 +581,20 @@ export function MapViewer({
         ctx.stroke();
       }
 
-      // Pinned / externally highlighted segment — same style as hover so it
-      // remains visually obvious even when the cursor moves elsewhere. Skip
-      // if it's already the hovered one to avoid double-stroking.
-      if (
-        highlightedSegmentIndex !== null &&
-        highlightedSegmentIndex !== hoveredOverlayIndex &&
-        projectedOverlaySegments[highlightedSegmentIndex]
-      ) {
-        const seg = projectedOverlaySegments[highlightedSegmentIndex];
+      // Pinned / externally highlighted segments — same style as hover so they
+      // remain visually obvious even when the cursor moves elsewhere. Skip
+      // the hovered one to avoid double-stroking.
+      if (highlightedSegmentIndices.size > 0) {
         ctx.strokeStyle = hoverLineColor;
         ctx.lineWidth = Math.max(baseWidth * 1.6, 1.6);
         ctx.beginPath();
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
+        for (const idx of highlightedSegmentIndices) {
+          if (idx === hoveredOverlayIndex) continue;
+          const seg = projectedOverlaySegments[idx];
+          if (!seg) continue;
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
         ctx.stroke();
       }
 
@@ -617,7 +635,7 @@ export function MapViewer({
   }, [
     containerSize.h,
     containerSize.w,
-    highlightedSegmentIndex,
+    highlightedSegmentIndices,
     hoveredOverlayIndex,
     imgNatural.h,
     imgNatural.w,

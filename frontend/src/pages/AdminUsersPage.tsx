@@ -22,6 +22,7 @@ import {
   type KeyPermission,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -423,7 +424,7 @@ function FilterToggle({
 }) {
   return (
     <label className="flex items-center gap-1 cursor-pointer">
-      <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
+      <Checkbox checked={value} onCheckedChange={(checked) => onChange(checked === true)} />
       {label}
     </label>
   );

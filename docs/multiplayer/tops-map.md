@@ -155,6 +155,35 @@ The "show local radius only" filter (`TL_FILTER_CENTER = (2250, 12500)`, `TL_FIL
 
 The selected landmark/translocator and search input also drive `MapViewer`'s focus point, which pans the canvas to the selected feature.
 
+### Favorite TL groupings (local-only)
+
+A user-facing way to deal with the "too many TLs cluttering the map" problem without having to ship server-side preferences. Users build named **groupings** of translocators and either filter the map down to only those TLs or highlight them while still rendering the rest.
+
+> Lib: [frontend/src/lib/tl-groupings.ts](../../frontend/src/lib/tl-groupings.ts)
+> Drawer: [frontend/src/components/tops-map/TLGroupingsDrawer.tsx](../../frontend/src/components/tops-map/TLGroupingsDrawer.tsx)
+> Sheet primitive: [frontend/src/components/ui/sheet.tsx](../../frontend/src/components/ui/sheet.tsx)
+> Multi-highlight in viewer: [frontend/src/components/MapViewer.tsx](../../frontend/src/components/MapViewer.tsx) (`highlightedSegments` prop)
+
+**TL identity.** Each segment is keyed by its coordinate tuple `${x1},${z1},${x2},${z2}` (after the same z-negation transform applied at geojson-load time). Stable against ordering changes; only fragile if the underlying TL itself is edited or removed. The drawer surfaces a `(N missing)` badge per grouping rather than auto-pruning so the user can decide.
+
+**Storage.** Local-only. Three localStorage keys, all per-browser:
+
+| Key | Shape | Purpose |
+|-----|-------|---------|
+| `tops-map-tl-groupings` | `{ version: 1, groupings: TLGrouping[] }` | The groupings themselves |
+| `tops-map-tl-groupings-view-mode` | `"all" \| "filter" \| "highlight"` | Active view mode |
+| `tops-map-tl-groupings-active` | `string[]` (grouping ids) | Which groupings are toggled on |
+
+`useTLGroupings()` exposes the CRUD API (`createGrouping`, `renameGrouping`, `deleteGrouping`, `addTLs`, `removeTLs`, `toggleTL`, `setColor`) plus `importJSON(json, mode)` and `exportJSON()`. Cross-tab sync is handled by listening to the standard `storage` event so a change in one tab updates the other without polling.
+
+**View modes.** `all` is unchanged behavior. `filter` renders only the union of TLs in the active groupings (translocator count flips to "N / total shown"). `highlight` renders everything but emphasises the union via the same hover/highlight style used for a pinned TL — implemented by `MapViewer`'s new `highlightedSegments` prop, which builds a `Set` of indices and combines additively with the existing single-segment `highlightedSegment`.
+
+**Edit mode.** A grouping can be put into edit mode from the drawer; this overrides the click handler so left-clicking any TL toggles its membership in that grouping. Right-click pinning is suppressed while editing. Edit mode forces the translocator overlay on (otherwise there'd be nothing to click) and renders all current members as highlighted so the user always sees the running selection. A banner above the viewer shows the current count and a "Done" button.
+
+**Import / export.** Export downloads the same versioned envelope as the storage payload as `tops-tl-groupings-YYYY-MM-DD.json`. Import opens a confirmation dialog with **Replace** (overwrite the stored list) or **Merge** (re-id every imported grouping and append). Malformed JSON shows an inline error and changes nothing.
+
+**Deliberate non-goals.** No server sync, no URL-based sharing, no per-grouping color on the map (the drawer stores `color` on the type but the viewer currently uses the same highlight style for everything — adding per-grouping colors would extend `MapViewer` to accept a colored-segments map). No search/filter inside the drawer itself.
+
 ## Admin resolution panel
 
 Admins (`getStoredIsAdmin()`) see an extra dialog from the Settings icon. It surfaces:

@@ -7,18 +7,17 @@
 - [x] add signed URLs for secure access to uploaded files in R2
 - Automatically give a score based on already existing map data (Spawn). Display the amount of chunks are overlapping & the overall similarity of the overlapping chunks (ex:300 chunks with 85% resemblance)
 - Automatically display the regions with the most overlapping chunks (ex: top 5 regions with the most overlapping chunks) and also display for each region the similarity score of the overlapping chunks
-- custom domain
+-[x] custom domain
 - have a way to revert already merged changes in the map (e.g. if a user accidentally imports a wrong file, they can revert that import)
 - SSL setup for secure access to the API (low priority, can be added later)
 - Add cookies banner to the frontend to comply with privacy regulations (e.g., GDPR) (Local storage counts as cookies, so we should inform users about it and get their consent before using local storage to persist query data)
 - Add a loading spinner or progress bar to the frontend to indicate when data is being fetched or processed (e.g., when generating map levels or fetching chunk data)
-- Add Dark mode and a centralized theme to the frontend for better user experience
-
+-[x] Add Dark mode and a centralized theme to the frontend for better user experience
 
 
 - Allow players to upload their waypoints (extract from client-chat.log file) and display them on the map (this will allow players to share their waypoints with others and also to have a visual representation of their waypoints on the map). Limit how many waypoints can be viewed at once by normal users. Admins can view all waypoints without limit. Waypoints should be displayed with their name, icon, and color on the map. Waypoints should also be searchable by name and filterable by icon and color. For normal users they have to set their approximate home location on the map and only waypoints within a certain radius of that location will be displayed. Admins can see all waypoints regardless of location for moderation purposes. waypoints are heavily filters and sanitized on upload to prevent abuse (e.g., a user uploading a file with 100k waypoints to crash the map). 
 
-- change how admins send api-keys to the server, apikeys should not be that easily visible in requests.
+-[x] change how admins send api-keys to the server, apikeys should not be that easily visible in requests.
 
 
 

@@ -5,6 +5,7 @@ import { adminListFlags, adminResolveFlag } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export function AdminFlagsPage() {
   const queryClient = useQueryClient();
@@ -31,10 +32,9 @@ export function AdminFlagsPage() {
           </p>
         </div>
         <label className="flex items-center gap-1 text-sm">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={unresolvedOnly}
-            onChange={(e) => setUnresolvedOnly(e.target.checked)}
+            onCheckedChange={(checked) => setUnresolvedOnly(checked === true)}
           />
           Unresolved only
         </label>
@@ -63,9 +63,14 @@ export function AdminFlagsPage() {
                 {f.resolved_at && <Badge variant="outline">Resolved: {f.resolution}</Badge>}
               </div>
               <div className="text-sm">
-                <span className="font-mono">{f.flagged_display_name ?? f.flagged_user.slice(0, 8)}</span>
+                <span className="font-mono">
+                  {f.flagged_display_name ?? f.flagged_user.slice(0, 8)}
+                </span>
                 {f.related_display_name && (
-                  <> ⟷ <span className="font-mono">{f.related_display_name}</span></>
+                  <>
+                    {" "}
+                    ⟷ <span className="font-mono">{f.related_display_name}</span>
+                  </>
                 )}
               </div>
               {f.metadata && (
@@ -75,16 +80,25 @@ export function AdminFlagsPage() {
               )}
               {!f.resolved_at && (
                 <div className="flex gap-1">
-                  <Button size="sm" variant="destructive"
-                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "abuse" })}>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "abuse" })}
+                  >
                     Mark as abuse
                   </Button>
-                  <Button size="sm" variant="outline"
-                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "valid" })}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "valid" })}
+                  >
                     Valid
                   </Button>
-                  <Button size="sm" variant="outline"
-                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "dismissed" })}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => resolveMut.mutate({ id: f.id, resolution: "dismissed" })}
+                  >
                     Dismiss
                   </Button>
                 </div>
