@@ -124,14 +124,18 @@ def generate_presigned_download_url(
     *,
     expires_seconds: int,
     content_type: str = "image/png",
+    verify_exists: bool = True,
 ) -> str:
     """Generate a presigned GET URL so clients can fetch an R2 object directly.
 
     The URL is self-contained — no API key is required by the client.
     Expiry is clamped to 7 days (S3v4 maximum).
-    Returns an empty string if the object does not exist.
+    When ``verify_exists`` is True, returns an empty string if the object does
+    not exist (one HEAD round-trip per call). Pass False when the caller has
+    already established existence (e.g. via a single bulk LIST) to skip the
+    HEAD round-trip entirely.
     """
-    if not object_exists(key):
+    if verify_exists and not object_exists(key):
         return ""
     clamped = min(expires_seconds, _MAX_PRESIGN_SECONDS)
     return _get_client().generate_presigned_url(

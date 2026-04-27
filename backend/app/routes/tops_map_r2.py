@@ -106,6 +106,25 @@ def _build_chunk_urls(level: int) -> tuple:
     out = []
     new_rows = []
     earliest = None
+
+    # Figure out which chunks need a fresh presign. If any are missing from the
+    # cache, do a single LIST against the level prefix instead of doing a HEAD
+    # per chunk — one R2 round-trip vs. up to 256.
+    missing_coords = [
+        (cx, cy)
+        for cy in range(CHUNK_GRID_SIZE)
+        for cx in range(CHUNK_GRID_SIZE)
+        if (cx, cy) not in cached
+    ]
+    existing_keys: set = set()
+    if missing_coords:
+        prefix = f"cache/tops-map-level{level}/"
+        try:
+            existing_keys = set(r2_storage.list_keys_with_prefix(prefix))
+        except Exception:
+            # Fall back to per-chunk HEAD checks if listing fails.
+            existing_keys = None  # type: ignore[assignment]
+
     for cy in range(CHUNK_GRID_SIZE):
         for cx in range(CHUNK_GRID_SIZE):
             entry = cached.get((cx, cy))
@@ -114,9 +133,12 @@ def _build_chunk_urls(level: int) -> tuple:
                 expires_at = entry["expires_at"]
             else:
                 key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+                if existing_keys is not None and key not in existing_keys:
+                    continue
                 url = r2_storage.generate_presigned_download_url(
                     key,
                     expires_seconds=_CHUNK_URL_EXPIRY_SECONDS,
+                    verify_exists=existing_keys is None,
                 )
                 if not url:
                     continue

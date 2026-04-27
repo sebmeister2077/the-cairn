@@ -1,23 +1,25 @@
 import { useEffect, useState } from "react";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  useInfiniteQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { Plus, MailOpen, Search, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+  Plus,
+  MailOpen,
+  Search,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import {
-  listApiKeys, revokeApiKey, type ApiKeyRecord,
-  listInviteLinks, revokeInviteLink, type InviteLinkRecord,
+  listApiKeys,
+  revokeApiKey,
+  type ApiKeyRecord,
+  listInviteLinks,
+  revokeInviteLink,
+  type InviteLinkRecord,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { KeyRow } from "@/components/ApiKeyRow";
 import { CreatedKeyDialog } from "@/components/CreatedKeyDialog";
@@ -116,23 +118,21 @@ export function ApiKeysPage() {
 
   const revokeMutation = useMutation({
     mutationFn: revokeApiKey,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] }),
   });
 
   const revokeInviteMutation = useMutation({
     mutationFn: revokeInviteLink,
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["admin-invite-links"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-invite-links"] }),
   });
 
   function handleCreated(record: ApiKeyRecord) {
-    queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] });
+    queryClient.refetchQueries({ queryKey: ["admin-api-keys"] });
     setCreatedKey(record);
   }
 
   function handleInviteCreated(record: InviteLinkRecord) {
-    queryClient.invalidateQueries({ queryKey: ["admin-invite-links"] });
+    queryClient.refetchQueries({ queryKey: ["admin-invite-links"] });
     setCreatedInvite(record);
   }
 
@@ -186,19 +186,13 @@ export function ApiKeysPage() {
             <LoadingRow />
           ) : activeKeyItems.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              {activeKeysQ
-                ? "No matching keys."
-                : "No active keys. Generate one to get started."}
+              {activeKeysQ ? "No matching keys." : "No active keys. Generate one to get started."}
             </p>
           ) : (
             <>
               <div>
                 {activeKeyItems.map((k) => (
-                  <KeyRow
-                    key={k.key}
-                    record={k}
-                    onRevoke={(key) => revokeMutation.mutate(key)}
-                  />
+                  <KeyRow key={k.key} record={k} onRevoke={(key) => revokeMutation.mutate(key)} />
                 ))}
               </div>
               <LoadMoreButton query={activeKeys} />
@@ -220,14 +214,13 @@ export function ApiKeysPage() {
               <ChevronRight className="size-4" />
             )}
             <CardTitle className="text-base text-muted-foreground">
-              Revoked{showRevokedKeys && revokedKeys.isSuccess
+              Revoked
+              {showRevokedKeys && revokedKeys.isSuccess
                 ? ` (${revokedKeyItems.length} of ${revokedKeysTotal})`
                 : ""}
             </CardTitle>
           </button>
-          {showRevokedKeys && (
-            <CardDescription>These keys no longer work.</CardDescription>
-          )}
+          {showRevokedKeys && <CardDescription>These keys no longer work.</CardDescription>}
         </CardHeader>
         {showRevokedKeys && (
           <CardContent className="space-y-3 opacity-80">
@@ -262,10 +255,7 @@ export function ApiKeysPage() {
         onCreate={handleCreated}
       />
 
-      <CreatedKeyDialog
-        record={createdKey}
-        onClose={() => setCreatedKey(null)}
-      />
+      <CreatedKeyDialog record={createdKey} onClose={() => setCreatedKey(null)} />
 
       <Separator />
 
@@ -277,16 +267,29 @@ export function ApiKeysPage() {
             Share a link — anyone who opens it can claim a new API key automatically.
           </p>
         </div>
-        <Button onClick={() => setInviteOpen(true)}>
-          <MailOpen className="size-4" />
-          Create Invite Link
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => activeInvites.refetch()}
+            disabled={activeInvites.isFetching}
+            title="Refresh active invite links"
+          >
+            <RefreshCw className={activeInvites.isFetching ? "size-3 animate-spin" : "size-3"} />
+            Refresh
+          </Button>
+          <Button onClick={() => setInviteOpen(true)}>
+            <MailOpen className="size-4" />
+            Create Invite Link
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            Active Invite Links{activeInvites.isSuccess
+            Active Invite Links
+            {activeInvites.isSuccess
               ? ` (${activeInviteItems.length} of ${activeInvitesTotal})`
               : ""}
           </CardTitle>
@@ -335,7 +338,8 @@ export function ApiKeysPage() {
               <ChevronRight className="size-4" />
             )}
             <CardTitle className="text-base text-muted-foreground">
-              Revoked Invite Links{showRevokedInvites && revokedInvites.isSuccess
+              Revoked Invite Links
+              {showRevokedInvites && revokedInvites.isSuccess
                 ? ` (${revokedInviteItems.length} of ${revokedInvitesTotal})`
                 : ""}
             </CardTitle>
@@ -355,9 +359,7 @@ export function ApiKeysPage() {
               <LoadingRow />
             ) : revokedInviteItems.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                {revokedInvitesQ
-                  ? "No matching revoked invite links."
-                  : "No revoked invite links."}
+                {revokedInvitesQ ? "No matching revoked invite links." : "No revoked invite links."}
               </p>
             ) : (
               <>
@@ -379,10 +381,7 @@ export function ApiKeysPage() {
         onCreate={handleInviteCreated}
       />
 
-      <CreatedInviteLinkDialog
-        record={createdInvite}
-        onClose={() => setCreatedInvite(null)}
-      />
+      <CreatedInviteLinkDialog record={createdInvite} onClose={() => setCreatedInvite(null)} />
     </div>
   );
 }
