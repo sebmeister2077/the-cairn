@@ -454,13 +454,13 @@ function GeneralPage() {
   );
 }
 
-const TWO_DAYS = 2 * 24 * 60 * 60 * 1000;
+const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
-      gcTime: TWO_DAYS,
+      gcTime: TWO_WEEKS,
     },
   },
 });
@@ -480,7 +480,7 @@ export default function App() {
       client={queryClient}
       persistOptions={{
         persister,
-        maxAge: TWO_DAYS,
+        maxAge: TWO_WEEKS,
         dehydrateOptions: {
           shouldDehydrateQuery: (query) =>
             query.state.status === "success" &&
