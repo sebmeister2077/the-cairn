@@ -565,8 +565,18 @@ export interface ApiKeyRecord {
     last_used_at: string | null;
 }
 
-export async function listApiKeys(): Promise<ApiKeyRecord[]> {
-    const res = await fetch(`${API_BASE}/admin/keys`, {
+export async function listApiKeys(params: {
+    status?: "all" | "active" | "revoked";
+    q?: string;
+    offset?: number;
+    limit?: number;
+} = {}): Promise<{ items: ApiKeyRecord[]; total: number; next_offset: number | null }> {
+    const search = new URLSearchParams();
+    search.set("status", params.status ?? "all");
+    if (params.q) search.set("q", params.q);
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(`${API_BASE}/admin/keys?${search.toString()}`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
@@ -609,8 +619,18 @@ export interface InviteLinkRecord {
     revoked: boolean;
 }
 
-export async function listInviteLinks(): Promise<InviteLinkRecord[]> {
-    const res = await fetch(`${API_BASE}/admin/invite-links`, {
+export async function listInviteLinks(params: {
+    status?: "all" | "active" | "revoked";
+    q?: string;
+    offset?: number;
+    limit?: number;
+} = {}): Promise<{ items: InviteLinkRecord[]; total: number; next_offset: number | null }> {
+    const search = new URLSearchParams();
+    search.set("status", params.status ?? "all");
+    if (params.q) search.set("q", params.q);
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(`${API_BASE}/admin/invite-links?${search.toString()}`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search } from "lucide-react";
 import {
@@ -48,14 +48,62 @@ const REASONS: { value: BanReasonCode; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
+const FILTERS_STORAGE_KEY = "admin_users_filters_v1";
+
+type StoredFilters = {
+  q: string;
+  sort: string;
+  filterFlagged: boolean;
+  filterBanned: boolean;
+  filterGenesis: boolean;
+  includeDeleted: boolean;
+};
+
+const DEFAULT_FILTERS: StoredFilters = {
+  q: "",
+  sort: "joined_at",
+  filterFlagged: false,
+  filterBanned: false,
+  filterGenesis: false,
+  includeDeleted: true,
+};
+
+function loadStoredFilters(): StoredFilters {
+  try {
+    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
+    if (!raw) return DEFAULT_FILTERS;
+    const parsed = JSON.parse(raw) as Partial<StoredFilters>;
+    return { ...DEFAULT_FILTERS, ...parsed };
+  } catch {
+    return DEFAULT_FILTERS;
+  }
+}
+
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
-  const [q, setQ] = useState("");
-  const [sort, setSort] = useState("joined_at");
-  const [filterFlagged, setFilterFlagged] = useState(false);
-  const [filterBanned, setFilterBanned] = useState(false);
-  const [filterGenesis, setFilterGenesis] = useState(false);
-  const [includeDeleted, setIncludeDeleted] = useState(true);
+  const initialFilters = loadStoredFilters();
+  const [q, setQ] = useState(initialFilters.q);
+  const [sort, setSort] = useState(initialFilters.sort);
+  const [filterFlagged, setFilterFlagged] = useState(initialFilters.filterFlagged);
+  const [filterBanned, setFilterBanned] = useState(initialFilters.filterBanned);
+  const [filterGenesis, setFilterGenesis] = useState(initialFilters.filterGenesis);
+  const [includeDeleted, setIncludeDeleted] = useState(initialFilters.includeDeleted);
+
+  useEffect(() => {
+    try {
+      const value: StoredFilters = {
+        q,
+        sort,
+        filterFlagged,
+        filterBanned,
+        filterGenesis,
+        includeDeleted,
+      };
+      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(value));
+    } catch {
+      // ignore quota / serialization errors
+    }
+  }, [q, sort, filterFlagged, filterBanned, filterGenesis, includeDeleted]);
 
   const [banTarget, setBanTarget] = useState<AdminUserListItem | null>(null);
   const [siblingTarget, setSiblingTarget] = useState<AdminUserListItem | null>(null);
@@ -119,9 +167,7 @@ export function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold">Users</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            View, edit and moderate accounts.
-          </p>
+          <p className="text-sm text-muted-foreground mt-0.5">View, edit and moderate accounts.</p>
         </div>
         <Button size="sm" variant="outline" onClick={() => refreshStats.mutate()}>
           <RefreshCw className={refreshStats.isPending ? "size-3 animate-spin" : "size-3"} />
@@ -169,10 +215,18 @@ export function AdminUsersPage() {
             <FilterToggle label="Flagged" value={filterFlagged} onChange={setFilterFlagged} />
             <FilterToggle label="Banned" value={filterBanned} onChange={setFilterBanned} />
             <span className="inline-flex items-center">
-              <FilterToggle label="Genesis only" value={filterGenesis} onChange={setFilterGenesis} />
+              <FilterToggle
+                label="Genesis only"
+                value={filterGenesis}
+                onChange={setFilterGenesis}
+              />
               <HelpTip text="Genesis = the first (earliest) account ever created from a given IP address. Subsequent accounts on the same IP are flagged 'shared_ip' and are NOT genesis. Useful for spotting alts." />
             </span>
-            <FilterToggle label="Include deleted" value={includeDeleted} onChange={setIncludeDeleted} />
+            <FilterToggle
+              label="Include deleted"
+              value={includeDeleted}
+              onChange={setIncludeDeleted}
+            />
           </div>
         </CardContent>
       </Card>
@@ -183,9 +237,7 @@ export function AdminUsersPage() {
         </div>
       )}
 
-      {users.error && (
-        <p className="text-sm text-destructive">{(users.error as Error).message}</p>
-      )}
+      {users.error && <p className="text-sm text-destructive">{(users.error as Error).message}</p>}
 
       {users.data?.users && users.data.users.length === 0 && (
         <p className="text-sm text-muted-foreground py-4 text-center">No users match.</p>
@@ -215,34 +267,36 @@ export function AdminUsersPage() {
                     {u.deleted_at && <Badge variant="outline">Deleted</Badge>}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {u.in_game_name && <>In-game: <span className="font-mono">{u.in_game_name}</span> · </>}
+                    {u.in_game_name && (
+                      <>
+                        In-game: <span className="font-mono">{u.in_game_name}</span> ·{" "}
+                      </>
+                    )}
                     Joined {new Date(u.joined_at).toLocaleDateString()}
-                    {u.last_used_at && <> · Last seen {new Date(u.last_used_at).toLocaleDateString()}</>}
+                    {u.last_used_at && (
+                      <> · Last seen {new Date(u.last_used_at).toLocaleDateString()}</>
+                    )}
                   </div>
                   <div className="text-[10px] text-muted-foreground font-mono break-all">
                     {u.api_key.slice(0, 8)}…{u.api_key.slice(-4)}
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  <Button size="sm" variant="outline" onClick={() => setSiblingTarget(u)}>Siblings</Button>
+                  <Button size="sm" variant="outline" onClick={() => setSiblingTarget(u)}>
+                    Siblings
+                  </Button>
                   {u.flag_count > 0 && (
                     <Button size="sm" variant="outline" onClick={() => setFlagsTarget(u)}>
                       Flags ({u.flag_count})
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => regenMut.mutate(u.api_key)}>Regen name</Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setPermsTarget(u)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => regenMut.mutate(u.api_key)}>
+                    Regen name
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setPermsTarget(u)}>
                     Permissions
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setRekeyConfirm(u)}
-                  >
+                  <Button size="sm" variant="outline" onClick={() => setRekeyConfirm(u)}>
                     Re-key
                   </Button>
                   {u.deleted_at ? (
@@ -250,11 +304,7 @@ export function AdminUsersPage() {
                       Reactivate
                     </Button>
                   ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setDeleteConfirm(u)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => setDeleteConfirm(u)}>
                       Delete
                     </Button>
                   )}
@@ -268,10 +318,14 @@ export function AdminUsersPage() {
         ))}
       </div>
 
-      <BanDialog target={banTarget} onClose={() => setBanTarget(null)} onDone={() => {
-        queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-        queryClient.invalidateQueries({ queryKey: ["admin-user-stats"] });
-      }} />
+      <BanDialog
+        target={banTarget}
+        onClose={() => setBanTarget(null)}
+        onDone={() => {
+          queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+          queryClient.invalidateQueries({ queryKey: ["admin-user-stats"] });
+        }}
+      />
 
       <SiblingsDialog target={siblingTarget} onClose={() => setSiblingTarget(null)} />
 
@@ -284,15 +338,9 @@ export function AdminUsersPage() {
         }}
       />
 
-      <PermissionsDialog
-        target={permsTarget}
-        onClose={() => setPermsTarget(null)}
-      />
+      <PermissionsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
 
-      <RekeyResultDialog
-        result={rekeyResult}
-        onClose={() => setRekeyResult(null)}
-      />
+      <RekeyResultDialog result={rekeyResult} onClose={() => setRekeyResult(null)} />
 
       <ConfirmDialog
         open={!!rekeyConfirm}
@@ -301,10 +349,9 @@ export function AdminUsersPage() {
           rekeyConfirm ? (
             <>
               A brand-new API key will be issued for{" "}
-              <span className="font-mono">{rekeyConfirm.display_name}</span> and the
-              current key will be <strong>revoked immediately</strong>. The user will be
-              signed out until they enter the new key. Make sure you can deliver the new
-              key securely before continuing.
+              <span className="font-mono">{rekeyConfirm.display_name}</span> and the current key
+              will be <strong>revoked immediately</strong>. The user will be signed out until they
+              enter the new key. Make sure you can deliver the new key securely before continuing.
             </>
           ) : null
         }
@@ -326,9 +373,9 @@ export function AdminUsersPage() {
         description={
           deleteConfirm ? (
             <>
-              <span className="font-mono">{deleteConfirm.display_name}</span> will be
-              marked deleted, their personal fields cleared and their API key revoked. They
-              can still be reactivated later from this page.
+              <span className="font-mono">{deleteConfirm.display_name}</span> will be marked
+              deleted, their personal fields cleared and their API key revoked. They can still be
+              reactivated later from this page.
             </>
           ) : null
         }
@@ -348,7 +395,15 @@ export function AdminUsersPage() {
   );
 }
 
-function Stat({ label, value, className = "" }: { label: string; value: number; className?: string }) {
+function Stat({
+  label,
+  value,
+  className = "",
+}: {
+  label: string;
+  value: number;
+  className?: string;
+}) {
   return (
     <div className={className}>
       <div className="text-lg font-semibold">{value}</div>
@@ -357,7 +412,15 @@ function Stat({ label, value, className = "" }: { label: string; value: number; 
   );
 }
 
-function FilterToggle({ label, value, onChange }: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+function FilterToggle({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label className="flex items-center gap-1 cursor-pointer">
       <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
@@ -409,8 +472,8 @@ function BanDialog({
         <DialogHeader>
           <DialogTitle>Ban IP for {target.display_name}</DialogTitle>
           <DialogDescription>
-            This bans the user's hashed IP. All accounts on that IP will be soft-deleted
-            and their API keys revoked.
+            This bans the user's hashed IP. All accounts on that IP will be soft-deleted and their
+            API keys revoked.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
@@ -422,13 +485,19 @@ function BanDialog({
               className="w-full rounded border bg-background px-2 py-1 mt-1"
             >
               {REASONS.map((r) => (
-                <option key={r.value} value={r.value}>{r.label}</option>
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
               ))}
             </select>
           </div>
           <div>
             <Label>Reason details (visible internally)</Label>
-            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. ban evasion" />
+            <Input
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="e.g. ban evasion"
+            />
           </div>
           <div>
             <Label>Admin notes (optional)</Label>
@@ -436,7 +505,11 @@ function BanDialog({
           </div>
           <div>
             <Label>Duration (days)</Label>
-            <Input type="number" value={days} onChange={(e) => setDays(parseInt(e.target.value || "0", 10))} />
+            <Input
+              type="number"
+              value={days}
+              onChange={(e) => setDays(parseInt(e.target.value || "0", 10))}
+            />
           </div>
           <Separator />
           <div>
@@ -444,7 +517,8 @@ function BanDialog({
             {preview.isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
             {preview.data && (
               <p className="text-xs text-muted-foreground">
-                {preview.data.affected_users.length} account(s) on this IP will be revoked &amp; soft-deleted:
+                {preview.data.affected_users.length} account(s) on this IP will be revoked &amp;
+                soft-deleted:
                 <span className="block mt-1 font-mono">
                   {preview.data.affected_users.map((u) => u.display_name).join(", ")}
                 </span>
@@ -455,8 +529,14 @@ function BanDialog({
             <p className="text-sm text-destructive">{(banMut.error as Error).message}</p>
           )}
           <div className="flex gap-2 justify-end pt-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
-            <Button variant="destructive" disabled={!reason.trim() || banMut.isPending} onClick={() => banMut.mutate()}>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={!reason.trim() || banMut.isPending}
+              onClick={() => banMut.mutate()}
+            >
               {banMut.isPending ? "Banning…" : "Ban IP"}
             </Button>
           </div>
@@ -466,7 +546,13 @@ function BanDialog({
   );
 }
 
-function SiblingsDialog({ target, onClose }: { target: AdminUserListItem | null; onClose: () => void }) {
+function SiblingsDialog({
+  target,
+  onClose,
+}: {
+  target: AdminUserListItem | null;
+  onClose: () => void;
+}) {
   const q = useQuery({
     queryKey: ["siblings", target?.api_key],
     queryFn: () => adminGetSiblings(target!.api_key),
@@ -489,7 +575,10 @@ function SiblingsDialog({ target, onClose }: { target: AdminUserListItem | null;
         )}
         <div className="space-y-2">
           {q.data?.siblings.map((s) => (
-            <div key={s.api_key} className="text-sm border rounded p-2 flex items-center justify-between">
+            <div
+              key={s.api_key}
+              className="text-sm border rounded p-2 flex items-center justify-between"
+            >
               <div>
                 <div className="font-mono">{s.display_name}</div>
                 {s.in_game_name && (
@@ -528,7 +617,9 @@ function RekeyResultDialog({
         <div className="space-y-2">
           <Input readOnly value={result.key} className="font-mono text-xs" />
           <Button onClick={() => navigator.clipboard.writeText(result.key)}>Copy</Button>
-          <Button variant="outline" onClick={onClose}>Close</Button>
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -589,32 +680,35 @@ function FlagsDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
-        {q.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
-        {q.data && flags.length === 0 && (
-          <p className="text-sm text-muted-foreground">No flags.</p>
-        )}
-        {unresolved.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground">
-              Unresolved ({unresolved.length})
+          {q.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
+          {q.data && flags.length === 0 && (
+            <p className="text-sm text-muted-foreground">No flags.</p>
+          )}
+          {unresolved.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground">
+                Unresolved ({unresolved.length})
+              </div>
+              {unresolved.map((f) => (
+                <FlagRow
+                  key={f.id}
+                  flag={f}
+                  onResolve={(resolution) => resolveMut.mutate({ id: f.id, resolution })}
+                  pending={resolveMut.isPending}
+                />
+              ))}
             </div>
-            {unresolved.map((f) => (
-              <FlagRow key={f.id} flag={f} onResolve={(resolution) =>
-                resolveMut.mutate({ id: f.id, resolution })
-              } pending={resolveMut.isPending} />
-            ))}
-          </div>
-        )}
-        {resolved.length > 0 && (
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground pt-2">
-              Resolved ({resolved.length})
+          )}
+          {resolved.length > 0 && (
+            <div className="space-y-2">
+              <div className="text-xs font-semibold text-muted-foreground pt-2">
+                Resolved ({resolved.length})
+              </div>
+              {resolved.map((f) => (
+                <FlagRow key={f.id} flag={f} />
+              ))}
             </div>
-            {resolved.map((f) => (
-              <FlagRow key={f.id} flag={f} />
-            ))}
-          </div>
-        )}
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -653,17 +747,40 @@ function FlagRow({
       {flag.resolved_at ? (
         <div className="text-xs text-muted-foreground">
           Resolved {new Date(flag.resolved_at).toLocaleString()}
-          {flag.resolution && <> as <strong>{flag.resolution}</strong></>}
+          {flag.resolution && (
+            <>
+              {" "}
+              as <strong>{flag.resolution}</strong>
+            </>
+          )}
         </div>
       ) : (
         onResolve && (
           <div className="flex gap-1 pt-1">
-            <Button size="sm" variant="outline" disabled={pending}
-              onClick={() => onResolve("valid")}>Valid</Button>
-            <Button size="sm" variant="outline" disabled={pending}
-              onClick={() => onResolve("abuse")}>False positive</Button>
-            <Button size="sm" variant="outline" disabled={pending}
-              onClick={() => onResolve("dismissed")}>Dismiss</Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => onResolve("valid")}
+            >
+              Valid
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => onResolve("abuse")}
+            >
+              False positive
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => onResolve("dismissed")}
+            >
+              Dismiss
+            </Button>
           </div>
         )
       )}
@@ -710,8 +827,8 @@ function PermissionsDialog({
         <DialogHeader>
           <DialogTitle>Permissions for {target.display_name}</DialogTitle>
           <DialogDescription>
-            Granular permissions on this API key. These supplement (not replace) the
-            coarse "read" / "contribute" tier.
+            Granular permissions on this API key. These supplement (not replace) the coarse "read" /
+            "contribute" tier.
           </DialogDescription>
         </DialogHeader>
         {q.isLoading ? (

@@ -14,7 +14,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -53,10 +53,21 @@ def _serialise(record: dict) -> dict:
 
 
 @router.get("/admin/keys")
-async def list_keys(_: str = Depends(require_admin)) -> List[dict]:
+async def list_keys(
+    _: str = Depends(require_admin),
+    status: str = Query("all", pattern="^(all|active|revoked)$"),
+    q: str = Query("", max_length=128),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict:
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
-    return [_serialise(r) for r in db.list_api_keys()]
+    page = db.list_api_keys_paginated(status=status, q=q.strip(), offset=offset, limit=limit)
+    return {
+        "items": [_serialise(r) for r in page["items"]],
+        "total": page["total"],
+        "next_offset": (offset + limit) if offset + limit < page["total"] else None,
+    }
 
 
 @router.post("/admin/keys", status_code=201)
@@ -100,10 +111,21 @@ def _serialise_invite(record: dict) -> dict:
 
 
 @router.get("/admin/invite-links")
-async def list_invite_links(_: str = Depends(require_admin)) -> List[dict]:
+async def list_invite_links(
+    _: str = Depends(require_admin),
+    status: str = Query("all", pattern="^(all|active|revoked)$"),
+    q: str = Query("", max_length=128),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> dict:
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
-    return [_serialise_invite(r) for r in db.list_invite_links()]
+    page = db.list_invite_links_paginated(status=status, q=q.strip(), offset=offset, limit=limit)
+    return {
+        "items": [_serialise_invite(r) for r in page["items"]],
+        "total": page["total"],
+        "next_offset": (offset + limit) if offset + limit < page["total"] else None,
+    }
 
 
 @router.post("/admin/invite-links", status_code=201)

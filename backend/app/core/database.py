@@ -1006,6 +1006,48 @@ def list_api_keys() -> List[dict]:
             return [dict(r) for r in rows]
 
 
+def list_api_keys_paginated(
+    status: str = "all",
+    q: str = "",
+    offset: int = 0,
+    limit: int = 50,
+) -> dict:
+    """Paginated + filtered listing of API keys.
+
+    ``status`` one of ``"active"``, ``"revoked"``, ``"all"``.
+    ``q`` is an optional case-insensitive substring search across the key's
+    ``name`` and (a prefix of) the raw ``key`` itself.
+
+    Returns ``{"items": [...], "total": int}``.
+    """
+    where = []
+    params: list = []
+    if status == "active":
+        where.append("revoked = FALSE")
+    elif status == "revoked":
+        where.append("revoked = TRUE")
+    if q:
+        where.append("(name ILIKE %s OR key ILIKE %s)")
+        like = f"%{q}%"
+        params.extend([like, like])
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 200))
+    offset = max(0, int(offset))
+
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(f"SELECT COUNT(*) AS c FROM api_keys {where_sql}", params)
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"SELECT * FROM api_keys {where_sql} "
+                "ORDER BY created_at DESC, key DESC LIMIT %s OFFSET %s",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
 def get_api_key(key: str) -> Optional[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -1216,6 +1258,45 @@ def list_invite_links() -> List[dict]:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute("SELECT * FROM invite_links ORDER BY created_at DESC")
             return [dict(r) for r in cur.fetchall()]
+
+
+def list_invite_links_paginated(
+    status: str = "all",
+    q: str = "",
+    offset: int = 0,
+    limit: int = 50,
+) -> dict:
+    """Paginated + filtered listing of invite links.
+
+    ``status`` is one of ``"active"`` (not revoked), ``"revoked"``, ``"all"``.
+    ``q`` searches the invite ``name`` and ``token`` (substring, case-insensitive).
+    """
+    where = []
+    params: list = []
+    if status == "active":
+        where.append("revoked = FALSE")
+    elif status == "revoked":
+        where.append("revoked = TRUE")
+    if q:
+        where.append("(name ILIKE %s OR token ILIKE %s)")
+        like = f"%{q}%"
+        params.extend([like, like])
+
+    where_sql = ("WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 200))
+    offset = max(0, int(offset))
+
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(f"SELECT COUNT(*) AS c FROM invite_links {where_sql}", params)
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"SELECT * FROM invite_links {where_sql} "
+                "ORDER BY created_at DESC, token DESC LIMIT %s OFFSET %s",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
 
 
 def get_invite_link(token: str) -> Optional[dict]:
