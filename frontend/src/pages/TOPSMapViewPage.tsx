@@ -37,9 +37,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const STALE_TIME = 60 * 60 * 1000; // 1 hour
-const TL_FILTER_CENTER = { x: 2250, z: 12500 };
-const TL_FILTER_RADIUS = 500;
+const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
 
 /**
@@ -100,7 +98,6 @@ export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
   const isAdmin = getStoredIsAdmin();
   const [showTranslocators, setShowTranslocators] = useState(false);
-  const [showLocalRadiusOnly, setShowLocalRadiusOnly] = useState(false);
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [translocatorSegments, setTranslocatorSegments] = useState<WorldLineSegment[]>([]);
   const [translocatorCount, setTranslocatorCount] = useState(0);
@@ -145,7 +142,14 @@ export function TOPSMapViewPage() {
           const [x, z] = coords;
           if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
 
-          const props = (feature?.properties ?? {}) as Record<string, unknown>;
+          const props = (feature?.properties ?? {}) as {
+            label: string;
+            type: "Base" | "Server" | "Misc" | string;
+            z: number;
+          };
+
+          if (props.type === "Misc") continue;
+
           points.push({
             x,
             z: -z,
@@ -249,7 +253,25 @@ export function TOPSMapViewPage() {
     return levelToTileSet(info);
   }, [levelInfoQuery.data]);
 
-  const stats = statsQuery.data ?? null;
+  // Prefer the backend stats payload (richer: tile count, size). When that
+  // request fails (server down, etc.) but we still have a cached level-info
+  // payload, derive a minimal MapStats from it so overlay projection (which
+  // needs start_x/start_z/width_blocks/height_blocks) keeps working.
+  const stats = useMemo<MapStats | null>(() => {
+    if (statsQuery.data) return statsQuery.data;
+    const info = levelInfoQuery.data;
+    if (!info || isLevelInfoExpired(info)) return null;
+    return {
+      pieces: 0,
+      size_mb: 0,
+      width_chunks: 0,
+      height_chunks: 0,
+      width_blocks: info.width_blocks,
+      height_blocks: info.height_blocks,
+      start_x: info.start_x,
+      start_z: info.start_z,
+    };
+  }, [statsQuery.data, levelInfoQuery.data]);
   const hasMap = tileSet != null;
   const [downloading, setDownloading] = useState(false);
 
@@ -266,44 +288,12 @@ export function TOPSMapViewPage() {
         ? levelInfoQuery.error.message
         : "";
 
-  const visibleTranslocatorSegments = useMemo(() => {
-    if (!showLocalRadiusOnly) return translocatorSegments;
-
-    const cx = TL_FILTER_CENTER.x;
-    const cz = TL_FILTER_CENTER.z;
-    const r2 = TL_FILTER_RADIUS * TL_FILTER_RADIUS;
-
-    const pointDistSq = (x: number, z: number) => {
-      const dx = x - cx;
-      const dz = z - cz;
-      return dx * dx + dz * dz;
-    };
-
-    // Include a TL when either endpoint is inside the target radius.
-    return translocatorSegments.filter(
-      (seg) => pointDistSq(seg.x1, seg.z1) <= r2 || pointDistSq(seg.x2, seg.z2) <= r2,
-    );
-  }, [showLocalRadiusOnly, translocatorSegments]);
-
   useEffect(() => {
     if (!showTranslocators) {
       setSelectedTranslocator(null);
       setTranslocatorPinned(false);
-      return;
     }
-    if (!selectedTranslocator) return;
-    const stillVisible = visibleTranslocatorSegments.some(
-      (seg) =>
-        seg.x1 === selectedTranslocator.x1 &&
-        seg.z1 === selectedTranslocator.z1 &&
-        seg.x2 === selectedTranslocator.x2 &&
-        seg.z2 === selectedTranslocator.z2,
-    );
-    if (!stillVisible) {
-      setSelectedTranslocator(null);
-      setTranslocatorPinned(false);
-    }
-  }, [selectedTranslocator, showTranslocators, visibleTranslocatorSegments]);
+  }, [showTranslocators]);
 
   const sameSegment = (a: WorldLineSegment | null, b: WorldLineSegment | null): boolean =>
     !!a && !!b && a.x1 === b.x1 && a.z1 === b.z1 && a.x2 === b.x2 && a.z2 === b.z2;
@@ -336,7 +326,7 @@ export function TOPSMapViewPage() {
   }, []);
 
   useEffect(() => {
-    if (!isAdmin || !showTranslocators) {
+    if (!showTranslocators) {
       setTranslocatorSegments([]);
       return;
     }
@@ -400,15 +390,15 @@ export function TOPSMapViewPage() {
     return () => {
       cancelled = true;
     };
-  }, [isAdmin, showTranslocators]);
+  }, [showTranslocators]);
 
   useEffect(() => {
-    if (!isAdmin || !showLandmarks) {
+    if (!showLandmarks) {
       setLandmarkPoints([]);
       return;
     }
     void ensureLandmarksLoaded();
-  }, [isAdmin, showLandmarks, ensureLandmarksLoaded]);
+  }, [showLandmarks, ensureLandmarksLoaded]);
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
@@ -584,56 +574,33 @@ export function TOPSMapViewPage() {
             </Dialog>
           )}
         </div>
-        {isAdmin && (
-          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-            <Switch
-              checked={showTranslocators}
-              onCheckedChange={setShowTranslocators}
-              aria-label="Show translocator overlay"
-            />
-            <Label>Show translocators (admin only)</Label>
-            <span className="text-xs text-muted-foreground ml-2">
-              TLs found:{" "}
-              <span className="font-medium text-foreground">
-                {translocatorCount.toLocaleString()}
-              </span>
+        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <Switch
+            checked={showTranslocators}
+            onCheckedChange={setShowTranslocators}
+            aria-label="Show translocator overlay"
+          />
+          <Label>Show translocators</Label>
+          <span className="text-xs text-muted-foreground ml-2">
+            TLs found:{" "}
+            <span className="font-medium text-foreground">
+              {translocatorCount.toLocaleString()}
             </span>
-          </div>
-        )}
-        {isAdmin && showTranslocators && (
-          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-            <Switch
-              checked={showLocalRadiusOnly}
-              onCheckedChange={setShowLocalRadiusOnly}
-              aria-label="Show only TLs near 2250, 12500"
-            />
-            <Label>
-              Show only TLs near X {TL_FILTER_CENTER.x.toLocaleString()}, Z{" "}
-              {TL_FILTER_CENTER.z.toLocaleString()} ({TL_FILTER_RADIUS.toLocaleString()} radius)
-            </Label>
-            <span className="text-xs text-muted-foreground ml-2">
-              Showing:{" "}
-              <span className="font-medium text-foreground">
-                {visibleTranslocatorSegments.length.toLocaleString()}
-              </span>
-            </span>
-          </div>
-        )}
-        {isAdmin && (
-          <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-            <Switch
-              checked={showLandmarks}
-              onCheckedChange={setShowLandmarks}
-              aria-label="Show landmarks overlay"
-            />
-            <Label>Show landmarks (admin only)</Label>
-            <span className="text-xs text-muted-foreground ml-2">
-              Landmarks found:{" "}
-              <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
-            </span>
-          </div>
-        )}
-        {isAdmin && hasMap && (
+          </span>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <Switch
+            checked={showLandmarks}
+            onCheckedChange={setShowLandmarks}
+            aria-label="Show landmarks overlay"
+          />
+          <Label>Show landmarks</Label>
+          <span className="text-xs text-muted-foreground ml-2">
+            Landmarks found:{" "}
+            <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
+          </span>
+        </div>
+        {hasMap && (
           <div className="flex flex-col gap-1">
             <Label htmlFor="landmark-search" className="text-sm">
               Search landmark
@@ -651,7 +618,7 @@ export function TOPSMapViewPage() {
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        {isAdmin && showTranslocators && selectedTranslocator && (
+        {showTranslocators && selectedTranslocator && (
           <div className="flex flex-wrap min-h-14 items-center gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
               Start:{" "}
@@ -687,7 +654,7 @@ export function TOPSMapViewPage() {
           </div>
         )}
 
-        {stats && (
+        {stats && statsQuery.data && (
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
               <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
@@ -709,7 +676,7 @@ export function TOPSMapViewPage() {
           tileSet={tileSet}
           stats={stats}
           alt="TOPS global server map"
-          overlaySegments={showTranslocators ? visibleTranslocatorSegments : undefined}
+          overlaySegments={showTranslocators ? translocatorSegments : undefined}
           overlayPoints={showLandmarks ? landmarkPoints : undefined}
           onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
           onOverlaySegmentRightClick={showTranslocators ? handleTranslocatorRightClick : undefined}

@@ -1,1 +1,479 @@
-{"type":"FeatureCollection","crs":{"Name":"urn:ogc:def:crs:EPSG::3857","type":"name","properties":{"name":"urn:ogc:def:crs:EPSG::3857"}},"name":"landmarks","features":[{"type":"Feature","properties":{"type":"Base","label":"Pepevog\n— In Distant Lands — \n               <3","z":113},"geometry":{"type":"Point","coordinates":[-511996,511999]}},{"type":"Feature","properties":{"type":"Base","label":"Zadak Springs","z":137},"geometry":{"type":"Point","coordinates":[1249,9280]}},{"type":"Feature","properties":{"type":"Base","label":"Frost Peak\nTIE, Lil, Tab","z":118},"geometry":{"type":"Point","coordinates":[210,7885]}},{"type":"Feature","properties":{"type":"Misc","label":"The Tab Cave","z":123},"geometry":{"type":"Point","coordinates":[380,7860]}},{"type":"Feature","properties":{"type":"Base","label":"- Княжество Берло -\n- Bearlo Princedom -","z":111},"geometry":{"type":"Point","coordinates":[2866,6510]}},{"type":"Feature","properties":{"type":"Base","label":"DREVLIAN VILLAGE\n(MihaPrikol,\nnerle & Bobot's base)","z":107},"geometry":{"type":"Point","coordinates":[-260,5455]}},{"type":"Feature","properties":{"type":"Base","label":"Rooster Island","z":110},"geometry":{"type":"Point","coordinates":[1121,3814]}},{"type":"Feature","properties":{"type":"Base","label":"Saricane","z":114},"geometry":{"type":"Point","coordinates":[2024,3267]}},{"type":"Feature","properties":{"type":"Base","label":"Mouchi's\nSpawn\nOutpost","z":138},"geometry":{"type":"Point","coordinates":[2166,3126]}},{"type":"Feature","properties":{"type":"Base","label":"Sandwich","z":114},"geometry":{"type":"Point","coordinates":[-1746,1030]}},{"type":"Feature","properties":{"type":"Base","label":"Irongrave","z":122},"geometry":{"type":"Point","coordinates":[-416,1115]}},{"type":"Feature","properties":{"type":"Base","label":"Morwynstead","z":108},"geometry":{"type":"Point","coordinates":[-19196,1256]}},{"type":"Feature","properties":{"type":"Base","label":"White Harbor","z":111},"geometry":{"type":"Point","coordinates":[-17859,-25]}},{"type":"Feature","properties":{"type":"Misc","label":"Blackwing trading\nterminal","z":109},"geometry":{"type":"Point","coordinates":[13700,-135]}},{"type":"Feature","properties":{"type":"Base","label":"Hot Spring\nPeninsula","z":113},"geometry":{"type":"Point","coordinates":[-18688,736]}},{"type":"Feature","properties":{"type":"Base","label":"Cerrion","z":110},"geometry":{"type":"Point","coordinates":[-1724,21]}},{"type":"Feature","properties":{"type":"Base","label":"Bilborf's Bargain\nBasement","z":110},"geometry":{"type":"Point","coordinates":[-351,-556]}},{"type":"Feature","properties":{"type":"Base","label":"JurekKiller","z":153},"geometry":{"type":"Point","coordinates":[1348,94]}},{"type":"Feature","properties":{"type":"Misc","label":"Springwatch Tower","z":224},"geometry":{"type":"Point","coordinates":[1418,84]}},{"type":"Feature","properties":{"type":"Base","label":"WestWald Community","z":112},"geometry":{"type":"Point","coordinates":[-5240,-211]}},{"type":"Feature","properties":{"type":"Base","label":"Autobahn AG \n(West Infrastructure HQ)","z":161},"geometry":{"type":"Point","coordinates":[-4996,0]}},{"type":"Feature","properties":{"type":"Base","label":"~Perch Point~","z":109},"geometry":{"type":"Point","coordinates":[-1067,-19]}},{"type":"Feature","properties":{"type":"Server","label":"Spawn","z":119},"geometry":{"type":"Point","coordinates":[0,0]}},{"type":"Feature","properties":{"type":"Base","label":"vak & XDead_MasterX's store","z":125},"geometry":{"type":"Point","coordinates":[25,-1078]}},{"type":"Feature","properties":{"type":"Base","label":"Honorguard Castle","z":122},"geometry":{"type":"Point","coordinates":[162,-1376]}},{"type":"Feature","properties":{"type":"Base","label":"Port Emerald","z":120},"geometry":{"type":"Point","coordinates":[-22240,-882]}},{"type":"Feature","properties":{"type":"Base","label":"The \nTrashy \nCove","z":113},"geometry":{"type":"Point","coordinates":[-17725,-1052]}},{"type":"Feature","properties":{"type":"Base","label":"Fig Valley Ranch","z":110},"geometry":{"type":"Point","coordinates":[-508,-511]}},{"type":"Feature","properties":{"type":"Base","label":"Dwarfshire","z":122},"geometry":{"type":"Point","coordinates":[-17046,-1787]}},{"type":"Feature","properties":{"type":"Base","label":"Did you poop?","z":110},"geometry":{"type":"Point","coordinates":[16041,-2095]}},{"type":"Feature","properties":{"type":"Base","label":"Slutbot","z":110},"geometry":{"type":"Point","coordinates":[16035,-2154]}},{"type":"Feature","properties":{"type":"Base","label":"Laimfo","z":109},"geometry":{"type":"Point","coordinates":[16036,-2184]}},{"type":"Feature","properties":{"type":"Base","label":"Dictator","z":110},"geometry":{"type":"Point","coordinates":[16143,-2138]}},{"type":"Feature","properties":{"type":"Base","label":"GieSarang","z":109},"geometry":{"type":"Point","coordinates":[1390,-2044]}},{"type":"Feature","properties":{"type":"Base","label":"B_Wanderts Sommerresidenz","z":111},"geometry":{"type":"Point","coordinates":[-2538,-2051]}},{"type":"Feature","properties":{"type":"Base","label":"Pine Peak Retreat","z":132},"geometry":{"type":"Point","coordinates":[-945,-2055]}},{"type":"Feature","properties":{"type":"Base","label":"Camp Jubjub\nBase camp for the\nToves of Brillig","z":107},"geometry":{"type":"Point","coordinates":[-149,-3564]}},{"type":"Feature","properties":{"type":"Base","label":"Twonutsheim","z":123},"geometry":{"type":"Point","coordinates":[-19365,-3691]}},{"type":"Feature","properties":{"type":"Base","label":"Travelers Rest","z":107},"geometry":{"type":"Point","coordinates":[-460,-4528]}},{"type":"Feature","properties":{"type":"Base","label":"Jinsue Archives Outpost","z":111},"geometry":{"type":"Point","coordinates":[143,-4224]}},{"type":"Feature","properties":{"type":"Base","label":"RiverTheSheep","z":121},"geometry":{"type":"Point","coordinates":[4877,-6154]}},{"type":"Feature","properties":{"type":"Base","label":"Elio Kast's Goat Ranch","z":198},"geometry":{"type":"Point","coordinates":[20454,-5959]}},{"type":"Feature","properties":{"type":"Base","label":"Rusty's Home","z":127},"geometry":{"type":"Point","coordinates":[1608,-7293]}},{"type":"Feature","properties":{"type":"Base","label":"Katk's \nHouse","z":116},"geometry":{"type":"Point","coordinates":[20796,-8785]}},{"type":"Feature","properties":{"type":"Base","label":"Zaharit`s\nTemporal\nHomestead","z":113},"geometry":{"type":"Point","coordinates":[-1836,-10137]}},{"type":"Feature","properties":{"type":"Base","label":"Mackaby","z":112},"geometry":{"type":"Point","coordinates":[-8,-10197]}},{"type":"Feature","properties":{"type":"Base","label":"Mikie420\n\nBase 1","z":111},"geometry":{"type":"Point","coordinates":[-12,-10461]}},{"type":"Feature","properties":{"type":"Base","label":"CJDusty's Farm","z":121},"geometry":{"type":"Point","coordinates":[694,-11049]}},{"type":"Feature","properties":{"type":"Base","label":"Mustardhölme","z":123},"geometry":{"type":"Point","coordinates":[1779,-11797]}},{"type":"Feature","properties":{"type":"Base","label":"ZombieHead's\nTool-Shack and Chest-Monster inc.","z":108},"geometry":{"type":"Point","coordinates":[-184,-12110]}},{"type":"Feature","properties":{"type":"Misc","label":"Limestone Area\nHigh Hematite\nHigh Ilmenite","z":119},"geometry":{"type":"Point","coordinates":[3062,-12482]}},{"type":"Feature","properties":{"type":"Base","label":"XDead_MasterX's First Base","z":118},"geometry":{"type":"Point","coordinates":[2266,-12548]}},{"type":"Feature","properties":{"type":"Base","label":"Hearthholm","z":114},"geometry":{"type":"Point","coordinates":[-27574,-14422]}},{"type":"Feature","properties":{"type":"Base","label":"Urshee's Base","z":117},"geometry":{"type":"Point","coordinates":[22387,-16453]}},{"type":"Feature","properties":{"type":"Base","label":"Villa Catellus","z":110},"geometry":{"type":"Point","coordinates":[801,-18208]}},{"type":"Feature","properties":{"type":"Base","label":"The Throughway","z":113},"geometry":{"type":"Point","coordinates":[0,-18770]}},{"type":"Feature","properties":{"type":"Base","label":"Niva-Meadowia\nBenCampbell","z":118},"geometry":{"type":"Point","coordinates":[-10526,-19951]}},{"type":"Feature","properties":{"type":"Base","label":"Jebi's Base","z":116},"geometry":{"type":"Point","coordinates":[1484,-20629]}},{"type":"Feature","properties":{"type":"Base","label":"MrKROT base","z":108},"geometry":{"type":"Point","coordinates":[-3068,-24176]}},{"type":"Feature","properties":{"type":"Base","label":"UWotMateyz","z":133},"geometry":{"type":"Point","coordinates":[8718,-26534]}},{"type":"Feature","properties":{"type":"Base","label":"Hermit's Hill","z":130},"geometry":{"type":"Point","coordinates":[-1349,-27247]}},{"type":"Feature","properties":{"type":"Misc","label":"TheFool \nIsland","z":153},"geometry":{"type":"Point","coordinates":[41154,-28285]}},{"type":"Feature","properties":{"type":"Base","label":"Pongle","z":112},"geometry":{"type":"Point","coordinates":[-1011,-28544]}},{"type":"Feature","properties":{"type":"Base","label":"Zere","z":129},"geometry":{"type":"Point","coordinates":[0,-28500]}},{"type":"Feature","properties":{"type":"Base","label":"The Throughway southern base\n(also RaidenFumo's house)","z":111},"geometry":{"type":"Point","coordinates":[97,-28951]}},{"type":"Feature","properties":{"type":"Misc","label":"Bamboo \nIsland","z":153},"geometry":{"type":"Point","coordinates":[41854,-29194]}},{"type":"Feature","properties":{"type":"Misc","label":"Here a rapid","z":144},"geometry":{"type":"Point","coordinates":[41913,-29194]}},{"type":"Feature","properties":{"type":"Misc","label":"HERE A RAPID","z":111},"geometry":{"type":"Point","coordinates":[41906,-29254]}},{"type":"Feature","properties":{"type":"Misc","label":"LoneBird\nIsland","z":122},"geometry":{"type":"Point","coordinates":[41565,-30588]}},{"type":"Feature","properties":{"type":"Base","label":"Future Bikini Bottom","z":110},"geometry":{"type":"Point","coordinates":[8696,-31605]}},{"type":"Feature","properties":{"type":"Misc","label":"The Candy Cane","z":132},"geometry":{"type":"Point","coordinates":[7396,-32672]}},{"type":"Feature","properties":{"type":"Misc","label":"TheTriplet \nIslands","z":113},"geometry":{"type":"Point","coordinates":[40869,-31502]}},{"type":"Feature","properties":{"type":"Misc","label":"LaserGun \nIsland","z":125},"geometry":{"type":"Point","coordinates":[40561,-32668]}},{"type":"Feature","properties":{"type":"Base","label":"BRILLIG","z":113},"geometry":{"type":"Point","coordinates":[7386,-32833]}},{"type":"Feature","properties":{"type":"Misc","label":"Greenhill Island","z":164},"geometry":{"type":"Point","coordinates":[41758,-37991]}},{"type":"Feature","properties":{"type":"Misc","label":"Little Rabbit Island","z":129},"geometry":{"type":"Point","coordinates":[43029,-39811]}},{"type":"Feature","properties":{"type":"Base","label":"Yikesberg","z":123},"geometry":{"type":"Point","coordinates":[29,-38219]}},{"type":"Feature","properties":{"type":"Misc","label":"LittleLake Island","z":111},"geometry":{"type":"Point","coordinates":[43746,-38597]}},{"type":"Feature","properties":{"type":"Misc","label":"Dry Island","z":137},"geometry":{"type":"Point","coordinates":[43725,-40148]}},{"type":"Feature","properties":{"type":"Misc","label":"The Rabbit Ocean","z":107},"geometry":{"type":"Point","coordinates":[41944,-41129]}},{"type":"Feature","properties":{"type":"Misc","label":"ALPHA island","z":166},"geometry":{"type":"Point","coordinates":[43104,-39504]}},{"type":"Feature","properties":{"type":"Misc","label":"Here a rapid","z":112},"geometry":{"type":"Point","coordinates":[43037,-39607]}},{"type":"Feature","properties":{"type":"Misc","label":"Rabbit Island","z":148},"geometry":{"type":"Point","coordinates":[43667,-39433]}},{"type":"Feature","properties":{"type":"Misc","label":"Artisant Island","z":116},"geometry":{"type":"Point","coordinates":[41002,-42004]}},{"type":"Feature","properties":{"type":"Misc","label":"Ocarina Island","z":122},"geometry":{"type":"Point","coordinates":[43697,-40647]}},{"type":"Feature","properties":{"type":"Misc","label":"ChickenNugget\nIsland","z":110},"geometry":{"type":"Point","coordinates":[40882,-42424]}},{"type":"Feature","properties":{"type":"Misc","label":"BigHead Island","z":160},"geometry":{"type":"Point","coordinates":[41601,-43320]}},{"type":"Feature","properties":{"type":"Base","label":"trops\nlost & found","z":112},"geometry":{"type":"Point","coordinates":[3029,-78336]}}]}
+{
+  "type": "FeatureCollection",
+  "crs": {
+    "Name": "urn:ogc:def:crs:EPSG::3857",
+    "type": "name",
+    "properties": { "name": "urn:ogc:def:crs:EPSG::3857" }
+  },
+  "name": "landmarks",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "Pepevog\n— In Distant Lands — \n               <3",
+        "z": 113
+      },
+      "geometry": { "type": "Point", "coordinates": [-511996, 511999] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Zadak Springs", "z": 137 },
+      "geometry": { "type": "Point", "coordinates": [1249, 9280] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Frost Peak\nTIE, Lil, Tab", "z": 118 },
+      "geometry": { "type": "Point", "coordinates": [210, 7885] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "The Tab Cave", "z": 123 },
+      "geometry": { "type": "Point", "coordinates": [380, 7860] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "- Княжество Берло -\n- Bearlo Princedom -",
+        "z": 111
+      },
+      "geometry": { "type": "Point", "coordinates": [2866, 6510] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "DREVLIAN VILLAGE\n(MihaPrikol,\nnerle & Bobot's base)",
+        "z": 107
+      },
+      "geometry": { "type": "Point", "coordinates": [-260, 5455] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Rooster Island", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [1121, 3814] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Saricane", "z": 114 },
+      "geometry": { "type": "Point", "coordinates": [2024, 3267] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Mouchi's\nSpawn\nOutpost", "z": 138 },
+      "geometry": { "type": "Point", "coordinates": [2166, 3126] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Sandwich", "z": 114 },
+      "geometry": { "type": "Point", "coordinates": [-1746, 1030] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Irongrave", "z": 122 },
+      "geometry": { "type": "Point", "coordinates": [-416, 1115] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Morwynstead", "z": 108 },
+      "geometry": { "type": "Point", "coordinates": [-19196, 1256] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "White Harbor", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [-17859, -25] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Blackwing trading\nterminal", "z": 109 },
+      "geometry": { "type": "Point", "coordinates": [13700, -135] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Hot Spring\nPeninsula", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [-18688, 736] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Cerrion", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [-1724, 21] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Bilborf's Bargain\nBasement", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [-351, -556] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "JurekKiller", "z": 153 },
+      "geometry": { "type": "Point", "coordinates": [1348, 94] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Springwatch Tower", "z": 224 },
+      "geometry": { "type": "Point", "coordinates": [1418, 84] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "WestWald Community", "z": 112 },
+      "geometry": { "type": "Point", "coordinates": [-5240, -211] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Autobahn AG \n(West Infrastructure HQ)", "z": 161 },
+      "geometry": { "type": "Point", "coordinates": [-4996, 0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "~Perch Point~", "z": 109 },
+      "geometry": { "type": "Point", "coordinates": [-1067, -19] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Server", "label": "Spawn", "z": 119 },
+      "geometry": { "type": "Point", "coordinates": [0, 0] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "vak & XDead_MasterX's store", "z": 125 },
+      "geometry": { "type": "Point", "coordinates": [25, -1078] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Honorguard Castle", "z": 122 },
+      "geometry": { "type": "Point", "coordinates": [162, -1376] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Port Emerald", "z": 120 },
+      "geometry": { "type": "Point", "coordinates": [-22240, -882] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "The \nTrashy \nCove", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [-17725, -1052] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Fig Valley Ranch", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [-508, -511] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Dwarfshire", "z": 122 },
+      "geometry": { "type": "Point", "coordinates": [-17046, -1787] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Did you poop?", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [16041, -2095] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Slutbot", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [16035, -2154] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Laimfo", "z": 109 },
+      "geometry": { "type": "Point", "coordinates": [16036, -2184] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Dictator", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [16143, -2138] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "GieSarang", "z": 109 },
+      "geometry": { "type": "Point", "coordinates": [1390, -2044] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "B_Wanderts Sommerresidenz", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [-2538, -2051] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Pine Peak Retreat", "z": 132 },
+      "geometry": { "type": "Point", "coordinates": [-945, -2055] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "Camp Jubjub\nBase camp for the\nToves of Brillig",
+        "z": 107
+      },
+      "geometry": { "type": "Point", "coordinates": [-149, -3564] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Twonutsheim", "z": 123 },
+      "geometry": { "type": "Point", "coordinates": [-19365, -3691] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Travelers Rest", "z": 107 },
+      "geometry": { "type": "Point", "coordinates": [-460, -4528] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Jinsue Archives Outpost", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [143, -4224] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "RiverTheSheep", "z": 121 },
+      "geometry": { "type": "Point", "coordinates": [4877, -6154] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Elio Kast's Goat Ranch", "z": 198 },
+      "geometry": { "type": "Point", "coordinates": [20454, -5959] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Rusty's Home", "z": 127 },
+      "geometry": { "type": "Point", "coordinates": [1608, -7293] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Katk's \nHouse", "z": 116 },
+      "geometry": { "type": "Point", "coordinates": [20796, -8785] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Zaharit`s\nTemporal\nHomestead", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [-1836, -10137] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Mackaby", "z": 112 },
+      "geometry": { "type": "Point", "coordinates": [-8, -10197] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Mikie420\n\nBase 1", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [-12, -10461] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "CJDusty's Farm", "z": 121 },
+      "geometry": { "type": "Point", "coordinates": [694, -11049] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Mustardhölme", "z": 123 },
+      "geometry": { "type": "Point", "coordinates": [1779, -11797] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "ZombieHead's\nTool-Shack and Chest-Monster inc.",
+        "z": 108
+      },
+      "geometry": { "type": "Point", "coordinates": [-184, -12110] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Misc",
+        "label": "Limestone Area\nHigh Hematite\nHigh Ilmenite",
+        "z": 119
+      },
+      "geometry": { "type": "Point", "coordinates": [3062, -12482] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "XDead_MasterX's First Base", "z": 118 },
+      "geometry": { "type": "Point", "coordinates": [2266, -12548] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Hearthholm", "z": 114 },
+      "geometry": { "type": "Point", "coordinates": [-27574, -14422] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Urshee's Base", "z": 117 },
+      "geometry": { "type": "Point", "coordinates": [22387, -16453] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Villa Catellus", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [801, -18208] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "The Throughway", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [0, -18770] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Niva-Meadowia\nBenCampbell", "z": 118 },
+      "geometry": { "type": "Point", "coordinates": [-10526, -19951] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Jebi's Base", "z": 116 },
+      "geometry": { "type": "Point", "coordinates": [1484, -20629] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "MrKROT base", "z": 108 },
+      "geometry": { "type": "Point", "coordinates": [-3068, -24176] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "UWotMateyz", "z": 133 },
+      "geometry": { "type": "Point", "coordinates": [8718, -26534] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Hermit's Hill", "z": 130 },
+      "geometry": { "type": "Point", "coordinates": [-1349, -27247] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "TheFool \nIsland", "z": 153 },
+      "geometry": { "type": "Point", "coordinates": [41154, -28285] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Pongle", "z": 112 },
+      "geometry": { "type": "Point", "coordinates": [-1011, -28544] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Zere", "z": 129 },
+      "geometry": { "type": "Point", "coordinates": [0, -28500] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "type": "Base",
+        "label": "The Throughway southern base\n(also RaidenFumo's house)",
+        "z": 111
+      },
+      "geometry": { "type": "Point", "coordinates": [97, -28951] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Bamboo \nIsland", "z": 153 },
+      "geometry": { "type": "Point", "coordinates": [41854, -29194] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Here a rapid", "z": 144 },
+      "geometry": { "type": "Point", "coordinates": [41913, -29194] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "HERE A RAPID", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [41906, -29254] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "LoneBird\nIsland", "z": 122 },
+      "geometry": { "type": "Point", "coordinates": [41565, -30588] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Future Bikini Bottom", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [8696, -31605] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "The Candy Cane", "z": 132 },
+      "geometry": { "type": "Point", "coordinates": [7396, -32672] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "TheTriplet \nIslands", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [40869, -31502] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "LaserGun \nIsland", "z": 125 },
+      "geometry": { "type": "Point", "coordinates": [40561, -32668] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "BRILLIG", "z": 113 },
+      "geometry": { "type": "Point", "coordinates": [7386, -32833] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Greenhill Island", "z": 164 },
+      "geometry": { "type": "Point", "coordinates": [41758, -37991] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Little Rabbit Island", "z": 129 },
+      "geometry": { "type": "Point", "coordinates": [43029, -39811] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "Yikesberg", "z": 123 },
+      "geometry": { "type": "Point", "coordinates": [29, -38219] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "LittleLake Island", "z": 111 },
+      "geometry": { "type": "Point", "coordinates": [43746, -38597] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Dry Island", "z": 137 },
+      "geometry": { "type": "Point", "coordinates": [43725, -40148] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "The Rabbit Ocean", "z": 107 },
+      "geometry": { "type": "Point", "coordinates": [41944, -41129] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "ALPHA island", "z": 166 },
+      "geometry": { "type": "Point", "coordinates": [43104, -39504] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Here a rapid", "z": 112 },
+      "geometry": { "type": "Point", "coordinates": [43037, -39607] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Rabbit Island", "z": 148 },
+      "geometry": { "type": "Point", "coordinates": [43667, -39433] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Artisant Island", "z": 116 },
+      "geometry": { "type": "Point", "coordinates": [41002, -42004] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "Ocarina Island", "z": 122 },
+      "geometry": { "type": "Point", "coordinates": [43697, -40647] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "ChickenNugget\nIsland", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [40882, -42424] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Misc", "label": "BigHead Island", "z": 160 },
+      "geometry": { "type": "Point", "coordinates": [41601, -43320] }
+    },
+    {
+      "type": "Feature",
+      "properties": { "type": "Base", "label": "trops\nlost & found", "z": 112 },
+      "geometry": { "type": "Point", "coordinates": [3029, -78336] }
+    }
+  ]
+}
