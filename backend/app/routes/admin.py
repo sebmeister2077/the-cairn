@@ -149,6 +149,31 @@ async def revoke_invite_link(token: str, _: str = Depends(require_admin)):
     return JSONResponse(status_code=204, content=None)
 
 
+@router.get("/admin/invite-links/{token}/keys")
+async def list_invite_link_keys(
+    token: str,
+    _: str = Depends(require_admin),
+) -> List[dict]:
+    """Return every API key minted from this invite link, joined with the
+    user account (if any) bound to that key.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    record = db.get_invite_link(token)
+    if not record:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    rows = db.list_api_keys_by_invite(token)
+    out = []
+    for r in rows:
+        item = _serialise(r)
+        for field in ("user_joined_at", "user_deleted_at"):
+            val = item.get(field)
+            if val and hasattr(val, "isoformat"):
+                item[field] = val.isoformat()
+        out.append(item)
+    return out
+
+
 # ---------------------------------------------------------------------------
 # TOPS map multi-resolution generation
 # ---------------------------------------------------------------------------

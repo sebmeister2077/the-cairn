@@ -269,6 +269,16 @@ CREATE INDEX IF NOT EXISTS idx_contributions_update_region
     ON contributions (update_region_min_x)
     WHERE update_region_min_x IS NOT NULL;
 
+-- Invite-link traceability: record which invite minted each API key so
+-- admins can audit who claimed a given link. NULL for keys created via
+-- the admin route or the legacy paths that pre-date this column.
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS source_invite_token TEXT
+    REFERENCES invite_links(token) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_api_keys_source_invite_token
+    ON api_keys (source_invite_token)
+    WHERE source_invite_token IS NOT NULL;
+
 -- Phase 4c: WebAuthn (passkey) credentials for admin keys. Acts as a second
 -- factor on top of the API key: an admin must complete a passkey assertion
 -- after pasting their key before they can call admin routes. One admin key
@@ -969,14 +979,20 @@ def is_available() -> bool:
 # API Keys CRUD
 # ---------------------------------------------------------------------------
 
-def create_api_key(key: str, name: str, permissions: str, consume_once: bool) -> dict:
+def create_api_key(
+    key: str,
+    name: str,
+    permissions: str,
+    consume_once: bool,
+    source_invite_token: Optional[str] = None,
+) -> dict:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO api_keys (key, name, permissions, consume_once)
-                   VALUES (%s, %s, %s, %s)
+                """INSERT INTO api_keys (key, name, permissions, consume_once, source_invite_token)
+                   VALUES (%s, %s, %s, %s, %s)
                    RETURNING *""",
-                (key, name, permissions, consume_once),
+                (key, name, permissions, consume_once, source_invite_token),
             )
             row = cur.fetchone()
             return dict(row)
@@ -1231,6 +1247,30 @@ def claim_invite_link(token: str) -> bool:
                 (token,),
             )
             return cur.rowcount > 0
+
+
+def list_api_keys_by_invite(token: str) -> List[dict]:
+    """Return every API key minted from the given invite link, joined with
+    the user account (if any) bound to that key. Newest first.
+
+    Each row carries the api-key columns plus ``display_name``, ``in_game_name``
+    and ``user_joined_at`` (NULL when no account exists for the key).
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT k.*,
+                          u.display_name,
+                          u.in_game_name,
+                          u.joined_at AS user_joined_at,
+                          u.deleted_at AS user_deleted_at
+                       FROM api_keys k
+                       LEFT JOIN users u ON u.api_key = k.key
+                       WHERE k.source_invite_token = %s
+                       ORDER BY k.created_at DESC""",
+                (token,),
+            )
+            return [dict(r) for r in cur.fetchall()]
 
 
 # ---------------------------------------------------------------------------

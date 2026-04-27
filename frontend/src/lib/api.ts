@@ -639,6 +639,22 @@ export async function revokeInviteLink(token: string): Promise<void> {
     await handleResponse(res);
 }
 
+export interface InviteLinkKeyRecord extends ApiKeyRecord {
+    usage_count?: number;
+    display_name: string | null;
+    in_game_name: string | null;
+    user_joined_at: string | null;
+    user_deleted_at: string | null;
+}
+
+export async function listInviteLinkKeys(token: string): Promise<InviteLinkKeyRecord[]> {
+    const res = await fetch(
+        `${API_BASE}/admin/invite-links/${encodeURIComponent(token)}/keys`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
 export async function claimInvite(token: string): Promise<{ key: string; permissions: string; invite_name: string }> {
     const res = await fetch(`${API_BASE}/invite/${encodeURIComponent(token)}/claim`, {
         method: "POST",

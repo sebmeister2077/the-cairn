@@ -44,6 +44,12 @@ async def claim_invite(token: str):
 
     new_key = secrets.token_urlsafe(32)
     name = f"Invite: {link['name']}"
-    db.create_api_key(new_key, name, link["permissions"], False)
+    db.create_api_key(
+        new_key,
+        name,
+        link["permissions"],
+        False,
+        source_invite_token=token,
+    )
 
     return ClaimResponse(key=new_key, permissions=link["permissions"], invite_name=link["name"])
