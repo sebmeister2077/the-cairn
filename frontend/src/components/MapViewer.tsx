@@ -390,9 +390,16 @@ export function MapViewer({
         if (isTileMode && enhanceTilesFn) {
           const next = await enhanceTilesFn(target);
           if (abort.signal.aborted) return;
+          // Image is rendered as `translate(pan) scale(zoom)` over a div
+          // sized to imageWidth, so a world point at image coord `ix`
+          // appears at screen `ix*zoom + pan`. After dims grow by `s` the
+          // same world point is at `ix*s` in new coords. To keep the visible
+          // result identical: ix*s*z' + p' = ix*z + p for all ix
+          // ⇒ z' = z/s and p' = p (pan unchanged). Previously pan was also
+          // multiplied by s, which shifted the viewport s× outside the image
+          // bounds and made every tile fail the visibility cull — the map
+          // went blank until “Center view” was pressed.
           const scaleW = next.imageWidth / imgNatural.w;
-          const scaleH = next.imageHeight / imgNatural.h;
-          setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
           setZoom((z) => z / scaleW);
           setRenderedMaxDim(target);
           // Mark this id as already-centered so the centering effect doesn't
@@ -400,8 +407,6 @@ export function MapViewer({
           centeredTileIdRef.current = next.id;
           setEnhancedTileSet(next);
           onTileSetEnhanced?.(next);
-          // Suppress unused-var warning when scaleH equals scaleW (typical case).
-          void scaleH;
           return;
         }
         if (!enhanceFn) return;
@@ -421,9 +426,9 @@ export function MapViewer({
           return;
         }
 
+        // See comment above for the correct pan/zoom compensation: pan stays
+        // put, only zoom is divided by the dimension ratio.
         const scaleW = tmpImg.naturalWidth / imgNatural.w;
-        const scaleH = tmpImg.naturalHeight / imgNatural.h;
-        setPan((p) => ({ x: p.x * scaleW, y: p.y * scaleH }));
         setZoom((z) => z / scaleW);
         setBlobImgNatural({ w: tmpImg.naturalWidth, h: tmpImg.naturalHeight });
         setRenderedMaxDim(target);
@@ -431,7 +436,6 @@ export function MapViewer({
           if (old) URL.revokeObjectURL(old);
           return newUrl;
         });
-        void scaleH;
       } catch {
         // silently ignore — user retains the current image
       } finally {

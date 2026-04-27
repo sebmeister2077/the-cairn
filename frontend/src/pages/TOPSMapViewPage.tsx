@@ -570,8 +570,15 @@ export function TOPSMapViewPage() {
         meta: { persist: true },
       });
       if (!info.chunks?.length) throw new Error("Higher-resolution chunks unavailable");
-      // Persist the upgrade so future page loads start at the higher level.
-      setSelectedLevel(candidate.level);
+      // Note: we deliberately do NOT call setSelectedLevel here. The parent
+      // updating its `tileSet` prop in the middle of MapViewer's async swap
+      // causes both sides to apply scale compensation (the prop-change effect
+      // *and* the post-await branch of auto-enhance), leaving pan/zoom
+      // double-scaled and the viewport outside all tiles — the map appears
+      // blank until "Center view" is pressed. Defer the level update to
+      // `onTileSetEnhanced` (fires after the internal swap is done) so the
+      // tileSet?.id effect takes the Case-1 fast path and just drops the
+      // override without touching pan/zoom.
       return levelToTileSet(info);
     },
     [statsQuery.data?.resolutions, selectedLevel, queryClient],
@@ -878,6 +885,14 @@ export function TOPSMapViewPage() {
           highlightedSegments={highlightedTranslocatorSegments}
           focusPoint={landmarkFocusPoint}
           enhanceTilesFn={hasMap && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
+          onTileSetEnhanced={(next) => {
+            // Persist the upgrade so future page loads start at the higher
+            // level. Runs after MapViewer's internal swap, so the resulting
+            // tileSet prop change is recognised as already-adopted (Case 1
+            // in the tileSet?.id effect) and doesn't re-scale pan/zoom.
+            const lvl = typeof next.id === "number" ? next.id : Number(next.id);
+            if (Number.isFinite(lvl)) setSelectedLevel(lvl);
+          }}
         />
         <TLGroupingsDrawer
           open={groupingsOpen}
