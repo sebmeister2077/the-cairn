@@ -117,11 +117,11 @@ export function TOPSMapViewPage() {
   const landmarkCacheRef = useRef<WorldPointMarker[] | null>(null);
   const landmarkLoadPromiseRef = useRef<Promise<WorldPointMarker[]> | null>(null);
 
-  // Shared landmark loader — can be called from overlay toggle or search box.
+  // Shared landmark loader — populates the cache and count without forcing
+  // the overlay on. Callers that need the rendered points (overlay toggle or
+  // landmark search) should consume the resolved promise themselves.
   const ensureLandmarksLoaded = useCallback(() => {
     if (landmarkCacheRef.current) {
-      setLandmarkPoints(landmarkCacheRef.current);
-      setLandmarkCount(landmarkCacheRef.current.length);
       return landmarkLoadPromiseRef.current ?? Promise.resolve(landmarkCacheRef.current);
     }
 
@@ -162,19 +162,70 @@ export function TOPSMapViewPage() {
         setLandmarkCount(points.length);
         return points;
       })();
-    }
-
-    landmarkLoadPromiseRef.current
-      .then((points) => {
-        setLandmarkPoints(points);
-        setLandmarkCount(points.length);
-      })
-      .catch(() => {
+      landmarkLoadPromiseRef.current.catch(() => {
+        // Allow retry on next call if the fetch failed.
         landmarkLoadPromiseRef.current = null;
       });
+    }
 
     return landmarkLoadPromiseRef.current;
   }, []);
+
+  // Same pattern for translocators — populate cache + count on demand without
+  // touching the rendered segments state.
+  const ensureTranslocatorsLoaded = useCallback(() => {
+    if (translocatorCacheRef.current) {
+      return translocatorLoadPromiseRef.current ?? Promise.resolve(translocatorCacheRef.current);
+    }
+
+    if (!translocatorLoadPromiseRef.current) {
+      const dataUrl = new URL("../assets/translocators.geojson", import.meta.url).href;
+      translocatorLoadPromiseRef.current = (async () => {
+        const res = await fetch(dataUrl);
+        if (!res.ok) throw new Error(`Failed to load translocator data (${res.status})`);
+        const data = await res.json();
+
+        const features = Array.isArray(data?.features) ? data.features : [];
+        const segments: WorldLineSegment[] = [];
+
+        for (const feature of features) {
+          const geometry = feature?.geometry;
+          if (!geometry || geometry.type !== "LineString") continue;
+          const coords = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+          for (let i = 1; i < coords.length; i++) {
+            const [x1, z1raw] = coords[i - 1] ?? [];
+            const [x2, z2raw] = coords[i] ?? [];
+            const z1 = -z1raw;
+            const z2 = -z2raw;
+            if (
+              Number.isFinite(x1) &&
+              Number.isFinite(z1) &&
+              Number.isFinite(x2) &&
+              Number.isFinite(z2)
+            ) {
+              segments.push({ x1, z1, x2, z2 });
+            }
+          }
+        }
+
+        translocatorCacheRef.current = segments;
+        setTranslocatorCount(segments.length);
+        return segments;
+      })();
+      translocatorLoadPromiseRef.current.catch(() => {
+        translocatorLoadPromiseRef.current = null;
+      });
+    }
+
+    return translocatorLoadPromiseRef.current;
+  }, []);
+
+  // Load both overlay data files on mount so the "TLs found" / "Landmarks
+  // found" counts populate without requiring the user to toggle the overlays.
+  useEffect(() => {
+    void ensureTranslocatorsLoaded();
+    void ensureLandmarksLoaded();
+  }, [ensureTranslocatorsLoaded, ensureLandmarksLoaded]);
 
   const statsQuery = useQuery<TopsMapStatsResponse>({
     queryKey: ["tops-map-stats"],
@@ -295,28 +346,23 @@ export function TOPSMapViewPage() {
     }
   }, [showTranslocators]);
 
-  const sameSegment = (a: WorldLineSegment | null, b: WorldLineSegment | null): boolean =>
-    !!a && !!b && a.x1 === b.x1 && a.z1 === b.z1 && a.x2 === b.x2 && a.z2 === b.z2;
-
   const handleTranslocatorClick = useCallback(
     (seg: WorldLineSegment | null) => {
+      // While a TL is pinned, ignore all map clicks (empty space or other TLs)
+      // — only the explicit unpin button can clear the selection.
+      if (translocatorPinned) return;
       if (!seg) {
-        // Click on empty space — honour the pin: only clear when not pinned.
-        if (translocatorPinned) return;
         setSelectedTranslocator(null);
         return;
       }
-      // Clicking a different TL clears any existing pin (the new selection is
-      // unpinned unless the user explicitly right-clicks to pin it).
-      if (!sameSegment(seg, selectedTranslocator)) {
-        setTranslocatorPinned(false);
-      }
       setSelectedTranslocator(seg);
     },
-    [selectedTranslocator, translocatorPinned],
+    [translocatorPinned],
   );
 
   const handleTranslocatorRightClick = useCallback((seg: WorldLineSegment) => {
+    // Right-click always pins the clicked TL — including when another TL is
+    // already pinned (the new selection replaces the previous pin).
     setSelectedTranslocator(seg);
     setTranslocatorPinned(true);
   }, []);
@@ -331,73 +377,38 @@ export function TOPSMapViewPage() {
       return;
     }
 
-    if (translocatorCacheRef.current) {
-      setTranslocatorSegments(translocatorCacheRef.current);
-      setTranslocatorCount(translocatorCacheRef.current.length);
-      return;
-    }
-
-    if (!translocatorLoadPromiseRef.current) {
-      const dataUrl = new URL("../assets/translocators.geojson", import.meta.url).href;
-      translocatorLoadPromiseRef.current = (async () => {
-        const res = await fetch(dataUrl);
-        if (!res.ok) throw new Error(`Failed to load translocator data (${res.status})`);
-        const data = await res.json();
-
-        const features = Array.isArray(data?.features) ? data.features : [];
-        const segments: WorldLineSegment[] = [];
-
-        for (const feature of features) {
-          const geometry = feature?.geometry;
-          if (!geometry || geometry.type !== "LineString") continue;
-          const coords = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-          for (let i = 1; i < coords.length; i++) {
-            const [x1, z1raw] = coords[i - 1] ?? [];
-            const [x2, z2raw] = coords[i] ?? [];
-            const z1 = -z1raw;
-            const z2 = -z2raw;
-            if (
-              Number.isFinite(x1) &&
-              Number.isFinite(z1) &&
-              Number.isFinite(x2) &&
-              Number.isFinite(z2)
-            ) {
-              segments.push({ x1, z1, x2, z2 });
-            }
-          }
-        }
-
-        translocatorCacheRef.current = segments;
-        setTranslocatorCount(segments.length);
-        return segments;
-      })();
-    }
-
     let cancelled = false;
-    translocatorLoadPromiseRef.current
+    ensureTranslocatorsLoaded()
       .then((segments) => {
-        if (!cancelled) {
-          setTranslocatorSegments(segments);
-          setTranslocatorCount(segments.length);
-        }
+        if (!cancelled) setTranslocatorSegments(segments);
       })
       .catch(() => {
         if (!cancelled) setTranslocatorSegments([]);
-        // Allow retry if the initial load fails.
-        translocatorLoadPromiseRef.current = null;
       });
 
     return () => {
       cancelled = true;
     };
-  }, [showTranslocators]);
+  }, [showTranslocators, ensureTranslocatorsLoaded]);
 
   useEffect(() => {
     if (!showLandmarks) {
       setLandmarkPoints([]);
       return;
     }
-    void ensureLandmarksLoaded();
+
+    let cancelled = false;
+    ensureLandmarksLoaded()
+      .then((points) => {
+        if (!cancelled) setLandmarkPoints(points);
+      })
+      .catch(() => {
+        if (!cancelled) setLandmarkPoints([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [showLandmarks, ensureLandmarksLoaded]);
 
   function handleReload() {
@@ -417,13 +428,15 @@ export function TOPSMapViewPage() {
   function handleLandmarkSelect(name: string) {
     setLandmarkSearch(name);
     const normalised = name.replace(/\s+/g, " ").trim().toLowerCase();
-    const match = (landmarkCacheRef.current ?? landmarkPoints).find(
-      (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
-    );
-    if (match) {
-      setLandmarkFocusPoint({ x: match.x, z: match.z });
-      if (!showLandmarks) setShowLandmarks(true);
-    }
+    void ensureLandmarksLoaded().then((points) => {
+      const match = points.find(
+        (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
+      );
+      if (match) {
+        setLandmarkFocusPoint({ x: match.x, z: match.z });
+        setShowLandmarks(true);
+      }
+    });
   }
 
   async function handleDownload() {
