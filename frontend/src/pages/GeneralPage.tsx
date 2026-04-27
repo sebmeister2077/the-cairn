@@ -12,6 +12,21 @@ export function GeneralPage() {
           sponsored by Anego Studios, the developers of <em>Vintage Story</em>. “Vintage Story” is a
           trademark of Anego Studios.
         </div>
+        <p className="rounded border border-border bg-muted/40 p-3 italic">
+          <strong className="not-italic text-foreground">
+            <a
+              href="https://en.wikipedia.org/wiki/Cairn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-dotted underline-offset-2 hover:text-primary"
+            >
+              cairn
+            </a>
+          </strong>{" "}
+          <span className="not-italic">(noun)</span>: what your ancestors built when they ran out of
+          dye and signs but still needed to mark the spot where they died to a drifter. We&rsquo;ve
+          upgraded the tech a little.
+        </p>
         <p>
           A web toolkit for managing Vintage Story waypoints and map data. Choose a category above
           to get started.
