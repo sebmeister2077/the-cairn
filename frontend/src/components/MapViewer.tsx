@@ -99,6 +99,14 @@ interface MapViewerProps {
   overlayPoints?: WorldPointMarker[];
   /** Optional callback fired when an overlay segment is clicked. */
   onOverlaySegmentClick?: (segment: WorldLineSegment | null) => void;
+  /** Optional callback fired when an overlay segment is right-clicked (context menu). */
+  onOverlaySegmentRightClick?: (segment: WorldLineSegment) => void;
+  /**
+   * Optional segment to render with the same highlighted style as the
+   * hover state (e.g. a "pinned" selection from the parent). Compared by
+   * value to the entries in `overlaySegments`.
+   */
+  highlightedSegment?: WorldLineSegment | null;
   /**
    * When set to a new object, the viewer pans and zooms to that world coordinate.
    * Pass a new object reference each time to trigger navigation.
@@ -124,6 +132,8 @@ export function MapViewer({
   overlaySegments,
   overlayPoints,
   onOverlaySegmentClick,
+  onOverlaySegmentRightClick,
+  highlightedSegment,
   focusPoint,
   focusZoom = 4,
 }: MapViewerProps) {
@@ -169,7 +179,13 @@ export function MapViewer({
   }, [activeTileSet, blobImgNatural]);
 
   const projectedOverlaySegments = useMemo(() => {
-    if (!stats || !overlaySegments || overlaySegments.length === 0 || imgNatural.w <= 0 || imgNatural.h <= 0) {
+    if (
+      !stats ||
+      !overlaySegments ||
+      overlaySegments.length === 0 ||
+      imgNatural.w <= 0 ||
+      imgNatural.h <= 0
+    ) {
       return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
     }
 
@@ -189,8 +205,35 @@ export function MapViewer({
     return projected;
   }, [imgNatural.h, imgNatural.w, overlaySegments, stats]);
 
+  // Index of `highlightedSegment` within `overlaySegments` (and therefore
+  // within `projectedOverlaySegments`, which is built in the same order with
+  // entries skipped only for non-finite coordinates — highlighted segments
+  // by definition have finite coords). Used to draw the hover-style emphasis
+  // for a pinned/externally-selected segment.
+  const highlightedSegmentIndex = useMemo(() => {
+    if (!highlightedSegment || !overlaySegments || overlaySegments.length === 0) return null;
+    for (let i = 0; i < overlaySegments.length; i++) {
+      const s = overlaySegments[i];
+      if (
+        s.x1 === highlightedSegment.x1 &&
+        s.z1 === highlightedSegment.z1 &&
+        s.x2 === highlightedSegment.x2 &&
+        s.z2 === highlightedSegment.z2
+      ) {
+        return i;
+      }
+    }
+    return null;
+  }, [highlightedSegment, overlaySegments]);
+
   const projectedOverlayPoints = useMemo(() => {
-    if (!stats || !overlayPoints || overlayPoints.length === 0 || imgNatural.w <= 0 || imgNatural.h <= 0) {
+    if (
+      !stats ||
+      !overlayPoints ||
+      overlayPoints.length === 0 ||
+      imgNatural.w <= 0 ||
+      imgNatural.h <= 0
+    ) {
       return [] as Array<{ x: number; y: number; label?: string; kind?: string }>;
     }
 
@@ -209,8 +252,12 @@ export function MapViewer({
   }, [imgNatural.h, imgNatural.w, overlayPoints, stats]);
 
   // Keep refs in sync with state so non-React callbacks always read current values
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-  useEffect(() => { panRef.current = pan; }, [pan]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+  useEffect(() => {
+    panRef.current = pan;
+  }, [pan]);
 
   // Reset viewer state when the base image URL changes (new file / new query)
   useEffect(() => {
@@ -226,7 +273,7 @@ export function MapViewer({
     setHoveredOverlayIndex(null);
     enhanceAbortRef.current?.abort();
     setEnhancing(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageUrl]);
 
   // Same reset for tile-mode source changes (parent swapped to a different
@@ -297,7 +344,7 @@ export function MapViewer({
       centeredTileIdRef.current = null;
       setZoomReferenceWidth(tileSet.imageWidth || 0);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileSet?.id]);
 
   // Auto-enhance: when zoomed in far enough, request a higher-resolution render
@@ -351,7 +398,10 @@ export function MapViewer({
           tmpImg.onload = () => res();
           tmpImg.onerror = () => rej();
         });
-        if (abort.signal.aborted) { URL.revokeObjectURL(newUrl); return; }
+        if (abort.signal.aborted) {
+          URL.revokeObjectURL(newUrl);
+          return;
+        }
 
         const scaleW = tmpImg.naturalWidth / imgNatural.w;
         const scaleH = tmpImg.naturalHeight / imgNatural.h;
@@ -372,12 +422,14 @@ export function MapViewer({
     }, 800);
 
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, imgNatural.w, renderedMaxDim, enhanceFn, enhanceTilesFn, isTileMode]);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => { enhanceAbortRef.current?.abort(); };
+    return () => {
+      enhanceAbortRef.current?.abort();
+    };
   }, []);
 
   // Track container size so the viewport-culling memo can recompute on resize.
@@ -435,16 +487,26 @@ export function MapViewer({
 
   useEffect(() => {
     const canvas = overlayCanvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
-    if (imgNatural.w <= 0 || imgNatural.h <= 0) {
+    // Screen-space canvas: sized to the visible viewport, NOT to the map
+    // image. This avoids exceeding browser canvas-dimension limits (~16384px
+    // in Safari, ~32767px in Chrome/Firefox) at high resolution levels —
+    // especially when overlay geometry (e.g. translocators from a previous
+    // global map) reaches far outside the current partial map's bounds.
+    // We compensate by applying pan/zoom inside the 2D context so draw calls
+    // can keep using image-space coordinates as before.
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    if (cw <= 0 || ch <= 0 || imgNatural.w <= 0 || imgNatural.h <= 0) {
       canvas.width = 0;
       canvas.height = 0;
       return;
     }
 
-    canvas.width = imgNatural.w;
-    canvas.height = imgNatural.h;
+    canvas.width = cw;
+    canvas.height = ch;
 
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -452,6 +514,12 @@ export function MapViewer({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (projectedOverlaySegments.length === 0 && projectedOverlayPoints.length === 0) return;
+
+    // Apply the viewer's pan/zoom so subsequent draw calls can stay in
+    // image-space coordinates. (Strokes scale with zoom; widths/radii below
+    // already divide by zoom to compensate.)
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoom, zoom);
 
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -495,6 +563,23 @@ export function MapViewer({
         ctx.stroke();
       }
 
+      // Pinned / externally highlighted segment — same style as hover so it
+      // remains visually obvious even when the cursor moves elsewhere. Skip
+      // if it's already the hovered one to avoid double-stroking.
+      if (
+        highlightedSegmentIndex !== null &&
+        highlightedSegmentIndex !== hoveredOverlayIndex &&
+        projectedOverlaySegments[highlightedSegmentIndex]
+      ) {
+        const seg = projectedOverlaySegments[highlightedSegmentIndex];
+        ctx.strokeStyle = hoverLineColor;
+        ctx.lineWidth = Math.max(baseWidth * 1.6, 1.6);
+        ctx.beginPath();
+        ctx.moveTo(seg.x1, seg.y1);
+        ctx.lineTo(seg.x2, seg.y2);
+        ctx.stroke();
+      }
+
       const outerRadius = Math.max(1.8, 2.9 / Math.max(zoom, 0.1));
       const innerRadius = Math.max(0.8, outerRadius * 0.5);
       for (const seg of projectedOverlaySegments) {
@@ -530,9 +615,14 @@ export function MapViewer({
       }
     }
   }, [
+    containerSize.h,
+    containerSize.w,
+    highlightedSegmentIndex,
     hoveredOverlayIndex,
     imgNatural.h,
     imgNatural.w,
+    pan.x,
+    pan.y,
     projectedOverlayPoints,
     projectedOverlaySegments,
     zoom,
@@ -621,27 +711,33 @@ export function MapViewer({
     // the browser scrolls the page instead of zooming the map.
   }, [activeUrl, activeTileSet, zoomToward]);
 
-  const centerView = useCallback((width: number, height: number, currentZoom?: number) => {
-    const el = containerRef.current;
-    if (!el || width === 0 || height === 0) return;
+  const centerView = useCallback(
+    (width: number, height: number, currentZoom?: number) => {
+      const el = containerRef.current;
+      if (!el || width === 0 || height === 0) return;
 
-    const z = currentZoom ?? zoomRef.current;
-    const rect = el.getBoundingClientRect();
+      const z = currentZoom ?? zoomRef.current;
+      const rect = el.getBoundingClientRect();
 
-    if (stats) {
-      const imgX = ((0 - stats.start_x) / stats.width_blocks) * width;
-      const imgY = ((0 - stats.start_z) / stats.height_blocks) * height;
-      setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
-      return;
-    }
+      if (stats) {
+        const imgX = ((0 - stats.start_x) / stats.width_blocks) * width;
+        const imgY = ((0 - stats.start_z) / stats.height_blocks) * height;
+        setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
+        return;
+      }
 
-    setPan({ x: (rect.width - width * z) / 2, y: (rect.height - height * z) / 2 });
-  }, [stats]);
+      setPan({ x: (rect.width - width * z) / 2, y: (rect.height - height * z) / 2 });
+    },
+    [stats],
+  );
 
-  const centerOnOrigin = useCallback((currentZoom?: number) => {
-    if (!stats || imgNatural.w === 0) return;
-    centerView(imgNatural.w, imgNatural.h, currentZoom);
-  }, [centerView, stats, imgNatural]);
+  const centerOnOrigin = useCallback(
+    (currentZoom?: number) => {
+      if (!stats || imgNatural.w === 0) return;
+      centerView(imgNatural.w, imgNatural.h, currentZoom);
+    },
+    [centerView, stats, imgNatural],
+  );
 
   // Tile-mode initial centering — runs once per tileSet id, after the
   // container has measured itself AND stats have loaded. Mirrors the
@@ -709,7 +805,8 @@ export function MapViewer({
               const apx = imgX - seg.x1;
               const apy = imgY - seg.y1;
               const abLenSq = abx * abx + aby * aby;
-              const t = abLenSq > 0 ? Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq)) : 0;
+              const t =
+                abLenSq > 0 ? Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq)) : 0;
               const cx = seg.x1 + t * abx;
               const cy = seg.y1 + t * aby;
               const dx = imgX - cx;
@@ -751,12 +848,25 @@ export function MapViewer({
     onOverlaySegmentClick(overlaySegments[hoveredOverlayIndex] ?? null);
   }, [hoveredOverlayIndex, onOverlaySegmentClick, overlaySegments]);
 
+  // Right-click handler: fires onOverlaySegmentRightClick when a segment is
+  // hovered (used by the parent to "pin" a translocator selection). Always
+  // suppresses the native context menu while hovering a segment so the gesture
+  // is dedicated to pinning rather than the browser menu.
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (!onOverlaySegmentRightClick || !overlaySegments || overlaySegments.length === 0) return;
+      if (hoveredOverlayIndex === null) return;
+      const seg = overlaySegments[hoveredOverlayIndex];
+      if (!seg) return;
+      e.preventDefault();
+      onOverlaySegmentRightClick(seg);
+    },
+    [hoveredOverlayIndex, onOverlaySegmentRightClick, overlaySegments],
+  );
+
   if (!activeUrl && !activeTileSet) return null;
 
-  const canvasClass = [
-    "relative overflow-hidden bg-black/90",
-    bordered ? "rounded-md border" : "",
-  ]
+  const canvasClass = ["relative overflow-hidden bg-black/90", bordered ? "rounded-md border" : ""]
     .filter(Boolean)
     .join(" ");
 
@@ -796,9 +906,7 @@ export function MapViewer({
             <Crosshair className="size-4" />
           </Button>
         )}
-        <span className="text-xs text-muted-foreground ml-2">
-          Scroll to zoom · Drag to pan
-        </span>
+        <span className="text-xs text-muted-foreground ml-2">Scroll to zoom · Drag to pan</span>
         {enhancing && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
             <Loader2 className="size-3 animate-spin" />
@@ -819,6 +927,7 @@ export function MapViewer({
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onClick={handleOverlayClick}
+        onContextMenu={handleContextMenu}
       >
         {isTileMode && activeTileSet ? (
           <div
@@ -882,21 +991,13 @@ export function MapViewer({
             }}
           />
         )}
-        {stats && ((overlaySegments && overlaySegments.length > 0) || (overlayPoints && overlayPoints.length > 0)) && (
-          <canvas
-            ref={overlayCanvasRef}
-            className="absolute pointer-events-none"
-            style={{
-              transformOrigin: "0 0",
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            }}
-          />
-        )}
+        {stats &&
+          ((overlaySegments && overlaySegments.length > 0) ||
+            (overlayPoints && overlayPoints.length > 0)) && (
+            <canvas ref={overlayCanvasRef} className="absolute inset-0 pointer-events-none" />
+          )}
         {overlayPoints && overlayPoints.length > 0 && (
-          <canvas
-            ref={labelsCanvasRef}
-            className="absolute inset-0 pointer-events-none"
-          />
+          <canvas ref={labelsCanvasRef} className="absolute inset-0 pointer-events-none" />
         )}
         {hoverCoords && (
           <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">

@@ -27,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Loader2, Settings } from "lucide-react";
+import { Download, Loader2, Pin, PinOff, Settings } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -105,10 +105,16 @@ export function TOPSMapViewPage() {
   const [translocatorSegments, setTranslocatorSegments] = useState<WorldLineSegment[]>([]);
   const [translocatorCount, setTranslocatorCount] = useState(0);
   const [selectedTranslocator, setSelectedTranslocator] = useState<WorldLineSegment | null>(null);
+  // When pinned, the displayed TL info stays put even if the user left-clicks
+  // empty space. Cleared by clicking the pin icon, or by clicking any other TL
+  // (which then becomes the new selection — pinned only if right-clicked).
+  const [translocatorPinned, setTranslocatorPinned] = useState(false);
   const [landmarkPoints, setLandmarkPoints] = useState<WorldPointMarker[]>([]);
   const [landmarkCount, setLandmarkCount] = useState(0);
   const [landmarkSearch, setLandmarkSearch] = useState("");
-  const [landmarkFocusPoint, setLandmarkFocusPoint] = useState<{ x: number; z: number } | undefined>(undefined);
+  const [landmarkFocusPoint, setLandmarkFocusPoint] = useState<
+    { x: number; z: number } | undefined
+  >(undefined);
   const translocatorCacheRef = useRef<WorldLineSegment[] | null>(null);
   const translocatorLoadPromiseRef = useRef<Promise<WorldLineSegment[]> | null>(null);
   const landmarkCacheRef = useRef<WorldPointMarker[] | null>(null);
@@ -195,7 +201,8 @@ export function TOPSMapViewPage() {
       setSelectedLevel(null);
       return;
     }
-    const desired = selectedLevel ?? statsQuery.data.default_level ?? completedLevels[completedLevels.length - 1];
+    const desired =
+      selectedLevel ?? statsQuery.data.default_level ?? completedLevels[completedLevels.length - 1];
     if (desired && completedLevels.includes(desired)) {
       if (selectedLevel !== desired) setSelectedLevel(desired);
       return;
@@ -226,25 +233,21 @@ export function TOPSMapViewPage() {
     // when an enabled query has stale data, so when staleTime returns 0 (URLs
     // already expired) we get exactly one refetch on mount; when it returns a
     // positive value we serve the persisted entry with no network call.
-    staleTime: ({ state }) =>
-      levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
+    staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
     gcTime: 7 * 24 * 60 * 60 * 1000,
     enabled: statsQuery.isSuccess && selectedLevel != null,
     meta: { persist: true },
   });
 
-  const tileSet = useMemo(
-    () => {
-      const info = levelInfoQuery.data;
-      if (!info) return null;
-      // Cached data with already-expired URLs would render as a blank map
-      // (every <img> 403s against R2). Treat it as missing so the user sees
-      // the loading state until the background refetch arrives.
-      if (isLevelInfoExpired(info)) return null;
-      return levelToTileSet(info);
-    },
-    [levelInfoQuery.data],
-  );
+  const tileSet = useMemo(() => {
+    const info = levelInfoQuery.data;
+    if (!info) return null;
+    // Cached data with already-expired URLs would render as a blank map
+    // (every <img> 403s against R2). Treat it as missing so the user sees
+    // the loading state until the background refetch arrives.
+    if (isLevelInfoExpired(info)) return null;
+    return levelToTileSet(info);
+  }, [levelInfoQuery.data]);
 
   const stats = statsQuery.data ?? null;
   const hasMap = tileSet != null;
@@ -285,6 +288,7 @@ export function TOPSMapViewPage() {
   useEffect(() => {
     if (!showTranslocators) {
       setSelectedTranslocator(null);
+      setTranslocatorPinned(false);
       return;
     }
     if (!selectedTranslocator) return;
@@ -295,8 +299,41 @@ export function TOPSMapViewPage() {
         seg.x2 === selectedTranslocator.x2 &&
         seg.z2 === selectedTranslocator.z2,
     );
-    if (!stillVisible) setSelectedTranslocator(null);
+    if (!stillVisible) {
+      setSelectedTranslocator(null);
+      setTranslocatorPinned(false);
+    }
   }, [selectedTranslocator, showTranslocators, visibleTranslocatorSegments]);
+
+  const sameSegment = (a: WorldLineSegment | null, b: WorldLineSegment | null): boolean =>
+    !!a && !!b && a.x1 === b.x1 && a.z1 === b.z1 && a.x2 === b.x2 && a.z2 === b.z2;
+
+  const handleTranslocatorClick = useCallback(
+    (seg: WorldLineSegment | null) => {
+      if (!seg) {
+        // Click on empty space — honour the pin: only clear when not pinned.
+        if (translocatorPinned) return;
+        setSelectedTranslocator(null);
+        return;
+      }
+      // Clicking a different TL clears any existing pin (the new selection is
+      // unpinned unless the user explicitly right-clicks to pin it).
+      if (!sameSegment(seg, selectedTranslocator)) {
+        setTranslocatorPinned(false);
+      }
+      setSelectedTranslocator(seg);
+    },
+    [selectedTranslocator, translocatorPinned],
+  );
+
+  const handleTranslocatorRightClick = useCallback((seg: WorldLineSegment) => {
+    setSelectedTranslocator(seg);
+    setTranslocatorPinned(true);
+  }, []);
+
+  const handleUnpinTranslocator = useCallback(() => {
+    setTranslocatorPinned(false);
+  }, []);
 
   useEffect(() => {
     if (!isAdmin || !showTranslocators) {
@@ -430,15 +467,16 @@ export function TOPSMapViewPage() {
       const resolutions = statsQuery.data?.resolutions ?? [];
       const completed = resolutions.filter((r) => r.status === "complete");
       const candidate =
-        completed.find((r) => r.max_dimension >= targetMaxDim && r.level > (selectedLevel ?? 0))
-        ?? completed[completed.length - 1];
+        completed.find((r) => r.max_dimension >= targetMaxDim && r.level > (selectedLevel ?? 0)) ??
+        completed[completed.length - 1];
       if (!candidate) {
         throw new Error("No higher resolution available");
       }
       const info = await queryClient.fetchQuery<TopsMapLevelChunks>({
         queryKey: ["tops-map-level", candidate.level],
         queryFn: () => getTopsMapLevel(candidate.level),
-        staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
+        staleTime: ({ state }) =>
+          levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
         gcTime: 7 * 24 * 60 * 60 * 1000,
         meta: { persist: true },
       });
@@ -468,7 +506,12 @@ export function TOPSMapViewPage() {
           )}
           {!loading && hasMap && (
             <>
-              <Button type="button" variant="outline" onClick={handleDownload} disabled={downloading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDownload}
+                disabled={downloading}
+              >
                 {downloading ? (
                   <Loader2 className="size-4 mr-1 animate-spin" />
                 ) : (
@@ -508,9 +551,7 @@ export function TOPSMapViewPage() {
                       disabled={r.status !== "complete"}
                     >
                       L{r.level} ·{" "}
-                      {r.level === 5
-                        ? "Full resolution"
-                        : `${r.max_dimension.toLocaleString()} px`}
+                      {r.level === 5 ? "Full resolution" : `${r.max_dimension.toLocaleString()} px`}
                       {r.status !== "complete" ? ` · ${r.status}` : ""}
                     </SelectItem>
                   ))}
@@ -552,7 +593,10 @@ export function TOPSMapViewPage() {
             />
             <Label>Show translocators (admin only)</Label>
             <span className="text-xs text-muted-foreground ml-2">
-              TLs found: <span className="font-medium text-foreground">{translocatorCount.toLocaleString()}</span>
+              TLs found:{" "}
+              <span className="font-medium text-foreground">
+                {translocatorCount.toLocaleString()}
+              </span>
             </span>
           </div>
         )}
@@ -564,10 +608,14 @@ export function TOPSMapViewPage() {
               aria-label="Show only TLs near 2250, 12500"
             />
             <Label>
-              Show only TLs near X {TL_FILTER_CENTER.x.toLocaleString()}, Z {TL_FILTER_CENTER.z.toLocaleString()} ({TL_FILTER_RADIUS.toLocaleString()} radius)
+              Show only TLs near X {TL_FILTER_CENTER.x.toLocaleString()}, Z{" "}
+              {TL_FILTER_CENTER.z.toLocaleString()} ({TL_FILTER_RADIUS.toLocaleString()} radius)
             </Label>
             <span className="text-xs text-muted-foreground ml-2">
-              Showing: <span className="font-medium text-foreground">{visibleTranslocatorSegments.length.toLocaleString()}</span>
+              Showing:{" "}
+              <span className="font-medium text-foreground">
+                {visibleTranslocatorSegments.length.toLocaleString()}
+              </span>
             </span>
           </div>
         )}
@@ -580,13 +628,16 @@ export function TOPSMapViewPage() {
             />
             <Label>Show landmarks (admin only)</Label>
             <span className="text-xs text-muted-foreground ml-2">
-              Landmarks found: <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
+              Landmarks found:{" "}
+              <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
             </span>
           </div>
         )}
         {isAdmin && hasMap && (
           <div className="flex flex-col gap-1">
-            <Label htmlFor="landmark-search" className="text-sm">Search landmark</Label>
+            <Label htmlFor="landmark-search" className="text-sm">
+              Search landmark
+            </Label>
             <Combobox
               id="landmark-search"
               placeholder="Type to search…"
@@ -601,21 +652,56 @@ export function TOPSMapViewPage() {
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
         {isAdmin && showTranslocators && selectedTranslocator && (
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
+          <div className="flex flex-wrap min-h-14 items-center gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
-              Start: <span className="font-medium text-foreground">X {selectedTranslocator.x1.toLocaleString()}, Z {selectedTranslocator.z1.toLocaleString()}</span>
+              Start:{" "}
+              <span className="font-medium text-foreground">
+                X {selectedTranslocator.x1.toLocaleString()}, Z{" "}
+                {selectedTranslocator.z1.toLocaleString()}
+              </span>
             </span>
             <span>
-              End: <span className="font-medium text-foreground">X {selectedTranslocator.x2.toLocaleString()}, Z {selectedTranslocator.z2.toLocaleString()}</span>
+              End:{" "}
+              <span className="font-medium text-foreground">
+                X {selectedTranslocator.x2.toLocaleString()}, Z{" "}
+                {selectedTranslocator.z2.toLocaleString()}
+              </span>
             </span>
+            {translocatorPinned && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleUnpinTranslocator}
+                title="Unpin translocator (also unpins on clicking another TL)"
+                className="ml-auto h-7 px-2 text-foreground"
+              >
+                <Pin className="size-4 mr-1 fill-current" />
+                Pinned
+                <PinOff className="size-4 ml-1" />
+              </Button>
+            )}
+            {!translocatorPinned && (
+              <span className="ml-auto text-xs text-muted-foreground">Right-click a TL to pin</span>
+            )}
           </div>
         )}
 
         {stats && (
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
-            <span><span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span> map tiles</span>
-            <span><span className="font-medium text-foreground">{stats.size_mb}</span> MB</span>
-            <span><span className="font-medium text-foreground">{stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}</span> blocks</span>
+            <span>
+              <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
+              map tiles
+            </span>
+            <span>
+              <span className="font-medium text-foreground">{stats.size_mb}</span> MB
+            </span>
+            <span>
+              <span className="font-medium text-foreground">
+                {stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}
+              </span>{" "}
+              blocks
+            </span>
           </div>
         )}
 
@@ -625,7 +711,11 @@ export function TOPSMapViewPage() {
           alt="TOPS global server map"
           overlaySegments={showTranslocators ? visibleTranslocatorSegments : undefined}
           overlayPoints={showLandmarks ? landmarkPoints : undefined}
-          onOverlaySegmentClick={showTranslocators ? setSelectedTranslocator : undefined}
+          onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
+          onOverlaySegmentRightClick={showTranslocators ? handleTranslocatorRightClick : undefined}
+          highlightedSegment={
+            showTranslocators && translocatorPinned ? selectedTranslocator : undefined
+          }
           focusPoint={landmarkFocusPoint}
           enhanceTilesFn={hasMap && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
         />
