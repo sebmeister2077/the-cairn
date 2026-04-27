@@ -92,7 +92,7 @@ class Settings:
     # 503 "totp_not_configured".
     TOTP_ENCRYPTION_KEY: str = os.environ.get("TOTP_ENCRYPTION_KEY", "")
     # Display label shown in the user's authenticator app.
-    TOTP_ISSUER: str = os.environ.get("TOTP_ISSUER", "VS Waypoints Admin")
+    TOTP_ISSUER: str = os.environ.get("TOTP_ISSUER", "Cairn Admin")
 
     # --- Phase 4c: WebAuthn (passkey) admin 2FA ---
     # Relying-Party ID — the eTLD+1 the passkey is bound to. MUST exactly match
@@ -101,7 +101,7 @@ class Settings:
     # does not match the page origin's effective domain.
     WEBAUTHN_RP_ID: str = os.environ.get("WEBAUTHN_RP_ID", "").strip()
     # Friendly name shown in the OS/browser passkey UI ("Sign in to <NAME>").
-    WEBAUTHN_RP_NAME: str = os.environ.get("WEBAUTHN_RP_NAME", "VS Waypoints Admin")
+    WEBAUTHN_RP_NAME: str = os.environ.get("WEBAUTHN_RP_NAME", "Cairn Admin")
     # Comma-separated list of allowed origins (full https URLs incl. scheme +
     # port). The browser sends the origin in clientDataJSON; the server rejects
     # any assertion whose origin is not in this list. If empty, falls back to

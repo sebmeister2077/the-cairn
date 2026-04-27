@@ -1,7 +1,7 @@
 # Terms & Privacy Plan
 
 This document outlines what the **Terms of Use** and **Privacy Policy** for the
-VS Waypoint & Map Tools site need to cover, derived from how the project
+Cairn site need to cover, derived from how the project
 actually works (see [Architecture.md](Architecture.md)).
 
 It is **not** legal advice — use it as the structure/checklist for a lawyer or

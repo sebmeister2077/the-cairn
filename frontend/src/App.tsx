@@ -198,7 +198,7 @@ function AppContent() {
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <div className="flex flex-col">
-            <h1 className="text-lg font-semibold">VS Waypoint & Map Tools</h1>
+            <h1 className="text-lg font-semibold">Cairn</h1>
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Unofficial fan project &mdash; not affiliated with Anego Studios
             </span>
@@ -274,7 +274,7 @@ function AppContent() {
       </main>
       <footer className="border-t mt-8">
         <div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2">
-          <span>VS Waypoint &amp; Map Tools &mdash; unofficial fan project.</span>
+          <span>Cairn &mdash; unofficial fan project.</span>
           <span className="flex gap-3">
             <NavLink to="/privacy" className="hover:text-foreground underline-offset-2 hover:underline">Privacy</NavLink>
             <NavLink to="/terms" className="hover:text-foreground underline-offset-2 hover:underline">Terms</NavLink>
@@ -362,7 +362,7 @@ function GeneralPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>VS Waypoint & Map Tools</CardTitle>
+        <CardTitle>Cairn</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">

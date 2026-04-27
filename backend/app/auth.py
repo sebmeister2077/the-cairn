@@ -295,7 +295,7 @@ def generate_totp_secret() -> str:
 def build_otpauth_uri(api_key: str, secret: str, account_label: str) -> str:
     """Render the otpauth:// URI an authenticator app needs to enrol."""
     import pyotp
-    issuer = settings.TOTP_ISSUER or "VS Waypoints Admin"
+    issuer = settings.TOTP_ISSUER or "Cairn Admin"
     return pyotp.TOTP(secret).provisioning_uri(
         name=account_label or _short_key_label(api_key),
         issuer_name=issuer,

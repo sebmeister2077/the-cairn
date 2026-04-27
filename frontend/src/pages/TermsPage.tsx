@@ -24,7 +24,7 @@ export function TermsPage() {
                 <section className="space-y-2">
                     <h2 className="text-base font-semibold text-foreground">1. Acceptance</h2>
                     <p>
-                        By accessing or using VS Waypoint &amp; Map Tools (the
+                        By accessing or using Cairn (the
                         “Service”), you agree to be bound by these Terms of
                         Use and our{" "}
                         <a href="/privacy" className="underline">Privacy Policy</a>.

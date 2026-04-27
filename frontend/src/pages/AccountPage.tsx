@@ -305,7 +305,7 @@ export function AccountPage() {
               ], { type: "application/json" });
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = `vs-waypoints-recovery-${user.display_name}.json`;
+              a.download = `cairn-recovery-${user.display_name}.json`;
               a.click();
             }}
           >
@@ -328,7 +328,7 @@ export function AccountPage() {
               const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
               const a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
-              a.download = `vs-waypoints-export-${user.display_name}.json`;
+              a.download = `cairn-export-${user.display_name}.json`;
               a.click();
             }}
           >

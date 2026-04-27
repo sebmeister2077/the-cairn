@@ -29,7 +29,7 @@ Set these env vars on the API host (Render):
 | Variable | Default | Purpose |
 |---|---|---|
 | `WEBAUTHN_RP_ID` | _unset_ | The Relying Party ID. **Must match the public hostname** of the frontend, e.g. `vs-waypoints.example.com`. Without this, all WebAuthn endpoints return `503 webauthn_not_configured`. |
-| `WEBAUTHN_RP_NAME` | `VS Waypoints Admin` | Human-readable name shown in the OS prompt. |
+| `WEBAUTHN_RP_NAME` | `Cairn Admin` | Human-readable name shown in the OS prompt. |
 | `WEBAUTHN_ORIGINS` | falls back to `ALLOWED_ORIGINS` | Comma-separated allow-list of `https://...` origins permitted to register / assert. Must include the production frontend URL. |
 | `WEBAUTHN_SESSION_TTL_SECONDS` | `28800` (8 h) | Lifetime of the `X-Admin-Session` token issued after a successful assertion. |
 | `WEBAUTHN_ENFORCE` | `True` | If `True`, admins with at least one registered credential **must** present an `X-Admin-Session`. If `False`, passkey verification is purely optional (use during initial rollout). |

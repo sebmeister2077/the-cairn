@@ -28,7 +28,7 @@ export function PrivacyPage() {
                 <section className="space-y-2">
                     <h2 className="text-base font-semibold text-foreground">1. Who we are</h2>
                     <p>
-                        VS Waypoint &amp; Map Tools (the “Service”) is an
+                        Cairn (the “Service”) is an
                         unofficial, fan-made web toolkit for the game{" "}
                         <em>Vintage Story</em>. It is operated as a hobby
                         project. For privacy questions, contact{" "}
