@@ -202,6 +202,70 @@ def archived_db_key(contribution_id: str) -> str:
     return f"archived/{contribution_id}.db"
 
 
+def history_preview_key(contribution_id: str) -> str:
+    """Long-lived preview PNG kept for the public history window (Phase 3)."""
+    return f"history/{contribution_id}.png"
+
+
+# ---------------------------------------------------------------------------
+# Phase 4b — per-contribution revert undo data
+# ---------------------------------------------------------------------------
+
+UNDO_KEY_PREFIX = "undo/"
+
+
+def undo_added_key(contribution_id: str) -> str:
+    """R2 key for the little-endian uint64 stream of positions inserted by
+    a contribution's approval (gap-fill + region-overwrite both populate this)."""
+    return f"{UNDO_KEY_PREFIX}{contribution_id}.added.bin"
+
+
+def undo_replaced_key(contribution_id: str) -> str:
+    """R2 key for the SQLite blob carrying ``(position, old_data)`` rows for
+    every tile this contribution overwrote (region/overwrite mode only)."""
+    return f"{UNDO_KEY_PREFIX}{contribution_id}.replaced.db"
+
+
+# ---------------------------------------------------------------------------
+# Phase 4a — weekly backups of the combined map .db
+# ---------------------------------------------------------------------------
+
+BACKUP_KEY_PREFIX = "backups/"
+
+
+def backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    """Key for the auto-snapshot of ISO calendar week ``iso_year``/``iso_week``.
+
+    Naming follows ISO 8601: week 01 contains the first Thursday of the year,
+    weeks always start on Monday (Python ``datetime.isocalendar()``).
+    """
+    return f"{BACKUP_KEY_PREFIX}backup-{iso_year:04d}-W{iso_week:02d}.db"
+
+
+def backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
+    """Key for an admin-triggered on-demand snapshot."""
+    return (
+        f"{BACKUP_KEY_PREFIX}backup-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.db"
+    )
+
+
+def list_backup_objects() -> list:
+    """Return raw R2 listing for ``backups/`` — dicts with Key, Size, LastModified."""
+    out = []
+    paginator = _get_client().get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=_bucket(), Prefix=BACKUP_KEY_PREFIX):
+        for obj in page.get("Contents", []) or []:
+            out.append(
+                {
+                    "key": obj["Key"],
+                    "size": int(obj.get("Size", 0)),
+                    "last_modified": obj.get("LastModified"),
+                }
+            )
+    return out
+
+
 def tops_map_cache_key(max_dimension: int = TOPS_MAP_CACHE_DIM) -> str:
     return f"cache/tops-map-{max_dimension}.png"
 

@@ -10,7 +10,6 @@ from .config import settings
 from .core import database as db
 from .core import accounts_db
 
-
 def _get_client_ip(request: Request) -> str:
     forwarded_for = request.headers.get("X-Forwarded-For")
     if forwarded_for:
@@ -121,6 +120,43 @@ async def require_admin(
     return x_api_key
 
 
+def is_admin_key(api_key: str) -> bool:
+    """Return True if ``api_key`` is the env-var admin key."""
+    return bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
+
+
+def verify_permission(api_key: str, perm_name: str) -> bool:
+    """Check whether ``api_key`` has the granular permission ``perm_name``.
+
+    Admins always pass. For DB-backed keys, the flag is read from
+    ``api_keys.extra_permissions`` (JSONB).
+    """
+    if is_admin_key(api_key):
+        return True
+    if not db.is_available():
+        return False
+    extras = db.get_api_key_extra_permissions(api_key)
+    return bool(extras.get(perm_name))
+
+
+def require_permission(perm_name: str):
+    """Dependency factory that enforces ``verify_permission(api_key, perm_name)``."""
+
+    async def _dep(
+        request: Request,
+        x_api_key: str = Header(..., alias="X-API-Key"),
+    ) -> str:
+        info = await verify_api_key_info(request, x_api_key)
+        if not info.get("is_admin") and not verify_permission(x_api_key, perm_name):
+            raise HTTPException(
+                status_code=403,
+                detail=f"This API key lacks the '{perm_name}' permission",
+            )
+        return x_api_key
+
+    return _dep
+
+
 async def require_active_user(
     request: Request,
     x_api_key: str = Header(..., alias="X-API-Key"),
@@ -155,3 +191,172 @@ async def require_active_user(
         raise HTTPException(status_code=403, detail="Account has been deleted")
 
     return {"key": x_api_key, "user": user, "info": info}
+
+
+# ---------------------------------------------------------------------------
+# TOTP 2FA (Phase 4a)
+# ---------------------------------------------------------------------------
+#
+# RFC 6238 TOTP, 30 s window, 6 digits — compatible with Google Authenticator,
+# Authy, 1Password, Bitwarden, etc. Used to gate destructive admin actions
+# (backup restore, force-release of map lock, future revert/restore paths).
+#
+# Storage: api_keys.totp_secret_encrypted — Fernet-encrypted with
+# settings.TOTP_ENCRYPTION_KEY. The plaintext secret is only ever in memory
+# during enrolment and verification.
+#
+# Replay protection: the (api_key, code) pair is cached for 90 s after a
+# successful verification and rejected if reused.
+#
+# Throttling: 5 bad codes in a rolling 5 minute window per api_key returns
+# 429 totp_throttled.
+
+import base64
+import secrets as _secrets
+import threading
+import time
+from collections import deque
+from typing import Tuple
+
+_totp_lock = threading.Lock()
+_totp_used: dict = {}              # (api_key, code) -> expiry monotonic ts
+_totp_failures: dict = {}          # api_key -> deque[monotonic ts]
+_TOTP_REPLAY_TTL = 90              # seconds
+_TOTP_THROTTLE_WINDOW = 5 * 60     # seconds
+_TOTP_THROTTLE_MAX = 5             # bad codes within window -> throttle
+
+
+class TotpError(HTTPException):
+    """Specialised HTTPException with a stable ``code`` field for the frontend."""
+
+    def __init__(self, status: int, code: str, message: Optional[str] = None):
+        super().__init__(status_code=status, detail={"code": code, "message": message or code})
+        self.code = code
+
+
+def _fernet():
+    if not settings.TOTP_ENCRYPTION_KEY:
+        raise TotpError(503, "totp_not_configured", "TOTP_ENCRYPTION_KEY is not set")
+    # Imported lazily so a missing optional dependency only matters when TOTP
+    # is actually configured.
+    from cryptography.fernet import Fernet, InvalidToken  # noqa: F401
+    try:
+        return Fernet(settings.TOTP_ENCRYPTION_KEY.encode())
+    except Exception as exc:  # invalid key shape
+        raise TotpError(503, "totp_not_configured", f"Invalid TOTP_ENCRYPTION_KEY: {exc}")
+
+
+def _encrypt_secret(secret: str) -> str:
+    return _fernet().encrypt(secret.encode()).decode()
+
+
+def _decrypt_secret(blob: str) -> str:
+    from cryptography.fernet import InvalidToken
+    try:
+        return _fernet().decrypt(blob.encode()).decode()
+    except InvalidToken as exc:
+        raise TotpError(503, "totp_not_configured", "TOTP secret could not be decrypted") from exc
+
+
+def generate_totp_secret() -> str:
+    """Return a fresh base32-encoded TOTP secret (160 bits)."""
+    raw = _secrets.token_bytes(20)
+    return base64.b32encode(raw).decode().rstrip("=")
+
+
+def build_otpauth_uri(api_key: str, secret: str, account_label: str) -> str:
+    """Render the otpauth:// URI an authenticator app needs to enrol."""
+    import pyotp
+    issuer = settings.TOTP_ISSUER or "VS Waypoints Admin"
+    return pyotp.TOTP(secret).provisioning_uri(
+        name=account_label or _short_key_label(api_key),
+        issuer_name=issuer,
+    )
+
+
+def _short_key_label(api_key: str) -> str:
+    """Last 6 chars of the key — enough to disambiguate authenticator entries
+    without leaking the full secret to the device's lock-screen preview."""
+    return f"admin-{api_key[-6:]}" if api_key else "admin"
+
+
+def is_totp_enrolled(api_key: str) -> bool:
+    if not settings.TOTP_ENCRYPTION_KEY or not db.is_available():
+        return False
+    return bool(db.get_totp_secret_encrypted(api_key))
+
+
+def store_enrolment(api_key: str, secret: str) -> None:
+    db.set_totp_secret_encrypted(api_key, _encrypt_secret(secret))
+
+
+def _gc_failures(now: float) -> None:
+    cutoff = now - _TOTP_THROTTLE_WINDOW
+    for key, q in list(_totp_failures.items()):
+        while q and q[0] < cutoff:
+            q.popleft()
+        if not q:
+            _totp_failures.pop(key, None)
+
+
+def _check_throttle(api_key: str, now: float) -> None:
+    _gc_failures(now)
+    q = _totp_failures.get(api_key)
+    if q and len(q) >= _TOTP_THROTTLE_MAX:
+        raise TotpError(429, "totp_throttled", "Too many bad TOTP codes; try again later")
+
+
+def _record_failure(api_key: str, now: float) -> None:
+    _totp_failures.setdefault(api_key, deque()).append(now)
+
+
+def verify_totp(api_key: str, code: str) -> None:
+    """Validate ``code`` for ``api_key``. Raises ``TotpError`` on any failure.
+
+    Allowed codes: previous, current, next 30 s window (±1 step) to absorb
+    clock skew. Replay-protected for 90 s after a successful verification.
+    """
+    if not settings.TOTP_ENCRYPTION_KEY:
+        raise TotpError(503, "totp_not_configured", "TOTP_ENCRYPTION_KEY is not set")
+    if not code or not code.strip().isdigit() or len(code.strip()) != 6:
+        raise TotpError(401, "invalid_totp", "TOTP code must be 6 digits")
+    code = code.strip()
+
+    now = time.monotonic()
+    with _totp_lock:
+        _check_throttle(api_key, now)
+        # Replay check
+        for cache_key, expiry in list(_totp_used.items()):
+            if expiry < now:
+                _totp_used.pop(cache_key, None)
+        if (api_key, code) in _totp_used:
+            _record_failure(api_key, now)
+            raise TotpError(401, "invalid_totp", "TOTP code already used")
+
+    if not db.is_available():
+        raise TotpError(503, "totp_not_configured", "TOTP store unavailable")
+    blob = db.get_totp_secret_encrypted(api_key)
+    if not blob:
+        raise TotpError(401, "totp_required", "TOTP enrolment required")
+    secret = _decrypt_secret(blob)
+
+    import pyotp
+    totp = pyotp.TOTP(secret)
+    # ``valid_window=1`` allows ±1 step (30 s).
+    if not totp.verify(code, valid_window=1):
+        with _totp_lock:
+            _record_failure(api_key, now)
+        raise TotpError(401, "invalid_totp", "Invalid TOTP code")
+
+    # Success — pin the code so it can't be reused immediately.
+    with _totp_lock:
+        _totp_used[(api_key, code)] = now + _TOTP_REPLAY_TTL
+        _totp_failures.pop(api_key, None)
+
+
+def require_totp(api_key: str, code: Optional[str]) -> None:
+    """Helper for endpoints: raises 401 totp_required if no code is supplied."""
+    if not code:
+        raise TotpError(401, "totp_required", "TOTP code is required for this action")
+    verify_totp(api_key, code)
+

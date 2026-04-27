@@ -8,6 +8,7 @@ import io
 import sqlite3
 import tempfile
 import os
+import random
 from typing import Iterator, Optional, Tuple, Dict
 
 import numpy as np
@@ -153,6 +154,46 @@ def _sample_one_pixel(blob: bytes, pixel_index: int = 528) -> tuple:
     argb = ((b0 & 0x7F) | ((b1 & 0x7F) << 7) | ((b2 & 0x7F) << 14)
             | ((b3 & 0x7F) << 21) | ((b4 & 0x7F) << 28)) & 0xFFFFFFFF
     return (argb & 0xFF, (argb >> 8) & 0xFF, (argb >> 16) & 0xFF, (argb >> 24) & 0xFF)
+
+
+def _sample_n_pixels(blob: bytes, n: int, seed: int) -> list:
+    """Phase 1 — sample ``n`` pseudo-random pixels plus the center pixel from
+    a tile blob. The seed is the tile's ``position`` integer so the same tile
+    samples the same pixels every run (reproducible scoring).
+
+    Returns a list of (R, G, B, A) tuples of length ``n + 1`` (the trailing
+    entry is always the center pixel, index 528). For non-standard blob
+    sizes the function falls back to decoding via :func:`decode_tile_fallback`
+    and reading ``arr[y, x]`` directly.
+
+    Alpha=0 pixels are returned unchanged; callers are expected to skip them
+    when computing similarity (treat alpha=0 as no-data).
+    """
+    out: list = []
+
+    if len(blob) == STANDARD_BLOB_SIZE:
+        rng = random.Random(seed)
+        # Deterministic random pixel indices in [0, TILE_PIXELS).
+        # We allow duplicates with the center; that's fine — the similarity
+        # check counts each sampled position independently.
+        for _ in range(n):
+            idx = rng.randrange(TILE_PIXELS)
+            out.append(_sample_one_pixel(blob, idx))
+        out.append(_sample_one_pixel(blob, 528))  # center pixel
+        return out
+
+    # Non-standard blob — decode the whole tile and index into the array.
+    arr = decode_tile_fallback(blob)
+    rng = random.Random(seed)
+    for _ in range(n):
+        y = rng.randrange(TILE_SIZE)
+        x = rng.randrange(TILE_SIZE)
+        r, g, b, a = arr[y, x]
+        out.append((int(r), int(g), int(b), int(a)))
+    cy, cx = TILE_SIZE // 2, TILE_SIZE // 2
+    r, g, b, a = arr[cy, cx]
+    out.append((int(r), int(g), int(b), int(a)))
+    return out
 
 
 def render_map_png_from_path(

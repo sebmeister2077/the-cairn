@@ -7,6 +7,8 @@ import {
   approveContribution,
   rejectContribution,
   withdrawContribution,
+  revertContribution,
+  recomputeMatchScore,
   getStoredIsAdmin,
   getStoredCanContribute,
   fetchImageFromSignedUrl,
@@ -19,8 +21,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, Undo2 } from "lucide-react";
+import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, Undo2, RefreshCw, History, ImageOff } from "lucide-react";
 import { MapViewer } from "@/components/MapViewer";
+import { AdminFeatureFlagsPanel } from "@/components/AdminFeatureFlagsPanel";
+import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
+
+// Phase 1 — informational match-score result attached to each pending row.
+interface MatchScore {
+  status: "pending" | "ready" | "failed";
+  tile_overlap_pct?: number;
+  pixel_similar_pct?: number;
+  overlap_count?: number;
+  pending_total?: number;
+  reason?: string;
+}
 
 interface PendingContribution {
   id: string;
@@ -32,6 +46,7 @@ interface PendingContribution {
   is_mine: boolean;
   preview_image_url?: string;
   preview_signed_url?: string;
+  match_score?: MatchScore | null;
 }
 
 interface WithdrawnEntry {
@@ -49,18 +64,51 @@ interface ApprovedEntry {
   combined_total: number;
 }
 
+// Phase 3 — public history grid entry. Returned for approved (and
+// withdrawn-with-preview) contributions whose retention deadline hasn't
+// elapsed.
+interface HistoryEntry {
+  id: string;
+  status: "approved" | "withdrawn" | "reverted" | "orphaned_by_restore";
+  contributor: string;
+  tile_count: number;
+  tiles_new?: number | null;
+  tiles_existing?: number | null;
+  combined_total?: number | null;
+  approved_at?: string | null;
+  withdrawn_at?: string | null;
+  preview_signed_url?: string | null;
+  is_mine?: boolean;
+  // Phase 4b — admin-only fields surfaced for revert UI.
+  revert_supported?: boolean;
+  revert_added_count?: number | null;
+  revert_replaced_count?: number | null;
+  reverted_at?: string | null;
+  can_revert?: boolean;
+}
+
 interface ContributeInfo {
   map_id: string;
   total_tiles: number;
   pending: PendingContribution[];
   withdrawn: WithdrawnEntry[];
   approved: ApprovedEntry[];
+  history?: HistoryEntry[];
+  history_total?: number;
+  history_window_days?: number;
+  public_history_enabled?: boolean;
   is_admin?: boolean;
+  match_score_enabled?: boolean;
+  revert_enabled?: boolean;
+  revert_window_days?: number;
   can_contribute?: boolean;
   cooldown_reason?: "pending" | "cooldown" | null;
   pending_contribution_id?: string | null;
   next_allowed_at?: string | null;
   cooldown_days?: number;
+  withdraw_limit_per_week?: number;
+  withdrawals_used_this_week?: number;
+  withdraw_next_allowed_at?: string | null;
 }
 
 export function ContributePage() {
@@ -102,10 +150,19 @@ export function ContributePage() {
   const [uploadResult, setUploadResult] = useState<string | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
 
-  // Contribute info via React Query
+  // Contribute info via React Query. Phase 1: when at least one pending row
+  // has a not-yet-ready match score we poll every 5 s so the badge updates
+  // automatically while the worker grinds through its queue.
   const infoQuery = useQuery<ContributeInfo>({
     queryKey: ["contribute-info"],
     queryFn: () => getContributeInfo(),
+    refetchInterval: (query) => {
+      const data = query.state.data as ContributeInfo | undefined;
+      const hasPendingScore = !!data?.pending.some(
+        (p) => p.match_score?.status === "pending",
+      );
+      return hasPendingScore ? 5000 : false;
+    },
   });
   const info = infoQuery.data ?? null;
   const infoLoading = infoQuery.isLoading;
@@ -228,8 +285,26 @@ export function ContributePage() {
     }
   }
 
+  async function handleRecomputeMatchScore(id: string) {
+    setActionLoading(id);
+    setActionError("");
+    try {
+      await recomputeMatchScore(id);
+      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : "Recompute failed");
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   return (
     <div className="space-y-4">
+      {/* Admin: feature flags + map lock (Phase 0) */}
+      {isAdmin && <AdminFeatureFlagsPanel />}
+      {/* Admin: weekly backups + restore (Phase 4a) */}
+      {isAdmin && <AdminBackupsPanel />}
+
       {/* Upload card */}
       <Card>
         <CardHeader>
@@ -436,6 +511,14 @@ export function ContributePage() {
                       {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
                     </div>
                     <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
+                    {info.match_score_enabled && p.match_score && (
+                      <MatchScoreBadge
+                        score={p.match_score}
+                        canRecompute={isAdmin && p.match_score.status !== "pending"}
+                        onRecompute={() => handleRecomputeMatchScore(p.id)}
+                        recomputing={actionLoading === p.id}
+                      />
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Button
@@ -456,7 +539,17 @@ export function ContributePage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleWithdraw(p.id)}
-                        disabled={actionLoading === p.id}
+                        disabled={
+                          actionLoading === p.id ||
+                          (!isAdmin && !!info?.withdraw_next_allowed_at)
+                        }
+                        title={
+                          !isAdmin && info?.withdraw_next_allowed_at
+                            ? `Weekly withdraw limit reached. Next allowed: ${new Date(
+                                info.withdraw_next_allowed_at,
+                              ).toLocaleString()}`
+                            : undefined
+                        }
                         className="text-destructive hover:text-destructive"
                       >
                         {actionLoading === p.id ? (
@@ -585,6 +678,332 @@ export function ContributePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Phase 3 — Recent contributions grid (public 14-day history with previews) */}
+      {info && info.public_history_enabled && info.history && info.history.length > 0 && (
+        <RecentContributionsGrid
+          history={info.history}
+          windowDays={info.history_window_days ?? 14}
+          isAdmin={!!isAdmin || !!info.is_admin}
+          totalCount={info.history_total ?? info.history.length}
+          displayContributor={displayContributor}
+          revertWindowDays={info.revert_window_days ?? 14}
+          onRevert={async (id) => {
+            await revertContribution(id);
+            queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 1 — Match-score badge (informational only, never blocks approval)
+// ---------------------------------------------------------------------------
+
+function MatchScoreBadge({
+  score,
+  canRecompute,
+  onRecompute,
+  recomputing,
+}: {
+  score: MatchScore;
+  canRecompute: boolean;
+  onRecompute: () => void;
+  recomputing: boolean;
+}) {
+  if (score.status === "pending") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        <span>Computing match score…</span>
+      </div>
+    );
+  }
+
+  if (score.status === "failed") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs">
+        <Badge variant="outline" className="text-muted-foreground">
+          Match score unknown
+        </Badge>
+        {canRecompute && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1.5 text-xs"
+            onClick={onRecompute}
+            disabled={recomputing}
+            title={score.reason || "Retry match-score computation"}
+          >
+            {recomputing ? (
+              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+            ) : (
+              <RefreshCw className="mr-1 h-3 w-3" />
+            )}
+            Recompute
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // status === "ready"
+  const pixel = score.pixel_similar_pct ?? 0;
+  const overlap = score.tile_overlap_pct ?? 0;
+  const overlapCount = score.overlap_count ?? 0;
+  const total = score.pending_total ?? 0;
+
+  // Plan thresholds: ≥80% green ("looks like our map"), <20% orange
+  // ("may be wrong file"), in between grey/neutral.
+  let badgeClass: string;
+  let label: string;
+  if (pixel >= 80) {
+    badgeClass = "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30";
+    label = "Looks like our map";
+  } else if (pixel < 20) {
+    badgeClass = "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30";
+    label = "May be wrong file";
+  } else {
+    badgeClass = "bg-muted text-muted-foreground border-border";
+    label = "Partial match";
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs">
+      <Badge variant="outline" className={badgeClass}>
+        {label}
+      </Badge>
+      <span className="text-muted-foreground">
+        {overlap.toFixed(0)}% overlap ({overlapCount.toLocaleString()}/{total.toLocaleString()}) ·{" "}
+        {pixel.toFixed(0)}% pixel-similar
+      </span>
+      {canRecompute && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-1.5 text-xs"
+          onClick={onRecompute}
+          disabled={recomputing}
+          title="Recompute match score"
+        >
+          {recomputing ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <RefreshCw className="h-3 w-3" />
+          )}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3 — Recent contributions grid
+//
+// Renders a thumbnail grid of approved/withdrawn contributions whose preview
+// is still retained. Clicking a tile expands it inline to a larger view.
+// Anonymous-by-default — the contributor is shown only when the viewer has
+// permission to see contributor names.
+// ---------------------------------------------------------------------------
+
+function RecentContributionsGrid({
+  history,
+  windowDays,
+  isAdmin,
+  totalCount,
+  displayContributor,
+  revertWindowDays,
+  onRevert,
+}: {
+  history: HistoryEntry[];
+  windowDays: number;
+  isAdmin: boolean;
+  totalCount: number;
+  displayContributor: (name: string) => string;
+  revertWindowDays: number;
+  onRevert: (id: string) => Promise<void>;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [revertingId, setRevertingId] = useState<string | null>(null);
+  const [revertError, setRevertError] = useState<string | null>(null);
+  const opened = openId ? history.find((h) => h.id === openId) ?? null : null;
+
+  async function handleRevert(entry: HistoryEntry) {
+    const tilesNew = entry.revert_added_count ?? entry.tiles_new ?? 0;
+    const tilesReplaced = entry.revert_replaced_count ?? 0;
+    const message =
+      tilesReplaced > 0
+        ? `Reverting will restore ${tilesReplaced.toLocaleString()} tiles to their pre-contribution state and remove ${tilesNew.toLocaleString()} tiles added in the region. Continue?`
+        : `Reverting will delete ${tilesNew.toLocaleString()} tiles added by this contribution. The area returns to unmapped, not to a previous version. Continue?`;
+    if (!window.confirm(message)) return;
+    setRevertError(null);
+    setRevertingId(entry.id);
+    try {
+      await onRevert(entry.id);
+      setOpenId(null);
+    } catch (err) {
+      setRevertError(err instanceof Error ? err.message : "Revert failed");
+    } finally {
+      setRevertingId(null);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <History className="h-4 w-4" />
+          Recent Contributions
+          <Badge variant="secondary" className="ml-1 font-normal">
+            last {windowDays}d
+          </Badge>
+        </CardTitle>
+        {isAdmin && totalCount > history.length && (
+          <p className="text-xs text-muted-foreground">
+            Showing {history.length} of {totalCount.toLocaleString()} retained.
+          </p>
+        )}
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {history.map((h) => {
+            const isWithdrawn = h.status === "withdrawn";
+            const isReverted = h.status === "reverted";
+            const isOrphaned = h.status === "orphaned_by_restore";
+            const dateStr = h.approved_at ?? h.withdrawn_at ?? "";
+            return (
+              <button
+                key={h.id}
+                type="button"
+                onClick={() => setOpenId(openId === h.id ? null : h.id)}
+                className={
+                  "group relative flex flex-col overflow-hidden rounded-md border bg-muted/20 text-left transition-colors hover:border-primary " +
+                  (openId === h.id ? "ring-2 ring-primary" : "")
+                }
+              >
+                <div className="aspect-video w-full bg-black/40 flex items-center justify-center overflow-hidden">
+                  {h.preview_signed_url ? (
+                    <img
+                      src={h.preview_signed_url}
+                      alt={`Preview of contribution ${h.id}`}
+                      loading="lazy"
+                      className={
+                        "h-full w-full object-cover transition-opacity group-hover:opacity-90 " +
+                        (isWithdrawn || isReverted || isOrphaned ? "opacity-60 grayscale" : "")
+                      }
+                    />
+                  ) : (
+                    <ImageOff className="h-6 w-6 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="space-y-0.5 px-2 py-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="truncate font-medium">
+                      {isWithdrawn
+                        ? "[Withdrawn]"
+                        : displayContributor(h.contributor)}
+                    </span>
+                    {isWithdrawn ? (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        withdrawn
+                      </Badge>
+                    ) : isReverted ? (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        reverted
+                      </Badge>
+                    ) : isOrphaned ? (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        orphaned
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {!isWithdrawn && typeof h.tiles_new === "number"
+                      ? `+${h.tiles_new.toLocaleString()} new tiles`
+                      : `${h.tile_count.toLocaleString()} tiles`}
+                  </div>
+                  <div className="text-muted-foreground">
+                    {dateStr ? new Date(dateStr).toLocaleDateString() : "—"}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Click-to-enlarge inline view */}
+        {opened && opened.preview_signed_url && (
+          <div className="rounded-md border overflow-hidden bg-black/5">
+            <MapViewer
+              imageUrl={opened.preview_signed_url}
+              alt={`Preview of contribution ${opened.id}`}
+              height="60vh"
+              bordered={false}
+              legend={
+                <span className="text-muted-foreground">
+                  {opened.status === "withdrawn"
+                    ? "[Withdrawn] · preview retained for transparency"
+                    : opened.status === "reverted"
+                    ? `Reverted · originally by ${displayContributor(opened.contributor)}`
+                    : opened.status === "orphaned_by_restore"
+                    ? `Orphaned by backup restore · ${displayContributor(opened.contributor)}`
+                    : `${displayContributor(opened.contributor)} · approved ${
+                        opened.approved_at
+                          ? new Date(opened.approved_at).toLocaleString()
+                          : ""
+                      }`}
+                </span>
+              }
+            />
+            {isAdmin && (
+              <div className="flex flex-col gap-2 border-t bg-muted/20 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
+                <div className="text-muted-foreground">
+                  {opened.status === "approved" ? (
+                    opened.can_revert ? (
+                      <>
+                        Revert window: {revertWindowDays}d ·{" "}
+                        {(opened.revert_added_count ?? opened.tiles_new ?? 0).toLocaleString()} tile
+                        {(opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s"} captured
+                        {opened.revert_replaced_count
+                          ? ` · ${opened.revert_replaced_count.toLocaleString()} overwrites`
+                          : ""}
+                      </>
+                    ) : opened.revert_supported === false ? (
+                      <>Revert unavailable — undo data was not captured (file too large or feature flag was off).</>
+                    ) : (
+                      <>Outside the {revertWindowDays}-day revert window — restore from a backup instead.</>
+                    )
+                  ) : (
+                    <>Status: {opened.status}</>
+                  )}
+                </div>
+                {opened.can_revert && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    disabled={revertingId === opened.id}
+                    onClick={() => handleRevert(opened)}
+                  >
+                    {revertingId === opened.id ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Undo2 className="mr-1 h-3 w-3" />
+                    )}
+                    Revert this contribution
+                  </Button>
+                )}
+              </div>
+            )}
+            {isAdmin && revertError && (
+              <div className="border-t bg-destructive/10 px-3 py-2 text-xs text-destructive">
+                {revertError}
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

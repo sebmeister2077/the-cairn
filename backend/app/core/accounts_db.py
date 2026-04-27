@@ -662,8 +662,14 @@ def backfill_users(
     name_generator,
     forbidden_substrings: List[str],
     admin_key: str = "",
+    legacy_keys: Optional[List[str]] = None,
 ) -> dict:
-    """Create a `users` row for every existing api_key that has none.
+    """Create a `users` row for legacy env-var api_keys that have none.
+
+    Only keys passed in via ``legacy_keys`` (the ``API_KEYS`` env var) and the
+    admin key are backfilled. DB-minted keys (from invite-link claims) are
+    intentionally skipped — those users must go through ``POST /account/register``
+    so ToS acceptance, IP-ban gate, and genesis/shared-IP flag logic apply.
 
     `name_generator()` must return a candidate display name; we retry until
     we find one that doesn't collide. Also marks the earliest non-deleted
@@ -684,21 +690,25 @@ def backfill_users(
         # Fallback: append timestamp
         return f"{name_generator()}-{int(datetime.now().timestamp())}"
 
-    with get_conn() as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(
-                """SELECT key FROM api_keys
-                   WHERE key NOT IN (SELECT api_key FROM users)"""
-            )
-            missing = [r["key"] for r in cur.fetchall()]
+    eligible = [k for k in (legacy_keys or []) if k]
+    if eligible:
+        with get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    """SELECT key FROM api_keys
+                       WHERE key = ANY(%s)
+                         AND key NOT IN (SELECT api_key FROM users)""",
+                    (eligible,),
+                )
+                missing = [r["key"] for r in cur.fetchall()]
 
-    for key in missing:
-        try:
-            create_user(key, _safe_name(), terms_version="backfill")
-            created += 1
-        except psycopg2.Error:
-            # If a race or unique violation happens, skip this key.
-            pass
+        for key in missing:
+            try:
+                create_user(key, _safe_name(), terms_version="backfill")
+                created += 1
+            except psycopg2.Error:
+                # If a race or unique violation happens, skip this key.
+                pass
 
     # Seed synthetic admin user
     admin_seeded = False

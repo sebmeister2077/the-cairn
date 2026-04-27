@@ -48,6 +48,52 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
+    # Phase 3 — public contribution history retention (days). Non-admin
+    # contributions show up in the public grid for this many days after
+    # approval; admin uploads are kept longer so the team can audit.
+    HISTORY_RETENTION_DAYS: int = int(os.environ.get("HISTORY_RETENTION_DAYS", "14"))
+    ADMIN_HISTORY_RETENTION_DAYS: int = int(
+        os.environ.get("ADMIN_HISTORY_RETENTION_DAYS", "90")
+    )
+    # Hard limit on withdrawals per ISO calendar week per non-admin key.
+    WITHDRAW_LIMIT_PER_WEEK: int = int(os.environ.get("WITHDRAW_LIMIT_PER_WEEK", "3"))
+    # Background cleanup interval for the history sweeper (seconds).
+    HISTORY_CLEANUP_INTERVAL_SECONDS: int = int(
+        os.environ.get("HISTORY_CLEANUP_INTERVAL_SECONDS", str(24 * 60 * 60))
+    )
+
+    # Phase 4a — weekly backups of the combined map .db.
+    # How many of each kind to retain in R2 (cleanup is application-side).
+    BACKUP_KEEP_SCHEDULED: int = int(os.environ.get("BACKUP_KEEP_SCHEDULED", "4"))
+    BACKUP_KEEP_MANUAL: int = int(os.environ.get("BACKUP_KEEP_MANUAL", "8"))
+    # How often the scheduler thread wakes up to check whether a new ISO week
+    # has begun. Hourly is plenty — a snapshot fires at most once per week.
+    BACKUP_CHECK_INTERVAL_SECONDS: int = int(
+        os.environ.get("BACKUP_CHECK_INTERVAL_SECONDS", str(60 * 60))
+    )
+
+    # --- Phase 4b: per-contribution revert ---
+    # How long after approval a contribution can still be reverted (days).
+    # Beyond this admins must restore from a Phase-4a backup.
+    REVERT_WINDOW_DAYS: int = int(os.environ.get("REVERT_WINDOW_DAYS", "14"))
+    # Hard cap on the size of the per-contribution ``undo/<id>.added.bin``
+    # stream. Each entry is 8 bytes (little-endian uint64), so the default
+    # 64 MiB == ~8M positions, which is well above any realistic upload.
+    # When a merge would exceed this, the capture is skipped and the
+    # contribution is marked ``revert_supported = false`` (admins still have
+    # the weekly-backup restore as the fallback).
+    REVERT_ADDED_BIN_MAX_BYTES: int = int(
+        os.environ.get("REVERT_ADDED_BIN_MAX_BYTES", str(64 * 1024 * 1024))
+    )
+    # Symmetric key used to encrypt TOTP secrets at rest. Must be a
+    # urlsafe-base64 32-byte Fernet key. Generate with:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    # If unset, TOTP enrolment is disabled and restore endpoints reject with
+    # 503 "totp_not_configured".
+    TOTP_ENCRYPTION_KEY: str = os.environ.get("TOTP_ENCRYPTION_KEY", "")
+    # Display label shown in the user's authenticator app.
+    TOTP_ISSUER: str = os.environ.get("TOTP_ISSUER", "VS Waypoints Admin")
+
     # Secret salt used to hash IP addresses before storing them (GDPR)
     IP_HASH_SALT: str = os.environ.get("IP_HASH_SALT", "")
 

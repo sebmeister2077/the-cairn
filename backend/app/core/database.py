@@ -1,9 +1,9 @@
 """Supabase PostgreSQL client for structured data.
 
 Tables:
-  - contributions     — one row per contribution (pending, approved, rejected)
-  - contribution_log  — approved merge history
-  - app_state         — key/value for things like cached tile count
+  - contributions     â€” one row per contribution (pending, approved, rejected)
+  - contribution_log  â€” approved merge history
+  - app_state         â€” key/value for things like cached tile count
 """
 
 from contextlib import contextmanager
@@ -139,6 +139,38 @@ CREATE TABLE IF NOT EXISTS regen_queue (
 );
 CREATE INDEX IF NOT EXISTS idx_regen_queue_created_at
     ON regen_queue (created_at);
+
+-- Single-row table acting as a global mutex around mutations of the
+-- combined map .db (approve / revert / restore). The application enforces
+-- that ``id`` is always 'globalservermap'. ``expires_at`` lets a crashed
+-- worker auto-release its lock after the TTL.
+CREATE TABLE IF NOT EXISTS map_lock (
+    id              TEXT PRIMARY KEY,
+    holder_token    TEXT NOT NULL,
+    holder_action   TEXT NOT NULL,
+    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at      TIMESTAMPTZ NOT NULL
+);
+
+-- Feature flags consulted by both backend (gating endpoints) and frontend
+-- (gating UI). A flag is OFF by default if its row is missing.
+CREATE TABLE IF NOT EXISTS feature_flags (
+    key             TEXT PRIMARY KEY,
+    enabled         BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by_key  TEXT
+);
+
+-- Seed the well-known flags as disabled. Idempotent â€” won't overwrite
+-- explicit toggles. New flags can be added by future migrations.
+INSERT INTO feature_flags (key, enabled) VALUES
+    ('match_score', FALSE),
+    ('region_overwrite', FALSE),
+    ('public_history', FALSE),
+    ('weekly_backups', FALSE),
+    ('per_contribution_revert', FALSE),
+    ('backup_restore', FALSE)
+ON CONFLICT (key) DO NOTHING;
 """
 
 _MIGRATIONS_SQL = """
@@ -150,6 +182,74 @@ ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
 ALTER TABLE IF EXISTS users
 ADD COLUMN IF NOT EXISTS show_contributions BOOLEAN NOT NULL DEFAULT FALSE;
+-- Granular per-key permission flags (e.g. 'region_overwrite'). The existing
+-- TEXT ``permissions`` column ('read'/'contribute') stays as the coarse tier;
+-- this JSONB carries fine-grained boolean toggles set by admins.
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS extra_permissions JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- Phase 1: async match-score result storage on contributions.
+-- ``match_score_status`` is one of ('pending', 'ready', 'failed') or NULL
+-- (legacy / feature disabled at submit-time). ``match_score_json`` carries
+-- the full result payload when status='ready', and the failure reason when
+-- status='failed'. ``match_score_attempts`` is bumped each time the worker
+-- picks the row up (caps retries at the worker level).
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS match_score_status   TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS match_score_json     JSONB;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS match_score_attempts INT NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_contributions_match_score_status
+    ON contributions (match_score_status)
+    WHERE match_score_status = 'pending';
+
+-- Phase 3: per-contribution preview retention. The approval flow promotes
+-- pending preview PNGs into the public history bucket and stamps an expiry
+-- here. The daily cleanup task uses this column to know when to delete the
+-- preview + archived .db. NULL ⇒ no public history retention configured
+-- (legacy rows or contributions whose preview was never generated).
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS preview_retained_until TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_contributions_preview_retained_until
+    ON contributions (preview_retained_until)
+    WHERE preview_retained_until IS NOT NULL;
+
+-- Phase 4a: TOTP 2FA enrolment for admin keys. The secret is stored
+-- encrypted (Fernet, key from TOTP_ENCRYPTION_KEY env var). NULL means
+-- the admin has not enrolled yet — destructive operations gated by TOTP
+-- will respond with 401 totp_required until they enrol.
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS totp_enrolled_at TIMESTAMPTZ;
+
+-- Phase 4b: per-contribution revert. The capture metadata records what
+-- was written to R2 ``undo/<id>.added.bin`` (positions inserted by this
+-- contribution) and ``undo/<id>.replaced.db`` (positions overwritten in
+-- region/overwrite mode). ``revert_supported`` is FALSE when the capture
+-- could not be persisted (e.g. the added.bin would have exceeded the
+-- size cap) or for legacy contributions that pre-date the feature.
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_supported BOOLEAN;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_added_count INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_replaced_count INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS reverted_at TIMESTAMPTZ;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS reverted_by_key TEXT;
+-- Affected world-block bounds, captured on approval and reused by the
+-- revert endpoint to enqueue a partial TOPS regen.
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS affected_min_x INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS affected_max_x INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS affected_min_z INTEGER;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS affected_max_z INTEGER;
 """
 
 # ---------------------------------------------------------------------------
@@ -395,6 +495,339 @@ def get_approved_log(limit: int = 20) -> List[dict]:
                 (limit,),
             )
             return [dict(r) for r in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 — Public contribution history
+# ---------------------------------------------------------------------------
+
+def set_preview_retained_until(cid: str, retained_until: Optional[datetime]) -> None:
+    """Stamp the preview retention deadline on a contribution row. Called by
+    the approval / withdrawal flow. ``None`` clears the field."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE contributions SET preview_retained_until = %s WHERE id = %s",
+                (retained_until, cid),
+            )
+
+
+def list_history_contributions(
+    *,
+    since: Optional[datetime] = None,
+    include_withdrawn: bool = True,
+    limit: int = 50,
+    offset: int = 0,
+) -> List[dict]:
+    """Return contributions whose preview is currently retained.
+
+    Used by ``/contribute/info`` to populate the public "Recent contributions"
+    grid. Includes both ``approved`` and (if ``include_withdrawn``) ``withdrawn``
+    rows whose ``preview_retained_until`` has not yet elapsed.
+
+    ``since`` filters to rows whose terminal event (approval / withdrawal)
+    happened on or after the given timestamp; pass ``now() - 14 days`` for the
+    public 14-day window or omit for the admin "everything still retained"
+    view.
+    """
+    statuses = ["approved", "withdrawn"] if include_withdrawn else ["approved"]
+    placeholders = ",".join(["%s"] * len(statuses))
+    sql = (
+        f"SELECT * FROM contributions "
+        f"WHERE status IN ({placeholders}) "
+        f"  AND preview_retained_until IS NOT NULL "
+        f"  AND preview_retained_until > now() "
+    )
+    params: List = list(statuses)
+    if since is not None:
+        sql += "  AND COALESCE(approved_at, withdrawn_at) >= %s "
+        params.append(since)
+    sql += "ORDER BY COALESCE(approved_at, withdrawn_at) DESC LIMIT %s OFFSET %s"
+    params.extend([limit, offset])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return [dict(r) for r in cur.fetchall()]
+
+
+def count_history_contributions(
+    *,
+    since: Optional[datetime] = None,
+    include_withdrawn: bool = True,
+) -> int:
+    """Count rows that ``list_history_contributions`` would return without
+    pagination. Used to power admin pagination controls."""
+    statuses = ["approved", "withdrawn"] if include_withdrawn else ["approved"]
+    placeholders = ",".join(["%s"] * len(statuses))
+    sql = (
+        f"SELECT COUNT(*) FROM contributions "
+        f"WHERE status IN ({placeholders}) "
+        f"  AND preview_retained_until IS NOT NULL "
+        f"  AND preview_retained_until > now() "
+    )
+    params: List = list(statuses)
+    if since is not None:
+        sql += "  AND COALESCE(approved_at, withdrawn_at) >= %s "
+        params.append(since)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, params)
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+
+
+def list_expired_history_contributions(limit: int = 500) -> List[dict]:
+    """Rows whose ``preview_retained_until`` has elapsed. The cleanup task
+    deletes their R2 objects and clears the column so the row is not
+    re-processed on the next sweep."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, status FROM contributions
+                       WHERE preview_retained_until IS NOT NULL
+                         AND preview_retained_until <= now()
+                       ORDER BY preview_retained_until
+                       LIMIT %s""",
+                (limit,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def mark_contributions_orphaned_by_restore(approved_after: datetime) -> int:
+    """Flip ``status`` from 'approved' to 'orphaned_by_restore' for every
+    contribution whose ``approved_at`` is strictly after ``approved_after``.
+
+    Used by Phase 4a backup-restore: contributions merged into the combined
+    .db after the snapshot was taken are no longer present in the restored
+    map, so the auditor needs to know they were lost.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET status = 'orphaned_by_restore'
+                       WHERE status = 'approved'
+                         AND approved_at IS NOT NULL
+                         AND approved_at > %s""",
+                (approved_after,),
+            )
+            return int(cur.rowcount or 0)
+
+def count_user_withdrawals_in_iso_week(api_key: str, week_start: datetime) -> int:
+    """Count this user's withdrawals since the start of the current ISO week.
+
+    The contribution-improvement plan caps non-admin contributors to 3
+    withdrawals per ISO week to break the
+    "withdraw → reupload → withdraw" preview-spam loop.
+    """
+    if not api_key:
+        return 0
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM contributions
+                       WHERE submitted_by_key = %s
+                         AND status = 'withdrawn'
+                         AND withdrawn_at >= %s""",
+                (api_key, week_start),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+
+
+# ---------------------------------------------------------------------------
+# Phase 4b — per-contribution revert
+# ---------------------------------------------------------------------------
+
+def set_revert_metadata(
+    cid: str,
+    *,
+    revert_supported: bool,
+    added_count: int,
+    replaced_count: int,
+    affected_bounds: Optional[tuple] = None,
+) -> None:
+    """Persist the capture metadata produced by the approval merge.
+
+    ``affected_bounds`` is ``(min_x, max_x, min_z, max_z)`` in world-block
+    coordinates or ``None`` (full-regen / unknown). The revert endpoint
+    re-uses these to enqueue a partial TOPS regen without re-deriving them.
+    """
+    if affected_bounds is None:
+        min_x = max_x = min_z = max_z = None
+    else:
+        min_x, max_x, min_z, max_z = affected_bounds
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_supported      = %s,
+                           revert_added_count    = %s,
+                           revert_replaced_count = %s,
+                           affected_min_x        = %s,
+                           affected_max_x        = %s,
+                           affected_min_z        = %s,
+                           affected_max_z        = %s
+                   WHERE id = %s""",
+                (revert_supported, added_count, replaced_count,
+                 min_x, max_x, min_z, max_z, cid),
+            )
+
+
+def mark_reverted(cid: str, reverted_by_key: str) -> bool:
+    """Flip a contribution's status to 'reverted' and stamp the actor."""
+    now = datetime.now(timezone.utc)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET status = 'reverted',
+                           reverted_at = %s,
+                           reverted_by_key = %s
+                   WHERE id = %s AND status = 'approved'""",
+                (now, reverted_by_key or None, cid),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def list_later_region_overwrites(
+    cid: str,
+    affected_bounds: Optional[tuple],
+) -> List[dict]:
+    """Return approved region-overwrite contributions whose region overlaps
+    the given bounds and which were approved AFTER ``cid``.
+
+    Used by the cascading-revert logic: their ``replaced.db`` defines the
+    set of positions that the revert must NOT delete or restore (those
+    positions are now owned by the later contribution).
+
+    Today (Phase 2 not yet shipped) every contribution is gap-fill, so this
+    always returns ``[]``. Once Phase 2 lands and ``contributions`` carries
+    ``update_region_*`` columns, this helper is the single source of truth
+    for the conflict set.
+    """
+    if affected_bounds is None:
+        return []
+    # Phase 2 region columns are not yet present in the schema. Probe for
+    # them so the helper degrades gracefully on pre-Phase-2 databases.
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM information_schema.columns
+                       WHERE table_name = 'contributions'
+                         AND column_name = 'update_region_min_x'"""
+            )
+            if cur.fetchone() is None:
+                return []
+        rmin_x, rmax_x, rmin_z, rmax_z = affected_bounds
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, approved_at,
+                          update_region_min_x, update_region_max_x,
+                          update_region_min_z, update_region_max_z
+                       FROM contributions AS c
+                       WHERE c.status = 'approved'
+                         AND c.id <> %s
+                         AND c.update_region_min_x IS NOT NULL
+                         AND c.approved_at > (
+                             SELECT approved_at FROM contributions WHERE id = %s
+                         )
+                         AND NOT (
+                             c.update_region_max_x < %s
+                             OR c.update_region_min_x > %s
+                             OR c.update_region_max_z < %s
+                             OR c.update_region_min_z > %s
+                         )""",
+                (cid, cid, rmin_x, rmax_x, rmin_z, rmax_z),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+
+
+# ---------------------------------------------------------------------------
+# Phase 1 — Match-score helpers
+# ---------------------------------------------------------------------------
+
+# Worker caps to avoid hammering R2 forever on a permanently-broken row.
+MATCH_SCORE_MAX_ATTEMPTS = 3
+
+
+def set_match_score_pending(cid: str) -> None:
+    """Mark a contribution as awaiting async scoring. Resets the result blob
+    and bumps attempts so the worker can stop after MAX_ATTEMPTS."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET match_score_status = 'pending',
+                           match_score_json   = NULL,
+                           match_score_attempts = match_score_attempts + 1
+                   WHERE id = %s""",
+                (cid,),
+            )
+
+
+def set_match_score_ready(cid: str, result: dict) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET match_score_status = 'ready',
+                           match_score_json   = %s::jsonb
+                   WHERE id = %s""",
+                (json.dumps(result), cid),
+            )
+
+
+def set_match_score_failed(cid: str, reason: str) -> None:
+    payload = {"reason": (reason or "")[:500]}
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET match_score_status = 'failed',
+                           match_score_json   = %s::jsonb
+                   WHERE id = %s""",
+                (json.dumps(payload), cid),
+            )
+
+
+def claim_pending_match_score_job() -> Optional[dict]:
+    """Atomically pick one pending match-score row whose attempts haven't
+    exceeded the cap. Returns ``{id, attempts}`` or None when the queue
+    is empty.
+
+    Uses ``FOR UPDATE SKIP LOCKED`` so multiple workers / processes can
+    safely race on the same table.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, match_score_attempts
+                       FROM contributions
+                       WHERE match_score_status = 'pending'
+                         AND match_score_attempts <= %s
+                       ORDER BY created_at
+                       LIMIT 1
+                       FOR UPDATE SKIP LOCKED""",
+                (MATCH_SCORE_MAX_ATTEMPTS,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def has_pending_match_score_jobs() -> bool:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM contributions
+                       WHERE match_score_status = 'pending'
+                         AND match_score_attempts <= %s
+                       LIMIT 1""",
+                (MATCH_SCORE_MAX_ATTEMPTS,),
+            )
+            return cur.fetchone() is not None
 
 
 # ---------------------------------------------------------------------------
@@ -652,7 +1085,7 @@ def drain_regen_queue() -> List[dict]:
 
 
 def regen_queue_size() -> int:
-    """Cheap diagnostic — used by the admin status endpoint."""
+    """Cheap diagnostic â€” used by the admin status endpoint."""
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM regen_queue")
@@ -719,3 +1152,230 @@ def claim_invite_link(token: str) -> bool:
                 (token,),
             )
             return cur.rowcount > 0
+
+
+# ---------------------------------------------------------------------------
+# Map lock — single-row mutex for combined-DB mutations (Phase 0a)
+# ---------------------------------------------------------------------------
+
+import secrets as _secrets
+from datetime import timedelta as _timedelta
+
+
+class MapLocked(Exception):
+    """Raised when the global map lock cannot be acquired."""
+
+
+MAP_LOCK_ID = "globalservermap"
+MAP_LOCK_TTL_SECONDS = 600  # 10 minutes
+_VALID_LOCK_ACTIONS = {"approve", "revert", "restore"}
+
+
+def acquire_map_lock(action: str, ttl_seconds: int = MAP_LOCK_TTL_SECONDS) -> str:
+    """Atomically acquire the global map lock. Returns an opaque holder token.
+
+    Raises `MapLocked` (HTTP 423) if another holder owns a non-expired row.
+    The lock auto-clears via `expires_at` so a crashed worker self-recovers
+    after the TTL.
+    """
+    if action not in _VALID_LOCK_ACTIONS:
+        raise ValueError(f"Invalid lock action: {action}")
+
+    token = _secrets.token_hex(16)
+    now = datetime.now(timezone.utc)
+    expires = now + _timedelta(seconds=ttl_seconds)
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            # Insert if no row, OR overwrite if existing row's lease has expired.
+            cur.execute(
+                """INSERT INTO map_lock (id, holder_token, holder_action, acquired_at, expires_at)
+                   VALUES (%s, %s, %s, %s, %s)
+                   ON CONFLICT (id) DO UPDATE
+                       SET holder_token  = EXCLUDED.holder_token,
+                           holder_action = EXCLUDED.holder_action,
+                           acquired_at   = EXCLUDED.acquired_at,
+                           expires_at    = EXCLUDED.expires_at
+                       WHERE map_lock.expires_at < now()
+                   RETURNING holder_token""",
+                (MAP_LOCK_ID, token, action, now, expires),
+            )
+            row = cur.fetchone()
+            if row is None or row[0] != token:
+                raise MapLocked("Another map operation is in progress")
+    return token
+
+
+def release_map_lock(token: str) -> bool:
+    """Release the lock if we still own it. Returns True if a row was deleted."""
+    if not token:
+        return False
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM map_lock WHERE id = %s AND holder_token = %s",
+                (MAP_LOCK_ID, token),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def force_release_map_lock() -> bool:
+    """Admin override — drop the lock unconditionally. Returns True if removed."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM map_lock WHERE id = %s", (MAP_LOCK_ID,))
+            return (cur.rowcount or 0) > 0
+
+
+def get_map_lock_info() -> Optional[dict]:
+    """Return current lock holder info (action, acquired_at, expires_at) or None."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT holder_action, acquired_at, expires_at FROM map_lock WHERE id = %s",
+                (MAP_LOCK_ID,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+@contextmanager
+def with_map_lock(action: str):
+    """Context manager wrapper around acquire/release_map_lock."""
+    token = acquire_map_lock(action)
+    try:
+        yield token
+    finally:
+        try:
+            release_map_lock(token)
+        except Exception:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Feature flags (Phase 0b)
+# ---------------------------------------------------------------------------
+
+def list_feature_flags() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM feature_flags ORDER BY key")
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_feature_flag(key: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM feature_flags WHERE key = %s", (key,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optional[dict]:
+    """Set a flag's state. Returns the resulting row, or None if the key is unknown."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE feature_flags
+                       SET enabled = %s, updated_at = now(), updated_by_key = %s
+                       WHERE key = %s
+                       RETURNING *""",
+                (enabled, updated_by_key or None, key),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Granular per-API-key permissions (Phase 0c)
+#
+# Stored in `api_keys.extra_permissions` JSONB. Recognised keys today:
+#   `region_overwrite`  : bool
+# Future toggles can be added without schema migrations.
+# ---------------------------------------------------------------------------
+
+def get_api_key_extra_permissions(key: str) -> dict:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT extra_permissions FROM api_keys WHERE key = %s", (key,))
+            row = cur.fetchone()
+            if not row:
+                return {}
+            value = row[0]
+            if isinstance(value, dict):
+                return value
+            try:
+                return json.loads(value) if value else {}
+            except (TypeError, json.JSONDecodeError):
+                return {}
+
+
+def set_api_key_extra_permission(key: str, perm_name: str, enabled: bool) -> bool:
+    """Toggle a single permission flag on an API key. Returns True on update."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE api_keys
+                       SET extra_permissions = jsonb_set(
+                           COALESCE(extra_permissions, '{}'::jsonb),
+                           %s,
+                           to_jsonb(%s::boolean),
+                           true
+                       )
+                       WHERE key = %s""",
+                ('{' + perm_name + '}', enabled, key),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+# ---------------------------------------------------------------------------
+# TOTP 2FA storage (Phase 4a)
+# ---------------------------------------------------------------------------
+
+def get_totp_secret_encrypted(api_key: str) -> Optional[str]:
+    """Return the encrypted TOTP secret for ``api_key``, or None if not enrolled."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT totp_secret_encrypted FROM api_keys WHERE key = %s",
+                (api_key,),
+            )
+            row = cur.fetchone()
+            return row[0] if row and row[0] else None
+
+
+def set_totp_secret_encrypted(api_key: str, encrypted: str) -> bool:
+    """Persist an encrypted TOTP secret + enrolment timestamp. Returns True on update.
+
+    Note: ``api_key`` may be the env-var admin key, which has no row in the
+    ``api_keys`` table. We upsert a synthetic row so TOTP still works for the
+    bootstrap admin.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO api_keys (key, name, permissions)
+                       VALUES (%s, 'admin (env)', 'contribute')
+                       ON CONFLICT (key) DO NOTHING""",
+                (api_key,),
+            )
+            cur.execute(
+                """UPDATE api_keys
+                       SET totp_secret_encrypted = %s,
+                           totp_enrolled_at      = now()
+                       WHERE key = %s""",
+                (encrypted, api_key),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def get_totp_enrolled_at(api_key: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT totp_enrolled_at FROM api_keys WHERE key = %s",
+                (api_key,),
+            )
+            row = cur.fetchone()
+            return row[0] if row else None
+

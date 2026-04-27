@@ -17,6 +17,10 @@ from .routes import contribute_r2 as contribute
 from .routes import tops_map_r2 as tops_map
 from .routes import admin
 from .routes import admin_users
+from .routes import admin_feature_flags
+from .routes import admin_backups
+from .routes import admin_contributions
+from .routes import admin_totp
 from .routes import account
 from .routes import invite
 
@@ -46,6 +50,7 @@ async def lifespan(app: FastAPI):
             name_generator=generate_display_name,
             forbidden_substrings=FORBIDDEN_SUBSTRINGS,
             admin_key=settings.ADMIN_API_KEY,
+            legacy_keys=list(settings.API_KEYS or []),
         )
         logger.info(
             "Startup step accounts backfill: created=%d genesis_marked=%d admin_seeded=%s in %.3fs",
@@ -68,12 +73,62 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Could not resume regen queue (non-fatal): %s", exc)
 
+    # Phase 1 — kick the match-score worker so any rows left ``pending`` from
+    # a previous process get drained promptly instead of waiting for the next
+    # contribution upload to wake the queue.
+    step_started = perf_counter()
+    try:
+        from .tasks.match_score import kick_on_startup
+        kick_on_startup()
+        logger.info(
+            "Startup step match-score kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Match-score startup kick failed (non-fatal): %s", exc)
+
+    # Phase 3 — start the daily history cleanup sweeper.
+    step_started = perf_counter()
+    try:
+        from .tasks import cleanup_history
+        cleanup_history.start()
+        logger.info(
+            "Startup step cleanup_history scheduler started in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("History cleanup scheduler failed to start (non-fatal): %s", exc)
+
+    # Phase 4a — start the weekly backup scheduler. The thread ticks even
+    # when the feature flag is off (it just no-ops); flipping the flag on
+    # therefore takes effect within one tick without a redeploy.
+    step_started = perf_counter()
+    try:
+        from .tasks import weekly_backup
+        weekly_backup.start()
+        logger.info(
+            "Startup step weekly_backup scheduler started in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Weekly backup scheduler failed to start (non-fatal): %s", exc)
+
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
     try:
         yield
     finally:
         shutdown_started = perf_counter()
+        try:
+            from .tasks import cleanup_history
+            cleanup_history.stop()
+        except Exception:
+            pass
+        try:
+            from .tasks import weekly_backup
+            weekly_backup.stop()
+        except Exception:
+            pass
         close_db()
         logger.info("Shutdown close_db completed in %.3fs", perf_counter() - shutdown_started)
 
@@ -103,6 +158,10 @@ app.include_router(tops_map.router, prefix="/api")
 app.include_router(contribute.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
+app.include_router(admin_feature_flags.router, prefix="/api")
+app.include_router(admin_backups.router, prefix="/api")
+app.include_router(admin_contributions.router, prefix="/api")
+app.include_router(admin_totp.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 

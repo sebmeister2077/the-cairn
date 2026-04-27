@@ -26,6 +26,16 @@ Index: `idx_audit_created_at` on `created_at DESC`.
 | `ban_ip` | ip_hash | `{"reason_code", "reason", "revoked_keys", "deleted_users", "triggered_by_user"}` | `POST /api/admin/users/{key}/ban` |
 | `unban_ip` | ip_hash | `null` | `DELETE /api/admin/ip-bans/{ip_hash}` |
 | `resolve_flag` | flag_id (as string) | `{"resolution": "valid" \| "abuse" \| "dismissed"}` | `POST /api/admin/flags/{id}/resolve` |
+| `contribution.approve` | contribution_id | `{"tiles_new", "tiles_existing", "combined_total"}` | `POST /api/contribute/{id}/approve` |
+| `contribution.reject` | contribution_id | `null` | `POST /api/contribute/{id}/reject` |
+| `contribution.revert` | contribution_id | `{"deleted", "restored", "combined_total", "affected_bounds"}` | `POST /api/admin/contributions/{id}/revert` |
+| `feature_flag.toggle` | flag key | `{"enabled": true\|false}` | `PATCH /api/admin/feature-flags/{key}` |
+| `permission.grant` | user api_key | `{"permission": "region_overwrite"}` | `PATCH /api/admin/users/{key}/permissions` (enabled=true) |
+| `permission.revoke` | user api_key | `{"permission": "region_overwrite"}` | `PATCH /api/admin/users/{key}/permissions` (enabled=false) |
+| `lock.force_release` | `null` | `null` | `POST /api/admin/map-lock/force-release` |
+| `map.create_backup` | R2 backup key | `{"kind": "manual"}` | `POST /api/admin/backups/create` |
+| `map.restore_backup` | R2 backup key | `{"totp_verified": true, "backup_taken_at", "orphaned_contributions"}` | `POST /api/admin/backups/restore` |
+| `totp.enrol` | `null` | `null` | `POST /api/admin/totp/confirm` |
 
 ## Querying
 

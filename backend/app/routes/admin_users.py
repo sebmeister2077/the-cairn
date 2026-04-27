@@ -380,3 +380,54 @@ async def resolve_flag(
         metadata={"resolution": payload.resolution},
     )
     return {"flag": _serialise_flag(resolved)}
+
+
+# ---------------------------------------------------------------------------
+# Granular per-key permissions (Phase 0c)
+# ---------------------------------------------------------------------------
+
+# Whitelist of permission names accepted by the toggle endpoint. Keep this
+# narrow so admins can't typo a permission into existence.
+VALID_KEY_PERMISSIONS = {"region_overwrite"}
+
+
+class KeyPermissionPatch(BaseModel):
+    permission: str = Field(..., description="One of VALID_KEY_PERMISSIONS")
+    enabled: bool
+
+
+@router.get("/users/{api_key}/permissions")
+async def get_key_permissions(api_key: str, _: str = Depends(require_admin)):
+    record = db.get_api_key(api_key)
+    if not record:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return {"key": api_key, "extra_permissions": db.get_api_key_extra_permissions(api_key)}
+
+
+@router.patch("/users/{api_key}/permissions")
+async def patch_key_permission(
+    api_key: str,
+    body: KeyPermissionPatch,
+    admin_key: str = Depends(require_admin),
+):
+    if body.permission not in VALID_KEY_PERMISSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown permission. Allowed: {sorted(VALID_KEY_PERMISSIONS)}",
+        )
+    record = db.get_api_key(api_key)
+    if not record:
+        raise HTTPException(status_code=404, detail="API key not found")
+    updated = db.set_api_key_extra_permission(api_key, body.permission, body.enabled)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update permission")
+    accounts_db.audit_log(
+        admin_key,
+        "permission.grant" if body.enabled else "permission.revoke",
+        target=api_key,
+        metadata={"permission": body.permission},
+    )
+    return {
+        "key": api_key,
+        "extra_permissions": db.get_api_key_extra_permissions(api_key),
+    }

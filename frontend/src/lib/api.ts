@@ -413,6 +413,34 @@ export async function withdrawContribution(contributionId: string) {
     return (await handleResponse(res)).json();
 }
 
+// Phase 4b — admin-only surgical undo of a single approved contribution.
+// Backend rejects with HTTP 423 if the global map lock is held by another
+// mutation, 409 if the contribution is no longer eligible (out of window,
+// not approved, no undo data captured), 410 if the undo blob has been
+// pruned, or 404 if the per_contribution_revert flag is off.
+export async function revertContribution(contributionId: string) {
+    const res = await fetch(
+        `${API_BASE}/admin/contributions/${contributionId}/revert`,
+        {
+            method: "POST",
+            headers: { "X-API-Key": getApiKey() },
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// Phase 1 — admin re-enqueue of match-score computation when a row is stuck.
+export async function recomputeMatchScore(contributionId: string) {
+    const res = await fetch(
+        `${API_BASE}/contribute/${contributionId}/recompute-match-score`,
+        {
+            method: "POST",
+            headers: { "X-API-Key": getApiKey() },
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
 // ---------------------------------------------------------------------------
 // Admin — dynamic API key management
 // ---------------------------------------------------------------------------
@@ -787,6 +815,178 @@ export async function adminResolveFlag(flagId: number, resolution: "valid" | "ab
         method: "POST",
         headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
         body: JSON.stringify({ resolution }),
+    });
+    return (await handleResponse(res)).json();
+}
+// --- Admin: feature flags & map lock (Phase 0) ---
+
+export interface FeatureFlag {
+    key: string;
+    enabled: boolean;
+    updated_at: string;
+    updated_by_key: string | null;
+}
+
+export async function adminListFeatureFlags(): Promise<{ flags: FeatureFlag[] }> {
+    const res = await fetch(`${API_BASE}/admin/feature-flags`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminSetFeatureFlag(
+    key: string,
+    enabled: boolean,
+): Promise<{ flag: FeatureFlag }> {
+    const res = await fetch(`${API_BASE}/admin/feature-flags/${encodeURIComponent(key)}`, {
+        method: "PATCH",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface MapLockInfo {
+    holder_action: string;
+    acquired_at: string;
+    expires_at: string;
+}
+
+export async function adminGetMapLock(): Promise<{ lock: MapLockInfo | null }> {
+    const res = await fetch(`${API_BASE}/admin/map-lock`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminForceReleaseMapLock(): Promise<{ released: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/map-lock/force-release`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: per-key granular permissions (Phase 0c) ---
+
+export type KeyPermission = "region_overwrite";
+
+export async function adminGetKeyPermissions(
+    apiKey: string,
+): Promise<{ key: string; extra_permissions: Record<string, boolean> }> {
+    const res = await fetch(
+        `${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/permissions`,
+        { headers: { "X-API-Key": getApiKey() } },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminSetKeyPermission(
+    apiKey: string,
+    permission: KeyPermission,
+    enabled: boolean,
+): Promise<{ key: string; extra_permissions: Record<string, boolean> }> {
+    const res = await fetch(
+        `${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/permissions`,
+        {
+            method: "PATCH",
+            headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+            body: JSON.stringify({ permission, enabled }),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: TOTP enrolment (Phase 4a) ---
+
+export interface TotpStatus {
+    enrolled: boolean;
+    configured: boolean;
+}
+
+export async function adminTotpStatus(): Promise<TotpStatus> {
+    const res = await fetch(`${API_BASE}/admin/totp/status`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminTotpEnroll(): Promise<{ secret: string; otpauth_uri: string }> {
+    const res = await fetch(`${API_BASE}/admin/totp/enroll`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminTotpConfirm(code: string): Promise<{ enrolled: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/totp/confirm`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ code }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: weekly backups (Phase 4a) ---
+
+export interface BackupRecord {
+    key: string;
+    kind: "scheduled" | "manual";
+    size: number;
+    last_modified: string | null;
+}
+
+export interface BackupListResponse {
+    backups: BackupRecord[];
+    retention: { scheduled: number; manual: number };
+}
+
+export async function adminListBackups(): Promise<BackupListResponse> {
+    const res = await fetch(`${API_BASE}/admin/backups`, {
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateBackup(): Promise<{ created: string }> {
+    const res = await fetch(`${API_BASE}/admin/backups/create`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCleanupBackups(): Promise<{ deleted: number }> {
+    const res = await fetch(`${API_BASE}/admin/backups/cleanup-now`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey() },
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRestoreBackup(
+    key: string,
+    totpCode: string,
+): Promise<{ restored_from: string; orphaned_contributions: number; backup_taken_at: string | null }> {
+    const res = await fetch(`${API_BASE}/admin/backups/restore`, {
+        method: "POST",
+        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        body: JSON.stringify({ key, confirm: true, totp_code: totpCode }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface LastRestoreInfo {
+    admin_key_suffix: string;
+    backup_key: string;
+    restored_at: string;
+    orphaned_contributions: number;
+}
+
+export async function adminLastBackupRestore(): Promise<{ last_restore: LastRestoreInfo | null }> {
+    const res = await fetch(`${API_BASE}/admin/backups/last-restore`, {
+        headers: { "X-API-Key": getApiKey() },
     });
     return (await handleResponse(res)).json();
 }
