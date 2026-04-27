@@ -9,6 +9,9 @@ import {
   deleteMyAccount,
   registerAccount,
   getStoredApiKey,
+  clearStoredAuthFlags,
+  clearAdminSession,
+  clearPersistedQueryCache,
   type AccountMeResponse,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -72,7 +75,16 @@ export function AccountPage() {
   const deleteMut = useMutation({
     mutationFn: deleteMyAccount,
     onSuccess: () => {
+      // Wipe every trace of the now-deleted account from the browser:
+      // the API key, cached admin/contributor flags, the admin passkey
+      // session, the in-memory React Query cache, and the persisted
+      // query cache in localStorage. Then hard-navigate so any in-memory
+      // page state is dropped too.
       localStorage.removeItem("api_key");
+      clearStoredAuthFlags();
+      clearAdminSession();
+      queryClient.clear();
+      clearPersistedQueryCache();
       window.location.href = "/";
     },
   });

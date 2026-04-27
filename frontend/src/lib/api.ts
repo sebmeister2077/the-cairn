@@ -90,6 +90,28 @@ export function setStoredCanContribute(value: boolean) {
     localStorage.setItem("can_contribute", value ? "true" : "false");
 }
 
+/**
+ * Storage key used by the React Query persister (kept in sync with App.tsx).
+ * Exposed here so logout / 401 / account-deletion paths can wipe the
+ * persisted cache without pulling in a react-query dependency.
+ */
+export const PERSISTED_QUERY_CACHE_KEY = "vs-waypoints-query-cache";
+
+/** Remove cached admin / contributor flags from localStorage. */
+export function clearStoredAuthFlags() {
+    localStorage.removeItem("is_admin");
+    localStorage.removeItem("can_contribute");
+}
+
+/** Wipe the persisted React Query cache from localStorage. */
+export function clearPersistedQueryCache() {
+    try {
+        localStorage.removeItem(PERSISTED_QUERY_CACHE_KEY);
+    } catch {
+        // ignore — storage may be unavailable
+    }
+}
+
 export interface AuthStatus {
     is_admin: boolean;
     can_contribute: boolean;
@@ -120,6 +142,15 @@ export async function checkAdminStatus(): Promise<boolean> {
 
 async function handleResponse(res: Response) {
     if (!res.ok) {
+        if (res.status === 401) {
+            // The API key is no longer accepted (revoked, expired, or the
+            // backing account was deleted/banned). The key itself is left
+            // in place — an admin may have only temporarily disabled it —
+            // but any admin passkey session is invalidated and listeners
+            // are notified so they can purge cached data and redirect.
+            clearAdminSession();
+            window.dispatchEvent(new Event("auth-rejected"));
+        }
         const body = await res.json().catch(() => ({ detail: res.statusText }));
         throw new Error(body.detail ?? `HTTP ${res.status}`);
     }

@@ -136,7 +136,7 @@
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "vak & XDead_MasterX's store", "z": 125 },
+      "properties": { "type": "Base", "label": "vak's store", "z": 125 },
       "geometry": { "type": "Point", "coordinates": [25, -1078] }
     },
     {
