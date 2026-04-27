@@ -10,6 +10,7 @@ Each topic has its own page so you can jump straight to what you need.
 |------|--------------|
 | [Accounts & lifecycle](./accounts.md) | Registration, profile, soft-delete, reactivate, re-key, tombstones |
 | [API keys](./api-keys.md) | Key creation, IP binding, revocation, the `X-API-Key` header |
+| [Admin passkeys (WebAuthn)](./admin-webauthn.md) | Second-factor passkey 2FA for admin keys: registration, assertion, sessions, recovery |
 | [Flags](./flags.md) | What a flag is, how flags are raised, what **Valid / False positive / Dismiss** actually do |
 | [IP bans](./ip-bans.md) | How an IP ban works, blast radius, expiry, unban behaviour |
 | [Siblings & alts (Genesis)](./siblings-and-genesis.md) | `bound_identity`, `genesis_for_ip`, alt-account detection |

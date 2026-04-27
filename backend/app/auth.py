@@ -112,9 +112,37 @@ async def verify_api_key_header_or_query(
 
 
 async def require_admin(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+    x_admin_session: Optional[str] = Header(None, alias="X-Admin-Session"),
+) -> str:
+    """FastAPI dependency that requires the admin API key.
+
+    When the admin has registered at least one WebAuthn passkey and
+    ``WEBAUTHN_ENFORCE`` is on (the default), this dependency *also* requires
+    a valid ``X-Admin-Session`` header obtained by completing a passkey
+    assertion at ``POST /admin/webauthn/auth/complete``. This makes a leaked
+    API key alone insufficient to call admin routes.
+
+    Endpoints that need to be reachable with the API key only (passkey
+    registration and assertion themselves) must use
+    :func:`require_admin_keyonly` instead.
+    """
+    if not settings.ADMIN_API_KEY or x_api_key != settings.ADMIN_API_KEY:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    _enforce_passkey_session(x_api_key, x_admin_session)
+    return x_api_key
+
+
+async def require_admin_keyonly(
     x_api_key: str = Header(..., alias="X-API-Key"),
 ) -> str:
-    """FastAPI dependency that requires the admin API key."""
+    """Like :func:`require_admin` but skips the WebAuthn session gate.
+
+    Used only by the WebAuthn registration and assertion endpoints —
+    otherwise the admin could never enrol a passkey or complete the
+    assertion that produces a session token in the first place.
+    """
     if not settings.ADMIN_API_KEY or x_api_key != settings.ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Admin access required")
     return x_api_key
@@ -359,4 +387,99 @@ def require_totp(api_key: str, code: Optional[str]) -> None:
     if not code:
         raise TotpError(401, "totp_required", "TOTP code is required for this action")
     verify_totp(api_key, code)
+
+
+# ---------------------------------------------------------------------------
+# WebAuthn admin session tokens (Phase 4c)
+# ---------------------------------------------------------------------------
+#
+# After a successful passkey assertion the server mints an opaque session
+# token and the frontend echoes it back on every admin request via the
+# ``X-Admin-Session`` header. Tokens live in process memory only — they are
+# regenerated on restart, which forces the admin to re-authenticate. That's
+# the desired behaviour: a stolen header value can't survive a redeploy.
+#
+# Each session is bound to (api_key, ip_hash). If the request IP changes mid
+# session the token is rejected, the client must re-assert.
+
+import secrets as _wa_secrets
+from threading import Lock as _WaLock
+
+_session_lock = _WaLock()
+_admin_sessions: dict = {}  # token -> {api_key, ip_hash, expires_at_monotonic}
+
+
+def _gc_admin_sessions(now: float) -> None:
+    expired = [t for t, s in _admin_sessions.items() if s["expires_at"] < now]
+    for t in expired:
+        _admin_sessions.pop(t, None)
+
+
+def issue_admin_session(api_key: str, request: Request) -> dict:
+    """Mint a fresh session token bound to this admin + IP. Returns
+    ``{"token": str, "expires_in": int}``."""
+    token = _wa_secrets.token_urlsafe(32)
+    ttl = max(60, int(settings.WEBAUTHN_SESSION_TTL_SECONDS))
+    now = time.monotonic()
+    ip_hash = _hash_ip(_get_client_ip(request))
+    with _session_lock:
+        _gc_admin_sessions(now)
+        _admin_sessions[token] = {
+            "api_key": api_key,
+            "ip_hash": ip_hash,
+            "expires_at": now + ttl,
+        }
+    return {"token": token, "expires_in": ttl}
+
+
+def revoke_admin_session(token: str) -> bool:
+    with _session_lock:
+        return _admin_sessions.pop(token, None) is not None
+
+
+def revoke_all_admin_sessions(api_key: str) -> int:
+    """Used on credential deletion / re-enrol to invalidate sessions."""
+    with _session_lock:
+        victims = [t for t, s in _admin_sessions.items() if s["api_key"] == api_key]
+        for t in victims:
+            _admin_sessions.pop(t, None)
+        return len(victims)
+
+
+def _enforce_passkey_session(api_key: str, token: Optional[str]) -> None:
+    """Raise 401 ``passkey_required`` when this admin has registered passkeys
+    and no valid session token is supplied. No-op if WEBAUTHN_ENFORCE is off
+    or the admin has no passkeys yet."""
+    if not settings.WEBAUTHN_ENFORCE:
+        return
+    if not db.is_available():
+        return
+    try:
+        n = db.count_webauthn_credentials(api_key)
+    except Exception:
+        return
+    if n == 0:
+        return  # admin has not enrolled — passkey is opt-in until they do
+
+    # Admin has at least one passkey; a session token is mandatory.
+    if not token:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "passkey_required",
+                "message": "Admin passkey verification required",
+            },
+        )
+    now = time.monotonic()
+    with _session_lock:
+        _gc_admin_sessions(now)
+        sess = _admin_sessions.get(token)
+    if not sess or sess["api_key"] != api_key or sess["expires_at"] < now:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "code": "passkey_session_expired",
+                "message": "Admin passkey session expired or invalid",
+            },
+        )
 

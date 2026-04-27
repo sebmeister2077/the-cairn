@@ -268,6 +268,26 @@ ADD COLUMN IF NOT EXISTS update_region_max_z INTEGER;
 CREATE INDEX IF NOT EXISTS idx_contributions_update_region
     ON contributions (update_region_min_x)
     WHERE update_region_min_x IS NOT NULL;
+
+-- Phase 4c: WebAuthn (passkey) credentials for admin keys. Acts as a second
+-- factor on top of the API key: an admin must complete a passkey assertion
+-- after pasting their key before they can call admin routes. One admin key
+-- may register multiple passkeys (e.g. laptop + YubiKey + phone). The
+-- credential ID and public key come straight from the authenticator; we
+-- never see or store any private material.
+CREATE TABLE IF NOT EXISTS webauthn_credentials (
+    id              BIGSERIAL PRIMARY KEY,
+    api_key         TEXT NOT NULL,
+    name            TEXT NOT NULL DEFAULT '',
+    credential_id   BYTEA NOT NULL UNIQUE,
+    public_key      BYTEA NOT NULL,
+    sign_count      BIGINT NOT NULL DEFAULT 0,
+    transports      TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_used_at    TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_webauthn_api_key
+    ON webauthn_credentials (api_key);
 """
 
 # ---------------------------------------------------------------------------
@@ -1437,4 +1457,121 @@ def get_totp_enrolled_at(api_key: str):
             )
             row = cur.fetchone()
             return row[0] if row else None
+
+
+# ---------------------------------------------------------------------------
+# WebAuthn / passkey storage (Phase 4c)
+# ---------------------------------------------------------------------------
+
+def add_webauthn_credential(
+    api_key: str,
+    name: str,
+    credential_id: bytes,
+    public_key: bytes,
+    sign_count: int,
+    transports: Optional[str],
+) -> dict:
+    """Insert a freshly registered passkey. Returns the new row as a dict."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO webauthn_credentials
+                       (api_key, name, credential_id, public_key, sign_count, transports)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   RETURNING id, api_key, name, created_at, last_used_at""",
+                (
+                    api_key,
+                    name or "",
+                    psycopg2.Binary(credential_id),
+                    psycopg2.Binary(public_key),
+                    int(sign_count or 0),
+                    transports,
+                ),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else {}
+
+
+def list_webauthn_credentials(api_key: str) -> List[dict]:
+    """Return all (non-revoked) passkey rows for this admin key, newest first.
+
+    The ``credential_id`` and ``public_key`` BYTEA columns are returned as
+    ``bytes`` so the caller can feed them straight back into the webauthn lib.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, api_key, name, credential_id, public_key,
+                          sign_count, transports, created_at, last_used_at
+                       FROM webauthn_credentials
+                      WHERE api_key = %s
+                   ORDER BY created_at DESC""",
+                (api_key,),
+            )
+            rows = cur.fetchall() or []
+            out = []
+            for r in rows:
+                d = dict(r)
+                if d.get("credential_id") is not None:
+                    d["credential_id"] = bytes(d["credential_id"])
+                if d.get("public_key") is not None:
+                    d["public_key"] = bytes(d["public_key"])
+                out.append(d)
+            return out
+
+
+def get_webauthn_credential_by_id(credential_id: bytes) -> Optional[dict]:
+    """Look up a credential by its raw ID (used during assertion verification)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, api_key, name, credential_id, public_key,
+                          sign_count, transports, created_at, last_used_at
+                       FROM webauthn_credentials
+                      WHERE credential_id = %s""",
+                (psycopg2.Binary(credential_id),),
+            )
+            row = cur.fetchone()
+            if not row:
+                return None
+            d = dict(row)
+            d["credential_id"] = bytes(d["credential_id"])
+            d["public_key"] = bytes(d["public_key"])
+            return d
+
+
+def update_webauthn_sign_count(credential_pk: int, new_sign_count: int) -> None:
+    """Bump sign_count + last_used_at after a successful assertion."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE webauthn_credentials
+                       SET sign_count = %s,
+                           last_used_at = now()
+                     WHERE id = %s""",
+                (int(new_sign_count), int(credential_pk)),
+            )
+
+
+def delete_webauthn_credential(api_key: str, credential_pk: int) -> bool:
+    """Remove a passkey owned by this admin key. Returns True if a row was deleted."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """DELETE FROM webauthn_credentials
+                     WHERE id = %s AND api_key = %s""",
+                (int(credential_pk), api_key),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def count_webauthn_credentials(api_key: str) -> int:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM webauthn_credentials WHERE api_key = %s",
+                (api_key,),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
 

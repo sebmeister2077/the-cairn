@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 
 export function AccountPage() {
   const queryClient = useQueryClient();
@@ -336,6 +337,10 @@ export function AccountPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Admin-only: passkey 2FA management. Renders nothing for non-admins
+          or when the server has WebAuthn unconfigured. */}
+      {data?.is_admin && <AdminPasskeyPanel />}
 
       {/* Danger zone */}
       <Card className="border-destructive/50">

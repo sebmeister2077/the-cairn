@@ -16,16 +16,24 @@ import {
   checkAuthStatus,
   setStoredIsAdmin,
   setStoredCanContribute,
+  adminWebauthnStatus,
+  clearAdminSession,
 } from "@/lib/api";
 
 export function ApiKeyDialog({
   open,
   onClose,
   onAdminStatusChange,
+  onAdminPasskeyNeeded,
 }: {
   open: boolean;
   onClose: () => void;
   onAdminStatusChange: (isAdmin: boolean) => void;
+  /** Called after a successful admin login when the next step is a passkey
+   *  ceremony. ``mode`` is "assert" if the admin has at least one passkey
+   *  registered and must verify, or "register" when the server offers
+   *  WebAuthn but the admin hasn't enrolled yet (treated as a soft prompt). */
+  onAdminPasskeyNeeded?: (mode: "assert" | "register") => void;
 }) {
   const [key, setKey] = useState(getStoredApiKey());
   const [loading, setLoading] = useState(false);
@@ -48,6 +56,26 @@ export function ApiKeyDialog({
       queryClient.removeQueries();
       await queryClient.invalidateQueries();
     }
+
+    // Phase 4c: if this is an admin login, find out whether a passkey
+    // ceremony is required next. Wrapped in try/catch so a 503 (WebAuthn
+    // unconfigured on the server) silently no-ops.
+    if (status.is_admin) {
+      try {
+        const wa = await adminWebauthnStatus();
+        if (wa.configured && wa.enrolled) {
+          // Always assert on a fresh login — drop any stale session token
+          // first so the server forces us through the ceremony.
+          clearAdminSession();
+          onAdminPasskeyNeeded?.("assert");
+        } else if (wa.configured && !wa.enrolled) {
+          onAdminPasskeyNeeded?.("register");
+        }
+      } catch {
+        // WebAuthn not configured / DB unavailable — don't block login.
+      }
+    }
+
     setLoading(false);
     onClose();
   }

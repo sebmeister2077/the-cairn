@@ -23,6 +23,11 @@ All authenticated routes accept the key via:
 - **Header:** `X-API-Key: <key>`
 - **Query string:** `?api_key=<key>` (less safe, used by some clients)
 
+> **Admin keys may need a second header.** When WebAuthn is configured and the
+> admin has registered at least one passkey, every admin route also requires
+> an `X-Admin-Session: <token>` header. The token is minted server-side after
+> a successful passkey assertion. See [admin-webauthn.md](admin-webauthn.md).
+
 Resolution order in [backend/app/auth.py](../../backend/app/auth.py):
 
 1. Match against `ADMIN_API_KEY` env var → admin context, full access, **bypasses IP ban check** for the admin themselves.

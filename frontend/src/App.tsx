@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
+import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { CookieConsent } from "@/components/CookieConsent";
 import { hasAcceptedStorage } from "@/lib/consent";
 import { ExtractPage } from "@/pages/ExtractPage";
@@ -33,6 +34,8 @@ import {
   setStoredIsAdmin,
   setStoredCanContribute,
   getStoredApiKey,
+  getAdminSession,
+  adminWebauthnStatus,
   claimInvite,
 } from "@/lib/api";
 import "./index.css";
@@ -80,9 +83,33 @@ function getActiveCategory(pathname: string) {
 function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
+  const [passkeyDialog, setPasskeyDialog] = useState<{ mode: PasskeyDialogMode; required: boolean } | null>(null);
   const location = useLocation();
   const [inviteClaim, setInviteClaim] = useState<{ token: string; status: "idle" | "pending" | "success" | "error"; error?: string; key?: string } | null>(null);
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
+
+  // On boot (or after a hot reload) if we already think we're admin but have
+  // no live X-Admin-Session token, ask the user to verify their passkey.
+  // This covers: page reload, opening a new tab, or session TTL expiry.
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (getAdminSession()) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const wa = await adminWebauthnStatus();
+        if (cancelled) return;
+        if (wa.configured && wa.enrolled) {
+          setPasskeyDialog({ mode: "assert", required: true });
+        }
+      } catch {
+        // server doesn't have webauthn configured — leave admin un-gated
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -254,7 +281,24 @@ function AppContent() {
           </span>
         </div>
       </footer>
-      <ApiKeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} onAdminStatusChange={setIsAdmin} />
+      <ApiKeyDialog
+        open={keyOpen}
+        onClose={() => setKeyOpen(false)}
+        onAdminStatusChange={setIsAdmin}
+        onAdminPasskeyNeeded={(mode) =>
+          setPasskeyDialog({ mode, required: mode === "assert" })
+        }
+      />
+
+      {passkeyDialog && (
+        <AdminPasskeyDialog
+          open={true}
+          mode={passkeyDialog.mode}
+          required={passkeyDialog.required}
+          onClose={() => setPasskeyDialog(null)}
+          onSuccess={() => setPasskeyDialog(null)}
+        />
+      )}
 
       {/* Cookie / browser-storage consent. Renders as a blocking modal when an
           invite link is waiting to be claimed, otherwise as a dismissible

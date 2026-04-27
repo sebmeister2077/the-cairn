@@ -94,6 +94,37 @@ class Settings:
     # Display label shown in the user's authenticator app.
     TOTP_ISSUER: str = os.environ.get("TOTP_ISSUER", "VS Waypoints Admin")
 
+    # --- Phase 4c: WebAuthn (passkey) admin 2FA ---
+    # Relying-Party ID — the eTLD+1 the passkey is bound to. MUST exactly match
+    # the hostname of the frontend admin UI (e.g. "vs-waypoints.example.com",
+    # "localhost" for local dev). Browsers refuse the registration if RP ID
+    # does not match the page origin's effective domain.
+    WEBAUTHN_RP_ID: str = os.environ.get("WEBAUTHN_RP_ID", "").strip()
+    # Friendly name shown in the OS/browser passkey UI ("Sign in to <NAME>").
+    WEBAUTHN_RP_NAME: str = os.environ.get("WEBAUTHN_RP_NAME", "VS Waypoints Admin")
+    # Comma-separated list of allowed origins (full https URLs incl. scheme +
+    # port). The browser sends the origin in clientDataJSON; the server rejects
+    # any assertion whose origin is not in this list. If empty, falls back to
+    # ALLOWED_ORIGINS so a single-host deployment Just Works.
+    _wa_origins_env: str = os.environ.get("WEBAUTHN_ORIGINS", "").strip()
+    WEBAUTHN_ORIGINS: List[str] = (
+        [o.strip().rstrip("/") for o in _wa_origins_env.split(",") if o.strip()]
+        if _wa_origins_env
+        else []
+    )
+    # Lifetime of the post-assertion admin session token in seconds. After this
+    # the admin must complete another passkey gesture. Default 8 hours = one
+    # workday.
+    WEBAUTHN_SESSION_TTL_SECONDS: int = int(
+        os.environ.get("WEBAUTHN_SESSION_TTL_SECONDS", str(8 * 60 * 60))
+    )
+    # When TRUE and an admin has at least one passkey registered, all admin
+    # routes require a valid X-Admin-Session header in addition to the API key.
+    # When FALSE, passkeys remain optional and act as a self-service hardening
+    # the admin can enable per-machine. Default TRUE so leaked keys are
+    # immediately useless once any passkey is registered.
+    WEBAUTHN_ENFORCE: bool = os.environ.get("WEBAUTHN_ENFORCE", "true").lower() in ("1", "true", "yes")
+
     # --- Phase 2: region-restricted updates ---
     # Hard cap on the rectangle a non-admin contributor with the
     # ``region_overwrite`` permission may select, expressed in TILES (each

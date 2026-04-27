@@ -21,6 +21,7 @@ from .routes import admin_feature_flags
 from .routes import admin_backups
 from .routes import admin_contributions
 from .routes import admin_totp
+from .routes import admin_webauthn
 from .routes import account
 from .routes import invite
 
@@ -162,6 +163,7 @@ app.include_router(admin_feature_flags.router, prefix="/api")
 app.include_router(admin_backups.router, prefix="/api")
 app.include_router(admin_contributions.router, prefix="/api")
 app.include_router(admin_totp.router, prefix="/api")
+app.include_router(admin_webauthn.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 

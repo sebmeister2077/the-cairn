@@ -2,6 +2,15 @@
 
 Every endpoint listed here requires `X-API-Key: <ADMIN_API_KEY>` and is gated by `Depends(require_admin)`.
 
+> **Passkey gate.** When WebAuthn is configured **and** the admin has at least
+> one passkey registered, every `require_admin` route additionally requires a
+> valid `X-Admin-Session: <token>` header. The session token is short-lived
+> (default 8 h, in-memory only — restarting the API forces re-verification)
+> and is minted by `/api/admin/webauthn/auth/complete`. The
+> `/api/admin/webauthn/*` endpoints themselves use the lighter
+> `require_admin_keyonly` dependency so first-time enrolment is possible.
+> See [admin-webauthn.md](admin-webauthn.md).
+
 Routes are split across two routers:
 - [backend/app/routes/admin_users.py](../../backend/app/routes/admin_users.py) — users, flags, bans
 - [backend/app/routes/admin.py](../../backend/app/routes/admin.py) — keys, invite links, map generation

@@ -1,4 +1,4 @@
-﻿const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
+const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 const API_BASE = configuredApiBase || "/api";
 
 // For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
@@ -9,11 +9,68 @@ function getApiKey(): string {
 }
 
 export function setApiKey(key: string) {
+    const previous = localStorage.getItem("api_key");
+    if (previous && previous !== key) {
+        // The session was bound to the old key — drop it so the new key has
+        // to assert its own passkey.
+        clearAdminSession();
+    }
     localStorage.setItem("api_key", key);
 }
 
 export function getStoredApiKey(): string {
     return getApiKey();
+}
+
+// --- Admin passkey session (Phase 4c) ---
+//
+// After a successful WebAuthn assertion the server returns an opaque session
+// token. The frontend stores it here and forwards it via X-Admin-Session on
+// every admin request. Tokens expire server-side (default 8 h) � the backend
+// then returns 401 ``passkey_session_expired`` and the UI re-prompts.
+
+const ADMIN_SESSION_KEY = "admin_session";
+const ADMIN_SESSION_EXPIRES_KEY = "admin_session_expires";
+
+export function getAdminSession(): string | null {
+    const token = localStorage.getItem(ADMIN_SESSION_KEY);
+    if (!token) return null;
+    const exp = Number(localStorage.getItem(ADMIN_SESSION_EXPIRES_KEY) ?? "0");
+    if (exp && Date.now() > exp) {
+        clearAdminSession();
+        return null;
+    }
+    return token;
+}
+
+export function setAdminSession(token: string, ttlSeconds: number) {
+    localStorage.setItem(ADMIN_SESSION_KEY, token);
+    localStorage.setItem(ADMIN_SESSION_EXPIRES_KEY, String(Date.now() + ttlSeconds * 1000));
+    window.dispatchEvent(new Event("admin-session-changed"));
+}
+
+export function clearAdminSession() {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    localStorage.removeItem(ADMIN_SESSION_EXPIRES_KEY);
+    window.dispatchEvent(new Event("admin-session-changed"));
+}
+
+export function getAdminSessionExpiresAt(): number | null {
+    const exp = Number(localStorage.getItem(ADMIN_SESSION_EXPIRES_KEY) ?? "0");
+    return exp || null;
+}
+
+/**
+ * Build the standard auth header bag: always X-API-Key, plus X-Admin-Session
+ * when the admin has completed a passkey assertion. Pass ``extra`` to merge
+ * in Content-Type or other one-off headers.
+ */
+export function authHeaders(extra?: Record<string, string>): Record<string, string> {
+    const h: Record<string, string> = { "X-API-Key": getApiKey() };
+    const session = getAdminSession();
+    if (session) h["X-Admin-Session"] = session;
+    if (extra) Object.assign(h, extra);
+    return h;
 }
 
 export function getStoredIsAdmin(): boolean {
@@ -41,7 +98,7 @@ export interface AuthStatus {
 export async function checkAuthStatus(): Promise<AuthStatus> {
     try {
         const res = await fetch(`${API_BASE}/me`, {
-            headers: { "X-API-Key": getApiKey() },
+            headers: authHeaders(),
         });
         if (!res.ok) {
             return { is_admin: false, can_contribute: false };
@@ -72,7 +129,7 @@ async function handleResponse(res: Response) {
 export async function extractWaypoints(formData: FormData) {
     const res = await fetch(`${API_BASE}/extract`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     return (await handleResponse(res)).json();
@@ -81,7 +138,7 @@ export async function extractWaypoints(formData: FormData) {
 export async function importWaypoints(formData: FormData) {
     const res = await fetch(`${API_BASE}/import`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     await handleResponse(res);
@@ -96,7 +153,7 @@ export async function importWaypoints(formData: FormData) {
 export async function deleteWaypoints(formData: FormData) {
     const res = await fetch(`${API_BASE}/delete`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     await handleResponse(res);
@@ -117,7 +174,7 @@ export async function deleteWaypoints(formData: FormData) {
 export async function generateCommands(formData: FormData) {
     const res = await fetch(`${API_BASE}/commands`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     return (await handleResponse(res)).json();
@@ -126,7 +183,7 @@ export async function generateCommands(formData: FormData) {
 export async function getMapStats(formData: FormData) {
     const res = await fetch(`${API_BASE}/map-stats`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     return (await handleResponse(res)).json();
@@ -145,7 +202,7 @@ export async function renderMap(
     }
     const res = await fetch(`${API_BASE}/map-render`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         body: formData,
     });
     await handleResponse(res);
@@ -154,13 +211,13 @@ export async function renderMap(
 
 export async function getTopsMapStats() {
     const res = await fetch(`${API_BASE}/tops-map-stats`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
 /**
- * Fetch an image from a presigned URL (no auth header — the URL is self-contained).
+ * Fetch an image from a presigned URL (no auth header � the URL is self-contained).
  * Falls back to null on network error or non-200 status so callers can degrade gracefully.
  */
 export async function fetchImageFromSignedUrl(signedUrl: string): Promise<Blob | null> {
@@ -178,7 +235,7 @@ export async function renderTopsMap(maxDimension?: number): Promise<Blob> {
     if (maxDimension) params.set("max_dimension", String(maxDimension));
     const qs = params.toString();
     const res = await fetch(`${API_BASE}/tops-map-render${qs ? `?${qs}` : ""}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     await handleResponse(res);
     return res.blob();
@@ -195,7 +252,7 @@ export interface TopsMapResolutionMeta {
 
 export async function getTopsMapLevel(level: number): Promise<TopsMapLevelChunks> {
     const res = await fetch(`${API_BASE}/tops-map-level/${level}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -230,7 +287,7 @@ export interface TopsMapLevelChunks {
 }
 
 // ---------------------------------------------------------------------------
-// Admin — TOPS map multi-resolution generation
+// Admin � TOPS map multi-resolution generation
 // ---------------------------------------------------------------------------
 
 export interface MapGenerationLevelStatus {
@@ -253,7 +310,7 @@ export interface MapGenerationStatus {
 
 export async function getMapGenerationStatus(): Promise<MapGenerationStatus> {
     const res = await fetch(`${API_BASE}/admin/tops-map/generation-status`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -264,10 +321,7 @@ export async function requestMapGeneration(
 ): Promise<MapGenerationStatus> {
     const res = await fetch(`${API_BASE}/admin/tops-map/generate`, {
         method: "POST",
-        headers: {
-            "X-API-Key": getApiKey(),
-            "Content-Type": "application/json",
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
             levels: levels ?? null,
             affected_bounds: affectedBounds ?? null,
@@ -279,7 +333,7 @@ export async function requestMapGeneration(
 export async function deleteMapLevel(level: number): Promise<void> {
     const res = await fetch(`${API_BASE}/admin/tops-map/level/${level}`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     if (res.status === 204) return;
     await handleResponse(res);
@@ -287,7 +341,7 @@ export async function deleteMapLevel(level: number): Promise<void> {
 
 export async function getContributeInfo(signal?: AbortSignal) {
     const res = await fetch(`${API_BASE}/contribute/info`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
         signal,
     });
     return (await handleResponse(res)).json();
@@ -300,7 +354,7 @@ interface ContributeUploadSession {
     upload_headers?: Record<string, string>;
 }
 
-// Phase 2 — region-restricted contribution. World-block coordinates,
+// Phase 2 � region-restricted contribution. World-block coordinates,
 // inclusive on both ends. Send as part of the /contribute/complete body.
 export interface ContributionRegion {
     min_x: number;
@@ -359,10 +413,7 @@ export async function contributeMap(
 ): Promise<Record<string, unknown>> {
     const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": getApiKey(),
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
             contributor,
             file_name: file.name,
@@ -388,10 +439,7 @@ export async function contributeMap(
 
     const completeRes = await fetch(`${UPLOAD_API_BASE}/contribute/complete`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": getApiKey(),
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(completeBody),
     });
 
@@ -401,7 +449,7 @@ export async function contributeMap(
 
 export async function getContributePreview(contributionId: string): Promise<Blob> {
     const res = await fetch(`${API_BASE}/contribute/preview/${contributionId}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     await handleResponse(res);
     return res.blob();
@@ -410,7 +458,7 @@ export async function getContributePreview(contributionId: string): Promise<Blob
 export async function approveContribution(contributionId: string) {
     const res = await fetch(`${API_BASE}/contribute/${contributionId}/approve`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -418,7 +466,7 @@ export async function approveContribution(contributionId: string) {
 export async function rejectContribution(contributionId: string) {
     const res = await fetch(`${API_BASE}/contribute/${contributionId}/reject`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -426,12 +474,12 @@ export async function rejectContribution(contributionId: string) {
 export async function withdrawContribution(contributionId: string) {
     const res = await fetch(`${API_BASE}/contribute/${contributionId}/withdraw`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
-// Phase 4b — admin-only surgical undo of a single approved contribution.
+// Phase 4b � admin-only surgical undo of a single approved contribution.
 // Backend rejects with HTTP 423 if the global map lock is held by another
 // mutation, 409 if the contribution is no longer eligible (out of window,
 // not approved, no undo data captured), 410 if the undo blob has been
@@ -441,25 +489,25 @@ export async function revertContribution(contributionId: string) {
         `${API_BASE}/admin/contributions/${contributionId}/revert`,
         {
             method: "POST",
-            headers: { "X-API-Key": getApiKey() },
+            headers: authHeaders(),
         },
     );
     return (await handleResponse(res)).json();
 }
 
-// Phase 1 — admin re-enqueue of match-score computation when a row is stuck.
+// Phase 1 � admin re-enqueue of match-score computation when a row is stuck.
 export async function recomputeMatchScore(contributionId: string) {
     const res = await fetch(
         `${API_BASE}/contribute/${contributionId}/recompute-match-score`,
         {
             method: "POST",
-            headers: { "X-API-Key": getApiKey() },
+            headers: authHeaders(),
         },
     );
     return (await handleResponse(res)).json();
 }
 
-// Phase 2 — preview the in-region tile counts for a candidate region against
+// Phase 2 � preview the in-region tile counts for a candidate region against
 // an already-uploaded pending file. Returns 404 when the
 // ``region_overwrite`` feature flag is off.
 export interface RegionPreviewResult {
@@ -475,10 +523,7 @@ export async function previewRegionContribution(
 ): Promise<RegionPreviewResult> {
     const res = await fetch(`${API_BASE}/contribute/region-preview`, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": getApiKey(),
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
             contribution_id: contributionId,
             update_region_min_x: region.min_x,
@@ -490,7 +535,7 @@ export async function previewRegionContribution(
     return (await handleResponse(res)).json();
 }
 
-// Phase 2 — fetch the cached side-by-side region preview PNG. ``side`` is
+// Phase 2 � fetch the cached side-by-side region preview PNG. ``side`` is
 // "before" (combined map cropped to region) or "after" (combined merged
 // with upload, with green/orange tints on the changed tiles).
 export async function getRegionPreviewImage(
@@ -499,14 +544,14 @@ export async function getRegionPreviewImage(
 ): Promise<Blob> {
     const res = await fetch(
         `${API_BASE}/contribute/preview-region/${contributionId}?side=${side}`,
-        { headers: { "X-API-Key": getApiKey() } },
+        { headers: authHeaders() },
     );
     await handleResponse(res);
     return res.blob();
 }
 
 // ---------------------------------------------------------------------------
-// Admin — dynamic API key management
+// Admin � dynamic API key management
 // ---------------------------------------------------------------------------
 
 export interface ApiKeyRecord {
@@ -522,7 +567,7 @@ export interface ApiKeyRecord {
 
 export async function listApiKeys(): Promise<ApiKeyRecord[]> {
     const res = await fetch(`${API_BASE}/admin/keys`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -534,10 +579,7 @@ export async function createApiKey(data: {
 }): Promise<ApiKeyRecord> {
     const res = await fetch(`${API_BASE}/admin/keys`, {
         method: "POST",
-        headers: {
-            "X-API-Key": getApiKey(),
-            "Content-Type": "application/json",
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(data),
     });
     return (await handleResponse(res)).json();
@@ -546,14 +588,14 @@ export async function createApiKey(data: {
 export async function revokeApiKey(key: string): Promise<void> {
     const res = await fetch(`${API_BASE}/admin/keys/${encodeURIComponent(key)}`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     if (res.status === 204) return;
     await handleResponse(res);
 }
 
 // ---------------------------------------------------------------------------
-// Admin — invite links
+// Admin � invite links
 // ---------------------------------------------------------------------------
 
 export interface InviteLinkRecord {
@@ -569,7 +611,7 @@ export interface InviteLinkRecord {
 
 export async function listInviteLinks(): Promise<InviteLinkRecord[]> {
     const res = await fetch(`${API_BASE}/admin/invite-links`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -582,10 +624,7 @@ export async function createInviteLink(data: {
 }): Promise<InviteLinkRecord> {
     const res = await fetch(`${API_BASE}/admin/invite-links`, {
         method: "POST",
-        headers: {
-            "X-API-Key": getApiKey(),
-            "Content-Type": "application/json",
-        },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(data),
     });
     return (await handleResponse(res)).json();
@@ -594,7 +633,7 @@ export async function createInviteLink(data: {
 export async function revokeInviteLink(token: string): Promise<void> {
     const res = await fetch(`${API_BASE}/admin/invite-links/${encodeURIComponent(token)}`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     if (res.status === 204) return;
     await handleResponse(res);
@@ -640,7 +679,7 @@ export interface AccountMeResponse {
 export async function registerAccount(): Promise<{ user: AccountUser; created: boolean }> {
     const res = await fetch(`${API_BASE}/account/register`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ accept_terms: true }),
     });
     return (await handleResponse(res)).json();
@@ -648,7 +687,7 @@ export async function registerAccount(): Promise<{ user: AccountUser; created: b
 
 export async function getMyAccount(): Promise<AccountMeResponse> {
     const res = await fetch(`${API_BASE}/account/me`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -662,7 +701,7 @@ export async function updateMyAccount(payload: {
 }): Promise<{ user: AccountUser }> {
     const res = await fetch(`${API_BASE}/account/me`, {
         method: "PATCH",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
     });
     return (await handleResponse(res)).json();
@@ -671,14 +710,14 @@ export async function updateMyAccount(payload: {
 export async function regenerateMyDisplayName(): Promise<{ user: AccountUser }> {
     const res = await fetch(`${API_BASE}/account/regenerate-name`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
 export async function exportMyData(): Promise<unknown> {
     const res = await fetch(`${API_BASE}/account/export`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -686,7 +725,7 @@ export async function exportMyData(): Promise<unknown> {
 export async function deleteMyAccount(): Promise<{ ok: boolean; tombstone: string }> {
     const res = await fetch(`${API_BASE}/account/me`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -727,7 +766,7 @@ export async function adminListUsers(params: {
     if (params.genesis) qs.set("genesis", "true");
     if (params.include_deleted === false) qs.set("include_deleted", "false");
     const res = await fetch(`${API_BASE}/admin/users?${qs.toString()}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -735,21 +774,21 @@ export async function adminListUsers(params: {
 export async function adminGetUserStats(refresh: boolean = false): Promise<{ stats: AdminUserStats; cached: boolean }> {
     const qs = refresh ? "?refresh=true" : "";
     const res = await fetch(`${API_BASE}/admin/users/stats${qs}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
 export async function adminGetUser(apiKey: string): Promise<{ user: AdminUserListItem }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
 export async function adminGetSiblings(apiKey: string): Promise<{ siblings: AdminUserListItem[] }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/siblings`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -757,7 +796,7 @@ export async function adminGetSiblings(apiKey: string): Promise<{ siblings: Admi
 export async function adminRegenerateName(apiKey: string): Promise<{ user: AdminUserListItem }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/regenerate-name`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -765,7 +804,7 @@ export async function adminRegenerateName(apiKey: string): Promise<{ user: Admin
 export async function adminRekeyUser(apiKey: string): Promise<{ new_api_key: string; user: AdminUserListItem }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/rekey`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -773,7 +812,7 @@ export async function adminRekeyUser(apiKey: string): Promise<{ new_api_key: str
 export async function adminReactivateUser(apiKey: string): Promise<{ user: AdminUserListItem }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/reactivate`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -781,14 +820,14 @@ export async function adminReactivateUser(apiKey: string): Promise<{ user: Admin
 export async function adminSoftDeleteUser(apiKey: string): Promise<{ ok: boolean; tombstone: string }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
 export async function adminBanPreview(apiKey: string): Promise<{ ip_hash: string | null; affected_users: AdminUserListItem[] }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/ban-preview`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -805,7 +844,7 @@ export async function adminBanUser(apiKey: string, payload: {
 }): Promise<{ ban: IpBan; revoked_keys: number; deleted_users: number }> {
     const res = await fetch(`${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/ban`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
     });
     return (await handleResponse(res)).json();
@@ -827,7 +866,7 @@ export async function adminListIpBans(cursor: number | null = null): Promise<{ b
     const qs = new URLSearchParams();
     if (cursor != null) qs.set("cursor", String(cursor));
     const res = await fetch(`${API_BASE}/admin/ip-bans?${qs.toString()}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -835,7 +874,7 @@ export async function adminListIpBans(cursor: number | null = null): Promise<{ b
 export async function adminUnbanIp(ipHash: string): Promise<{ ok: boolean }> {
     const res = await fetch(`${API_BASE}/admin/ip-bans/${encodeURIComponent(ipHash)}`, {
         method: "DELETE",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -869,7 +908,7 @@ export async function adminListFlags(params: {
     if (params.flagged_user) qs.set("flagged_user", params.flagged_user);
     if (params.cursor != null) qs.set("cursor", String(params.cursor));
     const res = await fetch(`${API_BASE}/admin/flags?${qs.toString()}`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -877,7 +916,7 @@ export async function adminListFlags(params: {
 export async function adminResolveFlag(flagId: number, resolution: "valid" | "abuse" | "dismissed"): Promise<{ flag: UserFlag }> {
     const res = await fetch(`${API_BASE}/admin/flags/${flagId}/resolve`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ resolution }),
     });
     return (await handleResponse(res)).json();
@@ -893,7 +932,7 @@ export interface FeatureFlag {
 
 export async function adminListFeatureFlags(): Promise<{ flags: FeatureFlag[] }> {
     const res = await fetch(`${API_BASE}/admin/feature-flags`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -904,7 +943,7 @@ export async function adminSetFeatureFlag(
 ): Promise<{ flag: FeatureFlag }> {
     const res = await fetch(`${API_BASE}/admin/feature-flags/${encodeURIComponent(key)}`, {
         method: "PATCH",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ enabled }),
     });
     return (await handleResponse(res)).json();
@@ -918,7 +957,7 @@ export interface MapLockInfo {
 
 export async function adminGetMapLock(): Promise<{ lock: MapLockInfo | null }> {
     const res = await fetch(`${API_BASE}/admin/map-lock`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -926,7 +965,7 @@ export async function adminGetMapLock(): Promise<{ lock: MapLockInfo | null }> {
 export async function adminForceReleaseMapLock(): Promise<{ released: boolean }> {
     const res = await fetch(`${API_BASE}/admin/map-lock/force-release`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -940,7 +979,7 @@ export async function adminGetKeyPermissions(
 ): Promise<{ key: string; extra_permissions: Record<string, boolean> }> {
     const res = await fetch(
         `${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/permissions`,
-        { headers: { "X-API-Key": getApiKey() } },
+        { headers: authHeaders() },
     );
     return (await handleResponse(res)).json();
 }
@@ -954,7 +993,7 @@ export async function adminSetKeyPermission(
         `${API_BASE}/admin/users/${encodeURIComponent(apiKey)}/permissions`,
         {
             method: "PATCH",
-            headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+            headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify({ permission, enabled }),
         },
     );
@@ -970,7 +1009,7 @@ export interface TotpStatus {
 
 export async function adminTotpStatus(): Promise<TotpStatus> {
     const res = await fetch(`${API_BASE}/admin/totp/status`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -978,7 +1017,7 @@ export async function adminTotpStatus(): Promise<TotpStatus> {
 export async function adminTotpEnroll(): Promise<{ secret: string; otpauth_uri: string }> {
     const res = await fetch(`${API_BASE}/admin/totp/enroll`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -986,7 +1025,7 @@ export async function adminTotpEnroll(): Promise<{ secret: string; otpauth_uri: 
 export async function adminTotpConfirm(code: string): Promise<{ enrolled: boolean }> {
     const res = await fetch(`${API_BASE}/admin/totp/confirm`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ code }),
     });
     return (await handleResponse(res)).json();
@@ -1008,7 +1047,7 @@ export interface BackupListResponse {
 
 export async function adminListBackups(): Promise<BackupListResponse> {
     const res = await fetch(`${API_BASE}/admin/backups`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -1016,7 +1055,7 @@ export async function adminListBackups(): Promise<BackupListResponse> {
 export async function adminCreateBackup(): Promise<{ created: string }> {
     const res = await fetch(`${API_BASE}/admin/backups/create`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -1024,7 +1063,7 @@ export async function adminCreateBackup(): Promise<{ created: string }> {
 export async function adminCleanupBackups(): Promise<{ deleted: number }> {
     const res = await fetch(`${API_BASE}/admin/backups/cleanup-now`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
@@ -1035,7 +1074,7 @@ export async function adminRestoreBackup(
 ): Promise<{ restored_from: string; orphaned_contributions: number; backup_taken_at: string | null }> {
     const res = await fetch(`${API_BASE}/admin/backups/restore`, {
         method: "POST",
-        headers: { "X-API-Key": getApiKey(), "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ key, confirm: true, totp_code: totpCode }),
     });
     return (await handleResponse(res)).json();
@@ -1050,7 +1089,91 @@ export interface LastRestoreInfo {
 
 export async function adminLastBackupRestore(): Promise<{ last_restore: LastRestoreInfo | null }> {
     const res = await fetch(`${API_BASE}/admin/backups/last-restore`, {
-        headers: { "X-API-Key": getApiKey() },
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
+}
+
+
+// ---------------------------------------------------------------------------
+// Admin � WebAuthn / passkey 2FA (Phase 4c)
+// ---------------------------------------------------------------------------
+
+export interface WebAuthnStatus {
+    configured: boolean;
+    enrolled: boolean;
+    enforced: boolean;
+    session_ttl_seconds: number;
+}
+
+export interface WebAuthnCredential {
+    id: number;
+    name: string;
+    created_at: string | null;
+    last_used_at: string | null;
+}
+
+export async function adminWebauthnStatus(): Promise<WebAuthnStatus> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/status`, { headers: authHeaders() });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnListCredentials(): Promise<{ credentials: WebAuthnCredential[] }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/credentials`, { headers: authHeaders() });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnDeleteCredential(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/credentials/${id}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    await handleResponse(res);
+}
+
+export async function adminWebauthnRegisterBegin(name: string): Promise<{ options: unknown }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/register/begin`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ name }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnRegisterComplete(name: string, credential: unknown): Promise<{ registered: boolean; id: number }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/register/complete`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ name, credential }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnAuthBegin(): Promise<{ options: unknown }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/auth/begin`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnAuthComplete(credential: unknown): Promise<{ session_token: string; expires_in: number }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/auth/complete`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ credential }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnLogout(): Promise<void> {
+    try {
+        await fetch(`${API_BASE}/admin/webauthn/logout`, {
+            method: "POST",
+            headers: authHeaders(),
+        });
+    } catch {
+        // best effort � clear locally regardless
+    }
+    clearAdminSession();
 }
