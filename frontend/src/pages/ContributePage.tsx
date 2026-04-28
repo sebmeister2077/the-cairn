@@ -611,7 +611,10 @@ export function ContributePage() {
                         recomputing={actionLoading === p.id}
                       />
                     )}
-                    <PendingLifecycleBadge contribution={p} />
+                    <PendingLifecycleBadge
+                      contribution={p}
+                      heavyComputeEnabled={info?.heavy_compute_enabled !== false}
+                    />
                   </div>
                   <div className="flex items-center gap-1.5">
                     {(() => {
@@ -850,10 +853,25 @@ export function ContributePage() {
 // Phase 1 — Match-score badge (informational only, never blocks approval)
 // ---------------------------------------------------------------------------
 
-function PendingLifecycleBadge({ contribution }: { contribution: PendingContribution }) {
+function PendingLifecycleBadge({
+  contribution,
+  heavyComputeEnabled,
+}: {
+  contribution: PendingContribution;
+  heavyComputeEnabled: boolean;
+}) {
   // Async upload validation. The row exists in the DB but the worker
   // hasn't opened the .db file yet — Approve will be greyed out upstream.
+  // When the heavy-compute kill switch is OFF no worker will spawn, so
+  // show a deferred state instead of a never-ending spinner.
   if (contribution.validation_status === "pending") {
+    if (!heavyComputeEnabled) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Awaiting admin compute…</span>
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />

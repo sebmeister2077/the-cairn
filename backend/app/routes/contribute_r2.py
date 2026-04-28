@@ -497,12 +497,18 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
     # Phase 1 — kick off async match-score computation. The feature flag is
     # checked here so that disabling it stops *new* jobs from being enqueued
     # while still letting the worker drain anything already in-flight.
-    # Same heavy-compute gate applies (the score job is just as expensive
-    # as a validation pass).
-    if is_feature_enabled("match_score") and is_heavy_compute_allowed():
+    #
+    # The heavy-compute kill switch only gates the immediate worker spawn —
+    # we still mark the row as ``match_score_status='pending'`` so the
+    # background poller (or a developer running locally with
+    # ``HEAVY_COMPUTE_LOCAL_OVERRIDE=true``) can pick it up later. Without
+    # this, the row would never enter the queue and would stay
+    # 'not_computed' forever on prod with the flag OFF.
+    if is_feature_enabled("match_score"):
         try:
             db.set_match_score_pending(contribution_id)
-            match_score_task.start_job(contribution_id)
+            if is_heavy_compute_allowed():
+                match_score_task.start_job(contribution_id)
         except Exception:
             # Score is informational — never fail the upload because of it.
             pass

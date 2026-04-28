@@ -232,6 +232,21 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("History cleanup scheduler failed to start (non-fatal): %s", exc)
 
+    # Periodic poller that drains pending validation / match-score work
+    # whenever heavy compute is allowed in this process. Lets a developer
+    # running locally with HEAVY_COMPUTE_LOCAL_OVERRIDE=true pick up
+    # contributions uploaded against the prod backend without restarting.
+    step_started = perf_counter()
+    try:
+        from .tasks import heavy_compute_poller
+        heavy_compute_poller.start()
+        logger.info(
+            "Startup step heavy_compute_poller scheduler started in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Heavy compute poller failed to start (non-fatal): %s", exc)
+
     # Phase 4a — start the weekly backup scheduler. The thread ticks even
     # when the feature flag is off (it just no-ops); flipping the flag on
     # therefore takes effect within one tick without a redeploy.
@@ -255,6 +270,11 @@ async def lifespan(app: FastAPI):
         try:
             from .tasks import cleanup_history
             cleanup_history.stop()
+        except Exception:
+            pass
+        try:
+            from .tasks import heavy_compute_poller
+            heavy_compute_poller.stop()
         except Exception:
             pass
         try:

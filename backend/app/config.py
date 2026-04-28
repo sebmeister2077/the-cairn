@@ -82,6 +82,11 @@ class Settings:
     HISTORY_CLEANUP_INTERVAL_SECONDS: int = int(
         os.environ.get("HISTORY_CLEANUP_INTERVAL_SECONDS", str(24 * 60 * 60))
     )
+    # How often the heavy-compute poller wakes up to check for pending
+    # validation / match-score work. Cheap when there's nothing to do.
+    HEAVY_COMPUTE_POLL_INTERVAL_SECONDS: int = int(
+        os.environ.get("HEAVY_COMPUTE_POLL_INTERVAL_SECONDS", "30")
+    )
 
     # Phase 4a — weekly backups of the combined map .db.
     # How many of each kind to retain in R2 (cleanup is application-side).
