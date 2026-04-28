@@ -129,7 +129,8 @@ def _sweep_orphan_temp_files() -> None:
         logger.info("Temp-file sweep: no orphans found in %s", tmpdir)
 
 
-_sweep_orphan_temp_files()
+# Disabled: startup temp-file sweep.
+# _sweep_orphan_temp_files()
 
 
 @asynccontextmanager

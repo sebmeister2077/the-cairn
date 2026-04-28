@@ -4,10 +4,31 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
-# Load .env from the backend directory
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+# Load env file from the backend directory based on APP_ENV.
+#   APP_ENV=local -> .env.local   (default)
+#   APP_ENV=prod  -> .env.prod
+#
+# APP_ENV resolution order (first hit wins):
+#   1. Real shell environment variable (e.g. `$env:APP_ENV='prod'`)
+#   2. APP_ENV= line inside backend/.env  (acts as the local "default switch")
+#   3. Hard-coded fallback: "local"
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_DEFAULT_ENV_FILE = _BACKEND_DIR / ".env"
+
+_APP_ENV = os.environ.get("APP_ENV")
+if not _APP_ENV and _DEFAULT_ENV_FILE.exists():
+    # Peek at .env without mutating os.environ so we can find APP_ENV
+    # before deciding which env file to actually load.
+    _APP_ENV = (dotenv_values(_DEFAULT_ENV_FILE).get("APP_ENV") or "").strip()
+_APP_ENV = (_APP_ENV or "local").strip().lower()
+
+print(f"Loading environment variables for APP_ENV='{_APP_ENV}'...")
+_env_file = _BACKEND_DIR / f".env.{_APP_ENV}"
+if not _env_file.exists():
+    _env_file = _DEFAULT_ENV_FILE
+load_dotenv(_env_file, override=True)
 
 
 class Settings:

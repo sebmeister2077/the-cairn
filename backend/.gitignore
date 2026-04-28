@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 .env
+.env.local
+.env.prod
+.env.*.local
 venv/
 .venv/
 
