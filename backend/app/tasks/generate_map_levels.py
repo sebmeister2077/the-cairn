@@ -372,8 +372,46 @@ def resume_pending_work():
 
     Intended to be called once at FastAPI startup so a process restart
     mid-pass does not strand previously-enqueued requests.
+
+    Also recovers from a process that died *mid-render*: ``drain_regen_queue``
+    deletes its rows before rendering begins, so a crash after that point
+    leaves the queue empty but the level pinned at ``status='generating'``
+    in the tracker forever, with stale chunks served alongside fresh ones.
+    For each such level we reset the tracker entry and enqueue a full regen
+    so the next worker pass re-renders it cleanly.
     """
     global _active_thread
+
+    # Step 1 — recover orphaned 'generating' levels.
+    try:
+        status = tracker.get_status()
+        orphaned: List[int] = []
+        for key, entry in (status.get("levels") or {}).items():
+            if entry.get("status") == "generating":
+                try:
+                    orphaned.append(int(key))
+                except (TypeError, ValueError):
+                    continue
+        for lvl in orphaned:
+            if lvl not in RESOLUTION_LEVELS:
+                continue
+            logger.warning(
+                "Level %s left in 'generating' state by previous process; "
+                "resetting tracker and re-enqueuing full regen.", lvl,
+            )
+            try:
+                tracker.reset_level(lvl)
+            except Exception:
+                logger.exception("Could not reset tracker for level %s", lvl)
+            try:
+                db.enqueue_regen(None, [lvl])
+            except Exception:
+                logger.exception("Could not enqueue recovery regen for level %s", lvl)
+    except Exception:
+        logger.exception("Could not scan tracker for orphaned 'generating' levels")
+
+    # Step 2 — start the worker if anything is queued (recovery rows above
+    # plus anything that survived the restart in regen_queue).
     try:
         size = db.regen_queue_size()
     except Exception:
