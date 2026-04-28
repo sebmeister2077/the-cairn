@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,8 @@ import {
   getAdminSession,
   adminWebauthnStatus,
   claimInvite,
+  getMyAccountSafe,
+  type AccountMeResponse,
 } from "@/lib/api";
 
 const BASE_CATEGORIES = [
@@ -202,6 +205,26 @@ export function AppContent() {
   const activeSubs = subTabs[activeCategory] ?? [];
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
 
+  // Detect "API key set but no account registered yet" so we can nudge the
+  // user toward the Account page (otherwise the 403 from /account/me is
+  // silent and they have no idea they need to click Account → Register).
+  // The queryKey includes the API key so switching keys invalidates the
+  // cached answer immediately (otherwise a previously-registered key's
+  // successful response would hide the dot for a freshly-pasted new key).
+  const apiKey = getStoredApiKey();
+  const { data: accountData } = useQuery<AccountMeResponse>({
+    queryKey: ["account-me", apiKey ?? ""],
+    queryFn: getMyAccountSafe,
+    enabled: !!apiKey,
+    retry: false,
+    // Always refetch on mount / focus so the indicator reflects reality
+    // even if a stale entry was rehydrated from the persisted cache.
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+  const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
@@ -219,8 +242,18 @@ export function AppContent() {
               </Badge>
             )}
             <NavLink to="/account">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="relative">
                 Account
+                {needsRegister && (
+                  <span
+                    aria-label="Account setup required"
+                    title="Finish setting up your account"
+                    className="absolute -top-0.5 -right-0.5 flex size-2.5"
+                  >
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                  </span>
+                )}
               </Button>
             </NavLink>
             <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>

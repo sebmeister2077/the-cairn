@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Download, Eye, EyeOff, Copy } from "lucide-react";
 import {
-  getMyAccount,
+  getMyAccountSafe,
   updateMyAccount,
   regenerateMyDisplayName,
   exportMyData,
@@ -29,35 +29,21 @@ export function AccountPage() {
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
-  const [needsRegister, setNeedsRegister] = useState(false);
 
   const { data, isLoading, error } = useQuery<AccountMeResponse>({
-    queryKey: ["account-me"],
-    queryFn: async () => {
-      try {
-        const result = await getMyAccount();
-        return result;
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "";
-        if (msg.toLowerCase().includes("no account")) {
-          setNeedsRegister(true);
-          return {
-            user: null,
-            is_admin: false,
-            terms_version_current: "",
-            terms_accepted_current: false,
-          };
-        }
-        throw e;
-      }
-    },
+    queryKey: ["account-me", apiKey ?? ""],
+    queryFn: getMyAccountSafe,
     retry: false,
   });
+
+  // Derive registration state from the query result so it stays correct
+  // even when the cache was already populated by another component (e.g.
+  // the header indicator) and `queryFn` doesn't re-run on mount.
+  const needsRegister = !!data && data.user === null && !data.is_admin;
 
   const registerMut = useMutation({
     mutationFn: registerAccount,
     onSuccess: () => {
-      setNeedsRegister(false);
       queryClient.invalidateQueries({ queryKey: ["account-me"] });
     },
   });

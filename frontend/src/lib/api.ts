@@ -759,6 +759,31 @@ export async function getMyAccount(): Promise<AccountMeResponse> {
     return (await handleResponse(res)).json();
 }
 
+/**
+ * Variant of {@link getMyAccount} that swallows the 403 "No account
+ * associated with this API key" response and returns a synthetic
+ * unregistered shape (`user: null`). Other errors still throw.
+ *
+ * Used by both the AccountPage and the header indicator so the
+ * react-query cache (keyed on ["account-me"]) is consistent.
+ */
+export async function getMyAccountSafe(): Promise<AccountMeResponse> {
+    try {
+        return await getMyAccount();
+    } catch (e) {
+        const msg = e instanceof Error ? e.message : "";
+        if (msg.toLowerCase().includes("no account")) {
+            return {
+                user: null,
+                is_admin: false,
+                terms_version_current: "",
+                terms_accepted_current: false,
+            };
+        }
+        throw e;
+    }
+}
+
 export async function updateMyAccount(payload: {
     in_game_name?: string;
     clear_in_game_name?: boolean;
