@@ -104,6 +104,20 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Validate-uploads startup kick failed (non-fatal): %s", exc)
 
+    # Drain any contribution approvals left ``approval_status='queued'`` /
+    # ``'running'`` by a previous process. The merge is idempotent (map_lock
+    # + per-position existence check), so resuming a half-run merge is safe.
+    step_started = perf_counter()
+    try:
+        from .tasks.approve_contribution import kick_on_startup as kick_approve
+        kick_approve()
+        logger.info(
+            "Startup step approve-contribution kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Approve-contribution startup kick failed (non-fatal): %s", exc)
+
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:

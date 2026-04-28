@@ -1780,7 +1780,23 @@ async def contribute_approve(
     contribution_id: str,
     api_key: str = Depends(verify_api_key),
 ):
-    """Admin-only: merge a pending contribution into the combined map."""
+    """Admin-only: enqueue a pending contribution for asynchronous merge.
+
+    The actual merge (download combined.db, sqlite merge, upload back, R2
+    archive moves, audit log, regen kick) is run by the
+    ``backend.app.tasks.approve_contribution`` worker so the request
+    completes well within Render's edge HTTP timeout regardless of how
+    large the combined map is.
+
+    Responses:
+      * **202 Accepted** — queued (or already in-flight). Frontend should
+        poll ``/contribute/info`` to observe the row's
+        ``approval_status`` flip from ``'queued'`` → ``'running'`` →
+        gone (status='approved') or ``'failed'`` (with ``approval_error``).
+      * **403** — caller is not an admin.
+      * **404** — contribution not found / no DB in storage.
+      * **409** — still being validated by the upload validator.
+    """
     try:
         _verify_admin_key(api_key)
     except ValueError as e:
@@ -1790,9 +1806,6 @@ async def contribute_approve(
     if not meta or meta.get("status") != "pending":
         return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
 
-    # Block approval until the async validator has finished. NULL
-    # ``validation_status`` ⇒ legacy row that pre-dates the worker (treated
-    # as already validated).
     if meta.get("validation_status") == "pending":
         return JSONResponse(
             status_code=409,
@@ -1808,35 +1821,92 @@ async def contribute_approve(
     if not r2_storage.object_exists(pending_key):
         return JSONResponse(status_code=404, content={"detail": "Contribution database missing"})
 
-    # The merge is several seconds of pure blocking I/O (download combined +
-    # pending DBs, sqlite merge, upload combined back). Running it directly
-    # on the event loop blocks every other request — including OPTIONS
-    # preflights, which then surface in the browser as "No
-    # 'Access-Control-Allow-Origin' header" CORS errors. Offloading to a
-    # worker thread keeps the loop responsive.
-    return await asyncio.to_thread(
-        _approve_blocking, contribution_id, meta, api_key, pending_key,
+    current_status = meta.get("approval_status")
+    if current_status in ("queued", "running"):
+        return JSONResponse(
+            status_code=202,
+            content={
+                "message": "Approval already in progress",
+                "approval_status": current_status,
+                "contribution_id": contribution_id,
+            },
+        )
+
+    enqueued = db.enqueue_approval(contribution_id, requested_by_key=api_key)
+    if not enqueued:
+        # Race: another caller flipped it between the meta read and the
+        # UPDATE, or the row stopped being eligible. Re-read and report.
+        latest = db.get_contribution(contribution_id) or {}
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": "Could not queue approval (row state changed)",
+                "approval_status": latest.get("approval_status"),
+                "status": latest.get("status"),
+            },
+        )
+
+    # Kick the worker so the merge starts within seconds rather than
+    # waiting for the next /approve call.
+    try:
+        from ..tasks import approve_contribution as approve_task
+        approve_task.start_job(contribution_id)
+    except Exception:
+        # Best-effort — startup kick / next /approve will pick it up.
+        pass
+
+    return JSONResponse(
+        status_code=202,
+        content={
+            "message": "Approval queued — merging in background",
+            "approval_status": "queued",
+            "contribution_id": contribution_id,
+        },
     )
 
 
-def _approve_blocking(
-    contribution_id: str,
-    meta: dict,
-    api_key: str,
-    pending_key: str,
-):
-    """Synchronous body of /contribute/{id}/approve.
+class ApprovalRetryable(Exception):
+    """Raised by ``run_approval_merge`` for transient failures (e.g.
+    map-lock contention). The background worker re-queues these."""
 
-    Returns either a JSON-serialisable dict (success) or a ``JSONResponse``
-    (failure). Called via ``asyncio.to_thread`` so the event loop stays
-    free to serve other requests (CORS preflights, GET /info, etc.) while
-    the merge runs.
+
+class ApprovalFatal(Exception):
+    """Raised by ``run_approval_merge`` for permanent failures (missing
+    row / DB / etc). The worker records the error and stops retrying."""
+
+
+def run_approval_merge(contribution_id: str) -> dict:
+    """Synchronous merge of a queued contribution into the combined map.
+
+    Public so the ``approve_contribution`` background worker can invoke it.
+    Returns a result dict on success. Raises ``ApprovalRetryable`` for
+    transient failures the worker should retry (e.g. ``MapLocked``) and
+    ``ApprovalFatal`` for everything else (the worker records the error
+    and stops retrying).
+
+    The merge itself is idempotent: ``map_lock`` serialises across
+    processes and the gap-fill is driven by an explicit per-position
+    existence lookup, so a re-run after a crash mid-merge is safe.
     """
+    meta = db.get_contribution(contribution_id)
+    if not meta:
+        raise ApprovalFatal("Contribution not found")
+    if meta.get("status") != "pending":
+        # Already approved/withdrawn — treat as a no-op so we don't bounce
+        # the row through 'failed' on a benign double-trigger.
+        return {"message": "Contribution no longer pending — nothing to do"}
+
+    pending_key = r2_storage.pending_db_key(contribution_id)
+    if not r2_storage.object_exists(pending_key):
+        raise ApprovalFatal("Contribution database missing in storage")
+
     # Phase 0a: serialise mutations of the combined .db with a global lock.
     try:
         lock_token = db.acquire_map_lock("approve")
     except db.MapLocked as exc:
-        return JSONResponse(status_code=423, content={"detail": str(exc)})
+        # Retryable — another mutation is in flight; the worker will pick
+        # this row up on the next pass.
+        raise ApprovalRetryable(str(exc))
 
     try:
         # Download both to temp, merge, re-upload combined
@@ -1978,10 +2048,13 @@ def _approve_blocking(
     finally:
         db.release_map_lock(lock_token)
 
-    # Phase 0d: unified audit log for contribution approvals.
+    # Phase 0d: unified audit log for contribution approvals. The acting
+    # admin's key is whoever clicked /approve in the route handler, captured
+    # on the row at enqueue-time.
+    actor_key = meta.get("approval_requested_by_key") or ""
     try:
         accounts_db.audit_log(
-            api_key,
+            actor_key,
             "contribution.approve",
             target=contribution_id,
             metadata={
@@ -2055,6 +2128,13 @@ def _approve_blocking(
         result["archived_db_key"] = archived_key
     else:
         result["archive_warning"] = "Contribution approved but DB archive move failed"
+
+    # Clear the transient approval bookkeeping now that the merge succeeded.
+    try:
+        db.clear_approval_state(contribution_id)
+    except Exception:
+        pass
+
     return result
 
 

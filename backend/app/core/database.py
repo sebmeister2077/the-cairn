@@ -327,6 +327,29 @@ ADD COLUMN IF NOT EXISTS validation_error    TEXT;
 CREATE INDEX IF NOT EXISTS idx_contributions_validation_status
     ON contributions (validation_status)
     WHERE validation_status = 'pending';
+
+-- Async approval. The merge of a pending contribution into the combined map
+-- can take longer than Render's edge HTTP timeout (~100 s) on large
+-- combined maps, since it needs to download globalservermap.db, run the
+-- SQLite merge, and upload it back. /contribute/{id}/approve therefore
+-- enqueues by setting ``approval_status='queued'`` and returns 202; the
+-- ``backend.app.tasks.approve_contribution`` worker drains queued rows and
+-- performs the actual merge.
+--
+-- Values: NULL (legacy / never queued), 'queued', 'running', 'failed'.
+-- Successful approval clears these (or sets them to NULL implicitly via
+-- the existing ``mark_approved`` flip of ``status``).
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS approval_status   TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS approval_attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS approval_error    TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS approval_requested_by_key TEXT;
+CREATE INDEX IF NOT EXISTS idx_contributions_approval_status
+    ON contributions (approval_status)
+    WHERE approval_status IN ('queued', 'running');
 """
 
 # ---------------------------------------------------------------------------
@@ -1041,6 +1064,127 @@ def set_validation_error(cid: str, reason: str) -> None:
                        SET validation_error = %s
                    WHERE id = %s""",
                 ((reason or "")[:500], cid),
+            )
+
+
+# ---------------------------------------------------------------------------
+# Async approval helpers (see backend.app.tasks.approve_contribution)
+# ---------------------------------------------------------------------------
+
+APPROVAL_MAX_ATTEMPTS = 3
+
+
+def enqueue_approval(cid: str, requested_by_key: str = "") -> bool:
+    """Mark a pending contribution as queued for async approval.
+
+    Returns True if the row was updated (was 'pending' status with no
+    in-flight approval), False if the row is already being approved or
+    isn't eligible. Also resets ``approval_error`` and bumps
+    ``approval_attempts`` back to 0 so a retry after a previous failure
+    starts from a clean slate.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET approval_status   = 'queued',
+                           approval_attempts = 0,
+                           approval_error    = NULL,
+                           approval_requested_by_key = %s
+                   WHERE id = %s
+                     AND status = 'pending'
+                     AND (approval_status IS NULL
+                          OR approval_status = 'failed')""",
+                (requested_by_key or None, cid),
+            )
+            return cur.rowcount > 0
+
+
+def claim_pending_approval_job() -> Optional[dict]:
+    """Atomically claim one queued approval. Bumps attempts and flips status
+    to ``'running'`` so /info viewers see "Merging…". Returns the full row
+    or None when the queue is empty."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET approval_status   = 'running',
+                           approval_attempts = approval_attempts + 1
+                   WHERE id = (
+                       SELECT id FROM contributions
+                           WHERE approval_status = 'queued'
+                             AND status = 'pending'
+                             AND approval_attempts < %s
+                           ORDER BY created_at
+                           LIMIT 1
+                           FOR UPDATE SKIP LOCKED
+                   )
+                   RETURNING *""",
+                (APPROVAL_MAX_ATTEMPTS,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def has_pending_approval_jobs() -> bool:
+    """True when there is at least one row needing the worker."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM contributions
+                       WHERE approval_status IN ('queued', 'running')
+                         AND status = 'pending'
+                         AND approval_attempts < %s
+                       LIMIT 1""",
+                (APPROVAL_MAX_ATTEMPTS,),
+            )
+            return cur.fetchone() is not None
+
+
+def reset_running_approvals() -> int:
+    """Re-queue any rows left in 'running' from a previous process. Called
+    from the startup hook so a backend restart mid-merge picks up where it
+    left off (the merge itself is idempotent: ``map_lock`` and the
+    INSERT-OR-IGNORE driven gap-fill make a re-run safe). Returns the
+    number of rows reset."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET approval_status = 'queued'
+                   WHERE approval_status = 'running'
+                     AND status = 'pending'""",
+            )
+            return cur.rowcount
+
+
+def set_approval_failed(cid: str, reason: str) -> None:
+    """Record an approval failure. The row stays ``status='pending'`` so an
+    admin can retry. ``approval_error`` is what the admin UI surfaces."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET approval_status = 'failed',
+                           approval_error  = %s
+                   WHERE id = %s""",
+                ((reason or "")[:500], cid),
+            )
+
+
+def clear_approval_state(cid: str) -> None:
+    """Clear approval bookkeeping after a successful merge. Called by the
+    worker right after ``mark_approved`` so historical rows don't keep the
+    transient 'running' / attempts noise."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET approval_status   = NULL,
+                           approval_attempts = 0,
+                           approval_error    = NULL
+                   WHERE id = %s""",
+                (cid,),
             )
 
 
