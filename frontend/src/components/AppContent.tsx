@@ -22,6 +22,7 @@ import { AdminUsersPage } from "@/pages/AdminUsersPage";
 import { AdminBannedIpsPage } from "@/pages/AdminBannedIpsPage";
 import { AdminFlagsPage } from "@/pages/AdminFlagsPage";
 import { AdminFeatureFlagsPage } from "@/pages/AdminFeatureFlagsPage";
+import { AdminMaintenancePage } from "@/pages/AdminMaintenancePage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -71,6 +72,7 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/manage/banned-ips", label: "Banned IPs" },
     { value: "/manage/flags", label: "Flags" },
     { value: "/manage/feature-flags", label: "Feature Flags" },
+    { value: "/manage/maintenance", label: "Maintenance" },
   ],
 };
 
@@ -303,6 +305,7 @@ export function AppContent() {
           <Route path="/manage/banned-ips" element={<AdminBannedIpsPage />} />
           <Route path="/manage/flags" element={<AdminFlagsPage />} />
           <Route path="/manage/feature-flags" element={<AdminFeatureFlagsPage />} />
+          <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

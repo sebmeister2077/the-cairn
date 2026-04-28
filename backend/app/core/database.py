@@ -356,6 +356,24 @@ ADD COLUMN IF NOT EXISTS approval_requested_by_key TEXT;
 CREATE INDEX IF NOT EXISTS idx_contributions_approval_status
     ON contributions (approval_status)
     WHERE approval_status IN ('queued', 'running');
+
+-- Maintenance notices. One row per known component (e.g. ``tops_map_viewer``).
+-- Active=TRUE means the public chip should be shown; ``eta_at`` is the
+-- admin's best guess for when the maintenance will be over and is used by
+-- the frontend to render a live countdown (or "X minutes ago" once it's
+-- elapsed). The row is preserved when the admin turns the notice off so
+-- the previous message/eta are still visible in the admin history.
+CREATE TABLE IF NOT EXISTS maintenance_notices (
+    component       TEXT PRIMARY KEY,
+    active          BOOLEAN NOT NULL DEFAULT FALSE,
+    message         TEXT NOT NULL DEFAULT '',
+    started_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    eta_at          TIMESTAMPTZ,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by_key  TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_maintenance_notices_active
+    ON maintenance_notices (active) WHERE active;
 """
 
 # ---------------------------------------------------------------------------
@@ -1796,6 +1814,89 @@ def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optio
                        WHERE key = %s
                        RETURNING *""",
                 (enabled, updated_by_key or None, key),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Maintenance notices
+#
+# One row per known component. The public ``GET /api/maintenance/notices``
+# endpoint returns only ``active = TRUE`` rows; the admin endpoints can
+# read/update any row. Turning a notice off keeps the row so the admin can
+# see the previous message/eta.
+# ---------------------------------------------------------------------------
+
+def list_maintenance_notices(active_only: bool = False) -> List[dict]:
+    sql = "SELECT * FROM maintenance_notices"
+    if active_only:
+        sql += " WHERE active = TRUE"
+    sql += " ORDER BY component"
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql)
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_maintenance_notice(component: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM maintenance_notices WHERE component = %s",
+                (component,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def upsert_maintenance_notice(
+    component: str,
+    active: bool,
+    message: str,
+    eta_at: Optional[datetime],
+    updated_by_key: str = "",
+) -> dict:
+    """Insert or update a maintenance notice. ``started_at`` is set to now()
+    only when the notice transitions from inactive to active so the public
+    chip's elapsed/remaining countdown stays anchored to the original
+    activation time across subsequent ETA updates."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO maintenance_notices
+                       (component, active, message, started_at, eta_at, updated_at, updated_by_key)
+                   VALUES (%s, %s, %s, now(), %s, now(), %s)
+                   ON CONFLICT (component) DO UPDATE SET
+                       active         = EXCLUDED.active,
+                       message        = EXCLUDED.message,
+                       eta_at         = EXCLUDED.eta_at,
+                       updated_at     = now(),
+                       updated_by_key = EXCLUDED.updated_by_key,
+                       started_at     = CASE
+                           WHEN maintenance_notices.active = FALSE AND EXCLUDED.active = TRUE
+                               THEN now()
+                           ELSE maintenance_notices.started_at
+                       END
+                   RETURNING *""",
+                (component, active, message or "", eta_at, updated_by_key or None),
+            )
+            row = cur.fetchone()
+            return dict(row)
+
+
+def clear_maintenance_notice(component: str, updated_by_key: str = "") -> Optional[dict]:
+    """Mark the notice as inactive without deleting the row."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE maintenance_notices
+                       SET active = FALSE,
+                           updated_at = now(),
+                           updated_by_key = %s
+                       WHERE component = %s
+                       RETURNING *""",
+                (updated_by_key or None, component),
             )
             row = cur.fetchone()
             return dict(row) if row else None

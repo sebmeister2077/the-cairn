@@ -29,6 +29,7 @@ from .routes import admin_totp
 from .routes import admin_webauthn
 from .routes import account
 from .routes import invite
+from .routes import maintenance
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -492,6 +493,8 @@ app.include_router(admin_totp.router, prefix="/api")
 app.include_router(admin_webauthn.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
+app.include_router(maintenance.public_router, prefix="/api")
+app.include_router(maintenance.admin_router, prefix="/api")
 
 
 @app.get("/api/health")

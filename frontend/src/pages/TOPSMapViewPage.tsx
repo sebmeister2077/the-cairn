@@ -16,6 +16,7 @@ import {
   type WorldPointMarker,
 } from "@/components/MapViewer";
 import { AdminResolutionPanel } from "@/components/AdminResolutionPanel";
+import { MaintenanceChip } from "@/components/MaintenanceChip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -640,7 +641,10 @@ export function TOPSMapViewPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>TOPS Map Viewer</CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <span>TOPS Map Viewer</span>
+          <MaintenanceChip component="tops_map_viewer" />
+        </CardTitle>
         <p className="text-sm text-muted-foreground">
           Explore the community-contributed global server map built from player contributions.
         </p>

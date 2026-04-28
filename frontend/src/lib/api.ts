@@ -1101,6 +1101,77 @@ export async function adminGetHeavyComputeStatus(): Promise<HeavyComputeStatus> 
     return (await handleResponse(res)).json();
 }
 
+// --- Maintenance notices ---
+
+export interface MaintenanceNotice {
+    component: string;
+    active: boolean;
+    message: string;
+    started_at: string;
+    eta_at: string | null;
+    updated_at: string;
+    updated_by_key: string | null;
+}
+
+export interface KnownMaintenanceComponent {
+    id: string;
+    label: string;
+}
+
+export async function listActiveMaintenanceNotices(): Promise<{
+    notices: MaintenanceNotice[];
+}> {
+    // Public endpoint — does NOT require auth so we can show the chip even
+    // to anonymous viewers. Don't use authHeaders() here so a missing /
+    // invalid X-API-Key never trips the global 401 handler.
+    const res = await fetch(`${API_BASE}/maintenance/notices`);
+    if (!res.ok) return { notices: [] };
+    return res.json();
+}
+
+export async function adminListMaintenanceNotices(): Promise<{
+    notices: MaintenanceNotice[];
+    known_components: KnownMaintenanceComponent[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/maintenance/notices`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminUpsertMaintenanceNotice(
+    component: string,
+    body: {
+        active: boolean;
+        message?: string;
+        eta_at?: string | null;
+        duration_hours?: number | null;
+    },
+): Promise<{ notice: MaintenanceNotice }> {
+    const res = await fetch(
+        `${API_BASE}/admin/maintenance/notices/${encodeURIComponent(component)}`,
+        {
+            method: "PUT",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(body),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminClearMaintenanceNotice(
+    component: string,
+): Promise<{ notice: MaintenanceNotice | null }> {
+    const res = await fetch(
+        `${API_BASE}/admin/maintenance/notices/${encodeURIComponent(component)}`,
+        {
+            method: "DELETE",
+            headers: authHeaders(),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
 // --- Admin: per-key granular permissions (Phase 0c) ---
 
 export type KeyPermission = "region_overwrite";
