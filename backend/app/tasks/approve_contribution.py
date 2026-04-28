@@ -88,15 +88,21 @@ def _process_one(job: dict) -> None:
         if attempts >= db.APPROVAL_MAX_ATTEMPTS:
             try:
                 db.set_approval_failed(
-                    cid, f"{type(exc).__name__}: {exc}"
+                    cid, f"Gave up after {attempts} attempts: "
+                         f"{type(exc).__name__}: {exc}",
                 )
             except Exception:
-                pass
+                logger.exception(
+                    "approve_contribution: persist unknown failure for %s", cid
+                )
             return
         try:
-            db.set_approval_failed(cid, f"{type(exc).__name__}: {exc}")
+            db.enqueue_approval(cid)
         except Exception:
-            pass
+            logger.exception(
+                "approve_contribution: re-queue after unknown error failed for %s",
+                cid,
+            )
 
 
 def _worker_loop() -> None:
