@@ -13,12 +13,13 @@ Storage:
   - Metadata/logs are stored in Supabase PostgreSQL
 """
 
+import asyncio
 import os
 import sqlite3
 import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse, Response
@@ -48,6 +49,59 @@ UPLOAD_URL_TTL_SECONDS = 15 * 60
 # Non-admin contributors are limited to one pending upload at a time, plus a
 # cooldown after each approval. Admins are exempt.
 CONTRIBUTION_COOLDOWN_DAYS = 7
+
+
+# ---------------------------------------------------------------------------
+# Per-contribution preview locks
+#
+# When two users hit the preview endpoint for the same brand-new contribution
+# at nearly the same time, both would otherwise see "cache miss", both would
+# download the (potentially large) combined DB + pending DB, both would render
+# the PNG, and both would upload it to R2. We dedupe with a per-contribution
+# asyncio.Lock: the first request renders+uploads, subsequent waiters re-check
+# the R2 cache inside the lock and serve the freshly-uploaded PNG.
+#
+# Note: this only dedupes within a single Uvicorn worker process. With >1
+# worker, an R2/Redis sentinel would be needed for full dedup.
+# ---------------------------------------------------------------------------
+
+_preview_locks: Dict[str, asyncio.Lock] = {}
+_preview_lock_refs: Dict[str, int] = {}
+_preview_locks_guard = asyncio.Lock()
+
+
+class _PreviewLock:
+    """Async context manager for a per-key preview lock with refcounting.
+
+    Ensures the lock entry is removed from the registry once no coroutine is
+    holding or waiting on it, so the dict doesn't grow unbounded.
+    """
+
+    def __init__(self, key: str):
+        self._key = key
+        self._lock: Optional[asyncio.Lock] = None
+
+    async def __aenter__(self) -> asyncio.Lock:
+        async with _preview_locks_guard:
+            lock = _preview_locks.get(self._key)
+            if lock is None:
+                lock = asyncio.Lock()
+                _preview_locks[self._key] = lock
+            _preview_lock_refs[self._key] = _preview_lock_refs.get(self._key, 0) + 1
+            self._lock = lock
+        await lock.acquire()
+        return lock
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        assert self._lock is not None
+        self._lock.release()
+        async with _preview_locks_guard:
+            n = _preview_lock_refs.get(self._key, 1) - 1
+            if n <= 0:
+                _preview_lock_refs.pop(self._key, None)
+                _preview_locks.pop(self._key, None)
+            else:
+                _preview_lock_refs[self._key] = n
 
 
 class ContributeUploadInitRequest(BaseModel):
@@ -1556,17 +1610,34 @@ async def contribute_preview(
     if not r2_storage.object_exists(pending_key):
         return JSONResponse(status_code=404, content={"detail": "Contribution database missing"})
 
-    # Download both DBs to temp files for SQLite operations
-    combined_tmp = _ensure_combined_db_temp()
-    pending_tmp = _download_to_temp(pending_key)
-    try:
-        png_bytes = _render_preview(combined_tmp, pending_tmp)
-        r2_storage.upload_bytes(preview_key, png_bytes, content_type="image/png")
-    except ValueError as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
-    finally:
-        os.unlink(combined_tmp)
-        os.unlink(pending_tmp)
+    # Dedupe concurrent renders for the same contribution. Without this, two
+    # users hitting the endpoint near-simultaneously would both render +
+    # upload the same PNG.
+    async with _PreviewLock(f"preview:{contribution_id}"):
+        # Re-check inside the lock — an earlier waiter may have just rendered
+        # and uploaded the PNG.
+        if r2_storage.object_exists(preview_key):
+            png_bytes = r2_storage.download_bytes(preview_key)
+            return Response(
+                content=png_bytes,
+                media_type="image/png",
+                headers={
+                    "Content-Disposition": f"inline; filename={contribution_id}.png",
+                    "X-Preview-Cache": "hit",
+                },
+            )
+
+        # Download both DBs to temp files for SQLite operations
+        combined_tmp = _ensure_combined_db_temp()
+        pending_tmp = _download_to_temp(pending_key)
+        try:
+            png_bytes = _render_preview(combined_tmp, pending_tmp)
+            r2_storage.upload_bytes(preview_key, png_bytes, content_type="image/png")
+        except ValueError as e:
+            return JSONResponse(status_code=400, content={"detail": str(e)})
+        finally:
+            os.unlink(combined_tmp)
+            os.unlink(pending_tmp)
 
     return Response(
         content=png_bytes,
@@ -1638,20 +1709,35 @@ async def contribute_preview_region(
     if not r2_storage.object_exists(pending_key):
         return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
 
-    combined_tmp = _ensure_combined_db_temp()
-    pending_tmp = _download_to_temp(pending_key)
-    try:
-        before_bytes, after_bytes, _stats = _render_region_before_after(
-            combined_tmp, pending_tmp, region
-        )
-        # Cache both halves so the second request (for the other side) is a hit.
-        r2_storage.upload_bytes(before_key, before_bytes, content_type="image/png")
-        r2_storage.upload_bytes(after_key, after_bytes, content_type="image/png")
-    except ValueError as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
-    finally:
-        os.unlink(combined_tmp)
-        os.unlink(pending_tmp)
+    # Dedupe concurrent renders. The lock is shared across both sides
+    # because a single render produces both the before and after PNGs.
+    async with _PreviewLock(f"preview-region:{contribution_id}"):
+        # Re-check inside the lock — an earlier waiter may have just rendered.
+        if r2_storage.object_exists(target_key):
+            png_bytes = r2_storage.download_bytes(target_key)
+            return Response(
+                content=png_bytes,
+                media_type="image/png",
+                headers={
+                    "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
+                    "X-Preview-Cache": "hit",
+                },
+            )
+
+        combined_tmp = _ensure_combined_db_temp()
+        pending_tmp = _download_to_temp(pending_key)
+        try:
+            before_bytes, after_bytes, _stats = _render_region_before_after(
+                combined_tmp, pending_tmp, region
+            )
+            # Cache both halves so the second request (for the other side) is a hit.
+            r2_storage.upload_bytes(before_key, before_bytes, content_type="image/png")
+            r2_storage.upload_bytes(after_key, after_bytes, content_type="image/png")
+        except ValueError as e:
+            return JSONResponse(status_code=400, content={"detail": str(e)})
+        finally:
+            os.unlink(combined_tmp)
+            os.unlink(pending_tmp)
 
     payload = before_bytes if side == "before" else after_bytes
     return Response(
