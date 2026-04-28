@@ -25,6 +25,8 @@ import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
 import { GeneralPage } from "@/pages/GeneralPage";
+import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
+import { BlogPostPage } from "@/pages/blog/BlogPostPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   getStoredIsAdmin,
@@ -272,12 +274,20 @@ export function AppContent() {
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/blog" element={<BlogIndexPage />} />
+          <Route path="/blog/:slug" element={<BlogPostPage />} />
         </Routes>
       </main>
       <footer className="border-t mt-8">
         <div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2">
           <span>Cairn &mdash; unofficial fan project.</span>
           <span className="flex gap-3">
+            <NavLink
+              to="/blog"
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Blog
+            </NavLink>
             <NavLink
               to="/privacy"
               className="hover:text-foreground underline-offset-2 hover:underline"

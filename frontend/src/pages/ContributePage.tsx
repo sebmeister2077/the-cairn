@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, type FormEvent } from "react";
+import { NavLink } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getContributeInfo,
@@ -159,6 +160,16 @@ export function ContributePage() {
           <p>
             This page lets players upload their local Vintage Story map cache so admins can review
             and merge new tiles into the shared community map.
+          </p>
+          <p>
+            New here? Read the{" "}
+            <NavLink
+              to="/blog/contributing-to-the-tops-map"
+              className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+            >
+              guide to contributing to the TOPS map
+            </NavLink>
+            .
           </p>
           <div className="rounded-md border bg-muted/30 p-3">
             <p className="font-medium text-foreground">Access required</p>
@@ -370,7 +381,14 @@ export function ContributePage() {
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
             Upload your local map cache to contribute to the shared community map. Submissions are
-            reviewed by an admin before being merged.
+            reviewed by an admin before being merged.{" "}
+            <NavLink
+              to="/blog/contributing-to-the-tops-map"
+              className="underline decoration-dotted underline-offset-2 hover:text-foreground"
+            >
+              Read the guide
+            </NavLink>
+            .
           </p>
 
           <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/50">
@@ -505,14 +523,32 @@ export function ContributePage() {
 
             <div className="space-y-2">
               <Label htmlFor="contributor-name">Your Name (optional)</Label>
-              <Input
-                id="contributor-name"
-                placeholder="Anonymous"
-                value={contributor}
-                onChange={(e) => setContributor(e.target.value)}
-                maxLength={50}
-                disabled={!isAdmin && info?.can_contribute === false}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="contributor-name"
+                  placeholder="Anonymous"
+                  value={contributor}
+                  onChange={(e) => setContributor(e.target.value)}
+                  maxLength={50}
+                  disabled={!isAdmin && info?.can_contribute === false}
+                  className="flex-1"
+                />
+                {accountQuery.data?.user?.display_name && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setContributor(accountQuery.data?.user?.display_name ?? "")}
+                    disabled={
+                      (!isAdmin && info?.can_contribute === false) ||
+                      contributor === accountQuery.data.user.display_name
+                    }
+                    title="Fill in your account display name"
+                  >
+                    Use my name
+                  </Button>
+                )}
+              </div>
             </div>
 
             {regionPickerEnabled && (
