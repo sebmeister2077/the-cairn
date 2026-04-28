@@ -33,7 +33,7 @@ class Settings:
     ALLOWED_ORIGIN_REGEX: Optional[str] = os.environ.get("ALLOWED_ORIGIN_REGEX", "").strip() or None
 
     # Upload limit (bytes)
-    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(4 * 1024 * 1024 * 1024)))  # 4 GB
+    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(5 * 1024 * 1024 * 1024)))  # 4 GB
 
     # Map render limit (pixels) to bound RGBA buffer size in memory
     MAP_RENDER_MAX_DIM: int = int(os.environ.get("MAP_RENDER_MAX_DIM", "8192"))

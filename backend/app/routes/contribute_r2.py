@@ -211,6 +211,30 @@ def _recount_combined() -> int:
 # Validation
 # ---------------------------------------------------------------------------
 
+# SQLite database file magic — first 16 bytes. See
+# https://www.sqlite.org/fileformat.html#magic_header_string
+_SQLITE_MAGIC = b"SQLite format 3\x00"
+
+
+def _validate_sqlite_magic_via_range(pending_key: str) -> None:
+    """Cheap sanity check: read just the first 100 bytes of the uploaded R2
+    object and confirm it's a SQLite database. Raises ``ValueError`` on
+    failure.
+
+    This runs synchronously inside ``/contribute/complete`` so the user
+    gets an immediate error if they uploaded a non-DB file. The deeper
+    schema check (does it have a ``mappiece`` table? how many tiles?) is
+    deferred to the async ``validate_uploads`` worker so multi-GB
+    downloads don't block the request thread on small Render instances.
+    """
+    try:
+        header = r2_storage.download_range(pending_key, 0, 100)
+    except FileNotFoundError:
+        raise ValueError("Uploaded file not found in storage")
+    if len(header) < 16 or not header.startswith(_SQLITE_MAGIC):
+        raise ValueError("Not a valid Vintage Story map database (bad SQLite header)")
+
+
 def _validate_upload(path: str) -> int:
     """Check it's a real VS map .db; return tile count."""
     conn = sqlite3.connect(path)
@@ -236,6 +260,20 @@ def _normalise_contributor(contributor: str) -> str:
 
 
 def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_key: str = "") -> dict:
+    """Register a freshly-uploaded R2 object as a pending contribution.
+
+    Designed to be cheap so it can return inside the request timeout even
+    for multi-GB uploads on a 0.5 CPU / 512 MB Render instance:
+
+      * HEAD the R2 object for size enforcement.
+      * Range-read the first 100 bytes to confirm SQLite magic. Anything
+        that's obviously not a DB file is rejected here so the user sees
+        an immediate error.
+      * Insert the row with ``validation_status='pending'`` and
+        ``tile_count=0``. The actual table-existence check, full tile
+        count, and region-tile count are then performed asynchronously by
+        the ``backend.app.tasks.validate_uploads`` worker.
+    """
     pending_key = r2_storage.pending_db_key(contribution_id)
 
     existing = db.get_contribution(contribution_id)
@@ -245,6 +283,7 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
             "contribution_id": contribution_id,
             "contributor": existing.get("contributor") or "Anonymous",
             "tile_count": existing.get("tile_count", 0),
+            "validation_status": existing.get("validation_status"),
         }
 
     try:
@@ -259,20 +298,30 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
         r2_storage.delete_object(pending_key)
         raise ValueError("File too large")
 
-    tmp_path = _download_to_temp(pending_key)
+    # Cheap synchronous header check (~100 bytes pulled). Anything past this
+    # — schema validation, tile counting — happens in the background worker.
     try:
-        tile_count = _validate_upload(tmp_path)
+        _validate_sqlite_magic_via_range(pending_key)
     except ValueError:
         r2_storage.delete_object(pending_key)
         raise
-    finally:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
 
     contributor_name = _normalise_contributor(contributor)
-    db.create_contribution(contribution_id, contributor_name, tile_count, api_key)
+    db.create_contribution(
+        contribution_id, contributor_name, 0, api_key,
+        validation_status="pending",
+    )
+
+    # Fire-and-forget the background validator. It will either flip the row
+    # to ``validation_status='valid'`` (and update tile_count) or delete the
+    # row + R2 object on failure.
+    try:
+        from ..tasks import validate_uploads as validate_task
+        validate_task.start_job(contribution_id)
+    except Exception:
+        # Validator startup is best-effort — the row is still claimable by
+        # the next /complete or by the startup kick.
+        pass
 
     # Phase 1 — kick off async match-score computation. The feature flag is
     # checked here so that disabling it stops *new* jobs from being enqueued
@@ -286,10 +335,11 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
             pass
 
     return {
-        "message": "Upload received — pending admin approval",
+        "message": "Upload received — validating in background, then pending admin approval",
         "contribution_id": contribution_id,
         "contributor": contributor_name or "Anonymous",
-        "tile_count": tile_count,
+        "tile_count": 0,
+        "validation_status": "pending",
     }
 
 
@@ -1423,46 +1473,21 @@ async def contribute_complete(
             status = 404
         return JSONResponse(status_code=status, content={"detail": detail})
 
-    # Persist the region after the upload validated. We also reject when the
-    # region contains zero of the upload's tiles — that's almost always a UI
-    # mistake (region drawn over an empty area of the map).
+    # Persist the region BEFORE the validation worker picks the row up so it
+    # can also count in-region tiles in the same pass. The worker will
+    # delete the contribution if the region turns out to contain zero tiles
+    # (almost always a UI mistake — region drawn over an empty area).
     if region is not None:
-        pending_key = r2_storage.pending_db_key(contribution_id)
-        tmp_path = _download_to_temp(pending_key)
-        try:
-            in_region, _total = _count_pending_tiles(tmp_path, region)
-        finally:
-            try:
-                os.unlink(tmp_path)
-            except OSError:
-                pass
-        if in_region == 0:
-            # Roll the contribution back so the user can retry with a sane
-            # region instead of being stuck with a "pending" row that can
-            # never be approved.
-            db.delete_contribution(contribution_id)
-            r2_storage.delete_object(pending_key)
-            return JSONResponse(
-                status_code=400,
-                content={
-                    "detail": (
-                        "The selected region contains zero tiles from your "
-                        "upload. Adjust the region and try again."
-                    )
-                },
-            )
         try:
             db.set_update_region(contribution_id, region)
         except Exception:
-            # Persisting the region is required; revert the contribution.
             db.delete_contribution(contribution_id)
-            r2_storage.delete_object(pending_key)
+            r2_storage.delete_object(r2_storage.pending_db_key(contribution_id))
             return JSONResponse(
                 status_code=500,
                 content={"detail": "Failed to persist region selection"},
             )
         result["update_region"] = list(region)
-        result["tiles_in_region"] = in_region
 
     return result
 
@@ -1764,6 +1789,20 @@ async def contribute_approve(
     meta = db.get_contribution(contribution_id)
     if not meta or meta.get("status") != "pending":
         return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
+
+    # Block approval until the async validator has finished. NULL
+    # ``validation_status`` ⇒ legacy row that pre-dates the worker (treated
+    # as already validated).
+    if meta.get("validation_status") == "pending":
+        return JSONResponse(
+            status_code=409,
+            content={
+                "detail": (
+                    "Contribution is still being validated — try again in a "
+                    "moment."
+                ),
+            },
+        )
 
     pending_key = r2_storage.pending_db_key(contribution_id)
     if not r2_storage.object_exists(pending_key):

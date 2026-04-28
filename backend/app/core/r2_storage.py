@@ -71,6 +71,28 @@ def download_bytes(key: str) -> bytes:
         raise
 
 
+def download_range(key: str, start: int, length: int) -> bytes:
+    """Download a byte range ``[start, start+length)`` from an R2 object.
+
+    Used to validate huge uploads (e.g. the SQLite header on a 4 GB file)
+    without pulling the whole object onto the small Render instance.
+    """
+    if length <= 0:
+        return b""
+    end_inclusive = start + length - 1
+    try:
+        resp = _get_client().get_object(
+            Bucket=_bucket(),
+            Key=key,
+            Range=f"bytes={start}-{end_inclusive}",
+        )
+        return resp["Body"].read()
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {key}")
+        raise
+
+
 def download_to_path(key: str, local_path: str):
     """Download an object from R2 to a local file path."""
     try:

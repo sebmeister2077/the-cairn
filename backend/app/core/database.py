@@ -304,6 +304,29 @@ CREATE TABLE IF NOT EXISTS webauthn_credentials (
 );
 CREATE INDEX IF NOT EXISTS idx_webauthn_api_key
     ON webauthn_credentials (api_key);
+
+-- Async upload validation. The /contribute/complete handler used to
+-- synchronously download the entire pending .db (potentially multi-GB) and
+-- run SELECT COUNT(*) before returning, which blew through Render's request
+-- timeout on small instances. Now /complete only does a cheap range-read of
+-- the SQLite header and returns immediately; the heavy table-existence
+-- check, tile count, and region-tile count are done by the
+-- ``backend.app.tasks.validate_uploads`` worker.
+--
+-- ``validation_status`` is one of ('pending', 'valid') or NULL. NULL means
+-- "legacy / already validated" (existing rows pre-dating this column are
+-- treated as valid). On invalid uploads the row is deleted entirely (and
+-- the R2 object with it), so 'invalid' is never persisted. ``attempts`` is
+-- bumped each time the worker picks the row up so we can stop after a cap.
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS validation_status   TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS validation_attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS validation_error    TEXT;
+CREATE INDEX IF NOT EXISTS idx_contributions_validation_status
+    ON contributions (validation_status)
+    WHERE validation_status = 'pending';
 """
 
 # ---------------------------------------------------------------------------
@@ -422,13 +445,32 @@ def ensure_schema():
 # Contributions CRUD
 # ---------------------------------------------------------------------------
 
-def create_contribution(cid: str, contributor: str, tile_count: int, api_key: str = ""):
+def create_contribution(
+    cid: str,
+    contributor: str,
+    tile_count: int,
+    api_key: str = "",
+    *,
+    validation_status: Optional[str] = None,
+):
+    """Insert a new pending contribution row.
+
+    ``validation_status`` controls async validation:
+      * ``None`` (default): row is treated as already validated (legacy /
+        callers that did synchronous validation themselves).
+      * ``'pending'``: the ``validate_uploads`` worker will pick the row up,
+        download the file, count tiles, and either flip status to ``'valid'``
+        and update ``tile_count`` — or delete the row + R2 object on failure.
+    """
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO contributions (id, contributor, tile_count, status, submitted_by_key)
-                   VALUES (%s, %s, %s, 'pending', %s)""",
-                (cid, contributor or "Anonymous", tile_count, api_key or None),
+                """INSERT INTO contributions
+                       (id, contributor, tile_count, status, submitted_by_key,
+                        validation_status)
+                   VALUES (%s, %s, %s, 'pending', %s, %s)""",
+                (cid, contributor or "Anonymous", tile_count, api_key or None,
+                 validation_status),
             )
 
 
@@ -923,6 +965,83 @@ def has_pending_match_score_jobs() -> bool:
                 (MATCH_SCORE_MAX_ATTEMPTS,),
             )
             return cur.fetchone() is not None
+
+
+# ---------------------------------------------------------------------------
+# Async upload validation helpers (see backend.app.tasks.validate_uploads)
+# ---------------------------------------------------------------------------
+
+VALIDATION_MAX_ATTEMPTS = 3
+
+
+def claim_pending_validation_job() -> Optional[dict]:
+    """Atomically claim one ``validation_status='pending'`` row whose
+    attempts haven't exceeded the cap. Returns ``{id, attempts, region}``
+    or None when the queue is empty. Bumps ``validation_attempts`` so a
+    permanently-broken row eventually stops retrying."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET validation_attempts = validation_attempts + 1
+                   WHERE id = (
+                       SELECT id FROM contributions
+                           WHERE validation_status = 'pending'
+                             AND validation_attempts < %s
+                           ORDER BY created_at
+                           LIMIT 1
+                           FOR UPDATE SKIP LOCKED
+                   )
+                   RETURNING id, validation_attempts,
+                             update_region_min_x, update_region_max_x,
+                             update_region_min_z, update_region_max_z""",
+                (VALIDATION_MAX_ATTEMPTS,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def has_pending_validation_jobs() -> bool:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM contributions
+                       WHERE validation_status = 'pending'
+                         AND validation_attempts < %s
+                       LIMIT 1""",
+                (VALIDATION_MAX_ATTEMPTS,),
+            )
+            return cur.fetchone() is not None
+
+
+def set_validation_valid(cid: str, tile_count: int) -> None:
+    """Mark a contribution as validated and update its tile count."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET validation_status = 'valid',
+                           validation_error  = NULL,
+                           tile_count        = %s
+                   WHERE id = %s""",
+                (int(tile_count), cid),
+            )
+
+
+def set_validation_error(cid: str, reason: str) -> None:
+    """Record a validation failure reason without deleting the row.
+
+    Used when the worker has retries remaining; once attempts hit the cap
+    the caller should delete the row + R2 object instead.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET validation_error = %s
+                   WHERE id = %s""",
+                ((reason or "")[:500], cid),
+            )
 
 
 # ---------------------------------------------------------------------------

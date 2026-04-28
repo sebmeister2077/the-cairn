@@ -90,6 +90,20 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Match-score startup kick failed (non-fatal): %s", exc)
 
+    # Drain any contribution uploads left in ``validation_status='pending'``
+    # by a previous process, so they don't sit forever waiting for the next
+    # upload to wake the worker.
+    step_started = perf_counter()
+    try:
+        from .tasks.validate_uploads import kick_on_startup as kick_validate_uploads
+        kick_validate_uploads()
+        logger.info(
+            "Startup step validate-uploads kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Validate-uploads startup kick failed (non-fatal): %s", exc)
+
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:
