@@ -2,6 +2,7 @@ import { useState, useCallback, type FormEvent } from "react";
 import { getMapStats, getStoredIsAdmin, renderMap } from "@/lib/api";
 import { MapViewer, type MapStats } from "@/components/MapViewer";
 import { FileUpload } from "@/components/FileUpload";
+import { MapDbFileHelp } from "@/components/MapDbFileHelp";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -99,6 +100,7 @@ export function MapViewPage() {
         </p>
       </CardHeader>
       <CardContent className="grid gap-4">
+        <MapDbFileHelp />
         <form onSubmit={handleSubmit} className="grid gap-4">
           <FileUpload
             key={fileInputKey}

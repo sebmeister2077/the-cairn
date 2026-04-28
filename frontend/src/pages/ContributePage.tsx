@@ -32,7 +32,6 @@ import {
   Eye,
   Check,
   XIcon,
-  HelpCircle,
   Undo2,
   RefreshCw,
   History,
@@ -42,6 +41,7 @@ import { MapViewer } from "@/components/MapViewer";
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
 import { ContributionRegionPicker } from "@/components/ContributionRegionPicker";
 import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
+import { MapDbFileHelp } from "@/components/MapDbFileHelp";
 
 // Phase 1 — informational match-score result attached to each pending row.
 interface MatchScore {
@@ -405,57 +405,7 @@ export function ContributePage() {
             </div>
           </div>
 
-          <details className="group rounded-md border text-sm">
-            <summary className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-muted-foreground hover:text-foreground select-none [&::-webkit-details-marker]:hidden list-none">
-              <HelpCircle className="h-4 w-4 shrink-0" />
-              <span>Where can I find this file?</span>
-              <svg
-                className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </summary>
-            <div className="border-t px-3 py-3 space-y-3 text-muted-foreground">
-              <p>
-                Vintage Story stores a{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
-                cache file for each server you've visited. Look for the file whose name matches the{" "}
-                <strong>Server Map ID</strong> shown above.
-              </p>
-              <div className="space-y-2">
-                <div>
-                  <p className="font-medium text-foreground">Windows</p>
-                  <code className="block rounded bg-muted px-2 py-1.5 text-xs font-mono break-all">
-                    %appdata%\VintagestoryData\Maps\
-                  </code>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Linux</p>
-                  <code className="block rounded bg-muted px-2 py-1.5 text-xs font-mono break-all">
-                    ~/.config/VintagestoryData/Maps/
-                  </code>
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">macOS</p>
-                  <code className="block rounded bg-muted px-2 py-1.5 text-xs font-mono break-all">
-                    ~/Library/Application Support/VintagestoryData/Maps/
-                  </code>
-                </div>
-              </div>
-              <p className="text-xs">
-                Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is
-                named after the server's map ID. Copy the file matching the ID above and upload it
-                below.
-              </p>
-            </div>
-          </details>
+          <MapDbFileHelp showServerIdHint />
 
           {!infoLoading && info && (
             <div className="flex gap-4 text-sm">
