@@ -2,6 +2,8 @@
 
 from contextlib import asynccontextmanager
 import logging
+import os
+import tempfile
 from time import perf_counter
 
 from fastapi import Depends, FastAPI, Request
@@ -50,6 +52,34 @@ def _configure_app_access_logger() -> None:
 
 
 _configure_app_access_logger()
+
+
+def _configure_temp_dir() -> None:
+    """Point ``tempfile.mkstemp`` at the persistent Render disk when one is
+    mounted, so multi-GB pending uploads + the combined map can coexist
+    without exhausting the small ephemeral ``/tmp`` of the dyno.
+
+    Honours the standard ``$TMPDIR`` env var. Render disks mount at the
+    path you choose (e.g. ``/var/data``); set ``TMPDIR=/var/data/tmp`` in
+    the service env vars and this function will create the directory and
+    rewire Python's ``tempfile`` module to use it. No-op when the env var
+    is unset (local dev keeps using the OS default).
+    """
+    tmpdir = os.environ.get("TMPDIR", "").strip()
+    if not tmpdir:
+        return
+    try:
+        os.makedirs(tmpdir, exist_ok=True)
+    except OSError as exc:
+        logger.warning("Could not create TMPDIR=%s (%s) — falling back to OS default", tmpdir, exc)
+        return
+    # Force tempfile to honour TMPDIR even if it was already imported (e.g.
+    # by uvicorn) before this env var was read for the first time.
+    tempfile.tempdir = tmpdir
+    logger.info("Temp directory set to %s", tmpdir)
+
+
+_configure_temp_dir()
 
 
 @asynccontextmanager
