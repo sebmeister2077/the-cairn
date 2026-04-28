@@ -31,6 +31,27 @@ from .routes import invite
 logger = logging.getLogger("uvicorn.error")
 
 
+def _configure_app_access_logger() -> None:
+    """Attach a stdout handler to the ``app.access`` logger so per-request
+    log lines show up in the terminal / Render logs alongside uvicorn's own
+    output. Idempotent: safe to import multiple times under ``--reload``."""
+    access_logger = logging.getLogger("app.access")
+    access_logger.setLevel(logging.INFO)
+    if not any(getattr(h, "_app_access_marker", False) for h in access_logger.handlers):
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s [access] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        handler._app_access_marker = True  # type: ignore[attr-defined]
+        access_logger.addHandler(handler)
+    # Don't double-print via the root logger.
+    access_logger.propagate = False
+
+
+_configure_app_access_logger()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     startup_started = perf_counter()
@@ -179,6 +200,126 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Request-access logging middleware
+#
+# Prints one line per request so it's easy to see at a glance what's hitting
+# the server. Emits at WARNING level for 4xx/5xx and slow requests so they
+# stand out, INFO for everything else. Logs the ``Origin`` header to make
+# CORS-rejected calls (which never reach a route handler) diagnosable —
+# combine with the preflight log below.
+# ---------------------------------------------------------------------------
+
+import re as _re
+
+_access_logger = logging.getLogger("app.access")
+_SLOW_REQUEST_SECONDS = 2.0
+# Skip noisy/health-style paths from the per-request log to keep output useful.
+_ACCESS_LOG_SKIP = _re.compile(r"^/api/health$")
+
+
+def _client_ip(request: Request) -> str:
+    # Honour the standard proxy headers Render / Vercel set, falling back to
+    # the direct socket peer.
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",", 1)[0].strip()
+    real = request.headers.get("x-real-ip")
+    if real:
+        return real.strip()
+    client = request.client
+    return client.host if client else "-"
+
+
+def _origin_allowed(origin: str) -> bool:
+    if not origin:
+        return True  # same-origin / non-browser caller
+    if origin in (settings.ALLOWED_ORIGINS or []):
+        return True
+    pattern = settings.ALLOWED_ORIGIN_REGEX
+    if pattern:
+        try:
+            return _re.match(pattern, origin) is not None
+        except _re.error:
+            return False
+    return False
+
+
+@app.middleware("http")
+async def access_log_middleware(request: Request, call_next):
+    started = perf_counter()
+    method = request.method
+    path = request.url.path
+    origin = request.headers.get("origin", "")
+    ip = _client_ip(request)
+    api_key = request.headers.get("X-API-Key", "")
+    key_tag = "admin" if (api_key and is_admin_key(api_key)) else ("key" if api_key else "anon")
+
+    # CORS preflight visibility — the browser sends OPTIONS with Origin, and
+    # Starlette's CORSMiddleware will reject it before our route runs. Log it
+    # so we can see *who* was rejected and *why*.
+    if method == "OPTIONS" and origin:
+        if not _origin_allowed(origin):
+            _access_logger.warning(
+                "CORS preflight REJECTED origin=%s path=%s ip=%s",
+                origin, path, ip,
+            )
+        else:
+            _access_logger.info(
+                "CORS preflight OK origin=%s path=%s ip=%s",
+                origin, path, ip,
+            )
+
+    try:
+        response = await call_next(request)
+    except Exception:
+        elapsed = perf_counter() - started
+        _access_logger.exception(
+            "%s %s -> 500 EXC ip=%s origin=%s auth=%s in %.3fs",
+            method, path, ip, origin or "-", key_tag, elapsed,
+        )
+        raise
+
+    elapsed = perf_counter() - started
+    status = response.status_code
+
+    # Warn on browser-side CORS rejections of actual (non-preflight) requests:
+    # the response will be missing the ACAO header for a disallowed origin.
+    cors_blocked = (
+        origin
+        and method != "OPTIONS"
+        and not _origin_allowed(origin)
+    )
+
+    if _ACCESS_LOG_SKIP.match(path) and status < 400 and not cors_blocked:
+        return response
+
+    if cors_blocked:
+        _access_logger.warning(
+            "%s %s -> %d CORS-BLOCKED origin=%s ip=%s auth=%s in %.3fs",
+            method, path, status, origin, ip, key_tag, elapsed,
+        )
+    elif status >= 500:
+        _access_logger.error(
+            "%s %s -> %d ip=%s origin=%s auth=%s in %.3fs",
+            method, path, status, ip, origin or "-", key_tag, elapsed,
+        )
+    elif status >= 400 or elapsed >= _SLOW_REQUEST_SECONDS:
+        _access_logger.warning(
+            "%s %s -> %d%s ip=%s origin=%s auth=%s in %.3fs",
+            method, path, status,
+            " SLOW" if elapsed >= _SLOW_REQUEST_SECONDS else "",
+            ip, origin or "-", key_tag, elapsed,
+        )
+    else:
+        _access_logger.info(
+            "%s %s -> %d ip=%s auth=%s in %.3fs",
+            method, path, status, ip, key_tag, elapsed,
+        )
+
+    return response
 
 
 # ---------------------------------------------------------------------------
