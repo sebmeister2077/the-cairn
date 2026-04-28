@@ -1243,6 +1243,10 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
             }
         else:
             row["match_score"] = {"status": status}
+        # Strip the api-key of whoever pressed Approve — admin keys must
+        # never leak to the frontend payload, even though the rest of the
+        # row is admin-only data anyway.
+        row.pop("approval_requested_by_key", None)
     for row in approved:
         if row.get("approved_at") and hasattr(row["approved_at"], "isoformat"):
             row["approved_at"] = row["approved_at"].isoformat()

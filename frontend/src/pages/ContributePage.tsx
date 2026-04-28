@@ -74,6 +74,20 @@ interface PendingContribution {
     max_z: number;
   } | null;
   update_region_mode?: "overwrite" | "gap_fill";
+  // Async validation lifecycle (see backend/app/tasks/validate_uploads.py).
+  // ``'pending'`` = worker hasn't validated the .db yet (tile_count=0).
+  // ``'valid'`` = SQLite open + tile-count succeeded; row is approvable.
+  // Missing means a legacy synchronously-validated row.
+  validation_status?: "pending" | "valid" | null;
+  validation_error?: string | null;
+  // Async approval lifecycle (see backend/app/tasks/approve_contribution.py).
+  // ``'queued'`` = admin pressed Approve, worker hasn't picked it up.
+  // ``'running'`` = worker is merging right now.
+  // ``'failed'`` = worker hit a non-retryable error or burned all attempts.
+  // Missing on success — row will flip to ``status='approved'`` instead.
+  approval_status?: "queued" | "running" | "failed" | null;
+  approval_attempts?: number;
+  approval_error?: string | null;
 }
 
 interface WithdrawnEntry {
@@ -202,7 +216,16 @@ export function ContributePage() {
     refetchInterval: (query) => {
       const data = query.state.data as ContributeInfo | undefined;
       const hasPendingScore = !!data?.pending.some((p) => p.match_score?.status === "pending");
-      return hasPendingScore ? 5000 : false;
+      // Phase: async validation + async approval workers. Poll every 5 s
+      // while any pending row is still being validated by the upload worker
+      // or being merged by the approval worker so the badge transitions
+      // (queued → running → gone) without a manual refresh.
+      const hasPendingValidation = !!data?.pending.some((p) => p.validation_status === "pending");
+      const hasInflightApproval = !!data?.pending.some(
+        (p) => p.approval_status === "queued" || p.approval_status === "running",
+      );
+      const shouldPoll = hasPendingScore || hasPendingValidation || hasInflightApproval;
+      return shouldPoll ? 5000 : false;
     },
   });
   const info = infoQuery.data ?? null;
@@ -587,6 +610,7 @@ export function ContributePage() {
                         recomputing={actionLoading === p.id}
                       />
                     )}
+                    <PendingLifecycleBadge contribution={p} />
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Button
@@ -629,19 +653,38 @@ export function ContributePage() {
                     )}
                     {isAdmin && (
                       <>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleApprove(p.id)}
-                          disabled={actionLoading === p.id}
-                        >
-                          {actionLoading === p.id ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Check className="mr-1 h-3.5 w-3.5" />
-                          )}
-                          Approve
-                        </Button>
+                        {(() => {
+                          const validating = p.validation_status === "pending";
+                          const merging =
+                            p.approval_status === "queued" || p.approval_status === "running";
+                          const approveDisabled = actionLoading === p.id || validating || merging;
+                          const approveTitle = validating
+                            ? "Waiting for upload validation to finish before approval is allowed."
+                            : merging
+                              ? "Already merging in the background."
+                              : undefined;
+                          const approveLabel = merging
+                            ? p.approval_status === "running"
+                              ? "Merging…"
+                              : "Queued…"
+                            : "Approve";
+                          return (
+                            <Button
+                              variant="default"
+                              size="sm"
+                              onClick={() => handleApprove(p.id)}
+                              disabled={approveDisabled}
+                              title={approveTitle}
+                            >
+                              {actionLoading === p.id || merging ? (
+                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="mr-1 h-3.5 w-3.5" />
+                              )}
+                              {approveLabel}
+                            </Button>
+                          );
+                        })()}
                         <Button
                           variant="destructive"
                           size="sm"
@@ -792,6 +835,74 @@ export function ContributePage() {
 // ---------------------------------------------------------------------------
 // Phase 1 — Match-score badge (informational only, never blocks approval)
 // ---------------------------------------------------------------------------
+
+function PendingLifecycleBadge({ contribution }: { contribution: PendingContribution }) {
+  // Async upload validation. The row exists in the DB but the worker
+  // hasn't opened the .db file yet — Approve will be greyed out upstream.
+  if (contribution.validation_status === "pending") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        <span>Validating upload…</span>
+      </div>
+    );
+  }
+
+  // Async approval lifecycle. ``queued`` = admin pressed Approve, the
+  // worker hasn't picked it up. ``running`` = merge in progress. ``failed``
+  // = worker hit a non-retryable error or burned all attempts; the row is
+  // still pending and Approve becomes available again.
+  const approval = contribution.approval_status;
+  if (approval === "queued") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs">
+        <Badge
+          variant="outline"
+          className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
+        >
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          Queued for merge
+        </Badge>
+        <span className="text-muted-foreground">Worker will pick this up shortly</span>
+      </div>
+    );
+  }
+  if (approval === "running") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs">
+        <Badge
+          variant="outline"
+          className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
+        >
+          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+          Merging into map…
+        </Badge>
+      </div>
+    );
+  }
+  if (approval === "failed") {
+    return (
+      <div className="flex items-center gap-1.5 text-xs">
+        <Badge
+          variant="outline"
+          className="bg-destructive/15 text-destructive border-destructive/30"
+        >
+          Merge failed
+        </Badge>
+        {contribution.approval_error && (
+          <span
+            className="text-muted-foreground truncate max-w-md"
+            title={contribution.approval_error}
+          >
+            {contribution.approval_error}
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
 
 function MatchScoreBadge({
   score,
