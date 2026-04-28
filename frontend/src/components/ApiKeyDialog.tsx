@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
@@ -38,6 +38,14 @@ export function ApiKeyDialog({
   const [key, setKey] = useState(getStoredApiKey());
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
+
+  // The dialog stays mounted in <AppContent/>, so the initial useState value
+  // never refreshes on its own. Re-sync from storage every time the dialog
+  // opens so flows that write the key elsewhere (invite claim, ?key= URL
+  // param, etc.) don't show a misleadingly empty input.
+  useEffect(() => {
+    if (open) setKey(getStoredApiKey());
+  }, [open]);
 
   async function handleSave() {
     setLoading(true);
@@ -85,9 +93,7 @@ export function ApiKeyDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>API Key</DialogTitle>
-          <DialogDescription>
-            Enter your API key to authenticate requests.
-          </DialogDescription>
+          <DialogDescription>Enter your API key to authenticate requests.</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2">
           <Label htmlFor="apikey">API Key</Label>
