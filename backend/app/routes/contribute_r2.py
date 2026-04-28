@@ -1808,6 +1808,30 @@ async def contribute_approve(
     if not r2_storage.object_exists(pending_key):
         return JSONResponse(status_code=404, content={"detail": "Contribution database missing"})
 
+    # The merge is several seconds of pure blocking I/O (download combined +
+    # pending DBs, sqlite merge, upload combined back). Running it directly
+    # on the event loop blocks every other request — including OPTIONS
+    # preflights, which then surface in the browser as "No
+    # 'Access-Control-Allow-Origin' header" CORS errors. Offloading to a
+    # worker thread keeps the loop responsive.
+    return await asyncio.to_thread(
+        _approve_blocking, contribution_id, meta, api_key, pending_key,
+    )
+
+
+def _approve_blocking(
+    contribution_id: str,
+    meta: dict,
+    api_key: str,
+    pending_key: str,
+):
+    """Synchronous body of /contribute/{id}/approve.
+
+    Returns either a JSON-serialisable dict (success) or a ``JSONResponse``
+    (failure). Called via ``asyncio.to_thread`` so the event loop stays
+    free to serve other requests (CORS preflights, GET /info, etc.) while
+    the merge runs.
+    """
     # Phase 0a: serialise mutations of the combined .db with a global lock.
     try:
         lock_token = db.acquire_map_lock("approve")
