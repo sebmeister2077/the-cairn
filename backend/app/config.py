@@ -139,7 +139,7 @@ class Settings:
     IP_HASH_SALT: str = os.environ.get("IP_HASH_SALT", "")
 
     # Terms of service version. Bump to force re-acceptance on next /me load.
-    TERMS_VERSION: str = os.environ.get("TERMS_VERSION", "2025-01-01")
+    TERMS_VERSION: str = os.environ.get("TERMS_VERSION", "2026-04-23")
 
     # Per-key sub-limit defaults (account system)
     RATE_LIMIT_REGEN_NAME_MAX: int = int(os.environ.get("RATE_LIMIT_REGEN_NAME_MAX", "3"))

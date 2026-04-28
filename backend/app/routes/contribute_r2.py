@@ -37,7 +37,7 @@ from ..core.mapdb import (
 )
 from ..tasks.generate_map_levels import start_job as start_map_generation_job
 from ..tasks import match_score as match_score_task
-from ..core.feature_flags import is_feature_enabled
+from ..core.feature_flags import is_feature_enabled, is_feature_enabled_default
 
 router = APIRouter()
 
@@ -396,6 +396,25 @@ def _verify_admin_key(api_key: str):
 
 def _is_admin_key(api_key: str) -> bool:
     return bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
+
+
+def _enforce_uploads_enabled(api_key: str) -> None:
+    """Raise 503 if the ``uploads_enabled`` flag is OFF and the caller is
+    not an admin. Admins remain able to push uploads (e.g. backfilling a
+    map after an outage) while the public contribution funnel is paused."""
+    if _is_admin_key(api_key):
+        return
+    if not is_feature_enabled_default("uploads_enabled", True):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "uploads_disabled",
+                "message": (
+                    "Map contributions are temporarily disabled by an admin. "
+                    "Please try again later."
+                ),
+            },
+        )
 
 
 def _get_contribution_status(api_key: str) -> dict:
@@ -1276,6 +1295,7 @@ async def contribute_upload_url(
     api_key: str = Depends(verify_contribute_permission),
 ):
     """Create a presigned upload URL so the browser can upload directly to R2."""
+    _enforce_uploads_enabled(api_key)
     check_rate_limit(api_key)
     _check_contribution_limits(api_key)
 
@@ -1312,6 +1332,7 @@ async def contribute_complete(
     api_key: str = Depends(verify_contribute_permission),
 ):
     """Validate an uploaded R2 object and register it as a pending contribution."""
+    _enforce_uploads_enabled(api_key)
     check_rate_limit(api_key)
     _check_contribution_limits(api_key)
 
@@ -1465,6 +1486,7 @@ async def contribute_upload(
     api_key: str = Depends(verify_contribute_permission),
 ):
     """Upload a .db map file. Validated and stored in R2 as pending."""
+    _enforce_uploads_enabled(api_key)
     check_rate_limit(api_key)
     _check_contribution_limits(api_key)
 

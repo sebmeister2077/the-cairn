@@ -169,7 +169,13 @@ INSERT INTO feature_flags (key, enabled) VALUES
     ('public_history', FALSE),
     ('weekly_backups', FALSE),
     ('per_contribution_revert', FALSE),
-    ('backup_restore', FALSE)
+    ('backup_restore', FALSE),
+    -- Operational kill switches. These exist so the row is visible in the
+    -- admin UI; their effective default when the row is *missing* is set in
+    -- the application code (see ``feature_flags.is_feature_enabled_default``).
+    ('maintenance_mode', FALSE),
+    ('uploads_enabled', TRUE),
+    ('registration_enabled', TRUE)
 ON CONFLICT (key) DO NOTHING;
 """
 

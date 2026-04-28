@@ -15,6 +15,7 @@ from ..auth import (
 from ..config import settings
 from ..core import accounts_db
 from ..core import database as db
+from ..core.feature_flags import is_feature_enabled_default
 from ..core.display_names import (
     is_forbidden_name,
     pick_unique_display_name,
@@ -90,6 +91,21 @@ async def register(
         raise HTTPException(status_code=401, detail="Invalid API key")
     if info.get("is_admin") or api_key in settings.API_KEYS:
         raise HTTPException(status_code=400, detail="Static / admin keys cannot register an account")
+
+    # Registration kill switch (feature flag). Admin-issued static keys are
+    # already excluded above; this gate only affects new self-service signups
+    # via invite or direct key claim.
+    if not is_feature_enabled_default("registration_enabled", True):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "registration_disabled",
+                "message": (
+                    "New account registration is temporarily disabled by an "
+                    "admin. Please try again later."
+                ),
+            },
+        )
 
     # IP ban gate
     ip_hash = _hash_ip(_get_client_ip(request))

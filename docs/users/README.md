@@ -12,6 +12,7 @@ Each topic has its own page so you can jump straight to what you need.
 | [API keys](./api-keys.md) | Key creation, IP binding, revocation, the `X-API-Key` header |
 | [Admin passkeys (WebAuthn)](./admin-webauthn.md) | Second-factor passkey 2FA for admin keys: registration, assertion, sessions, recovery |
 | [Flags](./flags.md) | What a flag is, how flags are raised, what **Valid / False positive / Dismiss** actually do |
+| [Feature flags](./feature-flags.md) | Runtime kill switches (`maintenance_mode`, `uploads_enabled`, `registration_enabled`, …) and how to toggle them |
 | [IP bans](./ip-bans.md) | How an IP ban works, blast radius, expiry, unban behaviour |
 | [Siblings & alts (Genesis)](./siblings-and-genesis.md) | `bound_identity`, `genesis_for_ip`, alt-account detection |
 | [In-game name duplicates](./in-game-name-duplicates.md) | How collisions are detected and flagged |

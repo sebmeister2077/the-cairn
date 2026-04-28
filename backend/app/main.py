@@ -6,11 +6,13 @@ from time import perf_counter
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-from .auth import verify_api_key_info
+from .auth import verify_api_key_info, is_admin_key
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
 from .core import accounts_db
+from .core import feature_flags as ff
 from .core.display_names import generate_display_name, FORBIDDEN_SUBSTRINGS
 from .routes import extract, import_wp, delete, commands, mapview
 from .routes import contribute_r2 as contribute
@@ -149,6 +151,59 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ---------------------------------------------------------------------------
+# Maintenance-mode middleware (gated by the ``maintenance_mode`` feature flag)
+#
+# When the flag is ON, all mutating requests (POST/PUT/PATCH/DELETE) are
+# rejected with HTTP 503 except for:
+#   * Requests carrying the env-var admin API key (so admins can keep working
+#     and toggle the flag back off).
+#   * A small allow-list of paths needed for an admin to authenticate
+#     (passkey assertion, key check, feature-flag toggle).
+# Read-only requests (GET/HEAD/OPTIONS) are always allowed so the public site
+# stays browsable in maintenance mode.
+# ---------------------------------------------------------------------------
+
+# Path *prefixes* that remain writable during maintenance even for non-admin
+# callers (kept to the absolute minimum needed for sign-in / opting out).
+_MAINTENANCE_ALWAYS_ALLOWED_PREFIXES = (
+    "/api/admin/",                 # all admin routes (gated by admin auth)
+    "/api/admin-webauthn/",        # passkey endpoints (admin auth path)
+)
+
+
+@app.middleware("http")
+async def maintenance_mode_middleware(request: Request, call_next):
+    method = request.method.upper()
+    if method in ("GET", "HEAD", "OPTIONS"):
+        return await call_next(request)
+
+    path = request.url.path
+    for prefix in _MAINTENANCE_ALWAYS_ALLOWED_PREFIXES:
+        if path.startswith(prefix):
+            return await call_next(request)
+
+    # Admin env-var key always bypasses maintenance so the admin can disable
+    # the flag without locking themselves out.
+    api_key = request.headers.get("X-API-Key", "")
+    if api_key and is_admin_key(api_key):
+        return await call_next(request)
+
+    if ff.is_feature_enabled("maintenance_mode"):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "maintenance_mode",
+                "message": (
+                    "The site is in maintenance mode. Write operations are "
+                    "temporarily disabled. Please try again later."
+                ),
+            },
+            headers={"Retry-After": "300"},
+        )
+    return await call_next(request)
 
 app.include_router(extract.router, prefix="/api")
 app.include_router(import_wp.router, prefix="/api")

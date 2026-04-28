@@ -2,6 +2,8 @@
 
 A **flag** is an automatic note that the system raises when something about a user looks suspicious. Flags are stored in `user_flags` and surface on the admin Users page (red badge + "Flags (n)" button).
 
+> **Different from feature flags.** This page is about *user report flags* (the red badge). For runtime kill switches like `maintenance_mode` and `uploads_enabled`, see [feature-flags.md](./feature-flags.md).
+
 > **Important up front:** flags are *informational*. The system never takes action based on them. Resolving a flag does not punish, ban, demote, or auto-anything. Resolution is a label so admins can clear their queue and keep the history. See [What "Valid" actually does](#what-valid-actually-does) below.
 
 ## The `user_flags` table

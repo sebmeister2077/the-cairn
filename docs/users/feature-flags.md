@@ -1,0 +1,166 @@
+# Feature flags
+
+> **Not the same thing as user flags.** This document is about *feature flags* —
+> runtime kill switches and feature toggles consulted by the API and the UI.
+> For per-user *report flags* (the red badge on the Users page), see
+> [flags.md](./flags.md).
+
+Feature flags live in the Supabase `feature_flags` table. They are
+admin-toggleable from the **Manage → Feature Flags** page in the UI, and the
+backend reads them through a small in-process cache so flips take effect
+within `CACHE_TTL_SECONDS` (30 s by default).
+
+## Schema
+
+| Column | Type | Notes |
+|---|---|---|
+| `key` | TEXT PK | Stable identifier referenced from code |
+| `enabled` | BOOLEAN | Current state |
+| `updated_at` | TIMESTAMPTZ | Last toggle |
+| `updated_by_key` | TEXT, nullable | Admin api_key that flipped it (audited via `audit_log`) |
+
+The seed in [backend/app/core/database.py](../../backend/app/core/database.py)
+inserts every well-known flag with `ON CONFLICT DO NOTHING`, so existing rows
+are never overwritten on schema bootstrap.
+
+## Cache + DB-failure semantics
+
+`is_feature_enabled(key)` and `is_feature_enabled_default(key, default)` in
+[backend/app/core/feature_flags.py](../../backend/app/core/feature_flags.py)
+share an in-process cache:
+
+- Reads are cached for 30 s; flips invalidate the cache for that key only.
+- If the DB read raises, the cache returns the **last known value**. If there
+  is no last known value, `is_feature_enabled` returns `False` (safe-off) and
+  `is_feature_enabled_default` returns the explicit default the caller asked
+  for.
+- This means a Supabase outage never silently disables an
+  `..._enabled`-style operational flag — it stays in its last good state.
+
+## Operational kill switches
+
+The three flags the on-call admin will reach for during an incident.
+
+### `maintenance_mode`
+
+- **Default:** `FALSE` (off).
+- **Effect when ON:** middleware in
+  [backend/app/main.py](../../backend/app/main.py) returns HTTP `503` with
+  `{"detail": "maintenance_mode"}` for any non-`GET`/`HEAD`/`OPTIONS` request,
+  with a `Retry-After: 300` header.
+- **Always allowed even when ON:**
+  - All `GET`/`HEAD`/`OPTIONS` (the public site stays browsable).
+  - Anything under `/api/admin/*` and `/api/admin-webauthn/*`.
+  - Any request whose `X-API-Key` matches the env-var `ADMIN_API_KEY`.
+- **Use when:** running a DB migration, swapping R2 buckets, doing incident
+  triage, or any scenario where you want writes to stop globally without
+  redeploying.
+- **Don't use for:** product-feature kill switches — those should be their
+  own flag so partial functionality keeps working.
+
+### `uploads_enabled`
+
+- **Default:** `TRUE` (on). The flag is treated as ON when its row is missing
+  or the DB read fails.
+- **Effect when OFF:** `POST /api/contribute`, `/api/contribute/upload-url`,
+  and `/api/contribute/complete` return `503` with body
+  `{"detail": {"code": "uploads_disabled", "message": "..."}}` for non-admin
+  callers. Admins (env-var `ADMIN_API_KEY`) bypass.
+- **Unaffected when OFF:**
+  - Existing pending contributions can still be approved, rejected,
+    withdrawn, or reverted.
+  - Region-preview, contribution history, and read endpoints continue.
+  - The match-score worker and weekly backups continue.
+- **Use when:** a contribution-driven incident is in progress (spam,
+  malformed uploads, R2 quota concern) and you want to stop new submissions
+  while continuing to drain the queue.
+
+### `registration_enabled`
+
+- **Default:** `TRUE` (on).
+- **Effect when OFF:** `POST /api/account/register` returns `503` with body
+  `{"detail": {"code": "registration_disabled", "message": "..."}}`. Static
+  / env-var admin keys are excluded from registration in any case.
+- **Unaffected when OFF:**
+  - Existing accounts can still log in, edit their profile, contribute, etc.
+  - Invite tokens can still be claimed (they issue an API key); the user
+    just cannot create a `users` row until you re-enable.
+- **Use when:** triaging a sibling-account / shared-IP wave, or freezing the
+  user base before a Terms version bump.
+
+## Product flags
+
+These gate features rather than acting as kill switches. Each is OFF by
+default; flipping ON exposes the feature to the relevant audience.
+
+| Key | Enables |
+|---|---|
+| `match_score` | Match-percentage scoring shown to admins on pending uploads. |
+| `region_overwrite` | Region-restricted contribution uploads (also requires per-key permission). |
+| `public_history` | Public 14-day Recent Contributions grid. |
+| `weekly_backups` | Weekly snapshot of `globalservermap.db`. The scheduler thread always runs; the flag controls whether snapshots are actually written. |
+| `per_contribution_revert` | Admin "Revert" button on approved contributions, within `REVERT_WINDOW_DAYS`. |
+| `backup_restore` | Admin restore-from-backup endpoint (additionally TOTP-gated). |
+
+## Toggling a flag
+
+### From the UI
+
+**Manage → Feature Flags** → the appropriate switch. Operational kill switches
+prompt for confirmation when toggled into their alarm state. Every flip is
+recorded in the [audit log](./audit-log.md) as `feature_flag.toggle` with
+`{enabled: bool}` metadata.
+
+### From the API
+
+```
+PATCH /api/admin/feature-flags/{key}
+Headers:
+    X-API-Key: <admin>
+    X-Admin-Session: <webauthn-session>     # if WebAuthn is enforced
+Body:
+    {"enabled": true}
+```
+
+Returns the new row. The cache is invalidated for that key.
+
+### Listing
+
+```
+GET /api/admin/feature-flags
+```
+
+Returns `{"flags": [{key, enabled, updated_at, updated_by_key}, ...]}`.
+
+## Adding a new flag
+
+1. Add a row to the seed in
+   [backend/app/core/database.py](../../backend/app/core/database.py) inside
+   the `INSERT INTO feature_flags` block. Pick `TRUE` or `FALSE` to match
+   the safe default for your feature.
+2. Read it from code with `is_feature_enabled("my_flag")` for default-OFF
+   product flags, or `is_feature_enabled_default("my_flag", True)` for
+   default-ON kill switches.
+3. Surface it in the UI:
+   - Operational kill switches → add an entry to `OPERATIONAL_FLAGS` in
+     [frontend/src/pages/AdminFeatureFlagsPage.tsx](../../frontend/src/pages/AdminFeatureFlagsPage.tsx).
+   - Product flags → add an entry to `PRODUCT_FLAG_LABELS` in the same file.
+4. Document the flag in this file under the appropriate section.
+
+## Auditing
+
+Every successful `PATCH /api/admin/feature-flags/{key}` writes an
+`audit_log` row of action `feature_flag.toggle`, `target = <key>`,
+`metadata = {"enabled": <new_value>}`, and `actor = <admin api_key>`. Use
+the audit log to reconstruct what state the flags were in at any point in
+time.
+
+## Cheat sheet
+
+| Symptom | Flip |
+|---|---|
+| Need to stop all writes briefly | `maintenance_mode` → ON |
+| Map upload spam wave | `uploads_enabled` → OFF |
+| New-account abuse / shared-IP wave | `registration_enabled` → OFF |
+| Need to pause weekly snapshots | `weekly_backups` → OFF |
+| Need to disable revert / restore | `per_contribution_revert` / `backup_restore` → OFF |

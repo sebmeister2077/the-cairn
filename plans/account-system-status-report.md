@@ -74,7 +74,6 @@ Append this to your existing `backend/.env`:
 ```env
 ADMIN_API_KEY=<long-random-secret>
 IP_HASH_SALT=<another-long-random-secret-NEVER-rotate>
-TERMS_VERSION=2025-01-01
 ```
 
 ---

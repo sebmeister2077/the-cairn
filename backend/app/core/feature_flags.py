@@ -47,6 +47,32 @@ def is_feature_enabled(key: str) -> bool:
     return enabled
 
 
+def is_feature_enabled_default(key: str, default: bool) -> bool:
+    """Like :func:`is_feature_enabled`, but lets the caller pick the value
+    used when the row is missing or the DB is unreachable. Used by the
+    operational kill-switch flags (``uploads_enabled``,
+    ``registration_enabled``) where the safe-on-failure value is True so
+    a transient DB blip doesn't take the public site offline.
+    """
+    now = time.monotonic()
+    with _lock:
+        cached = _cache.get(key)
+        if cached and (now - cached[1]) < CACHE_TTL_SECONDS:
+            return cached[0]
+    try:
+        row = db.get_feature_flag(key)
+    except Exception:
+        with _lock:
+            cached = _cache.get(key)
+            if cached:
+                return cached[0]
+        return default
+    enabled = bool(row["enabled"]) if row else default
+    with _lock:
+        _cache[key] = (enabled, now)
+    return enabled
+
+
 def invalidate(key: Optional[str] = None) -> None:
     """Drop a single flag (or the whole cache) so the next read is fresh."""
     with _lock:

@@ -19,7 +19,7 @@
 
 -[x] change how admins send api-keys to the server, apikeys should not be that easily visible in requests.
 - Add a "Traverse mode" which lets users select a TL grouping and traverse it in either direction, after exit/entry of a TL you press Next ao that the map automatically shows you (WITHOUT YOU NEEDING TO SCROLL) where the next TL is
-
+- Allow users to set up their own default page (e.g., they can choose to land on the map page, the stats page, or the settings page when they load the site at the domain root). Saved only client side in local storage, so it doesn't require user accounts or server-side storage.
 
 
 
