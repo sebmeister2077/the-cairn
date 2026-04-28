@@ -83,20 +83,24 @@ export function MapViewPage() {
     a.click();
   }
 
-  const enhanceFn = useCallback(async (maxDim: number) => {
-    if (!dbFile) throw new Error("no file");
-    const fd = new FormData();
-    fd.append("db_file", dbFile);
-    return renderMap(fd, maxDim, effectiveFastPreview);
-  }, [dbFile, effectiveFastPreview]);
+  const enhanceFn = useCallback(
+    async (maxDim: number) => {
+      if (!dbFile) throw new Error("no file");
+      const fd = new FormData();
+      fd.append("db_file", dbFile);
+      return renderMap(fd, maxDim, effectiveFastPreview);
+    },
+    [dbFile, effectiveFastPreview],
+  );
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Local Map Viewer</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Upload a multiplayer map <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file
-          to render and explore the world map your client has cached.
+          Upload a multiplayer map{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file to render
+          and explore the world map your client has cached.
         </p>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -141,9 +145,19 @@ export function MapViewPage() {
 
         {stats && (
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
-            <span><span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span> map tiles</span>
-            <span><span className="font-medium text-foreground">{stats.size_mb}</span> MB</span>
-            <span><span className="font-medium text-foreground">{stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}</span> blocks</span>
+            <span>
+              <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
+              map tiles
+            </span>
+            <span>
+              <span className="font-medium text-foreground">{stats.size_mb}</span> MB
+            </span>
+            <span>
+              <span className="font-medium text-foreground">
+                {stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}
+              </span>{" "}
+              blocks
+            </span>
           </div>
         )}
 

@@ -32,16 +32,16 @@ export function MapDbFileHelp({ showServerIdHint = false }: MapDbFileHelpProps) 
         {showServerIdHint ? (
           <p>
             Vintage Story stores a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
-            cache file for each server you've visited. Look for the file whose name matches the{" "}
+            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache
+            file for each server you've visited. Look for the file whose name matches the{" "}
             <strong>Server Map ID</strong> shown above.
           </p>
         ) : (
           <p>
             Vintage Story stores a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
-            cache file for each multiplayer server you've visited. Pick any of them to render
-            and explore the world tiles your client has cached.
+            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache
+            file for each multiplayer server you've visited. Pick any of them to render and explore
+            the world tiles your client has cached.
           </p>
         )}
         <div className="space-y-2">
@@ -67,14 +67,13 @@ export function MapDbFileHelp({ showServerIdHint = false }: MapDbFileHelpProps) 
         <p className="text-xs">
           {showServerIdHint ? (
             <>
-              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is
-              named after the server's map ID. Copy the file matching the ID above and upload it
-              below.
+              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is named
+              after the server's map ID. Copy the file matching the ID above and upload it below.
             </>
           ) : (
             <>
-              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is
-              named after the server's map ID.
+              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is named
+              after the server's map ID.
             </>
           )}
         </p>
