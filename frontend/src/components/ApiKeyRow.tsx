@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Trash2 } from "lucide-react";
+import { Check, Copy, Trash2 } from "lucide-react";
 import { type ApiKeyRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/components/DateFormatter";
+import { useCopy } from "@/components/useCopy";
 
 export function KeyRow({
   record,
@@ -13,6 +14,8 @@ export function KeyRow({
   onRevoke: (key: string) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
+  const { copied, copy } = useCopy();
+  const isCopied = copied === record.key;
 
   const statusBadge = record.revoked ? (
     <Badge variant="destructive">Revoked</Badge>
@@ -58,37 +61,57 @@ export function KeyRow({
       </div>
       <div>{statusBadge}</div>
       <div className="w-px h-5 bg-border" />
-      {!record.revoked ? (
-        confirming ? (
-          <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1">
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => copy(record.key, record.key)}
+          title="Copy API key"
+        >
+          {isCopied ? (
+            <>
+              <Check className="size-4 text-emerald-600" />
+              Copied
+            </>
+          ) : (
+            <>
+              <Copy className="size-4" />
+              Copy
+            </>
+          )}
+        </Button>
+        {!record.revoked ? (
+          confirming ? (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => {
+                  onRevoke(record.key);
+                  setConfirming(false);
+                }}
+              >
+                Confirm
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+            </div>
+          ) : (
             <Button
               size="sm"
-              variant="destructive"
-              onClick={() => {
-                onRevoke(record.key);
-                setConfirming(false);
-              }}
+              variant="ghost"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setConfirming(true)}
             >
-              Confirm
+              <Trash2 className="size-4" />
+              Revoke
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-              Cancel
-            </Button>
-          </div>
+          )
         ) : (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setConfirming(true)}
-          >
-            <Trash2 className="size-4" />
-            Revoke
-          </Button>
-        )
-      ) : (
-        <span className="text-xs text-muted-foreground">—</span>
-      )}
+          <span className="text-xs text-muted-foreground">—</span>
+        )}
+      </div>
     </div>
   );
 }
