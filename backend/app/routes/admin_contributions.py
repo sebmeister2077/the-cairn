@@ -249,6 +249,11 @@ async def revert_contribution(
 
             # 3) Re-upload the modified combined DB and refresh caches.
             r2_storage.upload_file(combined_tmp, r2_storage.COMBINED_DB_KEY)
+            try:
+                from .contribute_r2 import invalidate_combined_db_cache
+                invalidate_combined_db_cache()
+            except Exception:
+                pass
             from ..core.mapdb import get_map_stats_from_path
             db.set_tops_map_stats(get_map_stats_from_path(combined_tmp))
             db.set_cached_tile_count(combined_total)

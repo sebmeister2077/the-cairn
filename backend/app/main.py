@@ -82,6 +82,55 @@ def _configure_temp_dir() -> None:
 _configure_temp_dir()
 
 
+def _sweep_orphan_temp_files() -> None:
+    """Delete leftover ``tmp*.db`` files in the temp directory at startup.
+
+    Background workers (validation, approval, regen) download R2 objects to
+    ``tempfile.mkstemp(suffix='.db')`` and delete them in a ``finally``
+    block. When the worker process is SIGKILL-ed (Render dyno restart, OOM,
+    deploy mid-download) the cleanup never runs and the half-downloaded
+    file lingers — on a *persistent* disk these orphans accumulate across
+    deploys and can quickly fill the disk.
+
+    At startup the process is fresh, so any ``tmp*.db`` in ``$TMPDIR`` is
+    by definition an orphan from a previous run and safe to delete. Files
+    with other prefixes (e.g. our cached ``combined.db``) are left alone.
+    """
+    tmpdir = tempfile.gettempdir()
+    if not tmpdir or not os.path.isdir(tmpdir):
+        return
+    deleted = 0
+    freed_bytes = 0
+    try:
+        with os.scandir(tmpdir) as it:
+            for entry in it:
+                if not entry.is_file(follow_symlinks=False):
+                    continue
+                # Only files mkstemp would have created (``tmpXXXXXX.db``).
+                if not (entry.name.startswith("tmp") and entry.name.endswith(".db")):
+                    continue
+                try:
+                    size = entry.stat(follow_symlinks=False).st_size
+                    os.unlink(entry.path)
+                    deleted += 1
+                    freed_bytes += size
+                except OSError:
+                    continue
+    except OSError as exc:
+        logger.warning("Temp-file sweep failed: %s", exc)
+        return
+    if deleted:
+        logger.warning(
+            "Swept %d orphan temp file(s) from %s, freed %.1f MiB",
+            deleted, tmpdir, freed_bytes / (1024 * 1024),
+        )
+    else:
+        logger.info("Temp-file sweep: no orphans found in %s", tmpdir)
+
+
+_sweep_orphan_temp_files()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     startup_started = perf_counter()

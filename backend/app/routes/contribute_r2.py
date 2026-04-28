@@ -14,9 +14,12 @@ Storage:
 """
 
 import asyncio
+import logging
 import os
+import shutil
 import sqlite3
 import tempfile
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Set
@@ -137,9 +140,54 @@ class ContributeRegionPreviewRequest(BaseModel):
 # Temp-file helpers — download from R2 to a local temp for SQLite operations
 # ---------------------------------------------------------------------------
 
+logger = logging.getLogger("uvicorn.error")
+
+# Safety margin kept free on the temp disk after every download — stops a
+# burst of concurrent downloads from filling the disk to the byte and
+# leaving no room for in-flight SQLite scratch files / WAL pages.
+_FREE_DISK_SAFETY_BYTES = 512 * 1024 * 1024  # 512 MiB
+
+
+def _check_free_disk(required_bytes: int) -> None:
+    """Raise ``OSError(ENOSPC)`` *before* a multi-GB download starts if the
+    temp disk doesn't have enough free space for the file plus a safety
+    margin. Fails fast with a clean recorded error instead of leaving a
+    half-downloaded orphan when ``write()`` eventually hits ENOSPC."""
+    if required_bytes <= 0:
+        return
+    tmpdir = tempfile.gettempdir()
+    try:
+        free = shutil.disk_usage(tmpdir).free
+    except OSError:
+        return  # Best-effort — if we can't stat the disk, let the download try.
+    needed = required_bytes + _FREE_DISK_SAFETY_BYTES
+    if free < needed:
+        raise OSError(
+            errno_enospc(),
+            f"Insufficient disk space at {tmpdir}: need {needed:,} bytes "
+            f"({required_bytes:,} for download + {_FREE_DISK_SAFETY_BYTES:,} "
+            f"safety), have {free:,}",
+        )
+
+
+def errno_enospc() -> int:
+    import errno
+    return errno.ENOSPC
+
+
 def _download_to_temp(r2_key: str) -> str:
     """Download an R2 object to a temp file and return its path.
-    Caller is responsible for deleting the temp file."""
+    Caller is responsible for deleting the temp file.
+
+    Performs a HEAD first to size-check the available temp disk and avoid
+    half-downloads filling the disk. The HEAD also reuses the boto3 client
+    so the cost is one extra round-trip, negligible vs the multi-GB body.
+    """
+    try:
+        size = r2_storage.get_object_size(r2_key)
+    except FileNotFoundError:
+        raise
+    _check_free_disk(size)
     fd, path = tempfile.mkstemp(suffix=".db")
     try:
         os.close(fd)
@@ -162,16 +210,107 @@ def _upload_from_path(local_path: str, r2_key: str):
 # Combined DB helpers
 # ---------------------------------------------------------------------------
 
-def _ensure_combined_db_temp() -> str:
-    """Download globalservermap.db from R2 to a temp file. If it doesn't
-    exist yet, create an empty one. Returns temp path (caller must clean up)."""
+# Persistent cache for the combined map. Lives in ``$TMPDIR`` (which on
+# Render points at the persistent disk) and is reused across requests so
+# we don't re-download a multi-GB file on every preview / region preview /
+# match-score job. Refreshed only when R2's ETag changes.
+_combined_cache_lock = threading.Lock()
+
+
+def _combined_cache_paths():
+    base = tempfile.gettempdir()
+    return (
+        os.path.join(base, "combined.cache.db"),
+        os.path.join(base, "combined.cache.etag"),
+    )
+
+
+def _read_cached_etag(etag_path: str) -> str:
     try:
-        return _download_to_temp(r2_storage.COMBINED_DB_KEY)
-    except FileNotFoundError:
-        pass
-    # Create empty DB
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
+        with open(etag_path, "r", encoding="utf-8") as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def _write_cached_etag(etag_path: str, etag: str) -> None:
+    try:
+        with open(etag_path, "w", encoding="utf-8") as f:
+            f.write(etag)
+    except OSError:
+        pass  # Cache is best-effort; a missing etag just forces re-download.
+
+
+def invalidate_combined_db_cache() -> None:
+    """Drop the local cached copy of the combined map. Call after any code
+    path that has uploaded a new combined.db to R2 (approval merge, admin
+    restore) so the next reader downloads the fresh version."""
+    cache_path, etag_path = _combined_cache_paths()
+    with _combined_cache_lock:
+        for p in (cache_path, etag_path):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+
+def get_combined_db_cached() -> str:
+    """Return a path to a local copy of ``globalservermap.db`` from R2.
+
+    The file is held on the persistent temp disk and refreshed only when
+    R2's ETag changes, so repeated callers (previews, region previews,
+    match-score) share one download instead of pulling ~900 MB each. The
+    returned path is shared — callers MUST treat it as read-only and MUST
+    NOT delete it. For writable copies (approval merge), use
+    :func:`_ensure_combined_db_temp` which still allocates a fresh temp.
+    """
+    cache_path, etag_path = _combined_cache_paths()
+    with _combined_cache_lock:
+        try:
+            remote_etag = r2_storage.get_object_etag(r2_storage.COMBINED_DB_KEY)
+        except FileNotFoundError:
+            # No combined map exists yet — build a tiny empty one in cache.
+            if not os.path.exists(cache_path):
+                _create_empty_combined_db(cache_path)
+                _write_cached_etag(etag_path, "empty")
+            return cache_path
+
+        if (
+            os.path.exists(cache_path)
+            and _read_cached_etag(etag_path) == remote_etag
+            and remote_etag
+        ):
+            return cache_path
+
+        # Refresh: download to a sibling .new path then atomically rename so
+        # an interrupted download cannot corrupt the cached file.
+        try:
+            size = r2_storage.get_object_size(r2_storage.COMBINED_DB_KEY)
+        except FileNotFoundError:
+            if not os.path.exists(cache_path):
+                _create_empty_combined_db(cache_path)
+                _write_cached_etag(etag_path, "empty")
+            return cache_path
+        _check_free_disk(size)
+        new_path = cache_path + ".new"
+        try:
+            r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, new_path)
+            os.replace(new_path, cache_path)
+            _write_cached_etag(etag_path, remote_etag)
+            logger.info(
+                "Combined DB cache refreshed: %.1f MiB, ETag=%s",
+                size / (1024 * 1024), remote_etag[:12],
+            )
+        except Exception:
+            try:
+                os.unlink(new_path)
+            except OSError:
+                pass
+            raise
+        return cache_path
+
+
+def _create_empty_combined_db(path: str) -> None:
     conn = sqlite3.connect(path)
     try:
         conn.execute(
@@ -185,6 +324,26 @@ def _ensure_combined_db_temp() -> str:
         conn.commit()
     finally:
         conn.close()
+
+
+def _ensure_combined_db_temp() -> str:
+    """Return a writable temp copy of globalservermap.db. The caller is
+    responsible for deleting the file. Used by the approval merge which
+    needs to mutate the DB before re-uploading. Read-only callers should
+    use :func:`get_combined_db_cached` instead so they share one download."""
+    cached = get_combined_db_cached()
+    fd, path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    try:
+        # Local copy on the same disk — a few seconds for a 900 MB SSD-to-SSD
+        # copy, vs ~30 s for an R2 download.
+        shutil.copyfile(cached, path)
+    except Exception:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+        raise
     return path
 
 
@@ -1158,16 +1317,15 @@ def _compute_match_score_for_contribution(cid: str) -> dict:
     pending_key = r2_storage.pending_db_key(cid)
     region = db.get_update_region(cid)
 
-    combined_tmp = _ensure_combined_db_temp()
+    combined_tmp = get_combined_db_cached()
     pending_tmp = _download_to_temp(pending_key)
     try:
         return _compute_match_score(combined_tmp, pending_tmp, region=region)
     finally:
-        for p in (combined_tmp, pending_tmp):
-            try:
-                os.unlink(p)
-            except OSError:
-                pass
+        try:
+            os.unlink(pending_tmp)
+        except OSError:
+            pass
 
 
 # ===========================================================================
@@ -1656,8 +1814,8 @@ async def contribute_preview(
                 },
             )
 
-        # Download both DBs to temp files for SQLite operations
-        combined_tmp = _ensure_combined_db_temp()
+        # Download pending DB to temp; reuse the shared cached combined map.
+        combined_tmp = get_combined_db_cached()
         pending_tmp = _download_to_temp(pending_key)
         try:
             png_bytes = _render_preview(combined_tmp, pending_tmp)
@@ -1665,8 +1823,10 @@ async def contribute_preview(
         except ValueError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
         finally:
-            os.unlink(combined_tmp)
-            os.unlink(pending_tmp)
+            try:
+                os.unlink(pending_tmp)
+            except OSError:
+                pass
 
     return Response(
         content=png_bytes,
@@ -1753,7 +1913,7 @@ async def contribute_preview_region(
                 },
             )
 
-        combined_tmp = _ensure_combined_db_temp()
+        combined_tmp = get_combined_db_cached()
         pending_tmp = _download_to_temp(pending_key)
         try:
             before_bytes, after_bytes, _stats = _render_region_before_after(
@@ -1765,8 +1925,10 @@ async def contribute_preview_region(
         except ValueError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
         finally:
-            os.unlink(combined_tmp)
-            os.unlink(pending_tmp)
+            try:
+                os.unlink(pending_tmp)
+            except OSError:
+                pass
 
     payload = before_bytes if side == "before" else after_bytes
     return Response(
@@ -1980,6 +2142,10 @@ def run_approval_merge(contribution_id: str) -> dict:
 
             # Upload updated combined DB back to R2
             _upload_from_path(combined_tmp, r2_storage.COMBINED_DB_KEY)
+            # Drop the local cached copy so the next reader (preview /
+            # region preview / regen) sees the merged version instead of
+            # the stale pre-merge bytes.
+            invalidate_combined_db_cache()
         finally:
             try:
                 added_file.close()

@@ -133,6 +133,14 @@ async def restore_backup(body: RestoreBody, api_key: str = Depends(require_admin
         # 1) R2 server-side copy backup -> globalservermap.db (atomic, no download).
         r2_storage.copy_object(body.key, r2_storage.COMBINED_DB_KEY)
 
+        # Drop the local cached copy so subsequent previews / regen pull the
+        # restored bytes instead of the pre-restore version.
+        try:
+            from .contribute_r2 import invalidate_combined_db_cache
+            invalidate_combined_db_cache()
+        except Exception:
+            pass
+
         # 2) Refresh stats from the restored DB. Pull a fresh copy to a temp
         #    file so we never serve stats inferred from the in-flight upload.
         tmp_path = None

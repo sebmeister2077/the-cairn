@@ -119,6 +119,20 @@ def get_object_size(key: str) -> int:
         raise
 
 
+def get_object_etag(key: str) -> str:
+    """Return the ETag header for an R2 object (quotes stripped). Used as a
+    content fingerprint for local file caching — if the ETag matches what
+    we cached previously, the local copy is up-to-date and we can skip the
+    download. Raises FileNotFoundError if the object is missing."""
+    try:
+        resp = _get_client().head_object(Bucket=_bucket(), Key=key)
+        return (resp.get("ETag") or "").strip('"')
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {key}")
+        raise
+
+
 def generate_presigned_upload_url(
     key: str,
     *,

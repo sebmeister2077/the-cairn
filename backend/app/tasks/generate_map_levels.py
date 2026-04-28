@@ -62,18 +62,18 @@ def is_job_running() -> bool:
 
 
 def _download_combined_db() -> str:
-    """Download globalservermap.db to a temp file and return its path."""
-    fd, path = tempfile.mkstemp(suffix=".db")
-    os.close(fd)
-    try:
-        r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, path)
-    except Exception:
-        try:
-            os.unlink(path)
-        except OSError:
-            pass
-        raise
-    return path
+    """Return a path to a local copy of globalservermap.db. Reuses the
+    shared cached copy maintained by
+    :func:`backend.app.routes.contribute_r2.get_combined_db_cached` so a
+    regen pass shares one ~900 MB download with concurrent preview /
+    region-preview / match-score requests instead of doing its own.
+
+    The returned path must be treated as read-only — the regen worker
+    only reads from it (renders chunks) so this is safe. Caller MUST NOT
+    delete the file.
+    """
+    from ..routes.contribute_r2 import get_combined_db_cached
+    return get_combined_db_cached()
 
 
 def _generate_level(
@@ -311,12 +311,9 @@ def _worker_loop():
                         tracker.mark_failed(lvl, str(exc))
                     except Exception:
                         pass
-            finally:
-                if db_path:
-                    try:
-                        os.unlink(db_path)
-                    except OSError:
-                        pass
+            # Note: ``db_path`` is the shared cached combined.db; do NOT
+            # delete it here. The cache is invalidated when something
+            # uploads a new combined.db (approval merge, admin restore).
     finally:
         # Defensive: never leave _active_thread pointing at a finished thread.
         with _job_lock:
