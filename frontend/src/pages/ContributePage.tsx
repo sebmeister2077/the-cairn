@@ -23,9 +23,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, Users, Map, Eye, Check, XIcon, HelpCircle, Undo2, RefreshCw, History, ImageOff } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  Users,
+  Map,
+  Eye,
+  Check,
+  XIcon,
+  HelpCircle,
+  Undo2,
+  RefreshCw,
+  History,
+  ImageOff,
+} from "lucide-react";
 import { MapViewer } from "@/components/MapViewer";
-import { AdminFeatureFlagsPanel } from "@/components/AdminFeatureFlagsPanel";
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
 import { ContributionRegionPicker } from "@/components/ContributionRegionPicker";
 import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
@@ -145,14 +157,14 @@ export function ContributePage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
-            This page lets players upload their local Vintage Story map cache so admins can
-            review and merge new tiles into the shared community map.
+            This page lets players upload their local Vintage Story map cache so admins can review
+            and merge new tiles into the shared community map.
           </p>
           <div className="rounded-md border bg-muted/30 p-3">
             <p className="font-medium text-foreground">Access required</p>
             <p className="mt-1">
-              Your current API key does not have contribute permission.
-              Please request a <strong>Read &amp; Contribute</strong> key from an admin.
+              Your current API key does not have contribute permission. Please request a{" "}
+              <strong>Read &amp; Contribute</strong> key from an admin.
             </p>
           </div>
         </CardContent>
@@ -178,9 +190,7 @@ export function ContributePage() {
     queryFn: () => getContributeInfo(),
     refetchInterval: (query) => {
       const data = query.state.data as ContributeInfo | undefined;
-      const hasPendingScore = !!data?.pending.some(
-        (p) => p.match_score?.status === "pending",
-      );
+      const hasPendingScore = !!data?.pending.some((p) => p.match_score?.status === "pending");
       return hasPendingScore ? 5000 : false;
     },
   });
@@ -214,10 +224,10 @@ export function ContributePage() {
     queryKey: ["account-me"],
     queryFn: getMyAccount,
     retry: false,
-  });  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
+  });
+  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
   const canSeeContributors = isAdmin || info?.is_admin || showContributions;
-  const displayContributor = (name: string) =>
-    canSeeContributors ? name : "Anonymous";
+  const displayContributor = (name: string) => (canSeeContributors ? name : "Anonymous");
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -345,9 +355,8 @@ export function ContributePage() {
 
   return (
     <div className="space-y-4">
-      {/* Admin: feature flags + map lock (Phase 0) */}
-      {isAdmin && <AdminFeatureFlagsPanel />}
-      {/* Admin: weekly backups + restore (Phase 4a) */}
+      {/* Admin: weekly backups + restore (Phase 4a). Feature flags + map lock
+          live on the dedicated Manage → Feature Flags page. */}
       {isAdmin && <AdminBackupsPanel />}
 
       {/* Upload card */}
@@ -360,8 +369,8 @@ export function ContributePage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Upload your local map cache to contribute to the shared community map.
-            Submissions are reviewed by an admin before being merged.
+            Upload your local map cache to contribute to the shared community map. Submissions are
+            reviewed by an admin before being merged.
           </p>
 
           <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/50">
@@ -382,12 +391,25 @@ export function ContributePage() {
             <summary className="flex cursor-pointer items-center gap-2 px-3 py-2.5 text-muted-foreground hover:text-foreground select-none [&::-webkit-details-marker]:hidden list-none">
               <HelpCircle className="h-4 w-4 shrink-0" />
               <span>Where can I find this file?</span>
-              <svg className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              <svg
+                className="ml-auto h-4 w-4 shrink-0 transition-transform group-open:rotate-180"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </summary>
             <div className="border-t px-3 py-3 space-y-3 text-muted-foreground">
               <p>
-                Vintage Story stores a <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
-                cache file for each server you've visited. Look for the file whose name matches the <strong>Server Map ID</strong> shown above.
+                Vintage Story stores a{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
+                cache file for each server you've visited. Look for the file whose name matches the{" "}
+                <strong>Server Map ID</strong> shown above.
               </p>
               <div className="space-y-2">
                 <div>
@@ -410,8 +432,9 @@ export function ContributePage() {
                 </div>
               </div>
               <p className="text-xs">
-                Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is named after the server's
-                map ID. Copy the file matching the ID above and upload it below.
+                Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is
+                named after the server's map ID. Copy the file matching the ID above and upload it
+                below.
               </p>
             </div>
           </details>
@@ -436,9 +459,7 @@ export function ContributePage() {
             const cooldownDays = info?.cooldown_days ?? 7;
             const canContribute = info?.can_contribute !== false;
             const reason = info?.cooldown_reason ?? null;
-            const nextAllowed = info?.next_allowed_at
-              ? new Date(info.next_allowed_at)
-              : null;
+            const nextAllowed = info?.next_allowed_at ? new Date(info.next_allowed_at) : null;
             return (
               <div
                 className={
@@ -448,25 +469,22 @@ export function ContributePage() {
                     : "bg-destructive/10 border-destructive/30 text-destructive")
                 }
               >
-                <p className="font-medium text-foreground">
-                  Contribution limits
-                </p>
+                <p className="font-medium text-foreground">Contribution limits</p>
                 <p>
-                  To prevent abuse of server uploads, non-admin contributors may
-                  have <strong>one pending upload at a time</strong>, and must
-                  wait <strong>{cooldownDays} days</strong> after a contribution
-                  is approved before submitting another.
+                  To prevent abuse of server uploads, non-admin contributors may have{" "}
+                  <strong>one pending upload at a time</strong>, and must wait{" "}
+                  <strong>{cooldownDays} days</strong> after a contribution is approved before
+                  submitting another.
                 </p>
                 {!canContribute && reason === "pending" && (
                   <p>
-                    You already have a pending contribution awaiting review.
-                    Withdraw it below before submitting a new one.
+                    You already have a pending contribution awaiting review. Withdraw it below
+                    before submitting a new one.
                   </p>
                 )}
                 {!canContribute && reason === "cooldown" && nextAllowed && (
                   <p>
-                    Your last contribution was approved. You can contribute
-                    again on{" "}
+                    Your last contribution was approved. You can contribute again on{" "}
                     <strong>{nextAllowed.toLocaleString()}</strong>.
                   </p>
                 )}
@@ -506,19 +524,13 @@ export function ContributePage() {
                       (optional, replaces in-region tiles)
                     </span>
                   </Label>
-                  {isAdmin && (
-                    <Badge variant="outline">admin / region_overwrite</Badge>
-                  )}
+                  {isAdmin && <Badge variant="outline">admin / region_overwrite</Badge>}
                 </div>
                 <ContributionRegionPicker
                   availableLevels={availableLevels}
                   value={region}
                   onChange={(r) => setRegion(r)}
-                  tileAreaCap={
-                    isAdmin
-                      ? null
-                      : info?.region_tile_cap_non_admin ?? null
-                  }
+                  tileAreaCap={isAdmin ? null : (info?.region_tile_cap_non_admin ?? null)}
                   disabled={uploading}
                 />
               </div>
@@ -526,11 +538,7 @@ export function ContributePage() {
 
             <Button
               type="submit"
-              disabled={
-                !dbFile ||
-                uploading ||
-                (!isAdmin && info?.can_contribute === false)
-              }
+              disabled={!dbFile || uploading || (!isAdmin && info?.can_contribute === false)}
             >
               {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Upload for Review
@@ -577,7 +585,9 @@ export function ContributePage() {
               <div key={p.id} className="space-y-2">
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div className="space-y-0.5">
-                    <div className="text-sm font-medium">{p.is_mine ? p.contributor : displayContributor(p.contributor)}</div>
+                    <div className="text-sm font-medium">
+                      {p.is_mine ? p.contributor : displayContributor(p.contributor)}
+                    </div>
                     <div className="text-xs text-muted-foreground">
                       {p.tile_count.toLocaleString()} tiles &middot;{" "}
                       {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
@@ -612,8 +622,7 @@ export function ContributePage() {
                         size="sm"
                         onClick={() => handleWithdraw(p.id)}
                         disabled={
-                          actionLoading === p.id ||
-                          (!isAdmin && !!info?.withdraw_next_allowed_at)
+                          actionLoading === p.id || (!isAdmin && !!info?.withdraw_next_allowed_at)
                         }
                         title={
                           !isAdmin && info?.withdraw_next_allowed_at
@@ -684,11 +693,9 @@ export function ContributePage() {
                     owner/admin checks, so we only need to gate the UI on
                     the presence of `update_region` (which the backend
                     redacts for non-admin/non-owner viewers anyway). */}
-                {previewId === p.id &&
-                  p.update_region_mode === "overwrite" &&
-                  p.update_region && (
-                    <ContributionBeforeAfter contributionId={p.id} />
-                  )}
+                {previewId === p.id && p.update_region_mode === "overwrite" && p.update_region && (
+                  <ContributionBeforeAfter contributionId={p.id} />
+                )}
 
                 {/* Region badge — visible whenever the upload was a
                     region-overwrite, even if bounds are redacted. */}
@@ -697,9 +704,9 @@ export function ContributePage() {
                     Region overwrite
                     {p.update_region && (
                       <>
-                        {" "}— x [{p.update_region.min_x},{" "}
-                        {p.update_region.max_x}], z [{p.update_region.min_z},{" "}
-                        {p.update_region.max_z}]
+                        {" "}
+                        — x [{p.update_region.min_x}, {p.update_region.max_x}], z [
+                        {p.update_region.min_z}, {p.update_region.max_z}]
                       </>
                     )}
                   </div>
@@ -926,7 +933,7 @@ function RecentContributionsGrid({
   const [openId, setOpenId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [revertError, setRevertError] = useState<string | null>(null);
-  const opened = openId ? history.find((h) => h.id === openId) ?? null : null;
+  const opened = openId ? (history.find((h) => h.id === openId) ?? null) : null;
 
   async function handleRevert(entry: HistoryEntry) {
     const tilesNew = entry.revert_added_count ?? entry.tiles_new ?? 0;
@@ -999,9 +1006,7 @@ function RecentContributionsGrid({
                 <div className="space-y-0.5 px-2 py-1.5 text-xs">
                   <div className="flex items-center justify-between gap-1.5">
                     <span className="truncate font-medium">
-                      {isWithdrawn
-                        ? "[Withdrawn]"
-                        : displayContributor(h.contributor)}
+                      {isWithdrawn ? "[Withdrawn]" : displayContributor(h.contributor)}
                     </span>
                     {isWithdrawn ? (
                       <Badge variant="outline" className="text-[10px] py-0">
@@ -1044,14 +1049,12 @@ function RecentContributionsGrid({
                   {opened.status === "withdrawn"
                     ? "[Withdrawn] · preview retained for transparency"
                     : opened.status === "reverted"
-                    ? `Reverted · originally by ${displayContributor(opened.contributor)}`
-                    : opened.status === "orphaned_by_restore"
-                    ? `Orphaned by backup restore · ${displayContributor(opened.contributor)}`
-                    : `${displayContributor(opened.contributor)} · approved ${
-                        opened.approved_at
-                          ? new Date(opened.approved_at).toLocaleString()
-                          : ""
-                      }`}
+                      ? `Reverted · originally by ${displayContributor(opened.contributor)}`
+                      : opened.status === "orphaned_by_restore"
+                        ? `Orphaned by backup restore · ${displayContributor(opened.contributor)}`
+                        : `${displayContributor(opened.contributor)} · approved ${
+                            opened.approved_at ? new Date(opened.approved_at).toLocaleString() : ""
+                          }`}
                 </span>
               }
             />
@@ -1063,15 +1066,22 @@ function RecentContributionsGrid({
                       <>
                         Revert window: {revertWindowDays}d ·{" "}
                         {(opened.revert_added_count ?? opened.tiles_new ?? 0).toLocaleString()} tile
-                        {(opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s"} captured
+                        {(opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s"}{" "}
+                        captured
                         {opened.revert_replaced_count
                           ? ` · ${opened.revert_replaced_count.toLocaleString()} overwrites`
                           : ""}
                       </>
                     ) : opened.revert_supported === false ? (
-                      <>Revert unavailable — undo data was not captured (file too large or feature flag was off).</>
+                      <>
+                        Revert unavailable — undo data was not captured (file too large or feature
+                        flag was off).
+                      </>
                     ) : (
-                      <>Outside the {revertWindowDays}-day revert window — restore from a backup instead.</>
+                      <>
+                        Outside the {revertWindowDays}-day revert window — restore from a backup
+                        instead.
+                      </>
                     )
                   ) : (
                     <>Status: {opened.status}</>

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, Maximize, Crosshair, Loader2 } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2 } from "lucide-react";
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -915,7 +915,7 @@ export function MapViewer({
           <ZoomIn className="size-4" />
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={resetView} title="Reset view">
-          <Maximize className="size-4" />
+          <RotateCcw className="size-4" />
         </Button>
         {stats && (
           <Button

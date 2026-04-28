@@ -15,17 +15,27 @@ import {
   AlertTriangle,
   CheckCircle2,
   Loader2,
+  Lock,
   Power,
+  RefreshCw,
+  Unlock,
   Upload,
   UserPlus,
   Wrench,
 } from "lucide-react";
-import { adminListFeatureFlags, adminSetFeatureFlag, type FeatureFlag } from "@/lib/api";
+import {
+  adminForceReleaseMapLock,
+  adminGetMapLock,
+  adminListFeatureFlags,
+  adminSetFeatureFlag,
+  type FeatureFlag,
+} from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { HelpTip } from "@/components/ui/help-tip";
 
 type IconType = typeof Wrench;
 
@@ -96,33 +106,68 @@ const OPERATIONAL_FLAGS: OperationalFlagSpec[] = [
   },
 ];
 
-// All other (product-feature) flags rendered in a compact table below.
-const PRODUCT_FLAG_LABELS: Record<string, { title: string; help: string }> = {
-  match_score: {
-    title: "Match-percentage scoring",
-    help: "Show admins how many tiles in a pending upload overlap the existing combined map.",
+interface ProductFlagSpec {
+  key: string;
+  title: string;
+  help: string;
+}
+
+interface FlagCategory {
+  id: string;
+  label: string;
+  description: string;
+  flags: ProductFlagSpec[];
+}
+
+// Product / experimental flags grouped by domain. Any flag returned by the
+// API that isn't listed here falls into a synthesized "Other" category so
+// new flags don't disappear from the UI before the labels are added.
+const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
+  {
+    id: "contribution",
+    label: "Contribution workflow",
+    description: "Behaviour of the Multiplayer → Contribute review pipeline.",
+    flags: [
+      {
+        key: "match_score",
+        title: "Match-percentage scoring",
+        help: "Show admins how many tiles in a pending upload overlap the existing combined map.",
+      },
+      {
+        key: "region_overwrite",
+        title: "Region-restricted updates",
+        help: "Allow contributors to overwrite tiles within a bounding box (admin-only at launch).",
+      },
+      {
+        key: "per_contribution_revert",
+        title: "Per-contribution revert",
+        help: "Allow admins to undo a single approved contribution within REVERT_WINDOW_DAYS.",
+      },
+    ],
   },
-  region_overwrite: {
-    title: "Region-restricted updates",
-    help: "Allow contributors to overwrite tiles within a bounding box (admin-only at launch).",
+  {
+    id: "history-backups",
+    label: "History & backups",
+    description: "Public history feed and the weekly snapshot / restore pipeline.",
+    flags: [
+      {
+        key: "public_history",
+        title: "Public 14-day history",
+        help: "Expose recently-approved contribution previews to all read-key holders.",
+      },
+      {
+        key: "weekly_backups",
+        title: "Weekly backups",
+        help: "Snapshot the combined map .db once per ISO week.",
+      },
+      {
+        key: "backup_restore",
+        title: "Backup restore",
+        help: "Allow admins to restore the combined map from a weekly snapshot (TOTP-gated).",
+      },
+    ],
   },
-  public_history: {
-    title: "Public 14-day history",
-    help: "Expose recently-approved contribution previews to all read-key holders.",
-  },
-  weekly_backups: {
-    title: "Weekly backups",
-    help: "Snapshot the combined map .db once per ISO week.",
-  },
-  per_contribution_revert: {
-    title: "Per-contribution revert",
-    help: "Allow admins to undo a single approved contribution within REVERT_WINDOW_DAYS.",
-  },
-  backup_restore: {
-    title: "Backup restore",
-    help: "Allow admins to restore the combined map from a weekly snapshot (TOTP-gated).",
-  },
-};
+];
 
 export function AdminFeatureFlagsPage() {
   const queryClient = useQueryClient();
@@ -143,9 +188,30 @@ export function AdminFeatureFlagsPage() {
     return map;
   }, [flagsQuery.data]);
 
-  const productFlags = (flagsQuery.data?.flags ?? []).filter(
-    (f) => !OPERATIONAL_FLAGS.some((op) => op.key === f.key),
-  );
+  // Build the categorized product-flag view. Any flag returned by the API
+  // that isn't classified above lands in a synthesized "Other" group so new
+  // backend flags remain reachable from the UI before labels are added.
+  const categorizedProductFlags = useMemo(() => {
+    const known = new Set<string>();
+    OPERATIONAL_FLAGS.forEach((f) => known.add(f.key));
+    PRODUCT_FLAG_CATEGORIES.forEach((c) => c.flags.forEach((f) => known.add(f.key)));
+    const unknown: ProductFlagSpec[] = (flagsQuery.data?.flags ?? [])
+      .filter((f) => !known.has(f.key))
+      .map((f) => ({ key: f.key, title: f.key, help: "" }));
+    const cats = PRODUCT_FLAG_CATEGORIES.map((c) => ({
+      ...c,
+      flags: c.flags.filter((f) => flagMap.has(f.key)),
+    })).filter((c) => c.flags.length > 0);
+    if (unknown.length > 0) {
+      cats.push({
+        id: "other",
+        label: "Other",
+        description: "Flags returned by the API that aren’t categorized in the frontend yet.",
+        flags: unknown,
+      });
+    }
+    return cats;
+  }, [flagMap, flagsQuery.data]);
 
   return (
     <div className="space-y-6">
@@ -187,26 +253,39 @@ export function AdminFeatureFlagsPage() {
         </div>
       </section>
 
-      {/* Product / experimental flags */}
-      {productFlags.length > 0 && (
-        <section className="space-y-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Product flags
-          </h3>
+      {/* Map-lock infrastructure (lives next to the kill switches because
+          force-releasing the lock is an operational action, not a flag). */}
+      <section className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Infrastructure
+        </h3>
+        <MapLockCard />
+      </section>
+
+      {/* Product / experimental flags, grouped by category */}
+      {categorizedProductFlags.map((cat) => (
+        <section key={cat.id} className="space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              {cat.label}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
+          </div>
           <Card>
             <CardContent className="pt-4 space-y-2">
-              {productFlags.map((f) => {
-                const meta = PRODUCT_FLAG_LABELS[f.key] ?? { title: f.key, help: "" };
+              {cat.flags.map((spec) => {
+                const f = flagMap.get(spec.key);
+                if (!f) return null;
                 return (
                   <div
-                    key={f.key}
+                    key={spec.key}
                     className="flex items-start justify-between gap-3 border-b last:border-0 pb-2 last:pb-0"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{meta.title}</span>
+                        <span className="font-medium text-sm">{spec.title}</span>
                         <Badge variant="outline" className="font-mono text-[10px]">
-                          {f.key}
+                          {spec.key}
                         </Badge>
                         {f.enabled ? (
                           <Badge className="text-[10px]">on</Badge>
@@ -216,8 +295,8 @@ export function AdminFeatureFlagsPage() {
                           </Badge>
                         )}
                       </div>
-                      {meta.help && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{meta.help}</p>
+                      {spec.help && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{spec.help}</p>
                       )}
                       <p className="text-[10px] text-muted-foreground mt-0.5">
                         Updated {new Date(f.updated_at).toLocaleString()}
@@ -225,8 +304,10 @@ export function AdminFeatureFlagsPage() {
                     </div>
                     <Switch
                       checked={f.enabled}
-                      disabled={setFlag.isPending && setFlag.variables?.key === f.key}
-                      onCheckedChange={(v) => setFlag.mutate({ key: f.key, enabled: Boolean(v) })}
+                      disabled={setFlag.isPending && setFlag.variables?.key === spec.key}
+                      onCheckedChange={(v) =>
+                        setFlag.mutate({ key: spec.key, enabled: Boolean(v) })
+                      }
                     />
                   </div>
                 );
@@ -234,8 +315,96 @@ export function AdminFeatureFlagsPage() {
             </CardContent>
           </Card>
         </section>
-      )}
+      ))}
     </div>
+  );
+}
+
+function MapLockCard() {
+  const queryClient = useQueryClient();
+  const [confirmRelease, setConfirmRelease] = useState(false);
+
+  const lock = useQuery({
+    queryKey: ["admin-map-lock"],
+    queryFn: adminGetMapLock,
+    refetchInterval: 10_000,
+  });
+
+  const releaseLock = useMutation({
+    mutationFn: adminForceReleaseMapLock,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-map-lock"] }),
+  });
+
+  const lockInfo = lock.data?.lock ?? null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base flex items-center gap-2">
+          {lockInfo ? (
+            <Lock className="h-4 w-4 text-amber-600" />
+          ) : (
+            <Unlock className="h-4 w-4 text-emerald-600" />
+          )}
+          Map lock
+          <HelpTip
+            text={
+              "Global mutex around the combined map .db. Held briefly during " +
+              "approve, revert, and backup-restore so two writers can\u2019t merge into " +
+              "stale bytes. Force-release only if you\u2019re sure no worker is mid-write \u2014 " +
+              "doing so during a real merge can corrupt the map."
+            }
+          />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
+          <div>
+            {lockInfo ? (
+              <span>
+                Held by <strong>{lockInfo.holder_action}</strong>, expires{" "}
+                {new Date(lockInfo.expires_at).toLocaleTimeString()}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Free — no merge in progress.</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => lock.refetch()}
+              aria-label="Refresh lock status"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+            {lockInfo && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={releaseLock.isPending}
+                onClick={() => setConfirmRelease(true)}
+              >
+                Force release
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+
+      <ConfirmDialog
+        open={confirmRelease}
+        title="Force-release the map lock?"
+        description="Only do this if you\u2019re sure no approve/revert/restore is in progress. Releasing while a worker is still merging can corrupt the combined map."
+        confirmLabel="Release lock"
+        variant="destructive"
+        onCancel={() => setConfirmRelease(false)}
+        onConfirm={() => {
+          setConfirmRelease(false);
+          releaseLock.mutate();
+        }}
+      />
+    </Card>
   );
 }
 
