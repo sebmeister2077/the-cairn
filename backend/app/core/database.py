@@ -997,16 +997,30 @@ def has_pending_match_score_jobs() -> bool:
 VALIDATION_MAX_ATTEMPTS = 3
 
 
+# Sentinel prefix written to ``validation_error`` at claim time. Acts as a
+# breadcrumb: if the worker process is killed mid-validation (OOM, dyno
+# restart, kernel SIGKILL) the row is left with this string instead of NULL,
+# so the next ``kick_on_startup`` can recognise the row as a zombie and
+# revive it. Both worker code paths (success / explicit failure) overwrite
+# or clear this value, so it never sticks around for cleanly-completed runs.
+VALIDATION_INFLIGHT_PREFIX = "in-flight: attempt "
+
+
 def claim_pending_validation_job() -> Optional[dict]:
     """Atomically claim one ``validation_status='pending'`` row whose
     attempts haven't exceeded the cap. Returns ``{id, attempts, region}``
     or None when the queue is empty. Bumps ``validation_attempts`` so a
-    permanently-broken row eventually stops retrying."""
+    permanently-broken row eventually stops retrying, and records an
+    ``in-flight`` breadcrumb in ``validation_error`` so a SIGKILL-ed worker
+    leaves a trace ``reset_stuck_validations`` can find on the next boot."""
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE contributions
-                       SET validation_attempts = validation_attempts + 1
+                       SET validation_attempts = validation_attempts + 1,
+                           validation_error    = %s || (validation_attempts + 1)::text
+                                                    || ' started at '
+                                                    || NOW()::text
                    WHERE id = (
                        SELECT id FROM contributions
                            WHERE validation_status = 'pending'
@@ -1018,10 +1032,36 @@ def claim_pending_validation_job() -> Optional[dict]:
                    RETURNING id, validation_attempts,
                              update_region_min_x, update_region_max_x,
                              update_region_min_z, update_region_max_z""",
-                (VALIDATION_MAX_ATTEMPTS,),
+                (VALIDATION_INFLIGHT_PREFIX, VALIDATION_MAX_ATTEMPTS),
             )
             row = cur.fetchone()
             return dict(row) if row else None
+
+
+def reset_stuck_validations() -> int:
+    """Revive contributions whose validation worker was killed mid-flight.
+
+    A row is considered stuck when it is still ``validation_status='pending'``
+    AND ``validation_attempts >= VALIDATION_MAX_ATTEMPTS``. The cleanly-
+    failing worker path always deletes the row + R2 object before this
+    state is reachable, so any survivor must have been SIGKILL-ed before
+    its ``except`` handler ran (typically OOM or dyno restart on Render's
+    starter tier while downloading a multi-GB pending DB).
+
+    Resets ``validation_attempts`` to 0 and clears the breadcrumb error so
+    the worker picks the row up again. Returns the number of rows revived.
+    Safe to call on every startup."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET validation_attempts = 0,
+                           validation_error    = NULL
+                   WHERE validation_status = 'pending'
+                     AND validation_attempts >= %s""",
+                (VALIDATION_MAX_ATTEMPTS,),
+            )
+            return cur.rowcount or 0
 
 
 def has_pending_validation_jobs() -> bool:

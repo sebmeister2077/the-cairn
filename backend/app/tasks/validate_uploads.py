@@ -224,9 +224,25 @@ def start_job(cid: Optional[str] = None) -> bool:
 
 def kick_on_startup() -> None:
     """Re-enqueue any rows left ``validation_status='pending'`` from a
-    previous process. Called from ``main.py``'s startup hook."""
+    previous process. Called from ``main.py``'s startup hook.
+
+    Also revives "zombie" rows whose attempts counter is at the cap but
+    that were never cleanly rolled back — these are uniformly the result of
+    a worker process being SIGKILL-ed mid-validation (OOM, dyno restart),
+    not a deterministic validation failure (deterministic failures delete
+    the row before this state is reachable)."""
     if os.getenv("VALIDATE_UPLOADS_DISABLE_STARTUP_KICK") == "1":
         return
+    try:
+        revived = db.reset_stuck_validations()
+        if revived:
+            logger.warning(
+                "validate_uploads: revived %d zombie row(s) left at attempts cap by "
+                "a previously killed worker",
+                revived,
+            )
+    except Exception:
+        logger.exception("validate_uploads: reset_stuck_validations failed")
     try:
         start_job()
     except Exception:
