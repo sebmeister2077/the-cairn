@@ -18,6 +18,8 @@
 - Allow players to upload their waypoints (extract from client-chat.log file) and display them on the map (this will allow players to share their waypoints with others and also to have a visual representation of their waypoints on the map). Limit how many waypoints can be viewed at once by normal users. Admins can view all waypoints without limit. Waypoints should be displayed with their name, icon, and color on the map. Waypoints should also be searchable by name and filterable by icon and color. For normal users they have to set their approximate home location on the map and only waypoints within a certain radius of that location will be displayed. Admins can see all waypoints regardless of location for moderation purposes. waypoints are heavily filters and sanitized on upload to prevent abuse (e.g., a user uploading a file with 100k waypoints to crash the map). 
 
 -[x] change how admins send api-keys to the server, apikeys should not be that easily visible in requests.
+- Add a "Traverse mode" which lets users select a TL grouping and traverse it in either direction, after exit/entry of a TL you press Next ao that the map automatically shows you (WITHOUT YOU NEEDING TO SCROLL) where the next TL is
+
 
 
 
