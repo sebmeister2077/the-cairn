@@ -110,8 +110,8 @@ def start_job(cid: Optional[str] = None, *, force: bool = False) -> bool:
     global _active_thread
     if not force:
         try:
-            from ..core.feature_flags import is_feature_enabled_default
-            if not is_feature_enabled_default("heavy_compute_enabled", True):
+            from ..core.feature_flags import is_heavy_compute_allowed
+            if not is_heavy_compute_allowed():
                 logger.info(
                     "match_score: skipping spawn — heavy_compute_enabled is OFF"
                 )

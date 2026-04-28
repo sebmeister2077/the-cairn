@@ -7,6 +7,7 @@ hammering Supabase on hot paths. Writes go via
 self-refresh within the TTL.
 """
 
+import os
 import threading
 import time
 from typing import Optional
@@ -80,3 +81,23 @@ def invalidate(key: Optional[str] = None) -> None:
             _cache.clear()
         else:
             _cache.pop(key, None)
+
+
+def is_heavy_compute_allowed() -> bool:
+    """Whether heavy background workers (validation, match score, preview
+    rendering, …) are permitted to spawn / run.
+
+    Resolution order:
+
+    1. ``HEAVY_COMPUTE_LOCAL_OVERRIDE`` env var — if set to a truthy value
+       (``1``/``true``/``yes``/``on``, case-insensitive) the kill switch is
+       bypassed unconditionally. Intended for developers running the
+       backend locally against the prod database: the deployed Render
+       instance never sets this var so its non-admin users still respect
+       the flag.
+    2. ``heavy_compute_enabled`` feature flag (default True when missing).
+    """
+    raw = os.environ.get("HEAVY_COMPUTE_LOCAL_OVERRIDE", "").strip().lower()
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    return is_feature_enabled_default("heavy_compute_enabled", True)

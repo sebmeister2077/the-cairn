@@ -41,7 +41,11 @@ from ..core.mapdb import (
 )
 from ..tasks.generate_map_levels import start_job as start_map_generation_job
 from ..tasks import match_score as match_score_task
-from ..core.feature_flags import is_feature_enabled, is_feature_enabled_default
+from ..core.feature_flags import (
+    is_feature_enabled,
+    is_feature_enabled_default,
+    is_heavy_compute_allowed,
+)
 
 router = APIRouter()
 
@@ -481,7 +485,7 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
     # workers continue to drain the queue — only *new* spawns are blocked.
     # An admin pressing "Run heavy compute now" on the dashboard will spawn
     # the worker on demand.
-    if is_feature_enabled_default("heavy_compute_enabled", True):
+    if is_heavy_compute_allowed():
         try:
             from ..tasks import validate_uploads as validate_task
             validate_task.start_job(contribution_id)
@@ -495,9 +499,7 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
     # while still letting the worker drain anything already in-flight.
     # Same heavy-compute gate applies (the score job is just as expensive
     # as a validation pass).
-    if is_feature_enabled("match_score") and is_feature_enabled_default(
-        "heavy_compute_enabled", True
-    ):
+    if is_feature_enabled("match_score") and is_heavy_compute_allowed():
         try:
             db.set_match_score_pending(contribution_id)
             match_score_task.start_job(contribution_id)
@@ -1550,9 +1552,7 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         "public_history_enabled": public_history_on,
         "is_admin": is_admin,
         "match_score_enabled": is_feature_enabled("match_score"),
-        "heavy_compute_enabled": is_feature_enabled_default(
-            "heavy_compute_enabled", True
-        ),
+        "heavy_compute_enabled": is_heavy_compute_allowed(),
         "revert_enabled": is_feature_enabled("per_contribution_revert"),
         "revert_window_days": settings.REVERT_WINDOW_DAYS,
         "withdraw_limit_per_week": settings.WITHDRAW_LIMIT_PER_WEEK,
@@ -1814,9 +1814,7 @@ async def contribute_preview(
     # this is the path that OOM-kills the worker, so admin can flip
     # ``heavy_compute_enabled`` OFF and have non-admin callers wait until
     # the bulk-run button is pressed from a beefier machine. Admin bypasses.
-    if not _is_admin_key(api_key) and not is_feature_enabled_default(
-        "heavy_compute_enabled", True
-    ):
+    if not _is_admin_key(api_key) and not is_heavy_compute_allowed():
         return JSONResponse(
             status_code=503,
             content={
@@ -1933,9 +1931,7 @@ async def contribute_preview_region(
         )
 
     # Heavy-compute kill switch (see contribute_preview above for rationale).
-    if not _is_admin_key(api_key) and not is_feature_enabled_default(
-        "heavy_compute_enabled", True
-    ):
+    if not _is_admin_key(api_key) and not is_heavy_compute_allowed():
         return JSONResponse(
             status_code=503,
             content={
