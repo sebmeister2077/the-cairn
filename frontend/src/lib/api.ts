@@ -1037,6 +1037,45 @@ export async function adminForceReleaseMapLock(): Promise<{ released: boolean }>
     return (await handleResponse(res)).json();
 }
 
+// --- Admin: heavy-compute bulk-run (gated by heavy_compute_enabled flag) ---
+
+export interface HeavyComputeStatus {
+    running: boolean;
+    started_at: number | null;
+    finished_at: number | null;
+    started_by: string | null;
+    validations_revived: number;
+    validation_worker_started: boolean;
+    match_score_worker_started: boolean;
+    match_score_skipped_reason: string | null;
+    previews_total: number;
+    previews_rendered: number;
+    previews_already_cached: number;
+    previews_failed: number;
+    previews_failures: string[];
+    current_preview_id: string | null;
+    error: string | null;
+}
+
+export async function adminRunHeavyComputeNow(): Promise<{
+    started: boolean;
+    reason?: string;
+    status: HeavyComputeStatus;
+}> {
+    const res = await fetch(`${API_BASE}/admin/heavy-compute/run-now`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetHeavyComputeStatus(): Promise<HeavyComputeStatus> {
+    const res = await fetch(`${API_BASE}/admin/heavy-compute/status`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 // --- Admin: per-key granular permissions (Phase 0c) ---
 
 export type KeyPermission = "region_overwrite";

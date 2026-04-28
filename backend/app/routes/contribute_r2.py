@@ -474,18 +474,30 @@ def _finalize_uploaded_contribution(contribution_id: str, contributor: str, api_
     # Fire-and-forget the background validator. It will either flip the row
     # to ``validation_status='valid'`` (and update tile_count) or delete the
     # row + R2 object on failure.
-    try:
-        from ..tasks import validate_uploads as validate_task
-        validate_task.start_job(contribution_id)
-    except Exception:
-        # Validator startup is best-effort — the row is still claimable by
-        # the next /complete or by the startup kick.
-        pass
+    #
+    # Heavy-compute kill switch: when OFF we still mark the row as
+    # ``validation_status='pending'`` (already done above) but skip the
+    # worker spawn so the small server isn't crushed. Already-running
+    # workers continue to drain the queue — only *new* spawns are blocked.
+    # An admin pressing "Run heavy compute now" on the dashboard will spawn
+    # the worker on demand.
+    if is_feature_enabled_default("heavy_compute_enabled", True):
+        try:
+            from ..tasks import validate_uploads as validate_task
+            validate_task.start_job(contribution_id)
+        except Exception:
+            # Validator startup is best-effort — the row is still claimable by
+            # the next /complete or by the startup kick.
+            pass
 
     # Phase 1 — kick off async match-score computation. The feature flag is
     # checked here so that disabling it stops *new* jobs from being enqueued
     # while still letting the worker drain anything already in-flight.
-    if is_feature_enabled("match_score"):
+    # Same heavy-compute gate applies (the score job is just as expensive
+    # as a validation pass).
+    if is_feature_enabled("match_score") and is_feature_enabled_default(
+        "heavy_compute_enabled", True
+    ):
         try:
             db.set_match_score_pending(contribution_id)
             match_score_task.start_job(contribution_id)
@@ -1538,6 +1550,9 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         "public_history_enabled": public_history_on,
         "is_admin": is_admin,
         "match_score_enabled": is_feature_enabled("match_score"),
+        "heavy_compute_enabled": is_feature_enabled_default(
+            "heavy_compute_enabled", True
+        ),
         "revert_enabled": is_feature_enabled("per_contribution_revert"),
         "revert_window_days": settings.REVERT_WINDOW_DAYS,
         "withdraw_limit_per_week": settings.WITHDRAW_LIMIT_PER_WEEK,
@@ -1782,7 +1797,7 @@ async def contribute_preview(
     pending_key = r2_storage.pending_db_key(contribution_id)
     preview_key = r2_storage.pending_preview_key(contribution_id)
 
-    # Serve cached preview when available.
+    # Serve cached preview when available — cheap, no compute.
     if r2_storage.object_exists(preview_key):
         png_bytes = r2_storage.download_bytes(preview_key)
         return Response(
@@ -1792,6 +1807,29 @@ async def contribute_preview(
                 "Content-Disposition": f"inline; filename={contribution_id}.png",
                 "X-Preview-Cache": "hit",
             },
+        )
+
+    # Heavy-compute kill switch: rendering a preview means downloading the
+    # combined map + pending DB and chewing through them. On a small server
+    # this is the path that OOM-kills the worker, so admin can flip
+    # ``heavy_compute_enabled`` OFF and have non-admin callers wait until
+    # the bulk-run button is pressed from a beefier machine. Admin bypasses.
+    if not _is_admin_key(api_key) and not is_feature_enabled_default(
+        "heavy_compute_enabled", True
+    ):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": {
+                    "code": "heavy_compute_disabled",
+                    "message": (
+                        "Preview generation is paused while the server is at "
+                        "reduced capacity. An admin will render previews "
+                        "shortly."
+                    ),
+                }
+            },
+            headers={"Retry-After": "600"},
         )
 
     if not r2_storage.object_exists(pending_key):
@@ -1892,6 +1930,25 @@ async def contribute_preview_region(
                 "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
                 "X-Preview-Cache": "hit",
             },
+        )
+
+    # Heavy-compute kill switch (see contribute_preview above for rationale).
+    if not _is_admin_key(api_key) and not is_feature_enabled_default(
+        "heavy_compute_enabled", True
+    ):
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": {
+                    "code": "heavy_compute_disabled",
+                    "message": (
+                        "Region preview generation is paused while the server "
+                        "is at reduced capacity. An admin will render "
+                        "previews shortly."
+                    ),
+                }
+            },
+            headers={"Retry-After": "600"},
         )
 
     pending_key = r2_storage.pending_db_key(contribution_id)

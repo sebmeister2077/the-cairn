@@ -140,6 +140,7 @@ interface ContributeInfo {
   public_history_enabled?: boolean;
   is_admin?: boolean;
   match_score_enabled?: boolean;
+  heavy_compute_enabled?: boolean;
   revert_enabled?: boolean;
   revert_window_days?: number;
   can_contribute?: boolean;
@@ -613,19 +614,32 @@ export function ContributePage() {
                     <PendingLifecycleBadge contribution={p} />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePreview(p.id)}
-                      disabled={previewLoading && previewId === p.id}
-                    >
-                      {previewLoading && previewId === p.id ? (
-                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Eye className="mr-1 h-3.5 w-3.5" />
-                      )}
-                      Preview
-                    </Button>
+                    {(() => {
+                      const previewBlocked =
+                        !isAdmin && !info?.is_admin && info?.heavy_compute_enabled === false;
+                      const isPreviewLoading = previewLoading && previewId === p.id;
+                      const previewDisabled = isPreviewLoading || previewBlocked;
+                      const previewTitle = previewBlocked
+                        ? "Preview generation is paused while the server is at reduced capacity. An admin will render previews shortly."
+                        : undefined;
+                      return (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePreview(p.id)}
+                          disabled={previewDisabled}
+                          title={previewTitle}
+                          aria-disabled={previewDisabled}
+                        >
+                          {isPreviewLoading ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Eye className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          {previewBlocked ? "Preview paused" : "Preview"}
+                        </Button>
+                      );
+                    })()}
                     {p.is_mine && (
                       <Button
                         variant="outline"

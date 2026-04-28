@@ -88,6 +88,45 @@ The three flags the on-call admin will reach for during an incident.
 - **Use when:** triaging a sibling-account / shared-IP wave, or freezing the
   user base before a Terms version bump.
 
+### `heavy_compute_enabled`
+
+- **Default:** `TRUE` (on).
+- **Effect when OFF (admins always bypass):**
+  - `GET /api/contribute/preview/{id}` and
+    `GET /api/contribute/preview-region/{id}` return `503` with body
+    `{"detail": {"code": "heavy_compute_disabled", "message": "..."}}` and
+    `Retry-After: 600` for non-admin callers. Cached preview PNGs are still
+    served (the gate runs *after* the cache hit check).
+  - `POST /api/contribute/complete` still creates the contribution row
+    (and still uploads to R2), but does **not** spawn the
+    `validate_uploads` worker or the `match_score` worker. Rows accumulate
+    in `validation_status='pending'` / `match_score_status='pending'`
+    until an admin presses the bulk-run button.
+  - `kick_on_startup` for both workers also no-ops while the flag is OFF
+    (the workers' `start_job(force=False)` early-returns).
+  - The frontend `Preview` button on the Contribute page is disabled with
+    a tooltip for non-admin viewers.
+- **Unaffected when OFF:**
+  - Already-running validate/match-score worker threads continue draining
+    whatever they were processing — only *new spawns* are blocked.
+  - Approval / merge / revert / restore (admin-only paths) are not gated.
+  - Map browsing, contribution lists, and every read endpoint continue.
+- **Bulk drain:** **Manage → Feature Flags → Run heavy compute now** calls
+  `POST /api/admin/heavy-compute/run-now` which sequentially:
+  1. revives any zombie validation rows + spawns the validate_uploads
+     worker with `force=True`;
+  2. spawns the match_score worker with `force=True` (only if the
+     `match_score` product flag is also ON);
+  3. for each currently-pending contribution that has no cached preview
+     PNG in R2, downloads the pending DB and renders it.
+
+  Progress is surfaced via `GET /api/admin/heavy-compute/status` which the
+  flag page polls every 2 s while a run is active.
+- **Use when:** the production server is too small to handle per-request
+  multi-GB downloads (Render Starter, Fly shared-cpu, etc.). Flip OFF in
+  prod, then trigger the bulk drain manually from a beefier machine that
+  can connect to the prod API with the admin key.
+
 ## Product flags
 
 These gate features rather than acting as kill switches. Each is OFF by
@@ -162,5 +201,6 @@ time.
 | Need to stop all writes briefly | `maintenance_mode` → ON |
 | Map upload spam wave | `uploads_enabled` → OFF |
 | New-account abuse / shared-IP wave | `registration_enabled` → OFF |
+| Server OOM during preview / validation | `heavy_compute_enabled` → OFF (then bulk-drain manually) |
 | Need to pause weekly snapshots | `weekly_backups` → OFF |
 | Need to disable revert / restore | `per_contribution_revert` / `backup_restore` → OFF |

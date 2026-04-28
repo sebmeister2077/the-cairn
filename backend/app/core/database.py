@@ -175,7 +175,13 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- the application code (see ``feature_flags.is_feature_enabled_default``).
     ('maintenance_mode', FALSE),
     ('uploads_enabled', TRUE),
-    ('registration_enabled', TRUE)
+    ('registration_enabled', TRUE),
+    -- Heavy-compute kill switch. ON = previews + validation + match-score
+    -- run normally for everyone. OFF = those operations are blocked for
+    -- non-admin callers (admin bypasses the flag) so a small server can
+    -- keep serving the read-only API while heavy work waits for an admin
+    -- with a beefy machine to drain it via the bulk-run button.
+    ('heavy_compute_enabled', TRUE)
 ON CONFLICT (key) DO NOTHING;
 """
 

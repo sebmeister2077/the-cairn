@@ -96,16 +96,28 @@ def _worker_loop() -> None:
                 _active_thread = None
 
 
-def start_job(cid: Optional[str] = None) -> bool:
+def start_job(cid: Optional[str] = None, *, force: bool = False) -> bool:
     """Ensure the worker thread is running.
 
     If ``cid`` is provided, callers should already have written
     ``match_score_status='pending'`` for that row before invoking us — we
-    just kick the worker. Returns True if a new worker was started, False
-    if one was already running (which is also fine — it'll pick up the row
-    on its next drain).
+    just kick the worker. ``force=True`` bypasses the
+    ``heavy_compute_enabled`` kill switch and is reserved for the admin
+    "Run heavy compute now" bulk endpoint. Returns True if a new worker
+    was started, False if one was already running or if the kill switch
+    blocked the spawn.
     """
     global _active_thread
+    if not force:
+        try:
+            from ..core.feature_flags import is_feature_enabled_default
+            if not is_feature_enabled_default("heavy_compute_enabled", True):
+                logger.info(
+                    "match_score: skipping spawn — heavy_compute_enabled is OFF"
+                )
+                return False
+        except Exception:
+            logger.exception("match_score: feature-flag check failed")
     with _job_lock:
         if _active_thread is not None and _active_thread.is_alive():
             return False
