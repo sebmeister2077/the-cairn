@@ -13,7 +13,8 @@ import {
   getStoredIsAdmin,
   getStoredCanContribute,
   fetchImageFromSignedUrl,
-  getMyAccount,
+  getMyAccountSafe,
+  getStoredApiKey,
   getTopsMapStats,
   type ContributionRegion,
 } from "@/lib/api";
@@ -258,9 +259,14 @@ export function ContributePage() {
   const availableLevels = topsStatsQuery.data?.resolutions ?? [];
 
   // Current account — used to honour the user's "Show Contributions" preference.
+  // Key/queryFn must match AppContent + AccountPage so the three observers
+  // share a single in-flight request (otherwise /account/me is fetched twice
+  // on reload of /contribute).
+  const accountApiKey = getStoredApiKey();
   const accountQuery = useQuery({
-    queryKey: ["account-me"],
-    queryFn: getMyAccount,
+    queryKey: ["account-me", accountApiKey ?? ""],
+    queryFn: getMyAccountSafe,
+    enabled: !!accountApiKey,
     retry: false,
   });
   const showContributions = accountQuery.data?.user?.show_contributions ?? false;
