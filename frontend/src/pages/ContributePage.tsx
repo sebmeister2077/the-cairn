@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   Loader2,
   Upload,
@@ -609,6 +610,7 @@ export function ContributePage() {
                         canRecompute={isAdmin && p.match_score.status !== "pending"}
                         onRecompute={() => handleRecomputeMatchScore(p.id)}
                         recomputing={actionLoading === p.id}
+                        heavyComputeEnabled={info?.heavy_compute_enabled !== false}
                       />
                     )}
                     <PendingLifecycleBadge
@@ -868,7 +870,8 @@ function PendingLifecycleBadge({
     if (!heavyComputeEnabled) {
       return (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Awaiting admin compute…</span>
+          <span>Awaiting admin compute</span>
+          <HelpTip text="Heavy background work is paused on the server. Upload validation will run once an admin re-enables heavy compute or drains the queue manually." />
         </div>
       );
     }
@@ -941,13 +944,23 @@ function MatchScoreBadge({
   canRecompute,
   onRecompute,
   recomputing,
+  heavyComputeEnabled,
 }: {
   score: MatchScore;
   canRecompute: boolean;
   onRecompute: () => void;
   recomputing: boolean;
+  heavyComputeEnabled: boolean;
 }) {
   if (score.status === "pending") {
+    if (!heavyComputeEnabled) {
+      return (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span>Match score awaiting admin compute</span>
+          <HelpTip text="Heavy background work is paused on the server. The match score (how much of this upload overlaps the existing map) will be computed once an admin re-enables heavy compute or drains the queue manually." />
+        </div>
+      );
+    }
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />

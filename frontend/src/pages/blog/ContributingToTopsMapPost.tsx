@@ -15,6 +15,7 @@ import {
   Map as MapIcon,
   HelpCircle,
 } from "lucide-react";
+import contributionExampleImg from "@/assets/ContributionExample.png";
 
 export function ContributingToTopsMapPost() {
   return (
@@ -157,6 +158,25 @@ export function ContributingToTopsMapPost() {
           You can <strong>withdraw</strong> a pending contribution any time before it&rsquo;s
           approved (limited to 3 withdrawals per ISO week to discourage churn).
         </P>
+        <figure className="space-y-2">
+          <a
+            href={contributionExampleImg}
+            target="_blank"
+            rel="noreferrer"
+            className="block overflow-hidden rounded border bg-muted/40"
+          >
+            <img
+              src={contributionExampleImg}
+              alt="Pending Contributions card showing two contributions with their match-score badges and a preview open for one of them."
+              loading="lazy"
+              className="w-full h-auto"
+            />
+          </a>
+          <figcaption className="text-xs text-muted-foreground text-center">
+            Example: the Pending Contributions card after a successful upload &mdash; two
+            contributions with their match-score badges, and a preview open for one of them.
+          </figcaption>
+        </figure>
       </Section>
 
       <Section title="Gap-fill vs Region Overwrite" icon={<ShieldCheck className="size-4" />}>
