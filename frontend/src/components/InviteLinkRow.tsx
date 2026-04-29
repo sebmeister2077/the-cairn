@@ -43,7 +43,7 @@ export function InviteLinkRow({
 
   const permBadge =
     record.permissions === "contribute" ? (
-      <Badge variant="outline" className="text-blue-600 border-blue-300">
+      <Badge className="text-blue-700 border-blue-300 bg-blue-50 dark:text-blue-300 dark:border-blue-400/40 dark:bg-blue-400/10">
         Contribute
       </Badge>
     ) : (
