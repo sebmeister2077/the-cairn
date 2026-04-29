@@ -44,6 +44,7 @@ import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
 import { ContributionRegionPicker } from "@/components/ContributionRegionPicker";
 import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
 import { MapDbFileHelp } from "@/components/MapDbFileHelp";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 // Phase 1 — informational match-score result attached to each pending row.
 interface MatchScore {
@@ -298,6 +299,19 @@ export function ContributePage() {
   // Admin action state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
+  // Two-step reject — holds the id of the contribution awaiting confirmation
+  // so an accidental click on the destructive button can't drop precious
+  // contributor data without a deliberate second confirmation.
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+
+  const deleteTarget = rejectingId
+    ? (info?.pending.find((p) => p.id === rejectingId) ?? null)
+    : null;
+
+  const cooldownDays = info?.cooldown_days ?? 7;
+  const canContributeFromData = info?.can_contribute !== false;
+  const reason = info?.cooldown_reason ?? null;
+  const nextAllowed = info?.next_allowed_at ? new Date(info.next_allowed_at) : null;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -464,43 +478,36 @@ export function ContributePage() {
 
           <Separator />
 
-          {(() => {
-            if (isAdmin || info?.is_admin) return null;
-            const cooldownDays = info?.cooldown_days ?? 7;
-            const canContribute = info?.can_contribute !== false;
-            const reason = info?.cooldown_reason ?? null;
-            const nextAllowed = info?.next_allowed_at ? new Date(info.next_allowed_at) : null;
-            return (
-              <div
-                className={
-                  "rounded-md border p-3 text-sm space-y-1 " +
-                  (canContribute
-                    ? "bg-muted/30 text-muted-foreground"
-                    : "bg-destructive/10 border-destructive/30 text-destructive")
-                }
-              >
-                <p className="font-medium text-foreground">Contribution limits</p>
+          {isAdmin || info?.is_admin ? null : (
+            <div
+              className={
+                "rounded-md border p-3 text-sm space-y-1 " +
+                (canContributeFromData
+                  ? "bg-muted/30 text-muted-foreground"
+                  : "bg-destructive/10 border-destructive/30 text-destructive")
+              }
+            >
+              <p className="font-medium text-foreground">Contribution limits</p>
+              <p>
+                To prevent abuse of server uploads, non-admin contributors may have{" "}
+                <strong>one pending upload at a time</strong>, and must wait{" "}
+                <strong>{cooldownDays} days</strong> after a contribution is approved before
+                submitting another.
+              </p>
+              {!canContributeFromData && reason === "pending" && (
                 <p>
-                  To prevent abuse of server uploads, non-admin contributors may have{" "}
-                  <strong>one pending upload at a time</strong>, and must wait{" "}
-                  <strong>{cooldownDays} days</strong> after a contribution is approved before
-                  submitting another.
+                  You already have a pending contribution awaiting review. Withdraw it below before
+                  submitting a new one.
                 </p>
-                {!canContribute && reason === "pending" && (
-                  <p>
-                    You already have a pending contribution awaiting review. Withdraw it below
-                    before submitting a new one.
-                  </p>
-                )}
-                {!canContribute && reason === "cooldown" && nextAllowed && (
-                  <p>
-                    Your last contribution was approved. You can contribute again on{" "}
-                    <strong>{nextAllowed.toLocaleString()}</strong>.
-                  </p>
-                )}
-              </div>
-            );
-          })()}
+              )}
+              {!canContributeFromData && reason === "cooldown" && nextAllowed && (
+                <p>
+                  Your last contribution was approved. You can contribute again on{" "}
+                  <strong>{nextAllowed.toLocaleString()}</strong>.
+                </p>
+              )}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <FileUpload
@@ -609,175 +616,172 @@ export function ContributePage() {
           <CardContent className="space-y-3">
             {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
-            {info.pending.map((p) => (
-              <div key={p.id} className="space-y-2">
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div className="space-y-0.5">
-                    <div className="text-sm font-medium">
-                      {p.is_mine ? p.contributor : displayContributor(p.contributor)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {p.tile_count.toLocaleString()} tiles &middot;{" "}
-                      {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
-                    </div>
-                    <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
-                    {info.match_score_enabled && p.match_score && (
-                      <MatchScoreBadge
-                        score={p.match_score}
-                        canRecompute={isAdmin && p.match_score.status !== "pending"}
-                        onRecompute={() => handleRecomputeMatchScore(p.id)}
-                        recomputing={actionLoading === p.id}
+            {info.pending.map((p) => {
+              const previewBlocked =
+                !isAdmin && !info?.is_admin && info?.heavy_compute_enabled === false;
+              const isPreviewLoading = previewLoading && previewId === p.id;
+              const previewDisabled = isPreviewLoading || previewBlocked;
+              const previewTitle = previewBlocked
+                ? "Preview generation is paused while the server is at reduced capacity. An admin will render previews shortly."
+                : undefined;
+
+              const validating = p.validation_status === "pending";
+              const merging = p.approval_status === "queued" || p.approval_status === "running";
+              const approveDisabled = actionLoading === p.id || validating || merging;
+              const approveTitle = validating
+                ? "Waiting for upload validation to finish before approval is allowed."
+                : merging
+                  ? "Already merging in the background."
+                  : undefined;
+              const approveLabel = merging
+                ? p.approval_status === "running"
+                  ? "Merging…"
+                  : "Queued…"
+                : "Approve";
+
+              return (
+                <div key={p.id} className="space-y-2">
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div className="space-y-0.5">
+                      <div className="text-sm font-medium">
+                        {p.is_mine ? p.contributor : displayContributor(p.contributor)}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {p.tile_count.toLocaleString()} tiles &middot;{" "}
+                        {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
+                      </div>
+                      <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
+                      {info.match_score_enabled && p.match_score && (
+                        <MatchScoreBadge
+                          score={p.match_score}
+                          canRecompute={isAdmin && p.match_score.status !== "pending"}
+                          onRecompute={() => handleRecomputeMatchScore(p.id)}
+                          recomputing={actionLoading === p.id}
+                          heavyComputeEnabled={info?.heavy_compute_enabled !== false}
+                        />
+                      )}
+                      <PendingLifecycleBadge
+                        contribution={p}
                         heavyComputeEnabled={info?.heavy_compute_enabled !== false}
                       />
-                    )}
-                    <PendingLifecycleBadge
-                      contribution={p}
-                      heavyComputeEnabled={info?.heavy_compute_enabled !== false}
-                    />
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    {(() => {
-                      const previewBlocked =
-                        !isAdmin && !info?.is_admin && info?.heavy_compute_enabled === false;
-                      const isPreviewLoading = previewLoading && previewId === p.id;
-                      const previewDisabled = isPreviewLoading || previewBlocked;
-                      const previewTitle = previewBlocked
-                        ? "Preview generation is paused while the server is at reduced capacity. An admin will render previews shortly."
-                        : undefined;
-                      return (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePreview(p.id)}
-                          disabled={previewDisabled}
-                          title={previewTitle}
-                          aria-disabled={previewDisabled}
-                        >
-                          {isPreviewLoading ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Eye className="mr-1 h-3.5 w-3.5" />
-                          )}
-                          {previewBlocked ? "Preview paused" : "Preview"}
-                        </Button>
-                      );
-                    })()}
-                    {p.is_mine && (
+                    </div>
+                    <div className="flex items-center gap-1.5">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleWithdraw(p.id)}
-                        disabled={
-                          actionLoading === p.id || (!isAdmin && !!info?.withdraw_next_allowed_at)
-                        }
-                        title={
-                          !isAdmin && info?.withdraw_next_allowed_at
-                            ? `Weekly withdraw limit reached. Next allowed: ${new Date(
-                                info.withdraw_next_allowed_at,
-                              ).toLocaleString()}`
-                            : undefined
-                        }
-                        className="text-destructive hover:text-destructive"
+                        onClick={() => handlePreview(p.id)}
+                        disabled={previewDisabled}
+                        title={previewTitle}
+                        aria-disabled={previewDisabled}
                       >
-                        {actionLoading === p.id ? (
+                        {isPreviewLoading ? (
                           <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
                         ) : (
-                          <Undo2 className="mr-1 h-3.5 w-3.5" />
+                          <Eye className="mr-1 h-3.5 w-3.5" />
                         )}
-                        Withdraw
+                        {previewBlocked ? "Preview paused" : "Preview"}
                       </Button>
-                    )}
-                    {isAdmin && (
-                      <>
-                        {(() => {
-                          const validating = p.validation_status === "pending";
-                          const merging =
-                            p.approval_status === "queued" || p.approval_status === "running";
-                          const approveDisabled = actionLoading === p.id || validating || merging;
-                          const approveTitle = validating
-                            ? "Waiting for upload validation to finish before approval is allowed."
-                            : merging
-                              ? "Already merging in the background."
-                              : undefined;
-                          const approveLabel = merging
-                            ? p.approval_status === "running"
-                              ? "Merging…"
-                              : "Queued…"
-                            : "Approve";
-                          return (
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={() => handleApprove(p.id)}
-                              disabled={approveDisabled}
-                              title={approveTitle}
-                            >
-                              {actionLoading === p.id || merging ? (
-                                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Check className="mr-1 h-3.5 w-3.5" />
-                              )}
-                              {approveLabel}
-                            </Button>
-                          );
-                        })()}
+                      {p.is_mine && (
                         <Button
-                          variant="destructive"
+                          variant="outline"
                           size="sm"
-                          onClick={() => handleReject(p.id)}
-                          disabled={actionLoading === p.id}
+                          onClick={() => handleWithdraw(p.id)}
+                          disabled={
+                            actionLoading === p.id || (!isAdmin && !!info?.withdraw_next_allowed_at)
+                          }
+                          title={
+                            !isAdmin && info?.withdraw_next_allowed_at
+                              ? `Weekly withdraw limit reached. Next allowed: ${new Date(
+                                  info.withdraw_next_allowed_at,
+                                ).toLocaleString()}`
+                              : undefined
+                          }
+                          className="text-destructive hover:text-destructive"
                         >
-                          <XIcon className="mr-1 h-3.5 w-3.5" />
-                          Reject
+                          {actionLoading === p.id ? (
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Undo2 className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          Withdraw
                         </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Preview image */}
-                {previewId === p.id && (
-                  <div className="rounded-md border overflow-hidden bg-black/5">
-                    <MapViewer
-                      imageUrl={previewId === p.id ? previewUrl : null}
-                      alt="Merge preview"
-                      height="60vh"
-                      bordered={false}
-                      legend={
+                      )}
+                      {isAdmin && (
                         <>
-                          <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
-                          <span>Green-highlighted areas are new tiles from this contribution</span>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleApprove(p.id)}
+                            disabled={approveDisabled}
+                            title={approveTitle}
+                          >
+                            {actionLoading === p.id || merging ? (
+                              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Check className="mr-1 h-3.5 w-3.5" />
+                            )}
+                            {approveLabel}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setRejectingId(p.id)}
+                            disabled={actionLoading === p.id}
+                          >
+                            <XIcon className="mr-1 h-3.5 w-3.5" />
+                            Reject
+                          </Button>
                         </>
-                      }
-                    />
+                      )}
+                    </div>
                   </div>
-                )}
 
-                {/* Phase 2 — region before/after preview (admin/owner only).
+                  {/* Preview image */}
+                  {previewId === p.id && (
+                    <div className="rounded-md border overflow-hidden bg-black/5">
+                      <MapViewer
+                        imageUrl={previewId === p.id ? previewUrl : null}
+                        alt="Merge preview"
+                        height="60vh"
+                        bordered={false}
+                        legend={
+                          <>
+                            <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
+                            <span>
+                              Green-highlighted areas are new tiles from this contribution
+                            </span>
+                          </>
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {/* Phase 2 — region before/after preview (admin/owner only).
                     The endpoint is gated server-side by feature flag and
                     owner/admin checks, so we only need to gate the UI on
                     the presence of `update_region` (which the backend
                     redacts for non-admin/non-owner viewers anyway). */}
-                {previewId === p.id && p.update_region_mode === "overwrite" && p.update_region && (
-                  <ContributionBeforeAfter contributionId={p.id} />
-                )}
+                  {previewId === p.id &&
+                    p.update_region_mode === "overwrite" &&
+                    p.update_region && <ContributionBeforeAfter contributionId={p.id} />}
 
-                {/* Region badge — visible whenever the upload was a
+                  {/* Region badge — visible whenever the upload was a
                     region-overwrite, even if bounds are redacted. */}
-                {p.update_region_mode === "overwrite" && (
-                  <div className="text-xs text-muted-foreground">
-                    Region overwrite
-                    {p.update_region && (
-                      <>
-                        {" "}
-                        — x [{p.update_region.min_x}, {p.update_region.max_x}], z [
-                        {p.update_region.min_z}, {p.update_region.max_z}]
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                  {p.update_region_mode === "overwrite" && (
+                    <div className="text-xs text-muted-foreground">
+                      Region overwrite
+                      {p.update_region && (
+                        <>
+                          {" "}
+                          — x [{p.update_region.min_x}, {p.update_region.max_x}], z [
+                          {p.update_region.min_z}, {p.update_region.max_z}]
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}
@@ -864,6 +868,39 @@ export function ContributePage() {
           }}
         />
       )}
+
+      {/* Two-step confirmation for the destructive Reject action. */}
+      <ConfirmDialog
+        open={!!rejectingId}
+        title="Reject this contribution?"
+        description={
+          deleteTarget ? (
+            <>
+              This will permanently reject the contribution from{" "}
+              <span className="font-medium">
+                {deleteTarget.is_mine
+                  ? deleteTarget.contributor
+                  : displayContributor(deleteTarget.contributor)}
+              </span>{" "}
+              ({deleteTarget.tile_count.toLocaleString()} tiles). The uploaded data will be
+              discarded and cannot be recovered.
+            </>
+          ) : (
+            "The uploaded data will be discarded and cannot be recovered."
+          )
+        }
+        confirmLabel="Reject contribution"
+        cancelLabel="Keep pending"
+        variant="destructive"
+        loading={!!rejectingId && actionLoading === rejectingId}
+        onCancel={() => setRejectingId(null)}
+        onConfirm={async () => {
+          if (!rejectingId) return;
+          const id = rejectingId;
+          await handleReject(id);
+          setRejectingId(null);
+        }}
+      />
     </div>
   );
 }
