@@ -704,7 +704,9 @@ export function TOPSMapViewPage() {
                       disabled={r.status !== "complete"}
                     >
                       L{r.level} ·{" "}
-                      {r.level === 5 ? "Full resolution" : `${r.max_dimension.toLocaleString()} px`}
+                      {r.level === 5
+                        ? "Native 1:1 (10× L4)"
+                        : `${r.max_dimension.toLocaleString()} px`}
                       {r.status !== "complete" ? ` · ${r.status}` : ""}
                     </SelectItem>
                   ))}
