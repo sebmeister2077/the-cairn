@@ -253,6 +253,11 @@ class GenerateMapLevelsRequest(BaseModel):
     affected_bounds: Optional[dict] = None  # {min_x, max_x, min_z, max_z} world blocks
 
 
+class MarkLevelStatusRequest(BaseModel):
+    status: str  # "complete" or "failed"
+    error: Optional[str] = None  # required when status == "failed"
+
+
 def _generation_status_payload() -> dict:
     status = generation_tracker.get_status()
     try:
@@ -359,3 +364,41 @@ async def delete_map_level(level: int, _: str = Depends(require_admin)):
     _tops_map_r2.invalidate_level_metadata_cache(level)
     generation_tracker.reset_level(level)
     return JSONResponse(status_code=204, content=None)
+
+
+@router.post("/admin/tops-map/level/{level}/mark", status_code=200)
+async def mark_map_level_status(
+    level: int,
+    body: MarkLevelStatusRequest,
+    _: str = Depends(require_admin),
+):
+    """Manually override a level's tracker status to ``complete`` or
+    ``failed``.
+
+    This only updates the status JSON in ``app_state`` — it does NOT touch
+    the rendered chunks in R2. Useful when the worker has crashed or when
+    heavy compute is OFF and an admin wants to clear a stale ``failed``
+    badge so the UI stops showing the level as broken.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    if level not in RESOLUTION_LEVELS:
+        raise HTTPException(status_code=400, detail="Unknown level")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot override level status while generation is running",
+        )
+
+    status = (body.status or "").strip().lower()
+    if status == "complete":
+        generation_tracker.mark_complete(level)
+    elif status == "failed":
+        msg = (body.error or "Marked failed manually by admin").strip()
+        generation_tracker.mark_failed(level, msg)
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="status must be 'complete' or 'failed'",
+        )
+    return _generation_status_payload()

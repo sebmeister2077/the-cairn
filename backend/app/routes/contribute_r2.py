@@ -2302,11 +2302,23 @@ def run_approval_merge(contribution_id: str) -> dict:
     # Smart cache invalidation — kick off a background regen of all configured
     # resolution levels, but only for chunks that intersect the contributed
     # bounding box. Existing chunks outside that area are reused.
+    #
+    # Gated on ``auto_regen_after_approval``: when OFF (e.g. on a small
+    # production server that cannot afford the rerender) the kick is
+    # suppressed entirely and an admin must trigger regen manually from
+    # the TOPS map admin panel.
     try:
-        start_map_generation_job(
-            sorted(RESOLUTION_LEVELS.keys()),
-            affected_bounds=affected_bounds,
-        )
+        from ..core.feature_flags import is_auto_regen_after_approval_enabled
+        if is_auto_regen_after_approval_enabled():
+            start_map_generation_job(
+                sorted(RESOLUTION_LEVELS.keys()),
+                affected_bounds=affected_bounds,
+            )
+        else:
+            logger.info(
+                "approve: auto_regen_after_approval is OFF — skipping "
+                "map-cache regen for %s", contribution_id,
+            )
     except Exception:
         pass
 

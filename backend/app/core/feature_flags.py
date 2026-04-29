@@ -101,3 +101,14 @@ def is_heavy_compute_allowed() -> bool:
     if raw in ("1", "true", "yes", "on"):
         return True
     return is_feature_enabled_default("heavy_compute_enabled", True)
+
+
+def is_auto_regen_after_approval_enabled() -> bool:
+    """Whether contribution approve / revert should auto-kick a map-cache
+    regeneration. Default True so behaviour is unchanged when the row is
+    missing. Flip OFF to suppress the post-merge regen entirely — useful
+    when the small production server cannot afford the rerender even with
+    ``heavy_compute_enabled`` ON, and an admin will trigger regeneration
+    manually from the TOPS map admin panel.
+    """
+    return is_feature_enabled_default("auto_regen_after_approval", True)

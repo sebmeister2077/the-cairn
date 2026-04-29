@@ -382,6 +382,19 @@ export async function deleteMapLevel(level: number): Promise<void> {
     await handleResponse(res);
 }
 
+export async function markMapLevelStatus(
+    level: number,
+    status: "complete" | "failed",
+    error?: string,
+): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/level/${level}/mark`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ status, error: error ?? null }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 /** Cooperative stop: signal the generation worker to abort after its
  *  current chunk and discard any queued requests. */
 export async function stopMapGeneration(): Promise<MapGenerationStatus> {

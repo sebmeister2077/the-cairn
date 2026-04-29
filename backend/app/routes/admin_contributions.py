@@ -287,10 +287,17 @@ async def revert_contribution(
         logger.exception("revert: audit log failed for %s", contribution_id)
 
     try:
-        start_map_generation_job(
-            sorted(RESOLUTION_LEVELS.keys()),
-            affected_bounds=affected_bounds,
-        )
+        from ..core.feature_flags import is_auto_regen_after_approval_enabled
+        if is_auto_regen_after_approval_enabled():
+            start_map_generation_job(
+                sorted(RESOLUTION_LEVELS.keys()),
+                affected_bounds=affected_bounds,
+            )
+        else:
+            logger.info(
+                "revert: auto_regen_after_approval is OFF — skipping "
+                "map-cache regen for %s", contribution_id,
+            )
     except Exception:
         logger.exception("revert: failed to enqueue regen for %s", contribution_id)
 

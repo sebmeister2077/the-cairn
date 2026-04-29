@@ -181,7 +181,13 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- non-admin callers (admin bypasses the flag) so a small server can
     -- keep serving the read-only API while heavy work waits for an admin
     -- with a beefy machine to drain it via the bulk-run button.
-    ('heavy_compute_enabled', TRUE)
+    ('heavy_compute_enabled', TRUE),
+    -- Auto map-cache regeneration after a contribution merge. ON = the
+    -- approval / revert workflow kicks ``generate_map_levels`` so chunks
+    -- intersecting the contributed area are re-rendered immediately.
+    -- OFF = the regen request is suppressed entirely; an admin must
+    -- trigger regeneration manually from the TOPS map admin panel.
+    ('auto_regen_after_approval', TRUE)
 ON CONFLICT (key) DO NOTHING;
 """
 

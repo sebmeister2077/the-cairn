@@ -164,6 +164,11 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
         title: "Per-contribution revert",
         help: "Allow admins to undo a single approved contribution within REVERT_WINDOW_DAYS.",
       },
+      {
+        key: "auto_regen_after_approval",
+        title: "Auto map-cache regen after approval",
+        help: "When ON, approving (or reverting) a contribution automatically kicks generate_map_levels for the chunks intersecting the contributed area. Turn OFF on a small server that cannot afford the rerender — an admin must then trigger regeneration manually from the TOPS map admin panel.",
+      },
     ],
   },
   {

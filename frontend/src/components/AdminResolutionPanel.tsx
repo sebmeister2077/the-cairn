@@ -1,14 +1,16 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteMapLevel,
   getMapGenerationStatus,
+  markMapLevelStatus,
   requestMapGeneration,
   stopMapGeneration,
   type MapGenerationStatus,
   type MapGenerationLevelStatus,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Loader2,
   Trash2,
@@ -103,6 +105,37 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     },
   });
 
+  const markMutation = useMutation({
+    mutationFn: ({ level, status }: { level: number; status: "complete" | "failed" }) =>
+      markMapLevelStatus(
+        level,
+        status,
+        status === "failed" ? "Marked failed manually by admin" : undefined,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+    },
+  });
+
+  // Pending confirmation state for the three destructive/manual actions.
+  type PendingAction =
+    | { kind: "delete"; level: number }
+    | { kind: "mark"; level: number; status: "complete" | "failed" };
+  const [pending, setPending] = useState<PendingAction | null>(null);
+
+  const closeConfirm = () => setPending(null);
+  const runConfirm = () => {
+    if (!pending) return;
+    if (pending.kind === "delete") {
+      deleteMutation.mutate(pending.level, { onSettled: closeConfirm });
+    } else {
+      markMutation.mutate(
+        { level: pending.level, status: pending.status },
+        { onSettled: closeConfirm },
+      );
+    }
+  };
+
   // Detect transition from running → idle to notify parent (e.g. refresh image).
   const isRunning = statusQuery.data?.is_running ?? false;
   const stopRequested = statusQuery.data?.stop_requested ?? false;
@@ -129,7 +162,9 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
         ? deleteMutation.error.message
         : stopMutation.error instanceof Error
           ? stopMutation.error.message
-          : null;
+          : markMutation.error instanceof Error
+            ? markMutation.error.message
+            : null;
 
   return (
     <div className="grid gap-3">
@@ -249,7 +284,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                     {formatTimestamp(entry?.generated_at)}
                   </td>
                   <td className="px-3 py-2 text-right">
-                    <div className="inline-flex gap-1">
+                    <div className="inline-flex flex-wrap justify-end gap-1">
                       <Button
                         type="button"
                         size="sm"
@@ -259,20 +294,36 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                       >
                         {status === "complete" ? "Regenerate" : "Generate"}
                       </Button>
+                      {status !== "complete" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPending({ kind: "mark", level, status: "complete" })}
+                          disabled={isRunning || markMutation.isPending}
+                          title="Manually mark this level as complete (does not render anything)"
+                        >
+                          <CheckCircle2 className="size-3" />
+                        </Button>
+                      )}
+                      {status !== "failed" && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPending({ kind: "mark", level, status: "failed" })}
+                          disabled={isRunning || markMutation.isPending}
+                          title="Manually mark this level as failed"
+                        >
+                          <AlertCircle className="size-3" />
+                        </Button>
+                      )}
                       {status === "complete" && (
                         <Button
                           type="button"
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `Delete cached level ${level}? This will also remove its chunks.`,
-                              )
-                            ) {
-                              deleteMutation.mutate(level);
-                            }
-                          }}
+                          onClick={() => setPending({ kind: "delete", level })}
                           disabled={isRunning || deleteMutation.isPending}
                           title="Delete cached level"
                         >
@@ -294,6 +345,46 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={pending?.kind === "delete"}
+        title={pending?.kind === "delete" ? `Delete cached level ${pending.level}?` : ""}
+        description="This wipes the level's rendered chunks and assembled image from R2 storage. The combined map DB itself is untouched. You can regenerate afterwards."
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
+
+      <ConfirmDialog
+        open={pending?.kind === "mark" && pending.status === "complete"}
+        title={
+          pending?.kind === "mark" && pending.status === "complete"
+            ? `Mark level ${pending.level} as complete?`
+            : ""
+        }
+        description="This only updates the status indicator — no chunks will be rendered. Use this to clear a stale 'failed' badge when you know the cached chunks are actually fine."
+        confirmLabel="Mark complete"
+        loading={markMutation.isPending}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
+
+      <ConfirmDialog
+        open={pending?.kind === "mark" && pending.status === "failed"}
+        title={
+          pending?.kind === "mark" && pending.status === "failed"
+            ? `Mark level ${pending.level} as failed?`
+            : ""
+        }
+        description="This only updates the status indicator. The rendered chunks (if any) stay in R2. Useful for flagging a known-bad level so it stops showing as generated."
+        confirmLabel="Mark failed"
+        variant="destructive"
+        loading={markMutation.isPending}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
