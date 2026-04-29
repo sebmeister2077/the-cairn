@@ -37,6 +37,7 @@ import {
   RefreshCw,
   History,
   ImageOff,
+  ShieldCheck,
 } from "lucide-react";
 import { MapViewer } from "@/components/MapViewer";
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
@@ -431,6 +432,22 @@ export function ContributePage() {
           </div>
 
           <MapDbFileHelp showServerIdHint />
+
+          <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-foreground" />
+            <div className="space-y-1">
+              <p className="font-medium text-foreground">What gets uploaded?</p>
+              <p>
+                Only the rendered <strong>visual map tiles</strong> from your local cache are
+                extracted and submitted. Your{" "}
+                <strong>
+                  waypoints, traders, translocators, and other personal map markers are never read
+                  or uploaded
+                </strong>
+                — they stay private on your machine.
+              </p>
+            </div>
+          </div>
 
           {!infoLoading && info && (
             <div className="flex gap-4 text-sm">
