@@ -382,8 +382,21 @@ export function MapViewer({
     const viewportW = el.clientWidth;
     const visibleImgPx = viewportW / zoom;
     const neededMaxDim = Math.ceil((imgNatural.w / visibleImgPx) * viewportW);
-    const target = Math.min(16384, Math.max(4096, neededMaxDim));
-    if (target <= renderedMaxDim * 1.8) return;
+    // Tile mode supports the full range of pre-rendered levels (down to 2048
+    // and up to "every pixel" full-res), so use the raw needed size. Blob
+    // mode is bounded by what the on-the-fly renderer is willing to produce.
+    const target = isTileMode
+      ? Math.max(1, neededMaxDim)
+      : Math.min(16384, Math.max(4096, neededMaxDim));
+    // Hysteresis thresholds: only swap when we're well above (zoomed in past
+    // current resolution's headroom) or well below (zoomed out so far that
+    // we're rendering far more pixels than we need). The asymmetric ratios
+    // keep us from oscillating around a single threshold while panning.
+    const shouldUpgrade = target > renderedMaxDim * 1.8;
+    // Downgrade only applies in tile mode — blob mode's enhanceFn doesn't
+    // expose a way to fetch a smaller pre-rendered image.
+    const shouldDowngrade = isTileMode && target * 3 < renderedMaxDim;
+    if (!shouldUpgrade && !shouldDowngrade) return;
 
     const timer = setTimeout(async () => {
       enhanceAbortRef.current?.abort();
@@ -395,18 +408,22 @@ export function MapViewer({
         if (isTileMode && enhanceTilesFn) {
           const next = await enhanceTilesFn(target);
           if (abort.signal.aborted) return;
+          // Parent had no better candidate — stay on the current level.
+          if (activeTileSet && next.id === activeTileSet.id) return;
           // Image is rendered as `translate(pan) scale(zoom)` over a div
           // sized to imageWidth, so a world point at image coord `ix`
-          // appears at screen `ix*zoom + pan`. After dims grow by `s` the
+          // appears at screen `ix*zoom + pan`. After dims change by `s` the
           // same world point is at `ix*s` in new coords. To keep the visible
           // result identical: ix*s*z' + p' = ix*z + p for all ix
-          // ⇒ z' = z/s and p' = p (pan unchanged). Previously pan was also
-          // multiplied by s, which shifted the viewport s× outside the image
-          // bounds and made every tile fail the visibility cull — the map
-          // went blank until “Center view” was pressed.
+          // ⇒ z' = z/s and p' = p (pan unchanged). This works for both
+          // s > 1 (upgrade) and s < 1 (downgrade).
           const scaleW = next.imageWidth / imgNatural.w;
           setZoom((z) => z / scaleW);
-          setRenderedMaxDim(target);
+          // Track the actual delivered resolution rather than the requested
+          // target so the up/down hysteresis comparisons reflect reality
+          // (e.g. when no level satisfies `target` and we get the highest
+          // available instead).
+          setRenderedMaxDim(next.imageWidth);
           // Mark this id as already-centered so the centering effect doesn't
           // re-center after we just scale-compensated the existing view.
           centeredTileIdRef.current = next.id;

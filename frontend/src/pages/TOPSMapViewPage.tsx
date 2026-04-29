@@ -547,17 +547,22 @@ export function TOPSMapViewPage() {
     }
   }
 
-  // Auto-enhance: when zoomed in past current resolution, fetch the next
-  // higher completed level and hand its tile set to the viewer (no stitching).
-  const enhanceToHigherLevel = useCallback(
+  // Auto-enhance: when zoomed in past current resolution, fetch a higher
+  // completed level; when zoomed out past current resolution, fetch a lower
+  // one. Either direction hands its tile set to the viewer (no stitching).
+  const selectLevelForZoom = useCallback(
     async (targetMaxDim: number): Promise<MapTileSet> => {
       const resolutions = statsQuery.data?.resolutions ?? [];
-      const completed = resolutions.filter((r) => r.status === "complete");
+      const completed = resolutions
+        .filter((r) => r.status === "complete")
+        .slice()
+        .sort((a, b) => a.max_dimension - b.max_dimension);
+      // Pick the smallest completed level whose max_dimension covers the
+      // requested target; fall back to the highest completed level.
       const candidate =
-        completed.find((r) => r.max_dimension >= targetMaxDim && r.level > (selectedLevel ?? 0)) ??
-        completed[completed.length - 1];
+        completed.find((r) => r.max_dimension >= targetMaxDim) ?? completed[completed.length - 1];
       if (!candidate) {
-        throw new Error("No higher resolution available");
+        throw new Error("No completed resolution available");
       }
       const info = await queryClient.fetchQuery<TopsMapLevelChunks>({
         queryKey: ["tops-map-level", candidate.level],
@@ -567,7 +572,7 @@ export function TOPSMapViewPage() {
         gcTime: 7 * 24 * 60 * 60 * 1000,
         meta: { persist: true },
       });
-      if (!info.chunks?.length) throw new Error("Higher-resolution chunks unavailable");
+      if (!info.chunks?.length) throw new Error("Resolution chunks unavailable");
       // Note: we deliberately do NOT call setSelectedLevel here. The parent
       // updating its `tileSet` prop in the middle of MapViewer's async swap
       // causes both sides to apply scale compensation (the prop-change effect
@@ -579,7 +584,7 @@ export function TOPSMapViewPage() {
       // override without touching pan/zoom.
       return levelToTileSet(info);
     },
-    [statsQuery.data?.resolutions, selectedLevel, queryClient],
+    [statsQuery.data?.resolutions, queryClient],
   );
 
   // Derived: the editing grouping object, the union of TLIds across all
@@ -887,7 +892,7 @@ export function TOPSMapViewPage() {
           }
           highlightedSegments={highlightedTranslocatorSegments}
           focusPoint={landmarkFocusPoint}
-          enhanceTilesFn={hasMap && completedLevels.length > 1 ? enhanceToHigherLevel : undefined}
+          enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
           onTileSetEnhanced={(next) => {
             // Persist the upgrade so future page loads start at the higher
             // level. Runs after MapViewer's internal swap, so the resulting
