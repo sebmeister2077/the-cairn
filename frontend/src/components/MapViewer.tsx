@@ -622,8 +622,11 @@ export function MapViewer({
     if (projectedOverlayPoints.length > 0) {
       const pointOuter = Math.max(2.1, 3.6 / Math.max(zoom, 0.1));
       const pointInner = Math.max(1, pointOuter * 0.48);
+
+      // Regular (Base etc.) points — cyan dot with white core.
       ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
       for (const pt of projectedOverlayPoints) {
+        if (pt.kind === "Server") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointOuter, 0, Math.PI * 2);
         ctx.fill();
@@ -631,9 +634,38 @@ export function MapViewer({
 
       ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
       for (const pt of projectedOverlayPoints) {
+        if (pt.kind === "Server") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointInner, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Spawn (Server) markers — larger gold five-point star with dark outline.
+      const starOuter = Math.max(4.2, 7.2 / Math.max(zoom, 0.1));
+      const starInner = starOuter * 0.45;
+      const strokeW = Math.max(0.6, 1.1 / Math.max(zoom, 0.1));
+      const drawStar = (cx: number, cy: number) => {
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? starOuter : starInner;
+          const a = -Math.PI / 2 + (i * Math.PI) / 5;
+          const x = cx + Math.cos(a) * r;
+          const y = cy + Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+      };
+
+      ctx.lineJoin = "round";
+      ctx.lineWidth = strokeW;
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "Server") continue;
+        drawStar(pt.x, pt.y);
+        ctx.fillStyle = "rgba(250, 204, 21, 0.95)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.stroke();
       }
     }
   }, [
@@ -689,16 +721,18 @@ export function MapViewer({
       // Skip points outside the visible viewport.
       if (sx < -200 || sx > w + 200 || sy < -200 || sy > h + 200) continue;
 
+      const isServer = pt.kind === "Server";
       const text = raw.length > 30 ? `${raw.slice(0, 29)}\u2026` : raw;
       const textW = ctx.measureText(text).width;
       const textH = FONT_SIZE;
-      const tx = sx + DOT_RADIUS_SCREEN + 3;
-      const ty = sy - DOT_RADIUS_SCREEN - PAD_Y - textH;
+      const dotRadius = isServer ? DOT_RADIUS_SCREEN + 4 : DOT_RADIUS_SCREEN;
+      const tx = sx + dotRadius + 3;
+      const ty = sy - dotRadius - PAD_Y - textH;
 
-      ctx.fillStyle = "rgba(15, 23, 42, 0.80)";
+      ctx.fillStyle = isServer ? "rgba(120, 53, 15, 0.88)" : "rgba(15, 23, 42, 0.80)";
       ctx.fillRect(tx - PAD_X, ty - PAD_Y, textW + PAD_X * 2, textH + PAD_Y * 2);
 
-      ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
+      ctx.fillStyle = isServer ? "rgba(254, 240, 138, 1)" : "rgba(236, 254, 255, 0.98)";
       ctx.fillText(text, tx, ty);
     }
   }, [pan, projectedOverlayPoints, zoom]);
