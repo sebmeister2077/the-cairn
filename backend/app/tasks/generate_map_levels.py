@@ -472,6 +472,16 @@ def resume_pending_work():
     global _active_thread
 
     # Step 1 — recover orphaned 'generating' levels.
+    #
+    # Skip this scan entirely when a worker is alive in *this* process: any
+    # 'generating' entries belong to it, not to a dead predecessor. Without
+    # this guard the periodic heavy_compute_poller tick (every ~30s) would
+    # see the in-flight level as orphaned, reset its tracker, and enqueue a
+    # redundant full regen — producing an infinite "left in 'generating'
+    # state by previous process" warning loop.
+    if is_job_running():
+        return
+
     try:
         status = tracker.get_status()
         orphaned: List[int] = []
