@@ -37,6 +37,24 @@ export function setStoredConsent(value: ConsentValue) {
     window.dispatchEvent(new CustomEvent("storage-consent-change", { detail: value }));
 }
 
+/**
+ * Wipe the stored consent decision so the consent prompt is shown again.
+ * Used when the user previously declined and now wants to reconsider
+ * (e.g. after seeing the "you need an API key" banner).
+ */
+export function clearStoredConsent() {
+    try {
+        localStorage.removeItem(CONSENT_KEY);
+    } catch {
+        // ignore — storage may be disabled
+    }
+    window.dispatchEvent(new CustomEvent("storage-consent-change", { detail: null }));
+}
+
 export function hasAcceptedStorage(): boolean {
     return getStoredConsent() === "accepted";
+}
+
+export function hasDeclinedStorage(): boolean {
+    return getStoredConsent() === "declined";
 }

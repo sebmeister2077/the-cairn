@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, NavLink, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, NavLink, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { CookieConsent } from "@/components/CookieConsent";
-import { hasAcceptedStorage } from "@/lib/consent";
+import { hasAcceptedStorage, clearStoredConsent } from "@/lib/consent";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
@@ -96,6 +96,7 @@ export function AppContent() {
     required: boolean;
   } | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const [inviteClaim, setInviteClaim] = useState<{
     token: string;
     status: "idle" | "pending" | "success" | "error";
@@ -111,6 +112,12 @@ export function AppContent() {
   // Reactive mirror of the consent flag so the discovery effect re-runs the
   // moment the user clicks Accept (rather than only on the next reload).
   const [storageConsented, setStorageConsented] = useState(hasAcceptedStorage);
+  // Captured snapshot of "why was the user kicked out" so we can render a
+  // friendly banner after the global ``auth-rejected`` event fires. Cleared
+  // when the user dismisses the banner or claims a new key.
+  const [authRejected, setAuthRejected] = useState<
+    { kind: "had-key" } | { kind: "no-key-no-consent" } | { kind: "no-key" } | null
+  >(null);
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -232,6 +239,36 @@ export function AppContent() {
     return () => window.removeEventListener("storage-consent-change", onConsent);
   }, []);
 
+  // Listen for the global ``auth-rejected`` event fired by api.ts on a 401
+  // response. We snapshot the user's situation (has a stored key? has
+  // accepted browser storage?) so we can render a contextual banner that
+  // tells them what to do next. We also navigate back to the home page via
+  // react-router (instead of the previous full-page reload) so the banner
+  // survives the redirect.
+  useEffect(() => {
+    function onAuthRejected() {
+      const hadKey = !!getStoredApiKey();
+      const consented = hasAcceptedStorage();
+      // 401 means the backend rejected this key. Drop the cached
+      // admin/contributor flags so the UI no longer thinks we're admin.
+      setIsAdmin(false);
+      setStoredIsAdmin(false);
+      setStoredCanContribute(false);
+      if (hadKey) {
+        setAuthRejected({ kind: "had-key" });
+      } else if (!consented) {
+        setAuthRejected({ kind: "no-key-no-consent" });
+      } else {
+        setAuthRejected({ kind: "no-key" });
+      }
+      if (window.location.pathname !== "/") {
+        navigate("/", { replace: true });
+      }
+    }
+    window.addEventListener("auth-rejected", onAuthRejected);
+    return () => window.removeEventListener("auth-rejected", onAuthRejected);
+  }, [navigate]);
+
   async function handleClaimInvite() {
     if (!inviteClaim) return;
     setInviteClaim((prev) => prev && { ...prev, status: "pending" });
@@ -334,7 +371,30 @@ export function AppContent() {
         </nav>
       </header>
       <main className="container mx-auto px-4 py-6 max-w-3xl flex-1 w-full">
-        {defaultInvite && !inviteClaim && (
+        {authRejected && (
+          <AuthRejectedBanner
+            kind={authRejected.kind}
+            hasDefaultInvite={!!defaultInvite}
+            onDismiss={() => setAuthRejected(null)}
+            onClaim={() => {
+              if (defaultInvite) {
+                setInviteClaim({ token: defaultInvite.token, status: "idle" });
+                setDefaultInvite(null);
+              }
+              setAuthRejected(null);
+            }}
+            onOpenApiKey={() => {
+              setAuthRejected(null);
+              setKeyOpen(true);
+            }}
+            onReopenConsent={() => {
+              clearStoredConsent();
+              setStorageConsented(false);
+              setAuthRejected(null);
+            }}
+          />
+        )}
+        {defaultInvite && !inviteClaim && !authRejected && (
           <Card className="mb-4 border-sky-300 bg-sky-50/60 dark:bg-sky-950/30">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
@@ -417,6 +477,16 @@ export function AppContent() {
             >
               Terms
             </NavLink>
+            <button
+              type="button"
+              onClick={() => {
+                clearStoredConsent();
+                setStorageConsented(false);
+              }}
+              className="hover:text-foreground underline-offset-2 hover:underline"
+            >
+              Cookie settings
+            </button>
           </span>
         </div>
       </footer>
@@ -499,5 +569,66 @@ export function AppContent() {
         </div>
       )}
     </div>
+  );
+}
+
+function AuthRejectedBanner({
+  kind,
+  hasDefaultInvite,
+  onDismiss,
+  onClaim,
+  onOpenApiKey,
+  onReopenConsent,
+}: {
+  kind: "had-key" | "no-key" | "no-key-no-consent";
+  hasDefaultInvite: boolean;
+  onDismiss: () => void;
+  onClaim: () => void;
+  onOpenApiKey: () => void;
+  onReopenConsent: () => void;
+}) {
+  let title: string;
+  let body: string;
+  let primary: { label: string; onClick: () => void } | null = null;
+
+  if (kind === "had-key") {
+    title = "Your access has been restricted";
+    body =
+      "The server rejected your API key. It may have been revoked or temporarily disabled by an admin, or your account may have been removed. You can paste a different key, or contact an administrator if you think this is a mistake.";
+    primary = { label: "Use a different key", onClick: onOpenApiKey };
+  } else if (kind === "no-key-no-consent") {
+    title = "You need an API key to continue";
+    body =
+      "To use this service you'll need an API key, which means we have to store a small amount of data in your browser. Click below to review the cookie prompt again and accept storage so you can claim a free key.";
+    primary = { label: "Review cookie prompt", onClick: onReopenConsent };
+  } else {
+    title = "You need an API key to continue";
+    body = hasDefaultInvite
+      ? "Your previous session was rejected. You can claim a free key now to keep going — no sign-up form, no email required."
+      : "Your previous session was rejected. Paste an API key to continue, or ask an admin for an invite link.";
+    primary = hasDefaultInvite
+      ? { label: "Claim a key", onClick: onClaim }
+      : { label: "Enter an API key", onClick: onOpenApiKey };
+  }
+
+  return (
+    <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
+      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <p className="font-medium text-foreground">{title}</p>
+          <p className="text-sm text-muted-foreground">{body}</p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="ghost" size="sm" onClick={onDismiss}>
+            Dismiss
+          </Button>
+          {primary && (
+            <Button size="sm" onClick={primary.onClick}>
+              {primary.label}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

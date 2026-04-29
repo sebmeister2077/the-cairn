@@ -32,16 +32,15 @@ export default function App() {
   // Listen for the global `auth-rejected` signal that api.ts dispatches when
   // any backend call returns 401. We purge in-memory + persisted query data
   // (so stale results from the no-longer-valid session can't leak across the
-  // UI) and bounce the user to the home page. The API key itself is left
-  // alone — an admin may have only temporarily disabled it — but the admin
-  // passkey session is cleared inside api.ts before the event fires.
+  // UI). The API key itself is left alone — an admin may have only
+  // temporarily disabled it — but the admin passkey session is cleared
+  // inside api.ts before the event fires. AppContent listens for the same
+  // event and uses react-router to navigate + show a contextual banner so
+  // the user gets visual feedback instead of a silent reload.
   useEffect(() => {
     function onAuthRejected() {
       queryClient.clear();
       clearPersistedQueryCache();
-      if (window.location.pathname !== "/") {
-        window.location.href = "/";
-      }
     }
     window.addEventListener("auth-rejected", onAuthRejected);
     return () => window.removeEventListener("auth-rejected", onAuthRejected);
