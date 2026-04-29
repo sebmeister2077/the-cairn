@@ -8,6 +8,8 @@ Stores:
 """
 
 import os
+import threading
+import time
 
 import boto3
 from botocore.config import Config as BotoConfig
@@ -154,6 +156,66 @@ def generate_presigned_upload_url(
 # S3v4 presigned GET URLs are capped at 7 days (604800 s).
 _MAX_PRESIGN_SECONDS = 7 * 24 * 60 * 60
 
+# In-process cache for presigned download URLs.
+#
+# Why: the contribute /info endpoint is polled every 5s while a
+# contribution is being validated/merged, and each poll regenerated a
+# fresh signed URL for every history thumbnail and pending preview. The
+# resulting URL strings differ only in their `X-Amz-Signature`/expires
+# query params, but that's enough to bust frontend memoisation and
+# break browser image caching (each new URL is a new resource).
+#
+# We cache the generated URL keyed by (key, content_type, expires_seconds)
+# and reuse it until ~75% of its TTL has elapsed, then mint a fresh one.
+# This keeps URLs stable for the whole polling lifetime of a normal
+# admin session while still rotating well before the signature expires.
+_presigned_cache: dict[tuple[str, str, int], tuple[str, float]] = {}
+_presigned_cache_lock = threading.Lock()
+
+
+def _cached_presigned_download_url(
+    key: str,
+    *,
+    expires_seconds: int,
+    content_type: str,
+) -> str:
+    cache_key = (key, content_type, expires_seconds)
+    now = time.monotonic()
+    with _presigned_cache_lock:
+        cached = _presigned_cache.get(cache_key)
+        if cached is not None:
+            url, expires_at = cached
+            if now < expires_at:
+                return url
+        url = _get_client().generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": _bucket(),
+                "Key": key,
+                "ResponseContentType": content_type,
+            },
+            ExpiresIn=min(expires_seconds, _MAX_PRESIGN_SECONDS),
+        )
+        # Refresh well before the signature actually expires (75% of TTL,
+        # capped at 1 day so very long signatures still get rotated daily).
+        reuse_for = min(int(expires_seconds * 0.75), 24 * 60 * 60)
+        _presigned_cache[cache_key] = (url, now + reuse_for)
+        # Opportunistic GC — drop expired entries so the dict doesn't grow
+        # unboundedly across the lifetime of the process.
+        if len(_presigned_cache) > 1024:
+            stale = [k for k, (_, exp) in _presigned_cache.items() if exp <= now]
+            for k in stale:
+                _presigned_cache.pop(k, None)
+        return url
+
+
+def invalidate_presigned_download_url(key: str) -> None:
+    """Drop any cached presigned URLs for ``key`` (e.g. after re-uploading
+    or deleting the underlying object). Safe to call for unknown keys."""
+    with _presigned_cache_lock:
+        for cache_key in [k for k in _presigned_cache if k[0] == key]:
+            _presigned_cache.pop(cache_key, None)
+
 
 def generate_presigned_download_url(
     key: str,
@@ -170,18 +232,18 @@ def generate_presigned_download_url(
     not exist (one HEAD round-trip per call). Pass False when the caller has
     already established existence (e.g. via a single bulk LIST) to skip the
     HEAD round-trip entirely.
+
+    Generated URLs are cached in-process keyed by (key, content_type,
+    expires_seconds) and reused for ~75% of their TTL so repeated calls
+    (e.g. polling the /contribute/info endpoint) return the same string,
+    which keeps frontend memoisation and the browser image cache stable.
     """
     if verify_exists and not object_exists(key):
         return ""
-    clamped = min(expires_seconds, _MAX_PRESIGN_SECONDS)
-    return _get_client().generate_presigned_url(
-        "get_object",
-        Params={
-            "Bucket": _bucket(),
-            "Key": key,
-            "ResponseContentType": content_type,
-        },
-        ExpiresIn=clamped,
+    return _cached_presigned_download_url(
+        key,
+        expires_seconds=expires_seconds,
+        content_type=content_type,
     )
 
 
@@ -191,6 +253,9 @@ def delete_object(key: str):
         _get_client().delete_object(Bucket=_bucket(), Key=key)
     except ClientError:
         pass
+    # Drop any cached presigned URLs so we don't keep handing out links
+    # to a deleted object until their natural expiry.
+    invalidate_presigned_download_url(key)
 
 
 def object_exists(key: str) -> bool:
