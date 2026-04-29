@@ -16,6 +16,16 @@ export function setApiKey(key: string) {
         clearAdminSession();
     }
     localStorage.setItem("api_key", key);
+    if (previous !== key) {
+        // Notify in-process listeners (banners, gating UI) that the stored
+        // key changed. The browser only fires native ``storage`` events for
+        // OTHER tabs, so we dispatch our own for this tab.
+        try {
+            window.dispatchEvent(new CustomEvent("api-key-change", { detail: { key } }));
+        } catch {
+            // Older browsers / non-window environments — ignore.
+        }
+    }
 }
 
 export function getStoredApiKey(): string {

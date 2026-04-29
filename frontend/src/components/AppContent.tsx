@@ -112,6 +112,9 @@ export function AppContent() {
   // Reactive mirror of the consent flag so the discovery effect re-runs the
   // moment the user clicks Accept (rather than only on the next reload).
   const [storageConsented, setStorageConsented] = useState(hasAcceptedStorage);
+  // Reactive mirror of "is an API key currently stored?" so the welcome
+  // banner disappears the moment the user pastes one in (in this tab).
+  const [hasApiKey, setHasApiKey] = useState(() => !!getStoredApiKey());
   // Captured snapshot of "why was the user kicked out" so we can render a
   // friendly banner after the global ``auth-rejected`` event fires. Cleared
   // when the user dismisses the banner or claims a new key.
@@ -210,7 +213,11 @@ export function AppContent() {
   useEffect(() => {
     if (defaultInviteDismissed) return;
     if (!storageConsented) return;
-    if (getStoredApiKey()) return;
+    if (hasApiKey) {
+      // A key was just saved — make sure no stale banner remains.
+      setDefaultInvite(null);
+      return;
+    }
     if (inviteClaim || pendingInviteToken) return;
     let cancelled = false;
     getDefaultPublicInvite()
@@ -223,11 +230,9 @@ export function AppContent() {
     return () => {
       cancelled = true;
     };
-    // Re-evaluate when the invite-claim modal closes (success/dismiss) or
-    // when consent flips. We deliberately depend on inviteClaim presence
-    // (not its status) so the banner reappears if the user dismisses the
-    // modal without claiming.
-  }, [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented]);
+    // Re-evaluate when the invite-claim modal closes (success/dismiss), when
+    // consent flips, or when the stored API key appears/disappears.
+  }, [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented, hasApiKey]);
 
   // When consent is granted via the cookie banner, re-trigger the discovery
   // effect above by listening to the same custom event other components use.
@@ -237,6 +242,22 @@ export function AppContent() {
     }
     window.addEventListener("storage-consent-change", onConsent);
     return () => window.removeEventListener("storage-consent-change", onConsent);
+  }, []);
+
+  // Track API key changes (saved via the dialog, claimed via invite, pasted
+  // from a ``?key=`` URL, or written by another tab). Covers both our own
+  // ``api-key-change`` custom event (same tab) and the native ``storage``
+  // event (cross-tab).
+  useEffect(() => {
+    function syncFromStorage() {
+      setHasApiKey(!!getStoredApiKey());
+    }
+    window.addEventListener("api-key-change", syncFromStorage);
+    window.addEventListener("storage", syncFromStorage);
+    return () => {
+      window.removeEventListener("api-key-change", syncFromStorage);
+      window.removeEventListener("storage", syncFromStorage);
+    };
   }, []);
 
   // Listen for the global ``auth-rejected`` event fired by api.ts on a 401
@@ -394,7 +415,7 @@ export function AppContent() {
             }}
           />
         )}
-        {defaultInvite && !inviteClaim && !authRejected && (
+        {defaultInvite && !inviteClaim && !authRejected && !hasApiKey && (
           <Card className="mb-4 border-sky-300 bg-sky-50/60 dark:bg-sky-950/30">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
