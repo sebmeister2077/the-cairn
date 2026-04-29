@@ -10,6 +10,7 @@ import {
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
   MapViewer,
+  type LandmarkProperty,
   type MapStats,
   type MapTileSet,
   type WorldLineSegment,
@@ -225,11 +226,7 @@ export function TOPSMapViewPage() {
           const [x, z] = coords;
           if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
 
-          const props = (feature?.properties ?? {}) as {
-            label: string;
-            type: "Base" | "Server" | "Misc" | string;
-            z: number;
-          };
+          const props = (feature?.properties ?? {}) as LandmarkProperty;
 
           if (props.type === "Misc") continue;
 
@@ -479,15 +476,15 @@ export function TOPSMapViewPage() {
   }, [ensureTranslocatorsLoaded]);
 
   useEffect(() => {
-    if (!showLandmarks) {
-      setLandmarkPoints([]);
-      return;
-    }
-
     let cancelled = false;
     ensureLandmarksLoaded()
       .then((points) => {
-        if (!cancelled) setLandmarkPoints(points);
+        if (cancelled) return;
+        if (!showLandmarks) {
+          setLandmarkPoints(points.filter((p) => p.kind === "Server"));
+          return;
+        }
+        setLandmarkPoints(points);
       })
       .catch(() => {
         if (!cancelled) setLandmarkPoints([]);
@@ -878,7 +875,7 @@ export function TOPSMapViewPage() {
           stats={stats}
           alt="TOPS global server map"
           overlaySegments={visibleTranslocatorSegments}
-          overlayPoints={showLandmarks ? landmarkPoints : undefined}
+          overlayPoints={landmarkPoints}
           onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
           onOverlaySegmentRightClick={
             showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined

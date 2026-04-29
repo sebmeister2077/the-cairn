@@ -30,8 +30,13 @@ export interface WorldPointMarker {
   x: number;
   z: number;
   label?: string;
-  kind?: string;
+  kind?: "Base" | "Server" | "Misc";
 }
+export type LandmarkProperty = {
+  label: string;
+  type: "Base" | "Server" | "Misc";
+  z?: number;
+};
 
 export interface MapTile {
   cx: number;
