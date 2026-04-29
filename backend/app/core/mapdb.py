@@ -509,14 +509,15 @@ def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
     result without paying for ~300 extra bytes per blank chunk in storage and
     bandwidth.
 
-    Strategy: build a full-resolution buffer covering the chunk's block region,
-    plot tiles into it at exact block coordinates, then downsample with a fixed
-    stride. This avoids the subsampling-placement mismatch that occurs when
-    ``scale`` does not divide ``TILE_SIZE`` evenly (which produced visible
-    stripes/cuts in the older per-tile-subsample approach).
-
-    Memory: ``(chunk_arr_h * scale) × (chunk_arr_w * scale) × 4`` bytes peak.
-    For the configured levels and typical world sizes this stays a few MB.
+    Strategy: allocate the chunk's output buffer at the *target* resolution
+    (``chunk_arr_h × chunk_arr_w``), then for each overlapping tile decode
+    it, downsample with stride ``scale`` (``tile[::scale, ::scale]``), and
+    paste it at its scale-aligned image-pixel position. This is the same
+    approach the contribution preview uses and gives gap-free coverage
+    even when ``scale`` does not divide ``TILE_SIZE`` evenly — adjacent
+    tiles overlap by at most one pixel rather than leaving stripes of
+    transparent pixels. Memory is bounded by the chunk-sized output
+    buffer plus one decoded tile (~4 MB peak per worker).
     """
     from PIL import Image
 
@@ -535,28 +536,14 @@ def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
     if chunk_arr_w <= 0 or chunk_arr_h <= 0:
         return None
 
-    # Block-coordinate region this chunk covers (relative to map origin).
+    # Block-coordinate region this chunk covers (relative to map origin),
+    # used to compute which tiles overlap.
     bx0 = px0 * scale
     by0 = py0 * scale
     bx1 = bx0 + chunk_arr_w * scale
     by1 = by0 + chunk_arr_h * scale
-    block_w = bx1 - bx0
-    block_h = by1 - by0
 
-    # Cap the full-resolution buffer to ~64 MB. For typical worlds the
-    # natural buffer is well under this. If exceeded (extreme scale), fall
-    # back to one-pixel-per-tile sampling.
-    MAX_FULLRES_PIXELS = 64 * 1024 * 1024 // 4  # 64 MB / 4 bytes per pixel
-    use_fullres = (block_w * block_h) <= MAX_FULLRES_PIXELS and scale <= TILE_SIZE
-
-    # Full-resolution buffer for this chunk (only when use_fullres).
-    full_arr = (
-        np.zeros((block_h, block_w, 4), dtype=np.uint8) if use_fullres else None
-    )
-    sample_arr = (
-        np.zeros((chunk_arr_h, chunk_arr_w, 4), dtype=np.uint8)
-        if not use_fullres else None
-    )
+    out_arr = np.zeros((chunk_arr_h, chunk_arr_w, 4), dtype=np.uint8)
 
     # World-tile range that overlaps the block region.
     tx_lo = min_x + bx0 // TILE_SIZE
@@ -586,48 +573,33 @@ def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
                 if tx < tx_lo or tx > tx_hi:
                     continue
 
-                if use_fullres:
-                    if len(blob) == STANDARD_BLOB_SIZE:
-                        tile = decode_tile_numpy(blob)
-                    else:
-                        tile = decode_tile_fallback(blob)
-
-                    # Tile origin in chunk-block coordinates.
-                    tile_bx = (tx - min_x) * TILE_SIZE - bx0
-                    tile_bz = (tz - min_z) * TILE_SIZE - by0
-
-                    # Clip tile to the chunk's full-res buffer.
-                    sx0 = max(0, -tile_bx)
-                    sy0 = max(0, -tile_bz)
-                    ex = min(TILE_SIZE, block_w - tile_bx)
-                    ey = min(TILE_SIZE, block_h - tile_bz)
-                    if ex > sx0 and ey > sy0:
-                        full_arr[
-                            tile_bz + sy0:tile_bz + ey,
-                            tile_bx + sx0:tile_bx + ex,
-                        ] = tile[sy0:ey, sx0:ex]
+                if len(blob) == STANDARD_BLOB_SIZE:
+                    tile = decode_tile_numpy(blob)
                 else:
-                    # Extreme scale fallback — one sample pixel per tile.
-                    bx = (tx - min_x) * TILE_SIZE // scale - px0
-                    bz = (tz - min_z) * TILE_SIZE // scale - py0
-                    if 0 <= bx < chunk_arr_w and 0 <= bz < chunk_arr_h:
-                        if len(blob) >= STANDARD_BLOB_SIZE:
-                            r, g, b, a = _sample_one_pixel(blob)
-                        else:
-                            r, g, b, a = 0, 0, 0, 255
-                        sample_arr[bz, bx] = [r, g, b, a]
+                    tile = decode_tile_fallback(blob)
+
+                # Downsample tile to the level's scale. For scale=1 this
+                # is the original 32x32 tile; for larger scales it's a
+                # smaller patch (e.g. 16x16 at scale=2, 1x1 at scale≥32).
+                sampled = tile if scale == 1 else tile[::scale, ::scale]
+                sh, sw = sampled.shape[:2]
+
+                # Image-pixel origin of this tile, relative to the chunk.
+                bx = (tx - min_x) * TILE_SIZE // scale - px0
+                bz = (tz - min_z) * TILE_SIZE // scale - py0
+
+                # Clip the patch against the chunk's output buffer.
+                sx0 = max(0, -bx)
+                sy0 = max(0, -bz)
+                ew = min(sw, chunk_arr_w - bx)
+                eh = min(sh, chunk_arr_h - bz)
+                if ew > sx0 and eh > sy0:
+                    out_arr[
+                        bz + sy0:bz + eh,
+                        bx + sx0:bx + ew,
+                    ] = sampled[sy0:eh, sx0:ew]
     finally:
         conn.close()
-
-    # Downsample once. Stride sampling matches the legacy renderer's flavor.
-    if not use_fullres:
-        out_arr = sample_arr
-    elif scale == 1:
-        out_arr = full_arr
-    else:
-        out_arr = full_arr[::scale, ::scale]
-        # Defensive: ensure exact target shape.
-        out_arr = out_arr[:chunk_arr_h, :chunk_arr_w]
 
     # If no tile contributed any non-zero alpha, treat the chunk as empty so
     # the caller can skip uploading a ~300-byte transparent PNG.

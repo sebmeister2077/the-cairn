@@ -337,6 +337,8 @@ export interface MapGenerationStatus {
     levels: Record<string, MapGenerationLevelStatus>;
     configured_levels: { level: number; max_dimension: number }[];
     is_running: boolean;
+    /** True if a stop has been requested but the worker hasn't observed it yet. */
+    stop_requested?: boolean;
 }
 
 export async function getMapGenerationStatus(): Promise<MapGenerationStatus> {
@@ -368,6 +370,16 @@ export async function deleteMapLevel(level: number): Promise<void> {
     });
     if (res.status === 204) return;
     await handleResponse(res);
+}
+
+/** Cooperative stop: signal the generation worker to abort after its
+ *  current chunk and discard any queued requests. */
+export async function stopMapGeneration(): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/stop`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
 }
 
 export async function getContributeInfo(signal?: AbortSignal) {

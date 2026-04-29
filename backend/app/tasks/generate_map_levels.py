@@ -56,6 +56,38 @@ logger = logging.getLogger("uvicorn.error")
 _job_lock = threading.Lock()
 _active_thread: Optional[threading.Thread] = None
 
+# Cooperative stop signal. Set by ``request_stop()`` (admin STOP button);
+# checked by the worker between chunks and between queue passes. When
+# observed, the worker marks the in-flight level as failed with a clear
+# message, drains and discards any queued requests so they don't immediately
+# resume the work the admin just asked to stop, then exits.
+_stop_event = threading.Event()
+
+
+# Sentinel exception raised inside ``_generate_level`` to unwind the chunk
+# loop when a stop is requested. Caught in ``_worker_loop``.
+class _StopRequested(Exception):
+    pass
+
+
+def request_stop() -> bool:
+    """Signal the running worker to stop after the current chunk.
+
+    Returns ``True`` if a worker was running (and will observe the signal),
+    ``False`` if no worker is alive — in which case the flag is still set
+    and will be cleared by the next ``start_job`` call.
+    """
+    _stop_event.set()
+    return is_job_running()
+
+
+def is_stop_requested() -> bool:
+    return _stop_event.is_set()
+
+
+def clear_stop():
+    _stop_event.clear()
+
 
 def is_job_running() -> bool:
     return _active_thread is not None and _active_thread.is_alive()
@@ -132,6 +164,10 @@ def _generate_level(
         tracker.update_progress(level, completed, current_chunk=None)
 
     for cx, cy in chunks_to_render:
+        if is_stop_requested():
+            raise _StopRequested(
+                f"stopped at level {level} after {completed}/{total_grid} chunks"
+            )
         try:
             chunk_png = render_chunk_png(db_path, level, cx, cy, geometry=geometry)
             chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
@@ -271,6 +307,19 @@ def _worker_loop():
 
     try:
         while True:
+            if is_stop_requested():
+                # Discard any rows still in the queue so we don't resume
+                # immediately after the admin asked to stop. A subsequent
+                # ``start_job`` call clears the stop flag and re-enqueues.
+                try:
+                    db.drain_regen_queue()
+                except Exception:
+                    logger.exception("Failed to drain regen queue while stopping")
+                logger.info("Map generation worker exiting due to stop request")
+                with _job_lock:
+                    _active_thread = None
+                return
+
             try:
                 rows = db.drain_regen_queue()
             except Exception:
@@ -296,14 +345,40 @@ def _worker_loop():
             db_path: Optional[str] = None
             try:
                 db_path = _download_combined_db()
+                stopped = False
                 for lvl in sorted(plan.keys()):
+                    if stopped:
+                        # Mark levels we never got to as failed too so the
+                        # UI doesn't show them stuck mid-job.
+                        try:
+                            tracker.mark_failed(lvl, "Stopped by admin (skipped)")
+                        except Exception:
+                            pass
+                        continue
                     bounds = plan[lvl]
                     try:
                         _generate_level(db_path, lvl, affected_bounds=bounds)
+                    except _StopRequested as stop_exc:
+                        stopped = True
+                        try:
+                            tracker.mark_failed(lvl, f"Stopped by admin ({stop_exc})")
+                        except Exception:
+                            pass
+                        logger.info("Level %s aborted: %s", lvl, stop_exc)
                     except Exception as exc:
                         tracker.mark_failed(lvl, str(exc))
                         logger.exception("Level %s generation failed", lvl)
                         # Continue with remaining levels.
+                if stopped:
+                    # Discard the rest of the queue and exit cleanly so a
+                    # follow-up ``start_job`` is needed to resume work.
+                    try:
+                        db.drain_regen_queue()
+                    except Exception:
+                        logger.exception("Failed to drain regen queue after stop")
+                    with _job_lock:
+                        _active_thread = None
+                    return
             except Exception as exc:
                 logger.exception("Map generation pass aborted: %s", exc)
                 for lvl in plan:
@@ -352,6 +427,9 @@ def start_job(levels: Optional[List[int]] = None,
         return False
 
     with _job_lock:
+        # A new explicit start request always clears any prior stop flag —
+        # otherwise the worker we're about to spawn would exit immediately.
+        clear_stop()
         if is_job_running():
             return True
         thread = threading.Thread(

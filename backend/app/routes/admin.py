@@ -22,7 +22,12 @@ from ..auth import require_admin
 from ..core import database as db
 from ..core import generation_tracker, r2_storage
 from ..core.mapdb import RESOLUTION_LEVELS
-from ..tasks.generate_map_levels import is_job_running, start_job
+from ..tasks.generate_map_levels import (
+    is_job_running,
+    is_stop_requested,
+    request_stop,
+    start_job,
+)
 
 router = APIRouter()
 
@@ -218,6 +223,7 @@ def _generation_status_payload() -> dict:
             for lvl, dim in sorted(RESOLUTION_LEVELS.items())
         ],
         "is_running": is_job_running(),
+        "stop_requested": is_stop_requested(),
         "queued_requests": queue_size,
     }
 
@@ -266,6 +272,24 @@ async def request_map_generation(
     if not accepted:
         raise HTTPException(status_code=500, detail="Could not enqueue generation request")
 
+    return _generation_status_payload()
+
+
+@router.post("/admin/tops-map/stop", status_code=202)
+async def stop_map_generation(_: str = Depends(require_admin)):
+    """Cooperative stop: signal the generation worker to abort after the
+    current chunk finishes.
+
+    Any queued (but not-yet-started) regen requests are discarded so the
+    worker doesn't immediately resume the work the admin just asked to
+    stop. The currently-rendering level is marked as failed with a
+    "Stopped by admin" message; subsequent levels in the same plan are
+    skipped. To resume, hit the regular ``/admin/tops-map/generate``
+    endpoint again — ``start_job`` clears the stop flag automatically.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    request_stop()
     return _generation_status_payload()
 
 
