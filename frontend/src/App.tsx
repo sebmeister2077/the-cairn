@@ -15,6 +15,20 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 60 * 1000,
       gcTime: TWO_WEEKS,
+      retry: 2,
+      retryDelay(failureCount, error) {
+        if (error instanceof Response) {
+          // Don't retry on auth errors since they trigger a global cache purge
+          // that would make retries futile.
+          if (error.status === 401) return 0;
+          // Retry more aggressively on rate limit errors since they're likely
+          // to be transient and we want to recover from them as quickly as possible.
+          if (error.status === 429) return 1000;
+        }
+        // Otherwise, use an exponential backoff strategy with some jitter.
+        const baseDelay = Math.min(1000 * 2 ** failureCount, 30000);
+        return baseDelay / 2 + Math.random() * (baseDelay / 2);
+      },
     },
   },
 });
