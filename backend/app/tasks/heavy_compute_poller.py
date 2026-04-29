@@ -64,6 +64,18 @@ def _tick() -> None:
     except Exception:
         logger.exception("heavy_compute_poller: match_score.start_job failed")
 
+    try:
+        from . import approve_contribution
+        approve_contribution.start_job()
+    except Exception:
+        logger.exception("heavy_compute_poller: approve_contribution.start_job failed")
+
+    try:
+        from . import generate_map_levels
+        generate_map_levels.resume_pending_work()
+    except Exception:
+        logger.exception("heavy_compute_poller: generate_map_levels.resume_pending_work failed")
+
 
 def _scheduled_run() -> None:
     global _timer

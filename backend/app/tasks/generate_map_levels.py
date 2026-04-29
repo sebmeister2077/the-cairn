@@ -426,6 +426,20 @@ def start_job(levels: Optional[List[int]] = None,
         logger.exception("Failed to enqueue regen request")
         return False
 
+    # Heavy-compute kill switch. The request stays in regen_queue so it will
+    # be picked up by the next ``resume_pending_work`` / poller tick once
+    # the flag is flipped back on; we just don't spawn a worker right now.
+    try:
+        from ..core.feature_flags import is_heavy_compute_allowed
+        if not is_heavy_compute_allowed():
+            logger.info(
+                "generate_map_levels: skipping spawn — heavy_compute_enabled is OFF "
+                "(request enqueued and will resume when the flag is re-enabled)"
+            )
+            return True
+    except Exception:
+        logger.exception("generate_map_levels: feature-flag check failed")
+
     with _job_lock:
         # A new explicit start request always clears any prior stop flag —
         # otherwise the worker we're about to spawn would exit immediately.
@@ -494,6 +508,20 @@ def resume_pending_work():
         return
     if size <= 0:
         return
+
+    # Heavy-compute kill switch — leave the queue rows alone so a later
+    # flag-flip / poller tick resumes them; just don't spawn now.
+    try:
+        from ..core.feature_flags import is_heavy_compute_allowed
+        if not is_heavy_compute_allowed():
+            logger.info(
+                "generate_map_levels: %d queued row(s) but heavy_compute_enabled "
+                "is OFF; deferring worker spawn", size,
+            )
+            return
+    except Exception:
+        logger.exception("generate_map_levels: feature-flag check failed")
+
     with _job_lock:
         if is_job_running():
             return
