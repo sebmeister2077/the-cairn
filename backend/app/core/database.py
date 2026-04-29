@@ -374,6 +374,16 @@ CREATE TABLE IF NOT EXISTS maintenance_notices (
 );
 CREATE INDEX IF NOT EXISTS idx_maintenance_notices_active
     ON maintenance_notices (active) WHERE active;
+
+-- Public landing page can offer to claim a key from a single "default"
+-- invite link when a visitor lands on the site without an invite URL or a
+-- saved API key (and after they've accepted browser-storage consent). At
+-- most one invite link can be marked default-public at a time; the partial
+-- unique index below enforces that. Toggled via PATCH /admin/invite-links.
+ALTER TABLE invite_links
+ADD COLUMN IF NOT EXISTS is_default_public BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
+    ON invite_links ((is_default_public)) WHERE is_default_public = TRUE;
 """
 
 # ---------------------------------------------------------------------------
@@ -1643,7 +1653,62 @@ def get_invite_link(token: str) -> Optional[dict]:
 def revoke_invite_link(token: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute("UPDATE invite_links SET revoked = TRUE WHERE token = %s", (token,))
+            cur.execute(
+                "UPDATE invite_links SET revoked = TRUE, is_default_public = FALSE "
+                "WHERE token = %s",
+                (token,),
+            )
+
+
+def set_invite_link_default_public(token: str, value: bool) -> Optional[dict]:
+    """Mark/unmark an invite link as the single default-public link.
+
+    When ``value`` is True, atomically clears the flag on every other invite
+    link first (the partial unique index would otherwise reject the update),
+    then sets it on ``token``. Refuses to flag a revoked link as default.
+
+    Returns the updated invite-link row, or None if the token doesn't exist.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM invite_links WHERE token = %s", (token,))
+            row = cur.fetchone()
+            if not row:
+                return None
+            if value and row["revoked"]:
+                raise ValueError("Cannot mark a revoked invite link as default")
+            if value:
+                cur.execute(
+                    "UPDATE invite_links SET is_default_public = FALSE "
+                    "WHERE is_default_public = TRUE AND token <> %s",
+                    (token,),
+                )
+            cur.execute(
+                "UPDATE invite_links SET is_default_public = %s "
+                "WHERE token = %s RETURNING *",
+                (value, token),
+            )
+            return dict(cur.fetchone())
+
+
+def get_default_public_invite_link() -> Optional[dict]:
+    """Return the active default-public invite link, or None.
+
+    "Active" means: flagged is_default_public, not revoked, not expired, and
+    not exhausted. Used by the public ``GET /api/invite/default`` endpoint.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM invite_links
+                   WHERE is_default_public = TRUE
+                     AND revoked = FALSE
+                     AND (expires_at IS NULL OR expires_at > now())
+                     AND (max_uses IS NULL OR use_count < max_uses)
+                   LIMIT 1"""
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
 
 
 def claim_invite_link(token: str) -> bool:

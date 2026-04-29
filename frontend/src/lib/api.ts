@@ -660,6 +660,7 @@ export interface InviteLinkRecord {
     expires_at: string | null;
     created_at: string;
     revoked: boolean;
+    is_default_public: boolean;
 }
 
 export async function listInviteLinks(params: {
@@ -702,6 +703,18 @@ export async function revokeInviteLink(token: string): Promise<void> {
     await handleResponse(res);
 }
 
+export async function setInviteLinkDefaultPublic(
+    token: string,
+    isDefaultPublic: boolean,
+): Promise<InviteLinkRecord> {
+    const res = await fetch(`${API_BASE}/admin/invite-links/${encodeURIComponent(token)}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ is_default_public: isDefaultPublic }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 export interface InviteLinkKeyRecord extends ApiKeyRecord {
     usage_count?: number;
     display_name: string | null;
@@ -722,6 +735,19 @@ export async function claimInvite(token: string): Promise<{ key: string; permiss
     const res = await fetch(`${API_BASE}/invite/${encodeURIComponent(token)}/claim`, {
         method: "POST",
     });
+    return (await handleResponse(res)).json();
+}
+
+export interface DefaultInviteRecord {
+    token: string;
+    name: string;
+    permissions: "read" | "contribute";
+}
+
+/** Returns the active default-public invite, or null if none configured. */
+export async function getDefaultPublicInvite(): Promise<DefaultInviteRecord | null> {
+    const res = await fetch(`${API_BASE}/invite/default`);
+    if (res.status === 404) return null;
     return (await handleResponse(res)).json();
 }
 

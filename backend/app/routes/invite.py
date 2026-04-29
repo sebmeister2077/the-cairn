@@ -23,6 +23,33 @@ class ClaimResponse(BaseModel):
     invite_name: str
 
 
+class DefaultInviteResponse(BaseModel):
+    token: str
+    name: str
+    permissions: str
+
+
+@router.get("/invite/default", response_model=DefaultInviteResponse)
+async def get_default_invite():
+    """Return the active default-public invite link, if one is configured.
+
+    No auth required. Used by the landing page to offer a friendly key-claim
+    flow to first-time visitors who arrived without an invite URL.
+    Returns 404 if no link is currently flagged or the flagged link is
+    revoked / expired / exhausted.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    link = db.get_default_public_invite_link()
+    if not link:
+        raise HTTPException(status_code=404, detail="No default invite link configured")
+    return DefaultInviteResponse(
+        token=link["token"],
+        name=link["name"],
+        permissions=link["permissions"],
+    )
+
+
 @router.post("/invite/{token}/claim", response_model=ClaimResponse)
 async def claim_invite(token: str):
     if not db.is_available():

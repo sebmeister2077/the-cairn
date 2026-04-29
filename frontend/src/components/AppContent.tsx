@@ -40,8 +40,10 @@ import {
   getAdminSession,
   adminWebauthnStatus,
   claimInvite,
+  getDefaultPublicInvite,
   getMyAccountSafe,
   type AccountMeResponse,
+  type DefaultInviteRecord,
 } from "@/lib/api";
 
 const BASE_CATEGORIES = [
@@ -101,6 +103,14 @@ export function AppContent() {
     key?: string;
   } | null>(null);
   const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
+  // Default-public invite discovered from the backend, shown as a friendly
+  // dismissible banner to first-time visitors who land on the site without
+  // an invite URL or saved API key (and have accepted browser-storage).
+  const [defaultInvite, setDefaultInvite] = useState<DefaultInviteRecord | null>(null);
+  const [defaultInviteDismissed, setDefaultInviteDismissed] = useState(false);
+  // Reactive mirror of the consent flag so the discovery effect re-runs the
+  // moment the user clicks Accept (rather than only on the next reload).
+  const [storageConsented, setStorageConsented] = useState(hasAcceptedStorage);
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -166,6 +176,7 @@ export function AppContent() {
     if (value !== "accepted") {
       setPendingInviteToken(null);
       sessionStorage.removeItem("pending_api_key");
+      setDefaultInvite(null);
       return;
     }
     // Apply any deferred direct API key first.
@@ -184,6 +195,42 @@ export function AppContent() {
       setPendingInviteToken(null);
     }
   }
+
+  // Discover the default-public invite once consent is accepted and the
+  // visitor has no saved API key + no other invite flow in progress. The
+  // backend returns 404 when no link is configured, in which case we render
+  // nothing.
+  useEffect(() => {
+    if (defaultInviteDismissed) return;
+    if (!storageConsented) return;
+    if (getStoredApiKey()) return;
+    if (inviteClaim || pendingInviteToken) return;
+    let cancelled = false;
+    getDefaultPublicInvite()
+      .then((rec) => {
+        if (!cancelled) setDefaultInvite(rec);
+      })
+      .catch(() => {
+        // Network errors / DB unavailable: silently skip the banner.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // Re-evaluate when the invite-claim modal closes (success/dismiss) or
+    // when consent flips. We deliberately depend on inviteClaim presence
+    // (not its status) so the banner reappears if the user dismisses the
+    // modal without claiming.
+  }, [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented]);
+
+  // When consent is granted via the cookie banner, re-trigger the discovery
+  // effect above by listening to the same custom event other components use.
+  useEffect(() => {
+    function onConsent() {
+      setStorageConsented(hasAcceptedStorage());
+    }
+    window.addEventListener("storage-consent-change", onConsent);
+    return () => window.removeEventListener("storage-consent-change", onConsent);
+  }, []);
 
   async function handleClaimInvite() {
     if (!inviteClaim) return;
@@ -287,6 +334,40 @@ export function AppContent() {
         </nav>
       </header>
       <main className="container mx-auto px-4 py-6 max-w-3xl flex-1 w-full">
+        {defaultInvite && !inviteClaim && (
+          <Card className="mb-4 border-sky-300 bg-sky-50/60 dark:bg-sky-950/30">
+            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p className="font-medium text-foreground">Welcome to Cairn 👋</p>
+                <p className="text-sm text-muted-foreground">
+                  You don't have an API key yet. Claim a free one to start using the multiplayer map
+                  tools — no sign-up form, no email required.
+                </p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setDefaultInvite(null);
+                    setDefaultInviteDismissed(true);
+                  }}
+                >
+                  Not now
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setInviteClaim({ token: defaultInvite.token, status: "idle" });
+                    setDefaultInvite(null);
+                  }}
+                >
+                  Claim a key
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         <Routes>
           <Route path="/" element={<GeneralPage />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />

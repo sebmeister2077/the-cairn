@@ -1,9 +1,15 @@
 import { useState } from "react";
-import { Check, ChevronDown, ChevronRight, Link, Trash2, Users } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { listInviteLinkKeys, type InviteLinkKeyRecord, type InviteLinkRecord } from "@/lib/api";
+import { Check, ChevronDown, ChevronRight, Globe, Link, Trash2, Users } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  listInviteLinkKeys,
+  setInviteLinkDefaultPublic,
+  type InviteLinkKeyRecord,
+  type InviteLinkRecord,
+} from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useCopy } from "@/components/useCopy";
 import { fmt } from "@/components/DateFormatter";
 
@@ -57,7 +63,16 @@ export function InviteLinkRow({
     enabled: expanded,
   });
 
+  const queryClient = useQueryClient();
+  const defaultMutation = useMutation({
+    mutationFn: (value: boolean) => setInviteLinkDefaultPublic(record.token, value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-invite-links"] }),
+  });
+
   const canExpand = record.use_count > 0;
+  // Only active (non-revoked, non-expired, non-exhausted) links can serve as
+  // the public landing-page invite. Show the toggle only when it's meaningful.
+  const canBeDefault = !record.revoked && !isExpired && !isExhausted;
 
   return (
     <div className="border-b last:border-b-0">
@@ -81,7 +96,19 @@ export function InviteLinkRow({
             {usageText} · {expiryText} · Created {fmt(record.created_at)}
           </p>
         </div>
-        <div className="flex items-center gap-1.5">{permBadge}</div>
+        <div className="flex items-center gap-1.5">
+          {record.is_default_public && (
+            <Badge
+              variant="default"
+              className="bg-sky-500 text-white hover:bg-sky-500 gap-1"
+              title="Offered automatically on the landing page to visitors with no key"
+            >
+              <Globe className="size-3" />
+              Default
+            </Badge>
+          )}
+          {permBadge}
+        </div>
         <div>{statusBadge}</div>
         {!record.revoked ? (
           <Button
@@ -133,6 +160,25 @@ export function InviteLinkRow({
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </div>
+      {canBeDefault && (
+        <div className="ml-9 mb-2 flex items-center justify-between gap-3 rounded-md bg-muted/30 px-3 py-1.5 text-xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <Globe className="size-3.5 shrink-0 text-sky-600" />
+            <span className="text-muted-foreground">
+              <strong className="text-foreground">Default public link.</strong> When ON, visitors
+              who land on the site without an invite URL or saved API key (and after accepting
+              cookies) are offered to claim a key from this link. Only one link can be the default
+              at a time.
+            </span>
+          </div>
+          <Switch
+            size="sm"
+            checked={record.is_default_public}
+            disabled={defaultMutation.isPending}
+            onCheckedChange={(v) => defaultMutation.mutate(v)}
+          />
+        </div>
+      )}
       {expanded && (
         <IssuedKeysPanel
           loading={issuedKeys.isLoading}

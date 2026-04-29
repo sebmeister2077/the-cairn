@@ -112,7 +112,14 @@ def _serialise_invite(record: dict) -> dict:
         val = out.get(field)
         if val and hasattr(val, "isoformat"):
             out[field] = val.isoformat()
+    # Pre-existing rows from before the migration won't have this column in
+    # the dict if a caller mocked the DB; default to False for safety.
+    out["is_default_public"] = bool(out.get("is_default_public", False))
     return out
+
+
+class UpdateInviteLinkRequest(BaseModel):
+    is_default_public: bool
 
 
 @router.get("/admin/invite-links")
@@ -162,6 +169,28 @@ async def create_invite_link(
         max_uses=body.max_uses,
         expires_at=expires_at,
     )
+    return _serialise_invite(record)
+
+
+@router.patch("/admin/invite-links/{token}")
+async def update_invite_link(
+    token: str,
+    body: UpdateInviteLinkRequest,
+    _: str = Depends(require_admin),
+) -> dict:
+    """Toggle the ``is_default_public`` flag on an invite link.
+
+    At most one link can be flagged at a time; setting it on one clears it
+    on every other. Refuses to flag a revoked link.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    try:
+        record = db.set_invite_link_default_public(token, body.is_default_public)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not record:
+        raise HTTPException(status_code=404, detail="Invite link not found")
     return _serialise_invite(record)
 
 
