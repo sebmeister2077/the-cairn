@@ -12,96 +12,81 @@
 import { useEffect, useState } from "react";
 import { getRegionPreviewImage } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 
 interface Props {
-    contributionId: string;
+  contributionId: string;
 }
 
 export function ContributionBeforeAfter({ contributionId }: Props) {
-    const [beforeUrl, setBeforeUrl] = useState<string | null>(null);
-    const [afterUrl, setAfterUrl] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const [beforeUrl, setBeforeUrl] = useState<string | null>(null);
+  const [afterUrl, setAfterUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        let cancelled = false;
-        let createdBefore: string | null = null;
-        let createdAfter: string | null = null;
-        setLoading(true);
-        setError(null);
-        setBeforeUrl(null);
-        setAfterUrl(null);
-        (async () => {
-            try {
-                const [b, a] = await Promise.all([
-                    getRegionPreviewImage(contributionId, "before"),
-                    getRegionPreviewImage(contributionId, "after"),
-                ]);
-                if (cancelled) return;
-                createdBefore = URL.createObjectURL(b);
-                createdAfter = URL.createObjectURL(a);
-                setBeforeUrl(createdBefore);
-                setAfterUrl(createdAfter);
-            } catch (e) {
-                if (!cancelled) {
-                    setError(e instanceof Error ? e.message : String(e));
-                }
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        })();
-        return () => {
-            cancelled = true;
-            if (createdBefore) URL.revokeObjectURL(createdBefore);
-            if (createdAfter) URL.revokeObjectURL(createdAfter);
-        };
-    }, [contributionId]);
+  useEffectWithAbort(
+    ({ signal }) => {
+      let createdBefore: string | null = null;
+      let createdAfter: string | null = null;
+      setLoading(true);
+      setError(null);
+      setBeforeUrl(null);
+      setAfterUrl(null);
+      (async () => {
+        try {
+          const [b, a] = await Promise.all([
+            getRegionPreviewImage(contributionId, "before"),
+            getRegionPreviewImage(contributionId, "after"),
+          ]);
+          if (signal.aborted) return;
+          createdBefore = URL.createObjectURL(b);
+          createdAfter = URL.createObjectURL(a);
+          setBeforeUrl(createdBefore);
+          setAfterUrl(createdAfter);
+        } catch (e) {
+          if (!signal.aborted) {
+            setError(e instanceof Error ? e.message : String(e));
+          }
+        } finally {
+          if (!signal.aborted) setLoading(false);
+        }
+      })();
+      return () => {
+        if (createdBefore) URL.revokeObjectURL(createdBefore);
+        if (createdAfter) URL.revokeObjectURL(createdAfter);
+      };
+    },
+    [contributionId],
+  );
 
-    if (loading) {
-        return (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading region
-                preview…
-            </div>
-        );
-    }
-    if (error) {
-        return (
-            <div className="text-sm text-destructive">
-                Region preview unavailable: {error}
-            </div>
-        );
-    }
-    if (!beforeUrl || !afterUrl) return null;
-
+  if (loading) {
     return (
-        <div className="space-y-2">
-            <div className="text-xs text-muted-foreground">
-                Region before / after — green tiles are newly added, orange
-                tiles are overwriting existing data.
-            </div>
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                <figure className="space-y-1">
-                    <figcaption className="text-xs font-medium">
-                        Before
-                    </figcaption>
-                    <img
-                        src={beforeUrl}
-                        alt="Region before"
-                        className="w-full rounded border"
-                    />
-                </figure>
-                <figure className="space-y-1">
-                    <figcaption className="text-xs font-medium">
-                        After
-                    </figcaption>
-                    <img
-                        src={afterUrl}
-                        alt="Region after"
-                        className="w-full rounded border"
-                    />
-                </figure>
-            </div>
-        </div>
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading region preview…
+      </div>
     );
+  }
+  if (error) {
+    return <div className="text-sm text-destructive">Region preview unavailable: {error}</div>;
+  }
+  if (!beforeUrl || !afterUrl) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="text-xs text-muted-foreground">
+        Region before / after — green tiles are newly added, orange tiles are overwriting existing
+        data.
+      </div>
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <figure className="space-y-1">
+          <figcaption className="text-xs font-medium">Before</figcaption>
+          <img src={beforeUrl} alt="Region before" className="w-full rounded border" />
+        </figure>
+        <figure className="space-y-1">
+          <figcaption className="text-xs font-medium">After</figcaption>
+          <img src={afterUrl} alt="Region after" className="w-full rounded border" />
+        </figure>
+      </div>
+    </div>
+  );
 }

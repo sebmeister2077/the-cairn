@@ -46,6 +46,7 @@ import {
   type DefaultInviteRecord,
 } from "@/lib/api";
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
+import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 
 const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
@@ -126,25 +127,24 @@ export function AppContent() {
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
   // This covers: page reload, opening a new tab, or session TTL expiry.
-  useEffect(() => {
-    if (!isAdmin) return;
-    if (getAdminSession()) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const wa = await adminWebauthnStatus();
-        if (cancelled) return;
-        if (wa.configured && wa.enrolled) {
-          setPasskeyDialog({ mode: "assert", required: true });
+  useEffectWithAbort(
+    ({ signal }) => {
+      if (!isAdmin) return;
+      if (getAdminSession()) return;
+      (async () => {
+        try {
+          const wa = await adminWebauthnStatus();
+          if (signal.aborted) return;
+          if (wa.configured && wa.enrolled) {
+            setPasskeyDialog({ mode: "assert", required: true });
+          }
+        } catch {
+          // server doesn't have webauthn configured — leave admin un-gated
         }
-      } catch {
-        // server doesn't have webauthn configured — leave admin un-gated
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [isAdmin]);
+      })();
+    },
+    [isAdmin],
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -211,29 +211,27 @@ export function AppContent() {
   // visitor has no saved API key + no other invite flow in progress. The
   // backend returns 404 when no link is configured, in which case we render
   // nothing.
-  useEffect(() => {
-    if (defaultInviteDismissed) return;
-    if (!storageConsented) return;
-    if (hasApiKey) {
-      // A key was just saved — make sure no stale banner remains.
-      setDefaultInvite(null);
-      return;
-    }
-    if (inviteClaim || pendingInviteToken) return;
-    let cancelled = false;
-    getDefaultPublicInvite()
-      .then((rec) => {
-        if (!cancelled) setDefaultInvite(rec);
-      })
-      .catch(() => {
-        // Network errors / DB unavailable: silently skip the banner.
-      });
-    return () => {
-      cancelled = true;
-    };
-    // Re-evaluate when the invite-claim modal closes (success/dismiss), when
-    // consent flips, or when the stored API key appears/disappears.
-  }, [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented, hasApiKey]);
+  useEffectWithAbort(
+    ({ ifNotAbortedThen }) => {
+      if (defaultInviteDismissed) return;
+      if (!storageConsented) return;
+      if (hasApiKey) {
+        // A key was just saved — make sure no stale banner remains.
+        setDefaultInvite(null);
+        return;
+      }
+      if (inviteClaim || pendingInviteToken) return;
+      getDefaultPublicInvite()
+        .then(ifNotAbortedThen(setDefaultInvite))
+        .catch(() => {
+          // Network errors / DB unavailable: silently skip the banner.
+        });
+
+      // Re-evaluate when the invite-claim modal closes (success/dismiss), when
+      // consent flips, or when the stored API key appears/disappears.
+    },
+    [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented, hasApiKey],
+  );
 
   // When consent is granted via the cookie banner, re-trigger the discovery
   // effect above by listening to the same custom event other components use.

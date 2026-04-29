@@ -43,6 +43,7 @@ import {
   type TLGroupingsViewMode,
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
+import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
@@ -461,39 +462,40 @@ export function TOPSMapViewPage() {
     // Always populate the segments state once the cache is loaded \u2014 the
     // groupings drawer needs them for "missing" counts and edit-mode
     // rendering even before the user toggles the overlay on.
-    let cancelled = false;
-    ensureTranslocatorsLoaded()
-      .then((segments) => {
-        if (!cancelled) setTranslocatorSegments(segments);
-      })
-      .catch(() => {
-        if (!cancelled) setTranslocatorSegments([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
+    useEffectWithAbort(
+      ({ signal }) => {
+        ensureTranslocatorsLoaded()
+          .then((segments) => {
+            if (signal.aborted) return;
+            setTranslocatorSegments(segments);
+          })
+          .catch(() => {
+            if (signal.aborted) return;
+            setTranslocatorSegments([]);
+          });
+      },
+      [ensureTranslocatorsLoaded],
+    );
   }, [ensureTranslocatorsLoaded]);
 
-  useEffect(() => {
-    let cancelled = false;
-    ensureLandmarksLoaded()
-      .then((points) => {
-        if (cancelled) return;
-        if (!showLandmarks) {
-          setLandmarkPoints(points.filter((p) => p.kind === "Server"));
-          return;
-        }
-        setLandmarkPoints(points);
-      })
-      .catch(() => {
-        if (!cancelled) setLandmarkPoints([]);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [showLandmarks, ensureLandmarksLoaded]);
+  useEffectWithAbort(
+    ({ signal }) => {
+      ensureLandmarksLoaded()
+        .then((points) => {
+          if (signal.aborted) return;
+          if (!showLandmarks) {
+            setLandmarkPoints(points.filter((p) => p.kind === "Server"));
+            return;
+          }
+          setLandmarkPoints(points);
+        })
+        .catch(() => {
+          if (signal.aborted) return;
+          setLandmarkPoints([]);
+        });
+    },
+    [showLandmarks, ensureLandmarksLoaded],
+  );
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });

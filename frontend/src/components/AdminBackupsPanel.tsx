@@ -48,6 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
+import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -98,8 +99,7 @@ export function AdminBackupsPanel() {
   const [enrolDialog, setEnrolDialog] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
 
-  const featureDisabled =
-    backups.isError && /HTTP 404|Not Found/i.test(String(backups.error));
+  const featureDisabled = backups.isError && /HTTP 404|Not Found/i.test(String(backups.error));
 
   return (
     <Card>
@@ -141,10 +141,9 @@ export function AdminBackupsPanel() {
                 {new Date(lastRestore.data.last_restore.restored_at).toLocaleString()}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Source: <code>{lastRestore.data.last_restore.backup_key}</code> •
-                {" "}
-                {lastRestore.data.last_restore.orphaned_contributions} contribution(s)
-                marked <code>orphaned_by_restore</code>.
+                Source: <code>{lastRestore.data.last_restore.backup_key}</code> •{" "}
+                {lastRestore.data.last_restore.orphaned_contributions} contribution(s) marked{" "}
+                <code>orphaned_by_restore</code>.
               </p>
             </div>
           )}
@@ -158,8 +157,8 @@ export function AdminBackupsPanel() {
 
           {featureDisabled && (
             <p className="text-sm text-muted-foreground">
-              The <code>weekly_backups</code> feature flag is off. Enable it from the
-              feature-flag panel to view and manage snapshots.
+              The <code>weekly_backups</code> feature flag is off. Enable it from the feature-flag
+              panel to view and manage snapshots.
             </p>
           )}
 
@@ -225,8 +224,8 @@ export function AdminBackupsPanel() {
 
               {backups.data && backups.data.backups.length === 0 && (
                 <p className="text-sm text-muted-foreground">
-                  No backups yet. The first scheduled snapshot fires on the next
-                  ISO-week boundary, or click <strong>Create manual snapshot</strong>.
+                  No backups yet. The first scheduled snapshot fires on the next ISO-week boundary,
+                  or click <strong>Create manual snapshot</strong>.
                 </p>
               )}
 
@@ -293,9 +292,7 @@ function BackupRow({
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">
           {formatBytes(backup.size)} •{" "}
-          {backup.last_modified
-            ? new Date(backup.last_modified).toLocaleString()
-            : "unknown date"}
+          {backup.last_modified ? new Date(backup.last_modified).toLocaleString() : "unknown date"}
         </p>
       </div>
       <Button
@@ -303,11 +300,7 @@ function BackupRow({
         variant="destructive"
         onClick={onRestore}
         disabled={!restoreEnabled}
-        title={
-          restoreEnabled
-            ? "Restore this backup"
-            : "Enrol in TOTP 2FA before restoring"
-        }
+        title={restoreEnabled ? "Restore this backup" : "Enrol in TOTP 2FA before restoring"}
       >
         Restore
       </Button>
@@ -336,10 +329,10 @@ function TotpSection({
             {loading
               ? "checking…"
               : !status?.configured
-              ? "not configured on the server"
-              : status.enrolled
-              ? "enrolled — restore is unlocked"
-              : "not enrolled — required to restore"}
+                ? "not configured on the server"
+                : status.enrolled
+                  ? "enrolled — restore is unlocked"
+                  : "not enrolled — required to restore"}
           </span>
           <HelpTip
             text={
@@ -368,8 +361,8 @@ function TotpSection({
       </div>
       {status && !status.configured && (
         <p className="text-xs text-muted-foreground">
-          Set <code>TOTP_ENCRYPTION_KEY</code> in the backend environment to enable TOTP
-          enrolment. Until then, the restore endpoint returns 503.
+          Set <code>TOTP_ENCRYPTION_KEY</code> in the backend environment to enable TOTP enrolment.
+          Until then, the restore endpoint returns 503.
         </p>
       )}
     </div>
@@ -430,22 +423,23 @@ function TotpEnrolDialog({
   }, [open]);
 
   // Render the otpauth URI to a QR data-URL once it's available.
-  useEffect(() => {
-    if (!uri) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const QRCode = await import("qrcode");
-        const dataUrl = await QRCode.toDataURL(uri, { margin: 1, width: 220 });
-        if (!cancelled) setQrDataUrl(dataUrl);
-      } catch (e) {
-        if (!cancelled) setError(`QR render failed: ${String(e)}`);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [uri]);
+  useEffectWithAbort(
+    ({ signal }) => {
+      if (!uri) return;
+      (async () => {
+        try {
+          const QRCode = await import("qrcode");
+          const dataUrl = await QRCode.toDataURL(uri, { margin: 1, width: 220 });
+          if (signal.aborted) return;
+          setQrDataUrl(dataUrl);
+        } catch (e) {
+          if (signal.aborted) return;
+          setError(`QR render failed: ${String(e)}`);
+        }
+      })();
+    },
+    [uri],
+  );
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -453,8 +447,8 @@ function TotpEnrolDialog({
         <DialogHeader>
           <DialogTitle>Enrol in TOTP 2FA</DialogTitle>
           <DialogDescription>
-            Scan the QR with your authenticator app and enter the first 6-digit code.
-            The secret is shown once — if you lose it you'll have to re-enrol.
+            Scan the QR with your authenticator app and enter the first 6-digit code. The secret is
+            shown once — if you lose it you'll have to re-enrol.
           </DialogDescription>
         </DialogHeader>
 
@@ -560,9 +554,9 @@ function RestoreDialog({
           <DialogHeader>
             <DialogTitle>Restore from backup</DialogTitle>
             <DialogDescription>
-              This will overwrite the live combined map with{" "}
-              <code>{restoreSummary}</code>. Contributions approved after this snapshot
-              will be marked <code>orphaned_by_restore</code>.
+              This will overwrite the live combined map with <code>{restoreSummary}</code>.
+              Contributions approved after this snapshot will be marked{" "}
+              <code>orphaned_by_restore</code>.
             </DialogDescription>
           </DialogHeader>
 
