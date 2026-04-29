@@ -48,6 +48,8 @@ export function KeyRow({
         <p className="text-xs text-muted-foreground mt-0.5">
           Created {fmt(record.created_at)}
           {record.last_used_at && <> · Last used {fmt(record.last_used_at)}</>}
+          {" · "}
+          {record.usage_count.toLocaleString()} {record.usage_count === 1 ? "use" : "uses"}
           {record.consume_once && record.bound_identity && <> · Bound to {record.bound_identity}</>}
         </p>
       </div>

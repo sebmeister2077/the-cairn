@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   Plus,
   MailOpen,
   Search,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   Loader2,
   RefreshCw,
@@ -13,6 +20,9 @@ import {
   listApiKeys,
   revokeApiKey,
   type ApiKeyRecord,
+  type ApiKeySort,
+  type ApiKeySortOrder,
+  type ApiKeyBoundIdentityFilter,
   listInviteLinks,
   revokeInviteLink,
   type InviteLinkRecord,
@@ -21,6 +31,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { KeyRow } from "@/components/ApiKeyRow";
 import { CreatedKeyDialog } from "@/components/CreatedKeyDialog";
 import { GenerateKeyDialog } from "@/components/GenerateKeyDialog";
@@ -29,6 +46,7 @@ import { CreateInviteLinkDialog } from "@/components/CreateInviteLinkDialog";
 import { CreatedInviteLinkDialog } from "@/components/CreatedInviteLinkDialog";
 
 const PAGE_SIZE = 50;
+const ACTIVE_KEYS_PAGE_SIZE = 10;
 
 function useDebounced<T>(value: T, delay = 300): T {
   const [debounced, setDebounced] = useState(value);
@@ -41,6 +59,44 @@ function useDebounced<T>(value: T, delay = 300): T {
 
 type Page<T> = { items: T[]; total: number; next_offset: number | null };
 
+// Sort options exposed in the Active keys card. ``value`` is encoded as
+// ``"<sort>:<order>"`` so we only need a single Select control.
+const ACTIVE_KEYS_SORT_OPTIONS: {
+  value: string;
+  label: string;
+  sort: ApiKeySort;
+  order: ApiKeySortOrder;
+}[] = [
+  { value: "created_at:desc", label: "Newest first", sort: "created_at", order: "desc" },
+  { value: "created_at:asc", label: "Oldest first", sort: "created_at", order: "asc" },
+  { value: "last_used_at:desc", label: "Recently used", sort: "last_used_at", order: "desc" },
+  { value: "last_used_at:asc", label: "Least recently used", sort: "last_used_at", order: "asc" },
+  { value: "usage_count:desc", label: "Most used", sort: "usage_count", order: "desc" },
+  { value: "usage_count:asc", label: "Least used", sort: "usage_count", order: "asc" },
+  {
+    value: "bound_identity:asc",
+    label: "Bound identity (A–Z)",
+    sort: "bound_identity",
+    order: "asc",
+  },
+  {
+    value: "bound_identity:desc",
+    label: "Bound identity (Z–A)",
+    sort: "bound_identity",
+    order: "desc",
+  },
+];
+
+// Bound-identity filter options. Designed to be extended easily – add new
+// entries here (or surface a free-form identity input) without touching the
+// query wiring; the value is passed straight through as the
+// ``bound_identity`` query param.
+const BOUND_IDENTITY_FILTER_OPTIONS: { value: ApiKeyBoundIdentityFilter; label: string }[] = [
+  { value: "any", label: "Any binding" },
+  { value: "bound", label: "Bound only" },
+  { value: "unbound", label: "Unbound only" },
+];
+
 export function ApiKeysPage() {
   const queryClient = useQueryClient();
   const [generateOpen, setGenerateOpen] = useState(false);
@@ -48,20 +104,43 @@ export function ApiKeysPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createdInvite, setCreatedInvite] = useState<InviteLinkRecord | null>(null);
 
-  // --- Active keys ---
+  // --- Active keys (page-based pagination) ---
   const [activeKeysQ, setActiveKeysQ] = useState("");
   const debouncedActiveKeysQ = useDebounced(activeKeysQ);
-  const activeKeys = useInfiniteQuery<Page<ApiKeyRecord>>({
-    queryKey: ["admin-api-keys", "active", debouncedActiveKeysQ],
-    queryFn: ({ pageParam = 0 }) =>
+  const [activeKeysPage, setActiveKeysPage] = useState(0);
+  const [activeKeysSortValue, setActiveKeysSortValue] = useState<string>(
+    ACTIVE_KEYS_SORT_OPTIONS[0].value,
+  );
+  const activeKeysSortOption =
+    ACTIVE_KEYS_SORT_OPTIONS.find((o) => o.value === activeKeysSortValue) ??
+    ACTIVE_KEYS_SORT_OPTIONS[0];
+  const [activeKeysBoundFilter, setActiveKeysBoundFilter] =
+    useState<ApiKeyBoundIdentityFilter>("any");
+  // Reset to first page whenever a filter/search/sort changes
+  useEffect(() => {
+    setActiveKeysPage(0);
+  }, [debouncedActiveKeysQ, activeKeysSortValue, activeKeysBoundFilter]);
+  const activeKeys = useQuery<Page<ApiKeyRecord>>({
+    queryKey: [
+      "admin-api-keys",
+      "active",
+      debouncedActiveKeysQ,
+      activeKeysPage,
+      ACTIVE_KEYS_PAGE_SIZE,
+      activeKeysSortValue,
+      activeKeysBoundFilter,
+    ],
+    queryFn: () =>
       listApiKeys({
         status: "active",
         q: debouncedActiveKeysQ,
-        offset: pageParam as number,
-        limit: PAGE_SIZE,
+        offset: activeKeysPage * ACTIVE_KEYS_PAGE_SIZE,
+        limit: ACTIVE_KEYS_PAGE_SIZE,
+        sort: activeKeysSortOption.sort,
+        order: activeKeysSortOption.order,
+        bound_identity: activeKeysBoundFilter,
       }),
-    initialPageParam: 0,
-    getNextPageParam: (last) => last.next_offset,
+    placeholderData: keepPreviousData,
   });
 
   // --- Revoked keys (collapsed by default) ---
@@ -136,15 +215,16 @@ export function ApiKeysPage() {
     setCreatedInvite(record);
   }
 
-  const activeKeyItems = activeKeys.data?.pages.flatMap((p) => p.items) ?? [];
+  const activeKeyItems = activeKeys.data?.items ?? [];
   const revokedKeyItems = revokedKeys.data?.pages.flatMap((p) => p.items) ?? [];
   const activeInviteItems = activeInvites.data?.pages.flatMap((p) => p.items) ?? [];
   const revokedInviteItems = revokedInvites.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const activeKeysTotal = activeKeys.data?.pages[0]?.total ?? 0;
+  const activeKeysTotal = activeKeys.data?.total ?? 0;
   const revokedKeysTotal = revokedKeys.data?.pages[0]?.total ?? 0;
   const activeInvitesTotal = activeInvites.data?.pages[0]?.total ?? 0;
   const revokedInvitesTotal = revokedInvites.data?.pages[0]?.total ?? 0;
+  const activeKeysPageCount = Math.max(1, Math.ceil(activeKeysTotal / ACTIVE_KEYS_PAGE_SIZE));
 
   return (
     <div className="space-y-6">
@@ -173,29 +253,70 @@ export function ApiKeysPage() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">
-            Active{activeKeys.isSuccess ? ` (${activeKeyItems.length} of ${activeKeysTotal})` : ""}
+            Active{activeKeys.isSuccess ? ` (${activeKeysTotal})` : ""}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <SearchInput
-            value={activeKeysQ}
-            onChange={setActiveKeysQ}
-            placeholder="Search by name or key…"
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-50 flex-1">
+              <SearchInput
+                value={activeKeysQ}
+                onChange={setActiveKeysQ}
+                placeholder="Search by name or key…"
+              />
+            </div>
+            <Select
+              value={activeKeysSortValue}
+              onValueChange={(v) => v && setActiveKeysSortValue(v)}
+            >
+              <SelectTrigger className="w-45" aria-label="Sort active keys">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ACTIVE_KEYS_SORT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={activeKeysBoundFilter}
+              onValueChange={(v) => v && setActiveKeysBoundFilter(v as ApiKeyBoundIdentityFilter)}
+            >
+              <SelectTrigger className="w-40" aria-label="Filter by bound identity">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BOUND_IDENTITY_FILTER_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           {activeKeys.isLoading ? (
             <LoadingRow />
           ) : activeKeyItems.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              {activeKeysQ ? "No matching keys." : "No active keys. Generate one to get started."}
+              {activeKeysQ || activeKeysBoundFilter !== "any"
+                ? "No matching keys."
+                : "No active keys. Generate one to get started."}
             </p>
           ) : (
             <>
-              <div>
+              <div className={activeKeys.isFetching ? "opacity-60 transition-opacity" : ""}>
                 {activeKeyItems.map((k) => (
                   <KeyRow key={k.key} record={k} onRevoke={(key) => revokeMutation.mutate(key)} />
                 ))}
               </div>
-              <LoadMoreButton query={activeKeys} />
+              <Pagination
+                page={activeKeysPage}
+                pageCount={activeKeysPageCount}
+                onPageChange={setActiveKeysPage}
+                isFetching={activeKeys.isFetching}
+              />
             </>
           )}
         </CardContent>
@@ -442,6 +563,47 @@ function LoadMoreButton({
         ) : (
           "Load more"
         )}
+      </Button>
+    </div>
+  );
+}
+
+function Pagination({
+  page,
+  pageCount,
+  onPageChange,
+  isFetching,
+}: {
+  page: number;
+  pageCount: number;
+  onPageChange: (p: number) => void;
+  isFetching: boolean;
+}) {
+  if (pageCount <= 1) return null;
+  const canPrev = page > 0;
+  const canNext = page < pageCount - 1;
+  return (
+    <div className="pt-2 flex items-center justify-center gap-2">
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!canPrev || isFetching}
+        onClick={() => onPageChange(Math.max(0, page - 1))}
+      >
+        <ChevronLeft className="size-3" />
+        Previous
+      </Button>
+      <span className="text-xs text-muted-foreground tabular-nums px-2">
+        Page {page + 1} of {pageCount}
+      </span>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!canNext || isFetching}
+        onClick={() => onPageChange(Math.min(pageCount - 1, page + 1))}
+      >
+        Next
+        <ChevronRight className="size-3" />
       </Button>
     </div>
   );

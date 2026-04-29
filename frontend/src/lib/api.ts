@@ -604,21 +604,46 @@ export interface ApiKeyRecord {
     consume_once: boolean;
     bound_identity: string | null;
     revoked: boolean;
+    usage_count: number;
     created_at: string;
     last_used_at: string | null;
 }
+
+export type ApiKeySort =
+    | "created_at"
+    | "last_used_at"
+    | "usage_count"
+    | "bound_identity"
+    | "name";
+
+export type ApiKeySortOrder = "asc" | "desc";
+
+/** Filter token for the ``bound_identity`` query param.
+ *
+ * Designed so new filter values can be added without changing the request
+ * shape: pass any other string to filter by exact identity match.
+ */
+export type ApiKeyBoundIdentityFilter = "any" | "bound" | "unbound" | (string & {});
 
 export async function listApiKeys(params: {
     status?: "all" | "active" | "revoked";
     q?: string;
     offset?: number;
     limit?: number;
+    sort?: ApiKeySort;
+    order?: ApiKeySortOrder;
+    bound_identity?: ApiKeyBoundIdentityFilter;
 } = {}): Promise<{ items: ApiKeyRecord[]; total: number; next_offset: number | null }> {
     const search = new URLSearchParams();
     search.set("status", params.status ?? "all");
     if (params.q) search.set("q", params.q);
     search.set("offset", String(params.offset ?? 0));
     search.set("limit", String(params.limit ?? 50));
+    if (params.sort) search.set("sort", params.sort);
+    if (params.order) search.set("order", params.order);
+    if (params.bound_identity && params.bound_identity !== "any") {
+        search.set("bound_identity", params.bound_identity);
+    }
     const res = await fetch(`${API_BASE}/admin/keys?${search.toString()}`, {
         headers: authHeaders(),
     });
@@ -716,7 +741,6 @@ export async function setInviteLinkDefaultPublic(
 }
 
 export interface InviteLinkKeyRecord extends ApiKeyRecord {
-    usage_count?: number;
     display_name: string | null;
     in_game_name: string | null;
     user_joined_at: string | null;

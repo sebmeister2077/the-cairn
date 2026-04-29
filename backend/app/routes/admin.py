@@ -64,10 +64,24 @@ async def list_keys(
     q: str = Query("", max_length=128),
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort: str = Query(
+        "created_at",
+        pattern="^(created_at|last_used_at|usage_count|bound_identity|name)$",
+    ),
+    order: str = Query("desc", pattern="^(asc|desc)$"),
+    bound_identity: str = Query("any", max_length=256),
 ) -> dict:
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
-    page = db.list_api_keys_paginated(status=status, q=q.strip(), offset=offset, limit=limit)
+    page = db.list_api_keys_paginated(
+        status=status,
+        q=q.strip(),
+        offset=offset,
+        limit=limit,
+        sort=sort,
+        order=order,
+        bound_identity=bound_identity,
+    )
     return {
         "items": [_serialise(r) for r in page["items"]],
         "total": page["total"],

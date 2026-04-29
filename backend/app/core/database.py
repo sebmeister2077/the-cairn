@@ -1349,17 +1349,39 @@ def list_api_keys() -> List[dict]:
             return [dict(r) for r in rows]
 
 
+# Allow-list of sortable columns for ``list_api_keys_paginated``.
+# Mapping is ``api_param`` -> ``sql_column``.
+_API_KEY_SORT_COLUMNS = {
+    "created_at": "created_at",
+    "last_used_at": "last_used_at",
+    "usage_count": "usage_count",
+    "bound_identity": "bound_identity",
+    "name": "name",
+}
+
+
 def list_api_keys_paginated(
     status: str = "all",
     q: str = "",
     offset: int = 0,
     limit: int = 50,
+    sort: str = "created_at",
+    order: str = "desc",
+    bound_identity: str = "any",
 ) -> dict:
     """Paginated + filtered listing of API keys.
 
     ``status`` one of ``"active"``, ``"revoked"``, ``"all"``.
     ``q`` is an optional case-insensitive substring search across the key's
     ``name`` and (a prefix of) the raw ``key`` itself.
+    ``sort`` is one of the keys in :data:`_API_KEY_SORT_COLUMNS`.
+    ``order`` is ``"asc"`` or ``"desc"``.
+    ``bound_identity`` is a filter token:
+
+    * ``"any"``  – no filter (default)
+    * ``"none"`` / ``"unbound"`` – only rows where ``bound_identity IS NULL``
+    * ``"bound"`` – only rows where ``bound_identity IS NOT NULL``
+    * any other value – exact match against ``bound_identity``
 
     Returns ``{"items": [...], "total": int}``.
     """
@@ -1374,6 +1396,25 @@ def list_api_keys_paginated(
         like = f"%{q}%"
         params.extend([like, like])
 
+    bi = (bound_identity or "any").strip().lower()
+    if bi in ("none", "unbound"):
+        where.append("bound_identity IS NULL")
+    elif bi == "bound":
+        where.append("bound_identity IS NOT NULL")
+    elif bi and bi != "any":
+        # Exact match on the supplied identity value (case-sensitive – identities
+        # are typically opaque tokens). Use the original (non-lowercased) input.
+        where.append("bound_identity = %s")
+        params.append(bound_identity.strip())
+
+    sort_col = _API_KEY_SORT_COLUMNS.get((sort or "").lower(), "created_at")
+    direction = "ASC" if (order or "").lower() == "asc" else "DESC"
+    # Push NULLs to the end regardless of direction so they don't dominate the
+    # first page when sorting by sparse columns like ``last_used_at``.
+    nulls = "NULLS LAST"
+    # Tie-breaker on primary key keeps pagination stable.
+    order_sql = f"ORDER BY {sort_col} {direction} {nulls}, key DESC"
+
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
     limit = max(1, min(int(limit), 200))
     offset = max(0, int(offset))
@@ -1383,8 +1424,7 @@ def list_api_keys_paginated(
             cur.execute(f"SELECT COUNT(*) AS c FROM api_keys {where_sql}", params)
             total = int(cur.fetchone()["c"])
             cur.execute(
-                f"SELECT * FROM api_keys {where_sql} "
-                "ORDER BY created_at DESC, key DESC LIMIT %s OFFSET %s",
+                f"SELECT * FROM api_keys {where_sql} {order_sql} LIMIT %s OFFSET %s",
                 params + [limit, offset],
             )
             items = [dict(r) for r in cur.fetchall()]
