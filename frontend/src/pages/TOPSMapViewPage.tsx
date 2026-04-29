@@ -458,25 +458,23 @@ export function TOPSMapViewPage() {
     setTranslocatorPinned(false);
   }, []);
 
-  useEffect(() => {
-    // Always populate the segments state once the cache is loaded \u2014 the
-    // groupings drawer needs them for "missing" counts and edit-mode
-    // rendering even before the user toggles the overlay on.
-    useEffectWithAbort(
-      ({ signal }) => {
-        ensureTranslocatorsLoaded()
-          .then((segments) => {
-            if (signal.aborted) return;
-            setTranslocatorSegments(segments);
-          })
-          .catch(() => {
-            if (signal.aborted) return;
-            setTranslocatorSegments([]);
-          });
-      },
-      [ensureTranslocatorsLoaded],
-    );
-  }, [ensureTranslocatorsLoaded]);
+  // Always populate the segments state once the cache is loaded \u2014 the
+  // groupings drawer needs them for "missing" counts and edit-mode
+  // rendering even before the user toggles the overlay on.
+  useEffectWithAbort(
+    ({ signal }) => {
+      ensureTranslocatorsLoaded()
+        .then((segments) => {
+          if (signal.aborted) return;
+          setTranslocatorSegments(segments);
+        })
+        .catch(() => {
+          if (signal.aborted) return;
+          setTranslocatorSegments([]);
+        });
+    },
+    [ensureTranslocatorsLoaded],
+  );
 
   useEffectWithAbort(
     ({ signal }) => {
