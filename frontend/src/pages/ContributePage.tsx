@@ -230,7 +230,9 @@ export function ContributePage() {
         (p) => p.approval_status === "queued" || p.approval_status === "running",
       );
       const shouldPoll = hasPendingScore || hasPendingValidation || hasInflightApproval;
-      return shouldPoll ? 5000 : false;
+      const pollingRate = isAdmin ? 5000 : 60_000;
+
+      return shouldPoll ? pollingRate : false;
     },
   });
   const info = infoQuery.data ?? null;
