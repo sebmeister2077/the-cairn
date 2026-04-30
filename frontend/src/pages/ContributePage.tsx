@@ -635,7 +635,10 @@ export function ContributePage() {
 
             {info.pending.map((p) => {
               const previewBlocked =
-                !isAdmin && !info?.is_admin && info?.heavy_compute_enabled === false;
+                !isAdmin &&
+                !info?.is_admin &&
+                info?.heavy_compute_enabled === false &&
+                !p.preview_image_url;
               const isPreviewLoading = previewLoading && previewId === p.id;
               const previewDisabled = isPreviewLoading || previewBlocked;
               const previewTitle = previewBlocked
