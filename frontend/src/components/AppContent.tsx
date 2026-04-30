@@ -8,6 +8,7 @@ import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { CookieConsent } from "@/components/CookieConsent";
+import { ContactDialog, useContactDialog } from "@/components/ContactDialog";
 import { hasAcceptedStorage, clearStoredConsent } from "@/lib/consent";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
@@ -114,6 +115,7 @@ export function AppContent() {
   // Reactive mirror of the consent flag so the discovery effect re-runs the
   // moment the user clicks Accept (rather than only on the next reload).
   const [storageConsented, setStorageConsented] = useState(hasAcceptedStorage);
+  const contact = useContactDialog();
   // Reactive mirror of "is an API key currently stored?" so the welcome
   // banner disappears the moment the user pastes one in (in this tab).
   const [hasApiKey, setHasApiKey] = useState(() => !!getStoredApiKey());
@@ -503,13 +505,21 @@ export function AppContent() {
                 clearStoredConsent();
                 setStorageConsented(false);
               }}
-              className="hover:text-foreground underline-offset-2 hover:underline"
+              className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
             >
               Cookie settings
+            </button>
+            <button
+              type="button"
+              onClick={contact.openDialog}
+              className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
+            >
+              Contact
             </button>
           </span>
         </div>
       </footer>
+      <ContactDialog open={contact.open} onClose={contact.closeDialog} />
       <ApiKeyDialog
         open={keyOpen}
         onClose={() => setKeyOpen(false)}
