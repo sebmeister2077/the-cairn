@@ -389,10 +389,28 @@ export function TOPSMapViewPage() {
   // request fails (server down, etc.) but we still have a cached level-info
   // payload, derive a minimal MapStats from it so overlay projection (which
   // needs start_x/start_z/width_blocks/height_blocks) keeps working.
+  //
+  // IMPORTANT: when both are present, the *bounds* (start_x/start_z + width/
+  // height in blocks) must come from the per-level payload, not the global
+  // stats. The global stats reflect the current map database; older
+  // resolutions that haven't been regenerated since the last merge still
+  // have their original (smaller / shifted) bounds baked into their tile
+  // images. Using the global bounds for those levels misaligns every world-
+  // space overlay (spawn marker, landmarks, translocators).
   const stats = useMemo<MapStats | null>(() => {
-    if (statsQuery.data) return statsQuery.data;
     const info = levelInfoQuery.data;
-    if (!info || isLevelInfoExpired(info)) return null;
+    const infoUsable = info && !isLevelInfoExpired(info);
+    if (statsQuery.data) {
+      if (!infoUsable) return statsQuery.data;
+      return {
+        ...statsQuery.data,
+        width_blocks: info.width_blocks,
+        height_blocks: info.height_blocks,
+        start_x: info.start_x,
+        start_z: info.start_z,
+      };
+    }
+    if (!infoUsable) return null;
     return {
       pieces: 0,
       size_mb: 0,
