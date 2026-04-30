@@ -152,12 +152,12 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
       {
         key: "match_score",
         title: "Match-percentage scoring",
-        help: "Show admins how many tiles in a pending upload overlap the existing combined map.",
+        help: "Show admins how many chunks in a pending upload overlap the existing combined map.",
       },
       {
         key: "region_overwrite",
         title: "Region-restricted updates",
-        help: "Allow contributors to overwrite tiles within a bounding box (admin-only at launch).",
+        help: "Allow contributors to overwrite chunks within a bounding box (admin-only at launch).",
       },
       {
         key: "per_contribution_revert",

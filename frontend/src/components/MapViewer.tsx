@@ -53,7 +53,7 @@ export interface MapTile {
 export interface MapTileSet {
   /** Stable identity. When this changes the viewer treats it as a new map. */
   id: string | number;
-  tiles: MapTile[];
+  chunks: MapTile[];
   imageWidth: number;
   imageHeight: number;
 }
@@ -67,7 +67,7 @@ interface MapViewerProps {
   /**
    * Tile-based source. When provided the viewer renders each tile as a
    * separately positioned `<img>` instead of one giant image, with viewport
-   * culling so only the tiles intersecting the visible area are in the DOM.
+   * culling so only the chunks intersecting the visible area are in the DOM.
    * Avoids the giant `canvas.toBlob` round-trip needed for the single-image
    * path.
    */
@@ -88,7 +88,7 @@ interface MapViewerProps {
    * (with scale compensation), avoiding any monolithic encode/decode.
    */
   enhanceTilesFn?: (maxDim: number) => Promise<MapTileSet>;
-  /** Notified after an enhance-tiles swap completes (e.g. so the parent can persist the new level). */
+  /** Notified after an enhance-chunks swap completes (e.g. so the parent can persist the new level). */
   onTileSetEnhanced?: (next: MapTileSet) => void;
   /** Extra buttons rendered before the zoom controls in the toolbar. */
   toolbarStart?: React.ReactNode;
@@ -491,7 +491,7 @@ export function MapViewer({
     return () => ro.disconnect();
   }, [activeUrl, activeTileSet]);
 
-  // Compute which tiles intersect the visible viewport (plus an overscan
+  // Compute which chunks intersect the visible viewport (plus an overscan
   // margin). Keeps the DOM tile count bounded — typical viewport at level 4
   // (16384px) shows only a handful of the 256 chunks at any given zoom.
   const visibleTiles = useMemo(() => {
@@ -503,7 +503,7 @@ export function MapViewer({
     const viewMaxX = (containerSize.w - pan.x + TILE_OVERSCAN_PX) / zoom;
     const viewMaxY = (containerSize.h - pan.y + TILE_OVERSCAN_PX) / zoom;
     const out: MapTile[] = [];
-    for (const t of activeTileSet.tiles) {
+    for (const t of activeTileSet.chunks) {
       if (t.px + t.w < viewMinX || t.py + t.h < viewMinY) continue;
       if (t.px > viewMaxX || t.py > viewMaxY) continue;
       out.push(t);
@@ -1026,10 +1026,10 @@ export function MapViewer({
                 alt=""
                 draggable={false}
                 // NB: do NOT set loading="lazy" here. The browser's lazy-load
-                // heuristic ignores ancestor CSS transforms, so tiles whose
+                // heuristic ignores ancestor CSS transforms, so chunks whose
                 // untransformed absolute position falls outside the viewport
                 // (anything beyond the container width on level 4 = most of
-                // them) never get requested. We already cull off-screen tiles
+                // them) never get requested. We already cull off-screen chunks
                 // ourselves via `visibleTiles`, so every <img> rendered here
                 // is genuinely on-screen and should fetch eagerly.
                 decoding="async"

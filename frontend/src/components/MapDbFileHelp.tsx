@@ -32,7 +32,7 @@ export function MapDbFileHelp({ showServerIdHint = false }: MapDbFileHelpProps) 
             Vintage Story stores a{" "}
             <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache
             file for each multiplayer server you've visited. Pick any of them to render and explore
-            the world tiles your client has cached.
+            the world chunks your client has cached.
           </p>
         )
       }

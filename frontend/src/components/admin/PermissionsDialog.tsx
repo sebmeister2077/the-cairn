@@ -18,7 +18,7 @@ const KEY_PERMISSIONS: { key: KeyPermission; label: string; help: string }[] = [
   {
     key: "region_overwrite",
     label: "Region overwrite",
-    help: "Allow this contributor to submit region-restricted updates that overwrite existing tiles.",
+    help: "Allow this contributor to submit region-restricted updates that overwrite existing chunks.",
   },
 ];
 

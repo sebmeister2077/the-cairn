@@ -73,7 +73,7 @@ function isLevelInfoExpired(info: TopsMapLevelChunks | undefined): boolean {
 
 /**
  * Convert a level-info payload into the tile set the viewer renders.
- * Boundary tiles use the remainder dimensions so they line up exactly with
+ * Boundary chunks use the remainder dimensions so they line up exactly with
  * the assembled image bounds.
  */
 function levelToTileSet(info: TopsMapLevelChunks): MapTileSet {
@@ -83,7 +83,7 @@ function levelToTileSet(info: TopsMapLevelChunks): MapTileSet {
     id: info.level,
     imageWidth: info.image_w,
     imageHeight: info.image_h,
-    tiles: info.chunks.map((c) => {
+    chunks: info.chunks.map((c) => {
       const px = c.cx * info.chunk_w;
       const py = c.cy * info.chunk_h;
       return {
@@ -411,7 +411,7 @@ export function TOPSMapViewPage() {
   const loading = statsQuery.isFetching
     ? "Reading global server map…"
     : levelInfoQuery.isFetching && !tileSet
-      ? "Loading map tiles…"
+      ? "Loading map chunks…"
       : "";
   const error =
     statsQuery.error instanceof Error
@@ -577,7 +577,7 @@ export function TOPSMapViewPage() {
       // updating its `tileSet` prop in the middle of MapViewer's async swap
       // causes both sides to apply scale compensation (the prop-change effect
       // *and* the post-await branch of auto-enhance), leaving pan/zoom
-      // double-scaled and the viewport outside all tiles — the map appears
+      // double-scaled and the viewport outside all chunks — the map appears
       // blank until "Center view" is pressed. Defer the level update to
       // `onTileSetEnhanced` (fires after the internal swap is done) so the
       // tileSet?.id effect takes the Case-1 fast path and just drops the
@@ -861,7 +861,7 @@ export function TOPSMapViewPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
               <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
-              map tiles
+              map chunks
             </span>
             <span>
               <span className="font-medium text-foreground">{stats.size_mb}</span> MB

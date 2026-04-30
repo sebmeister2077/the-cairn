@@ -147,7 +147,7 @@ export function MapViewPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
               <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
-              map tiles
+              map chunks
             </span>
             <span>
               <span className="font-medium text-foreground">{stats.size_mb}</span> MB

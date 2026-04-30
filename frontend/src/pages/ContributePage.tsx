@@ -178,7 +178,7 @@ export function ContributePage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             This page lets players upload their local Vintage Story map cache so admins can review
-            and merge new tiles into the shared community map.
+            and merge new chunks into the shared community map.
           </p>
           <p>
             New here? Read the{" "}
@@ -469,7 +469,7 @@ export function ContributePage() {
             <div className="space-y-1">
               <p className="font-medium text-foreground">What gets uploaded?</p>
               <p>
-                Only the rendered <strong>visual map tiles</strong> from your local cache are
+                Only the rendered <strong>visual map chunks</strong> from your local cache are
                 extracted and submitted. Your{" "}
                 <strong>
                   waypoints, traders, translocators, and other personal map markers are never read
@@ -484,7 +484,7 @@ export function ContributePage() {
             <div className="flex gap-4 text-sm">
               <div className="flex items-center gap-1.5">
                 <Badge variant="secondary">{info.total_tiles.toLocaleString()}</Badge>
-                <span className="text-muted-foreground">tiles in combined map</span>
+                <span className="text-muted-foreground">chunks in combined map</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Badge variant="secondary">{info.pending.length}</Badge>
@@ -573,7 +573,7 @@ export function ContributePage() {
                   <Label className="m-0">
                     Region overwrite{" "}
                     <span className="text-xs font-normal text-muted-foreground">
-                      (optional, replaces in-region tiles)
+                      (optional, replaces in-region chunks)
                     </span>
                   </Label>
                   {isAdmin && <Badge variant="outline">admin / region_overwrite</Badge>}
@@ -664,7 +664,7 @@ export function ContributePage() {
                         {p.is_mine ? p.contributor : displayContributor(p.contributor)}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {p.tile_count.toLocaleString()} tiles &middot;{" "}
+                        {p.tile_count.toLocaleString()} chunks &middot;{" "}
                         {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
                       </div>
                       <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
@@ -765,7 +765,7 @@ export function ContributePage() {
                           <>
                             <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
                             <span>
-                              Green-highlighted areas are new tiles from this contribution
+                              Green-highlighted areas are new chunks from this contribution
                             </span>
                           </>
                         }
@@ -857,7 +857,7 @@ export function ContributePage() {
                     <div>
                       <span className="font-medium">{displayContributor(a.contributor)}</span>
                       <span className="text-muted-foreground ml-2">
-                        +{a.tiles_new.toLocaleString()} new tiles
+                        +{a.tiles_new.toLocaleString()} new chunks
                       </span>
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -896,7 +896,7 @@ export function ContributePage() {
                   ? deleteTarget.contributor
                   : displayContributor(deleteTarget.contributor)}
               </span>{" "}
-              ({deleteTarget.tile_count.toLocaleString()} tiles). The uploaded data will be
+              ({deleteTarget.tile_count.toLocaleString()} chunks). The uploaded data will be
               discarded and cannot be recovered.
             </>
           ) : (
@@ -1150,8 +1150,8 @@ function RecentContributionsGridImpl({
     const tilesReplaced = entry.revert_replaced_count ?? 0;
     const message =
       tilesReplaced > 0
-        ? `Reverting will restore ${tilesReplaced.toLocaleString()} tiles to their pre-contribution state and remove ${tilesNew.toLocaleString()} tiles added in the region. Continue?`
-        : `Reverting will delete ${tilesNew.toLocaleString()} tiles added by this contribution. The area returns to unmapped, not to a previous version. Continue?`;
+        ? `Reverting will restore ${tilesReplaced.toLocaleString()} chunks to their pre-contribution state and remove ${tilesNew.toLocaleString()} chunks added in the region. Continue?`
+        : `Reverting will delete ${tilesNew.toLocaleString()} chunks added by this contribution. The area returns to unmapped, not to a previous version. Continue?`;
     if (!window.confirm(message)) return;
     setRevertError(null);
     setRevertingId(entry.id);
@@ -1234,8 +1234,8 @@ function RecentContributionsGridImpl({
                   </div>
                   <div className="text-muted-foreground">
                     {!isWithdrawn && typeof h.tiles_new === "number"
-                      ? `+${h.tiles_new.toLocaleString()} new tiles`
-                      : `${h.tile_count.toLocaleString()} tiles`}
+                      ? `+${h.tiles_new.toLocaleString()} new chunks`
+                      : `${h.tile_count.toLocaleString()} chunks`}
                   </div>
                   <div className="text-muted-foreground">
                     {dateStr ? new Date(dateStr).toLocaleDateString() : "—"}

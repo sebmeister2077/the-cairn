@@ -55,13 +55,13 @@ export function ContributingToTopsMapPost() {
             , drop the file in, optionally add your name, and submit.
           </li>
           <li>
-            Wait for an admin to approve. Your tiles get merged into the shared map and rendered
+            Wait for an admin to approve. Your chunks get merged into the shared map and rendered
             into the public tile layer.
           </li>
         </Ol>
         <Callout tone="info">
           By default, contributions only <strong>fill gaps</strong> &mdash; they never overwrite
-          tiles that already exist. That makes contributing safe: you cannot accidentally damage
+          chunks that already exist. That makes contributing safe: you cannot accidentally damage
           someone else&rsquo;s work.
         </Callout>
       </Section>
@@ -125,8 +125,8 @@ export function ContributingToTopsMapPost() {
           <li>
             <strong>Region (advanced, optional)</strong> &mdash; if you have the{" "}
             <Badge variant="secondary">region_overwrite</Badge> permission, you can draw a rectangle
-            to <em>replace</em> tiles inside it instead of just gap-filling. This is for fixing
-            stale or wrong tiles, and it&rsquo;s gated for a reason &mdash; see below.
+            to <em>replace</em> chunks inside it instead of just gap-filling. This is for fixing
+            stale or wrong chunks, and it&rsquo;s gated for a reason &mdash; see below.
           </li>
         </Ul>
       </Section>
@@ -139,7 +139,7 @@ export function ContributingToTopsMapPost() {
           </li>
           <li>
             A preview PNG is rendered so admins can eyeball it. A <strong>match score</strong> is
-            computed in the background by sampling tiles against the existing TOPS map.
+            computed in the background by sampling chunks against the existing TOPS map.
           </li>
           <li>
             The contribution shows up in the pending list with a badge:
@@ -150,7 +150,7 @@ export function ContributingToTopsMapPost() {
             </span>
           </li>
           <li>
-            An admin reviews the preview and approves or rejects. On approval, the tiles are merged
+            An admin reviews the preview and approves or rejects. On approval, the chunks are merged
             under a database lock and the affected portion of the public TOPS image is regenerated.
           </li>
         </Ol>
@@ -182,7 +182,7 @@ export function ContributingToTopsMapPost() {
       <Section title="Gap-fill vs Region Overwrite" icon={<ShieldCheck className="size-4" />}>
         <div className="grid gap-3 sm:grid-cols-2">
           <MiniCard heading="Gap-fill (default)" badge={<Badge variant="secondary">safe</Badge>}>
-            Only adds tiles that don&rsquo;t exist yet. Existing tiles are untouched. This is the
+            Only adds chunks that don&rsquo;t exist yet. Existing chunks are untouched. This is the
             right choice 95% of the time.
           </MiniCard>
           <MiniCard heading="Region overwrite" badge={<Badge>permission required</Badge>}>
@@ -256,7 +256,7 @@ export function ContributingToTopsMapPost() {
           with a cascading conflict check against newer contributions on top of it.
         </P>
         <P>
-          And that&rsquo;s it &mdash; your tiles are now part of the shared world. Thanks for
+          And that&rsquo;s it &mdash; your chunks are now part of the shared world. Thanks for
           contributing.
         </P>
       </Section>

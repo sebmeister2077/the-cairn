@@ -1,6 +1,6 @@
 /**
  * Phase 2 — region-restricted updates: lets a contributor draw a single
- * rectangle on the existing TOPS map preview to constrain which tiles
+ * rectangle on the existing TOPS map preview to constrain which chunks
  * their upload should overwrite. Outputs world-block bounds.
  *
  * Implementation notes
@@ -15,7 +15,7 @@
  *   level's `start_x`, `start_z`, `image_w`, `image_h`, `width_blocks`,
  *   `height_blocks` fields.
  * - We do not snap to tile boundaries here — the backend rounds the bounds
- *   to whole tiles when filtering positions.
+ *   to whole chunks when filtering positions.
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -215,7 +215,7 @@ export function ContributionRegionPicker({
         {!loading && !error && (
           <span>
             Drag on the map to select the region your upload should overwrite. Outside the
-            rectangle, existing tiles stay untouched.
+            rectangle, existing chunks stay untouched.
           </span>
         )}
       </div>
@@ -241,10 +241,10 @@ export function ContributionRegionPicker({
             <span>
               Region: x [{value.min_x}, {value.max_x}], z [{value.min_z}, {value.max_z}] blocks
             </span>
-            <span>· {selectionTiles.toLocaleString()} tiles</span>
+            <span>· {selectionTiles.toLocaleString()} chunks</span>
             {tileAreaCap != null && (
               <span className={overCap ? "text-destructive" : ""}>
-                · cap {tileAreaCap.toLocaleString()} tiles
+                · cap {tileAreaCap.toLocaleString()} chunks
                 {overCap ? " (over!)" : ""}
               </span>
             )}
@@ -259,7 +259,7 @@ export function ContributionRegionPicker({
           </>
         ) : (
           <span className="text-muted-foreground">
-            No region selected — your upload will gap-fill unmapped tiles only (legacy mode).
+            No region selected — your upload will gap-fill unmapped chunks only (legacy mode).
           </span>
         )}
       </div>
