@@ -1664,15 +1664,30 @@ def list_invite_links_paginated(
 ) -> dict:
     """Paginated + filtered listing of invite links.
 
-    ``status`` is one of ``"active"`` (not revoked), ``"revoked"``, ``"all"``.
+    ``status`` is one of:
+
+    * ``"active"`` – usable: not revoked, not expired, and not exhausted.
+    * ``"revoked"`` – inactive: revoked OR expired OR (has a max-uses cap and
+      hit it). The frontend groups these under the "Inactive" card since none
+      of them can mint new keys.
+    * ``"all"`` – no status filter.
+
     ``q`` searches the invite ``name`` and ``token`` (substring, case-insensitive).
     """
     where = []
     params: list = []
+    # An invite link is "inactive" if any of: revoked, past expires_at, or
+    # use_count has reached max_uses (when max_uses is set). This mirrors the
+    # frontend status-badge logic in InviteLinkRow.
+    inactive_expr = (
+        "(revoked = TRUE "
+        " OR (expires_at IS NOT NULL AND expires_at < now()) "
+        " OR (max_uses IS NOT NULL AND use_count >= max_uses))"
+    )
     if status == "active":
-        where.append("revoked = FALSE")
+        where.append(f"NOT {inactive_expr}")
     elif status == "revoked":
-        where.append("revoked = TRUE")
+        where.append(inactive_expr)
     if q:
         where.append("(name ILIKE %s OR token ILIKE %s)")
         like = f"%{q}%"

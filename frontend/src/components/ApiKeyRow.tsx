@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { fmt } from "@/components/DateFormatter";
 import { useCopy } from "@/components/useCopy";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export function KeyRow({
   record,
@@ -13,7 +21,7 @@ export function KeyRow({
   record: ApiKeyRecord;
   onRevoke: (key: string) => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { copied, copy } = useCopy();
   const isCopied = copied === record.key;
 
@@ -84,37 +92,46 @@ export function KeyRow({
           )}
         </Button>
         {!record.revoked ? (
-          confirming ? (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => {
-                  onRevoke(record.key);
-                  setConfirming(false);
-                }}
-              >
-                Confirm
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setConfirming(true)}
-            >
-              <Trash2 className="size-4" />
-              Revoke
-            </Button>
-          )
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 className="size-4" />
+            Revoke
+          </Button>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
       </div>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revoke API key?</DialogTitle>
+            <DialogDescription>
+              This will immediately revoke{" "}
+              <strong className="text-foreground">{record.name || "this unnamed key"}</strong>. Any
+              client using it will stop working. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onRevoke(record.key);
+                setConfirmOpen(false);
+              }}
+            >
+              <Trash2 className="size-4" />
+              Revoke
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

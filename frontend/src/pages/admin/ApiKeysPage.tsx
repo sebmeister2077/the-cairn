@@ -471,14 +471,16 @@ export function ApiKeysPage() {
               <ChevronRight className="size-4" />
             )}
             <CardTitle className="text-base text-muted-foreground">
-              Revoked Invite Links
+              Inactive Invite Links
               {showRevokedInvites && revokedInvites.isSuccess
                 ? ` (${revokedInviteItems.length} of ${revokedInvitesTotal})`
                 : ""}
             </CardTitle>
           </button>
           {showRevokedInvites && (
-            <CardDescription>These invite links no longer work.</CardDescription>
+            <CardDescription>
+              Revoked, expired, or exhausted invite links. None can mint new keys.
+            </CardDescription>
           )}
         </CardHeader>
         {showRevokedInvites && (
@@ -486,13 +488,15 @@ export function ApiKeysPage() {
             <SearchInput
               value={revokedInvitesQ}
               onChange={setRevokedInvitesQ}
-              placeholder="Search revoked invite links…"
+              placeholder="Search inactive invite links…"
             />
             {revokedInvites.isLoading ? (
               <LoadingRow />
             ) : revokedInviteItems.length === 0 ? (
               <p className="text-sm text-muted-foreground py-4 text-center">
-                {revokedInvitesQ ? "No matching revoked invite links." : "No revoked invite links."}
+                {revokedInvitesQ
+                  ? "No matching inactive invite links."
+                  : "No inactive invite links."}
               </p>
             ) : (
               <>

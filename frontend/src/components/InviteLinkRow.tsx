@@ -13,6 +13,14 @@ import { Switch } from "@/components/ui/switch";
 import { useCopy } from "@/components/useCopy";
 import { fmt } from "@/components/DateFormatter";
 import { Pagination } from "@/components/Pagination";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const ISSUED_KEYS_PAGE_SIZE = 10;
 
@@ -24,7 +32,7 @@ export function InviteLinkRow({
   onRevoke: (token: string) => void;
 }) {
   const { copied, copy } = useCopy();
-  const [confirming, setConfirming] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   const inviteUrl = `${window.location.origin}/?invite=${encodeURIComponent(record.token)}`;
@@ -132,33 +140,15 @@ export function InviteLinkRow({
         )}
         <div className="w-px h-5 bg-border" />
         {!record.revoked ? (
-          confirming ? (
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => {
-                  onRevoke(record.token);
-                  setConfirming(false);
-                }}
-              >
-                Confirm
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-                Cancel
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => setConfirming(true)}
-            >
-              <Trash2 className="size-4" />
-              Revoke
-            </Button>
-          )
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 className="size-4" />
+            Revoke
+          </Button>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
         )}
@@ -189,6 +179,37 @@ export function InviteLinkRow({
           rows={issuedKeys.data ?? []}
         />
       )}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revoke invite link?</DialogTitle>
+            <DialogDescription>
+              This will immediately revoke{" "}
+              <strong className="text-foreground">
+                {record.name || "this unnamed invite link"}
+              </strong>
+              . The link will stop minting new keys, and if it was set as the default public link
+              that flag will be cleared. Keys already issued through this link are not affected.
+              This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                onRevoke(record.token);
+                setConfirmOpen(false);
+              }}
+            >
+              <Trash2 className="size-4" />
+              Revoke
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
