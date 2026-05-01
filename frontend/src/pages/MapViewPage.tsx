@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Download, Loader2 } from "lucide-react";
 
+const NON_ADMIN_MAX_MB = 200;
+const NON_ADMIN_MAX_BYTES = NON_ADMIN_MAX_MB * 1024 * 1024;
+
 export function MapViewPage() {
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
@@ -27,6 +30,15 @@ export function MapViewPage() {
     if (!dbFile) return;
 
     setError("");
+
+    // Non-admins are limited to 200MB map files (rendering large maps is
+    // expensive). Admins have no client-side limit.
+    if (!isAdmin && dbFile.size > NON_ADMIN_MAX_BYTES) {
+      const sizeMb = (dbFile.size / (1024 * 1024)).toFixed(1);
+      setError(`Map file is ${sizeMb} MB, which exceeds the ${NON_ADMIN_MAX_MB} MB limit`);
+      return;
+    }
+
     setStats(null);
     if (imageUrl) {
       URL.revokeObjectURL(imageUrl);
