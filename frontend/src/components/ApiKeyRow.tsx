@@ -50,7 +50,8 @@ export function KeyRow({
           {record.last_used_at && <> · Last used {fmt(record.last_used_at)}</>}
           {" · "}
           {record.usage_count.toLocaleString()} {record.usage_count === 1 ? "use" : "uses"}
-          {record.consume_once && record.bound_identity && <> · Bound to {record.bound_identity}</>}
+          {record.display_name && <> · {record.display_name}</>}
+          {record.in_game_name && <> · IGN {record.in_game_name}</>}
         </p>
       </div>
       <div className="flex items-center gap-1.5">

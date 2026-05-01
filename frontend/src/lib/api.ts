@@ -626,6 +626,10 @@ export interface ApiKeyRecord {
     permissions: "read" | "contribute";
     consume_once: boolean;
     bound_identity: string | null;
+    /** display_name from the linked user account (if one exists). */
+    display_name?: string | null;
+    /** in_game_name from the linked user account (if one exists). */
+    in_game_name?: string | null;
     revoked: boolean;
     usage_count: number;
     created_at: string;

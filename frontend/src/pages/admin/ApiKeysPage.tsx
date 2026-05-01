@@ -297,6 +297,16 @@ export function ApiKeysPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => activeKeys.refetch()}
+              disabled={activeKeys.isFetching}
+              title="Refresh active API keys"
+            >
+              <RefreshCw className={activeKeys.isFetching ? "size-3 animate-spin" : "size-3"} />
+              Refresh
+            </Button>
           </div>
           {activeKeys.isLoading ? (
             <LoadingRow />

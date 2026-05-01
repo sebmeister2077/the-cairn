@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useCopy } from "@/components/useCopy";
 import { fmt } from "@/components/DateFormatter";
+import { Pagination } from "@/components/Pagination";
+
+const ISSUED_KEYS_PAGE_SIZE = 10;
 
 export function InviteLinkRow({
   record,
@@ -199,11 +202,23 @@ function IssuedKeysPanel({
   error: Error | null;
   rows: InviteLinkKeyRecord[];
 }) {
+  const [page, setPage] = useState(0);
+  const pageCount = Math.max(1, Math.ceil(rows.length / ISSUED_KEYS_PAGE_SIZE));
+  // Clamp page if rows shrink (e.g. after a refetch).
+  const safePage = Math.min(page, pageCount - 1);
+  const start = safePage * ISSUED_KEYS_PAGE_SIZE;
+  const visibleRows = rows.slice(start, start + ISSUED_KEYS_PAGE_SIZE);
+
   return (
     <div className="ml-9 mb-3 mr-1 rounded-md border bg-muted/30 px-3 py-2 text-xs">
       <div className="flex items-center gap-1.5 text-muted-foreground mb-2">
         <Users className="size-3.5" />
-        <span className="font-medium">Issued keys &amp; users</span>
+        <span className="font-medium">
+          Issued keys &amp; users
+          {!loading && !error && rows.length > 0 && (
+            <span className="ml-1 font-normal">({rows.length})</span>
+          )}
+        </span>
       </div>
       {loading && <p className="text-muted-foreground italic">Loading…</p>}
       {error && <p className="text-destructive">Failed to load: {error.message}</p>}
@@ -211,15 +226,23 @@ function IssuedKeysPanel({
         <p className="text-muted-foreground italic">No keys recorded.</p>
       )}
       {!loading && !error && rows.length > 0 && (
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1.5 items-center">
-          <div className="text-muted-foreground font-medium">User / key name</div>
-          <div className="text-muted-foreground font-medium">Created</div>
-          <div className="text-muted-foreground font-medium">Last used</div>
-          <div className="text-muted-foreground font-medium">Status</div>
-          {rows.map((r) => (
-            <KeyRowEntry key={r.key} row={r} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-1.5 items-center">
+            <div className="text-muted-foreground font-medium">User / key name</div>
+            <div className="text-muted-foreground font-medium">Created</div>
+            <div className="text-muted-foreground font-medium">Last used</div>
+            <div className="text-muted-foreground font-medium">Status</div>
+            {visibleRows.map((r) => (
+              <KeyRowEntry key={r.key} row={r} />
+            ))}
+          </div>
+          <Pagination
+            page={safePage}
+            pageCount={pageCount}
+            onPageChange={setPage}
+            isFetching={false}
+          />
+        </>
       )}
     </div>
   );

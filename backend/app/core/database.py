@@ -1394,23 +1394,23 @@ def list_api_keys_paginated(
     where = []
     params: list = []
     if status == "active":
-        where.append("revoked = FALSE")
+        where.append("k.revoked = FALSE")
     elif status == "revoked":
-        where.append("revoked = TRUE")
+        where.append("k.revoked = TRUE")
     if q:
-        where.append("(name ILIKE %s OR key ILIKE %s)")
+        where.append("(k.name ILIKE %s OR k.key ILIKE %s)")
         like = f"%{q}%"
         params.extend([like, like])
 
     bi = (bound_identity or "any").strip().lower()
     if bi in ("none", "unbound"):
-        where.append("bound_identity IS NULL")
+        where.append("k.bound_identity IS NULL")
     elif bi == "bound":
-        where.append("bound_identity IS NOT NULL")
+        where.append("k.bound_identity IS NOT NULL")
     elif bi and bi != "any":
         # Exact match on the supplied identity value (case-sensitive – identities
         # are typically opaque tokens). Use the original (non-lowercased) input.
-        where.append("bound_identity = %s")
+        where.append("k.bound_identity = %s")
         params.append(bound_identity.strip())
 
     sort_col = _API_KEY_SORT_COLUMNS.get((sort or "").lower(), "created_at")
@@ -1419,7 +1419,7 @@ def list_api_keys_paginated(
     # first page when sorting by sparse columns like ``last_used_at``.
     nulls = "NULLS LAST"
     # Tie-breaker on primary key keeps pagination stable.
-    order_sql = f"ORDER BY {sort_col} {direction} {nulls}, key DESC"
+    order_sql = f"ORDER BY k.{sort_col} {direction} {nulls}, k.key DESC"
 
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
     limit = max(1, min(int(limit), 200))
@@ -1427,10 +1427,17 @@ def list_api_keys_paginated(
 
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute(f"SELECT COUNT(*) AS c FROM api_keys {where_sql}", params)
+            cur.execute(f"SELECT COUNT(*) AS c FROM api_keys k {where_sql}", params)
             total = int(cur.fetchone()["c"])
             cur.execute(
-                f"SELECT * FROM api_keys {where_sql} {order_sql} LIMIT %s OFFSET %s",
+                f"""SELECT k.*,
+                           u.display_name,
+                           u.in_game_name
+                      FROM api_keys k
+                      LEFT JOIN users u ON u.api_key = k.key
+                      {where_sql}
+                      {order_sql}
+                      LIMIT %s OFFSET %s""",
                 params + [limit, offset],
             )
             items = [dict(r) for r in cur.fetchall()]
