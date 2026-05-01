@@ -126,6 +126,28 @@ interface MapViewerProps {
   focusPoint?: { x: number; z: number };
   /** Zoom level to use when flying to a focusPoint. Default 4. */
   focusZoom?: number;
+  /**
+   * Reported (debounced) whenever the user pans or zooms. `centerWorldX` /
+   * `centerWorldZ` are the world-block coordinates currently under the
+   * viewport center; `pixelsPerBlock` is the on-screen scale (independent of
+   * which resolution level is active, so it survives resolution swaps).
+   * Requires `stats` to be set.
+   */
+  onViewportChange?: (info: {
+    centerWorldX: number;
+    centerWorldZ: number;
+    pixelsPerBlock: number;
+  }) => void;
+  /**
+   * Optional view to restore once `stats` and the first tile/image have
+   * loaded. Applied at most once per mount; subsequent updates are ignored
+   * (so this is meant to be sourced from the URL on initial page load).
+   */
+  initialView?: {
+    centerWorldX: number;
+    centerWorldZ: number;
+    pixelsPerBlock: number;
+  };
 }
 
 export function MapViewer({
@@ -149,6 +171,8 @@ export function MapViewer({
   highlightedSegments,
   focusPoint,
   focusZoom = 4,
+  onViewportChange,
+  initialView,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -823,12 +847,77 @@ export function MapViewer({
   // We deliberately wait for `stats` so the first centering call uses the
   // origin-aware branch of `centerView`; otherwise the map snaps to a
   // corner-anchored position and the ref then prevents any re-centering.
+  // Skipped while an unconsumed `initialView` is pending so we don't fight
+  // with the URL-restore effect below.
+  const initialViewAppliedRef = useRef(false);
   useEffect(() => {
     if (!activeTileSet || containerSize.w === 0 || !stats) return;
     if (centeredTileIdRef.current === activeTileSet.id) return;
+    if (initialView && !initialViewAppliedRef.current) return;
     centeredTileIdRef.current = activeTileSet.id;
     centerView(activeTileSet.imageWidth, activeTileSet.imageHeight, zoomRef.current);
-  }, [activeTileSet, containerSize.w, centerView, stats]);
+  }, [activeTileSet, containerSize.w, centerView, stats, initialView]);
+
+  // Restore a previously-shared view (from URL params) once everything we
+  // need is on screen. Runs at most once per mount.
+  useEffect(() => {
+    if (initialViewAppliedRef.current) return;
+    if (!initialView) return;
+    if (!stats || imgNatural.w === 0 || imgNatural.h === 0) return;
+    if (containerSize.w === 0 || containerSize.h === 0) return;
+    if (!activeTileSet && !activeUrl) return;
+
+    const { centerWorldX, centerWorldZ, pixelsPerBlock } = initialView;
+    if (
+      !Number.isFinite(centerWorldX) ||
+      !Number.isFinite(centerWorldZ) ||
+      !Number.isFinite(pixelsPerBlock) ||
+      pixelsPerBlock <= 0
+    ) {
+      initialViewAppliedRef.current = true;
+      return;
+    }
+
+    // Convert world-space pixels-per-block into the viewer's internal zoom,
+    // which is multiplied against the current image's natural width.
+    const internalZoom = Math.min(
+      Math.max((pixelsPerBlock * stats.width_blocks) / imgNatural.w, 0.1),
+      20,
+    );
+    const imgX = ((centerWorldX - stats.start_x) / stats.width_blocks) * imgNatural.w;
+    const imgY = ((centerWorldZ - stats.start_z) / stats.height_blocks) * imgNatural.h;
+    setZoom(internalZoom);
+    setPan({
+      x: containerSize.w / 2 - imgX * internalZoom,
+      y: containerSize.h / 2 - imgY * internalZoom,
+    });
+    if (activeTileSet) centeredTileIdRef.current = activeTileSet.id;
+    initialViewAppliedRef.current = true;
+  }, [initialView, stats, imgNatural, containerSize, activeTileSet, activeUrl]);
+
+  // Report the current viewport (world center + on-screen scale) to the
+  // parent, debounced so we don't spam URL updates while panning.
+  useEffect(() => {
+    if (!onViewportChange) return;
+    if (!stats || imgNatural.w === 0 || imgNatural.h === 0) return;
+    if (containerSize.w === 0 || containerSize.h === 0) return;
+    const handle = setTimeout(() => {
+      const cx = containerSize.w / 2;
+      const cy = containerSize.h / 2;
+      const imgX = (cx - pan.x) / zoom;
+      const imgY = (cy - pan.y) / zoom;
+      const worldX = (imgX / imgNatural.w) * stats.width_blocks + stats.start_x;
+      const worldZ = (imgY / imgNatural.h) * stats.height_blocks + stats.start_z;
+      const pixelsPerBlock = (zoom * imgNatural.w) / stats.width_blocks;
+      if (![worldX, worldZ, pixelsPerBlock].every(Number.isFinite)) return;
+      onViewportChange({
+        centerWorldX: worldX,
+        centerWorldZ: worldZ,
+        pixelsPerBlock,
+      });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [pan, zoom, stats, imgNatural, containerSize, onViewportChange]);
 
   const zoomIn = useCallback(() => {
     const el = containerRef.current;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
@@ -107,6 +108,55 @@ interface TopsMapStatsResponse extends MapStats {
 export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
   const isAdmin = getStoredIsAdmin();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Snapshot the URL params present on first render. They are *not* the
+  // source of truth (panning the map every frame against react-router would
+  // be expensive); they only seed the initial level + viewport so a shared
+  // link can be opened to the exact same view. Subsequent in-page state
+  // changes flow back into the URL via `setSearchParams({ replace: true })`.
+  const initialUrlParamsRef = useRef<{
+    level: number | null;
+    initialView: { centerWorldX: number; centerWorldZ: number; pixelsPerBlock: number } | undefined;
+  } | null>(null);
+  if (initialUrlParamsRef.current === null) {
+    const lvlRaw = searchParams.get("level");
+    const xRaw = searchParams.get("x");
+    const zRaw = searchParams.get("z");
+    const zoomRaw = searchParams.get("zoom");
+    const lvl = lvlRaw != null ? Number(lvlRaw) : NaN;
+    const x = xRaw != null ? Number(xRaw) : NaN;
+    const z = zRaw != null ? Number(zRaw) : NaN;
+    const zm = zoomRaw != null ? Number(zoomRaw) : NaN;
+    initialUrlParamsRef.current = {
+      level: Number.isFinite(lvl) && lvl > 0 ? Math.trunc(lvl) : null,
+      initialView:
+        Number.isFinite(x) && Number.isFinite(z) && Number.isFinite(zm) && zm > 0
+          ? { centerWorldX: x, centerWorldZ: z, pixelsPerBlock: zm }
+          : undefined,
+    };
+  }
+  const initialUrlParams = initialUrlParamsRef.current;
+
+  // Single helper that merges param changes into the existing search string
+  // and replaces the history entry (so panning doesn't fill back-button
+  // history). Wrapped in useCallback so it's stable for downstream effects.
+  const updateUrlParams = useCallback(
+    (updates: Record<string, string | null>) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          for (const [k, v] of Object.entries(updates)) {
+            if (v == null) next.delete(k);
+            else next.set(k, v);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const [showTranslocators, setShowTranslocators] = useState(false);
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [translocatorSegments, setTranslocatorSegments] = useState<WorldLineSegment[]>([]);
@@ -326,6 +376,8 @@ export function TOPSMapViewPage() {
   );
 
   const [selectedLevel, setSelectedLevel] = useState<number | null>(() => {
+    // URL beats persisted preference so a shared link always wins.
+    if (initialUrlParams.level != null) return initialUrlParams.level;
     const stored = localStorage.getItem(SELECTED_LEVEL_STORAGE_KEY);
     return stored ? Number(stored) : null;
   });
@@ -353,8 +405,23 @@ export function TOPSMapViewPage() {
   useEffect(() => {
     if (selectedLevel != null) {
       localStorage.setItem(SELECTED_LEVEL_STORAGE_KEY, String(selectedLevel));
+      updateUrlParams({ level: String(selectedLevel) });
     }
-  }, [selectedLevel]);
+  }, [selectedLevel, updateUrlParams]);
+
+  // Mirror viewport pan/zoom into the URL (debounced inside MapViewer). World
+  // coords are rounded to whole blocks; the on-screen scale is kept to a few
+  // decimals so the share is reproducible without bloating the URL.
+  const handleViewportChange = useCallback(
+    (info: { centerWorldX: number; centerWorldZ: number; pixelsPerBlock: number }) => {
+      updateUrlParams({
+        x: String(Math.round(info.centerWorldX)),
+        z: String(Math.round(info.centerWorldZ)),
+        zoom: info.pixelsPerBlock.toFixed(4),
+      });
+    },
+    [updateUrlParams],
+  );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
     queryKey: ["tops-map-level", selectedLevel],
@@ -911,6 +978,8 @@ export function TOPSMapViewPage() {
           highlightedSegments={highlightedTranslocatorSegments}
           focusPoint={landmarkFocusPoint}
           enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
+          initialView={initialUrlParams.initialView}
+          onViewportChange={handleViewportChange}
           onTileSetEnhanced={(next) => {
             // Persist the upgrade so future page loads start at the higher
             // level. Runs after MapViewer's internal swap, so the resulting
