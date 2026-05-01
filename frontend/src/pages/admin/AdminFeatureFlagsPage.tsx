@@ -178,8 +178,8 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
     flags: [
       {
         key: "public_history",
-        title: "Public 14-day history",
-        help: "Expose recently-approved contribution previews to all read-key holders.",
+        title: "Public history",
+        help: "Expose approved contribution previews to all read-key holders.",
       },
       {
         key: "weekly_backups",

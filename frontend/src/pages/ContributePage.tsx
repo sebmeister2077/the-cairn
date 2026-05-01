@@ -271,8 +271,8 @@ export function ContributePage() {
     enabled: !!accountApiKey,
     retry: false,
   });
-  const showContributions = accountQuery.data?.user?.show_contributions ?? false;
-  const canSeeContributors = isAdmin || info?.is_admin || showContributions;
+  // const showContributions = accountQuery.data?.user?.show_contributions ?? true;
+  const canSeeContributors = true; // = isAdmin || info?.is_admin //|| showContributions;
   const displayContributor = useCallback(
     (name: string) => (canSeeContributors ? name : "Anonymous"),
     [canSeeContributors],
