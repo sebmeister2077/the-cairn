@@ -229,9 +229,9 @@ export function AppContent() {
       setStoredIsAdmin(false);
       setStoredCanContribute(false);
       setAuthRejected({ kind: hadKey ? "had-key" : "no-key" });
-      if (window.location.pathname !== "/") {
-        navigate("/", { replace: true });
-      }
+      // if (window.location.pathname !== "/") {
+      //   navigate("/", { replace: true });
+      // }
     }
     window.addEventListener("auth-rejected", onAuthRejected);
     return () => window.removeEventListener("auth-rejected", onAuthRejected);
