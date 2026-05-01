@@ -224,14 +224,33 @@ CREATE INDEX IF NOT EXISTS idx_contributions_match_score_status
 
 -- Phase 3: per-contribution preview retention. The approval flow promotes
 -- pending preview PNGs into the public history bucket and stamps an expiry
--- here. The daily cleanup task uses this column to know when to delete the
--- preview + archived .db. NULL ⇒ no public history retention configured
--- (legacy rows or contributions whose preview was never generated).
+-- here. As of the all-time history change, this column governs only the
+-- per-contribution archived .db lifetime (used for revert) — the history
+-- preview PNG is now kept forever and is tracked by
+-- ``history_preview_uploaded_at`` below. NULL ⇒ no archive retention
+-- configured (legacy rows, withdrawn contributions, or rows whose archive
+-- has already been swept).
 ALTER TABLE contributions
 ADD COLUMN IF NOT EXISTS preview_retained_until TIMESTAMPTZ;
 CREATE INDEX IF NOT EXISTS idx_contributions_preview_retained_until
     ON contributions (preview_retained_until)
     WHERE preview_retained_until IS NOT NULL;
+
+-- All-time history: timestamp at which the preview PNG was promoted into
+-- the ``history/<id>.png`` bucket. Drives visibility in the "Recent
+-- contributions" grid (set ⇒ row appears, no time window). The PNG itself
+-- is kept indefinitely; the daily cleanup task no longer touches it.
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS history_preview_uploaded_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_contributions_history_preview_uploaded_at
+    ON contributions (history_preview_uploaded_at)
+    WHERE history_preview_uploaded_at IS NOT NULL;
+-- Backfill from rows that currently have a non-null preview_retained_until
+-- (those are the rows whose preview is still in R2 at migration time).
+UPDATE contributions
+   SET history_preview_uploaded_at = COALESCE(approved_at, withdrawn_at, now())
+ WHERE history_preview_uploaded_at IS NULL
+   AND preview_retained_until IS NOT NULL;
 
 -- Phase 4a: TOTP 2FA enrolment for admin keys. The secret is stored
 -- encrypted (Fernet, key from TOTP_ENCRYPTION_KEY env var). NULL means
@@ -702,13 +721,33 @@ def get_approved_log(limit: int = 20) -> List[dict]:
 # ---------------------------------------------------------------------------
 
 def set_preview_retained_until(cid: str, retained_until: Optional[datetime]) -> None:
-    """Stamp the preview retention deadline on a contribution row. Called by
-    the approval / withdrawal flow. ``None`` clears the field."""
+    """Stamp the archive-.db retention deadline on a contribution row.
+    Called by the approval flow with a future deadline and by the cleanup
+    task with ``None`` once the archived .db has been removed from R2.
+
+    Note: this column no longer governs the history preview PNG — that is
+    kept indefinitely once ``history_preview_uploaded_at`` is set.
+    """
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "UPDATE contributions SET preview_retained_until = %s WHERE id = %s",
                 (retained_until, cid),
+            )
+
+
+def set_history_preview_uploaded_at(
+    cid: str, uploaded_at: Optional[datetime]
+) -> None:
+    """Stamp the timestamp at which the preview PNG was promoted into the
+    ``history/<id>.png`` bucket. A non-null value makes the contribution
+    visible in the "Recent contributions" grid forever.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE contributions SET history_preview_uploaded_at = %s WHERE id = %s",
+                (uploaded_at, cid),
             )
 
 
@@ -719,24 +758,23 @@ def list_history_contributions(
     limit: int = 50,
     offset: int = 0,
 ) -> List[dict]:
-    """Return contributions whose preview is currently retained.
+    """Return contributions whose preview is in the public history bucket.
 
     Used by ``/contribute/info`` to populate the public "Recent contributions"
     grid. Includes both ``approved`` and (if ``include_withdrawn``) ``withdrawn``
-    rows whose ``preview_retained_until`` has not yet elapsed.
+    rows whose preview PNG was uploaded to ``history/<id>.png``. Previews are
+    retained indefinitely; there is no time window.
 
-    ``since`` filters to rows whose terminal event (approval / withdrawal)
-    happened on or after the given timestamp; pass ``now() - 14 days`` for the
-    public 14-day window or omit for the admin "everything still retained"
-    view.
+    ``since`` optionally filters to rows whose terminal event (approval /
+    withdrawal) happened on or after the given timestamp. Pass ``None`` for
+    the all-time view.
     """
     statuses = ["approved", "withdrawn"] if include_withdrawn else ["approved"]
     placeholders = ",".join(["%s"] * len(statuses))
     sql = (
         f"SELECT * FROM contributions "
         f"WHERE status IN ({placeholders}) "
-        f"  AND preview_retained_until IS NOT NULL "
-        f"  AND preview_retained_until > now() "
+        f"  AND history_preview_uploaded_at IS NOT NULL "
     )
     params: List = list(statuses)
     if since is not None:
@@ -762,8 +800,7 @@ def count_history_contributions(
     sql = (
         f"SELECT COUNT(*) FROM contributions "
         f"WHERE status IN ({placeholders}) "
-        f"  AND preview_retained_until IS NOT NULL "
-        f"  AND preview_retained_until > now() "
+        f"  AND history_preview_uploaded_at IS NOT NULL "
     )
     params: List = list(statuses)
     if since is not None:
@@ -777,9 +814,10 @@ def count_history_contributions(
 
 
 def list_expired_history_contributions(limit: int = 500) -> List[dict]:
-    """Rows whose ``preview_retained_until`` has elapsed. The cleanup task
-    deletes their R2 objects and clears the column so the row is not
-    re-processed on the next sweep."""
+    """Rows whose archived ``.db`` retention has elapsed. The cleanup task
+    deletes ``archived/<id>.db`` from R2 and clears ``preview_retained_until``
+    so the row is not re-processed on the next sweep. The history preview
+    PNG is *not* affected — it is kept forever."""
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(

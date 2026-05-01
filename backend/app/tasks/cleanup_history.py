@@ -1,10 +1,12 @@
-"""Phase 3 — daily sweep that deletes expired history previews + archived DBs.
+"""Daily sweep that deletes expired per-contribution archived ``.db`` files.
 
-Approved (and withdrawn-with-preview) contributions get a
-``preview_retained_until`` deadline stamped on their row by the approval /
-withdrawal flow. Once that deadline elapses, the public history grid stops
-showing the contribution and its ``history/<id>.png`` preview + ``archived/<id>.db``
-archive can be deleted.
+Approved contributions get a ``preview_retained_until`` deadline stamped on
+their row by the approval flow. Once that deadline elapses, the
+``archived/<id>.db`` (used to power per-contribution revert) can be deleted.
+
+The history preview PNG (``history/<id>.png``) is **not** deleted by this
+task — previews are kept indefinitely so the public "Recent contributions"
+grid remains an all-time history.
 
 The task runs on a single in-process timer thread that re-arms itself after
 each sweep. Idempotent — re-running on the same set of rows is a no-op
@@ -30,18 +32,14 @@ _stopped = False
 
 
 def _sweep_once() -> dict:
-    """Delete R2 objects for rows whose retention has elapsed; clear the
-    column so the next sweep can skip them. Returns counts for logging."""
+    """Delete the archived ``.db`` for rows whose retention has elapsed and
+    clear ``preview_retained_until`` so the next sweep can skip them. The
+    history preview PNG is intentionally left in place. Returns counts for
+    logging."""
     rows = db.list_expired_history_contributions(limit=500)
-    deleted_previews = 0
     deleted_archives = 0
     for row in rows:
         cid = row["id"]
-        try:
-            r2_storage.delete_object(r2_storage.history_preview_key(cid))
-            deleted_previews += 1
-        except Exception:
-            logger.exception("cleanup_history: failed to delete preview %s", cid)
         # Archived .db only exists for approved contributions; safe to call
         # delete_object on a missing key (it silently no-ops).
         try:
@@ -55,7 +53,6 @@ def _sweep_once() -> dict:
             logger.exception("cleanup_history: failed to clear retention for %s", cid)
     return {
         "rows": len(rows),
-        "previews_deleted": deleted_previews,
         "archives_deleted": deleted_archives,
     }
 

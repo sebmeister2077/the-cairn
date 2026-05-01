@@ -1431,40 +1431,39 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
 
     contribution_status = _get_contribution_status(api_key)
 
-    # Phase 3 — public contribution history. Non-admins see contributions
-    # that were approved (or withdrawn-with-preview) within the last
-    # ``HISTORY_RETENTION_DAYS`` days. Admins see everything still retained
-    # (paginated by ``history_limit``/``history_offset`` query args, default
-    # 50). The grid is feature-gated so disabling ``public_history`` makes
-    # the field empty for non-admins without breaking the response shape.
+    # Public contribution history. The grid is feature-gated by
+    # ``public_history`` for non-admins (admins always see it). Previews are
+    # kept indefinitely \u2014 there is no time window; ``history_limit`` /
+    # ``history_offset`` query args page through the full list.
     history: list = []
     history_total = 0
     public_history_on = is_feature_enabled("public_history")
     is_admin = _is_admin_key(api_key)
     if public_history_on or is_admin:
-        if is_admin:
-            history_limit = 50
-            history_offset = 0
-            try:
-                history_limit = max(1, min(200, int(request.query_params.get("history_limit", "50"))))
-                history_offset = max(0, int(request.query_params.get("history_offset", "0")))
-            except (TypeError, ValueError):
-                pass
-            since = None
-        else:
-            history_limit = 100
-            history_offset = 0
-            since = datetime.now(timezone.utc) - timedelta(
-                days=settings.HISTORY_RETENTION_DAYS
+        history_limit = 50
+        history_offset = 0
+        try:
+            default_limit = 50 if is_admin else 100
+            history_limit = max(
+                1,
+                min(
+                    200,
+                    int(request.query_params.get("history_limit", str(default_limit))),
+                ),
             )
+            history_offset = max(
+                0, int(request.query_params.get("history_offset", "0"))
+            )
+        except (TypeError, ValueError):
+            pass
         rows = db.list_history_contributions(
-            since=since,
+            since=None,
             include_withdrawn=True,
             limit=history_limit,
             offset=history_offset,
         )
         history_total = db.count_history_contributions(
-            since=since,
+            since=None,
             include_withdrawn=True,
         )
         for row in rows:
@@ -1554,7 +1553,7 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         "approved": approved,
         "history": history,
         "history_total": history_total,
-        "history_window_days": settings.HISTORY_RETENTION_DAYS,
+        "history_window_days": None,
         "public_history_enabled": public_history_on,
         "is_admin": is_admin,
         "match_score_enabled": is_feature_enabled("match_score"),
@@ -2332,14 +2331,17 @@ def run_approval_merge(contribution_id: str) -> dict:
         # Do not fail approval if archive move fails; keep pending object as fallback.
         archive_moved = False
 
-    # Phase 3 — promote the preview into the public history bucket and stamp
-    # a retention deadline. Admin-uploaded contributions get a longer window
-    # because the team uses them as a reviewable audit trail.
+    # Promote the preview into the history bucket so it remains accessible
+    # to the "Recent contributions" grid. Previews are kept indefinitely;
+    # only the per-contribution archived .db (used for revert) has a
+    # retention deadline.
     pending_preview_key = r2_storage.pending_preview_key(contribution_id)
     history_preview_key = r2_storage.history_preview_key(contribution_id)
+    history_preview_moved = False
     if r2_storage.object_exists(pending_preview_key):
         try:
             r2_storage.move_object(pending_preview_key, history_preview_key)
+            history_preview_moved = True
         except Exception:
             # Best-effort — fall back to deleting the pending preview so we
             # never leak it under the old key.
@@ -2350,7 +2352,21 @@ def run_approval_merge(contribution_id: str) -> dict:
     r2_storage.delete_object(r2_storage.region_before_preview_key(contribution_id))
     r2_storage.delete_object(r2_storage.region_after_preview_key(contribution_id))
 
-    if is_feature_enabled("public_history"):
+    # Mark the row as having a retained preview so it shows up in the
+    # "Recent contributions" grid (forever — no time window).
+    if history_preview_moved:
+        try:
+            db.set_history_preview_uploaded_at(
+                contribution_id, datetime.now(timezone.utc)
+            )
+        except Exception:
+            pass
+
+    # Stamp the archive-.db retention deadline. Admin-uploaded contributions
+    # get a longer window because the team uses them as a reviewable audit
+    # trail. This governs only ``archived/<id>.db`` lifetime — the preview
+    # PNG above is unaffected.
+    if archive_moved:
         retention_days = (
             settings.ADMIN_HISTORY_RETENTION_DAYS
             if _is_admin_key(meta.get("submitted_by_key") or "")
@@ -2471,7 +2487,9 @@ async def contribute_withdraw(
     r2_storage.delete_object(r2_storage.region_after_preview_key(contribution_id))
 
     # If a preview exists, move it into the history bucket; otherwise nothing
-    # to retain. Either way the pending preview key ends up empty.
+    # to retain. Either way the pending preview key ends up empty. Withdrawn
+    # contributions never produced an archived .db so there is no archive
+    # retention to set.
     pending_preview_key = r2_storage.pending_preview_key(contribution_id)
     history_preview_key = r2_storage.history_preview_key(contribution_id)
     preview_retained = False
@@ -2485,11 +2503,10 @@ async def contribute_withdraw(
     # Soft-delete in DB (anonymise + status='withdrawn')
     db.withdraw_contribution(contribution_id, api_key)
 
-    if preview_retained and is_feature_enabled("public_history"):
+    if preview_retained:
         try:
-            db.set_preview_retained_until(
-                contribution_id,
-                datetime.now(timezone.utc) + timedelta(days=settings.HISTORY_RETENTION_DAYS),
+            db.set_history_preview_uploaded_at(
+                contribution_id, datetime.now(timezone.utc)
             )
         except Exception:
             pass

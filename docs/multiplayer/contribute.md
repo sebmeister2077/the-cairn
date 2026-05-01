@@ -45,7 +45,7 @@ Flag keys (all default off):
 |---|---|---|
 | `match_score` | 1 | Async match-percentage scoring on pending uploads |
 | `region_overwrite` | 2 | Region-restricted updates (gated additionally by `region_overwrite` permission) |
-| `public_history` | 3 | Approved contributions visible to all read keys for 14 days |
+| `public_history` | 3 | Recent contributions grid visible to all read keys (all-time — previews are kept forever). Admins see the grid even when this flag is off. |
 | `weekly_backups` | 4a | Scheduled weekly snapshots of the combined map |
 | `per_contribution_revert` | 4b | Admin "Revert" action on approved contributions |
 | `backup_restore` | 4a | TOTP-gated restore from a weekly snapshot |
@@ -224,7 +224,7 @@ Plus a partial index `idx_contributions_match_score_status` on rows where `statu
 2. Verifies `submitted_by_key == api_key`. Other users — even admins, via this endpoint — get 403.
 3. Enforces the **per-ISO-week withdraw cap** (`WITHDRAW_LIMIT_PER_WEEK`, default 3). Non-admins over the limit get HTTP 429 with the next allowed timestamp (Monday 00:00 UTC of the next ISO week). Admins are exempt. The current week's count and `withdraw_next_allowed_at` are also surfaced on `/contribute/info` so the frontend can pre-emptively disable the Withdraw button.
 4. Deletes the `.db` from R2 immediately — withdraw is privacy-driven, the raw map data never sticks around.
-5. **If a preview was generated**, *moves* `pending/<id>.png` to `history/<id>.png` and stamps `preview_retained_until = now + HISTORY_RETENTION_DAYS` (Phase 3). The withdrawn entry then appears in the public history grid with a `[Withdrawn]` badge for the same window as approved contributions. This cuts down on the "user keeps re-uploading the same wrong thing" support load while still letting the user re-submit.
+5. **If a preview was generated**, *moves* `pending/<id>.png` to `history/<id>.png` and stamps `history_preview_uploaded_at = now()` so the row shows up in the Recent Contributions grid. The PNG is then kept indefinitely — there is no time window. The withdrawn entry surfaces with a `[Withdrawn]` badge so the contributor and other viewers can see the upload was rolled back; this cuts down on the "user keeps re-uploading the same wrong thing" support load while still letting the user re-submit.
 6. Marks the row `status = 'withdrawn'` and anonymises the contributor name in Supabase (`db.withdraw_contribution`).
 
 The row stays visible in `withdrawn` so the dashboard makes it clear what happened, and so an admin can see "user withdrew before review" patterns. There is no "un-withdraw" — the user has to upload again, which then resets the cooldown the way any new submission does.
@@ -283,7 +283,7 @@ A region overwrite is marked `revert_supported = false` only if `tiles_added + t
 5. Update Supabase: `mark_approved` flips `status` and writes the merge stats; `set_cached_tile_count` updates the dashboard total without reading the DB; `set_tops_map_stats` refreshes the cached stats blob the TOPS-map page reads.
 6. **Enqueue background regeneration** of every configured resolution level via `start_map_generation_job(..., affected_bounds=...)`. The request is persisted to the `regen_queue` Postgres table and the worker is spawned if it isn't already alive. With bounds, only the chunks intersecting the contributed area re-render; existing chunks elsewhere are reused. With no bounds, every chunk is re-rendered. **Approvals that land while a worker is mid-pass are not lost** — the worker drains the queue again before exiting and runs a second pass that includes their bounds. See [TOPS Map > Background regeneration](./tops-map.md#background-regeneration).
 7. **Archive** the original `.db`: `move_object` the R2 object from `pending/<id>.db` to the archive prefix. If the move fails, approval still succeeds and a warning is included in the response — losing the archive copy is not worth losing the merge.
-8. **Promote the preview PNG** (Phase 3): `move_object` from `pending/<id>.png` to `history/<id>.png` and stamp `preview_retained_until = now + HISTORY_RETENTION_DAYS` (90 days for admin-uploaded contributions, 14 days otherwise). The contribution then appears in the public Recent Contributions grid until the cleanup sweeper drops it. Promotion is best-effort — if the move fails, the pending preview is deleted instead so we never leak it under the old key.
+8. **Promote the preview PNG**: `move_object` from `pending/<id>.png` to `history/<id>.png` and stamp `history_preview_uploaded_at = now()`. The contribution then appears in the Recent Contributions grid forever — the history preview PNG is never deleted by the cleanup task. Promotion is best-effort; if the move fails, the pending preview is deleted instead so we never leak it under the old key. Independently, if the archived `.db` move (step 7) succeeded, `preview_retained_until = now + HISTORY_RETENTION_DAYS` (90 days for admin-uploaded contributions, 14 days otherwise) is stamped to govern the lifetime of *just* that archive (used to power per-contribution revert).
 9. Audit the action via `accounts_db.audit_log("contribution.approve", target=id, metadata=stats)`.
 
 The merge is **not transactional across R2 + Supabase**. If the R2 upload of the new combined DB fails after the local merge succeeds, the next approval will operate on the stale R2 copy. In practice this hasn't been a problem because the merge is idempotent — re-applying a contribution skips all already-present tiles.
@@ -300,11 +300,13 @@ Unlike withdraw, rejection is destructive. There's no "withdrawn" trace left for
 
 ## Public contribution history (Phase 3)
 
-Gated by the [`public_history` feature flag](#feature-flags). When enabled:
+Gated by the [`public_history` feature flag](#feature-flags) for non-admin viewers; admins see the grid even when the flag is off. When visible:
 
-- Approved contributions stay visible to **all read keys** for `HISTORY_RETENTION_DAYS = 14`. Admin-uploaded contributions are kept for `ADMIN_HISTORY_RETENTION_DAYS = 90` so the team has a longer audit window. Both values are env-overridable.
-- Withdrawn contributions whose preview was already generated also surface here with a `[Withdrawn]` badge. The contributor name is replaced with `[Withdrawn]` and the thumbnail is grayscale.
+- **Approved and withdrawn-with-preview contributions stay in the grid forever.** History preview PNGs are kept indefinitely — no time window. The cleanup sweeper used to drop them after `HISTORY_RETENTION_DAYS` but no longer touches the PNGs.
+- Withdrawn contributions surface with a `[Withdrawn]` badge. The contributor name is replaced with `[Withdrawn]` and the thumbnail is grayscale.
 - Each row carries a fresh 3-day presigned URL pointing at `history/<id>.png` (regenerated on every `/contribute/info` request — the URL itself never has to live more than one page load).
+
+Visibility is recorded by a non-null `history_preview_uploaded_at` column on `contributions`, set at the moment the preview is moved into the `history/` bucket. The legacy `preview_retained_until` column still exists but now governs only the lifetime of the per-contribution archived `.db` (see the cleanup task below).
 
 `/contribute/info` returns:
 
@@ -317,7 +319,7 @@ Gated by the [`public_history` feature flag](#feature-flags). When enabled:
       "preview_signed_url": "https://...", "is_mine": true|false }
   ],
   "history_total":  <int>,
-  "history_window_days": 14,
+  "history_window_days": null,
   "public_history_enabled": true,
   "withdraw_limit_per_week": 3,
   "withdrawals_used_this_week": <int>,
@@ -325,7 +327,7 @@ Gated by the [`public_history` feature flag](#feature-flags). When enabled:
 }
 ```
 
-Non-admins get the last `HISTORY_RETENTION_DAYS` worth (capped at 100). Admins see the full retained set, paginated via `?history_limit=&history_offset=` query args (default 50, max 200).
+`history_window_days` is always `null` (no window). Both admin and non-admin callers can page through the full retained set with `?history_limit=&history_offset=` query args (default 100 for non-admins, 50 for admins; max 200).
 
 ### Storage layout
 
@@ -333,17 +335,17 @@ Non-admins get the last `HISTORY_RETENTION_DAYS` worth (capped at 100). Admins s
 |---|---|
 | `pending/<id>.db` | deleted on approval (moved to `archived/`) or rejection / withdrawal |
 | `pending/<id>.png` | moved to `history/<id>.png` on approval / withdraw-with-preview, deleted on rejection |
-| `history/<id>.png` | retained until `preview_retained_until` elapses, then swept |
-| `archived/<id>.db` | retained alongside the preview, swept together |
+| `history/<id>.png` | **kept forever** — the cleanup task no longer deletes these |
+| `archived/<id>.db` | retained for `HISTORY_RETENTION_DAYS` (90 days for admin uploads), then swept; powers per-contribution revert |
 
-We deliberately **don't use an R2 lifecycle rule** — they're prefix-wide and would force a single TTL for everyone, which is incompatible with admin-vs-user retention and with the withdraw → preserved-preview behaviour. Cleanup is application-side only.
+We deliberately **don't use an R2 lifecycle rule** — they're prefix-wide and would force a single TTL for everyone, which is incompatible with admin-vs-user retention on the archived `.db`. Cleanup is application-side only.
 
 ### Cleanup task
 
 [`backend/app/tasks/cleanup_history.py`](../../backend/app/tasks/cleanup_history.py) runs on a daemon `threading.Timer` started from the FastAPI lifespan. It re-arms itself every `HISTORY_CLEANUP_INTERVAL_SECONDS` (default 24 h) and on each tick:
 
 1. `db.list_expired_history_contributions(limit=500)` returns rows whose `preview_retained_until <= now()`.
-2. Each row's `history/<id>.png` and `archived/<id>.db` are deleted from R2 (idempotent — missing keys are silently ignored).
+2. Each row's `archived/<id>.db` is deleted from R2 (idempotent — missing keys are silently ignored). The history preview PNG is **not** touched; it is kept forever.
 3. `db.set_preview_retained_until(id, None)` clears the column so the next sweep skips the row.
 
 `run_now()` exposes the same logic synchronously for tests and ad-hoc admin invocation.

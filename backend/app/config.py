@@ -69,9 +69,10 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
-    # Phase 3 — public contribution history retention (days). Non-admin
-    # contributions show up in the public grid for this many days after
-    # approval; admin uploads are kept longer so the team can audit.
+    # Per-contribution archived .db retention (days). Recent Contributions
+    # grid previews are kept forever; these values govern only the
+    # ``archived/<id>.db`` lifetime in R2 (used to power per-contribution
+    # revert). Admin uploads get the longer window so the team can audit.
     HISTORY_RETENTION_DAYS: int = int(os.environ.get("HISTORY_RETENTION_DAYS", "14"))
     ADMIN_HISTORY_RETENTION_DAYS: int = int(
         os.environ.get("ADMIN_HISTORY_RETENTION_DAYS", "90")

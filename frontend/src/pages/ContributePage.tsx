@@ -140,7 +140,7 @@ interface ContributeInfo {
   approved: ApprovedEntry[];
   history?: HistoryEntry[];
   history_total?: number;
-  history_window_days?: number;
+  history_window_days?: number | null;
   public_history_enabled?: boolean;
   is_admin?: boolean;
   match_score_enabled?: boolean;
@@ -875,18 +875,22 @@ export function ContributePage() {
         </Card>
       )}
 
-      {/* Phase 3 — Recent contributions grid (public 14-day history with previews) */}
-      {info && info.public_history_enabled && info.history && info.history.length > 0 && (
-        <RecentContributionsGrid
-          history={info.history}
-          windowDays={info.history_window_days ?? 14}
-          isAdmin={!!isAdmin || !!info.is_admin}
-          totalCount={info.history_total ?? info.history.length}
-          displayContributor={displayContributor}
-          revertWindowDays={info.revert_window_days ?? 14}
-          onRevert={handleRevertHistory}
-        />
-      )}
+      {/* Recent contributions grid (all-time history with previews). Visible
+          to non-admins only when the public_history flag is on; admins
+          always see it. */}
+      {info &&
+        (info.public_history_enabled || isAdmin || info.is_admin) &&
+        info.history &&
+        info.history.length > 0 && (
+          <RecentContributionsGrid
+            history={info.history}
+            isAdmin={!!isAdmin || !!info.is_admin}
+            totalCount={info.history_total ?? info.history.length}
+            displayContributor={displayContributor}
+            revertWindowDays={info.revert_window_days ?? 14}
+            onRevert={handleRevertHistory}
+          />
+        )}
 
       {/* Two-step confirmation for the destructive Reject action. */}
       <ConfirmDialog
@@ -1120,17 +1124,17 @@ function MatchScoreBadge({
 }
 
 // ---------------------------------------------------------------------------
-// Phase 3 — Recent contributions grid
+// Recent contributions grid
 //
 // Renders a thumbnail grid of approved/withdrawn contributions whose preview
-// is still retained. Clicking a tile expands it inline to a larger view.
-// Anonymous-by-default — the contributor is shown only when the viewer has
-// permission to see contributor names.
+// PNG is in the history bucket (kept indefinitely — all-time history).
+// Clicking a tile expands it inline to a larger view. Anonymous-by-default
+// — the contributor is shown only when the viewer has permission to see
+// contributor names.
 // ---------------------------------------------------------------------------
 
 function RecentContributionsGridImpl({
   history,
-  windowDays,
   isAdmin,
   totalCount,
   displayContributor,
@@ -1138,7 +1142,6 @@ function RecentContributionsGridImpl({
   onRevert,
 }: {
   history: HistoryEntry[];
-  windowDays: number;
   isAdmin: boolean;
   totalCount: number;
   displayContributor: (name: string) => string;
@@ -1177,7 +1180,7 @@ function RecentContributionsGridImpl({
           <History className="h-4 w-4" />
           Recent Contributions
           <Badge variant="secondary" className="ml-1 font-normal">
-            last {windowDays}d
+            all-time
           </Badge>
         </CardTitle>
         {isAdmin && totalCount > history.length && (
@@ -1388,7 +1391,6 @@ function historyEntriesEqual(a: HistoryEntry[], b: HistoryEntry[]): boolean {
 
 const RecentContributionsGrid = memo(RecentContributionsGridImpl, (prev, next) => {
   return (
-    prev.windowDays === next.windowDays &&
     prev.isAdmin === next.isAdmin &&
     prev.totalCount === next.totalCount &&
     prev.revertWindowDays === next.revertWindowDays &&

@@ -136,7 +136,7 @@ default; flipping ON exposes the feature to the relevant audience.
 |---|---|
 | `match_score` | Match-percentage scoring shown to admins on pending uploads. |
 | `region_overwrite` | Region-restricted contribution uploads (also requires per-key permission). |
-| `public_history` | Public 14-day Recent Contributions grid. |
+| `public_history` | All-time Recent Contributions grid for non-admins. Admins always see it (regardless of this flag) since previews are kept forever. |
 | `weekly_backups` | Weekly snapshot of `globalservermap.db`. The scheduler thread always runs; the flag controls whether snapshots are actually written. |
 | `per_contribution_revert` | Admin "Revert" button on approved contributions, within `REVERT_WINDOW_DAYS`. |
 | `backup_restore` | Admin restore-from-backup endpoint (additionally TOTP-gated). |
