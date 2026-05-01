@@ -5,22 +5,34 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppContent } from "@/components/AppContent";
-import { getStoredApiKey, clearPersistedQueryCache, PERSISTED_QUERY_CACHE_KEY } from "@/lib/api";
+import {
+  getStoredApiKey,
+  clearPersistedQueryCache,
+  PERSISTED_QUERY_CACHE_KEY,
+  ApiError,
+} from "@/lib/api";
 import "./index.css";
 
 const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;
+
+// HTTP statuses that indicate the request will keep failing the same way no
+// matter how many times we retry. Hammering them just spams the server and
+// noisy network panels.
+const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 422]);
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
       gcTime: TWO_WEEKS,
-      retry: 2,
+      retry(failureCount, error) {
+        if (error instanceof ApiError && NON_RETRYABLE_STATUSES.has(error.status)) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       retryDelay(failureCount, error) {
-        if (error instanceof Response) {
-          // Don't retry on auth errors since they trigger a global cache purge
-          // that would make retries futile.
-          if (error.status === 401) return 0;
+        if (error instanceof ApiError) {
           // Retry more aggressively on rate limit errors since they're likely
           // to be transient and we want to recover from them as quickly as possible.
           if (error.status === 429) return 1000;

@@ -228,7 +228,14 @@ export function AppContent() {
       setIsAdmin(false);
       setStoredIsAdmin(false);
       setStoredCanContribute(false);
-      setAuthRejected({ kind: hadKey ? "had-key" : "no-key" });
+      // Only surface the banner if the user actually had a key that got
+      // rejected (revoked / banned / account deleted). Anonymous visitors
+      // get a 401 simply because they have no key yet — that's the normal
+      // first-load state and the auto-claim flow (or the "no public invite"
+      // fallback notice) will handle it without scaring them.
+      if (hadKey) {
+        setAuthRejected({ kind: "had-key" });
+      }
       // if (window.location.pathname !== "/") {
       //   navigate("/", { replace: true });
       // }

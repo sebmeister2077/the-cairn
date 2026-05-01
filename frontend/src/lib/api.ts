@@ -13,11 +13,30 @@ function getApiKey(): string {
 // ``authHeaders`` short-circuit (see ``handleResponse``) so we don't busy-
 // loop hammering the server (e.g. a react-query observer with staleTime: 0
 // that refetches as soon as ``queryClient.clear()`` purges its data).
-// Cleared whenever the stored key changes.
+// The empty string is a valid sentinel meaning "no key was stored at the
+// time we got rejected"; we MUST NOT collapse that to ``null`` (otherwise
+// anonymous 401s would re-fire ``auth-rejected`` forever, since each call
+// would look like a fresh rejection). Cleared whenever the stored key
+// changes via ``setApiKey``.
 let rejectedApiKey: string | null = null;
 
 export function isCurrentApiKeyRejected(): boolean {
     return rejectedApiKey !== null && rejectedApiKey === getApiKey();
+}
+
+/**
+ * Error thrown by ``handleResponse`` when the backend returns a non-2xx
+ * status. Carries the HTTP ``status`` so callers (including the React Query
+ * retry logic in App.tsx) can react differently to auth errors vs. transient
+ * failures without falling back to brittle string parsing.
+ */
+export class ApiError extends Error {
+    public readonly status: number;
+    constructor(message: string, status: number) {
+        super(message);
+        this.name = "ApiError";
+        this.status = status;
+    }
 }
 
 export function setApiKey(key: string) {
@@ -176,16 +195,20 @@ async function handleResponse(res: Response) {
             // Remember the rejected key so subsequent calls short-circuit
             // instead of busy-looping after ``queryClient.clear()`` causes
             // active observers to refetch (see ``isCurrentApiKeyRejected``).
+            // Note: the empty string is a meaningful sentinel for "no key
+            // was stored", so we record it as-is rather than coercing to
+            // null. That distinction is what stops anonymous-user 401s
+            // from re-firing the auth-rejected event in a loop.
             const currentKey = getApiKey();
             const alreadyRejected = rejectedApiKey === currentKey;
-            rejectedApiKey = currentKey || null;
+            rejectedApiKey = currentKey;
             clearAdminSession();
             if (!alreadyRejected) {
                 window.dispatchEvent(new Event("auth-rejected"));
             }
         }
         const body = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
+        throw new ApiError(body.detail ?? `HTTP ${res.status}`, res.status);
     }
     return res;
 }
