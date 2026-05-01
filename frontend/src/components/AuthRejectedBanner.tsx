@@ -23,21 +23,21 @@ export function AuthRejectedBanner({
   if (kind === "had-key") {
     title = "Your access has been restricted";
     body =
-      "The server rejected your API key. It may have been revoked or temporarily disabled by an admin, or your account may have been removed. You can paste a different key, or contact an administrator if you think this is a mistake.";
+      "The server rejected your access key. It may have been revoked or temporarily disabled by an admin, or your account may have been removed. You can paste a different key, or contact an administrator if you think this is a mistake.";
     primary = { label: "Use a different key", onClick: onOpenApiKey };
   } else if (kind === "no-key-no-consent") {
-    title = "You need an API key to continue";
+    title = "Almost there — one quick thing";
     body =
-      "To use this service you'll need an API key, which means we have to store a small amount of data in your browser. Click below to review the cookie prompt again and accept storage so you can claim a free key.";
+      "To set you up we need to store a small amount of data in your browser. Review the cookie prompt and accept storage to continue — it's free, no sign-up needed.";
     primary = { label: "Review cookie prompt", onClick: onReopenConsent };
   } else {
-    title = "You need an API key to continue";
+    title = hasDefaultInvite ? "Let's get you back in" : "You need an access key to continue";
     body = hasDefaultInvite
-      ? "Your previous session was rejected. You can claim a free key now to keep going — no sign-up form, no email required."
-      : "Your previous session was rejected. Paste an API key to continue, or ask an admin for an invite link.";
+      ? "Your previous session was rejected. We can set you up again instantly — no sign-up, no email, no payment."
+      : "Your previous session was rejected. Paste an access key to continue, or ask an admin for an invite link.";
     primary = hasDefaultInvite
-      ? { label: "Claim a key", onClick: onClaim }
-      : { label: "Enter an API key", onClick: onOpenApiKey };
+      ? { label: "Get started", onClick: onClaim }
+      : { label: "Enter an access key", onClick: onOpenApiKey };
   }
 
   return (

@@ -74,9 +74,9 @@ export function ContributingToTopsMapPost() {
           notice.
         </P>
         <P>
-          If a friend or admin sent you an invite link, claiming it gives you a key automatically.
-          Otherwise ask in the community to be invited &mdash; contributor access is intentionally
-          gated to keep the map trustworthy.
+          If a friend or admin sent you an invite link, opening it sets up a key for you
+          automatically. Otherwise ask in the community to be invited &mdash; contributor access is
+          intentionally gated to keep the map trustworthy.
         </P>
       </Section>
 

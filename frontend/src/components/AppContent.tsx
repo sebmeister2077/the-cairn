@@ -420,10 +420,10 @@ export function AppContent() {
           <Card className="mb-4 border-sky-300 bg-sky-50/60 dark:bg-sky-950/30">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
-                <p className="font-medium text-foreground">Welcome to Cairn 👋</p>
+                <p className="font-medium text-foreground">Ready to start? 👋</p>
                 <p className="text-sm text-muted-foreground">
-                  You don't have an API key yet. Claim a free one to start using the multiplayer map
-                  tools — no sign-up form, no email required.
+                  Get instant access to the multiplayer map tools — no sign-up, no email, no
+                  payment. We'll set everything up for you.
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
@@ -444,7 +444,7 @@ export function AppContent() {
                     setDefaultInvite(null);
                   }}
                 >
-                  Claim a key
+                  Get started
                 </Button>
               </div>
             </CardContent>
@@ -547,14 +547,14 @@ export function AppContent() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-sm">
             <CardHeader>
-              <CardTitle>Claim Your API Key</CardTitle>
+              <CardTitle>You're almost in</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {inviteClaim.status === "idle" && (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    You were invited to use this service. Click below to receive your personal API
-                    key.
+                    Free, instant access — no sign-up, no email, no payment. Click below and we'll
+                    set everything up for you automatically.
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -562,24 +562,23 @@ export function AppContent() {
                       onClick={() => setInviteClaim(null)}
                       className="flex-1"
                     >
-                      Dismiss
+                      Not now
                     </Button>
                     <Button onClick={handleClaimInvite} className="flex-1">
-                      Claim Key
+                      Let's go
                     </Button>
                   </div>
                 </>
               )}
               {inviteClaim.status === "pending" && (
-                <p className="text-sm text-muted-foreground text-center py-2">Claiming…</p>
+                <p className="text-sm text-muted-foreground text-center py-2">Setting up…</p>
               )}
               {inviteClaim.status === "success" && (
                 <>
-                  <p className="text-sm text-emerald-600 font-medium">
-                    Your API key has been activated!
-                  </p>
+                  <p className="text-sm text-emerald-600 font-medium">You're all set!</p>
                   <p className="text-xs text-muted-foreground">
-                    Your key is now saved in this browser. You can start using the service.
+                    Your access key is saved in this browser. You can start using the multiplayer
+                    map tools right away.
                   </p>
                   <Button onClick={() => setInviteClaim(null)} className="w-full">
                     Continue

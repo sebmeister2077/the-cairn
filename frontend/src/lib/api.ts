@@ -8,6 +8,18 @@ function getApiKey(): string {
     return localStorage.getItem("api_key") ?? "";
 }
 
+// Tracks the API key value that the backend most recently rejected with a
+// 401. While this matches the currently-stored key, requests built via
+// ``authHeaders`` short-circuit (see ``handleResponse``) so we don't busy-
+// loop hammering the server (e.g. a react-query observer with staleTime: 0
+// that refetches as soon as ``queryClient.clear()`` purges its data).
+// Cleared whenever the stored key changes.
+let rejectedApiKey: string | null = null;
+
+export function isCurrentApiKeyRejected(): boolean {
+    return rejectedApiKey !== null && rejectedApiKey === getApiKey();
+}
+
 export function setApiKey(key: string) {
     const previous = localStorage.getItem("api_key");
     if (previous && previous !== key) {
@@ -17,6 +29,9 @@ export function setApiKey(key: string) {
     }
     localStorage.setItem("api_key", key);
     if (previous !== key) {
+        // A different key — give it a fresh chance even if the previous
+        // one had been rejected.
+        rejectedApiKey = null;
         // Notify in-process listeners (banners, gating UI) that the stored
         // key changed. The browser only fires native ``storage`` events for
         // OTHER tabs, so we dispatch our own for this tab.
@@ -158,8 +173,16 @@ async function handleResponse(res: Response) {
             // in place — an admin may have only temporarily disabled it —
             // but any admin passkey session is invalidated and listeners
             // are notified so they can purge cached data and redirect.
+            // Remember the rejected key so subsequent calls short-circuit
+            // instead of busy-looping after ``queryClient.clear()`` causes
+            // active observers to refetch (see ``isCurrentApiKeyRejected``).
+            const currentKey = getApiKey();
+            const alreadyRejected = rejectedApiKey === currentKey;
+            rejectedApiKey = currentKey || null;
             clearAdminSession();
-            window.dispatchEvent(new Event("auth-rejected"));
+            if (!alreadyRejected) {
+                window.dispatchEvent(new Event("auth-rejected"));
+            }
         }
         const body = await res.json().catch(() => ({ detail: res.statusText }));
         throw new Error(body.detail ?? `HTTP ${res.status}`);
@@ -842,6 +865,13 @@ export async function registerAccount(): Promise<{ user: AccountUser; created: b
 }
 
 export async function getMyAccount(): Promise<AccountMeResponse> {
+    if (isCurrentApiKeyRejected()) {
+        // The backend already rejected this key in this session. Throw
+        // synchronously instead of issuing another network request \u2014 the
+        // observer would otherwise be re-triggered every ~300ms by the
+        // ``auth-rejected`` cache purge in App.tsx.
+        throw new Error("auth_rejected");
+    }
     const res = await fetch(`${API_BASE}/account/me`, {
         headers: authHeaders(),
     });
