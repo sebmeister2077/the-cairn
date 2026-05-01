@@ -7,9 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
-import { CookieConsent } from "@/components/CookieConsent";
 import { ContactDialog, useContactDialog } from "@/components/ContactDialog";
-import { hasAcceptedStorage, clearStoredConsent } from "@/lib/consent";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
@@ -100,31 +98,29 @@ export function AppContent() {
   } | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  // Tracks the auto-claim splash. Shown briefly on first visit while we
+  // fetch a free key from the public default invite. The dialog is
+  // non-interactive — it appears, runs, and disappears on success.
   const [inviteClaim, setInviteClaim] = useState<{
     token: string;
-    status: "idle" | "pending" | "success" | "error";
+    status: "pending" | "error";
     error?: string;
-    key?: string;
   } | null>(null);
-  const [pendingInviteToken, setPendingInviteToken] = useState<string | null>(null);
-  // Default-public invite discovered from the backend, shown as a friendly
-  // dismissible banner to first-time visitors who land on the site without
-  // an invite URL or saved API key (and have accepted browser-storage).
-  const [defaultInvite, setDefaultInvite] = useState<DefaultInviteRecord | null>(null);
-  const [defaultInviteDismissed, setDefaultInviteDismissed] = useState(false);
-  // Reactive mirror of the consent flag so the discovery effect re-runs the
-  // moment the user clicks Accept (rather than only on the next reload).
-  const [storageConsented, setStorageConsented] = useState(hasAcceptedStorage);
+  // Default-public invite discovered from the backend. Used to auto-claim
+  // a key for any visitor without one. Kept in state only to gate the
+  // "no invite available, contact admin" fallback notice.
+  const [defaultInvite, setDefaultInvite] = useState<DefaultInviteRecord | null | undefined>(
+    undefined,
+  );
   const contact = useContactDialog();
-  // Reactive mirror of "is an API key currently stored?" so the welcome
-  // banner disappears the moment the user pastes one in (in this tab).
+  // Reactive mirror of "is an API key currently stored?" so banners and
+  // the auto-claim effect re-evaluate the moment a key is saved.
   const [hasApiKey, setHasApiKey] = useState(() => !!getStoredApiKey());
   // Captured snapshot of "why was the user kicked out" so we can render a
-  // friendly banner after the global ``auth-rejected`` event fires. Cleared
-  // when the user dismisses the banner or claims a new key.
-  const [authRejected, setAuthRejected] = useState<
-    { kind: "had-key" } | { kind: "no-key-no-consent" } | { kind: "no-key" } | null
-  >(null);
+  // friendly banner after the global ``auth-rejected`` event fires.
+  const [authRejected, setAuthRejected] = useState<{ kind: "had-key" } | { kind: "no-key" } | null>(
+    null,
+  );
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -148,24 +144,19 @@ export function AppContent() {
     [isAdmin],
   );
 
+  // Apply any ``?key=`` or ``?invite=`` URL parameters on first load.
+  // Both flows write to localStorage immediately — the API key is treated
+  // as strictly necessary for the service to function, so no consent gate.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const keyParam = params.get("key");
     if (keyParam) {
-      // Don't write the key to localStorage until the user has consented to
-      // browser storage. If consent isn't given yet, treat the key as an
-      // invite-style claim that's gated behind the consent banner.
-      if (hasAcceptedStorage()) {
-        setApiKey(keyParam.trim());
-        checkAuthStatus().then((status) => {
-          setStoredIsAdmin(status.is_admin);
-          setStoredCanContribute(status.can_contribute);
-          setIsAdmin(status.is_admin);
-        });
-      } else {
-        // Stash the raw key in memory until consent is granted.
-        sessionStorage.setItem("pending_api_key", keyParam.trim());
-      }
+      setApiKey(keyParam.trim());
+      checkAuthStatus().then((status) => {
+        setStoredIsAdmin(status.is_admin);
+        setStoredCanContribute(status.can_contribute);
+        setIsAdmin(status.is_admin);
+      });
       window.history.replaceState({}, "", window.location.pathname);
       return;
     }
@@ -173,77 +164,39 @@ export function AppContent() {
     const inviteParam = params.get("invite");
     if (inviteParam) {
       window.history.replaceState({}, "", window.location.pathname);
-      // Only show the claim prompt if the user does not already have an API key
       if (!getStoredApiKey()) {
-        if (hasAcceptedStorage()) {
-          setInviteClaim({ token: inviteParam, status: "idle" });
-        } else {
-          // Defer until consent is granted.
-          setPendingInviteToken(inviteParam);
-        }
+        setInviteClaim({ token: inviteParam, status: "pending" });
       }
     }
   }, []);
 
-  function handleConsentChange(value: "accepted" | "declined") {
-    if (value !== "accepted") {
-      setPendingInviteToken(null);
-      sessionStorage.removeItem("pending_api_key");
-      setDefaultInvite(null);
-      return;
-    }
-    // Apply any deferred direct API key first.
-    const deferredKey = sessionStorage.getItem("pending_api_key");
-    if (deferredKey) {
-      sessionStorage.removeItem("pending_api_key");
-      setApiKey(deferredKey);
-      checkAuthStatus().then((status) => {
-        setStoredIsAdmin(status.is_admin);
-        setStoredCanContribute(status.can_contribute);
-        setIsAdmin(status.is_admin);
-      });
-    }
-    if (pendingInviteToken) {
-      setInviteClaim({ token: pendingInviteToken, status: "idle" });
-      setPendingInviteToken(null);
-    }
-  }
-
-  // Discover the default-public invite once consent is accepted and the
-  // visitor has no saved API key + no other invite flow in progress. The
-  // backend returns 404 when no link is configured, in which case we render
-  // nothing.
+  // Auto-claim flow: any visitor without a stored key gets one assigned
+  // automatically from the public default invite link. If no public invite
+  // is configured the fallback notice is rendered later in the JSX.
   useEffectWithAbort(
-    ({ ifNotAbortedThen }) => {
-      if (defaultInviteDismissed) return;
-      if (!storageConsented) return;
+    ({ ifNotAbortedThen, signal }) => {
       if (hasApiKey) {
-        // A key was just saved — make sure no stale banner remains.
+        // Already provisioned — clear any stale discovery result.
         setDefaultInvite(null);
         return;
       }
-      if (inviteClaim || pendingInviteToken) return;
+      if (inviteClaim) return;
+      if (authRejected) return; // user is banned/revoked — do NOT silently re-issue
       getDefaultPublicInvite()
-        .then(ifNotAbortedThen(setDefaultInvite))
+        .then(
+          ifNotAbortedThen((invite) => {
+            setDefaultInvite(invite);
+            if (invite && !signal.aborted) {
+              setInviteClaim({ token: invite.token, status: "pending" });
+            }
+          }),
+        )
         .catch(() => {
-          // Network errors / DB unavailable: silently skip the banner.
+          if (!signal.aborted) setDefaultInvite(null);
         });
-
-      // Re-evaluate when the invite-claim modal closes (success/dismiss), when
-      // consent flips, or when the stored API key appears/disappears.
     },
-    [inviteClaim, pendingInviteToken, defaultInviteDismissed, storageConsented, hasApiKey],
+    [hasApiKey, inviteClaim, authRejected],
   );
-
-  // When consent is granted via the cookie banner, re-trigger the discovery
-  // effect above by listening to the same custom event other components use.
-  useEffect(() => {
-    function onConsent() {
-      setStorageConsented(hasAcceptedStorage());
-    }
-    window.addEventListener("storage-consent-change", onConsent);
-    return () => window.removeEventListener("storage-consent-change", onConsent);
-  }, []);
 
   // Track API key changes (saved via the dialog, claimed via invite, pasted
   // from a ``?key=`` URL, or written by another tab). Covers both our own
@@ -270,19 +223,12 @@ export function AppContent() {
   useEffect(() => {
     function onAuthRejected() {
       const hadKey = !!getStoredApiKey();
-      const consented = hasAcceptedStorage();
       // 401 means the backend rejected this key. Drop the cached
       // admin/contributor flags so the UI no longer thinks we're admin.
       setIsAdmin(false);
       setStoredIsAdmin(false);
       setStoredCanContribute(false);
-      if (hadKey) {
-        setAuthRejected({ kind: "had-key" });
-      } else if (!consented) {
-        setAuthRejected({ kind: "no-key-no-consent" });
-      } else {
-        setAuthRejected({ kind: "no-key" });
-      }
+      setAuthRejected({ kind: hadKey ? "had-key" : "no-key" });
       if (window.location.pathname !== "/") {
         navigate("/", { replace: true });
       }
@@ -291,22 +237,34 @@ export function AppContent() {
     return () => window.removeEventListener("auth-rejected", onAuthRejected);
   }, [navigate]);
 
-  async function handleClaimInvite() {
-    if (!inviteClaim) return;
-    setInviteClaim((prev) => prev && { ...prev, status: "pending" });
-    try {
-      const result = await claimInvite(inviteClaim.token);
-      setApiKey(result.key);
-      const status = await checkAuthStatus();
-      setStoredIsAdmin(status.is_admin);
-      setStoredCanContribute(status.can_contribute);
-      setIsAdmin(status.is_admin);
-      setInviteClaim((prev) => prev && { ...prev, status: "success", key: result.key });
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Failed to claim invite";
-      setInviteClaim((prev) => prev && { ...prev, status: "error", error: msg });
-    }
-  }
+  // Auto-claim whenever a pending invite enters the state machine. The
+  // dialog is purely informational — there is no "Claim" button anymore.
+  useEffect(() => {
+    if (!inviteClaim || inviteClaim.status !== "pending") return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await claimInvite(inviteClaim.token);
+        if (cancelled) return;
+        setApiKey(result.key);
+        const status = await checkAuthStatus();
+        if (cancelled) return;
+        setStoredIsAdmin(status.is_admin);
+        setStoredCanContribute(status.can_contribute);
+        setIsAdmin(status.is_admin);
+        // Success: silently dismiss the splash. The api-key-change event
+        // already updated ``hasApiKey`` so the rest of the UI lights up.
+        setInviteClaim(null);
+      } catch (e: unknown) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : "Could not set up access automatically";
+        setInviteClaim((prev) => prev && { ...prev, status: "error", error: msg });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteClaim]);
 
   const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
@@ -396,57 +354,25 @@ export function AppContent() {
         {authRejected && (
           <AuthRejectedBanner
             kind={authRejected.kind}
-            hasDefaultInvite={!!defaultInvite}
             onDismiss={() => setAuthRejected(null)}
-            onClaim={() => {
-              if (defaultInvite) {
-                setInviteClaim({ token: defaultInvite.token, status: "idle" });
-                setDefaultInvite(null);
-              }
-              setAuthRejected(null);
-            }}
             onOpenApiKey={() => {
               setAuthRejected(null);
               setKeyOpen(true);
             }}
-            onReopenConsent={() => {
-              clearStoredConsent();
-              setStorageConsented(false);
-              setAuthRejected(null);
-            }}
           />
         )}
-        {defaultInvite && !inviteClaim && !authRejected && !hasApiKey && (
-          <Card className="mb-4 border-sky-300 bg-sky-50/60 dark:bg-sky-950/30">
-            <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="space-y-1">
-                <p className="font-medium text-foreground">Ready to start? 👋</p>
-                <p className="text-sm text-muted-foreground">
-                  Get instant access to the multiplayer map tools — no sign-up, no email, no
-                  payment. We'll set everything up for you.
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setDefaultInvite(null);
-                    setDefaultInviteDismissed(true);
-                  }}
-                >
-                  Not now
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    setInviteClaim({ token: defaultInvite.token, status: "idle" });
-                    setDefaultInvite(null);
-                  }}
-                >
-                  Get started
-                </Button>
-              </div>
+        {/* Fallback notice when no public invite link is configured and the
+            visitor has no key. Auto-claim cannot run; an admin must hand out
+            an invite link or paste a key directly via the API Key dialog. */}
+        {!hasApiKey && !inviteClaim && !authRejected && defaultInvite === null && (
+          <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
+            <CardContent className="p-4 space-y-1">
+              <p className="font-medium text-foreground">Access not available</p>
+              <p className="text-sm text-muted-foreground">
+                Automatic sign-up is currently disabled. Please contact an administrator for an
+                invite link, or paste an existing access key via the &ldquo;API Key&rdquo; button at
+                the top right.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -501,16 +427,6 @@ export function AppContent() {
             </NavLink>
             <button
               type="button"
-              onClick={() => {
-                clearStoredConsent();
-                setStorageConsented(false);
-              }}
-              className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
-            >
-              Cookie settings
-            </button>
-            <button
-              type="button"
               onClick={contact.openDialog}
               className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
             >
@@ -537,57 +453,30 @@ export function AppContent() {
         />
       )}
 
-      {/* Cookie / browser-storage consent. Renders as a blocking modal when an
-          invite link is waiting to be claimed, otherwise as a dismissible
-          bottom banner. The component returns null once a choice is stored. */}
-      <CookieConsent blocking={pendingInviteToken !== null} onChange={handleConsentChange} />
-
-      {/* Invite claim dialog */}
+      {/* Auto-claim splash. Non-interactive: appears while we silently fetch
+          a free key for first-time visitors and auto-dismisses on success.
+          Only the error state offers a button (to close the splash). */}
       {inviteClaim && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-sm">
             <CardHeader>
-              <CardTitle>You're almost in</CardTitle>
+              <CardTitle>
+                {inviteClaim.status === "error" ? "Setup failed" : "Setting up…"}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {inviteClaim.status === "idle" && (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Free, instant access — no sign-up, no email, no payment. Click below and we'll
-                    set everything up for you automatically.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => setInviteClaim(null)}
-                      className="flex-1"
-                    >
-                      Not now
-                    </Button>
-                    <Button onClick={handleClaimInvite} className="flex-1">
-                      Let's go
-                    </Button>
-                  </div>
-                </>
-              )}
               {inviteClaim.status === "pending" && (
-                <p className="text-sm text-muted-foreground text-center py-2">Setting up…</p>
-              )}
-              {inviteClaim.status === "success" && (
-                <>
-                  <p className="text-sm text-emerald-600 font-medium">You're all set!</p>
-                  <p className="text-xs text-muted-foreground">
-                    Your access key is saved in this browser. You can start using the multiplayer
-                    map tools right away.
-                  </p>
-                  <Button onClick={() => setInviteClaim(null)} className="w-full">
-                    Continue
-                  </Button>
-                </>
+                <p className="text-sm text-muted-foreground text-center py-2">
+                  One moment while we get you ready…
+                </p>
               )}
               {inviteClaim.status === "error" && (
                 <>
                   <p className="text-sm text-destructive">{inviteClaim.error}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Please try refreshing the page, or contact an administrator if the problem
+                    persists.
+                  </p>
                   <Button variant="outline" onClick={() => setInviteClaim(null)} className="w-full">
                     Close
                   </Button>

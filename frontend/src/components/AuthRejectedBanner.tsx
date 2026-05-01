@@ -3,18 +3,12 @@ import { Card, CardContent } from "./ui/card";
 
 export function AuthRejectedBanner({
   kind,
-  hasDefaultInvite,
   onDismiss,
-  onClaim,
   onOpenApiKey,
-  onReopenConsent,
 }: {
-  kind: "had-key" | "no-key" | "no-key-no-consent";
-  hasDefaultInvite: boolean;
+  kind: "had-key" | "no-key";
   onDismiss: () => void;
-  onClaim: () => void;
   onOpenApiKey: () => void;
-  onReopenConsent: () => void;
 }) {
   let title: string;
   let body: string;
@@ -25,19 +19,11 @@ export function AuthRejectedBanner({
     body =
       "The server rejected your access key. It may have been revoked or temporarily disabled by an admin, or your account may have been removed. You can paste a different key, or contact an administrator if you think this is a mistake.";
     primary = { label: "Use a different key", onClick: onOpenApiKey };
-  } else if (kind === "no-key-no-consent") {
-    title = "Almost there — one quick thing";
-    body =
-      "To set you up we need to store a small amount of data in your browser. Review the cookie prompt and accept storage to continue — it's free, no sign-up needed.";
-    primary = { label: "Review cookie prompt", onClick: onReopenConsent };
   } else {
-    title = hasDefaultInvite ? "Let's get you back in" : "You need an access key to continue";
-    body = hasDefaultInvite
-      ? "Your previous session was rejected. We can set you up again instantly — no sign-up, no email, no payment."
-      : "Your previous session was rejected. Paste an access key to continue, or ask an admin for an invite link.";
-    primary = hasDefaultInvite
-      ? { label: "Get started", onClick: onClaim }
-      : { label: "Enter an access key", onClick: onOpenApiKey };
+    title = "You need an access key to continue";
+    body =
+      "Your previous session was rejected. Paste an access key to continue, or ask an admin for an invite link.";
+    primary = { label: "Enter an access key", onClick: onOpenApiKey };
   }
 
   return (
