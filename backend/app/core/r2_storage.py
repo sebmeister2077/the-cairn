@@ -267,13 +267,85 @@ def object_exists(key: str) -> bool:
         return False
 
 
-def copy_object(source_key: str, destination_key: str):
-    """Copy an object within R2. Raises FileNotFoundError if source is missing."""
+# S3/R2 single-shot CopyObject is limited to 5 GiB. For larger sources we
+# must fall back to a server-side multipart copy (UploadPartCopy with byte
+# ranges). We pick a threshold safely below the hard limit so we don't ever
+# bump into "EntityTooLarge" errors at the boundary.
+_SINGLE_COPY_MAX_BYTES = 4 * 1024 * 1024 * 1024  # 4 GiB
+_MULTIPART_COPY_PART_BYTES = 512 * 1024 * 1024   # 512 MiB per part
+
+
+def _multipart_copy(source_key: str, destination_key: str, size: int):
+    """Server-side copy of a large object using multipart UploadPartCopy.
+
+    No data flows through this process — R2 copies each byte range internally.
+    """
+    client = _get_client()
+    bucket = _bucket()
+    upload_id = client.create_multipart_upload(
+        Bucket=bucket, Key=destination_key
+    )["UploadId"]
     try:
-        _get_client().copy_object(
-            Bucket=_bucket(),
+        parts = []
+        part_number = 1
+        offset = 0
+        while offset < size:
+            end = min(offset + _MULTIPART_COPY_PART_BYTES, size) - 1
+            resp = client.upload_part_copy(
+                Bucket=bucket,
+                Key=destination_key,
+                PartNumber=part_number,
+                UploadId=upload_id,
+                CopySource={"Bucket": bucket, "Key": source_key},
+                CopySourceRange=f"bytes={offset}-{end}",
+            )
+            parts.append({
+                "ETag": resp["CopyPartResult"]["ETag"],
+                "PartNumber": part_number,
+            })
+            part_number += 1
+            offset = end + 1
+        client.complete_multipart_upload(
+            Bucket=bucket,
             Key=destination_key,
-            CopySource={"Bucket": _bucket(), "Key": source_key},
+            UploadId=upload_id,
+            MultipartUpload={"Parts": parts},
+        )
+    except Exception:
+        try:
+            client.abort_multipart_upload(
+                Bucket=bucket, Key=destination_key, UploadId=upload_id
+            )
+        except ClientError:
+            pass
+        raise
+
+
+def copy_object(source_key: str, destination_key: str):
+    """Copy an object within R2. Raises FileNotFoundError if source is missing.
+
+    Transparently uses multipart copy for sources larger than the S3
+    single-shot CopyObject limit (5 GiB).
+    """
+    client = _get_client()
+    bucket = _bucket()
+    try:
+        head = client.head_object(Bucket=bucket, Key=source_key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {source_key}")
+        raise
+
+    size = int(head.get("ContentLength", 0))
+    if size > _SINGLE_COPY_MAX_BYTES:
+        _multipart_copy(source_key, destination_key, size)
+        return
+
+    try:
+        client.copy_object(
+            Bucket=bucket,
+            Key=destination_key,
+            CopySource={"Bucket": bucket, "Key": source_key},
         )
     except ClientError as e:
         if e.response["Error"]["Code"] in ("NoSuchKey", "404"):

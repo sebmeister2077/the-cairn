@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from ..config import settings
+from ..core import database as db
 from ..core import feature_flags as ff
 from ..core import r2_storage
 
@@ -79,6 +80,9 @@ def create_scheduled_snapshot_if_due() -> Optional[str]:
 
     Returns the new R2 key on creation, or ``None`` if a snapshot for the
     current ISO week already exists (idempotent re-runs in the same week).
+
+    Holds the global map lock for the duration of the copy so an approve or
+    revert cannot overwrite the source partway through a multipart copy.
     """
     iso_year, iso_week = _now_iso_week()
     target_key = r2_storage.backup_scheduled_key(iso_year, iso_week)
@@ -87,13 +91,25 @@ def create_scheduled_snapshot_if_due() -> Optional[str]:
     if not r2_storage.object_exists(r2_storage.COMBINED_DB_KEY):
         logger.info("weekly_backup: combined .db missing — skipping snapshot")
         return None
-    r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_key)
+    try:
+        with db.with_map_lock("backup"):
+            r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_key)
+    except db.MapLocked:
+        logger.info(
+            "weekly_backup: skipping scheduled snapshot — map lock held by "
+            "another operation; will retry on next tick"
+        )
+        return None
     logger.info("weekly_backup: created scheduled snapshot %s", target_key)
     return target_key
 
 
 def create_manual_snapshot() -> str:
-    """Force-create a manual snapshot tagged with the current unix timestamp."""
+    """Force-create a manual snapshot tagged with the current unix timestamp.
+
+    The caller is expected to already hold the global map lock (the admin
+    route does this) so an approve/revert cannot race the multipart copy.
+    """
     iso_year, iso_week = _now_iso_week()
     ts = int(datetime.now(timezone.utc).timestamp())
     target_key = r2_storage.backup_manual_key(iso_year, iso_week, ts)

@@ -13,6 +13,7 @@ All endpoints require the env-var admin key. Restore additionally requires:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import tempfile
@@ -64,17 +65,31 @@ async def list_backups(_: str = Depends(require_admin)):
 @router.post("/create")
 async def create_backup(api_key: str = Depends(require_admin)):
     _require_flag("weekly_backups")
+
+    # Hold the global map lock so an approve/revert can't overwrite the source
+    # midway through our multipart copy (which would yield a corrupt backup).
     try:
-        key = weekly_backup.create_manual_snapshot()
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=409, detail=str(exc))
+        lock_token = db.acquire_map_lock("backup")
+    except db.MapLocked as exc:
+        return JSONResponse(status_code=423, content={"detail": str(exc)})
+
+    try:
+        # The R2 multipart copy can take many seconds for a multi-GB DB. Run it
+        # in a worker thread so the event loop keeps serving other requests.
+        try:
+            key = await asyncio.to_thread(weekly_backup.create_manual_snapshot)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=409, detail=str(exc))
+    finally:
+        db.release_map_lock(lock_token)
+
     accounts_db.audit_log(
         api_key, "map.create_backup", target=key, metadata={"kind": "manual"},
     )
     # Run cleanup so the new manual snapshot doesn't push us over the cap
     # silently — the admin sees the trim outcome on the next list.
     try:
-        weekly_backup.cleanup_old_backups()
+        await asyncio.to_thread(weekly_backup.cleanup_old_backups)
     except Exception:
         logger.exception("backups: post-create cleanup failed")
     return {"created": key}
@@ -83,7 +98,7 @@ async def create_backup(api_key: str = Depends(require_admin)):
 @router.post("/cleanup-now")
 async def cleanup_now(_: str = Depends(require_admin)):
     _require_flag("weekly_backups")
-    return weekly_backup.cleanup_old_backups()
+    return await asyncio.to_thread(weekly_backup.cleanup_old_backups)
 
 
 @router.post("/restore")

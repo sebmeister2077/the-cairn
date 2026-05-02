@@ -1903,7 +1903,7 @@ class MapLocked(Exception):
 
 MAP_LOCK_ID = "globalservermap"
 MAP_LOCK_TTL_SECONDS = 600  # 10 minutes
-_VALID_LOCK_ACTIONS = {"approve", "revert", "restore"}
+_VALID_LOCK_ACTIONS = {"approve", "revert", "restore", "backup"}
 
 
 def acquire_map_lock(action: str, ttl_seconds: int = MAP_LOCK_TTL_SECONDS) -> str:
