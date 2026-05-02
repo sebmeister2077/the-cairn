@@ -11572,6 +11572,108 @@
       }
     },
     {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 103,
+        "depth2": 34,
+        "label": "North-South Line",
+        "tag": "SOUTHLINED"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [1632, -36595],
+          [-3944, -40974]
+        ]
+      }
+    },
+    {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 56,
+        "depth2": 72,
+        "label": "North-South Line",
+        "tag": "SOUTHLINED"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-3913, -41016],
+          [-9641, -45347]
+        ]
+      }
+    },
+    {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 79,
+        "depth2": 88,
+        "label": "North-South Line",
+        "tag": "SOUTHLINED"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-9779, -45087],
+          [-3043, -51384]
+        ]
+      }
+    },
+    {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 53,
+        "depth2": 93,
+        "label": "North-South Line",
+        "tag": "SOUTHLINED"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [770, -57555],
+          [-2913, -51370]
+        ]
+      }
+    },
+    {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 99,
+        "depth2": 33,
+        "label": "North-South Line",
+        "tag": "SOUTHLINED"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [890, -57847],
+          [-881, -65192]
+        ]
+      }
+    },
+    {
+      "added-by": "Cairn",
+      "type": "Feature",
+      "properties": {
+        "depth1": 73,
+        "depth2": 88,
+        "label": "",
+        "tag": ""
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-9732, -45286],
+          [-16710, -43877]
+        ]
+      }
+    },
+    {
       "type": "Feature",
       "properties": { "depth1": 94, "depth2": 48, "label": "", "tag": "" },
       "geometry": {
