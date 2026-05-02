@@ -176,6 +176,20 @@ def start() -> None:
         if _timer is not None and _timer.is_alive():
             return
         _stopped = False
+        # Reclaim storage from any multipart copy that was interrupted by a
+        # crash/restart of a previous process. Older than 1h is safely past
+        # any in-flight legitimate copy (a 10–20 GB DB copies in seconds).
+        try:
+            aborted = r2_storage.abort_stale_multipart_uploads(
+                r2_storage.BACKUP_KEY_PREFIX, older_than_seconds=3600
+            )
+            if aborted:
+                logger.info(
+                    "weekly_backup: aborted %d stale multipart upload(s) at startup",
+                    aborted,
+                )
+        except Exception:
+            logger.exception("weekly_backup: stale multipart sweep failed")
         _timer = threading.Timer(
             settings.BACKUP_CHECK_INTERVAL_SECONDS, _scheduled_run
         )

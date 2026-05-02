@@ -267,6 +267,45 @@ def object_exists(key: str) -> bool:
         return False
 
 
+def abort_stale_multipart_uploads(prefix: str, older_than_seconds: int = 3600) -> int:
+    """Abort in-progress multipart uploads under ``prefix`` older than the cutoff.
+
+    Crashes mid-``_multipart_copy`` leave parts that R2 keeps billing storage
+    for until the upload is completed or aborted. Run this on startup (and
+    after a manual backup) to reclaim that space.
+
+    Returns the number of multipart uploads aborted.
+    """
+    client = _get_client()
+    bucket = _bucket()
+    now = time.time()
+    aborted = 0
+    paginator = client.get_paginator("list_multipart_uploads")
+    try:
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for upload in page.get("Uploads", []) or []:
+                initiated = upload.get("Initiated")
+                if initiated is None:
+                    continue
+                age = now - initiated.timestamp()
+                if age < older_than_seconds:
+                    continue
+                try:
+                    client.abort_multipart_upload(
+                        Bucket=bucket,
+                        Key=upload["Key"],
+                        UploadId=upload["UploadId"],
+                    )
+                    aborted += 1
+                except ClientError:
+                    # Another process may have aborted/completed it concurrently.
+                    pass
+    except ClientError:
+        # ListMultipartUploads itself failed — nothing to do.
+        return aborted
+    return aborted
+
+
 # S3/R2 single-shot CopyObject is limited to 5 GiB. For larger sources we
 # must fall back to a server-side multipart copy (UploadPartCopy with byte
 # ranges). We pick a threshold safely below the hard limit so we don't ever
