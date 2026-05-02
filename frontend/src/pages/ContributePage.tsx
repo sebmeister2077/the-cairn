@@ -853,7 +853,9 @@ export function ContributePage() {
             <div className="space-y-2">
               {info.approved
                 .slice()
-                .reverse()
+                .sort(
+                  (a, b) => new Date(b.approved_at).getTime() - new Date(a.approved_at).getTime(),
+                )
                 .map((a) => (
                   <div
                     key={a.id}
