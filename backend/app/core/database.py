@@ -667,13 +667,23 @@ def withdraw_contribution(cid: str, api_key: str) -> bool:
     """Soft-delete a pending contribution owned by api_key.
     Anonymises the contributor name and marks as withdrawn.
     Returns True if the row was updated, False if not found/not owned.
+
+    Also clears ``validation_status`` so the async ``validate_uploads``
+    worker stops treating the row as a pending validation job — otherwise
+    it would re-claim the row indefinitely (bumping attempts → hitting
+    the cap → being "revived" by ``reset_stuck_validations`` on every
+    restart).
     """
     now = datetime.now(timezone.utc)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE contributions
-                   SET status = 'withdrawn', contributor = '[Withdrawn]', withdrawn_at = %s
+                   SET status = 'withdrawn',
+                       contributor = '[Withdrawn]',
+                       withdrawn_at = %s,
+                       validation_status = NULL,
+                       validation_error  = NULL
                    WHERE id = %s AND status = 'pending' AND submitted_by_key = %s""",
                 (now, cid, api_key),
             )
@@ -1102,6 +1112,7 @@ def claim_pending_validation_job() -> Optional[dict]:
                    WHERE id = (
                        SELECT id FROM contributions
                            WHERE validation_status = 'pending'
+                             AND status = 'pending'
                              AND validation_attempts < %s
                            ORDER BY created_at
                            LIMIT 1
@@ -1153,6 +1164,26 @@ def has_pending_validation_jobs() -> bool:
                 (VALIDATION_MAX_ATTEMPTS,),
             )
             return cur.fetchone() is not None
+
+
+def clear_validation_status(cid: str) -> None:
+    """Null out ``validation_status`` and ``validation_error`` for a row.
+
+    Used by the validate-uploads worker to retire rows whose contribution
+    ``status`` is no longer ``'pending'`` (typically: withdrawn between
+    claim and processing). Without this, the worker would keep claiming
+    the row on every attempt + every ``reset_stuck_validations`` revival,
+    producing the "skipping … no longer pending" log spam forever.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET validation_status = NULL,
+                           validation_error  = NULL
+                   WHERE id = %s""",
+                (cid,),
+            )
 
 
 def set_validation_valid(cid: str, tile_count: int) -> None:

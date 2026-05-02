@@ -79,10 +79,17 @@ def _process_one(job: dict) -> None:
     pending_key = r2_storage.pending_db_key(cid)
 
     # If the contribution row was withdrawn / deleted between claim and now
-    # there's nothing to do.
+    # there's nothing to do. Clear ``validation_status`` so the row can't
+    # be re-claimed forever (the claim already bumped attempts; without
+    # this, the row stays pending until the cap, then gets "revived" on
+    # the next restart and the loop repeats).
     meta = db.get_contribution(cid)
     if not meta or meta.get("status") != "pending":
         logger.info("validate_uploads: skipping %s — no longer pending", cid)
+        try:
+            db.clear_validation_status(cid)
+        except Exception:
+            logger.exception("validate_uploads: clear-status failed for %s", cid)
         return
     if meta.get("validation_status") != "pending":
         # Already validated by another worker / a manual override.
