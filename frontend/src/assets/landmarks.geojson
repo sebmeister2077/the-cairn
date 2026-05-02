@@ -288,6 +288,15 @@
     },
     {
       "type": "Feature",
+      "properties": {
+        "type": "MiscTerminus",
+        "label": "Public Terminus",
+        "z": 107
+      },
+      "geometry": { "type": "Point", "coordinates": [65, -28500] }
+    },
+    {
+      "type": "Feature",
       "properties": { "type": "Base", "label": "XDead_MasterX's First Base", "z": 118 },
       "geometry": { "type": "Point", "coordinates": [2266, -12548] }
     },
