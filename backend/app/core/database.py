@@ -554,6 +554,35 @@ CREATE TABLE IF NOT EXISTS backup_download_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_bdlog_link ON backup_download_log (link_id, redeemed_at DESC);
+
+-- Resources-overlay async upload jobs.
+--
+-- ``POST /admin/resources/upload`` returns immediately after the .zip is
+-- spooled to local disk. A daemon thread then unpacks it into R2 and
+-- mutates this row so the FE can poll for live progress (file count + bytes
+-- + phase) instead of staring at a stuck 95% bar while the server fans
+-- thousands of small PUTs out to R2.
+--
+-- ``status`` is one of: 'unpacking' | 'swapping' | 'complete' | 'failed'.
+-- ``phase`` is a free-form human-readable string for the UI.
+CREATE TABLE IF NOT EXISTS resources_upload_jobs (
+    id              TEXT PRIMARY KEY,
+    seed            TEXT NOT NULL,
+    vs_version      TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'unpacking',
+    phase           TEXT,
+    total_files     INTEGER NOT NULL DEFAULT 0,
+    processed_files INTEGER NOT NULL DEFAULT 0,
+    total_bytes     BIGINT NOT NULL DEFAULT 0,
+    uploaded_bytes  BIGINT NOT NULL DEFAULT 0,
+    error           TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at    TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_resources_jobs_recent
+    ON resources_upload_jobs (created_at DESC);
 """
 
 
@@ -2250,6 +2279,158 @@ def get_feature_flag(key: str) -> Optional[dict]:
             cur.execute("SELECT * FROM feature_flags WHERE key = %s", (key,))
             row = cur.fetchone()
             return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Resources-overlay async upload jobs
+# ---------------------------------------------------------------------------
+#
+# Used by ``backend/app/routes/resources.py``. The HTTP request handler
+# only spools the .zip to local disk; this row tracks the long tail of
+# fanning thousands of small tile PUTs out to R2.
+
+_RESOURCES_JOB_ACTIVE_STATUSES = ("unpacking", "swapping")
+
+
+def create_resources_upload_job(
+    job_id: str,
+    seed: str,
+    vs_version: str,
+    *,
+    total_files: int = 0,
+    total_bytes: int = 0,
+    phase: str = "queued",
+) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO resources_upload_jobs
+                    (id, seed, vs_version, status, phase,
+                     total_files, total_bytes)
+                VALUES (%s, %s, %s, 'unpacking', %s, %s, %s)
+                """,
+                (job_id, seed, vs_version, phase, total_files, total_bytes),
+            )
+
+
+def update_resources_upload_job(
+    job_id: str,
+    *,
+    phase: Optional[str] = None,
+    status: Optional[str] = None,
+    total_files: Optional[int] = None,
+    processed_files: Optional[int] = None,
+    total_bytes: Optional[int] = None,
+    uploaded_bytes: Optional[int] = None,
+    error: Optional[str] = None,
+    completed: bool = False,
+) -> None:
+    """Patch the row. Any field left as ``None`` is preserved."""
+    sets: List[str] = ["updated_at = now()"]
+    params: list = []
+    if phase is not None:
+        sets.append("phase = %s")
+        params.append(phase)
+    if status is not None:
+        sets.append("status = %s")
+        params.append(status)
+    if total_files is not None:
+        sets.append("total_files = %s")
+        params.append(total_files)
+    if processed_files is not None:
+        sets.append("processed_files = %s")
+        params.append(processed_files)
+    if total_bytes is not None:
+        sets.append("total_bytes = %s")
+        params.append(total_bytes)
+    if uploaded_bytes is not None:
+        sets.append("uploaded_bytes = %s")
+        params.append(uploaded_bytes)
+    if error is not None:
+        sets.append("error = %s")
+        params.append(error)
+    if completed:
+        sets.append("completed_at = now()")
+    params.append(job_id)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"UPDATE resources_upload_jobs SET {', '.join(sets)} WHERE id = %s",
+                params,
+            )
+
+
+def get_resources_upload_job(job_id: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM resources_upload_jobs WHERE id = %s",
+                (job_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_active_resources_upload_job() -> Optional[dict]:
+    """Return the most recent in-flight job, or the most recent job if
+    none are in flight (so the FE can show the last result on first load)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT * FROM resources_upload_jobs
+                WHERE status IN %s
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (_RESOURCES_JOB_ACTIVE_STATUSES,),
+            )
+            row = cur.fetchone()
+            if row:
+                return dict(row)
+            cur.execute(
+                """
+                SELECT * FROM resources_upload_jobs
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def has_active_resources_upload_job() -> bool:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 1 FROM resources_upload_jobs
+                WHERE status IN %s
+                LIMIT 1
+                """,
+                (_RESOURCES_JOB_ACTIVE_STATUSES,),
+            )
+            return cur.fetchone() is not None
+
+
+def reset_stuck_resources_upload_jobs() -> int:
+    """Mark in-flight jobs as failed at startup. The worker thread that
+    owned them died with the previous process, so they are unreachable."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE resources_upload_jobs
+                SET status = 'failed',
+                    error = COALESCE(error, 'Backend process restarted mid-upload'),
+                    updated_at = now(),
+                    completed_at = COALESCE(completed_at, now())
+                WHERE status IN %s
+                """,
+                (_RESOURCES_JOB_ACTIVE_STATUSES,),
+            )
+            return cur.rowcount or 0
 
 
 def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optional[dict]:

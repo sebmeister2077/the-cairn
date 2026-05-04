@@ -16,3 +16,6 @@ backend/.venv/
 # OS
 Thumbs.db
 .DS_Store
+
+
+resourceexporter-example-output/

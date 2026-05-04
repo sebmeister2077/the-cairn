@@ -1912,14 +1912,15 @@ export async function getResourcesStatus(): Promise<ResourcesStatus> {
 
 /**
  * Stream a resources-overlay bundle (.zip) to the backend, reporting
- * percentage progress as bytes are uploaded. Server-side validation +
- * unpack happens after the upload finishes; the final 5% is reserved for
- * that work so the bar visibly continues moving while the server does it.
+ * percentage progress as bytes are uploaded. The backend spools the file
+ * to local disk and returns ``{job_id}`` immediately (HTTP 202); the
+ * actual unpack into R2 then runs in a background worker. Poll
+ * ``getResourcesUploadJob`` for live progress.
  */
 export function uploadResourcesBundle(
     file: File,
     onProgress?: (percent: number) => void,
-): Promise<{ ok: boolean; seed: string; vs_version: string; generated_at: string | null; size_bytes: number }> {
+): Promise<{ job_id: string; size_bytes: number }> {
     return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open("POST", `${UPLOAD_API_BASE}/admin/resources/upload`);
@@ -1929,13 +1930,11 @@ export function uploadResourcesBundle(
         xhr.setRequestHeader("Content-Type", "application/zip");
         xhr.upload.onprogress = (e) => {
             if (e.lengthComputable && onProgress) {
-                onProgress(Math.min(Math.round((e.loaded / e.total) * 95), 95));
+                onProgress(Math.min(Math.round((e.loaded / e.total) * 100), 100));
             }
         };
         xhr.onload = () => {
             if (xhr.status === 401) {
-                // Mirror handleResponse so a stale session triggers the same
-                // global rejection handler the rest of the app uses.
                 clearAdminSession();
                 window.dispatchEvent(new Event("auth-rejected"));
             }
@@ -1960,6 +1959,39 @@ export function uploadResourcesBundle(
         xhr.onerror = () => reject(new Error("Network error during bundle upload"));
         xhr.send(file);
     });
+}
+
+export type ResourcesUploadJobStatus = "unpacking" | "swapping" | "complete" | "failed";
+
+export interface ResourcesUploadJob {
+    id: string;
+    seed: string;
+    vs_version: string;
+    status: ResourcesUploadJobStatus;
+    phase: string | null;
+    total_files: number;
+    processed_files: number;
+    total_bytes: number;
+    uploaded_bytes: number;
+    error: string | null;
+    created_at: string | null;
+    updated_at: string | null;
+    completed_at: string | null;
+}
+
+export async function getResourcesUploadJob(jobId: string): Promise<ResourcesUploadJob> {
+    const res = await fetch(`${API_BASE}/admin/resources/jobs/${encodeURIComponent(jobId)}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function getActiveResourcesUploadJob(): Promise<ResourcesUploadJob | null> {
+    const res = await fetch(`${API_BASE}/admin/resources/jobs/active`, {
+        headers: authHeaders(),
+    });
+    const body = await (await handleResponse(res)).json();
+    return body.job ?? null;
 }
 
 export interface ResourcesManifest {

@@ -239,6 +239,19 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Revert-contribution startup kick failed (non-fatal): %s", exc)
 
+    # Resources-overlay: mark any in-flight upload jobs as failed —
+    # their worker thread died with the previous process so they're
+    # unreachable, and we don't want the FE polling them forever.
+    step_started = perf_counter()
+    try:
+        admin_resources.kick_on_startup()
+        logger.info(
+            "Startup step resources upload-jobs reset completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Resources upload-jobs startup reset failed (non-fatal): %s", exc)
+
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:

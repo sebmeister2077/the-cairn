@@ -31,7 +31,9 @@ import sqlite3
 import tempfile
 import threading
 import time
+import uuid
 import zipfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -40,6 +42,7 @@ from fastapi.responses import JSONResponse
 
 from ..auth import require_admin
 from ..config import settings
+from ..core import database as db
 from ..core import feature_flags as ff
 from ..core import r2_storage
 
@@ -53,6 +56,19 @@ router = APIRouter(prefix="/admin/resources", tags=["admin-resources"])
 # buffer below.
 _TILE_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60
 _TILE_URL_REFRESH_BUFFER_SECONDS = 30 * 60
+
+# Parallelism for fanning bundle members out to R2. Each worker owns one
+# boto3 client (boto3 clients are thread-safe), so this maps directly to
+# concurrent PUTs. 16 was the sweet spot for ~2k small tile uploads in
+# local testing — higher counts saturate the Render egress without
+# meaningfully reducing wall time.
+_R2_UPLOAD_CONCURRENCY = 16
+
+# Throttle DB writes from the worker. With 1878 tiles and per-file updates
+# we'd hammer Postgres for no UI benefit. Flush whichever comes first.
+_PROGRESS_FLUSH_EVERY_FILES = 25
+_PROGRESS_FLUSH_EVERY_SECONDS = 1.0
+
 
 
 # ---------------------------------------------------------------------------
@@ -159,9 +175,19 @@ def _validate_bundle_member(name: str) -> None:
         raise HTTPException(status_code=400, detail=f"Bundle contains unsafe path: {name}")
 
 
-def _unpack_bundle(zip_path: str, seed: str, version: str) -> dict:
+def _unpack_bundle(
+    zip_path: str,
+    seed: str,
+    version: str,
+    *,
+    job_id: Optional[str] = None,
+) -> dict:
     """Validate manifest + structure, then upload every member into the
     staging prefix. Returns the parsed manifest dict.
+
+    When ``job_id`` is given, the row in ``resources_upload_jobs`` is
+    patched with progress updates (file count + bytes) as the upload
+    proceeds.
 
     Caller is responsible for swapping the pointer once this returns.
     """
@@ -205,46 +231,119 @@ def _unpack_bundle(zip_path: str, seed: str, version: str) -> dict:
             )
 
         prefix = r2_storage.resources_prefix(seed, version, staging=True)
-        # Stream every member straight to R2 — we never load the whole zip
-        # into memory.
-        for info in zf.infolist():
-            name = info.filename
-            if not name or name.endswith("/"):
-                continue
-            if name == _MANIFEST_NAME:
-                key = r2_storage.resources_manifest_key(seed, version, staging=True)
-                content_type = "application/json"
-            elif name == _DEPOSITS_NAME:
-                key = r2_storage.resources_deposits_key(seed, version, staging=True)
-                content_type = "application/octet-stream"
-            elif name.startswith(_TILES_PREFIX):
-                key = prefix + name
-                content_type = "image/png"
-            else:
-                # Unknown top-level files are rejected so we don't accumulate
-                # garbage in R2 (e.g. a stray README.txt the operator left).
-                raise HTTPException(
-                    status_code=400, detail=f"Unexpected bundle entry: {name}"
-                )
-            with zf.open(info, "r") as src, tempfile.NamedTemporaryFile(
-                delete=False
-            ) as dst:
-                tmp_path = dst.name
-                # Bounded read to avoid pathological zip-bombs landing on disk.
-                # Each member is independently size-checked against the bundle
-                # cap further up in the request handler.
-                while True:
-                    chunk = src.read(1024 * 1024)
-                    if not chunk:
-                        break
-                    dst.write(chunk)
+
+        # Pre-walk the zip once so we know the totals up-front; it's the
+        # only way to give the FE an accurate "X of Y" rather than a
+        # rolling counter.
+        members = [
+            info for info in zf.infolist()
+            if info.filename and not info.filename.endswith("/")
+        ]
+        total_files = len(members)
+        total_bytes = sum(int(i.file_size) for i in members)
+        if job_id is not None:
             try:
-                r2_storage.upload_file(tmp_path, key, content_type=content_type)
-            finally:
+                db.update_resources_upload_job(
+                    job_id,
+                    total_files=total_files,
+                    total_bytes=total_bytes,
+                    phase=f"Uploading {total_files} files to storage",
+                )
+            except Exception:
+                logger.exception("resources: failed to seed job totals (%s)", job_id)
+
+        # ZipFile is NOT thread-safe for concurrent reads, so each worker
+        # opens its own ZipFile against the same on-disk path. We pass the
+        # filename string + ZipInfo + key + content_type and let the worker
+        # pull the bytes itself.
+        def _key_and_ct(info: zipfile.ZipInfo) -> tuple[str, str]:
+            name = info.filename
+            if name == _MANIFEST_NAME:
+                return r2_storage.resources_manifest_key(seed, version, staging=True), "application/json"
+            if name == _DEPOSITS_NAME:
+                return r2_storage.resources_deposits_key(seed, version, staging=True), "application/octet-stream"
+            if name.startswith(_TILES_PREFIX):
+                return prefix + name, "image/png"
+            raise HTTPException(
+                status_code=400, detail=f"Unexpected bundle entry: {name}"
+            )
+
+        # Validate member classification up-front (so a bad name fails
+        # before we kick off the thread pool).
+        plan: list[tuple[zipfile.ZipInfo, str, str]] = []
+        for info in members:
+            key, ct = _key_and_ct(info)
+            plan.append((info, key, ct))
+
+        # Progress accumulators are owned by this thread; workers report
+        # back via futures.
+        processed = 0
+        uploaded_bytes = 0
+        last_flush_at = time.monotonic()
+        last_flush_files = 0
+
+        def _do_upload(item: tuple[zipfile.ZipInfo, str, str]) -> int:
+            info, key, content_type = item
+            # Each worker re-opens the zip read-only; this is cheap because
+            # ZipFile keeps a tiny in-memory directory and seeks on demand.
+            with zipfile.ZipFile(zip_path, "r") as worker_zf:
+                with worker_zf.open(info, "r") as src:
+                    data = src.read()
+            # ``upload_bytes`` PUTs in a single round-trip — fine for
+            # tiles and the small manifest. ``deposits.sqlite`` may be
+            # tens of MB; boto3 transparently switches to multipart only
+            # via ``upload_file`` / ``upload_fileobj``, so for the SQLite
+            # we go through the path-based variant.
+            if info.file_size > 8 * 1024 * 1024:
+                with tempfile.NamedTemporaryFile(delete=False) as tmp:
+                    tmp_path = tmp.name
+                    tmp.write(data)
                 try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
+                    r2_storage.upload_file(tmp_path, key, content_type=content_type)
+                finally:
+                    try:
+                        os.unlink(tmp_path)
+                    except OSError:
+                        pass
+            else:
+                r2_storage.upload_bytes(key, data, content_type=content_type)
+            return int(info.file_size)
+
+        with ThreadPoolExecutor(
+            max_workers=_R2_UPLOAD_CONCURRENCY,
+            thread_name_prefix="resources-upload",
+        ) as pool:
+            futures = [pool.submit(_do_upload, item) for item in plan]
+            try:
+                for fut in as_completed(futures):
+                    size = fut.result()  # re-raises worker exceptions
+                    processed += 1
+                    uploaded_bytes += size
+                    now = time.monotonic()
+                    if job_id is not None and (
+                        processed - last_flush_files >= _PROGRESS_FLUSH_EVERY_FILES
+                        or now - last_flush_at >= _PROGRESS_FLUSH_EVERY_SECONDS
+                        or processed == total_files
+                    ):
+                        try:
+                            db.update_resources_upload_job(
+                                job_id,
+                                processed_files=processed,
+                                uploaded_bytes=uploaded_bytes,
+                            )
+                        except Exception:
+                            logger.exception(
+                                "resources: progress flush failed (%s)", job_id
+                            )
+                        last_flush_at = now
+                        last_flush_files = processed
+            except Exception:
+                # Cancel anything still queued so we don't keep PUTting
+                # bytes after a worker has already failed.
+                for f in futures:
+                    f.cancel()
+                raise
+
         return manifest
 
 
@@ -345,7 +444,15 @@ async def resources_upload(
     request: Request,
     api_key: str = Depends(require_admin),
 ):
-    """Stream a .zip resources bundle, validate, unpack, swap pointer."""
+    """Stream a .zip resources bundle to disk, then hand off to a
+    background worker that unpacks it into R2.
+
+    The handler returns ``{"job_id": ...}`` as soon as the bytes are
+    spooled. The FE then polls ``/admin/resources/jobs/{job_id}`` for
+    progress (file count + bytes uploaded + phase). This keeps the
+    HTTP request short — Render's request timeout would otherwise kill
+    the connection mid-fanout for any non-trivial bundle.
+    """
     _require_flag()
     if not settings.CANONICAL_WORLD_SEED or not settings.CANONICAL_WORLD_VS_VERSION:
         raise HTTPException(
@@ -356,11 +463,22 @@ async def resources_upload(
             ),
         )
 
+    # Reject a second concurrent upload before we even spool the bytes
+    # — otherwise the browser would happily push 1 GiB onto disk only
+    # for the worker to find another job already running.
+    with _job_lock:
+        if _active_job_id is not None:
+            raise HTTPException(
+                status_code=409,
+                detail="Another resources bundle upload is already in progress.",
+            )
+
     seed = settings.CANONICAL_WORLD_SEED
     version = settings.CANONICAL_WORLD_VS_VERSION
     cap = settings.RESOURCES_BUNDLE_MAX_BYTES
 
     fd, tmp_path = tempfile.mkstemp(suffix=".zip", prefix="vs-resources-")
+    spooled = False
     try:
         total = 0
         with os.fdopen(fd, "wb") as f:
@@ -380,20 +498,227 @@ async def resources_upload(
                 status_code=400, content={"detail": "Upload is not a valid .zip"}
             )
 
-        manifest = _unpack_bundle(tmp_path, seed, version)
-        _swap_pointer_and_cleanup(seed, version)
-        return {
-            "ok": True,
-            "seed": seed,
-            "vs_version": version,
-            "generated_at": manifest.get("generated_at"),
-            "size_bytes": total,
-        }
+        # Hand-off to background worker. Once we've created the job and
+        # spawned the thread, the worker owns ``tmp_path`` and is
+        # responsible for unlinking it.
+        job_id = uuid.uuid4().hex
+        try:
+            db.create_resources_upload_job(
+                job_id, seed, version,
+                phase="Spooled to disk, starting unpack",
+                total_bytes=total,
+            )
+        except Exception:
+            logger.exception("resources: failed to create job row %s", job_id)
+            raise HTTPException(
+                status_code=500, detail="Failed to record upload job"
+            )
+
+        with _job_lock:
+            if _active_job_id is not None:
+                # Lost the race against another concurrent upload that
+                # cleared its own check above. Roll back the row.
+                try:
+                    db.update_resources_upload_job(
+                        job_id,
+                        status="failed",
+                        error="Another upload took the slot first",
+                        completed=True,
+                    )
+                except Exception:
+                    pass
+                raise HTTPException(
+                    status_code=409,
+                    detail="Another resources bundle upload is already in progress.",
+                )
+            globals()["_active_job_id"] = job_id
+
+        thread = threading.Thread(
+            target=_run_upload_job,
+            args=(job_id, tmp_path, seed, version, total),
+            name=f"resources-job-{job_id[:8]}",
+            daemon=True,
+        )
+        thread.start()
+        spooled = True
+        return JSONResponse(
+            status_code=202,
+            content={"job_id": job_id, "size_bytes": total},
+        )
+    finally:
+        # Only unlink here if we did NOT successfully hand the file off
+        # to the worker. The worker unlinks it on completion / failure.
+        if not spooled:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+
+# ---------------------------------------------------------------------------
+# Async upload worker
+# ---------------------------------------------------------------------------
+#
+# Single-flight: one bundle unpack at a time. The lock guards the
+# ``_active_job_id`` global, which doubles as the "is something running?"
+# flag for the upload endpoint.
+
+_job_lock = threading.Lock()
+_active_job_id: Optional[str] = None
+
+
+def _run_upload_job(
+    job_id: str, zip_path: str, seed: str, version: str, total_bytes: int,
+) -> None:
+    """Daemon thread body: validate, unpack into staging, swap pointer."""
+    global _active_job_id
+    try:
+        try:
+            db.update_resources_upload_job(
+                job_id, phase="Validating manifest"
+            )
+        except Exception:
+            logger.exception("resources: failed to set phase (%s)", job_id)
+
+        try:
+            manifest = _unpack_bundle(zip_path, seed, version, job_id=job_id)
+        except HTTPException as exc:
+            try:
+                db.update_resources_upload_job(
+                    job_id,
+                    status="failed",
+                    error=str(exc.detail),
+                    completed=True,
+                )
+            except Exception:
+                logger.exception("resources: failed to mark job failed (%s)", job_id)
+            return
+        except Exception as exc:
+            logger.exception("resources: unpack raised for %s", job_id)
+            try:
+                db.update_resources_upload_job(
+                    job_id,
+                    status="failed",
+                    error=f"{type(exc).__name__}: {exc}",
+                    completed=True,
+                )
+            except Exception:
+                logger.exception("resources: failed to mark job failed (%s)", job_id)
+            return
+
+        try:
+            db.update_resources_upload_job(
+                job_id, status="swapping", phase="Promoting bundle to active"
+            )
+        except Exception:
+            logger.exception("resources: failed to set swapping (%s)", job_id)
+
+        try:
+            _swap_pointer_and_cleanup(seed, version)
+        except Exception as exc:
+            logger.exception("resources: pointer swap failed for %s", job_id)
+            try:
+                db.update_resources_upload_job(
+                    job_id,
+                    status="failed",
+                    error=f"Pointer swap failed: {type(exc).__name__}: {exc}",
+                    completed=True,
+                )
+            except Exception:
+                pass
+            return
+
+        try:
+            db.update_resources_upload_job(
+                job_id,
+                status="complete",
+                phase=f"Active: {seed} / {version}",
+                completed=True,
+            )
+        except Exception:
+            logger.exception("resources: final mark-complete failed (%s)", job_id)
+        logger.info(
+            "resources: upload job %s complete (seed=%s version=%s, %d bytes)",
+            job_id, seed, version, total_bytes,
+        )
     finally:
         try:
-            os.unlink(tmp_path)
+            os.unlink(zip_path)
         except OSError:
             pass
+        with _job_lock:
+            if _active_job_id == job_id:
+                _active_job_id = None
+
+
+@router.get("/jobs/active")
+async def resources_active_job(_: str = Depends(require_admin)):
+    """Return the most recent in-flight job, or the most recent finished
+    job if nothing is running. Returns ``{"job": null}`` if no job has
+    ever been created."""
+    _require_flag()
+    try:
+        job = db.get_active_resources_upload_job()
+    except Exception:
+        logger.exception("resources: failed to read active job")
+        raise HTTPException(status_code=500, detail="Failed to read job state")
+    return {"job": _serialize_job(job) if job else None}
+
+
+@router.get("/jobs/{job_id}")
+async def resources_job(job_id: str, _: str = Depends(require_admin)):
+    _require_flag()
+    try:
+        job = db.get_resources_upload_job(job_id)
+    except Exception:
+        logger.exception("resources: failed to read job %s", job_id)
+        raise HTTPException(status_code=500, detail="Failed to read job state")
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return _serialize_job(job)
+
+
+def _serialize_job(job: dict) -> dict:
+    """Coerce psycopg row → JSON-friendly dict the FE understands."""
+    def _iso(value) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, datetime):
+            return value.isoformat()
+        return str(value)
+
+    return {
+        "id": job.get("id"),
+        "seed": job.get("seed"),
+        "vs_version": job.get("vs_version"),
+        "status": job.get("status"),
+        "phase": job.get("phase"),
+        "total_files": int(job.get("total_files") or 0),
+        "processed_files": int(job.get("processed_files") or 0),
+        "total_bytes": int(job.get("total_bytes") or 0),
+        "uploaded_bytes": int(job.get("uploaded_bytes") or 0),
+        "error": job.get("error"),
+        "created_at": _iso(job.get("created_at")),
+        "updated_at": _iso(job.get("updated_at")),
+        "completed_at": _iso(job.get("completed_at")),
+    }
+
+
+def kick_on_startup() -> None:
+    """Called from ``main.py`` startup hook. Resurrects any in-flight
+    job rows whose worker thread died with the previous process —
+    they're unreachable now, so we just mark them failed so the FE
+    doesn't keep polling them."""
+    try:
+        revived = db.reset_stuck_resources_upload_jobs()
+        if revived:
+            logger.warning(
+                "resources: marked %d stale upload job(s) as failed at startup",
+                revived,
+            )
+    except Exception:
+        logger.exception("resources: startup reset failed")
+
 
 
 def _active_bundle_or_503() -> tuple[str, str]:

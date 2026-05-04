@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, Loader2, Upload } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getResourcesStatus, uploadResourcesBundle, type ResourcesStatus } from "@/lib/api";
+import {
+  getActiveResourcesUploadJob,
+  getResourcesStatus,
+  getResourcesUploadJob,
+  uploadResourcesBundle,
+  type ResourcesStatus,
+  type ResourcesUploadJob,
+} from "@/lib/api";
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -28,20 +35,68 @@ function formatDate(iso: string | null): string {
   }
 }
 
+function isJobActive(job: ResourcesUploadJob | null | undefined): boolean {
+  return !!job && (job.status === "unpacking" || job.status === "swapping");
+}
+
 export function AdminResourcesPage() {
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
-  const [percent, setPercent] = useState<number>(0);
+  const [uploadPercent, setUploadPercent] = useState<number>(0);
+  const [trackedJobId, setTrackedJobId] = useState<string | null>(null);
+  const dismissedJobRef = useRef<string | null>(null);
 
   const status = useQuery<ResourcesStatus>({
     queryKey: ["admin-resources-status"],
     queryFn: getResourcesStatus,
   });
 
-  const uploadMut = useMutation({
-    mutationFn: (selected: File) => uploadResourcesBundle(selected, (p) => setPercent(p)),
-    onSuccess: () => {
+  // Adopt any in-flight job we find on first mount so a refresh during
+  // an upload doesn't hide the progress bar.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const job = await getActiveResourcesUploadJob();
+        if (!cancelled && job && isJobActive(job)) {
+          setTrackedJobId(job.id);
+        }
+      } catch {
+        // ignore — if the API is unreachable the rest of the page will
+        // surface the error.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const job = useQuery<ResourcesUploadJob>({
+    queryKey: ["admin-resources-job", trackedJobId],
+    queryFn: () => getResourcesUploadJob(trackedJobId as string),
+    enabled: !!trackedJobId,
+    refetchInterval: (q) => {
+      const data = q.state.data;
+      if (!data) return 1500;
+      return isJobActive(data) ? 1500 : false;
+    },
+  });
+
+  // When the tracked job finishes, refresh the status card so the new
+  // active bundle shows up.
+  useEffect(() => {
+    const data = job.data;
+    if (!data) return;
+    if (!isJobActive(data)) {
       queryClient.invalidateQueries({ queryKey: ["admin-resources-status"] });
+    }
+  }, [job.data, queryClient]);
+
+  const uploadMut = useMutation({
+    mutationFn: (selected: File) => uploadResourcesBundle(selected, (p) => setUploadPercent(p)),
+    onSuccess: (result) => {
+      setTrackedJobId(result.job_id);
+      dismissedJobRef.current = null;
       setFile(null);
     },
   });
@@ -50,7 +105,7 @@ export function AdminResourcesPage() {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
-    setPercent(0);
+    setUploadPercent(0);
     uploadMut.reset();
   }
 
@@ -59,14 +114,23 @@ export function AdminResourcesPage() {
     const f = e.dataTransfer.files?.[0];
     if (!f) return;
     setFile(f);
-    setPercent(0);
+    setUploadPercent(0);
     uploadMut.reset();
   }
 
   function handleUpload() {
     if (!file) return;
-    setPercent(0);
+    setUploadPercent(0);
     uploadMut.mutate(file);
+  }
+
+  function handleDismissJob() {
+    if (trackedJobId) {
+      dismissedJobRef.current = trackedJobId;
+    }
+    setTrackedJobId(null);
+    uploadMut.reset();
+    setUploadPercent(0);
   }
 
   const data = status.data;
@@ -77,6 +141,25 @@ export function AdminResourcesPage() {
     active &&
     canonical &&
     (active.seed !== canonical.seed || active.vs_version !== canonical.vs_version);
+
+  const showJob = job.data && job.data.id !== dismissedJobRef.current;
+  const jobActive = isJobActive(job.data);
+  const uploadInFlight = uploadMut.isPending || jobActive;
+
+  // Server-side phase percent (file count). Falls back to byte ratio
+  // until ``total_files`` is known.
+  const serverPercent = (() => {
+    const j = job.data;
+    if (!j) return 0;
+    if (j.status === "complete") return 100;
+    if (j.total_files > 0) {
+      return Math.min(100, Math.round((j.processed_files / j.total_files) * 100));
+    }
+    if (j.total_bytes > 0) {
+      return Math.min(100, Math.round((j.uploaded_bytes / j.total_bytes) * 100));
+    }
+    return 0;
+  })();
 
   return (
     <div className="space-y-4 p-4 max-w-3xl">
@@ -210,20 +293,85 @@ export function AdminResourcesPage() {
               accept=".zip,application/zip"
               className="hidden"
               onChange={handleFileSelect}
+              disabled={uploadInFlight}
             />
           </label>
 
+          {/* Phase 1: bytes uploaded to backend (XHR onprogress). */}
           {uploadMut.isPending && (
             <div className="space-y-1">
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>Step 1 of 2 — uploading to server</span>
+                <span>{uploadPercent}%</span>
+              </div>
               <div className="h-2 bg-muted rounded overflow-hidden">
                 <div
                   className="h-full bg-primary transition-all"
-                  style={{ width: `${percent}%` }}
+                  style={{ width: `${uploadPercent}%` }}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Uploading… {percent}%{percent >= 95 && " (validating + unpacking)"}
-              </p>
+            </div>
+          )}
+
+          {/* Phase 2: backend unpacking into R2 (DB-backed polling). */}
+          {showJob && job.data && (
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">
+                  {job.data.status === "complete"
+                    ? "Bundle activated"
+                    : job.data.status === "failed"
+                      ? "Upload failed"
+                      : "Step 2 of 2 — unpacking on server"}
+                </div>
+                {!jobActive && (
+                  <Button size="sm" variant="ghost" onClick={handleDismissJob}>
+                    Dismiss
+                  </Button>
+                )}
+              </div>
+
+              {jobActive && (
+                <>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{job.data.phase || job.data.status}</span>
+                    <span>{serverPercent}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all"
+                      style={{ width: `${serverPercent}%` }}
+                    />
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {job.data.total_files > 0 ? (
+                      <>
+                        {job.data.processed_files.toLocaleString()} /{" "}
+                        {job.data.total_files.toLocaleString()} files
+                        {" · "}
+                        {formatBytes(job.data.uploaded_bytes)} / {formatBytes(job.data.total_bytes)}
+                      </>
+                    ) : (
+                      <>Counting bundle contents…</>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {job.data.status === "complete" && (
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Uploaded {job.data.processed_files.toLocaleString()} files (
+                  {formatBytes(job.data.uploaded_bytes)}).
+                </div>
+              )}
+
+              {job.data.status === "failed" && (
+                <div className="flex items-start gap-2 text-destructive text-sm">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                  <span>{job.data.error || "Unknown error"}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -234,22 +382,12 @@ export function AdminResourcesPage() {
             </div>
           )}
 
-          {uploadMut.isSuccess && (
-            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm">
-              <CheckCircle2 className="h-4 w-4" />
-              Bundle uploaded and activated.
-            </div>
-          )}
-
           <div className="flex gap-2">
-            <Button
-              onClick={handleUpload}
-              disabled={!file || !seedConfigured || uploadMut.isPending}
-            >
-              {uploadMut.isPending ? (
+            <Button onClick={handleUpload} disabled={!file || !seedConfigured || uploadInFlight}>
+              {uploadInFlight ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Uploading
+                  {uploadMut.isPending ? "Uploading" : "Unpacking"}
                 </>
               ) : (
                 <>
@@ -258,12 +396,12 @@ export function AdminResourcesPage() {
                 </>
               )}
             </Button>
-            {file && !uploadMut.isPending && (
+            {file && !uploadInFlight && (
               <Button
                 variant="ghost"
                 onClick={() => {
                   setFile(null);
-                  setPercent(0);
+                  setUploadPercent(0);
                   uploadMut.reset();
                 }}
               >
