@@ -1,6 +1,6 @@
 import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import type { ContributeInfo } from "@/pages/ContributePage";
+import type { ContributeInfo } from "@/models/contributions";
 
 type Props = {
   info: ContributeInfo | null;
