@@ -1,21 +1,13 @@
-import { useState, useRef, type FormEvent } from "react";
-import { extractDBFromLogs, type MapFileInfo, type ServerMapResult } from "@/lib/identify-maps";
-import { FileUpload } from "@/components/FileUpload";
 import { FilePathHelp } from "@/components/FilePathHelp";
+import { FileUpload } from "@/components/FileUpload";
+import { IdentifyMapsResult } from "@/components/identify-maps/IdentifyMapsResult";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { HelpTip } from "@/components/ui/help-tip";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { extractDBFromLogs, type MapFileInfo, type ServerMapResult } from "@/lib/identify-maps";
+import { useRef, useState, type FormEvent } from "react";
 
 export function IdentifyMapsPage() {
   const [logFiles, setLogFiles] = useState<File[]>([]);
@@ -154,80 +146,7 @@ export function IdentifyMapsPage() {
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </form>
 
-        {hasRun && (
-          <div className="mt-6 space-y-3">
-            {results.length === 0 ? (
-              <div className="rounded-md border border-dashed p-6 text-center">
-                <p className="text-muted-foreground">
-                  No multiplayer connections found in the provided log file.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    {results.length} server connection{results.length !== 1 && "s"} found
-                  </p>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Server</TableHead>
-                      <TableHead>Database File</TableHead>
-                      <TableHead className="text-right">Size</TableHead>
-                      <TableHead className="text-right">Last Connected</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {results.map((r) => (
-                      <TableRow key={r.serverAddress}>
-                        <TableCell>
-                          <div className="flex flex-col gap-0.5">
-                            {r.friendlyName && (
-                              <span className="font-medium">{r.friendlyName}</span>
-                            )}
-                            <span
-                              className={
-                                r.friendlyName ? "text-xs text-muted-foreground" : "font-medium"
-                              }
-                            >
-                              {r.serverAddress}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          {r.dbFile ? (
-                            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-                              {r.dbFile}
-                            </code>
-                          ) : (
-                            <Badge variant="outline">No match</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {r.dbSizeMB != null ? `${r.dbSizeMB} MB` : "—"}
-                        </TableCell>
-                        <TableCell className="text-right whitespace-nowrap">
-                          {r.lastConnected.toLocaleDateString(undefined, {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}{" "}
-                          <span className="text-muted-foreground">
-                            {r.lastConnected.toLocaleTimeString(undefined, {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </>
-            )}
-          </div>
-        )}
+        {hasRun && <IdentifyMapsResult results={results} />}
       </CardContent>
     </Card>
   );

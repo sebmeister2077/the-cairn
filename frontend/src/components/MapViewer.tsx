@@ -8,7 +8,7 @@ const BUTTON_ZOOM_FACTOR = 1.75;
 // reveals empty edges before the next render lands.
 const TILE_OVERSCAN_PX = 256;
 
-export interface MapStats {
+export type MapStats =  {
   pieces: number;
   size_mb: number;
   width_chunks: number;

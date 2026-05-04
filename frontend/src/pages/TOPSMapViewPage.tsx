@@ -45,6 +45,10 @@ import {
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
+import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
+import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
+import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
+import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
@@ -771,35 +775,12 @@ export function TOPSMapViewPage() {
           )}
 
           {/* Resolution selector — visible whenever multiple completed levels exist. */}
-          {completedLevels.length > 1 && selectedLevel != null && (
-            <div className="ml-auto flex items-center gap-2">
-              <Label htmlFor="tops-map-resolution" className="text-xs text-muted-foreground">
-                Resolution
-              </Label>
-              <Select
-                value={String(selectedLevel)}
-                onValueChange={(v) => setSelectedLevel(Number(v))}
-              >
-                <SelectTrigger id="tops-map-resolution" className="h-8 w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(statsQuery.data?.resolutions ?? []).map((r) => (
-                    <SelectItem
-                      key={r.level}
-                      value={String(r.level)}
-                      disabled={r.status !== "complete"}
-                    >
-                      L{r.level} ·{" "}
-                      {r.level === 5
-                        ? "Native 1:1 (10× L4)"
-                        : `${r.max_dimension.toLocaleString()} px`}
-                      {r.status !== "complete" ? ` · ${r.status}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {completedLevels.length > 1 && (
+            <ResolutionSelector
+              selectedLevel={selectedLevel}
+              setSelectedLevel={setSelectedLevel}
+              resolutionLevels={statsQuery.data?.resolutions}
+            />
           )}
 
           {isAdmin && (
@@ -857,25 +838,10 @@ export function TOPSMapViewPage() {
             )}
           </Button>
         </div>
-        {editingGrouping && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-primary bg-primary/5 px-4 py-3 text-sm">
-            <span>
-              Editing: <span className="font-medium">{editingGrouping.name}</span>
-            </span>
-            <span className="text-xs text-muted-foreground">
-              Click TLs on the map to add or remove. {editingGrouping.tlIds.length} selected.
-            </span>
-            <Button
-              type="button"
-              size="sm"
-              variant="default"
-              className="ml-auto h-7"
-              onClick={() => setEditingGroupingId(null)}
-            >
-              Done
-            </Button>
-          </div>
-        )}
+        <GroupEditingInfo
+          editingGrouping={editingGrouping}
+          setEditingGroupingId={setEditingGroupingId}
+        />
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch
             checked={showLandmarks}
@@ -906,59 +872,15 @@ export function TOPSMapViewPage() {
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        {showTranslocators && selectedTranslocator && (
-          <div className="flex flex-wrap min-h-14 items-center gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
-            <span>
-              Start:{" "}
-              <span className="font-medium text-foreground">
-                X {selectedTranslocator.x1.toLocaleString()}, Z{" "}
-                {selectedTranslocator.z1.toLocaleString()}
-              </span>
-            </span>
-            <span>
-              End:{" "}
-              <span className="font-medium text-foreground">
-                X {selectedTranslocator.x2.toLocaleString()}, Z{" "}
-                {selectedTranslocator.z2.toLocaleString()}
-              </span>
-            </span>
-            {translocatorPinned && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleUnpinTranslocator}
-                title="Unpin translocator (also unpins on clicking another TL)"
-                className="ml-auto h-7 px-2 text-foreground"
-              >
-                <Pin className="size-4 mr-1 fill-current" />
-                Pinned
-                <PinOff className="size-4 ml-1" />
-              </Button>
-            )}
-            {!translocatorPinned && (
-              <span className="ml-auto text-xs text-muted-foreground">Right-click a TL to pin</span>
-            )}
-          </div>
+        {showTranslocators && (
+          <SelectedTranslocatorHeader
+            selectedTranslocator={selectedTranslocator}
+            translocatorPinned={translocatorPinned}
+            handleUnpinTranslocator={handleUnpinTranslocator}
+          />
         )}
 
-        {stats && statsQuery.data && (
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
-            <span>
-              <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
-              map chunks
-            </span>
-            <span>
-              <span className="font-medium text-foreground">{stats.size_mb}</span> MB
-            </span>
-            <span>
-              <span className="font-medium text-foreground">
-                {stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}
-              </span>{" "}
-              blocks
-            </span>
-          </div>
-        )}
+        {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
 
         <MapViewer
           tileSet={tileSet}
