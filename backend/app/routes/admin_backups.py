@@ -101,6 +101,65 @@ async def cleanup_now(_: str = Depends(require_admin)):
     return await asyncio.to_thread(weekly_backup.cleanup_old_backups)
 
 
+def _do_restore_blocking(backup_key: str, backup_taken_at: datetime) -> int:
+    """Synchronous body of the restore flow.
+
+    Performs R2 copy/upload, decompression, stat refresh, and orphan marking.
+    Designed to be called via ``asyncio.to_thread`` so it does not block the
+    event loop. Returns the number of orphaned contributions.
+    """
+    # 1) Promote the backup into ``globalservermap.db``. When the chosen
+    #    backup is already raw, R2's server-side copy is the fastest option
+    #    (atomic, no egress). For ``.zst`` snapshots we download → decompress
+    #    to a temp → upload the raw bytes.
+    if backup_key.endswith(".zst"):
+        from ..core import compression as comp
+        zst_fd, zst_path = tempfile.mkstemp(suffix=".db.zst")
+        os.close(zst_fd)
+        raw_fd, raw_path = tempfile.mkstemp(suffix=".db")
+        os.close(raw_fd)
+        try:
+            r2_storage.download_to_path(backup_key, zst_path)
+            comp.decompress_file(zst_path, raw_path)
+            r2_storage.upload_file(raw_path, r2_storage.COMBINED_DB_KEY)
+        finally:
+            for p in (zst_path, raw_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+    else:
+        r2_storage.copy_object(backup_key, r2_storage.COMBINED_DB_KEY)
+
+    # Drop the local cached copy so subsequent previews / regen pull the
+    # restored bytes instead of the pre-restore version.
+    try:
+        from .contribute_r2 import invalidate_combined_db_cache
+        invalidate_combined_db_cache()
+    except Exception:
+        pass
+
+    # 2) Refresh stats from the restored DB. Pull a fresh copy to a temp file
+    #    so we never serve stats inferred from the in-flight upload.
+    tmp_path = None
+    try:
+        fd, tmp_path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, tmp_path)
+        stats = get_map_stats_from_path(tmp_path)
+        db.set_tops_map_stats(stats)
+        db.set_cached_tile_count(int(stats.get("tile_count", 0)))
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    # 3) Mark contributions approved AFTER the snapshot as orphaned.
+    return db.mark_contributions_orphaned_by_restore(backup_taken_at)
+
+
 @router.post("/restore")
 async def restore_backup(body: RestoreBody, api_key: str = Depends(require_admin)):
     _require_flag("backup_restore")
@@ -145,56 +204,11 @@ async def restore_backup(body: RestoreBody, api_key: str = Depends(require_admin
         backup_taken_at = datetime.now(timezone.utc)
 
     try:
-        # 1) Promote the backup into ``globalservermap.db``. When the
-        #    chosen backup is already raw, R2's server-side copy is the
-        #    fastest option (atomic, no egress). For ``.zst`` snapshots
-        #    we download → decompress to a temp → upload the raw bytes.
-        if body.key.endswith(".zst"):
-            from ..core import compression as comp
-            zst_fd, zst_path = tempfile.mkstemp(suffix=".db.zst")
-            os.close(zst_fd)
-            raw_fd, raw_path = tempfile.mkstemp(suffix=".db")
-            os.close(raw_fd)
-            try:
-                r2_storage.download_to_path(body.key, zst_path)
-                comp.decompress_file(zst_path, raw_path)
-                r2_storage.upload_file(raw_path, r2_storage.COMBINED_DB_KEY)
-            finally:
-                for p in (zst_path, raw_path):
-                    try:
-                        os.unlink(p)
-                    except OSError:
-                        pass
-        else:
-            r2_storage.copy_object(body.key, r2_storage.COMBINED_DB_KEY)
-
-        # Drop the local cached copy so subsequent previews / regen pull the
-        # restored bytes instead of the pre-restore version.
-        try:
-            from .contribute_r2 import invalidate_combined_db_cache
-            invalidate_combined_db_cache()
-        except Exception:
-            pass
-
-        # 2) Refresh stats from the restored DB. Pull a fresh copy to a temp
-        #    file so we never serve stats inferred from the in-flight upload.
-        tmp_path = None
-        try:
-            fd, tmp_path = tempfile.mkstemp(suffix=".db")
-            os.close(fd)
-            r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, tmp_path)
-            stats = get_map_stats_from_path(tmp_path)
-            db.set_tops_map_stats(stats)
-            db.set_cached_tile_count(int(stats.get("tile_count", 0)))
-        finally:
-            if tmp_path:
-                try:
-                    os.unlink(tmp_path)
-                except OSError:
-                    pass
-
-        # 3) Mark contributions approved AFTER the snapshot as orphaned.
-        orphaned = db.mark_contributions_orphaned_by_restore(backup_taken_at)
+        # Steps 1–3 perform blocking R2 + SQLite work. Run them off the event
+        # loop so other requests aren't starved while a restore is in flight.
+        orphaned = await asyncio.to_thread(
+            _do_restore_blocking, body.key, backup_taken_at
+        )
     finally:
         db.release_map_lock(lock_token)
 

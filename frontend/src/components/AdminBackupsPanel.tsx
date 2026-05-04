@@ -549,7 +549,10 @@ function RestoreDialog({
 
   return (
     <>
-      <Dialog open={!!backup && !confirmFinal} onOpenChange={(v) => !v && onClose()}>
+      <Dialog
+        open={!!backup && !confirmFinal && !restore.isPending && !restore.isSuccess}
+        onOpenChange={(v) => !v && !restore.isPending && onClose()}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Restore from backup</DialogTitle>
@@ -603,6 +606,9 @@ function RestoreDialog({
         variant="destructive"
         onCancel={() => setConfirmFinal(false)}
         onConfirm={() => {
+          // Close both dialogs immediately and fire the (long-running) restore.
+          // The TOTP dialog stays hidden while the mutation is in flight so the
+          // admin isn't stuck staring at it; on success we close via onRestored.
           setConfirmFinal(false);
           restore.mutate();
         }}
