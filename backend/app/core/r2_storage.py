@@ -62,6 +62,25 @@ def upload_file(local_path: str, key: str, content_type: str = "application/octe
         )
 
 
+def upload_file_with_metadata(
+    local_path: str,
+    key: str,
+    *,
+    metadata: dict,
+    content_type: str = "application/octet-stream",
+):
+    """Like :func:`upload_file` but attaches user metadata (sent as
+    ``x-amz-meta-*`` headers). All values are coerced to strings — boto3
+    requires that. Used by the compressed combined-DB writer to embed the
+    raw object's ETag so readers can detect a stale .zst sibling.
+    """
+    extra: dict = {"ContentType": content_type}
+    if metadata:
+        extra["Metadata"] = {str(k): str(v) for k, v in metadata.items()}
+    with open(local_path, "rb") as file_obj:
+        _get_client().upload_fileobj(file_obj, _bucket(), key, ExtraArgs=extra)
+
+
 def download_bytes(key: str) -> bytes:
     """Download an object from R2 as bytes. Raises FileNotFoundError if missing."""
     try:
@@ -151,6 +170,83 @@ def generate_presigned_upload_url(
         },
         ExpiresIn=expires_seconds,
     )
+
+
+# ---------------------------------------------------------------------------
+# Multipart upload helpers (browser → R2 direct, used for files >5 GiB which
+# exceed the single-PUT cap, and recommended for any large upload to get
+# resumability and parallel parts).
+# ---------------------------------------------------------------------------
+
+def create_multipart_upload(
+    key: str,
+    *,
+    content_type: str = "application/octet-stream",
+) -> str:
+    """Initiate a multipart upload. Returns the ``UploadId`` to feed into
+    subsequent ``upload_part``/``complete``/``abort`` calls."""
+    resp = _get_client().create_multipart_upload(
+        Bucket=_bucket(),
+        Key=key,
+        ContentType=content_type,
+    )
+    return resp["UploadId"]
+
+
+def generate_presigned_upload_part_url(
+    key: str,
+    *,
+    upload_id: str,
+    part_number: int,
+    expires_seconds: int = 900,
+) -> str:
+    """Generate a presigned PUT URL for a single multipart-upload part.
+
+    The browser PUTs the part body to this URL and reads the ``ETag``
+    response header (R2 CORS must expose ``ETag``). The frontend then
+    sends ``{PartNumber, ETag}`` back to /multipart/complete."""
+    return _get_client().generate_presigned_url(
+        "upload_part",
+        Params={
+            "Bucket": _bucket(),
+            "Key": key,
+            "UploadId": upload_id,
+            "PartNumber": part_number,
+        },
+        ExpiresIn=expires_seconds,
+    )
+
+
+def complete_multipart_upload(
+    key: str,
+    *,
+    upload_id: str,
+    parts: list,
+) -> None:
+    """Finish a multipart upload. ``parts`` is a list of
+    ``{"PartNumber": int, "ETag": str}`` dicts in ascending part order."""
+    if not parts:
+        raise ValueError("complete_multipart_upload requires at least one part")
+    sorted_parts = sorted(parts, key=lambda p: p["PartNumber"])
+    _get_client().complete_multipart_upload(
+        Bucket=_bucket(),
+        Key=key,
+        UploadId=upload_id,
+        MultipartUpload={"Parts": sorted_parts},
+    )
+
+
+def abort_multipart_upload(key: str, *, upload_id: str) -> None:
+    """Abort an in-progress multipart upload, freeing its uploaded parts."""
+    try:
+        _get_client().abort_multipart_upload(
+            Bucket=_bucket(),
+            Key=key,
+            UploadId=upload_id,
+        )
+    except ClientError:
+        # Already aborted/completed — treat as success.
+        pass
 
 
 # S3v4 presigned GET URLs are capped at 7 days (604800 s).
@@ -265,6 +361,73 @@ def object_exists(key: str) -> bool:
         return True
     except ClientError:
         return False
+
+
+def head_artefact_with_format(raw_key: str) -> tuple[str, bool]:
+    """Discover whether an artefact is stored raw or zstd-compressed.
+
+    Given the **raw** key (e.g. ``archived/<id>.db``), HEADs both the raw
+    key and its ``.zst`` sibling and returns ``(actual_key, is_compressed)``
+    for whichever exists. ``.zst`` is preferred when both happen to exist
+    (only possible during a migration window).
+
+    Raises :class:`FileNotFoundError` when neither form is present.
+
+    Used by the revert / restore read paths so the caller doesn't need to
+    know whether the ``compress_artefacts`` flag was on at write time.
+    """
+    zstd_key = raw_key + ZSTD_SUFFIX
+    if object_exists(zstd_key):
+        return zstd_key, True
+    if object_exists(raw_key):
+        return raw_key, False
+    raise FileNotFoundError(
+        f"R2 artefact missing in both raw and zstd forms: {raw_key}"
+    )
+
+
+def head_object_metadata(key: str) -> dict:
+    """Return the object's user metadata (lower-cased keys, str values).
+
+    Wrapper around ``head_object`` that hides the boto3 response shape.
+    Raises :class:`FileNotFoundError` if the object is missing.
+    """
+    try:
+        resp = _get_client().head_object(Bucket=_bucket(), Key=key)
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {key}")
+        raise
+    return dict(resp.get("Metadata") or {})
+
+
+def download_artefact_to_raw_path(raw_key: str, dst_raw_path: str) -> bool:
+    """Download whichever form of ``raw_key`` exists (raw or ``.zst``) and
+    deliver the raw bytes at ``dst_raw_path``. Returns True if the source
+    was compressed, False if it was already raw. Raises :class:`FileNotFoundError`
+    when neither form is present.
+
+    Lets revert / restore code paths read archived artefacts without caring
+    whether ``compress_artefacts`` was on at write time.
+    """
+    actual_key, is_compressed = head_artefact_with_format(raw_key)
+    if not is_compressed:
+        download_to_path(actual_key, dst_raw_path)
+        return False
+    # Compressed: stream into a temp .zst then decompress to dst.
+    import tempfile as _tempfile  # local import keeps module init cheap
+    fd, zst_path = _tempfile.mkstemp(suffix=".zst")
+    os.close(fd)
+    try:
+        download_to_path(actual_key, zst_path)
+        from .compression import decompress_file
+        decompress_file(zst_path, dst_raw_path)
+    finally:
+        try:
+            os.unlink(zst_path)
+        except OSError:
+            pass
+    return True
 
 
 def abort_stale_multipart_uploads(prefix: str, older_than_seconds: int = 3600) -> int:
@@ -403,7 +566,21 @@ def move_object(source_key: str, destination_key: str):
 # ---------------------------------------------------------------------------
 
 COMBINED_DB_KEY = "globalservermap.db"
+# Optional zstd-compressed sibling of the combined map. Only present when
+# the ``compress_artefacts`` feature flag is ON. Readers must verify its
+# ``x-amz-meta-source-etag`` user-metadata matches the raw ``COMBINED_DB_KEY``
+# ETag before trusting it (see the cache-miss path in ``contribute_r2``).
+COMBINED_DB_ZSTD_KEY = "globalservermap.db.zst"
 TOPS_MAP_CACHE_DIM = 4096
+
+# Suffix appended when an artefact is stored zstd-compressed. Centralised
+# so the read paths can reliably distinguish "uncompressed sibling missing"
+# from "filename has not been canonicalised yet".
+ZSTD_SUFFIX = ".zst"
+
+
+def _maybe_zstd(key: str, compressed: bool) -> str:
+    return key + ZSTD_SUFFIX if compressed else key
 
 
 def pending_db_key(contribution_id: str) -> str:
@@ -414,8 +591,12 @@ def pending_preview_key(contribution_id: str) -> str:
     return f"pending/{contribution_id}.png"
 
 
-def archived_db_key(contribution_id: str) -> str:
-    return f"archived/{contribution_id}.db"
+def archived_db_key(contribution_id: str, *, compressed: bool = False) -> str:
+    """Long-lived archived copy of a contribution's pending .db. When the
+    ``compress_artefacts`` flag is ON, callers pass ``compressed=True`` to
+    obtain the zstd suffix variant. There is **no fallback** — at any time
+    exactly one of the two extensions exists for a given contribution."""
+    return _maybe_zstd(f"archived/{contribution_id}.db", compressed)
 
 
 def history_preview_key(contribution_id: str) -> str:
@@ -453,10 +634,15 @@ def undo_added_key(contribution_id: str) -> str:
     return f"{UNDO_KEY_PREFIX}{contribution_id}.added.bin"
 
 
-def undo_replaced_key(contribution_id: str) -> str:
+def undo_replaced_key(contribution_id: str, *, compressed: bool = False) -> str:
     """R2 key for the SQLite blob carrying ``(position, old_data)`` rows for
-    every tile this contribution overwrote (region/overwrite mode only)."""
-    return f"{UNDO_KEY_PREFIX}{contribution_id}.replaced.db"
+    every tile this contribution overwrote (region/overwrite mode only).
+
+    When ``compressed=True``, returns the zstd-suffixed variant. Like
+    :func:`archived_db_key` exactly one form exists at a time; the read
+    path uses :func:`head_artefact_with_format` to discover which.
+    """
+    return _maybe_zstd(f"{UNDO_KEY_PREFIX}{contribution_id}.replaced.db", compressed)
 
 
 # ---------------------------------------------------------------------------
@@ -466,20 +652,34 @@ def undo_replaced_key(contribution_id: str) -> str:
 BACKUP_KEY_PREFIX = "backups/"
 
 
-def backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+def backup_scheduled_key(iso_year: int, iso_week: int, *, compressed: bool = False) -> str:
     """Key for the auto-snapshot of ISO calendar week ``iso_year``/``iso_week``.
 
     Naming follows ISO 8601: week 01 contains the first Thursday of the year,
     weeks always start on Monday (Python ``datetime.isocalendar()``).
+
+    When ``compressed=True`` the ``.zst`` suffix is appended. As with
+    archives, only one form exists per snapshot — restore detects which
+    extension is on disk via :func:`head_artefact_with_format`.
     """
-    return f"{BACKUP_KEY_PREFIX}backup-{iso_year:04d}-W{iso_week:02d}.db"
+    return _maybe_zstd(
+        f"{BACKUP_KEY_PREFIX}backup-{iso_year:04d}-W{iso_week:02d}.db",
+        compressed,
+    )
 
 
-def backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
+def backup_manual_key(
+    iso_year: int,
+    iso_week: int,
+    unix_timestamp: int,
+    *,
+    compressed: bool = False,
+) -> str:
     """Key for an admin-triggered on-demand snapshot."""
-    return (
+    return _maybe_zstd(
         f"{BACKUP_KEY_PREFIX}backup-{iso_year:04d}-W{iso_week:02d}"
-        f"-manual-{unix_timestamp}.db"
+        f"-manual-{unix_timestamp}.db",
+        compressed,
     )
 
 

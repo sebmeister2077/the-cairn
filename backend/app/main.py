@@ -27,6 +27,7 @@ from .routes import admin_contributions
 from .routes import admin_heavy_compute
 from .routes import admin_totp
 from .routes import admin_webauthn
+from .routes import admin_settings
 from .routes import account
 from .routes import invite
 from .routes import maintenance
@@ -221,6 +222,21 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Approve-contribution startup kick failed (non-fatal): %s", exc)
 
+    # Drain any contribution reverts left ``revert_status='queued'`` /
+    # ``'running'`` by a previous process. The merge holds map_lock for
+    # the full duration and the SQLite mutations happen on a local copy,
+    # so a restart mid-revert is safe to resume.
+    step_started = perf_counter()
+    try:
+        from .tasks.revert_contribution import kick_on_startup as kick_revert
+        kick_revert()
+        logger.info(
+            "Startup step revert-contribution kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Revert-contribution startup kick failed (non-fatal): %s", exc)
+
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:
@@ -261,6 +277,20 @@ async def lifespan(app: FastAPI):
         )
     except Exception as exc:  # pragma: no cover
         logger.warning("Weekly backup scheduler failed to start (non-fatal): %s", exc)
+
+    # Resume any per-contribution archive-compression work that was
+    # interrupted by a previous process. No-op when ``compress_artefacts``
+    # is OFF; cheap (single LIST + per-row Postgres lookup) otherwise.
+    step_started = perf_counter()
+    try:
+        from .tasks import compress_workers
+        compress_workers.kick_on_startup()
+        logger.info(
+            "Startup step compress_workers kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("compress_workers startup kick failed (non-fatal): %s", exc)
 
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
@@ -491,6 +521,7 @@ app.include_router(admin_contributions.router, prefix="/api")
 app.include_router(admin_heavy_compute.router, prefix="/api")
 app.include_router(admin_totp.router, prefix="/api")
 app.include_router(admin_webauthn.router, prefix="/api")
+app.include_router(admin_settings.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 app.include_router(maintenance.public_router, prefix="/api")

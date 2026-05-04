@@ -41,9 +41,13 @@ def _sweep_once() -> dict:
     for row in rows:
         cid = row["id"]
         # Archived .db only exists for approved contributions; safe to call
-        # delete_object on a missing key (it silently no-ops).
+        # delete_object on a missing key (it silently no-ops). Delete both
+        # raw and .zst forms in case the flag was flipped between archiving
+        # and expiry — only one should exist but cleaning up both is cheap.
         try:
-            r2_storage.delete_object(r2_storage.archived_db_key(cid))
+            raw_key = r2_storage.archived_db_key(cid)
+            r2_storage.delete_object(raw_key)
+            r2_storage.delete_object(raw_key + ".zst")
             deleted_archives += 1
         except Exception:
             logger.exception("cleanup_history: failed to delete archive %s", cid)
@@ -70,6 +74,14 @@ def _scheduled_run() -> None:
         logger.info("cleanup_history: swept %s", result)
     except Exception:
         logger.exception("cleanup_history: sweep raised; will retry next interval")
+    # Opportunistic leak sweeper for the async archive-compression worker —
+    # re-enqueue any pending/<id>.db files that should have been moved to
+    # archived/<id>.db.zst already. Cheap when compression is OFF.
+    try:
+        from . import compress_workers
+        compress_workers.sweep_pending_archives()
+    except Exception:
+        logger.exception("cleanup_history: compress sweep raised")
     finally:
         with _lock:
             if _stopped:

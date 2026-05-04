@@ -523,6 +523,13 @@ export async function contributeMap(
     onProgress?: (percent: number) => void,
     region?: ContributionRegion | null,
 ): Promise<Record<string, unknown>> {
+    // R2/S3 single-PUT is hard-capped at 5 GiB. Switch to multipart well
+    // before that to leave headroom and to get parallelisable parts.
+    const MULTIPART_THRESHOLD_BYTES = 4 * 1024 * 1024 * 1024; // 4 GiB
+    if (file.size > MULTIPART_THRESHOLD_BYTES) {
+        return contributeMapMultipart(file, contributor, onProgress, region);
+    }
+
     const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
         method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
@@ -554,6 +561,182 @@ export async function contributeMap(
         headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(completeBody),
     });
+
+    onProgress?.(100);
+    return (await handleResponse(completeRes)).json();
+}
+
+// ---------- Multipart upload path (files >4 GiB) ----------
+
+interface MultipartInitResponse {
+    contribution_id: string;
+    upload_id: string;
+    key: string;
+    part_size: number;
+    expected_parts: number;
+    max_parts: number;
+    expires_in_seconds: number;
+}
+
+interface MultipartSignPartResponse {
+    url: string;
+    method: string;
+    part_number: number;
+    expires_in_seconds: number;
+}
+
+/** PUT one slice to its presigned URL and return the part's ETag.
+ *
+ *  Browser CORS on the R2 bucket MUST include ``ExposeHeaders: ["ETag"]``;
+ *  otherwise ``getResponseHeader("ETag")`` returns null and the upload
+ *  cannot be completed. */
+function uploadOnePart(
+    url: string,
+    method: string,
+    blob: Blob,
+    onChunkProgress?: (loaded: number, total: number) => void,
+): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(method || "PUT", url);
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && onChunkProgress) {
+                onChunkProgress(e.loaded, e.total);
+            }
+        };
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                const etag = xhr.getResponseHeader("ETag");
+                if (!etag) {
+                    reject(new Error(
+                        "Upload succeeded but server did not return an ETag header. " +
+                        "The R2 bucket CORS policy must expose the ETag header.",
+                    ));
+                    return;
+                }
+                resolve(etag);
+                return;
+            }
+            let detail = `Part upload failed (${xhr.status})`;
+            try {
+                const body = JSON.parse(xhr.responseText) as { detail?: string };
+                if (body.detail) detail = body.detail;
+            } catch {
+                if (xhr.responseText) detail = xhr.responseText;
+            }
+            reject(new Error(detail));
+        };
+        xhr.onerror = () => reject(new Error("Network error during part upload"));
+        xhr.send(blob);
+    });
+}
+
+async function contributeMapMultipart(
+    file: File,
+    contributor: string,
+    onProgress?: (percent: number) => void,
+    region?: ContributionRegion | null,
+): Promise<Record<string, unknown>> {
+    const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/multipart/init`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+            contributor,
+            file_name: file.name,
+            size_bytes: file.size,
+        }),
+    });
+    const session = (await (await handleResponse(initRes)).json()) as MultipartInitResponse;
+
+    const partSize = session.part_size;
+    const totalParts = session.expected_parts;
+    const partLoaded = new Array<number>(totalParts).fill(0);
+    const reportProgress = () => {
+        if (!onProgress) return;
+        let sum = 0;
+        for (const n of partLoaded) sum += n;
+        // Cap part-upload progress at 95% so the /complete round-trip
+        // accounts for the final 3% (matching the single-PUT path).
+        onProgress(Math.min(Math.round((sum / file.size) * 95), 95));
+    };
+
+    const parts: { PartNumber: number; ETag: string }[] = [];
+
+    try {
+        // Sequential upload keeps memory + bandwidth predictable. (Could
+        // be parallelised later with a small worker pool.)
+        for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+            const start = (partNumber - 1) * partSize;
+            const end = Math.min(start + partSize, file.size);
+            const blob = file.slice(start, end);
+
+            const signRes = await fetch(
+                `${UPLOAD_API_BASE}/contribute/multipart/sign-part`,
+                {
+                    method: "POST",
+                    headers: authHeaders({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({
+                        contribution_id: session.contribution_id,
+                        part_number: partNumber,
+                    }),
+                },
+            );
+            const signed = (await (await handleResponse(signRes)).json()) as MultipartSignPartResponse;
+
+            const partIndex = partNumber - 1;
+            const etag = await uploadOnePart(
+                signed.url,
+                signed.method,
+                blob,
+                (loaded) => {
+                    partLoaded[partIndex] = loaded;
+                    reportProgress();
+                },
+            );
+            // Ensure the part is recorded as fully uploaded even if the
+            // final ``progress`` event lagged.
+            partLoaded[partIndex] = blob.size;
+            reportProgress();
+
+            parts.push({ PartNumber: partNumber, ETag: etag });
+        }
+    } catch (err) {
+        // Best-effort cleanup. Server is also swept by
+        // ``abort_stale_multipart_uploads`` periodically.
+        try {
+            await fetch(`${UPLOAD_API_BASE}/contribute/multipart/abort`, {
+                method: "POST",
+                headers: authHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ contribution_id: session.contribution_id }),
+            });
+        } catch {
+            /* ignore */
+        }
+        throw err;
+    }
+
+    onProgress?.(96);
+
+    const completeBody: Record<string, unknown> = {
+        contribution_id: session.contribution_id,
+        contributor,
+        parts,
+    };
+    if (region) {
+        completeBody.update_region_min_x = region.min_x;
+        completeBody.update_region_max_x = region.max_x;
+        completeBody.update_region_min_z = region.min_z;
+        completeBody.update_region_max_z = region.max_z;
+    }
+
+    const completeRes = await fetch(
+        `${UPLOAD_API_BASE}/contribute/multipart/complete`,
+        {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(completeBody),
+        },
+    );
 
     onProgress?.(100);
     return (await handleResponse(completeRes)).json();
@@ -1179,6 +1362,109 @@ export async function adminSetFeatureFlag(
         method: "PATCH",
         headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ enabled }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin: zstd compression settings (gated by compress_artefacts flag) ---
+
+export type CompressionThreadsPreset = "single" | "half" | "all";
+
+export interface CompressionSettings {
+    level: number;
+    threads_preset: CompressionThreadsPreset;
+    resolved_threads: number;
+    cpu_count: number;
+}
+
+export interface CompressionEstimate {
+    db_size_bytes: number;
+    threads: number;
+    input_bytes: number;
+    output_bytes: number;
+    elapsed_seconds: number;
+    estimated_compress_seconds: number;
+    estimated_compressed_bytes: number;
+    estimated_decompress_seconds: number;
+    ratio: number;
+}
+
+export interface CompressionStatus {
+    kind: string | null;
+    started_at: number | null;
+    finished_at: number | null;
+    input_bytes: number;
+    output_bytes: number;
+    elapsed_seconds: number;
+    error: string | null;
+}
+
+export interface CompressionMigrationStatus {
+    phase: "idle" | "running" | "done" | "error";
+    total: number;
+    processed: number;
+    skipped: number;
+    failed: number;
+    started_at: number | null;
+    finished_at: number | null;
+    error: string | null;
+}
+
+export interface SystemCpuInfo {
+    cpu_count: number;
+    presets: { single: number; half: number; all: number };
+}
+
+export async function adminGetCompressionSettings(): Promise<CompressionSettings> {
+    const res = await fetch(`${API_BASE}/admin/settings/compression`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminSetCompressionSettings(
+    level: number,
+    threads_preset: CompressionThreadsPreset,
+): Promise<CompressionSettings> {
+    const res = await fetch(`${API_BASE}/admin/settings/compression`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ level, threads_preset }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminEstimateCompression(
+    level: number,
+    threads_preset: CompressionThreadsPreset,
+    input_bytes?: number,
+): Promise<CompressionEstimate> {
+    const res = await fetch(`${API_BASE}/admin/settings/compression/estimate`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ level, threads_preset, input_bytes }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetCompressionStatus(): Promise<CompressionStatus> {
+    const res = await fetch(`${API_BASE}/admin/settings/compression/status`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetCompressionMigrationStatus(): Promise<CompressionMigrationStatus> {
+    const res = await fetch(
+        `${API_BASE}/admin/settings/compression/migration-status`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetSystemCpuInfo(): Promise<SystemCpuInfo> {
+    const res = await fetch(`${API_BASE}/admin/system/cpu-info`, {
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }

@@ -27,6 +27,15 @@ R2 holds anything large or binary:
 | `tops_map/level_<N>/metadata.json` | Geometry of one resolution level | Rewritten on level (re)generation |
 | `tops_map/level_<N>/chunk_<cx>_<cy>.png` | One stitched cell | Rewritten when its area is regenerated |
 
+> **Compression (`compress_artefacts` flag).** When the operational
+> kill switch `compress_artefacts` is ON, long-lived artefacts are
+> stored as `.zst` (zstd-compressed) instead of raw. The combined DB
+> keeps a raw form **and** a `.zst` sibling (background, latest-wins);
+> archived/undo/backup artefacts exist in **only one** form at a time.
+> Readers transparently support both formats forever — see
+> [feature-flags.md](../users/feature-flags.md#compress_artefacts) for
+> the full asymmetric storage rule.
+
 Why R2: huge files are cheap there, egress is free for our use, and presigned URLs let the browser fetch directly without going through FastAPI.
 
 ### 4. Supabase Postgres

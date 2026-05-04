@@ -44,6 +44,39 @@ function formatTimestamp(iso: string | null | undefined): string {
   }
 }
 
+/** Format a duration in milliseconds as a short human string (e.g. "2m 30s"). */
+function formatDuration(ms: number): string {
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (totalMinutes < 60) {
+    return seconds > 0 ? `${totalMinutes}m ${seconds}s` : `${totalMinutes}m`;
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+}
+
+/**
+ * Estimate remaining time for a generating level based on chunks completed
+ * since `started_at`. Returns null when not enough data is available
+ * (no start time, no chunks done yet, or all chunks already done).
+ */
+function computeEtaMs(entry: MapGenerationLevelStatus | undefined, nowMs: number): number | null {
+  if (!entry || entry.status !== "generating") return null;
+  if (!entry.started_at || entry.total_chunks <= 0) return null;
+  const completed = entry.completed_chunks;
+  const remaining = entry.total_chunks - completed;
+  if (completed <= 0 || remaining <= 0) return null;
+  const startedMs = new Date(entry.started_at).getTime();
+  if (!Number.isFinite(startedMs)) return null;
+  const elapsed = nowMs - startedMs;
+  if (elapsed <= 0) return null;
+  return (elapsed / completed) * remaining;
+}
+
 function StatusBadge({ status }: { status: MapGenerationLevelStatus["status"] }) {
   if (status === "complete") {
     return (
@@ -144,6 +177,16 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
       onLevelComplete();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRunning]);
+
+  // Tick every second while running so the ETA display refreshes smoothly
+  // between status polls (which only happen every POLL_INTERVAL_MS).
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isRunning) return;
+    setNowMs(Date.now());
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
   }, [isRunning]);
 
   const rows = useMemo(() => {
@@ -272,6 +315,17 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                             ({entry.completed_chunks}/{entry.total_chunks})
                           </span>
                         )}
+                        {(() => {
+                          const etaMs = computeEtaMs(entry, nowMs);
+                          return etaMs != null ? (
+                            <span
+                              className="text-xs text-muted-foreground"
+                              title="Estimated time remaining (client-side estimate based on chunks completed since start)"
+                            >
+                              · ETA ~{formatDuration(etaMs)}
+                            </span>
+                          ) : null;
+                        })()}
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>

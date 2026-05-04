@@ -20,6 +20,7 @@ import shutil
 import sqlite3
 import tempfile
 import threading
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Set
@@ -52,6 +53,18 @@ router = APIRouter()
 MAPPIECE_TABLE = "mappiece"
 BLOCKIDMAPPING_TABLE = "blockidmapping"
 UPLOAD_URL_TTL_SECONDS = 15 * 60
+
+# Multipart upload tuning. R2/S3 require parts ≥5 MiB (except the last) and
+# allow up to 10 000 parts per upload. 64 MiB × 10 000 = 640 GiB headroom,
+# which comfortably covers MAX_UPLOAD_SIZE.
+MULTIPART_PART_SIZE = 64 * 1024 * 1024  # 64 MiB
+MULTIPART_MAX_PARTS = 10_000
+
+# In-process registry of in-flight multipart sessions. Keyed by contribution
+# ID, so subsequent /sign-part/complete/abort calls can verify the caller
+# owns the upload without round-tripping to R2 every time.
+_multipart_sessions: Dict[str, dict] = {}
+_multipart_sessions_lock = threading.Lock()
 
 # Non-admin contributors are limited to one pending upload at a time, plus a
 # cooldown after each approval. Admins are exempt.
@@ -127,6 +140,38 @@ class ContributeUploadCompleteRequest(BaseModel):
     update_region_max_x: Optional[int] = None
     update_region_min_z: Optional[int] = None
     update_region_max_z: Optional[int] = None
+
+
+# --- Multipart upload (browser → R2 direct, for files >5 GiB) -------------
+
+class ContributeMultipartInitRequest(BaseModel):
+    contributor: str = ""
+    file_name: str = "map.db"
+    size_bytes: int = 0
+
+
+class ContributeMultipartSignPartRequest(BaseModel):
+    contribution_id: str
+    part_number: int
+
+
+class ContributeMultipartPartETag(BaseModel):
+    PartNumber: int
+    ETag: str
+
+
+class ContributeMultipartCompleteRequest(BaseModel):
+    contribution_id: str
+    contributor: str = ""
+    parts: list  # list[ContributeMultipartPartETag]
+    update_region_min_x: Optional[int] = None
+    update_region_max_x: Optional[int] = None
+    update_region_min_z: Optional[int] = None
+    update_region_max_z: Optional[int] = None
+
+
+class ContributeMultipartAbortRequest(BaseModel):
+    contribution_id: str
 
 
 class ContributeRegionPreviewRequest(BaseModel):
@@ -251,7 +296,9 @@ def invalidate_combined_db_cache() -> None:
     restore) so the next reader downloads the fresh version."""
     cache_path, etag_path = _combined_cache_paths()
     with _combined_cache_lock:
-        for p in (cache_path, etag_path):
+        # Drop the raw cache, the etag sidecar, and any leftover .zst
+        # download buffer so the next reader re-fetches both forms.
+        for p in (cache_path, etag_path, cache_path + ".zst"):
             try:
                 os.unlink(p)
             except OSError:
@@ -298,13 +345,58 @@ def get_combined_db_cached() -> str:
         _check_free_disk(size)
         new_path = cache_path + ".new"
         try:
-            r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, new_path)
+            # Prefer the zstd sibling when ``compress_artefacts`` is on AND
+            # the .zst's ``x-amz-meta-source-etag`` matches the live raw
+            # ETag — that proves the .zst was produced from the bytes we
+            # would otherwise download. A mismatch means the background
+            # combined-DB compressor hasn't caught up yet, so we fall
+            # through to the raw download.
+            served_from_zst = False
+            try:
+                from ..core.feature_flags import is_feature_enabled as _ff_on
+                if _ff_on("compress_artefacts"):
+                    meta = r2_storage.head_object_metadata(
+                        r2_storage.COMBINED_DB_ZSTD_KEY
+                    )
+                    if (meta.get("source-etag") or "") == remote_etag:
+                        from ..core import compression as comp
+                        zst_path = cache_path + ".zst.dl"
+                        try:
+                            r2_storage.download_to_path(
+                                r2_storage.COMBINED_DB_ZSTD_KEY, zst_path,
+                            )
+                            comp.decompress_file(zst_path, new_path)
+                            served_from_zst = True
+                            logger.info(
+                                "Combined DB cache refreshed via .zst (raw "
+                                "size %.1f MiB)", size / (1024 * 1024),
+                            )
+                        finally:
+                            try:
+                                os.unlink(zst_path)
+                            except OSError:
+                                pass
+            except FileNotFoundError:
+                pass  # no .zst sibling — fall back to raw
+            except Exception:
+                logger.exception(
+                    "Combined DB .zst fast-path failed — falling back to raw"
+                )
+                try:
+                    os.unlink(new_path)
+                except OSError:
+                    pass
+                served_from_zst = False
+
+            if not served_from_zst:
+                r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, new_path)
             os.replace(new_path, cache_path)
             _write_cached_etag(etag_path, remote_etag)
-            logger.info(
-                "Combined DB cache refreshed: %.1f MiB, ETag=%s",
-                size / (1024 * 1024), remote_etag[:12],
-            )
+            if not served_from_zst:
+                logger.info(
+                    "Combined DB cache refreshed: %.1f MiB, ETag=%s",
+                    size / (1024 * 1024), remote_etag[:12],
+                )
         except Exception:
             try:
                 os.unlink(new_path)
@@ -1537,11 +1629,18 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
                     if row.get("reverted_at") and hasattr(row["reverted_at"], "isoformat")
                     else row.get("reverted_at")
                 )
+                # Phase 4b — async revert state for the admin UI to show
+                # "Queued for revert", "Reverting…" or "Revert failed: …".
+                entry["revert_status"] = row.get("revert_status")
+                entry["revert_error"] = row.get("revert_error")
+                entry["revert_attempts"] = int(row.get("revert_attempts") or 0)
+                revert_in_flight = (row.get("revert_status") or "") in ("queued", "running")
                 entry["can_revert"] = bool(
                     is_feature_enabled("per_contribution_revert")
                     and row.get("status") == "approved"
                     and row.get("revert_supported")
                     and in_window
+                    and not revert_in_flight
                 )
             history.append(entry)
 
@@ -1674,6 +1773,272 @@ async def contribute_complete(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Multipart upload (browser → R2 direct, used for files >5 GiB which exceed
+# the single-PUT cap).
+#
+# Flow:
+#   1. POST /contribute/multipart/init      → reserve contribution_id, create
+#                                             upload, return part_size + key
+#   2. POST /contribute/multipart/sign-part → presigned PUT URL per part
+#      (browser PUTs each slice and reads ETag from response header — R2 CORS
+#       must expose ``ETag``)
+#   3. POST /contribute/multipart/complete  → assemble parts, then run the
+#      same finalization (validation + DB row + region) as /contribute/complete
+#   4. POST /contribute/multipart/abort     → discard on cancel/failure
+# ---------------------------------------------------------------------------
+
+
+def _pop_multipart_session(contribution_id: str, api_key: str) -> dict:
+    """Look up an in-flight multipart session, verifying caller ownership.
+    Returns the session dict without removing it. Raises HTTPException on
+    missing/foreign session."""
+    with _multipart_sessions_lock:
+        session = _multipart_sessions.get(contribution_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Multipart session not found")
+    if session.get("api_key") != api_key:
+        raise HTTPException(status_code=403, detail="Not your upload")
+    return session
+
+
+def _delete_multipart_session(contribution_id: str) -> None:
+    with _multipart_sessions_lock:
+        _multipart_sessions.pop(contribution_id, None)
+
+
+@router.post("/contribute/multipart/init")
+async def contribute_multipart_init(
+    payload: ContributeMultipartInitRequest,
+    api_key: str = Depends(verify_contribute_permission),
+):
+    """Initiate a multipart upload session for a large file."""
+    _enforce_uploads_enabled(api_key)
+    check_rate_limit(api_key)
+    _check_contribution_limits(api_key)
+
+    if payload.size_bytes <= 0:
+        return JSONResponse(status_code=400, content={"detail": "Empty upload"})
+    if payload.size_bytes > settings.MAX_UPLOAD_SIZE:
+        return JSONResponse(status_code=413, content={"detail": "File too large"})
+    if payload.file_name and not payload.file_name.lower().endswith(".db"):
+        return JSONResponse(status_code=400, content={"detail": "Only .db map files are supported"})
+
+    # Reject if the file would require more than the per-upload part cap. With
+    # MULTIPART_PART_SIZE = 64 MiB this only triggers for absurdly large
+    # uploads (>640 GiB).
+    expected_parts = (payload.size_bytes + MULTIPART_PART_SIZE - 1) // MULTIPART_PART_SIZE
+    if expected_parts > MULTIPART_MAX_PARTS:
+        return JSONResponse(
+            status_code=413,
+            content={"detail": "File too large for multipart configuration"},
+        )
+
+    contribution_id = uuid.uuid4().hex[:12]
+    pending_key = r2_storage.pending_db_key(contribution_id)
+
+    try:
+        upload_id = r2_storage.create_multipart_upload(
+            pending_key, content_type="application/octet-stream"
+        )
+    except Exception:
+        logger.exception("multipart init failed for %s", pending_key)
+        return JSONResponse(
+            status_code=502,
+            content={"detail": "Failed to initiate multipart upload"},
+        )
+
+    with _multipart_sessions_lock:
+        _multipart_sessions[contribution_id] = {
+            "api_key": api_key,
+            "upload_id": upload_id,
+            "key": pending_key,
+            "size_bytes": payload.size_bytes,
+            "expected_parts": expected_parts,
+            "created_at": time.time(),
+        }
+
+    return {
+        "contribution_id": contribution_id,
+        "upload_id": upload_id,
+        "key": pending_key,
+        "part_size": MULTIPART_PART_SIZE,
+        "expected_parts": expected_parts,
+        "max_parts": MULTIPART_MAX_PARTS,
+        "expires_in_seconds": UPLOAD_URL_TTL_SECONDS,
+    }
+
+
+@router.post("/contribute/multipart/sign-part")
+async def contribute_multipart_sign_part(
+    payload: ContributeMultipartSignPartRequest,
+    api_key: str = Depends(verify_contribute_permission),
+):
+    """Return a presigned PUT URL for a single part of an in-flight upload."""
+    check_rate_limit(api_key)
+
+    cid = payload.contribution_id.strip()
+    if not cid:
+        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
+
+    try:
+        session = _pop_multipart_session(cid, api_key)
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    part_number = int(payload.part_number)
+    if part_number < 1 or part_number > MULTIPART_MAX_PARTS:
+        return JSONResponse(status_code=400, content={"detail": "Invalid part number"})
+    if part_number > session["expected_parts"]:
+        return JSONResponse(status_code=400, content={"detail": "Part number exceeds file size"})
+
+    url = r2_storage.generate_presigned_upload_part_url(
+        session["key"],
+        upload_id=session["upload_id"],
+        part_number=part_number,
+        expires_seconds=UPLOAD_URL_TTL_SECONDS,
+    )
+    return {
+        "url": url,
+        "method": "PUT",
+        "part_number": part_number,
+        "expires_in_seconds": UPLOAD_URL_TTL_SECONDS,
+    }
+
+
+@router.post("/contribute/multipart/complete")
+async def contribute_multipart_complete(
+    payload: ContributeMultipartCompleteRequest,
+    api_key: str = Depends(verify_contribute_permission),
+):
+    """Assemble multipart parts then register the contribution (mirrors
+    /contribute/complete)."""
+    _enforce_uploads_enabled(api_key)
+    check_rate_limit(api_key)
+    _check_contribution_limits(api_key)
+
+    cid = payload.contribution_id.strip()
+    if not cid:
+        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
+
+    try:
+        session = _pop_multipart_session(cid, api_key)
+    except HTTPException as e:
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    # Validate parts payload — must be a non-empty list of {PartNumber, ETag}.
+    raw_parts = payload.parts or []
+    if not isinstance(raw_parts, list) or not raw_parts:
+        return JSONResponse(status_code=400, content={"detail": "Missing parts"})
+    parts: list = []
+    seen_numbers: Set[int] = set()
+    for entry in raw_parts:
+        try:
+            part_number = int(entry["PartNumber"])
+            etag = str(entry["ETag"]).strip()
+        except (KeyError, TypeError, ValueError):
+            return JSONResponse(status_code=400, content={"detail": "Malformed part entry"})
+        if not etag or part_number < 1 or part_number > MULTIPART_MAX_PARTS:
+            return JSONResponse(status_code=400, content={"detail": "Invalid part entry"})
+        if part_number in seen_numbers:
+            return JSONResponse(status_code=400, content={"detail": "Duplicate part number"})
+        seen_numbers.add(part_number)
+        parts.append({"PartNumber": part_number, "ETag": etag})
+
+    # Region validation (same rules as /contribute/complete).
+    try:
+        region = _normalise_region(
+            payload.update_region_min_x,
+            payload.update_region_max_x,
+            payload.update_region_min_z,
+            payload.update_region_max_z,
+        )
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"detail": str(e)})
+    if region is not None:
+        try:
+            _check_region_eligibility(api_key, region)
+        except HTTPException as e:
+            return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    # Tell R2 to assemble the parts. On failure, abort + drop the session
+    # so the user can retry from /init.
+    try:
+        r2_storage.complete_multipart_upload(
+            session["key"],
+            upload_id=session["upload_id"],
+            parts=parts,
+        )
+    except Exception:
+        logger.exception("multipart complete failed for %s", session["key"])
+        try:
+            r2_storage.abort_multipart_upload(
+                session["key"], upload_id=session["upload_id"]
+            )
+        except Exception:
+            pass
+        _delete_multipart_session(cid)
+        return JSONResponse(
+            status_code=502,
+            content={"detail": "Failed to finalize multipart upload"},
+        )
+
+    # Session is no longer needed regardless of finalization outcome below.
+    _delete_multipart_session(cid)
+
+    try:
+        result = _finalize_uploaded_contribution(cid, payload.contributor, api_key)
+    except ValueError as e:
+        detail = str(e)
+        status = 413 if detail == "File too large" else 400
+        if detail == "Uploaded file not found in storage":
+            status = 404
+        return JSONResponse(status_code=status, content={"detail": detail})
+
+    if region is not None:
+        try:
+            db.set_update_region(cid, region)
+        except Exception:
+            db.delete_contribution(cid)
+            r2_storage.delete_object(r2_storage.pending_db_key(cid))
+            return JSONResponse(
+                status_code=500,
+                content={"detail": "Failed to persist region selection"},
+            )
+        result["update_region"] = list(region)
+
+    return result
+
+
+@router.post("/contribute/multipart/abort")
+async def contribute_multipart_abort(
+    payload: ContributeMultipartAbortRequest,
+    api_key: str = Depends(verify_contribute_permission),
+):
+    """Discard an in-flight multipart upload (cancel button / unload)."""
+    check_rate_limit(api_key)
+
+    cid = payload.contribution_id.strip()
+    if not cid:
+        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
+
+    try:
+        session = _pop_multipart_session(cid, api_key)
+    except HTTPException as e:
+        # Idempotent: treat a missing session as already-aborted.
+        if e.status_code == 404:
+            return {"aborted": False}
+        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
+
+    try:
+        r2_storage.abort_multipart_upload(
+            session["key"], upload_id=session["upload_id"]
+        )
+    finally:
+        _delete_multipart_session(cid)
+    return {"aborted": True}
+
+
 @router.post("/contribute/region-preview")
 async def contribute_region_preview(
     payload: ContributeRegionPreviewRequest,
@@ -1802,9 +2167,14 @@ async def contribute_preview(
     pending_key = r2_storage.pending_db_key(contribution_id)
     preview_key = r2_storage.pending_preview_key(contribution_id)
 
-    # Serve cached preview when available — cheap, no compute.
-    if r2_storage.object_exists(preview_key):
-        png_bytes = r2_storage.download_bytes(preview_key)
+    # Serve cached preview when available — cheap, no compute. Even
+    # the cache-hit path does blocking R2 I/O so we push it to a worker
+    # thread; this handler is ``async def`` and calling sync boto3 from
+    # the event loop blocks every other request for the duration of the
+    # download (observed ~10 s on a multi-MB combined DB while a
+    # preview was rendering).
+    if await asyncio.to_thread(r2_storage.object_exists, preview_key):
+        png_bytes = await asyncio.to_thread(r2_storage.download_bytes, preview_key)
         return Response(
             content=png_bytes,
             media_type="image/png",
@@ -1835,7 +2205,7 @@ async def contribute_preview(
             headers={"Retry-After": "600"},
         )
 
-    if not r2_storage.object_exists(pending_key):
+    if not await asyncio.to_thread(r2_storage.object_exists, pending_key):
         return JSONResponse(status_code=404, content={"detail": "Contribution database missing"})
 
     # Dedupe concurrent renders for the same contribution. Without this, two
@@ -1844,8 +2214,8 @@ async def contribute_preview(
     async with _PreviewLock(f"preview:{contribution_id}"):
         # Re-check inside the lock — an earlier waiter may have just rendered
         # and uploaded the PNG.
-        if r2_storage.object_exists(preview_key):
-            png_bytes = r2_storage.download_bytes(preview_key)
+        if await asyncio.to_thread(r2_storage.object_exists, preview_key):
+            png_bytes = await asyncio.to_thread(r2_storage.download_bytes, preview_key)
             return Response(
                 content=png_bytes,
                 media_type="image/png",
@@ -1856,11 +2226,15 @@ async def contribute_preview(
             )
 
         # Download pending DB to temp; reuse the shared cached combined map.
-        combined_tmp = get_combined_db_cached()
-        pending_tmp = _download_to_temp(pending_key)
+        # All three steps below are CPU- or I/O-bound sync calls, so they
+        # run in a worker thread to keep the event loop responsive.
+        combined_tmp = await asyncio.to_thread(get_combined_db_cached)
+        pending_tmp = await asyncio.to_thread(_download_to_temp, pending_key)
         try:
-            png_bytes = _render_preview(combined_tmp, pending_tmp)
-            r2_storage.upload_bytes(preview_key, png_bytes, content_type="image/png")
+            png_bytes = await asyncio.to_thread(_render_preview, combined_tmp, pending_tmp)
+            await asyncio.to_thread(
+                r2_storage.upload_bytes, preview_key, png_bytes, "image/png"
+            )
         except ValueError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
         finally:
@@ -1924,8 +2298,10 @@ async def contribute_preview_region(
     after_key = r2_storage.region_after_preview_key(contribution_id)
     target_key = before_key if side == "before" else after_key
 
-    if r2_storage.object_exists(target_key):
-        png_bytes = r2_storage.download_bytes(target_key)
+    # Push blocking R2 / PIL work to a worker thread — see
+    # contribute_preview above for the event-loop-blocking discussion.
+    if await asyncio.to_thread(r2_storage.object_exists, target_key):
+        png_bytes = await asyncio.to_thread(r2_storage.download_bytes, target_key)
         return Response(
             content=png_bytes,
             media_type="image/png",
@@ -1953,15 +2329,15 @@ async def contribute_preview_region(
         )
 
     pending_key = r2_storage.pending_db_key(contribution_id)
-    if not r2_storage.object_exists(pending_key):
+    if not await asyncio.to_thread(r2_storage.object_exists, pending_key):
         return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
 
     # Dedupe concurrent renders. The lock is shared across both sides
     # because a single render produces both the before and after PNGs.
     async with _PreviewLock(f"preview-region:{contribution_id}"):
         # Re-check inside the lock — an earlier waiter may have just rendered.
-        if r2_storage.object_exists(target_key):
-            png_bytes = r2_storage.download_bytes(target_key)
+        if await asyncio.to_thread(r2_storage.object_exists, target_key):
+            png_bytes = await asyncio.to_thread(r2_storage.download_bytes, target_key)
             return Response(
                 content=png_bytes,
                 media_type="image/png",
@@ -1971,15 +2347,19 @@ async def contribute_preview_region(
                 },
             )
 
-        combined_tmp = get_combined_db_cached()
-        pending_tmp = _download_to_temp(pending_key)
+        combined_tmp = await asyncio.to_thread(get_combined_db_cached)
+        pending_tmp = await asyncio.to_thread(_download_to_temp, pending_key)
         try:
-            before_bytes, after_bytes, _stats = _render_region_before_after(
-                combined_tmp, pending_tmp, region
+            before_bytes, after_bytes, _stats = await asyncio.to_thread(
+                _render_region_before_after, combined_tmp, pending_tmp, region
             )
             # Cache both halves so the second request (for the other side) is a hit.
-            r2_storage.upload_bytes(before_key, before_bytes, content_type="image/png")
-            r2_storage.upload_bytes(after_key, after_bytes, content_type="image/png")
+            await asyncio.to_thread(
+                r2_storage.upload_bytes, before_key, before_bytes, "image/png"
+            )
+            await asyncio.to_thread(
+                r2_storage.upload_bytes, after_key, after_bytes, "image/png"
+            )
         except ValueError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
         finally:
@@ -2204,6 +2584,21 @@ def run_approval_merge(contribution_id: str) -> dict:
             # region preview / regen) sees the merged version instead of
             # the stale pre-merge bytes.
             invalidate_combined_db_cache()
+            # Hand the merged file to the async compressor so a .zst
+            # sibling is produced for next-time readers when the
+            # ``compress_artefacts`` flag is on. The worker takes
+            # ownership of ``compressed_handoff_path`` and unlinks it;
+            # we copy first because ``combined_tmp`` is unlinked below.
+            try:
+                from ..tasks.compress_workers import schedule_combined_compress
+                fresh_etag = r2_storage.get_object_etag(r2_storage.COMBINED_DB_KEY)
+                handoff_fd, handoff_path = tempfile.mkstemp(suffix=".db")
+                os.close(handoff_fd)
+                import shutil as _shutil
+                _shutil.copyfile(combined_tmp, handoff_path)
+                schedule_combined_compress(handoff_path, fresh_etag)
+            except Exception:
+                logger.exception("combined-compress handoff failed (non-fatal)")
         finally:
             try:
                 added_file.close()
@@ -2321,15 +2716,40 @@ def run_approval_merge(contribution_id: str) -> dict:
     except Exception:
         pass
 
-    # Move approved .db into archive storage
-    archived_key = r2_storage.archived_db_key(contribution_id)
-    archive_moved = False
+    # Move approved .db into archive storage. With ``compress_artefacts``
+    # OFF this is the cheap server-side ``move_object`` that's been used
+    # since launch. With the flag ON we instead schedule an async
+    # compression job: the worker downloads ``pending_key``, compresses
+    # to ``archived/<id>.db.zst``, uploads, then deletes the source.
+    # The leak sweeper re-enqueues if the worker crashes mid-flight.
     try:
-        r2_storage.move_object(pending_key, archived_key)
-        archive_moved = True
+        from ..core.feature_flags import is_feature_enabled as _ff_is_enabled
+        _compress_on = _ff_is_enabled("compress_artefacts")
     except Exception:
-        # Do not fail approval if archive move fails; keep pending object as fallback.
+        _compress_on = False
+
+    if _compress_on:
+        try:
+            from ..tasks.compress_workers import schedule_archive_compress
+            schedule_archive_compress(contribution_id)
+            archive_moved = True  # The async worker handles the actual move.
+            # Worker will write to ``archived/<id>.db.zst``; surface the
+            # raw key for callers — ``download_artefact_to_raw_path``
+            # transparently resolves either form.
+            archived_key = r2_storage.archived_db_key(contribution_id)
+        except Exception:
+            logger.exception("archive-compress schedule failed for %s", contribution_id)
+            archive_moved = False
+            archived_key = r2_storage.archived_db_key(contribution_id)
+    else:
+        archived_key = r2_storage.archived_db_key(contribution_id)
         archive_moved = False
+        try:
+            r2_storage.move_object(pending_key, archived_key)
+            archive_moved = True
+        except Exception:
+            # Do not fail approval if archive move fails; keep pending object as fallback.
+            archive_moved = False
 
     # Promote the preview into the history bucket so it remains accessible
     # to the "Recent contributions" grid. Previews are kept indefinitely;

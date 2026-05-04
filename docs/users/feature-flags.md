@@ -127,6 +127,43 @@ The three flags the on-call admin will reach for during an incident.
   prod, then trigger the bulk drain manually from a beefier machine that
   can connect to the prod API with the admin key.
 
+### `compress_artefacts`
+
+- **Default:** OFF.
+- **When ON:** all NEW writes to long-lived R2 artefacts are stored as
+  `.zst` (zstd-compressed). The asymmetric storage rule is:
+
+  | Artefact | Flag OFF | Flag ON |
+  | --- | --- | --- |
+  | `globalservermap.db` (combined) | raw only | raw + `.zst` sibling (background, latest-wins) |
+  | `archived/<id>.db` | raw only | `.zst` only |
+  | `undo/<id>.replaced.db` | raw only | `.zst` only |
+  | `backups/scheduled/...` | raw only | `.zst` only |
+  | `backups/manual/...` | raw only | `.zst` only |
+
+  Cache-miss reads of the combined DB prefer the `.zst` sibling **only**
+  when its `x-amz-meta-source-etag` matches the live raw ETag (so we
+  never serve stale data while the background compressor is catching
+  up). Revert + restore code paths transparently support both forms via
+  `r2_storage.head_artefact_with_format()`.
+
+  Flipping ON for the first time also kicks an **eager migration** that
+  walks every contribution with `preview_retained_until > now()` and
+  converts its archived `.db` (and undo `replaced.db` if any) to `.zst`.
+  Migration honours `heavy_compute_enabled` — when the kill switch is
+  flipped OFF the migration pauses and resumes on the next startup or
+  next OFF→ON of `heavy_compute_enabled`.
+- **When OFF:** all writes use raw `.db`/`.bin` (current behaviour).
+  Existing `.zst` artefacts remain readable forever — flipping OFF does
+  **not** rehydrate them.
+- **Tunable knobs** (visible only when the flag is ON): admin can set
+  the zstd level (1..22) and thread budget (`single` / `half` / `all`)
+  via the panel under the flag. Settings are stored in the
+  `app_settings` Postgres table and cached in-process for 30 s.
+- **Use when:** R2 storage cost is a concern. Ratios for our SQLite map
+  artefacts typically range 30–60 % of the source size at the
+  `Balanced` preset (level 10).
+
 ## Product flags
 
 These gate features rather than acting as kill switches. Each is OFF by

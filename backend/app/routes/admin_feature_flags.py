@@ -38,6 +38,11 @@ async def patch_flag(
     body: FeatureFlagPatch,
     admin_key: str = Depends(require_admin),
 ):
+    # Capture the previous state so we can react to OFF -> ON transitions
+    # (e.g. kicking the eager compression migration runner).
+    previous = db.get_feature_flag(key)
+    was_enabled = bool(previous.get("enabled")) if previous else False
+
     row = db.set_feature_flag(key, body.enabled, updated_by_key=admin_key)
     if row is None:
         raise HTTPException(status_code=404, detail=f"Unknown feature flag: {key}")
@@ -48,6 +53,18 @@ async def patch_flag(
         target=key,
         metadata={"enabled": body.enabled},
     )
+
+    # Side effect: when the operator switches ``compress_artefacts`` from
+    # OFF to ON, kick the eager migration so pre-existing raw archives are
+    # converted to .zst in the background. The reverse direction does NOT
+    # rehydrate (readers permanently support both formats).
+    if key == "compress_artefacts" and body.enabled and not was_enabled:
+        try:
+            from ..tasks import compress_workers
+            compress_workers.start_migration()
+        except Exception:
+            pass
+
     if row.get("updated_at") and hasattr(row["updated_at"], "isoformat"):
         row["updated_at"] = row["updated_at"].isoformat()
     return {"flag": row}

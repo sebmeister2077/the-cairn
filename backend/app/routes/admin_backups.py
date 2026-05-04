@@ -145,8 +145,28 @@ async def restore_backup(body: RestoreBody, api_key: str = Depends(require_admin
         backup_taken_at = datetime.now(timezone.utc)
 
     try:
-        # 1) R2 server-side copy backup -> globalservermap.db (atomic, no download).
-        r2_storage.copy_object(body.key, r2_storage.COMBINED_DB_KEY)
+        # 1) Promote the backup into ``globalservermap.db``. When the
+        #    chosen backup is already raw, R2's server-side copy is the
+        #    fastest option (atomic, no egress). For ``.zst`` snapshots
+        #    we download → decompress to a temp → upload the raw bytes.
+        if body.key.endswith(".zst"):
+            from ..core import compression as comp
+            zst_fd, zst_path = tempfile.mkstemp(suffix=".db.zst")
+            os.close(zst_fd)
+            raw_fd, raw_path = tempfile.mkstemp(suffix=".db")
+            os.close(raw_fd)
+            try:
+                r2_storage.download_to_path(body.key, zst_path)
+                comp.decompress_file(zst_path, raw_path)
+                r2_storage.upload_file(raw_path, r2_storage.COMBINED_DB_KEY)
+            finally:
+                for p in (zst_path, raw_path):
+                    try:
+                        os.unlink(p)
+                    except OSError:
+                        pass
+        else:
+            r2_storage.copy_object(body.key, r2_storage.COMBINED_DB_KEY)
 
         # Drop the local cached copy so subsequent previews / regen pull the
         # restored bytes instead of the pre-restore version.

@@ -187,8 +187,25 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- intersecting the contributed area are re-rendered immediately.
     -- OFF = the regen request is suppressed entirely; an admin must
     -- trigger regeneration manually from the TOPS map admin panel.
-    ('auto_regen_after_approval', TRUE)
+    ('auto_regen_after_approval', TRUE),
+    -- zstd compression for the combined map .db, weekly/manual backups,
+    -- and per-contribution archives. OFF = today's behaviour (raw .db
+    -- everywhere). ON = combined DB keeps a raw + .zst pair (readers
+    -- prefer .zst when its x-amz-meta-source-etag matches), backups and
+    -- archives are written as .zst only. See plans/zstd-compression-plan.
+    ('compress_artefacts', FALSE)
 ON CONFLICT (key) DO NOTHING;
+
+-- Generic key/value settings table for non-boolean admin-tunable values
+-- (compression level, thread preset, future runtime knobs). Distinct from
+-- ``feature_flags`` which is bool-only. Values are JSONB so callers can
+-- store small structured documents without schema churn.
+CREATE TABLE IF NOT EXISTS app_settings (
+    key            TEXT PRIMARY KEY,
+    value          JSONB NOT NULL,
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by_key TEXT
+);
 """
 
 _MIGRATIONS_SQL = """
@@ -381,6 +398,31 @@ ADD COLUMN IF NOT EXISTS approval_requested_by_key TEXT;
 CREATE INDEX IF NOT EXISTS idx_contributions_approval_status
     ON contributions (approval_status)
     WHERE approval_status IN ('queued', 'running');
+
+-- Per-contribution revert is also async: the merge re-uploads
+-- ``globalservermap.db`` and on a multi-GB combined map that easily
+-- exceeds Render's edge HTTP timeout (~100 s). The admin endpoint
+-- ``/api/admin/contributions/{id}/revert`` therefore enqueues by setting
+-- ``revert_status='queued'`` and returns 202; the
+-- ``backend.app.tasks.revert_contribution`` worker drains the queue and
+-- performs the actual undo. A backend restart mid-revert is recovered by
+-- ``reset_running_reverts()`` (the merge holds ``map_lock`` for the
+-- duration so resuming after a crash is safe).
+--
+-- Values: NULL (never reverted), 'queued', 'running', 'failed'.
+-- Successful revert clears these (or leaves them NULL via the existing
+-- ``mark_reverted`` flip of ``status``).
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_status   TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_attempts INT NOT NULL DEFAULT 0;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_error    TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS revert_requested_by_key TEXT;
+CREATE INDEX IF NOT EXISTS idx_contributions_revert_status
+    ON contributions (revert_status)
+    WHERE revert_status IN ('queued', 'running');
 
 -- Maintenance notices. One row per known component (e.g. ``tops_map_viewer``).
 -- Active=TRUE means the public chip should be shown; ``eta_at`` is the
@@ -841,6 +883,27 @@ def list_expired_history_contributions(limit: int = 500) -> List[dict]:
             return [dict(r) for r in cur.fetchall()]
 
 
+def list_active_archived_contributions(limit: Optional[int] = None) -> List[dict]:
+    """Rows that still have a live ``archived/<id>.db`` (or .zst) in R2 —
+    i.e. ``preview_retained_until`` is in the future. Used by the eager
+    compression migration runner to know which archives to convert when
+    the ``compress_artefacts`` flag is flipped ON."""
+    sql = (
+        "SELECT id FROM contributions "
+        " WHERE preview_retained_until IS NOT NULL "
+        "   AND preview_retained_until > now() "
+        " ORDER BY id"
+    )
+    params: tuple = ()
+    if limit is not None:
+        sql += " LIMIT %s"
+        params = (int(limit),)
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(sql, params)
+            return [dict(r) for r in cur.fetchall()]
+
+
 def mark_contributions_orphaned_by_restore(approved_after: datetime) -> int:
     """Flip ``status`` from 'approved' to 'orphaned_by_restore' for every
     contribution whose ``approved_at`` is strictly after ``approved_after``.
@@ -848,6 +911,10 @@ def mark_contributions_orphaned_by_restore(approved_after: datetime) -> int:
     Used by Phase 4a backup-restore: contributions merged into the combined
     .db after the snapshot was taken are no longer present in the restored
     map, so the auditor needs to know they were lost.
+
+    Also drops their ``contribution_log`` rows so they stop appearing in
+    the public "Approved Contributions" feed (`get_approved_log`). Both
+    statements run in a single transaction.
     """
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -859,7 +926,19 @@ def mark_contributions_orphaned_by_restore(approved_after: datetime) -> int:
                          AND approved_at > %s""",
                 (approved_after,),
             )
-            return int(cur.rowcount or 0)
+            affected = int(cur.rowcount or 0)
+            if affected:
+                cur.execute(
+                    """DELETE FROM contribution_log
+                           WHERE id IN (
+                               SELECT id FROM contributions
+                                WHERE status = 'orphaned_by_restore'
+                                  AND approved_at IS NOT NULL
+                                  AND approved_at > %s
+                           )""",
+                    (approved_after,),
+                )
+            return affected
 
 def count_user_withdrawals_in_iso_week(api_key: str, week_start: datetime) -> int:
     """Count this user's withdrawals since the start of the current ISO week.
@@ -923,7 +1002,14 @@ def set_revert_metadata(
 
 
 def mark_reverted(cid: str, reverted_by_key: str) -> bool:
-    """Flip a contribution's status to 'reverted' and stamp the actor."""
+    """Flip a contribution's status to 'reverted' and stamp the actor.
+
+    Also removes the matching ``contribution_log`` row so the contribution
+    no longer appears in the public "Approved Contributions" feed served
+    by ``get_approved_log`` (the contribute page's `info.approved` list).
+    Both updates run in the same transaction so the visible state stays
+    consistent.
+    """
     now = datetime.now(timezone.utc)
     with get_conn() as conn:
         with conn.cursor() as cur:
@@ -935,7 +1021,15 @@ def mark_reverted(cid: str, reverted_by_key: str) -> bool:
                    WHERE id = %s AND status = 'approved'""",
                 (now, reverted_by_key or None, cid),
             )
-            return (cur.rowcount or 0) > 0
+            updated = (cur.rowcount or 0) > 0
+            if updated:
+                # Drop the public approval-log entry. Safe even if absent
+                # (older rows pre-dating the log table won't have one).
+                cur.execute(
+                    "DELETE FROM contribution_log WHERE id = %s",
+                    (cid,),
+                )
+            return updated
 
 
 def list_later_region_overwrites(
@@ -1332,6 +1426,126 @@ def clear_approval_state(cid: str) -> None:
                        SET approval_status   = NULL,
                            approval_attempts = 0,
                            approval_error    = NULL
+                   WHERE id = %s""",
+                (cid,),
+            )
+
+
+# ---------------------------------------------------------------------------
+# Async revert helpers (see backend.app.tasks.revert_contribution)
+# ---------------------------------------------------------------------------
+
+REVERT_MAX_ATTEMPTS = 3
+
+
+def enqueue_revert(cid: str, requested_by_key: str = "") -> bool:
+    """Mark an approved contribution as queued for async revert.
+
+    Returns True if the row was updated (was 'approved' status with no
+    in-flight revert), False if it's already being reverted, has been
+    reverted, or isn't eligible. Resets ``revert_error`` and bumps
+    ``revert_attempts`` back to 0 so a retry after a previous failure
+    starts from a clean slate.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_status   = 'queued',
+                           revert_attempts = 0,
+                           revert_error    = NULL,
+                           revert_requested_by_key = %s
+                   WHERE id = %s
+                     AND status = 'approved'
+                     AND (revert_status IS NULL
+                          OR revert_status = 'failed')""",
+                (requested_by_key or None, cid),
+            )
+            return cur.rowcount > 0
+
+
+def claim_pending_revert_job() -> Optional[dict]:
+    """Atomically claim one queued revert. Bumps attempts and flips status
+    to 'running'. Returns the full row or None when the queue is empty."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_status   = 'running',
+                           revert_attempts = revert_attempts + 1
+                   WHERE id = (
+                       SELECT id FROM contributions
+                           WHERE revert_status = 'queued'
+                             AND status = 'approved'
+                             AND revert_attempts < %s
+                           ORDER BY approved_at NULLS LAST, created_at
+                           LIMIT 1
+                           FOR UPDATE SKIP LOCKED
+                   )
+                   RETURNING *""",
+                (REVERT_MAX_ATTEMPTS,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def has_pending_revert_jobs() -> bool:
+    """True when there is at least one row needing the revert worker."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT 1 FROM contributions
+                       WHERE revert_status IN ('queued', 'running')
+                         AND status = 'approved'
+                         AND revert_attempts < %s
+                       LIMIT 1""",
+                (REVERT_MAX_ATTEMPTS,),
+            )
+            return cur.fetchone() is not None
+
+
+def reset_running_reverts() -> int:
+    """Re-queue any rows left in revert_status='running' by a previous
+    process. The merge holds ``map_lock`` for its duration and is driven
+    by the same idempotent SQLite operations as the original synchronous
+    revert, so resuming after a crash is safe. Returns the number of
+    rows reset."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_status = 'queued'
+                   WHERE revert_status = 'running'
+                     AND status = 'approved'""",
+            )
+            return cur.rowcount
+
+
+def set_revert_failed(cid: str, reason: str) -> None:
+    """Record a revert failure. The row stays ``status='approved'`` so the
+    admin can retry. ``revert_error`` is what the admin UI surfaces."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_status = 'failed',
+                           revert_error  = %s
+                   WHERE id = %s""",
+                ((reason or "")[:500], cid),
+            )
+
+
+def clear_revert_state(cid: str) -> None:
+    """Clear revert bookkeeping after a successful revert. Called by the
+    worker right after ``mark_reverted`` so historical rows don't keep the
+    transient 'running' / attempts noise."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET revert_status   = NULL,
+                           revert_attempts = 0,
+                           revert_error    = NULL
                    WHERE id = %s""",
                 (cid,),
             )
@@ -2019,6 +2233,46 @@ def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optio
             )
             row = cur.fetchone()
             return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Generic app settings (non-boolean admin-tunable values)
+# ---------------------------------------------------------------------------
+
+def list_app_settings() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM app_settings ORDER BY key")
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_app_setting(key: str) -> Optional[dict]:
+    """Return the raw row (with ``value`` already deserialised by psycopg2's
+    JSONB adapter) or None if the key is missing."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM app_settings WHERE key = %s", (key,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def set_app_setting(key: str, value, updated_by_key: str = "") -> dict:
+    """Upsert ``value`` (any JSON-serialisable Python object) under ``key``.
+    Returns the resulting row."""
+    payload = psycopg2.extras.Json(value)
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO app_settings (key, value, updated_by_key)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (key) DO UPDATE
+                           SET value = EXCLUDED.value,
+                               updated_at = now(),
+                               updated_by_key = EXCLUDED.updated_by_key
+                       RETURNING *""",
+                (key, payload, updated_by_key or None),
+            )
+            return dict(cur.fetchone())
 
 
 # ---------------------------------------------------------------------------

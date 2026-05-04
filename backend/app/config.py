@@ -53,8 +53,10 @@ class Settings:
     ]
     ALLOWED_ORIGIN_REGEX: Optional[str] = os.environ.get("ALLOWED_ORIGIN_REGEX", "").strip() or None
 
-    # Upload limit (bytes)
-    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(5 * 1024 * 1024 * 1024)))  # 4 GB
+    # Upload limit (bytes). Default 15 GiB. Files >5 GiB MUST go through the
+    # multipart upload path (R2/S3 hard-cap single PUTs at 5 GiB); the
+    # frontend switches automatically above ~4 GiB.
+    MAX_UPLOAD_SIZE: int = int(os.environ.get("MAX_UPLOAD_SIZE", str(15 * 1024 * 1024 * 1024)))  # 15 GiB
 
     # Map render limit (pixels) to bound RGBA buffer size in memory
     MAP_RENDER_MAX_DIM: int = int(os.environ.get("MAP_RENDER_MAX_DIM", "8192"))

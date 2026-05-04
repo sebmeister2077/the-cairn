@@ -1,4 +1,4 @@
-import type { ChangeEvent } from "react";
+import { useState, type ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -11,16 +11,24 @@ interface FileUploadProps {
   onChange: (file: File | null) => void;
 }
 
-export function FileUpload({
-  id,
-  label,
-  accept,
-  required,
-  disabled,
-  onChange,
-}: FileUploadProps) {
+/** Format a byte count as a short human-readable string. */
+function formatFileSize(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return "—";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  if (mb < 1024) return `${mb.toFixed(2)} MB`;
+  return `${(mb / 1024).toFixed(2)} GB`;
+}
+
+export function FileUpload({ id, label, accept, required, disabled, onChange }: FileUploadProps) {
+  const [picked, setPicked] = useState<File | null>(null);
+
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
-    onChange(e.target.files?.[0] ?? null);
+    const file = e.target.files?.[0] ?? null;
+    setPicked(file);
+    onChange(file);
   }
 
   return (
@@ -37,6 +45,11 @@ export function FileUpload({
         disabled={disabled}
         onChange={handleChange}
       />
+      {picked && (
+        <p className="text-xs text-muted-foreground">
+          Size: <span className="font-medium text-foreground">{formatFileSize(picked.size)}</span>
+        </p>
+      )}
     </div>
   );
 }

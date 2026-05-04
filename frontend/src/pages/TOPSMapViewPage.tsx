@@ -812,7 +812,7 @@ export function TOPSMapViewPage() {
                   </Button>
                 }
               />
-              <DialogContent className="sm:max-w-3xl">
+              <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
                 <DialogHeader>
                   <DialogTitle>TOPS map resolution cache</DialogTitle>
                 </DialogHeader>

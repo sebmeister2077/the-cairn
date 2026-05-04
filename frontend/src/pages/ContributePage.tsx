@@ -46,6 +46,7 @@ import { ContributionRegionPicker } from "@/components/ContributionRegionPicker"
 import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
 import { MapDbFileHelp } from "@/components/MapDbFileHelp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ContributionsCard } from "@/components/contributions/ApprovedContributionsCard";
 
 // Phase 1 — informational match-score result attached to each pending row.
 interface MatchScore {
@@ -112,7 +113,7 @@ interface ApprovedEntry {
 // Phase 3 — public history grid entry. Returned for approved (and
 // withdrawn-with-preview) contributions whose retention deadline hasn't
 // elapsed.
-interface HistoryEntry {
+export interface HistoryEntry {
   id: string;
   status: "approved" | "withdrawn" | "reverted" | "orphaned_by_restore";
   contributor: string;
@@ -130,9 +131,16 @@ interface HistoryEntry {
   revert_replaced_count?: number | null;
   reverted_at?: string | null;
   can_revert?: boolean;
+  // Async revert state — populated once the admin queues a revert.
+  // The backend worker drains the queue; the frontend polls /info to
+  // observe the transitions queued -> running -> (status='reverted'
+  // or revert_status='failed' with revert_error set).
+  revert_status?: "queued" | "running" | "failed" | null;
+  revert_error?: string | null;
+  revert_attempts?: number | null;
 }
 
-interface ContributeInfo {
+export type ContributeInfo = {
   map_id: string;
   total_tiles: number;
   pending: PendingContribution[];
@@ -159,7 +167,7 @@ interface ContributeInfo {
   region_overwrite_enabled?: boolean;
   can_use_region_overwrite?: boolean;
   region_tile_cap_non_admin?: number;
-}
+};
 
 export function ContributePage() {
   const queryClient = useQueryClient();
@@ -271,12 +279,6 @@ export function ContributePage() {
     enabled: !!accountApiKey,
     retry: false,
   });
-  // const showContributions = accountQuery.data?.user?.show_contributions ?? true;
-  const canSeeContributors = true; // = isAdmin || info?.is_admin //|| showContributions;
-  const displayContributor = useCallback(
-    (name: string) => (canSeeContributors ? name : "Anonymous"),
-    [canSeeContributors],
-  );
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
@@ -665,9 +667,7 @@ export function ContributePage() {
                 <div key={p.id} className="space-y-2">
                   <div className="flex items-center justify-between rounded-md border p-3">
                     <div className="space-y-0.5">
-                      <div className="text-sm font-medium">
-                        {p.is_mine ? p.contributor : displayContributor(p.contributor)}
-                      </div>
+                      <div className="text-sm font-medium">{p.contributor}</div>
                       <div className="text-xs text-muted-foreground">
                         {p.tile_count.toLocaleString()} chunks &middot;{" "}
                         {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
@@ -808,8 +808,32 @@ export function ContributePage() {
         </Card>
       )}
 
-      {/* Withdrawn contributions — only shown to users with a withdrawn own entry */}
-      {info && info.withdrawn && info.withdrawn.filter((w) => w.is_mine).length > 0 && (
+      {/* Approved history. Reverted entries are excluded here (they appear
+          in their own admin-only section below the Recent contributions
+          grid). The backend currently leaves reverted rows in the approved
+          list, so we cross-reference by id with `info.history`. */}
+      {info && <ContributionsCard info={info} />}
+
+      {/* Recent contributions grid (all-time history with previews). Visible
+          to non-admins only when the public_history flag is on; admins
+          always see it. */}
+      {info &&
+        (info.public_history_enabled || isAdmin || info.is_admin) &&
+        info.history &&
+        info.history.length > 0 && (
+          <RecentContributionsGrid
+            history={info.history}
+            isAdmin={!!isAdmin || !!info.is_admin}
+            totalCount={info.history_total ?? info.history.length}
+            displayContributor={(name) => name}
+            revertWindowDays={info.revert_window_days ?? 14}
+            onRevert={handleRevertHistory}
+          />
+        )}
+
+      {/* Withdrawn contributions — admin-only, shown below the Recent
+          contributions grid. */}
+      {info && (isAdmin || info.is_admin) && info.withdrawn && info.withdrawn.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
@@ -820,7 +844,10 @@ export function ContributePage() {
           <CardContent>
             <div className="space-y-2">
               {info.withdrawn
-                .filter((w) => w.is_mine)
+                .slice()
+                .sort(
+                  (a, b) => new Date(b.withdrawn_at).getTime() - new Date(a.withdrawn_at).getTime(),
+                )
                 .map((w) => (
                   <div
                     key={w.id}
@@ -840,58 +867,55 @@ export function ContributePage() {
         </Card>
       )}
 
-      {/* Approved history */}
-      {info && info.approved.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Users className="h-4 w-4" />
-              Approved Contributions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {info.approved
-                .slice()
-                .sort(
-                  (a, b) => new Date(b.approved_at).getTime() - new Date(a.approved_at).getTime(),
-                )
-                .map((a) => (
-                  <div
-                    key={a.id}
-                    className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0"
-                  >
-                    <div>
-                      <span className="font-medium">{displayContributor(a.contributor)}</span>
-                      <span className="text-muted-foreground ml-2">
-                        +{a.tiles_new.toLocaleString()} new chunks
+      {/* Reverted contributions — admin-only. Sourced from the history
+          feed (status='reverted' or 'orphaned_by_restore'). */}
+      {info &&
+        (isAdmin || info.is_admin) &&
+        info.history &&
+        info.history.some((h) => h.status === "reverted" || h.status === "orphaned_by_restore") && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
+                <Undo2 className="h-4 w-4" />
+                Reverted Contributions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {info.history
+                  .filter((h) => h.status === "reverted" || h.status === "orphaned_by_restore")
+                  .slice()
+                  .sort((a, b) => {
+                    const ta = new Date(a.reverted_at ?? a.approved_at ?? 0).getTime();
+                    const tb = new Date(b.reverted_at ?? b.approved_at ?? 0).getTime();
+                    return tb - ta;
+                  })
+                  .map((h) => (
+                    <div
+                      key={h.id}
+                      className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0 opacity-60"
+                    >
+                      <div>
+                        <span className="font-medium">{h.contributor}</span>
+                        <span className="text-muted-foreground ml-2">
+                          {h.status === "orphaned_by_restore"
+                            ? "[Orphaned by restore]"
+                            : "[Reverted]"}
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2 font-mono">{h.id}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {h.reverted_at
+                          ? new Date(h.reverted_at).toLocaleDateString()
+                          : h.approved_at
+                            ? new Date(h.approved_at).toLocaleDateString()
+                            : "—"}
                       </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(a.approved_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent contributions grid (all-time history with previews). Visible
-          to non-admins only when the public_history flag is on; admins
-          always see it. */}
-      {info &&
-        (info.public_history_enabled || isAdmin || info.is_admin) &&
-        info.history &&
-        info.history.length > 0 && (
-          <RecentContributionsGrid
-            history={info.history}
-            isAdmin={!!isAdmin || !!info.is_admin}
-            totalCount={info.history_total ?? info.history.length}
-            displayContributor={displayContributor}
-            revertWindowDays={info.revert_window_days ?? 14}
-            onRevert={handleRevertHistory}
-          />
+                  ))}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
       {/* Two-step confirmation for the destructive Reject action. */}
@@ -902,12 +926,8 @@ export function ContributePage() {
           deleteTarget ? (
             <>
               This will permanently reject the contribution from{" "}
-              <span className="font-medium">
-                {deleteTarget.is_mine
-                  ? deleteTarget.contributor
-                  : displayContributor(deleteTarget.contributor)}
-              </span>{" "}
-              ({deleteTarget.tile_count.toLocaleString()} chunks). The uploaded data will be
+              <span className="font-medium">{deleteTarget.contributor}</span> (
+              {deleteTarget.tile_count.toLocaleString()} chunks). The uploaded data will be
               discarded and cannot be recovered.
             </>
           ) : (
@@ -1153,27 +1173,38 @@ function RecentContributionsGridImpl({
   const [openId, setOpenId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [revertError, setRevertError] = useState<string | null>(null);
+  // Two-step revert: clicking the destructive button stages the entry
+  // here, which opens a themed ConfirmDialog instead of the browser's
+  // native window.confirm() (which feels jarring inside the admin UI
+  // and can't be styled per page).
+  const [pendingRevert, setPendingRevert] = useState<HistoryEntry | null>(null);
   const opened = openId ? (history.find((h) => h.id === openId) ?? null) : null;
 
-  async function handleRevert(entry: HistoryEntry) {
-    const tilesNew = entry.revert_added_count ?? entry.tiles_new ?? 0;
-    const tilesReplaced = entry.revert_replaced_count ?? 0;
-    const message =
-      tilesReplaced > 0
-        ? `Reverting will restore ${tilesReplaced.toLocaleString()} chunks to their pre-contribution state and remove ${tilesNew.toLocaleString()} chunks added in the region. Continue?`
-        : `Reverting will delete ${tilesNew.toLocaleString()} chunks added by this contribution. The area returns to unmapped, not to a previous version. Continue?`;
-    if (!window.confirm(message)) return;
+  const requestRevert = (entry: HistoryEntry) => {
+    setRevertError(null);
+    setPendingRevert(entry);
+  };
+
+  async function confirmRevert() {
+    if (!pendingRevert) return;
+    const entry = pendingRevert;
     setRevertError(null);
     setRevertingId(entry.id);
     try {
       await onRevert(entry.id);
       setOpenId(null);
+      setPendingRevert(null);
     } catch (err) {
       setRevertError(err instanceof Error ? err.message : "Revert failed");
+      // Keep the dialog open so the operator can read the error and
+      // either retry or cancel.
     } finally {
       setRevertingId(null);
     }
   }
+
+  const pendingTilesNew = pendingRevert?.revert_added_count ?? pendingRevert?.tiles_new ?? 0;
+  const pendingTilesReplaced = pendingRevert?.revert_replaced_count ?? 0;
 
   return (
     <Card>
@@ -1240,6 +1271,14 @@ function RecentContributionsGridImpl({
                       <Badge variant="outline" className="text-[10px] py-0">
                         orphaned
                       </Badge>
+                    ) : h.revert_status === "queued" || h.revert_status === "running" ? (
+                      <Badge variant="outline" className="text-[10px] py-0">
+                        {h.revert_status === "running" ? "reverting…" : "queued"}
+                      </Badge>
+                    ) : h.revert_status === "failed" ? (
+                      <Badge variant="destructive" className="text-[10px] py-0">
+                        revert failed
+                      </Badge>
                     ) : null}
                   </div>
                   <div className="text-muted-foreground">
@@ -1282,7 +1321,23 @@ function RecentContributionsGridImpl({
               <div className="flex flex-col gap-2 border-t bg-muted/20 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-muted-foreground">
                   {opened.status === "approved" ? (
-                    opened.can_revert ? (
+                    opened.revert_status === "queued" ? (
+                      <>Queued for revert — worker will pick this up shortly.</>
+                    ) : opened.revert_status === "running" ? (
+                      <>
+                        <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
+                        Reverting now — this can take a few minutes for large maps.
+                      </>
+                    ) : opened.revert_status === "failed" ? (
+                      <span className="text-destructive">
+                        Revert failed
+                        {opened.revert_attempts
+                          ? ` (after ${opened.revert_attempts} attempts)`
+                          : ""}
+                        {opened.revert_error ? `: ${opened.revert_error}` : ""}. Click Revert to
+                        retry.
+                      </span>
+                    ) : opened.can_revert ? (
                       <>
                         Revert window: {revertWindowDays}d ·{" "}
                         {(opened.revert_added_count ?? opened.tiles_new ?? 0).toLocaleString()} tile
@@ -1312,14 +1367,16 @@ function RecentContributionsGridImpl({
                     size="sm"
                     variant="destructive"
                     disabled={revertingId === opened.id}
-                    onClick={() => handleRevert(opened)}
+                    onClick={() => requestRevert(opened)}
                   >
                     {revertingId === opened.id ? (
                       <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                     ) : (
                       <Undo2 className="mr-1 h-3 w-3" />
                     )}
-                    Revert this contribution
+                    {opened.revert_status === "failed"
+                      ? "Retry revert"
+                      : "Revert this contribution"}
                   </Button>
                 )}
               </div>
@@ -1332,6 +1389,48 @@ function RecentContributionsGridImpl({
           </div>
         )}
       </CardContent>
+      <ConfirmDialog
+        open={pendingRevert !== null}
+        title="Revert this contribution?"
+        description={
+          pendingRevert ? (
+            <>
+              {pendingTilesReplaced > 0 ? (
+                <>
+                  This will restore <strong>{pendingTilesReplaced.toLocaleString()}</strong> chunk
+                  {pendingTilesReplaced === 1 ? "" : "s"} to their pre-contribution state and remove{" "}
+                  <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
+                  {pendingTilesNew === 1 ? "" : "s"} added in the region.
+                </>
+              ) : (
+                <>
+                  This will delete <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
+                  {pendingTilesNew === 1 ? "" : "s"} added by this contribution. The area returns to{" "}
+                  <em>unmapped</em> — not to a previous version.
+                </>
+              )}
+              <br />
+              <span className="text-muted-foreground">
+                Contribution ID: <span className="font-mono">{pendingRevert.id}</span>
+              </span>
+              {revertError && (
+                <>
+                  <br />
+                  <span className="text-destructive">{revertError}</span>
+                </>
+              )}
+            </>
+          ) : null
+        }
+        confirmLabel="Revert"
+        variant="destructive"
+        loading={revertingId !== null}
+        onConfirm={confirmRevert}
+        onCancel={() => {
+          setPendingRevert(null);
+          setRevertError(null);
+        }}
+      />
     </Card>
   );
 }
@@ -1383,7 +1482,10 @@ function historyEntriesEqual(a: HistoryEntry[], b: HistoryEntry[]): boolean {
       x.revert_added_count !== y.revert_added_count ||
       x.revert_replaced_count !== y.revert_replaced_count ||
       x.reverted_at !== y.reverted_at ||
-      x.can_revert !== y.can_revert
+      x.can_revert !== y.can_revert ||
+      x.revert_status !== y.revert_status ||
+      x.revert_error !== y.revert_error ||
+      x.revert_attempts !== y.revert_attempts
     ) {
       return false;
     }

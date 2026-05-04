@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Cpu,
+  Info,
   Loader2,
   Lock,
   Power,
@@ -23,6 +24,7 @@ import {
   Upload,
   UserPlus,
   Wrench,
+  Archive,
 } from "lucide-react";
 import {
   adminForceReleaseMapLock,
@@ -34,6 +36,7 @@ import {
   type FeatureFlag,
   type HeavyComputeStatus,
 } from "@/lib/api";
+import { CompressionSettingsPanel } from "@/components/admin/CompressionSettingsPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +59,13 @@ interface OperationalFlagSpec {
   /** Tone shown next to the toggle when the flag is in its "alarm" state. */
   alarmState: "on" | "off";
   alarmText: string;
+  /**
+   * Visual severity of the alarm state. "danger" (default) draws an amber
+   * border + destructive badge + destructive confirm dialog. "info" uses a
+   * neutral blue accent for flags whose alarm state is merely informational
+   * (e.g. an opt-in optimization being active, not a kill switch tripped).
+   */
+  alarmTone?: "danger" | "info";
   /** Optional additional caveat — surfaced in a callout. */
   caveat?: string;
 }
@@ -124,6 +134,31 @@ const OPERATIONAL_FLAGS: OperationalFlagSpec[] = [
     alarmText: "heavy compute paused",
     caveat:
       "Flip OFF when the production server is too small for the per-request workload (multi-GB DB downloads, OOM during previews) and you want an admin on a beefier machine to drain pending work in batches via the button below.",
+  },
+  {
+    key: "compress_artefacts",
+    label: "Zstd compression of R2 artefacts",
+    icon: Archive,
+    defaultEnabled: false,
+    whenOn:
+      "All NEW writes to weekly backups, archived per-contribution .db files, and undo " +
+      "replaced.db files are stored as .zst (single form, no raw sibling). The combined " +
+      "globalservermap.db is uploaded raw AND a .zst sibling is produced in the background " +
+      "(latest-wins) so cache-miss reads can prefer the smaller .zst when its source-etag " +
+      "matches the live raw ETag. Flipping ON for the first time also kicks an eager " +
+      "migration that converts every still-retained archived/undo .db to .zst (paused when " +
+      "heavy compute is OFF). Readers transparently support both forms forever.",
+    whenOff:
+      "All artefacts are written as raw .db / .bin (current behaviour). Existing .zst " +
+      "artefacts continue to be readable — flipping OFF does NOT rehydrate them. Use this " +
+      "as a kill switch if a compression bug is suspected.",
+    alarmState: "on",
+    alarmText: "compression active",
+    alarmTone: "info",
+    caveat:
+      "Compression level + thread budget are tuned in the panel below (visible only when " +
+      "the flag is ON). Higher levels use more CPU per write but produce smaller files; " +
+      "the eager migration honours the heavy-compute kill switch.",
   },
 ];
 
@@ -267,16 +302,26 @@ export function AdminFeatureFlagsPage() {
           Operational kill switches
         </h3>
         <div className="space-y-3">
-          {OPERATIONAL_FLAGS.map((spec) => (
-            <OperationalFlagCard
-              key={spec.key}
-              spec={spec}
-              flag={flagMap.get(spec.key)}
-              pending={setFlag.isPending && setFlag.variables?.key === spec.key}
-              onToggle={(enabled) => setFlag.mutate({ key: spec.key, enabled })}
-              extra={spec.key === "heavy_compute_enabled" ? <HeavyComputeRunner /> : undefined}
-            />
-          ))}
+          {OPERATIONAL_FLAGS.map((spec) => {
+            const flag = flagMap.get(spec.key);
+            const enabled = flag?.enabled ?? spec.defaultEnabled;
+            let extra: ReactNode | undefined;
+            if (spec.key === "heavy_compute_enabled") {
+              extra = <HeavyComputeRunner />;
+            } else if (spec.key === "compress_artefacts" && enabled) {
+              extra = <CompressionSettingsPanel />;
+            }
+            return (
+              <OperationalFlagCard
+                key={spec.key}
+                spec={spec}
+                flag={flag}
+                pending={setFlag.isPending && setFlag.variables?.key === spec.key}
+                onToggle={(en) => setFlag.mutate({ key: spec.key, enabled: en })}
+                extra={extra}
+              />
+            );
+          })}
         </div>
       </section>
 
@@ -450,6 +495,7 @@ function OperationalFlagCard({
 }) {
   const enabled = flag ? flag.enabled : spec.defaultEnabled;
   const inAlarm = (spec.alarmState === "on" && enabled) || (spec.alarmState === "off" && !enabled);
+  const tone = spec.alarmTone ?? "danger";
   const Icon = spec.icon;
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingValue, setPendingValue] = useState<boolean | null>(null);
@@ -466,8 +512,14 @@ function OperationalFlagCard({
     onToggle(next);
   }
 
+  const alarmBorderClass = inAlarm
+    ? tone === "info"
+      ? "border-sky-500"
+      : "border-amber-500"
+    : undefined;
+
   return (
-    <Card className={inAlarm ? "border-amber-500" : undefined}>
+    <Card className={alarmBorderClass}>
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between gap-3 text-base">
           <span className="flex items-center gap-2">
@@ -479,10 +531,17 @@ function OperationalFlagCard({
           </span>
           <span className="flex items-center gap-2">
             {inAlarm ? (
-              <Badge variant="destructive" className="gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                {spec.alarmText}
-              </Badge>
+              tone === "info" ? (
+                <Badge variant="outline" className="gap-1 text-sky-600 border-sky-500/40">
+                  <Info className="h-3 w-3" />
+                  {spec.alarmText}
+                </Badge>
+              ) : (
+                <Badge variant="destructive" className="gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {spec.alarmText}
+                </Badge>
+              )
             ) : (
               <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/40">
                 <CheckCircle2 className="h-3 w-3" />
@@ -543,7 +602,7 @@ function OperationalFlagCard({
               : ""
         }
         confirmLabel={pendingValue ? "Enable" : "Disable"}
-        variant="destructive"
+        variant={tone === "info" ? "default" : "destructive"}
         onCancel={() => {
           setConfirmOpen(false);
           setPendingValue(null);

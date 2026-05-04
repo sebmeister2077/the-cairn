@@ -38,8 +38,8 @@ _timer: Optional[threading.Timer] = None
 _stopped = False
 
 # backup-2026-W17.db   OR   backup-2026-W17-manual-1714214400.db
-_RE_SCHEDULED = re.compile(r"^backups/backup-(\d{4})-W(\d{2})\.db$")
-_RE_MANUAL = re.compile(r"^backups/backup-(\d{4})-W(\d{2})-manual-(\d+)\.db$")
+_RE_SCHEDULED = re.compile(r"^backups/backup-(\d{4})-W(\d{2})\.db(?:\.zst)?$")
+_RE_MANUAL = re.compile(r"^backups/backup-(\d{4})-W(\d{2})-manual-(\d+)\.db(?:\.zst)?$")
 
 
 def _now_iso_week() -> tuple:
@@ -75,6 +75,57 @@ def list_backups() -> List[dict]:
     return out
 
 
+def _compress_artefacts_enabled() -> bool:
+    try:
+        return ff.is_feature_enabled("compress_artefacts")
+    except Exception:
+        return False
+
+
+def _snapshot_combined_to(target_raw_key: str) -> str:
+    """Materialise a backup of ``COMBINED_DB_KEY`` at ``target_raw_key``.
+
+    Honours the ``compress_artefacts`` flag:
+
+    * OFF → the historical zero-egress server-side ``copy_object``. Returns
+      the raw key.
+    * ON  → downloads the combined DB to a temp, streams it through zstd
+      with the current admin settings, and uploads to ``target_raw_key + .zst``.
+      Returns the .zst key.
+
+    Caller is expected to hold the global map lock.
+    """
+    import os
+    import tempfile
+    if not _compress_artefacts_enabled():
+        r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_raw_key)
+        return target_raw_key
+
+    from ..core import compression as comp
+    from ..routes.admin_settings import get_compression_settings
+
+    sett = get_compression_settings()
+    level = int(sett["level"])
+    threads = comp.resolve_threads(sett["threads_preset"])
+
+    fd_in, src_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd_in)
+    fd_out, dst_path = tempfile.mkstemp(suffix=".db.zst")
+    os.close(fd_out)
+    target_zst_key = target_raw_key + ".zst"
+    try:
+        r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, src_path)
+        comp.compress_file(src_path, dst_path, level=level, threads=threads)
+        r2_storage.upload_file(dst_path, target_zst_key)
+        return target_zst_key
+    finally:
+        for p in (src_path, dst_path):
+            try:
+                os.unlink(p)
+            except OSError:
+                pass
+
+
 def create_scheduled_snapshot_if_due() -> Optional[str]:
     """Create this week's scheduled snapshot if it doesn't exist yet.
 
@@ -85,15 +136,18 @@ def create_scheduled_snapshot_if_due() -> Optional[str]:
     revert cannot overwrite the source partway through a multipart copy.
     """
     iso_year, iso_week = _now_iso_week()
-    target_key = r2_storage.backup_scheduled_key(iso_year, iso_week)
-    if r2_storage.object_exists(target_key):
+    target_raw = r2_storage.backup_scheduled_key(iso_year, iso_week)
+    # Either form already counts as "this week's snapshot exists".
+    if r2_storage.object_exists(target_raw) or r2_storage.object_exists(
+        target_raw + ".zst"
+    ):
         return None
     if not r2_storage.object_exists(r2_storage.COMBINED_DB_KEY):
         logger.info("weekly_backup: combined .db missing — skipping snapshot")
         return None
     try:
         with db.with_map_lock("backup"):
-            r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_key)
+            target_key = _snapshot_combined_to(target_raw)
     except db.MapLocked:
         logger.info(
             "weekly_backup: skipping scheduled snapshot — map lock held by "
@@ -112,10 +166,10 @@ def create_manual_snapshot() -> str:
     """
     iso_year, iso_week = _now_iso_week()
     ts = int(datetime.now(timezone.utc).timestamp())
-    target_key = r2_storage.backup_manual_key(iso_year, iso_week, ts)
+    target_raw = r2_storage.backup_manual_key(iso_year, iso_week, ts)
     if not r2_storage.object_exists(r2_storage.COMBINED_DB_KEY):
         raise FileNotFoundError("Combined map .db is not present in R2")
-    r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_key)
+    target_key = _snapshot_combined_to(target_raw)
     logger.info("weekly_backup: created manual snapshot %s", target_key)
     return target_key
 
