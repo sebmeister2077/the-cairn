@@ -31,6 +31,44 @@ interface PersistedShape {
 
 const STORAGE_KEY = "tops-map-tl-groupings";
 const STORAGE_VERSION = 1 as const;
+/**
+ * Marker so the built-in default grouping is only seeded once. After the
+ * initial seed the user can rename, edit, or delete it freely without us
+ * silently re-adding it on the next page load.
+ */
+const SEEDED_DEFAULTS_KEY = "tops-map-tl-groupings-seeded-defaults";
+
+/**
+ * Built-in starter groupings that are seeded into a user's local storage on
+ * first visit. Each entry uses a fixed `id` so we can detect whether the user
+ * still has it and avoid duplicating it across reloads. Once seeded, these
+ * groupings behave like any other user-created grouping.
+ */
+const DEFAULT_GROUPINGS: readonly TLGrouping[] = [
+    {
+        "id": "d9989b4e-07a9-4212-93bd-560bf96b0a8e",
+        "name": "N/S line",
+        "tlIds": [
+            "366,1314,-4615,8049",
+            "-710,4596,-4466,8047",
+            "-188,4666,2215,12518",
+            "1374,-2067,-245,4615",
+            "2463,12320,5328,14803",
+            "5383,14771,10944,18470",
+            "10947,18516,3070,22984",
+            "3219,23060,-763,26695",
+            "-907,26626,239,28698",
+            "53,28501,1851,36273",
+            "1632,36595,-3944,40974",
+            "-3913,41016,-9641,45347",
+            "-9779,45087,-3043,51384",
+            "770,57555,-2913,51370",
+            "890,57847,-881,65192"
+        ],
+        "createdAt": 1777623796429,
+        "updatedAt": 1777912704136
+    }
+];
 
 /**
  * Build the canonical TLId for a segment. Coordinates come straight from the
@@ -78,10 +116,30 @@ function parsePersisted(raw: string | null): TLGrouping[] {
     return [];
 }
 
+/**
+ * Seed the built-in default groupings on first run. Idempotent: relies on
+ * `SEEDED_DEFAULTS_KEY` so a user who deletes a default isn't re-served it on
+ * the next load. Returns the list with any newly-seeded defaults appended.
+ */
+function seedDefaultsIfNeeded(existing: TLGrouping[]): TLGrouping[] {
+    if (typeof window === "undefined") return existing;
+    if (window.localStorage.getItem(SEEDED_DEFAULTS_KEY) === "1") return existing;
+    const existingIds = new Set(existing.map((g) => g.id));
+    const toSeed = DEFAULT_GROUPINGS.filter((g) => !existingIds.has(g.id));
+    const next = toSeed.length === 0 ? existing : [...existing, ...toSeed];
+    if (toSeed.length > 0) {
+        const payload: PersistedShape = { version: STORAGE_VERSION, groupings: next };
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    }
+    window.localStorage.setItem(SEEDED_DEFAULTS_KEY, "1");
+    return next;
+}
+
 /** Read all groupings from localStorage. Safe in non-browser environments. */
 export function loadGroupings(): TLGrouping[] {
     if (typeof window === "undefined") return [];
-    return parsePersisted(window.localStorage.getItem(STORAGE_KEY));
+    const stored = parsePersisted(window.localStorage.getItem(STORAGE_KEY));
+    return seedDefaultsIfNeeded(stored);
 }
 
 /** Persist the full grouping list. Wraps in the versioned envelope. */
