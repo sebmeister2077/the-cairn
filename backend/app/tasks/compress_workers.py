@@ -473,9 +473,47 @@ def stop_migration() -> None:
     _migration_stop.set()
 
 
+def _collect_migration_cids() -> list:
+    """Enumerate contribution ids that still have a raw ``.db`` artefact
+    under ``archived/`` or ``undo/`` in R2. Source of truth is the bucket
+    listing — the DB's ``preview_retained_until`` is intentionally not
+    consulted so orphaned objects (e.g. rows whose retention deadline has
+    passed but cleanup hasn't run yet) still get converted.
+
+    A contribution appears at most once even if it has both an archived
+    and an undo-replaced artefact; ``_migrate_one_contribution`` handles
+    both per cid.
+    """
+    from ..core import r2_storage
+
+    cids: list = []
+    seen: set = set()
+
+    def _add(cid: str) -> None:
+        if cid and cid not in seen:
+            seen.add(cid)
+            cids.append(cid)
+
+    archived_prefix = "archived/"
+    for key in r2_storage.list_keys_with_prefix(archived_prefix):
+        # Raw artefacts only — skip already-migrated .db.zst siblings.
+        if not key.endswith(".db"):
+            continue
+        _add(key[len(archived_prefix):-len(".db")])
+
+    undo_prefix = r2_storage.UNDO_KEY_PREFIX
+    undo_suffix = ".replaced.db"
+    for key in r2_storage.list_keys_with_prefix(undo_prefix):
+        if not key.endswith(undo_suffix):
+            continue
+        _add(key[len(undo_prefix):-len(undo_suffix)])
+
+    cids.sort()
+    return cids
+
+
 def _migration_loop(*, resume: bool) -> None:
     from ..core import compression as comp
-    from ..core import database as db
     from ..core import r2_storage
     from ..routes.admin_settings import update_migration_status
 
@@ -488,7 +526,7 @@ def _migration_loop(*, resume: bool) -> None:
         return
 
     try:
-        rows = db.list_active_archived_contributions()
+        cids = _collect_migration_cids()
     except Exception as exc:
         logger.exception("migration: failed to enumerate active archives")
         update_migration_status(
@@ -496,7 +534,7 @@ def _migration_loop(*, resume: bool) -> None:
         )
         return
 
-    total = len(rows)
+    total = len(cids)
     update_migration_status(
         phase="running",
         total=total,
@@ -511,7 +549,7 @@ def _migration_loop(*, resume: bool) -> None:
     processed = 0
     skipped = 0
     failed = 0
-    for row in rows:
+    for cid in cids:
         if _migration_stop.is_set():
             update_migration_status(phase="idle", finished_at=time.time())
             return
@@ -527,7 +565,6 @@ def _migration_loop(*, resume: bool) -> None:
             )
             return
 
-        cid = row["id"]
         try:
             level, threads = _current_settings()
             converted = _migrate_one_contribution(cid, level, threads)
