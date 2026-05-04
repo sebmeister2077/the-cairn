@@ -1,173 +1,29 @@
-import { useState, useEffect, useMemo, useCallback, memo, type FormEvent } from "react";
-import { NavLink } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  getContributeInfo,
-  contributeMap,
-  getContributePreview,
-  approveContribution,
-  rejectContribution,
-  withdrawContribution,
-  revertContribution,
-  recomputeMatchScore,
-  getStoredIsAdmin,
-  getStoredCanContribute,
-  fetchImageFromSignedUrl,
-  getMyAccountSafe,
-  getStoredApiKey,
-  getTopsMapStats,
-  type ContributionRegion,
-} from "@/lib/api";
-import { FileUpload } from "@/components/FileUpload";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { HelpTip } from "@/components/ui/help-tip";
-import {
-  Loader2,
-  Upload,
-  Users,
-  Map,
-  Eye,
-  Check,
-  XIcon,
-  Undo2,
-  RefreshCw,
-  History,
-  ImageOff,
-  ShieldCheck,
-} from "lucide-react";
-import { MapViewer } from "@/components/MapViewer";
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
-import { ContributionRegionPicker } from "@/components/ContributionRegionPicker";
-import { ContributionBeforeAfter } from "@/components/ContributionBeforeAfter";
-import { MapDbFileHelp } from "@/components/MapDbFileHelp";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ContributionsCard } from "@/components/contributions/ApprovedContributionsCard";
-
-// Phase 1 — informational match-score result attached to each pending row.
-interface MatchScore {
-  status: "pending" | "ready" | "failed";
-  tile_overlap_pct?: number;
-  pixel_similar_pct?: number;
-  overlap_count?: number;
-  pending_total?: number;
-  reason?: string;
-}
-
-interface PendingContribution {
-  id: string;
-  contributor: string;
-  created_at: string;
-  timestamp?: string;
-  tile_count: number;
-  status: string;
-  is_mine: boolean;
-  preview_image_url?: string;
-  preview_signed_url?: string;
-  match_score?: MatchScore | null;
-  // Phase 2 — region-restricted update bounds (admin-or-owner only) and mode
-  // ("overwrite" | "gap_fill"). The mode is always present; bounds are
-  // redacted from non-admin/non-owner viewers.
-  update_region?: {
-    min_x: number;
-    max_x: number;
-    min_z: number;
-    max_z: number;
-  } | null;
-  update_region_mode?: "overwrite" | "gap_fill";
-  // Async validation lifecycle (see backend/app/tasks/validate_uploads.py).
-  // ``'pending'`` = worker hasn't validated the .db yet (tile_count=0).
-  // ``'valid'`` = SQLite open + tile-count succeeded; row is approvable.
-  // Missing means a legacy synchronously-validated row.
-  validation_status?: "pending" | "valid" | null;
-  validation_error?: string | null;
-  // Async approval lifecycle (see backend/app/tasks/approve_contribution.py).
-  // ``'queued'`` = admin pressed Approve, worker hasn't picked it up.
-  // ``'running'`` = worker is merging right now.
-  // ``'failed'`` = worker hit a non-retryable error or burned all attempts.
-  // Missing on success — row will flip to ``status='approved'`` instead.
-  approval_status?: "queued" | "running" | "failed" | null;
-  approval_attempts?: number;
-  approval_error?: string | null;
-}
-
-interface WithdrawnEntry {
-  id: string;
-  withdrawn_at: string;
-  is_mine: boolean;
-}
-
-interface ApprovedEntry {
-  id: string;
-  contributor: string;
-  approved_at: string;
-  tiles_new: number;
-  tiles_existing: number;
-  combined_total: number;
-}
-
-// Phase 3 — public history grid entry. Returned for approved (and
-// withdrawn-with-preview) contributions whose retention deadline hasn't
-// elapsed.
-export interface HistoryEntry {
-  id: string;
-  status: "approved" | "withdrawn" | "reverted" | "orphaned_by_restore";
-  contributor: string;
-  tile_count: number;
-  tiles_new?: number | null;
-  tiles_existing?: number | null;
-  combined_total?: number | null;
-  approved_at?: string | null;
-  withdrawn_at?: string | null;
-  preview_signed_url?: string | null;
-  is_mine?: boolean;
-  // Phase 4b — admin-only fields surfaced for revert UI.
-  revert_supported?: boolean;
-  revert_added_count?: number | null;
-  revert_replaced_count?: number | null;
-  reverted_at?: string | null;
-  can_revert?: boolean;
-  // Async revert state — populated once the admin queues a revert.
-  // The backend worker drains the queue; the frontend polls /info to
-  // observe the transitions queued -> running -> (status='reverted'
-  // or revert_status='failed' with revert_error set).
-  revert_status?: "queued" | "running" | "failed" | null;
-  revert_error?: string | null;
-  revert_attempts?: number | null;
-}
-
-export type ContributeInfo = {
-  map_id: string;
-  total_tiles: number;
-  pending: PendingContribution[];
-  withdrawn: WithdrawnEntry[];
-  approved: ApprovedEntry[];
-  history?: HistoryEntry[];
-  history_total?: number;
-  history_window_days?: number | null;
-  public_history_enabled?: boolean;
-  is_admin?: boolean;
-  match_score_enabled?: boolean;
-  heavy_compute_enabled?: boolean;
-  revert_enabled?: boolean;
-  revert_window_days?: number;
-  can_contribute?: boolean;
-  cooldown_reason?: "pending" | "cooldown" | null;
-  pending_contribution_id?: string | null;
-  next_allowed_at?: string | null;
-  cooldown_days?: number;
-  withdraw_limit_per_week?: number;
-  withdrawals_used_this_week?: number;
-  withdraw_next_allowed_at?: string | null;
-  // Phase 2 — region-restricted update gating
-  region_overwrite_enabled?: boolean;
-  can_use_region_overwrite?: boolean;
-  region_tile_cap_non_admin?: number;
-};
+import { CantContributeCard } from "@/components/contributions/CantContributeCard";
+import { ContributeUploadCard } from "@/components/contributions/ContributeUploadCard";
+import { PendingContributionsSection } from "@/components/contributions/PendingContributionsSection";
+import { RevertedContributionsSection } from "@/components/contributions/RevertedContributionsSection";
+import { WithdrawnContributionsCard } from "@/components/contributions/WithdrawnContributionsCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  approveContribution,
+  fetchImageFromSignedUrl,
+  getContributeInfo,
+  getContributePreview,
+  getStoredCanContribute,
+  getStoredIsAdmin,
+  recomputeMatchScore,
+  rejectContribution,
+  revertContribution,
+  withdrawContribution,
+} from "@/lib/api";
+import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
+import { contributeQueries } from "@/lib/constants/react-query";
+import type { ContributeInfo } from "@/models/contributions";
+import { useQuery, useQueryClient, type DefaultError } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function ContributePage() {
   const queryClient = useQueryClient();
@@ -175,57 +31,19 @@ export function ContributePage() {
   const canContribute = getStoredCanContribute();
 
   if (!canContribute) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Contribute Map Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>
-            This page lets players upload their local Vintage Story map cache so admins can review
-            and merge new chunks into the shared community map.
-          </p>
-          <p>
-            New here? Read the{" "}
-            <NavLink
-              to="/blog/contributing-to-the-tops-map"
-              className="underline decoration-dotted underline-offset-2 hover:text-foreground"
-            >
-              guide to contributing to the TOPS map
-            </NavLink>
-            .
-          </p>
-          <div className="rounded-md border bg-muted/30 p-3">
-            <p className="font-medium text-foreground">Access required</p>
-            <p className="mt-1">
-              Your current API key does not have contribute permission. Please request a{" "}
-              <strong>Read &amp; Contribute</strong> key from an admin.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <CantContributeCard />;
   }
-
-  const [dbFile, setDbFile] = useState<File | null>(null);
-  const [contributor, setContributor] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState("");
-  const [uploadResult, setUploadResult] = useState<string | null>(null);
-  const [fileInputKey, setFileInputKey] = useState(0);
-  // Phase 2 — region-restricted update state. `null` = legacy gap-fill mode.
-  const [region, setRegion] = useState<ContributionRegion | null>(null);
 
   // Contribute info via React Query. Phase 1: when at least one pending row
   // has a not-yet-ready match score we poll every 5 s so the badge updates
   // automatically while the worker grinds through its queue.
-  const infoQuery = useQuery<ContributeInfo>({
-    queryKey: ["contribute-info"],
-    queryFn: () => getContributeInfo(),
+  const contributeInfoQuery = useQuery<
+    ContributeInfo,
+    DefaultError,
+    ContributeInfo,
+    typeof contributeQueries.contributeInfo.queryKey
+  >({
+    ...contributeQueries.contributeInfo,
     refetchInterval: (query) => {
       const data = query.state.data as ContributeInfo | undefined;
       const hasPendingScore = !!data?.pending.some((p) => p.match_score?.status === "pending");
@@ -243,49 +61,15 @@ export function ContributePage() {
       return shouldPoll ? pollingRate : false;
     },
   });
-  const info = infoQuery.data ?? null;
-  const infoLoading = infoQuery.isLoading;
-
-  // Phase 2 — fetch the multi-resolution TOPS map metadata so the region
-  // picker can pick the cheapest complete level. We only enable this query
-  // when the contributor is actually allowed to use region-overwrite, to
-  // avoid hammering the endpoint for everyone.
-  const regionPickerEnabled = info?.can_use_region_overwrite === true;
-  const topsStatsQuery = useQuery<{
-    resolutions?: Array<{
-      level: number;
-      max_dimension: number;
-      status: "complete" | "generating" | "not_generated" | "failed";
-      generated_at?: string | null;
-      size_bytes?: number | null;
-      progress?: number;
-    }>;
-  }>({
-    queryKey: ["tops-map-stats"],
-    queryFn: getTopsMapStats,
-    enabled: regionPickerEnabled,
-    retry: false,
-  });
-  const availableLevels = topsStatsQuery.data?.resolutions ?? [];
-
-  // Current account — used to honour the user's "Show Contributions" preference.
-  // Key/queryFn must match AppContent + AccountPage so the three observers
-  // share a single in-flight request (otherwise /account/me is fetched twice
-  // on reload of /contribute).
-  const accountApiKey = getStoredApiKey();
-  const accountQuery = useQuery({
-    queryKey: ["account-me", accountApiKey ?? ""],
-    queryFn: getMyAccountSafe,
-    enabled: !!accountApiKey,
-    retry: false,
-  });
+  const contributionInfo = contributeInfoQuery.data ?? null;
+  const contributeInfoLoading = contributeInfoQuery.isLoading;
 
   // Preview state
   const [previewId, setPreviewId] = useState<string | null>(null);
   const previewQuery = useQuery<Blob>({
     queryKey: ["contribute-preview", previewId],
     queryFn: async () => {
-      const row = info?.pending.find((p) => p.id === previewId);
+      const row = contributionInfo?.pending.find((p) => p.id === previewId);
       const signedUrl = row?.preview_signed_url;
       if (signedUrl) {
         const blob = await fetchImageFromSignedUrl(signedUrl);
@@ -318,49 +102,23 @@ export function ContributePage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   const deleteTarget = rejectingId
-    ? (info?.pending.find((p) => p.id === rejectingId) ?? null)
+    ? (contributionInfo?.pending.find((p) => p.id === rejectingId) ?? null)
     : null;
 
   const handleRevertHistory = useCallback(
     async (id: string) => {
       await revertContribution(id);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+      queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     },
     [queryClient],
   );
 
-  const cooldownDays = info?.cooldown_days ?? 7;
-  const canContributeFromData = info?.can_contribute !== false;
-  const reason = info?.cooldown_reason ?? null;
-  const nextAllowed = info?.next_allowed_at ? new Date(info.next_allowed_at) : null;
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!dbFile) return;
-
-    setUploading(true);
-    setUploadProgress(0);
-    setError("");
-    setUploadResult(null);
-
-    try {
-      const data = await contributeMap(
-        dbFile,
-        contributor,
-        (pct) => setUploadProgress(pct),
-        region,
-      );
-      setUploadResult(data.message as string);
-      setDbFile(null);
-      setFileInputKey((prev) => prev + 1);
-      setRegion(null);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-    }
-  }
+  const cooldownDays = contributionInfo?.cooldown_days ?? 7;
+  const canContributeFromData = contributionInfo?.can_contribute !== false;
+  const reason = contributionInfo?.cooldown_reason ?? null;
+  const nextAllowed = contributionInfo?.next_allowed_at
+    ? new Date(contributionInfo.next_allowed_at)
+    : null;
 
   async function handlePreview(id: string) {
     if (previewId === id) {
@@ -376,7 +134,7 @@ export function ContributePage() {
     try {
       await approveContribution(id);
       if (previewId === id) setPreviewId(null);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+      queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Approve failed");
     } finally {
@@ -390,7 +148,7 @@ export function ContributePage() {
     try {
       await rejectContribution(id);
       if (previewId === id) setPreviewId(null);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+      queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Reject failed");
     } finally {
@@ -404,7 +162,7 @@ export function ContributePage() {
     try {
       await withdrawContribution(id);
       if (previewId === id) setPreviewId(null);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+      queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Withdraw failed");
     } finally {
@@ -417,7 +175,7 @@ export function ContributePage() {
     setActionError("");
     try {
       await recomputeMatchScore(id);
-      queryClient.invalidateQueries({ queryKey: ["contribute-info"] });
+      queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Recompute failed");
     } finally {
@@ -432,204 +190,18 @@ export function ContributePage() {
       {isAdmin && <AdminBackupsPanel />}
 
       {/* Upload card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Contribute Map Data
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            Upload your local map cache to contribute to the shared community map. Submissions are
-            reviewed by an admin before being merged.{" "}
-            <NavLink
-              to="/blog/contributing-to-the-tops-map"
-              className="underline decoration-dotted underline-offset-2 hover:text-foreground"
-            >
-              Read the guide
-            </NavLink>
-            .
-          </p>
-
-          <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/50">
-            <Map className="h-4 w-4 text-muted-foreground shrink-0" />
-            <div className="text-sm">
-              <span className="text-muted-foreground">Server Map ID:</span>{" "}
-              {infoLoading ? (
-                <span className="text-muted-foreground">loading…</span>
-              ) : (
-                <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">
-                  {info?.map_id ?? "—"}
-                </code>
-              )}
-            </div>
-          </div>
-
-          <MapDbFileHelp showServerIdHint />
-
-          <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 shrink-0 mt-0.5 text-foreground" />
-            <div className="space-y-1">
-              <p className="font-medium text-foreground">What gets uploaded?</p>
-              <p>
-                Only the rendered <strong>visual map chunks</strong> from your local cache are
-                extracted and submitted. Your{" "}
-                <strong>
-                  waypoints, traders, translocators, and other personal map markers are never read
-                  or uploaded
-                </strong>
-                — they stay private on your machine.
-              </p>
-            </div>
-          </div>
-
-          {!infoLoading && info && (
-            <div className="flex gap-4 text-sm">
-              <div className="flex items-center gap-1.5">
-                <Badge variant="secondary">{info.total_tiles.toLocaleString()}</Badge>
-                <span className="text-muted-foreground">chunks in combined map</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Badge variant="secondary">{info.pending.length}</Badge>
-                <span className="text-muted-foreground">pending review</span>
-              </div>
-            </div>
-          )}
-
-          <Separator />
-
-          {isAdmin || info?.is_admin ? null : (
-            <div
-              className={
-                "rounded-md border p-3 text-sm space-y-1 " +
-                (canContributeFromData
-                  ? "bg-muted/30 text-muted-foreground"
-                  : "bg-destructive/10 border-destructive/30 text-destructive")
-              }
-            >
-              <p className="font-medium text-foreground">Contribution limits</p>
-              <p>
-                To prevent abuse of server uploads, non-admin contributors may have{" "}
-                <strong>one pending upload at a time</strong>, and must wait{" "}
-                <strong>{cooldownDays} days</strong> after a contribution is approved before
-                submitting another.
-              </p>
-              {!canContributeFromData && reason === "pending" && (
-                <p>
-                  You already have a pending contribution awaiting review. Withdraw it below before
-                  submitting a new one.
-                </p>
-              )}
-              {!canContributeFromData && reason === "cooldown" && nextAllowed && (
-                <p>
-                  Your last contribution was approved. You can contribute again on{" "}
-                  <strong>{nextAllowed.toLocaleString()}</strong>.
-                </p>
-              )}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FileUpload
-              key={fileInputKey}
-              id="contribute-db"
-              label="Map Database (.db)"
-              accept=".db"
-              required
-              onChange={setDbFile}
-              disabled={!isAdmin && info?.can_contribute === false}
-            />
-
-            <div className="space-y-2">
-              <Label htmlFor="contributor-name">Your Name (optional)</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="contributor-name"
-                  placeholder="Anonymous"
-                  value={contributor}
-                  onChange={(e) => setContributor(e.target.value)}
-                  maxLength={50}
-                  disabled={!isAdmin && info?.can_contribute === false}
-                  className="flex-1"
-                />
-                {accountQuery.data?.user?.display_name && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setContributor(accountQuery.data?.user?.display_name ?? "")}
-                    disabled={
-                      (!isAdmin && info?.can_contribute === false) ||
-                      contributor === accountQuery.data.user.display_name
-                    }
-                    title="Fill in your account display name"
-                  >
-                    Use my name
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {regionPickerEnabled && (
-              <div className="space-y-2 rounded border p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <Label className="m-0">
-                    Region overwrite{" "}
-                    <span className="text-xs font-normal text-muted-foreground">
-                      (optional, replaces in-region chunks)
-                    </span>
-                  </Label>
-                  {isAdmin && <Badge variant="outline">admin / region_overwrite</Badge>}
-                </div>
-                <ContributionRegionPicker
-                  availableLevels={availableLevels}
-                  value={region}
-                  onChange={(r) => setRegion(r)}
-                  tileAreaCap={isAdmin ? null : (info?.region_tile_cap_non_admin ?? null)}
-                  disabled={uploading}
-                />
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              disabled={!dbFile || uploading || (!isAdmin && info?.can_contribute === false)}
-            >
-              {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Upload for Review
-            </Button>
-
-            {uploading && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Uploading…</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-300"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </form>
-
-          {error && <p className="text-sm text-destructive">{error}</p>}
-
-          {uploadResult && (
-            <div className="rounded-md border p-3 bg-muted/30">
-              <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                {uploadResult}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ContributeUploadCard
+        contributionInfo={contributionInfo}
+        infoLoading={contributeInfoLoading}
+        canContributeFromData={canContributeFromData}
+        isAdmin={!!isAdmin}
+        cooldownDays={cooldownDays}
+        nextAllowed={nextAllowed}
+        reason={reason}
+      />
 
       {/* Pending contributions */}
-      {info && info.pending.length > 0 && (
+      {contributionInfo && contributionInfo.pending.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Pending Contributions</CardTitle>
@@ -637,173 +209,23 @@ export function ContributePage() {
           <CardContent className="space-y-3">
             {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
-            {info.pending.map((p) => {
-              const previewBlocked =
-                !isAdmin &&
-                !info?.is_admin &&
-                info?.heavy_compute_enabled === false &&
-                !p.preview_image_url;
-              const isPreviewLoading = previewLoading && previewId === p.id;
-              const previewDisabled = isPreviewLoading || previewBlocked;
-              const previewTitle = previewBlocked
-                ? "Preview generation is paused while the server is at reduced capacity. An admin will render previews shortly."
-                : undefined;
-
-              const validating = p.validation_status === "pending";
-              const merging = p.approval_status === "queued" || p.approval_status === "running";
-              const approveDisabled = actionLoading === p.id || validating || merging;
-              const approveTitle = validating
-                ? "Waiting for upload validation to finish before approval is allowed."
-                : merging
-                  ? "Already merging in the background."
-                  : undefined;
-              const approveLabel = merging
-                ? p.approval_status === "running"
-                  ? "Merging…"
-                  : "Queued…"
-                : "Approve";
-
-              return (
-                <div key={p.id} className="space-y-2">
-                  <div className="flex items-center justify-between rounded-md border p-3">
-                    <div className="space-y-0.5">
-                      <div className="text-sm font-medium">{p.contributor}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {p.tile_count.toLocaleString()} chunks &middot;{" "}
-                        {new Date(p.created_at ?? p.timestamp ?? "").toLocaleDateString()}
-                      </div>
-                      <div className="text-xs text-muted-foreground font-mono">{p.id}</div>
-                      {info.match_score_enabled && p.match_score && (
-                        <MatchScoreBadge
-                          score={p.match_score}
-                          canRecompute={isAdmin && p.match_score.status !== "pending"}
-                          onRecompute={() => handleRecomputeMatchScore(p.id)}
-                          recomputing={actionLoading === p.id}
-                          heavyComputeEnabled={info?.heavy_compute_enabled !== false}
-                        />
-                      )}
-                      <PendingLifecycleBadge
-                        contribution={p}
-                        heavyComputeEnabled={info?.heavy_compute_enabled !== false}
-                      />
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handlePreview(p.id)}
-                        disabled={previewDisabled}
-                        title={previewTitle}
-                        aria-disabled={previewDisabled}
-                      >
-                        {isPreviewLoading ? (
-                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Eye className="mr-1 h-3.5 w-3.5" />
-                        )}
-                        {previewBlocked ? "Preview paused" : "Preview"}
-                      </Button>
-                      {p.is_mine && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleWithdraw(p.id)}
-                          disabled={
-                            actionLoading === p.id || (!isAdmin && !!info?.withdraw_next_allowed_at)
-                          }
-                          title={
-                            !isAdmin && info?.withdraw_next_allowed_at
-                              ? `Weekly withdraw limit reached. Next allowed: ${new Date(
-                                  info.withdraw_next_allowed_at,
-                                ).toLocaleString()}`
-                              : undefined
-                          }
-                          className="text-destructive hover:text-destructive"
-                        >
-                          {actionLoading === p.id ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Undo2 className="mr-1 h-3.5 w-3.5" />
-                          )}
-                          Withdraw
-                        </Button>
-                      )}
-                      {isAdmin && (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleApprove(p.id)}
-                            disabled={approveDisabled}
-                            title={approveTitle}
-                          >
-                            {actionLoading === p.id || merging ? (
-                              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Check className="mr-1 h-3.5 w-3.5" />
-                            )}
-                            {approveLabel}
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setRejectingId(p.id)}
-                            disabled={actionLoading === p.id}
-                          >
-                            <XIcon className="mr-1 h-3.5 w-3.5" />
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Preview image */}
-                  {previewId === p.id && (
-                    <div className="rounded-md border overflow-hidden bg-black/5">
-                      <MapViewer
-                        imageUrl={previewId === p.id ? previewUrl : null}
-                        alt="Merge preview"
-                        height="60vh"
-                        bordered={false}
-                        legend={
-                          <>
-                            <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
-                            <span>
-                              Green-highlighted areas are new chunks from this contribution
-                            </span>
-                          </>
-                        }
-                      />
-                    </div>
-                  )}
-
-                  {/* Phase 2 — region before/after preview (admin/owner only).
-                    The endpoint is gated server-side by feature flag and
-                    owner/admin checks, so we only need to gate the UI on
-                    the presence of `update_region` (which the backend
-                    redacts for non-admin/non-owner viewers anyway). */}
-                  {previewId === p.id &&
-                    p.update_region_mode === "overwrite" &&
-                    p.update_region && <ContributionBeforeAfter contributionId={p.id} />}
-
-                  {/* Region badge — visible whenever the upload was a
-                    region-overwrite, even if bounds are redacted. */}
-                  {p.update_region_mode === "overwrite" && (
-                    <div className="text-xs text-muted-foreground">
-                      Region overwrite
-                      {p.update_region && (
-                        <>
-                          {" "}
-                          — x [{p.update_region.min_x}, {p.update_region.max_x}], z [
-                          {p.update_region.min_z}, {p.update_region.max_z}]
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {contributionInfo.pending.map((p) => (
+              <PendingContributionsSection
+                key={p.id}
+                contribution={p}
+                contributeInfo={contributionInfo}
+                isAdmin={!!isAdmin}
+                previewId={previewId}
+                previewUrl={previewUrl}
+                previewLoading={previewLoading}
+                actionLoading={actionLoading}
+                handlePreview={handlePreview}
+                handleWithdraw={handleWithdraw}
+                handleApprove={handleApprove}
+                setRejectingId={setRejectingId}
+                handleRecomputeMatchScore={handleRecomputeMatchScore}
+              />
+            ))}
           </CardContent>
         </Card>
       )}
@@ -812,111 +234,31 @@ export function ContributePage() {
           in their own admin-only section below the Recent contributions
           grid). The backend currently leaves reverted rows in the approved
           list, so we cross-reference by id with `info.history`. */}
-      {info && <ContributionsCard info={info} />}
+      {contributionInfo && <ContributionsCard info={contributionInfo} />}
 
       {/* Recent contributions grid (all-time history with previews). Visible
           to non-admins only when the public_history flag is on; admins
           always see it. */}
-      {info &&
-        (info.public_history_enabled || isAdmin || info.is_admin) &&
-        info.history &&
-        info.history.length > 0 && (
-          <RecentContributionsGrid
-            history={info.history}
-            isAdmin={!!isAdmin || !!info.is_admin}
-            totalCount={info.history_total ?? info.history.length}
-            displayContributor={(name) => name}
-            revertWindowDays={info.revert_window_days ?? 14}
+      {contributionInfo &&
+        (contributionInfo.public_history_enabled || isAdmin || contributionInfo.is_admin) &&
+        contributionInfo.history &&
+        contributionInfo.history.length > 0 && (
+          <RecentContributionsGridMemo
+            history={contributionInfo.history}
+            isAdmin={!!isAdmin || !!contributionInfo.is_admin}
+            totalCount={contributionInfo.history_total ?? contributionInfo.history.length}
+            revertWindowDays={contributionInfo.revert_window_days ?? 14}
             onRevert={handleRevertHistory}
           />
         )}
 
       {/* Withdrawn contributions — admin-only, shown below the Recent
           contributions grid. */}
-      {info && (isAdmin || info.is_admin) && info.withdrawn && info.withdrawn.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
-              <Undo2 className="h-4 w-4" />
-              Withdrawn Contributions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {info.withdrawn
-                .slice()
-                .sort(
-                  (a, b) => new Date(b.withdrawn_at).getTime() - new Date(a.withdrawn_at).getTime(),
-                )
-                .map((w) => (
-                  <div
-                    key={w.id}
-                    className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0 opacity-60"
-                  >
-                    <div>
-                      <span className="font-medium text-muted-foreground">[Withdrawn]</span>
-                      <span className="text-xs text-muted-foreground ml-2 font-mono">{w.id}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(w.withdrawn_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <WithdrawnContributionsCard info={contributionInfo} isAdmin={!!isAdmin} />
 
       {/* Reverted contributions — admin-only. Sourced from the history
           feed (status='reverted' or 'orphaned_by_restore'). */}
-      {info &&
-        (isAdmin || info.is_admin) &&
-        info.history &&
-        info.history.some((h) => h.status === "reverted" || h.status === "orphaned_by_restore") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
-                <Undo2 className="h-4 w-4" />
-                Reverted Contributions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {info.history
-                  .filter((h) => h.status === "reverted" || h.status === "orphaned_by_restore")
-                  .slice()
-                  .sort((a, b) => {
-                    const ta = new Date(a.reverted_at ?? a.approved_at ?? 0).getTime();
-                    const tb = new Date(b.reverted_at ?? b.approved_at ?? 0).getTime();
-                    return tb - ta;
-                  })
-                  .map((h) => (
-                    <div
-                      key={h.id}
-                      className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0 opacity-60"
-                    >
-                      <div>
-                        <span className="font-medium">{h.contributor}</span>
-                        <span className="text-muted-foreground ml-2">
-                          {h.status === "orphaned_by_restore"
-                            ? "[Orphaned by restore]"
-                            : "[Reverted]"}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-2 font-mono">{h.id}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {h.reverted_at
-                          ? new Date(h.reverted_at).toLocaleDateString()
-                          : h.approved_at
-                            ? new Date(h.approved_at).toLocaleDateString()
-                            : "—"}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <RevertedContributionsSection info={contributionInfo} isAdmin={!!isAdmin} />
 
       {/* Two-step confirmation for the destructive Reject action. */}
       <ConfirmDialog
@@ -949,557 +291,3 @@ export function ContributePage() {
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Phase 1 — Match-score badge (informational only, never blocks approval)
-// ---------------------------------------------------------------------------
-
-function PendingLifecycleBadge({
-  contribution,
-  heavyComputeEnabled,
-}: {
-  contribution: PendingContribution;
-  heavyComputeEnabled: boolean;
-}) {
-  // Async upload validation. The row exists in the DB but the worker
-  // hasn't opened the .db file yet — Approve will be greyed out upstream.
-  // When the heavy-compute kill switch is OFF no worker will spawn, so
-  // show a deferred state instead of a never-ending spinner.
-  if (contribution.validation_status === "pending") {
-    if (!heavyComputeEnabled) {
-      return (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Awaiting admin compute</span>
-          <HelpTip text="Heavy background work is paused on the server. Upload validation will run once an admin re-enables heavy compute or drains the queue manually." />
-        </div>
-      );
-    }
-    return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Validating upload…</span>
-      </div>
-    );
-  }
-
-  // Async approval lifecycle. ``queued`` = admin pressed Approve, the
-  // worker hasn't picked it up. ``running`` = merge in progress. ``failed``
-  // = worker hit a non-retryable error or burned all attempts; the row is
-  // still pending and Approve becomes available again.
-  const approval = contribution.approval_status;
-  if (approval === "queued") {
-    return (
-      <div className="flex items-center gap-1.5 text-xs">
-        <Badge
-          variant="outline"
-          className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
-        >
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Queued for merge
-        </Badge>
-        <span className="text-muted-foreground">Worker will pick this up shortly</span>
-      </div>
-    );
-  }
-  if (approval === "running") {
-    return (
-      <div className="flex items-center gap-1.5 text-xs">
-        <Badge
-          variant="outline"
-          className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
-        >
-          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Merging into map…
-        </Badge>
-      </div>
-    );
-  }
-  if (approval === "failed") {
-    return (
-      <div className="flex items-center gap-1.5 text-xs">
-        <Badge
-          variant="outline"
-          className="bg-destructive/15 text-destructive border-destructive/30"
-        >
-          Merge failed
-        </Badge>
-        {contribution.approval_error && (
-          <span
-            className="text-muted-foreground truncate max-w-md"
-            title={contribution.approval_error}
-          >
-            {contribution.approval_error}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
-
-function MatchScoreBadge({
-  score,
-  canRecompute,
-  onRecompute,
-  recomputing,
-  heavyComputeEnabled,
-}: {
-  score: MatchScore;
-  canRecompute: boolean;
-  onRecompute: () => void;
-  recomputing: boolean;
-  heavyComputeEnabled: boolean;
-}) {
-  if (score.status === "pending") {
-    if (!heavyComputeEnabled) {
-      return (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Match score awaiting admin compute</span>
-          <HelpTip text="Heavy background work is paused on the server. The match score (how much of this upload overlaps the existing map) will be computed once an admin re-enables heavy compute or drains the queue manually." />
-        </div>
-      );
-    }
-    return (
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Computing match score…</span>
-      </div>
-    );
-  }
-
-  if (score.status === "failed") {
-    return (
-      <div className="flex items-center gap-1.5 text-xs">
-        <Badge variant="outline" className="text-muted-foreground">
-          Match score unknown
-        </Badge>
-        {canRecompute && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-1.5 text-xs"
-            onClick={onRecompute}
-            disabled={recomputing}
-            title={score.reason || "Retry match-score computation"}
-          >
-            {recomputing ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1 h-3 w-3" />
-            )}
-            Recompute
-          </Button>
-        )}
-      </div>
-    );
-  }
-
-  // status === "ready"
-  const pixel = score.pixel_similar_pct ?? 0;
-  const overlap = score.tile_overlap_pct ?? 0;
-  const overlapCount = score.overlap_count ?? 0;
-  const total = score.pending_total ?? 0;
-
-  // Plan thresholds: ≥80% green ("looks like our map"), <20% orange
-  // ("may be wrong file"), in between grey/neutral.
-  let badgeClass: string;
-  let label: string;
-  if (pixel >= 80) {
-    badgeClass = "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30";
-    label = "Looks like our map";
-  } else if (pixel < 20) {
-    badgeClass = "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30";
-    label = "May be wrong file";
-  } else {
-    badgeClass = "bg-muted text-muted-foreground border-border";
-    label = "Partial match";
-  }
-
-  return (
-    <div className="flex items-center gap-1.5 text-xs">
-      <Badge variant="outline" className={badgeClass}>
-        {label}
-      </Badge>
-      <span className="text-muted-foreground">
-        {overlap.toFixed(0)}% overlap ({overlapCount.toLocaleString()}/{total.toLocaleString()}) ·{" "}
-        {pixel.toFixed(0)}% pixel-similar
-      </span>
-      {canRecompute && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1.5 text-xs"
-          onClick={onRecompute}
-          disabled={recomputing}
-          title="Recompute match score"
-        >
-          {recomputing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
-          )}
-        </Button>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Recent contributions grid
-//
-// Renders a thumbnail grid of approved/withdrawn contributions whose preview
-// PNG is in the history bucket (kept indefinitely — all-time history).
-// Clicking a tile expands it inline to a larger view. Anonymous-by-default
-// — the contributor is shown only when the viewer has permission to see
-// contributor names.
-// ---------------------------------------------------------------------------
-
-function RecentContributionsGridImpl({
-  history,
-  isAdmin,
-  totalCount,
-  displayContributor,
-  revertWindowDays,
-  onRevert,
-}: {
-  history: HistoryEntry[];
-  isAdmin: boolean;
-  totalCount: number;
-  displayContributor: (name: string) => string;
-  revertWindowDays: number;
-  onRevert: (id: string) => Promise<void>;
-}) {
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [revertingId, setRevertingId] = useState<string | null>(null);
-  const [revertError, setRevertError] = useState<string | null>(null);
-  // Two-step revert: clicking the destructive button stages the entry
-  // here, which opens a themed ConfirmDialog instead of the browser's
-  // native window.confirm() (which feels jarring inside the admin UI
-  // and can't be styled per page).
-  const [pendingRevert, setPendingRevert] = useState<HistoryEntry | null>(null);
-  const opened = openId ? (history.find((h) => h.id === openId) ?? null) : null;
-
-  const requestRevert = (entry: HistoryEntry) => {
-    setRevertError(null);
-    setPendingRevert(entry);
-  };
-
-  async function confirmRevert() {
-    if (!pendingRevert) return;
-    const entry = pendingRevert;
-    setRevertError(null);
-    setRevertingId(entry.id);
-    try {
-      await onRevert(entry.id);
-      setOpenId(null);
-      setPendingRevert(null);
-    } catch (err) {
-      setRevertError(err instanceof Error ? err.message : "Revert failed");
-      // Keep the dialog open so the operator can read the error and
-      // either retry or cancel.
-    } finally {
-      setRevertingId(null);
-    }
-  }
-
-  const pendingTilesNew = pendingRevert?.revert_added_count ?? pendingRevert?.tiles_new ?? 0;
-  const pendingTilesReplaced = pendingRevert?.revert_replaced_count ?? 0;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <History className="h-4 w-4" />
-          Recent Contributions
-          <Badge variant="secondary" className="ml-1 font-normal">
-            all-time
-          </Badge>
-        </CardTitle>
-        {isAdmin && totalCount > history.length && (
-          <p className="text-xs text-muted-foreground">
-            Showing {history.length} of {totalCount.toLocaleString()} retained.
-          </p>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-          {history.map((h) => {
-            const isWithdrawn = h.status === "withdrawn";
-            const isReverted = h.status === "reverted";
-            const isOrphaned = h.status === "orphaned_by_restore";
-            const dateStr = h.approved_at ?? h.withdrawn_at ?? "";
-            return (
-              <button
-                key={h.id}
-                type="button"
-                onClick={() => setOpenId(openId === h.id ? null : h.id)}
-                className={
-                  "group relative flex flex-col overflow-hidden rounded-md border bg-muted/20 text-left transition-colors hover:border-primary " +
-                  (openId === h.id ? "ring-2 ring-primary" : "")
-                }
-              >
-                <div className="aspect-video w-full bg-black/40 flex items-center justify-center overflow-hidden">
-                  {h.preview_signed_url ? (
-                    <img
-                      src={h.preview_signed_url}
-                      alt={`Preview of contribution ${h.id}`}
-                      loading="lazy"
-                      className={
-                        "h-full w-full object-cover transition-opacity group-hover:opacity-90 " +
-                        (isWithdrawn || isReverted || isOrphaned ? "opacity-60 grayscale" : "")
-                      }
-                    />
-                  ) : (
-                    <ImageOff className="h-6 w-6 text-muted-foreground" />
-                  )}
-                </div>
-                <div className="space-y-0.5 px-2 py-1.5 text-xs">
-                  <div className="flex items-center justify-between gap-1.5">
-                    <span className="truncate font-medium">
-                      {isWithdrawn ? "[Withdrawn]" : displayContributor(h.contributor)}
-                    </span>
-                    {isWithdrawn ? (
-                      <Badge variant="outline" className="text-[10px] py-0">
-                        withdrawn
-                      </Badge>
-                    ) : isReverted ? (
-                      <Badge variant="outline" className="text-[10px] py-0">
-                        reverted
-                      </Badge>
-                    ) : isOrphaned ? (
-                      <Badge variant="outline" className="text-[10px] py-0">
-                        orphaned
-                      </Badge>
-                    ) : h.revert_status === "queued" || h.revert_status === "running" ? (
-                      <Badge variant="outline" className="text-[10px] py-0">
-                        {h.revert_status === "running" ? "reverting…" : "queued"}
-                      </Badge>
-                    ) : h.revert_status === "failed" ? (
-                      <Badge variant="destructive" className="text-[10px] py-0">
-                        revert failed
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {!isWithdrawn && typeof h.tiles_new === "number"
-                      ? `+${h.tiles_new.toLocaleString()} new chunks`
-                      : `${h.tile_count.toLocaleString()} chunks`}
-                  </div>
-                  <div className="text-muted-foreground">
-                    {dateStr ? new Date(dateStr).toLocaleDateString() : "—"}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Click-to-enlarge inline view */}
-        {opened && opened.preview_signed_url && (
-          <div className="rounded-md border overflow-hidden bg-black/5">
-            <MapViewer
-              imageUrl={opened.preview_signed_url}
-              alt={`Preview of contribution ${opened.id}`}
-              height="60vh"
-              bordered={false}
-              legend={
-                <span className="text-muted-foreground">
-                  {opened.status === "withdrawn"
-                    ? "[Withdrawn] · preview retained for transparency"
-                    : opened.status === "reverted"
-                      ? `Reverted · originally by ${displayContributor(opened.contributor)}`
-                      : opened.status === "orphaned_by_restore"
-                        ? `Orphaned by backup restore · ${displayContributor(opened.contributor)}`
-                        : `${displayContributor(opened.contributor)} · approved ${
-                            opened.approved_at ? new Date(opened.approved_at).toLocaleString() : ""
-                          }`}
-                </span>
-              }
-            />
-            {isAdmin && (
-              <div className="flex flex-col gap-2 border-t bg-muted/20 px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-muted-foreground">
-                  {opened.status === "approved" ? (
-                    opened.revert_status === "queued" ? (
-                      <>Queued for revert — worker will pick this up shortly.</>
-                    ) : opened.revert_status === "running" ? (
-                      <>
-                        <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
-                        Reverting now — this can take a few minutes for large maps.
-                      </>
-                    ) : opened.revert_status === "failed" ? (
-                      <span className="text-destructive">
-                        Revert failed
-                        {opened.revert_attempts
-                          ? ` (after ${opened.revert_attempts} attempts)`
-                          : ""}
-                        {opened.revert_error ? `: ${opened.revert_error}` : ""}. Click Revert to
-                        retry.
-                      </span>
-                    ) : opened.can_revert ? (
-                      <>
-                        Revert window: {revertWindowDays}d ·{" "}
-                        {(opened.revert_added_count ?? opened.tiles_new ?? 0).toLocaleString()} tile
-                        {(opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s"}{" "}
-                        captured
-                        {opened.revert_replaced_count
-                          ? ` · ${opened.revert_replaced_count.toLocaleString()} overwrites`
-                          : ""}
-                      </>
-                    ) : opened.revert_supported === false ? (
-                      <>
-                        Revert unavailable — undo data was not captured (file too large or feature
-                        flag was off).
-                      </>
-                    ) : (
-                      <>
-                        Outside the {revertWindowDays}-day revert window — restore from a backup
-                        instead.
-                      </>
-                    )
-                  ) : (
-                    <>Status: {opened.status}</>
-                  )}
-                </div>
-                {opened.can_revert && (
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    disabled={revertingId === opened.id}
-                    onClick={() => requestRevert(opened)}
-                  >
-                    {revertingId === opened.id ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    ) : (
-                      <Undo2 className="mr-1 h-3 w-3" />
-                    )}
-                    {opened.revert_status === "failed"
-                      ? "Retry revert"
-                      : "Revert this contribution"}
-                  </Button>
-                )}
-              </div>
-            )}
-            {isAdmin && revertError && (
-              <div className="border-t bg-destructive/10 px-3 py-2 text-xs text-destructive">
-                {revertError}
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-      <ConfirmDialog
-        open={pendingRevert !== null}
-        title="Revert this contribution?"
-        description={
-          pendingRevert ? (
-            <>
-              {pendingTilesReplaced > 0 ? (
-                <>
-                  This will restore <strong>{pendingTilesReplaced.toLocaleString()}</strong> chunk
-                  {pendingTilesReplaced === 1 ? "" : "s"} to their pre-contribution state and remove{" "}
-                  <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
-                  {pendingTilesNew === 1 ? "" : "s"} added in the region.
-                </>
-              ) : (
-                <>
-                  This will delete <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
-                  {pendingTilesNew === 1 ? "" : "s"} added by this contribution. The area returns to{" "}
-                  <em>unmapped</em> — not to a previous version.
-                </>
-              )}
-              <br />
-              <span className="text-muted-foreground">
-                Contribution ID: <span className="font-mono">{pendingRevert.id}</span>
-              </span>
-              {revertError && (
-                <>
-                  <br />
-                  <span className="text-destructive">{revertError}</span>
-                </>
-              )}
-            </>
-          ) : null
-        }
-        confirmLabel="Revert"
-        variant="destructive"
-        loading={revertingId !== null}
-        onConfirm={confirmRevert}
-        onCancel={() => {
-          setPendingRevert(null);
-          setRevertError(null);
-        }}
-      />
-    </Card>
-  );
-}
-
-// Memoise the grid so the React-Query polling that fires every 5s while a
-// contribution is being merged/validated doesn't re-render the thumbnail
-// list (and the inline expanded `MapViewer`) on every successful refetch.
-// React-Query produces a fresh `history` array reference on each fetch even
-// when the underlying data is byte-for-byte identical, so the default
-// reference equality is not enough — we compare the fields we actually
-// render. `displayContributor` and `onRevert` are stabilised at the call
-// site via `useCallback`, so identity equality is sufficient there.
-//
-// IMPORTANT: `preview_signed_url` carries a fresh signature/token on every
-// refetch (R2 / S3-style signed URLs include `X-Amz-Signature`, `expires`,
-// etc. in the query string), so a strict string compare would always
-// disagree and force the inline `MapViewer` to reset its zoom/pan. We
-// compare just the URL's pathname to detect actual preview swaps and
-// ignore signature churn.
-function previewUrlsEqual(a: string | null | undefined, b: string | null | undefined): boolean {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  try {
-    return new URL(a).pathname === new URL(b).pathname;
-  } catch {
-    return a === b;
-  }
-}
-
-function historyEntriesEqual(a: HistoryEntry[], b: HistoryEntry[]): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    const x = a[i];
-    const y = b[i];
-    if (
-      x.id !== y.id ||
-      x.status !== y.status ||
-      x.contributor !== y.contributor ||
-      x.tile_count !== y.tile_count ||
-      x.tiles_new !== y.tiles_new ||
-      x.tiles_existing !== y.tiles_existing ||
-      x.combined_total !== y.combined_total ||
-      x.approved_at !== y.approved_at ||
-      x.withdrawn_at !== y.withdrawn_at ||
-      !previewUrlsEqual(x.preview_signed_url, y.preview_signed_url) ||
-      x.is_mine !== y.is_mine ||
-      x.revert_supported !== y.revert_supported ||
-      x.revert_added_count !== y.revert_added_count ||
-      x.revert_replaced_count !== y.revert_replaced_count ||
-      x.reverted_at !== y.reverted_at ||
-      x.can_revert !== y.can_revert ||
-      x.revert_status !== y.revert_status ||
-      x.revert_error !== y.revert_error ||
-      x.revert_attempts !== y.revert_attempts
-    ) {
-      return false;
-    }
-  }
-  return true;
-}
-
-const RecentContributionsGrid = memo(RecentContributionsGridImpl, (prev, next) => {
-  return (
-    prev.isAdmin === next.isAdmin &&
-    prev.totalCount === next.totalCount &&
-    prev.revertWindowDays === next.revertWindowDays &&
-    prev.displayContributor === next.displayContributor &&
-    prev.onRevert === next.onRevert &&
-    historyEntriesEqual(prev.history, next.history)
-  );
-});

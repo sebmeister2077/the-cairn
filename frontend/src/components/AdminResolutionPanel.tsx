@@ -288,6 +288,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
             {rows.map(({ level, max_dimension, entry }) => {
               const status = entry?.status ?? "not_generated";
               const progress = entry?.progress ?? 0;
+              const etaMs = computeEtaMs(entry, nowMs);
               return (
                 <tr key={level} className="border-t">
                   <td className="px-3 py-2 font-medium">L{level}</td>
@@ -315,17 +316,14 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                             ({entry.completed_chunks}/{entry.total_chunks})
                           </span>
                         )}
-                        {(() => {
-                          const etaMs = computeEtaMs(entry, nowMs);
-                          return etaMs != null ? (
-                            <span
-                              className="text-xs text-muted-foreground"
-                              title="Estimated time remaining (client-side estimate based on chunks completed since start)"
-                            >
-                              · ETA ~{formatDuration(etaMs)}
-                            </span>
-                          ) : null;
-                        })()}
+                        {etaMs == null ? null : (
+                          <span
+                            className="text-xs text-muted-foreground"
+                            title="Estimated time remaining (client-side estimate based on chunks completed since start)"
+                          >
+                            · ETA ~{formatDuration(etaMs)}
+                          </span>
+                        )}
                       </div>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>

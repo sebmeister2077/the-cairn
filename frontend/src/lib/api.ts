@@ -1,5 +1,7 @@
+import type { QueryFunction } from "@tanstack/react-query";
+
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
-const API_BASE = configuredApiBase || "/api";
+export const API_BASE = configuredApiBase || "/api";
 
 // For large uploads, use the same API base. In dev this is usually "/api" via Vite proxy.
 const UPLOAD_API_BASE = API_BASE;
@@ -184,7 +186,7 @@ export async function checkAdminStatus(): Promise<boolean> {
     return status.is_admin;
 }
 
-async function handleResponse(res: Response) {
+export async function handleResponse(res: Response) {
     if (!res.ok) {
         if (res.status === 401) {
             // The API key is no longer accepted (revoked, expired, or the
@@ -450,7 +452,6 @@ export async function stopMapGeneration(): Promise<MapGenerationStatus> {
     });
     return (await handleResponse(res)).json();
 }
-
 export async function getContributeInfo(signal?: AbortSignal) {
     const res = await fetch(`${API_BASE}/contribute/info`, {
         headers: authHeaders(),
