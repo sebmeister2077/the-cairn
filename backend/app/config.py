@@ -100,6 +100,10 @@ class Settings:
     BACKUP_CHECK_INTERVAL_SECONDS: int = int(
         os.environ.get("BACKUP_CHECK_INTERVAL_SECONDS", str(60 * 60))
     )
+    # Externally visible base URL of the backend API (e.g. ``https://api.example.com``).
+    # Used to render shareable backup-download links. When empty, the create
+    # endpoint falls back to the request's own base URL.
+    PUBLIC_BASE_URL: str = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
 
     # --- Phase 4b: per-contribution revert ---
     # How long after approval a contribution can still be reverted (days).

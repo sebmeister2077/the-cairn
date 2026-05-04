@@ -21,6 +21,10 @@ import {
   ChevronRight,
   Trash2,
   AlertTriangle,
+  Link as LinkIcon,
+  Copy,
+  ExternalLink,
+  Eye,
 } from "lucide-react";
 import {
   adminListBackups,
@@ -31,7 +35,12 @@ import {
   adminTotpEnroll,
   adminTotpConfirm,
   adminLastBackupRestore,
+  adminCreateBackupDownloadLink,
+  adminListBackupDownloadLinks,
+  adminListBackupDownloadRedemptions,
+  adminRevokeBackupDownloadLink,
   type BackupRecord,
+  type BackupDownloadLink,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +57,13 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 
 function formatBytes(n: number): string {
@@ -98,8 +114,17 @@ export function AdminBackupsPanel() {
 
   const [enrolDialog, setEnrolDialog] = useState(false);
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
+  const [linkTarget, setLinkTarget] = useState<BackupRecord | null>(null);
 
   const featureDisabled = backups.isError && /HTTP 404|Not Found/i.test(String(backups.error));
+
+  const downloadLinks = useQuery({
+    queryKey: ["admin-backup-download-links"],
+    queryFn: adminListBackupDownloadLinks,
+    enabled: open && !featureDisabled,
+    refetchInterval: open ? 30_000 : false,
+    retry: false,
+  });
 
   return (
     <Card>
@@ -108,7 +133,7 @@ export function AdminBackupsPanel() {
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="flex w-full items-center gap-2 text-left"
+          className="flex w-full items-center gap-2 text-left cursor-pointer"
         >
           {open ? (
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -134,13 +159,13 @@ export function AdminBackupsPanel() {
       {open && (
         <CardContent className="space-y-4">
           {lastRestore.data?.last_restore && (
-            <div className="border border-amber-300 bg-amber-50 rounded p-3 text-sm">
+            <div className="border border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-100 rounded p-3 text-sm">
               <div className="flex items-center gap-2 font-medium">
-                <HistoryIcon className="h-4 w-4 text-amber-700" />
+                <HistoryIcon className="h-4 w-4 text-amber-700 dark:text-amber-300" />
                 Map was restored from a backup on{" "}
                 {new Date(lastRestore.data.last_restore.restored_at).toLocaleString()}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-amber-900/80 dark:text-amber-200/80 mt-1">
                 Source: <code>{lastRestore.data.last_restore.backup_key}</code> •{" "}
                 {lastRestore.data.last_restore.orphaned_contributions} contribution(s) marked{" "}
                 <code>orphaned_by_restore</code>.
@@ -237,10 +262,18 @@ export function AdminBackupsPanel() {
                       backup={b}
                       restoreEnabled={Boolean(totp.data?.enrolled)}
                       onRestore={() => setRestoreTarget(b)}
+                      onGenerateLink={() => setLinkTarget(b)}
                     />
                   ))}
                 </ul>
               )}
+
+              <DownloadLinksSection
+                links={downloadLinks.data?.links ?? []}
+                loading={downloadLinks.isLoading}
+                error={downloadLinks.error ? String(downloadLinks.error) : null}
+                onRefresh={() => downloadLinks.refetch()}
+              />
             </>
           )}
         </CardContent>
@@ -264,6 +297,14 @@ export function AdminBackupsPanel() {
           queryClient.invalidateQueries({ queryKey: ["admin-last-restore"] });
         }}
       />
+
+      <GenerateLinkDialog
+        backup={linkTarget}
+        onClose={() => setLinkTarget(null)}
+        onCreated={() =>
+          queryClient.invalidateQueries({ queryKey: ["admin-backup-download-links"] })
+        }
+      />
     </Card>
   );
 }
@@ -272,10 +313,12 @@ function BackupRow({
   backup,
   restoreEnabled,
   onRestore,
+  onGenerateLink,
 }: {
   backup: BackupRecord;
   restoreEnabled: boolean;
   onRestore: () => void;
+  onGenerateLink: () => void;
 }) {
   return (
     <li className="flex items-center justify-between gap-3 p-2">
@@ -295,15 +338,26 @@ function BackupRow({
           {backup.last_modified ? new Date(backup.last_modified).toLocaleString() : "unknown date"}
         </p>
       </div>
-      <Button
-        size="sm"
-        variant="destructive"
-        onClick={onRestore}
-        disabled={!restoreEnabled}
-        title={restoreEnabled ? "Restore this backup" : "Enrol in TOTP 2FA before restoring"}
-      >
-        Restore
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onGenerateLink}
+          title="Generate a shareable download link"
+        >
+          <LinkIcon className="h-3 w-3" />
+          Generate link
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={onRestore}
+          disabled={!restoreEnabled}
+          title={restoreEnabled ? "Restore this backup" : "Enrol in TOTP 2FA before restoring"}
+        >
+          Restore
+        </Button>
+      </div>
     </li>
   );
 }
@@ -614,5 +668,429 @@ function RestoreDialog({
         }}
       />
     </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Shareable backup-download links
+// ---------------------------------------------------------------------------
+
+const TTL_OPTIONS: { label: string; value: number }[] = [
+  { label: "15 minutes", value: 15 * 60 },
+  { label: "1 hour", value: 60 * 60 },
+  { label: "24 hours", value: 24 * 60 * 60 },
+  { label: "7 days", value: 7 * 24 * 60 * 60 },
+  { label: "30 days", value: 30 * 24 * 60 * 60 },
+];
+
+function formatRelative(toIso: string | null): string {
+  if (!toIso) return "";
+  const ms = new Date(toIso).getTime() - Date.now();
+  const abs = Math.abs(ms);
+  const units: [number, string][] = [
+    [60_000, "s"],
+    [3_600_000, "min"],
+    [86_400_000, "h"],
+    [Number.POSITIVE_INFINITY, "d"],
+  ];
+  let unitIdx = units.findIndex(([cap]) => abs < cap);
+  if (unitIdx === -1) unitIdx = units.length - 1;
+  const divisors = [1000, 60_000, 3_600_000, 86_400_000];
+  const value = Math.round(abs / divisors[unitIdx]);
+  const u = units[unitIdx][1];
+  return ms >= 0 ? `in ${value}${u}` : `${value}${u} ago`;
+}
+
+function GenerateLinkDialog({
+  backup,
+  onClose,
+  onCreated,
+}: {
+  backup: BackupRecord | null;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const [ttl, setTtl] = useState<number>(24 * 60 * 60);
+  const [label, setLabel] = useState("");
+  const [generated, setGenerated] = useState<BackupDownloadLink | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!backup) {
+      setTtl(24 * 60 * 60);
+      setLabel("");
+      setGenerated(null);
+      setError(null);
+      setCopied(false);
+    }
+  }, [backup]);
+
+  const create = useMutation({
+    mutationFn: () =>
+      adminCreateBackupDownloadLink({
+        key: backup!.key,
+        ttl_seconds: ttl,
+        label: label || undefined,
+      }),
+    onSuccess: (data) => {
+      setGenerated(data);
+      setError(null);
+      onCreated();
+    },
+    onError: (e) => setError(String(e)),
+  });
+
+  const handleCopy = async () => {
+    if (!generated?.url) return;
+    try {
+      await navigator.clipboard.writeText(generated.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setError("Could not copy to clipboard.");
+    }
+  };
+
+  if (!backup) return null;
+
+  return (
+    <Dialog open={!!backup} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Generate download link</DialogTitle>
+          <DialogDescription>
+            Create a shareable URL for <code className="font-mono">{backup.key}</code>. Anyone with
+            the link can download the file until it expires or you revoke it.
+          </DialogDescription>
+        </DialogHeader>
+
+        {!generated && (
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="link-ttl" className="text-xs">
+                Link expires after
+              </Label>
+              <Select value={String(ttl)} onValueChange={(v) => setTtl(Number(v))}>
+                <SelectTrigger id="link-ttl">
+                  <SelectValue>
+                    {TTL_OPTIONS.find((o) => o.value === ttl)?.label ?? `${ttl} s`}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {TTL_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={String(opt.value)}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="link-label" className="text-xs">
+                Label (optional)
+              </Label>
+              <Input
+                id="link-label"
+                value={label}
+                maxLength={200}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="e.g. Sent to Alice 2026-05-04"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Shown in the active-links list to help you remember who you shared it with.
+              </p>
+            </div>
+            {error && <p className="text-xs text-destructive">{error}</p>}
+          </div>
+        )}
+
+        {generated && (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Shareable URL</Label>
+              <div className="flex items-center gap-2">
+                <Input readOnly value={generated.url} className="font-mono text-xs" />
+                <Button size="sm" variant="outline" onClick={handleCopy}>
+                  <Copy className="h-3 w-3" />
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+                <a
+                  href={generated.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs hover:bg-accent"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  Open
+                </a>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Expires {formatRelative(generated.expires_at)} (
+                {generated.expires_at ? new Date(generated.expires_at).toLocaleString() : "unknown"}
+                ). Revoke from the <strong>Active download links</strong> list to invalidate early.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          {!generated ? (
+            <>
+              <Button variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button disabled={create.isPending} onClick={() => create.mutate()}>
+                {create.isPending && <Loader2 className="h-3 w-3 animate-spin" />} Generate
+              </Button>
+            </>
+          ) : (
+            <Button onClick={onClose}>Done</Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DownloadLinksSection({
+  links,
+  loading,
+  error,
+  onRefresh,
+}: {
+  links: BackupDownloadLink[];
+  loading: boolean;
+  error: string | null;
+  onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  // Active first, then expired/revoked.
+  const sorted = useMemo(() => {
+    const order: Record<string, number> = { active: 0, expired: 1, revoked: 2 };
+    return [...links].sort(
+      (a, b) =>
+        (order[a.status] ?? 99) - (order[b.status] ?? 99) ||
+        (b.created_at || "").localeCompare(a.created_at || ""),
+    );
+  }, [links]);
+
+  const activeCount = links.filter((l) => l.status === "active").length;
+
+  return (
+    <div className="border rounded">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-2 p-2 text-left text-sm font-medium cursor-pointer"
+      >
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+        )}
+        <LinkIcon className="h-4 w-4" />
+        Active download links
+        <Badge variant="outline" className="text-[10px]">
+          {activeCount} active
+        </Badge>
+        {links.length > activeCount && (
+          <Badge variant="secondary" className="text-[10px]">
+            {links.length - activeCount} past
+          </Badge>
+        )}
+        <span className="ml-auto" />
+      </button>
+
+      {open && (
+        <div className="p-2 space-y-2 border-t">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRefresh();
+              }}
+              aria-label="Refresh"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              Auto-refreshes every 30 s while the panel is open.
+            </span>
+          </div>
+
+          {loading && (
+            <div className="text-sm text-muted-foreground flex items-center gap-2">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading links…
+            </div>
+          )}
+          {error && <p className="text-xs text-destructive">{error}</p>}
+          {!loading && !error && sorted.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              No download links yet. Click <strong>Generate link</strong> on a backup row above.
+            </p>
+          )}
+
+          {sorted.length > 0 && (
+            <ul className="divide-y border rounded bg-background">
+              {sorted.map((link) => (
+                <DownloadLinkRow key={link.id} link={link} />
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DownloadLinkRow({ link }: { link: BackupDownloadLink }) {
+  const queryClient = useQueryClient();
+  const [showRedemptions, setShowRedemptions] = useState(false);
+  const [confirmRevoke, setConfirmRevoke] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const revoke = useMutation({
+    mutationFn: () => adminRevokeBackupDownloadLink(link.id),
+    onSuccess: () => {
+      setConfirmRevoke(false);
+      queryClient.invalidateQueries({ queryKey: ["admin-backup-download-links"] });
+    },
+  });
+
+  const redemptions = useQuery({
+    queryKey: ["admin-backup-download-redemptions", link.id],
+    queryFn: () => adminListBackupDownloadRedemptions(link.id),
+    enabled: showRedemptions,
+  });
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(link.url);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // ignore
+    }
+  };
+
+  const expiryLabel =
+    link.status === "revoked"
+      ? `revoked ${formatRelative(link.revoked_at)}`
+      : link.status === "expired"
+        ? `expired ${formatRelative(link.expires_at)}`
+        : `expires ${formatRelative(link.expires_at)}`;
+
+  return (
+    <li className="p-2 space-y-1">
+      <div className="flex items-center gap-2 flex-wrap">
+        <code className="text-xs font-mono truncate max-w-[26ch]" title={link.backup_key}>
+          {link.backup_key.replace(/^backups\//, "")}
+        </code>
+        {link.status === "active" && <Badge className="text-[10px]">active</Badge>}
+        {link.status === "expired" && (
+          <Badge variant="secondary" className="text-[10px]">
+            expired
+          </Badge>
+        )}
+        {link.status === "revoked" && (
+          <Badge variant="destructive" className="text-[10px]">
+            revoked
+          </Badge>
+        )}
+        {link.label && (
+          <span className="text-[11px] text-muted-foreground italic truncate" title={link.label}>
+            “{link.label}”
+          </span>
+        )}
+        <span className="ml-auto text-[10px] text-muted-foreground">
+          by …{link.created_by_suffix}
+        </span>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground">
+        {expiryLabel} • {link.redeem_count} redeem{link.redeem_count === 1 ? "" : "s"}
+        {link.redeem_count > 0 && ` (${link.success_count} ok)`}
+        {link.last_redeem_at && ` • last ${formatRelative(link.last_redeem_at)}`}
+      </p>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        {link.status === "active" && (
+          <Button size="sm" variant="outline" onClick={handleCopy}>
+            <Copy className="h-3 w-3" />
+            {copied ? "Copied" : "Copy link"}
+          </Button>
+        )}
+        <Button size="sm" variant="ghost" onClick={() => setShowRedemptions((v) => !v)}>
+          <Eye className="h-3 w-3" />
+          {showRedemptions ? "Hide" : "View"} redemptions
+        </Button>
+        {link.status === "active" && (
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setConfirmRevoke(true)}
+            disabled={revoke.isPending}
+          >
+            <Trash2 className="h-3 w-3" />
+            Revoke
+          </Button>
+        )}
+      </div>
+
+      {showRedemptions && (
+        <div className="mt-1 border rounded bg-muted/30 p-2 text-[11px]">
+          {redemptions.isLoading && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Loading…
+            </div>
+          )}
+          {redemptions.error && (
+            <p className="text-destructive">Error: {String(redemptions.error)}</p>
+          )}
+          {redemptions.data && redemptions.data.redemptions.length === 0 && (
+            <p className="text-muted-foreground">No redemptions yet.</p>
+          )}
+          {redemptions.data && redemptions.data.redemptions.length > 0 && (
+            <ul className="space-y-1">
+              {redemptions.data.redemptions.map((r) => (
+                <li key={r.id} className="flex items-baseline gap-2">
+                  <span className={r.success ? "text-emerald-600" : "text-destructive"}>
+                    {r.success ? "✓" : "✗"}
+                  </span>
+                  <span className="text-muted-foreground tabular-nums">
+                    {r.redeemed_at ? new Date(r.redeemed_at).toLocaleString() : "?"}
+                  </span>
+                  <code className="font-mono">ip:{r.ip_hash_short ?? "?"}</code>
+                  {r.failure_reason && (
+                    <span className="text-destructive">[{r.failure_reason}]</span>
+                  )}
+                  <span
+                    className="text-muted-foreground truncate max-w-[40ch]"
+                    title={r.user_agent ?? ""}
+                  >
+                    {r.user_agent ?? ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmRevoke}
+        title="Revoke download link?"
+        description="The link will stop working immediately. Anyone you have shared it with will see an error."
+        confirmLabel={revoke.isPending ? "Revoking…" : "Revoke"}
+        variant="destructive"
+        onCancel={() => setConfirmRevoke(false)}
+        onConfirm={() => revoke.mutate()}
+      />
+    </li>
   );
 }

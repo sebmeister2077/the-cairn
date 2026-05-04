@@ -23,6 +23,7 @@ from .routes import admin
 from .routes import admin_users
 from .routes import admin_feature_flags
 from .routes import admin_backups
+from .routes import public_backup_download
 from .routes import admin_contributions
 from .routes import admin_heavy_compute
 from .routes import admin_totp
@@ -518,6 +519,7 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(admin_users.router, prefix="/api")
 app.include_router(admin_feature_flags.router, prefix="/api")
 app.include_router(admin_backups.router, prefix="/api")
+app.include_router(public_backup_download.router, prefix="/api")
 app.include_router(admin_contributions.router, prefix="/api")
 app.include_router(admin_heavy_compute.router, prefix="/api")
 app.include_router(admin_totp.router, prefix="/api")

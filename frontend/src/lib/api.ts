@@ -1726,6 +1726,83 @@ export async function adminLastBackupRestore(): Promise<{ last_restore: LastRest
 }
 
 
+// --- Admin: shareable backup download links ---
+
+export type BackupDownloadLinkStatus = "active" | "expired" | "revoked";
+
+export interface BackupDownloadLink {
+    id: number;
+    token: string;
+    backup_key: string;
+    label: string | null;
+    created_by_suffix: string;
+    created_at: string | null;
+    expires_at: string | null;
+    revoked_at: string | null;
+    revoked_by_suffix: string | null;
+    redeem_count: number;
+    success_count: number;
+    last_redeem_at: string | null;
+    status: BackupDownloadLinkStatus;
+    url: string;
+    /** Only present on the create response. */
+    size?: number;
+}
+
+export interface BackupDownloadRedemption {
+    id: number;
+    redeemed_at: string | null;
+    ip_hash_short: string | null;
+    user_agent: string | null;
+    success: boolean;
+    failure_reason: string | null;
+}
+
+export async function adminCreateBackupDownloadLink(args: {
+    key: string;
+    ttl_seconds: number;
+    label?: string;
+}): Promise<BackupDownloadLink> {
+    const res = await fetch(`${API_BASE}/admin/backups/download-links`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+            key: args.key,
+            ttl_seconds: args.ttl_seconds,
+            label: args.label?.trim() || undefined,
+        }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListBackupDownloadLinks(): Promise<{ links: BackupDownloadLink[] }> {
+    const res = await fetch(`${API_BASE}/admin/backups/download-links`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListBackupDownloadRedemptions(
+    linkId: number,
+): Promise<{ redemptions: BackupDownloadRedemption[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/backups/download-links/${linkId}/redemptions`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRevokeBackupDownloadLink(
+    linkId: number,
+): Promise<{ revoked: boolean; link: BackupDownloadLink }> {
+    const res = await fetch(
+        `${API_BASE}/admin/backups/download-links/${linkId}`,
+        { method: "DELETE", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+
 // ---------------------------------------------------------------------------
 // Admin � WebAuthn / passkey 2FA (Phase 4c)
 // ---------------------------------------------------------------------------

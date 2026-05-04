@@ -522,6 +522,38 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_audit_created_at ON admin_audit_log (created_at DESC);
+
+-- Shareable, time-limited download links for R2 backup objects. Each link
+-- is multi-use until it expires or is revoked; per-redeem details live in
+-- backup_download_log so the admin UI can surface who has been pulling
+-- the file.
+CREATE TABLE IF NOT EXISTS backup_download_links (
+    id          BIGSERIAL PRIMARY KEY,
+    token       TEXT NOT NULL UNIQUE,
+    backup_key  TEXT NOT NULL,
+    created_by  TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at  TIMESTAMPTZ NOT NULL,
+    revoked_at  TIMESTAMPTZ,
+    revoked_by  TEXT,
+    label       TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_bdl_token  ON backup_download_links (token);
+CREATE INDEX IF NOT EXISTS idx_bdl_active ON backup_download_links (expires_at)
+    WHERE revoked_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS backup_download_log (
+    id             BIGSERIAL PRIMARY KEY,
+    link_id        BIGINT NOT NULL REFERENCES backup_download_links(id) ON DELETE CASCADE,
+    redeemed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    ip_hash        TEXT,
+    user_agent     TEXT,
+    success        BOOLEAN NOT NULL,
+    failure_reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_bdlog_link ON backup_download_log (link_id, redeemed_at DESC);
 """
 
 

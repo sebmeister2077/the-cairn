@@ -591,6 +591,124 @@ def audit_log(
 
 
 # ---------------------------------------------------------------------------
+# Backup download links (shareable, time-limited URLs for R2 backups)
+# ---------------------------------------------------------------------------
+
+def create_backup_download_link(
+    token: str,
+    backup_key: str,
+    created_by: str,
+    expires_at: datetime,
+    label: Optional[str],
+) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO backup_download_links
+                       (token, backup_key, created_by, expires_at, label)
+                   VALUES (%s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (token, backup_key, created_by, expires_at, label),
+            )
+            return dict(cur.fetchone())
+
+
+def get_backup_download_link_by_token(token: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM backup_download_links WHERE token = %s",
+                (token,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_backup_download_link(link_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM backup_download_links WHERE id = %s",
+                (link_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_backup_download_links() -> List[dict]:
+    """All backup download links, newest first, with redemption stats."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    l.*,
+                    COALESCE(r.redeem_count, 0)    AS redeem_count,
+                    COALESCE(r.success_count, 0)   AS success_count,
+                    r.last_redeem_at               AS last_redeem_at
+                FROM backup_download_links l
+                LEFT JOIN (
+                    SELECT link_id,
+                           COUNT(*)                                       AS redeem_count,
+                           COUNT(*) FILTER (WHERE success)                AS success_count,
+                           MAX(redeemed_at)                               AS last_redeem_at
+                    FROM backup_download_log
+                    GROUP BY link_id
+                ) r ON r.link_id = l.id
+                ORDER BY l.created_at DESC
+                """
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_backup_download_redemptions(link_id: int) -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, redeemed_at, ip_hash, user_agent, success, failure_reason
+                       FROM backup_download_log
+                       WHERE link_id = %s
+                       ORDER BY redeemed_at DESC""",
+                (link_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def revoke_backup_download_link(link_id: int, admin_key: str) -> Optional[dict]:
+    """Mark a link revoked. Returns the updated row, or None if missing /
+    already revoked (idempotent: re-revoking a revoked link is a no-op)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE backup_download_links
+                       SET revoked_at = now(), revoked_by = %s
+                       WHERE id = %s AND revoked_at IS NULL
+                       RETURNING *""",
+                (admin_key, link_id),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def record_backup_download_redemption(
+    link_id: int,
+    *,
+    ip_hash: Optional[str],
+    user_agent: Optional[str],
+    success: bool,
+    failure_reason: Optional[str] = None,
+) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO backup_download_log
+                       (link_id, ip_hash, user_agent, success, failure_reason)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (link_id, ip_hash, user_agent, success, failure_reason),
+            )
+
+
+# ---------------------------------------------------------------------------
 # Contributions (used by /account/export)
 # ---------------------------------------------------------------------------
 

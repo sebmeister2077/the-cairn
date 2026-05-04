@@ -10,6 +10,7 @@ Stores:
 import os
 import threading
 import time
+from typing import Optional
 
 import boto3
 from botocore.config import Config as BotoConfig
@@ -265,7 +266,7 @@ _MAX_PRESIGN_SECONDS = 7 * 24 * 60 * 60
 # and reuse it until ~75% of its TTL has elapsed, then mint a fresh one.
 # This keeps URLs stable for the whole polling lifetime of a normal
 # admin session while still rotating well before the signature expires.
-_presigned_cache: dict[tuple[str, str, int], tuple[str, float]] = {}
+_presigned_cache: dict[tuple[str, str, int, str], tuple[str, float]] = {}
 _presigned_cache_lock = threading.Lock()
 
 
@@ -274,8 +275,9 @@ def _cached_presigned_download_url(
     *,
     expires_seconds: int,
     content_type: str,
+    content_disposition: Optional[str] = None,
 ) -> str:
-    cache_key = (key, content_type, expires_seconds)
+    cache_key = (key, content_type, expires_seconds, content_disposition or "")
     now = time.monotonic()
     with _presigned_cache_lock:
         cached = _presigned_cache.get(cache_key)
@@ -283,13 +285,16 @@ def _cached_presigned_download_url(
             url, expires_at = cached
             if now < expires_at:
                 return url
+        params: dict = {
+            "Bucket": _bucket(),
+            "Key": key,
+            "ResponseContentType": content_type,
+        }
+        if content_disposition:
+            params["ResponseContentDisposition"] = content_disposition
         url = _get_client().generate_presigned_url(
             "get_object",
-            Params={
-                "Bucket": _bucket(),
-                "Key": key,
-                "ResponseContentType": content_type,
-            },
+            Params=params,
             ExpiresIn=min(expires_seconds, _MAX_PRESIGN_SECONDS),
         )
         # Refresh well before the signature actually expires (75% of TTL,
@@ -319,6 +324,7 @@ def generate_presigned_download_url(
     expires_seconds: int,
     content_type: str = "image/png",
     verify_exists: bool = True,
+    content_disposition: Optional[str] = None,
 ) -> str:
     """Generate a presigned GET URL so clients can fetch an R2 object directly.
 
@@ -329,10 +335,15 @@ def generate_presigned_download_url(
     already established existence (e.g. via a single bulk LIST) to skip the
     HEAD round-trip entirely.
 
+    ``content_disposition`` is forwarded as ``ResponseContentDisposition`` so
+    callers can force the browser to download with a specific filename
+    (e.g. ``attachment; filename="backup-2026-W17.db"``).
+
     Generated URLs are cached in-process keyed by (key, content_type,
-    expires_seconds) and reused for ~75% of their TTL so repeated calls
-    (e.g. polling the /contribute/info endpoint) return the same string,
-    which keeps frontend memoisation and the browser image cache stable.
+    expires_seconds, content_disposition) and reused for ~75% of their TTL so
+    repeated calls (e.g. polling the /contribute/info endpoint) return the
+    same string, which keeps frontend memoisation and the browser image
+    cache stable.
     """
     if verify_exists and not object_exists(key):
         return ""
@@ -340,6 +351,7 @@ def generate_presigned_download_url(
         key,
         expires_seconds=expires_seconds,
         content_type=content_type,
+        content_disposition=content_disposition,
     )
 
 

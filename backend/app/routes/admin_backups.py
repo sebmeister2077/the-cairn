@@ -16,11 +16,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import secrets
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -277,3 +278,180 @@ async def last_restore(_: str = Depends(require_admin)):
     if age_days > _LAST_RESTORE_BANNER_DAYS:
         return {"last_restore": None}
     return {"last_restore": info}
+
+
+# ---------------------------------------------------------------------------
+# Shareable backup download links
+# ---------------------------------------------------------------------------
+
+# Allowed TTLs for /download-links. Kept small + closed so admins can't mint a
+# link with an arbitrary lifetime.
+_DOWNLOAD_LINK_TTLS_SECONDS = {
+    900,         # 15 min
+    3600,        # 1 hour
+    86400,       # 24 hours
+    7 * 86400,   # 7 days
+    30 * 86400,  # 30 days
+}
+
+_LABEL_MAX_LEN = 200
+
+
+class CreateDownloadLinkBody(BaseModel):
+    key: str
+    ttl_seconds: int
+    label: Optional[str] = None
+
+
+def _shareable_url(request: Request, token: str) -> str:
+    """Build the public URL recipients use to redeem a token."""
+    base = _auth.settings.PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
+    return f"{base}/api/public/backup-download/{token}"
+
+
+def _serialize_link(link: dict, *, request: Optional[Request] = None) -> dict:
+    """Convert a DB row + redemption stats into a JSON-friendly dict."""
+    now = datetime.now(timezone.utc)
+    expires_at = link.get("expires_at")
+    revoked_at = link.get("revoked_at")
+    if revoked_at is not None:
+        status = "revoked"
+    elif expires_at is not None and expires_at <= now:
+        status = "expired"
+    else:
+        status = "active"
+    out = {
+        "id": link["id"],
+        "token": link["token"],
+        "backup_key": link["backup_key"],
+        "label": link.get("label"),
+        "created_by_suffix": (link.get("created_by") or "")[-6:],
+        "created_at": link["created_at"].isoformat() if link.get("created_at") else None,
+        "expires_at": expires_at.isoformat() if expires_at else None,
+        "revoked_at": revoked_at.isoformat() if revoked_at else None,
+        "revoked_by_suffix": (link.get("revoked_by") or "")[-6:] if link.get("revoked_by") else None,
+        "redeem_count": int(link.get("redeem_count") or 0),
+        "success_count": int(link.get("success_count") or 0),
+        "last_redeem_at": (
+            link["last_redeem_at"].isoformat() if link.get("last_redeem_at") else None
+        ),
+        "status": status,
+    }
+    if request is not None:
+        out["url"] = _shareable_url(request, link["token"])
+    return out
+
+
+@router.post("/download-links")
+async def create_download_link(
+    body: CreateDownloadLinkBody,
+    request: Request,
+    api_key: str = Depends(require_admin),
+):
+    _require_flag("weekly_backups")
+
+    if body.ttl_seconds not in _DOWNLOAD_LINK_TTLS_SECONDS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_ttl",
+                "message": "ttl_seconds must be one of "
+                + ", ".join(str(t) for t in sorted(_DOWNLOAD_LINK_TTLS_SECONDS)),
+            },
+        )
+
+    if not body.key.startswith(r2_storage.BACKUP_KEY_PREFIX):
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "invalid_backup_key", "message": "Key is not a backup"},
+        )
+
+    available = {b["key"]: b for b in weekly_backup.list_backups()}
+    backup = available.get(body.key)
+    if backup is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "backup_not_found", "message": "Backup does not exist"},
+        )
+
+    label = (body.label or "").strip() or None
+    if label and len(label) > _LABEL_MAX_LEN:
+        label = label[:_LABEL_MAX_LEN]
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(seconds=body.ttl_seconds)
+
+    row = accounts_db.create_backup_download_link(
+        token=token,
+        backup_key=body.key,
+        created_by=api_key,
+        expires_at=expires_at,
+        label=label,
+    )
+    accounts_db.audit_log(
+        api_key,
+        "map.create_backup_download_link",
+        target=body.key,
+        metadata={
+            "link_id": row["id"],
+            "ttl_seconds": body.ttl_seconds,
+            "label": label,
+        },
+    )
+
+    payload = _serialize_link(row, request=request)
+    payload["size"] = backup.get("size")
+    return payload
+
+
+@router.get("/download-links")
+async def list_download_links(
+    request: Request,
+    _: str = Depends(require_admin),
+):
+    _require_flag("weekly_backups")
+    rows = accounts_db.list_backup_download_links()
+    return {"links": [_serialize_link(r, request=request) for r in rows]}
+
+
+@router.get("/download-links/{link_id}/redemptions")
+async def list_link_redemptions(
+    link_id: int,
+    _: str = Depends(require_admin),
+):
+    _require_flag("weekly_backups")
+    if not accounts_db.get_backup_download_link(link_id):
+        raise HTTPException(status_code=404, detail="link_not_found")
+    rows = accounts_db.list_backup_download_redemptions(link_id)
+    return {
+        "redemptions": [
+            {
+                "id": r["id"],
+                "redeemed_at": r["redeemed_at"].isoformat() if r.get("redeemed_at") else None,
+                "ip_hash_short": (r.get("ip_hash") or "")[:12] or None,
+                "user_agent": r.get("user_agent"),
+                "success": bool(r.get("success")),
+                "failure_reason": r.get("failure_reason"),
+            }
+            for r in rows
+        ]
+    }
+
+
+@router.delete("/download-links/{link_id}")
+async def revoke_download_link(link_id: int, api_key: str = Depends(require_admin)):
+    _require_flag("weekly_backups")
+    existing = accounts_db.get_backup_download_link(link_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="link_not_found")
+    updated = accounts_db.revoke_backup_download_link(link_id, api_key)
+    if updated is None:
+        # Already revoked — return current row, idempotent.
+        return {"revoked": False, "link": _serialize_link(existing)}
+    accounts_db.audit_log(
+        api_key,
+        "map.revoke_backup_download_link",
+        target=existing.get("backup_key"),
+        metadata={"link_id": link_id},
+    )
+    return {"revoked": True, "link": _serialize_link(updated)}

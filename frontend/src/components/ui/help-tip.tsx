@@ -43,7 +43,8 @@ function HelpTip({ text }: HelpTipProps) {
       >
         ?
       </button>
-      {open && coords &&
+      {open &&
+        coords &&
         createPortal(
           <span
             style={{
