@@ -116,7 +116,7 @@
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "WestWald Community", "z": 112 },
+      "properties": { "type": "Base", "label": "Barony of Westwald", "z": 112 },
       "geometry": { "type": "Point", "coordinates": [-5240, -211] }
     },
     {
