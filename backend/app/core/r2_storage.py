@@ -722,6 +722,64 @@ def tops_map_level_metadata_key(level: int) -> str:
     return f"cache/tops-map-level{level}/metadata.json"
 
 
+# ---------------------------------------------------------------------------
+# Resources overlay (admin-only)
+# ---------------------------------------------------------------------------
+#
+# Layout under ``resources/``::
+#
+#   resources/CURRENT                                    -- pointer txt: "<seed>-<version>"
+#   resources/<seed>-<version>/manifest.json
+#   resources/<seed>-<version>/deposits.sqlite
+#   resources/<seed>-<version>/tiles/<layer>/level_<N>/chunk_<cx>_<cy>.png
+#
+# A staging prefix ``resources/<seed>-<version>.staging/`` is used during
+# upload so the swap of ``CURRENT`` is the only step that flips the active
+# bundle (atomic from the reader's point of view).
+
+RESOURCES_KEY_PREFIX = "resources/"
+RESOURCES_POINTER_KEY = "resources/CURRENT"
+
+
+def _resources_bundle_id(seed: str, version: str) -> str:
+    # ``-`` separator is fine because seeds are alphanumeric and versions
+    # use dots (e.g. "12345-1.22.3"). Both fields are validated upstream.
+    return f"{seed}-{version}"
+
+
+def resources_prefix(seed: str, version: str, *, staging: bool = False) -> str:
+    suffix = ".staging" if staging else ""
+    return f"{RESOURCES_KEY_PREFIX}{_resources_bundle_id(seed, version)}{suffix}/"
+
+
+def resources_manifest_key(seed: str, version: str, *, staging: bool = False) -> str:
+    return resources_prefix(seed, version, staging=staging) + "manifest.json"
+
+
+def resources_deposits_key(seed: str, version: str, *, staging: bool = False) -> str:
+    return resources_prefix(seed, version, staging=staging) + "deposits.sqlite"
+
+
+def resources_tile_key(
+    seed: str,
+    version: str,
+    layer: str,
+    level: int,
+    cx: int,
+    cy: int,
+    *,
+    staging: bool = False,
+) -> str:
+    return (
+        resources_prefix(seed, version, staging=staging)
+        + f"tiles/{layer}/level_{level}/chunk_{cx}_{cy}.png"
+    )
+
+
+def resources_pointer_key() -> str:
+    return RESOURCES_POINTER_KEY
+
+
 def list_keys_with_prefix(prefix: str) -> list:
     """Return a list of all object keys under the given prefix."""
     keys = []

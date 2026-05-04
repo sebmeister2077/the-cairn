@@ -1808,3 +1808,137 @@ export async function adminWebauthnLogout(): Promise<void> {
     }
     clearAdminSession();
 }
+
+// --- Admin: Resources overlay (worldgen reconstruction) ---
+
+export interface ResourcesActiveBundle {
+    seed: string;
+    vs_version: string;
+    generated_at: string | null;
+    world_bounds: { min_x: number; max_x: number; min_z: number; max_z: number } | null;
+    size_bytes: number;
+    deposit_type_count: number;
+    layer_count: number;
+}
+
+export interface ResourcesStatus {
+    active_bundle: ResourcesActiveBundle | null;
+    canonical: { seed: string; vs_version: string };
+}
+
+export async function getResourcesStatus(): Promise<ResourcesStatus> {
+    const res = await fetch(`${API_BASE}/admin/resources/status`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/**
+ * Stream a resources-overlay bundle (.zip) to the backend, reporting
+ * percentage progress as bytes are uploaded. Server-side validation +
+ * unpack happens after the upload finishes; the final 5% is reserved for
+ * that work so the bar visibly continues moving while the server does it.
+ */
+export function uploadResourcesBundle(
+    file: File,
+    onProgress?: (percent: number) => void,
+): Promise<{ ok: boolean; seed: string; vs_version: string; generated_at: string | null; size_bytes: number }> {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", `${UPLOAD_API_BASE}/admin/resources/upload`);
+        for (const [headerName, headerValue] of Object.entries(authHeaders())) {
+            xhr.setRequestHeader(headerName, headerValue);
+        }
+        xhr.setRequestHeader("Content-Type", "application/zip");
+        xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && onProgress) {
+                onProgress(Math.min(Math.round((e.loaded / e.total) * 95), 95));
+            }
+        };
+        xhr.onload = () => {
+            if (xhr.status === 401) {
+                // Mirror handleResponse so a stale session triggers the same
+                // global rejection handler the rest of the app uses.
+                clearAdminSession();
+                window.dispatchEvent(new Event("auth-rejected"));
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                onProgress?.(100);
+                try {
+                    resolve(JSON.parse(xhr.responseText));
+                } catch (e) {
+                    reject(new Error(`Invalid JSON in response: ${e}`));
+                }
+                return;
+            }
+            let detail = `Upload failed (${xhr.status})`;
+            try {
+                const body = JSON.parse(xhr.responseText);
+                if (body && typeof body.detail === "string") detail = body.detail;
+            } catch {
+                // ignore
+            }
+            reject(new ApiError(detail, xhr.status));
+        };
+        xhr.onerror = () => reject(new Error("Network error during bundle upload"));
+        xhr.send(file);
+    });
+}
+
+export interface ResourcesManifest {
+    schema_version: number;
+    seed: string;
+    vs_version: string;
+    generated_at: string | null;
+    world_bounds: { min_x: number; max_x: number; min_z: number; max_z: number } | null;
+    layers: Array<{
+        id: string;
+        kind: "heatmap" | string;
+        legend?: { values: Array<{ id: string; label: string; color: string }> };
+        scale?: { min: number; max: number; unit: string };
+        levels: number[];
+    }>;
+    deposit_types: Array<{ id: string; label: string; color: string }>;
+    presigned_tiles: Record<string, Record<string, Array<{ cx: number; cy: number; url: string }>>>;
+    presigned_tiles_expires_at: string;
+}
+
+export async function getResourcesManifest(): Promise<ResourcesManifest> {
+    const res = await fetch(`${API_BASE}/admin/resources/manifest`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface ResourceDeposit {
+    type: string;
+    x: number;
+    y: number;
+    z: number;
+    qty: number | null;
+    richness: number | null;
+}
+
+export async function getResourcesDeposits(opts: {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+    types?: string[];
+    cursor?: number | null;
+    signal?: AbortSignal;
+}): Promise<{ deposits: ResourceDeposit[]; next_cursor: number | null; page_limit: number }> {
+    const params = new URLSearchParams({
+        min_x: String(opts.minX),
+        max_x: String(opts.maxX),
+        min_z: String(opts.minZ),
+        max_z: String(opts.maxZ),
+    });
+    if (opts.types && opts.types.length > 0) params.set("types", opts.types.join(","));
+    if (opts.cursor != null) params.set("cursor", String(opts.cursor));
+    const res = await fetch(`${API_BASE}/admin/resources/deposits?${params.toString()}`, {
+        headers: authHeaders(),
+        signal: opts.signal,
+    });
+    return (await handleResponse(res)).json();
+}

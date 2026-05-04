@@ -28,6 +28,7 @@ from .routes import admin_heavy_compute
 from .routes import admin_totp
 from .routes import admin_webauthn
 from .routes import admin_settings
+from .routes import resources as admin_resources
 from .routes import account
 from .routes import invite
 from .routes import maintenance
@@ -522,6 +523,7 @@ app.include_router(admin_heavy_compute.router, prefix="/api")
 app.include_router(admin_totp.router, prefix="/api")
 app.include_router(admin_webauthn.router, prefix="/api")
 app.include_router(admin_settings.router, prefix="/api")
+app.include_router(admin_resources.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 app.include_router(maintenance.public_router, prefix="/api")

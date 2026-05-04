@@ -179,6 +179,26 @@ class Settings:
     # Default duration of an IP ban (days). Admins can override per-ban.
     IP_BAN_DEFAULT_DAYS: int = int(os.environ.get("IP_BAN_DEFAULT_DAYS", "365"))
 
+    # --- Resources overlay (admin-only) ---
+    # Identifies the single canonical world the offline exporter ran against.
+    # Uploaded bundles MUST declare a manifest whose ``seed`` and
+    # ``vs_version`` match these exactly, otherwise the upload is rejected.
+    # Bumping either value here is the signal for the admin to re-run the
+    # offline exporter and re-upload a fresh bundle.
+    CANONICAL_WORLD_SEED: str = os.environ.get("CANONICAL_WORLD_SEED", "")
+    CANONICAL_WORLD_VS_VERSION: str = os.environ.get("CANONICAL_WORLD_VS_VERSION", "")
+    # Hard cap on the resources-overlay bundle .zip size. Default 1 GiB is
+    # well above the realistic worst case (~mapped-area * a few MB per layer).
+    RESOURCES_BUNDLE_MAX_BYTES: int = int(
+        os.environ.get("RESOURCES_BUNDLE_MAX_BYTES", str(1 * 1024 * 1024 * 1024))
+    )
+    # Per-page cap on /admin/resources/deposits results. Server-side filter
+    # plus pagination keeps the response payload bounded regardless of how
+    # large a region the admin pans across.
+    RESOURCES_DEPOSITS_PAGE_LIMIT: int = int(
+        os.environ.get("RESOURCES_DEPOSITS_PAGE_LIMIT", "5000")
+    )
+
     # Cloudflare R2
     R2_ACCOUNT_ID: str = os.environ.get("R2_ACCOUNT_ID", "")
     R2_ACCESS_KEY_ID: str = os.environ.get("R2_ACCESS_KEY_ID", "")
