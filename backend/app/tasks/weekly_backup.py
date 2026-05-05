@@ -103,27 +103,31 @@ def _snapshot_combined_to(target_raw_key: str) -> str:
 
     from ..core import compression as comp
     from ..routes.admin_settings import get_compression_settings
+    from ..routes.contribute_r2 import get_combined_db_cached
 
     sett = get_compression_settings()
     level = int(sett["level"])
     threads = comp.resolve_threads(sett["threads_preset"])
 
-    fd_in, src_path = tempfile.mkstemp(suffix=".db")
-    os.close(fd_in)
+    # Reuse the ETag-cached local copy of the combined DB instead of
+    # re-downloading it from R2. ``get_combined_db_cached()`` HEADs the
+    # object and only pulls bytes when the remote ETag differs from the
+    # locally stored one, so back-to-back snapshots after a merge skip
+    # the multi-GB download entirely. The returned path is shared and
+    # MUST be treated as read-only (we only read from it for compression).
     fd_out, dst_path = tempfile.mkstemp(suffix=".db.zst")
     os.close(fd_out)
     target_zst_key = target_raw_key + ".zst"
     try:
-        r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, src_path)
+        src_path = get_combined_db_cached()
         comp.compress_file(src_path, dst_path, level=level, threads=threads)
         r2_storage.upload_file(dst_path, target_zst_key)
         return target_zst_key
     finally:
-        for p in (src_path, dst_path):
-            try:
-                os.unlink(p)
-            except OSError:
-                pass
+        try:
+            os.unlink(dst_path)
+        except OSError:
+            pass
 
 
 def create_scheduled_snapshot_if_due() -> Optional[str]:
