@@ -1,5 +1,5 @@
 import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
-import { ContributionsCard } from "@/components/contributions/ApprovedContributionsCard";
+import { ApprovedContributionsCard } from "@/components/contributions/ApprovedContributionsCard";
 import { CantContributeCard } from "@/components/contributions/CantContributeCard";
 import { ContributeUploadCard } from "@/components/contributions/ContributeUploadCard";
 import { PendingContributionsSection } from "@/components/contributions/PendingContributionsSection";
@@ -235,7 +235,7 @@ export function ContributePage() {
           in their own admin-only section below the Recent contributions
           grid). The backend currently leaves reverted rows in the approved
           list, so we cross-reference by id with `info.history`. */}
-      {contributionInfo && <ContributionsCard info={contributionInfo} />}
+      {contributionInfo && <ApprovedContributionsCard info={contributionInfo} />}
 
       {/* Recent contributions grid (all-time history with previews). Visible
           to non-admins only when the public_history flag is on; admins

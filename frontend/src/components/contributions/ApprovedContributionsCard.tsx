@@ -5,7 +5,7 @@ import type { ContributeInfo } from "@/models/contributions";
 type Props = {
   info: ContributeInfo | null;
 };
-export function ContributionsCard({ info }: Props) {
+export function ApprovedContributionsCard({ info }: Props) {
   if (!info) return null;
   const revertedIds = new Set(
     (info.history ?? [])

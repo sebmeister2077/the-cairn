@@ -14,6 +14,7 @@ from .auth import verify_api_key_info, is_admin_key
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
 from .core import accounts_db
+from . import migrations as _migrations
 from .core import feature_flags as ff
 from .core.display_names import generate_display_name, FORBIDDEN_SUBSTRINGS
 from .routes import extract, import_wp, delete, commands, mapview
@@ -148,8 +149,18 @@ async def lifespan(app: FastAPI):
     logger.info("Startup step init_db completed in %.3fs", perf_counter() - step_started)
 
     step_started = perf_counter()
-    ensure_schema()
-    logger.info("Startup step ensure_schema completed in %.3fs", perf_counter() - step_started)
+    if _migrations.is_enabled():
+        _migrations.upgrade_to_head()
+        logger.info(
+            "Startup step alembic upgrade head completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    else:
+        ensure_schema()
+        logger.info(
+            "Startup step ensure_schema completed in %.3fs (legacy; set USE_ALEMBIC=true to switch)",
+            perf_counter() - step_started,
+        )
 
     # Account-system backfill: create users for legacy api_keys, mark genesis,
     # seed synthetic admin user. Idempotent — safe to run on every boot.

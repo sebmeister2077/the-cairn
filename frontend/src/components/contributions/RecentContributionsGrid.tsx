@@ -111,7 +111,7 @@ export function RecentContributionsGridImpl({
                 type="button"
                 onClick={() => setOpenId(openId === h.id ? null : h.id)}
                 className={
-                  "group relative flex flex-col overflow-hidden rounded-md border bg-muted/20 text-left transition-colors hover:border-primary " +
+                  "group relative flex flex-col overflow-hidden rounded-md cursor-pointer border bg-muted/20 text-left transition-colors hover:border-primary " +
                   (openId === h.id ? "ring-2 ring-primary" : "")
                 }
               >
