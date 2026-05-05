@@ -1275,7 +1275,7 @@ export interface IpBan {
     reason_code: string;
     reason: string;
     admin_notes: string | null;
-    banned_by: string;
+    banned_by_suffix: string | null;
     banned_at: string;
     expires_at: string;
 }
@@ -1345,7 +1345,7 @@ export interface FeatureFlag {
     key: string;
     enabled: boolean;
     updated_at: string;
-    updated_by_key: string | null;
+    updated_by_suffix: string | null;
 }
 
 export async function adminListFeatureFlags(): Promise<{ flags: FeatureFlag[] }> {
@@ -1539,7 +1539,7 @@ export interface MaintenanceNotice {
     started_at: string;
     eta_at: string | null;
     updated_at: string;
-    updated_by_key: string | null;
+    updated_by_suffix: string | null;
 }
 
 export interface KnownMaintenanceComponent {

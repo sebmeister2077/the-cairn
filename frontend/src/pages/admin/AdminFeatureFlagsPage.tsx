@@ -580,7 +580,7 @@ function OperationalFlagCard({
         {flag && (
           <p className="text-[10px] text-muted-foreground">
             Last changed {new Date(flag.updated_at).toLocaleString()}
-            {flag.updated_by_key ? ` by ${flag.updated_by_key.slice(0, 8)}…` : ""}
+            {flag.updated_by_suffix ? ` by …${flag.updated_by_suffix}` : ""}
           </p>
         )}
         {!flag && (

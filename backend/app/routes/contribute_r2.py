@@ -1572,10 +1572,29 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
             }
         else:
             row["match_score"] = {"status": status}
-        # Strip the api-key of whoever pressed Approve — admin keys must
-        # never leak to the frontend payload, even though the rest of the
-        # row is admin-only data anyway.
+        # Strip every api-key audit field. None of these belong on the
+        # client — they're either the contributor's own key (already known
+        # to them) or an admin key, which must never leak. The trigger-
+        # backed *_id columns (UUIDs) are the safe replacement; expose a
+        # short suffix only when the UI needs to distinguish callers.
+        row.pop("submitted_by_key", None)
         row.pop("approval_requested_by_key", None)
+        row.pop("revert_requested_by_key", None)
+        row.pop("reverted_by_key", None)
+    for row in withdrawn:
+        row.pop("submitted_by_key", None)
+        row.pop("approval_requested_by_key", None)
+        row.pop("revert_requested_by_key", None)
+        row.pop("reverted_by_key", None)
+        # Withdrawn rows also carry the same per-row admin/diagnostic
+        # columns as pending; drop them so the payload shape stays minimal.
+        row.pop("update_region_min_x", None)
+        row.pop("update_region_max_x", None)
+        row.pop("update_region_min_z", None)
+        row.pop("update_region_max_z", None)
+        row.pop("match_score_status", None)
+        row.pop("match_score_json", None)
+        row.pop("match_score_attempts", None)
     for row in approved:
         if row.get("approved_at") and hasattr(row["approved_at"], "isoformat"):
             row["approved_at"] = row["approved_at"].isoformat()

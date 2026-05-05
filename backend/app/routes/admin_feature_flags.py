@@ -23,13 +23,18 @@ class FeatureFlagPatch(BaseModel):
     enabled: bool
 
 
+def _scrub_flag(r: dict) -> dict:
+    if r.get("updated_at") and hasattr(r["updated_at"], "isoformat"):
+        r["updated_at"] = r["updated_at"].isoformat()
+    raw = r.pop("updated_by_key", None)
+    r["updated_by_suffix"] = (raw or "")[-6:] if raw else None
+    return r
+
+
 @router.get("/feature-flags")
 async def list_flags(_: str = Depends(require_admin)):
     rows = db.list_feature_flags()
-    for r in rows:
-        if r.get("updated_at") and hasattr(r["updated_at"], "isoformat"):
-            r["updated_at"] = r["updated_at"].isoformat()
-    return {"flags": rows}
+    return {"flags": [_scrub_flag(r) for r in rows]}
 
 
 @router.patch("/feature-flags/{key}")
@@ -65,9 +70,7 @@ async def patch_flag(
         except Exception:
             pass
 
-    if row.get("updated_at") and hasattr(row["updated_at"], "isoformat"):
-        row["updated_at"] = row["updated_at"].isoformat()
-    return {"flag": row}
+    return {"flag": _scrub_flag(row)}
 
 
 @router.get("/map-lock")
