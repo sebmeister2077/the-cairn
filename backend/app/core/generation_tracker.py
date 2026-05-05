@@ -25,7 +25,7 @@ import threading
 from typing import Dict, Optional
 
 from . import database as db
-from .mapdb import RESOLUTION_LEVELS, CHUNK_GRID_SIZE
+from .mapdb import RESOLUTION_LEVELS, get_chunk_grid_size
 
 STATE_KEY = "tops_map_generation_status"
 
@@ -39,14 +39,21 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _empty_level() -> dict:
+def _empty_level(level: Optional[int] = None) -> dict:
+    if level is None:
+        total_chunks = 0
+    else:
+        try:
+            total_chunks = get_chunk_grid_size(level) ** 2
+        except ValueError:
+            total_chunks = 0
     return {
         "status": "not_generated",
         "generated_at": None,
         "started_at": None,
         "progress": 0,
         "current_chunk": None,
-        "total_chunks": CHUNK_GRID_SIZE * CHUNK_GRID_SIZE,
+        "total_chunks": total_chunks,
         "completed_chunks": 0,
         "size_bytes": None,
         "error": None,
@@ -56,7 +63,7 @@ def _empty_level() -> dict:
 def _load_raw() -> dict:
     raw = db.get_state(STATE_KEY)
     if not raw:
-        return {"levels": {str(lvl): _empty_level() for lvl in RESOLUTION_LEVELS}}
+        return {"levels": {str(lvl): _empty_level(lvl) for lvl in RESOLUTION_LEVELS}}
     try:
         parsed = json.loads(raw)
     except (json.JSONDecodeError, TypeError):
@@ -66,7 +73,7 @@ def _load_raw() -> dict:
     for lvl in RESOLUTION_LEVELS:
         key = str(lvl)
         existing = levels.get(key) or {}
-        merged = _empty_level()
+        merged = _empty_level(lvl)
         merged.update(existing)
         levels[key] = merged
     parsed["levels"] = levels
@@ -84,7 +91,7 @@ def get_status() -> dict:
 
 
 def get_level_status(level: int) -> dict:
-    return get_status()["levels"].get(str(level), _empty_level())
+    return get_status()["levels"].get(str(level), _empty_level(level))
 
 
 def is_generating(level: int) -> bool:
@@ -99,14 +106,19 @@ def any_generating() -> bool:
 def mark_started(level: int, total_chunks: Optional[int] = None):
     with _lock:
         state = _load_raw()
-        entry = state["levels"].setdefault(str(level), _empty_level())
+        entry = state["levels"].setdefault(str(level), _empty_level(level))
+        default_total = (
+            int(total_chunks)
+            if total_chunks
+            else entry.get("total_chunks") or get_chunk_grid_size(level) ** 2
+        )
         entry.update({
             "status": "generating",
             "started_at": _now_iso(),
             "progress": 0,
             "current_chunk": None,
             "completed_chunks": 0,
-            "total_chunks": int(total_chunks) if total_chunks else entry.get("total_chunks") or CHUNK_GRID_SIZE * CHUNK_GRID_SIZE,
+            "total_chunks": default_total,
             "error": None,
         })
         _save_raw(state)
@@ -115,7 +127,7 @@ def mark_started(level: int, total_chunks: Optional[int] = None):
 def update_progress(level: int, completed_chunks: int, current_chunk: Optional[str] = None):
     with _lock:
         state = _load_raw()
-        entry = state["levels"].setdefault(str(level), _empty_level())
+        entry = state["levels"].setdefault(str(level), _empty_level(level))
         total = entry.get("total_chunks") or 1
         entry["completed_chunks"] = int(completed_chunks)
         entry["progress"] = max(0, min(100, int((completed_chunks / total) * 100)))
@@ -127,8 +139,8 @@ def update_progress(level: int, completed_chunks: int, current_chunk: Optional[s
 def mark_complete(level: int, size_bytes: Optional[int] = None):
     with _lock:
         state = _load_raw()
-        entry = state["levels"].setdefault(str(level), _empty_level())
-        total = entry.get("total_chunks") or CHUNK_GRID_SIZE * CHUNK_GRID_SIZE
+        entry = state["levels"].setdefault(str(level), _empty_level(level))
+        total = entry.get("total_chunks") or get_chunk_grid_size(level) ** 2
         entry.update({
             "status": "complete",
             "generated_at": _now_iso(),
@@ -144,7 +156,7 @@ def mark_complete(level: int, size_bytes: Optional[int] = None):
 def mark_failed(level: int, error: str):
     with _lock:
         state = _load_raw()
-        entry = state["levels"].setdefault(str(level), _empty_level())
+        entry = state["levels"].setdefault(str(level), _empty_level(level))
         entry.update({
             "status": "failed",
             "current_chunk": None,
@@ -157,5 +169,5 @@ def reset_level(level: int):
     """Mark a level as not_generated (e.g. after a fresh invalidation)."""
     with _lock:
         state = _load_raw()
-        state["levels"][str(level)] = _empty_level()
+        state["levels"][str(level)] = _empty_level(level)
         _save_raw(state)

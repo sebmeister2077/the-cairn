@@ -36,15 +36,31 @@ RESOLUTION_LEVELS: Dict[int, int] = {
     # Level 5 — "every pixel" / full resolution. Set well above the largest
     # plausible explored map side so ``compute_level_geometry`` always picks
     # scale=1 (1 image pixel per world block). Matches VS's max world size
-    # of 1,024,000 blocks and stays divisible by CHUNK_GRID_SIZE (16).
+    # of 1,024,000 blocks and stays divisible by every configured grid size.
     5: 1048576,
 }
 
 # Default level served to non-admin viewers on first load.
 DEFAULT_RESOLUTION_LEVEL = 2
 
-# Number of chunks per side for the chunked grid (CHUNK_GRID_SIZE × CHUNK_GRID_SIZE chunks per level).
-# Allows generating one chunk at a time to keep peak memory low.
+# Number of chunks per side for each level's chunked grid
+# (grid × grid PNGs uploaded to R2 per level). Picked per-level so high-detail
+# levels stay below browser/CDN-friendly per-chunk sizes: a level-5 image of a
+# fully explored map is ~8000²+ pixels, so a 16×16 grid produced single chunks
+# in the tens of MB. A 64×64 grid keeps each chunk well below ~5 MB.
+# IMPORTANT: when increasing the grid for an existing level, run a full regen
+# so the orphan-cleanup pass in ``generate_map_levels._generate_level``
+# wipes out chunks at coords that no longer fit.
+CHUNK_GRID_SIZES: Dict[int, int] = {
+    1: 16,
+    2: 16,
+    3: 16,
+    4: 32,
+    5: 64,
+}
+
+# Backwards-compatible default for callers that don't have a level handy.
+# Prefer ``get_chunk_grid_size(level)`` or ``geometry["chunk_grid"]``.
 CHUNK_GRID_SIZE = 16
 
 
@@ -55,9 +71,16 @@ def get_level_dimension(level: int) -> int:
     return RESOLUTION_LEVELS[level]
 
 
+def get_chunk_grid_size(level: int) -> int:
+    """Return the per-side chunk count for a level's grid."""
+    if level not in CHUNK_GRID_SIZES:
+        raise ValueError(f"Unknown resolution level: {level}")
+    return CHUNK_GRID_SIZES[level]
+
+
 def get_chunk_pixel_size(level: int) -> int:
     """Return the size of one chunk (one side) in pixels for a level."""
-    return get_level_dimension(level) // CHUNK_GRID_SIZE
+    return get_level_dimension(level) // get_chunk_grid_size(level)
 
 
 def _open_mapdb(db_path: str) -> sqlite3.Connection:
@@ -420,6 +443,7 @@ def compute_level_geometry(db_path: str, level: int) -> dict:
         conn.close()
 
     max_dim = get_level_dimension(level)
+    grid = get_chunk_grid_size(level)
     w_chunks = max_x - min_x + 1
     h_chunks = max_z - min_z + 1
     full_w = w_chunks * TILE_SIZE
@@ -429,9 +453,9 @@ def compute_level_geometry(db_path: str, level: int) -> dict:
     image_w = max(1, full_w // scale)
     image_h = max(1, full_h // scale)
 
-    # Chunk dimensions — divide image evenly into CHUNK_GRID_SIZE × CHUNK_GRID_SIZE
-    chunk_w = max(1, image_w // CHUNK_GRID_SIZE)
-    chunk_h = max(1, image_h // CHUNK_GRID_SIZE)
+    # Chunk dimensions — divide image evenly into grid × grid.
+    chunk_w = max(1, image_w // grid)
+    chunk_h = max(1, image_h // grid)
 
     return {
         "scale": int(scale),
@@ -439,6 +463,7 @@ def compute_level_geometry(db_path: str, level: int) -> dict:
         "image_h": int(image_h),
         "chunk_w": int(chunk_w),
         "chunk_h": int(chunk_h),
+        "chunk_grid": int(grid),
         "min_x": int(min_x),
         "max_x": int(max_x),
         "min_z": int(min_z),
@@ -460,10 +485,11 @@ def _chunk_pixel_bounds(geometry: dict, cx: int, cy: int) -> Tuple[int, int, int
     chunk_h = geometry["chunk_h"]
     img_w = geometry["image_w"]
     img_h = geometry["image_h"]
+    grid = geometry.get("chunk_grid", CHUNK_GRID_SIZE)
     px0 = cx * chunk_w
     py0 = cy * chunk_h
-    px1 = img_w if cx == CHUNK_GRID_SIZE - 1 else min(img_w, px0 + chunk_w)
-    py1 = img_h if cy == CHUNK_GRID_SIZE - 1 else min(img_h, py0 + chunk_h)
+    px1 = img_w if cx == grid - 1 else min(img_w, px0 + chunk_w)
+    py1 = img_h if cy == grid - 1 else min(img_h, py0 + chunk_h)
     return px0, py0, px1, py1
 
 
@@ -476,12 +502,14 @@ def world_block_bounds_to_chunk_indices(
 ) -> Tuple[int, int, int, int]:
     """Translate a world-block bounding box into inclusive chunk-grid indices.
 
-    Returns (cx_min, cy_min, cx_max, cy_max). Clamped to [0, CHUNK_GRID_SIZE-1].
+    Returns (cx_min, cy_min, cx_max, cy_max). Clamped to [0, grid-1] using the
+    grid size recorded in ``geometry``.
     Useful for partial regeneration after a contribution is merged.
     """
     scale = geometry["scale"]
     chunk_w = geometry["chunk_w"]
     chunk_h = geometry["chunk_h"]
+    grid = geometry.get("chunk_grid", CHUNK_GRID_SIZE)
     map_origin_block_x = geometry["min_x"] * TILE_SIZE
     map_origin_block_z = geometry["min_z"] * TILE_SIZE
 
@@ -491,10 +519,10 @@ def world_block_bounds_to_chunk_indices(
     py_min = max(0, (min_block_z - map_origin_block_z)) // scale
     py_max = max(0, (max_block_z - map_origin_block_z)) // scale
 
-    cx_min = max(0, min(CHUNK_GRID_SIZE - 1, int(px_min // chunk_w)))
-    cx_max = max(0, min(CHUNK_GRID_SIZE - 1, int(px_max // chunk_w)))
-    cy_min = max(0, min(CHUNK_GRID_SIZE - 1, int(py_min // chunk_h)))
-    cy_max = max(0, min(CHUNK_GRID_SIZE - 1, int(py_max // chunk_h)))
+    cx_min = max(0, min(grid - 1, int(px_min // chunk_w)))
+    cx_max = max(0, min(grid - 1, int(px_max // chunk_w)))
+    cy_min = max(0, min(grid - 1, int(py_min // chunk_h)))
+    cy_max = max(0, min(grid - 1, int(py_max // chunk_h)))
     return cx_min, cy_min, cx_max, cy_max
 
 
@@ -521,11 +549,12 @@ def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
     """
     from PIL import Image
 
-    if cx < 0 or cy < 0 or cx >= CHUNK_GRID_SIZE or cy >= CHUNK_GRID_SIZE:
-        raise ValueError(f"Chunk coords out of range: ({cx},{cy})")
-
     if geometry is None:
         geometry = compute_level_geometry(db_path, level)
+
+    grid = geometry.get("chunk_grid", get_chunk_grid_size(level))
+    if cx < 0 or cy < 0 or cx >= grid or cy >= grid:
+        raise ValueError(f"Chunk coords out of range: ({cx},{cy})")
 
     scale = geometry["scale"]
     min_x = geometry["min_x"]
@@ -612,17 +641,18 @@ def render_chunk_png(db_path: str, level: int, cx: int, cy: int,
     return out.getvalue()
 
 
-def iter_chunk_coords(only_bounds: Optional[Tuple[int, int, int, int]] = None
+def iter_chunk_coords(grid: int,
+                      only_bounds: Optional[Tuple[int, int, int, int]] = None,
                       ) -> Iterator[Tuple[int, int]]:
-    """Yield (cx, cy) chunk coordinates for the grid.
+    """Yield (cx, cy) chunk coordinates for a ``grid``×``grid`` layout.
 
     If only_bounds is provided as (cx_min, cy_min, cx_max, cy_max), only chunks
-    inside that inclusive rectangle are yielded. Otherwise all CHUNK_GRID_SIZE²
-    chunks are yielded.
+    inside that inclusive rectangle are yielded. Otherwise all grid² chunks
+    are yielded.
     """
     if only_bounds is None:
-        for cy in range(CHUNK_GRID_SIZE):
-            for cx in range(CHUNK_GRID_SIZE):
+        for cy in range(grid):
+            for cx in range(grid):
                 yield cx, cy
         return
     cx_min, cy_min, cx_max, cy_max = only_bounds
@@ -644,10 +674,11 @@ def assemble_chunks_to_png(chunk_loader, geometry: dict) -> bytes:
 
     img_w = geometry["image_w"]
     img_h = geometry["image_h"]
+    grid = geometry.get("chunk_grid", CHUNK_GRID_SIZE)
     img_arr = np.zeros((img_h, img_w, 4), dtype=np.uint8)
 
-    for cy in range(CHUNK_GRID_SIZE):
-        for cx in range(CHUNK_GRID_SIZE):
+    for cy in range(grid):
+        for cx in range(grid):
             chunk_png = chunk_loader(cx, cy)
             if not chunk_png:
                 continue

@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse, Response
 from ..auth import verify_api_key
 from ..rate_limiter import check_rate_limit
 from ..core.mapdb import (
-    CHUNK_GRID_SIZE,
     DEFAULT_RESOLUTION_LEVEL,
     RESOLUTION_LEVELS,
+    get_chunk_grid_size,
     get_level_dimension,
     render_map_png,
 )
@@ -103,17 +103,19 @@ def _build_chunk_urls(level: int) -> tuple:
     refresh_threshold = now + timedelta(seconds=_CHUNK_URL_REFRESH_BUFFER_SECONDS)
     cached = db.get_cached_chunk_urls(level, min_expires_at=refresh_threshold)
 
+    grid = get_chunk_grid_size(level)
+
     out = []
     new_rows = []
     earliest = None
 
     # Figure out which chunks need a fresh presign. If any are missing from the
     # cache, do a single LIST against the level prefix instead of doing a HEAD
-    # per chunk — one R2 round-trip vs. up to 256.
+    # per chunk — one R2 round-trip vs. up to grid².
     missing_coords = [
         (cx, cy)
-        for cy in range(CHUNK_GRID_SIZE)
-        for cx in range(CHUNK_GRID_SIZE)
+        for cy in range(grid)
+        for cx in range(grid)
         if (cx, cy) not in cached
     ]
     existing_keys: set = set()
@@ -125,8 +127,8 @@ def _build_chunk_urls(level: int) -> tuple:
             # Fall back to per-chunk HEAD checks if listing fails.
             existing_keys = None  # type: ignore[assignment]
 
-    for cy in range(CHUNK_GRID_SIZE):
-        for cx in range(CHUNK_GRID_SIZE):
+    for cy in range(grid):
+        for cx in range(grid):
             entry = cached.get((cx, cy))
             if entry is not None:
                 url = entry["url"]
@@ -247,7 +249,7 @@ def tops_map_level(level: int, api_key: str = Depends(verify_api_key)):
         "progress": entry.get("progress", 0),
         "generated_at": entry.get("generated_at"),
         "size_bytes": entry.get("size_bytes"),
-        "chunk_grid": CHUNK_GRID_SIZE,
+        "chunk_grid": metadata.get("chunk_grid", get_chunk_grid_size(level)),
         "image_w": metadata.get("image_w"),
         "image_h": metadata.get("image_h"),
         "chunk_w": metadata.get("chunk_w"),

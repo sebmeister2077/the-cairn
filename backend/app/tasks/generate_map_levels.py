@@ -42,7 +42,6 @@ from ..core import r2_storage
 from ..core import generation_tracker as tracker
 from ..core import database as db
 from ..core.mapdb import (
-    CHUNK_GRID_SIZE,
     RESOLUTION_LEVELS,
     compute_level_geometry,
     iter_chunk_coords,
@@ -120,6 +119,7 @@ def _generate_level(
     chunks outside the area are reused.
     """
     geometry = compute_level_geometry(db_path, level)
+    grid = geometry["chunk_grid"]
 
     # Persist geometry as the level metadata so the API can serve it.
     metadata = {
@@ -129,7 +129,7 @@ def _generate_level(
         "image_h": geometry["image_h"],
         "chunk_w": geometry["chunk_w"],
         "chunk_h": geometry["chunk_h"],
-        "chunk_grid": CHUNK_GRID_SIZE,
+        "chunk_grid": grid,
         "scale": geometry["scale"],
         "width_blocks": geometry["width_blocks"],
         "height_blocks": geometry["height_blocks"],
@@ -150,10 +150,36 @@ def _generate_level(
         )
     else:
         logger.info("Level %s: full regeneration of all %s chunks",
-                    level, CHUNK_GRID_SIZE * CHUNK_GRID_SIZE)
+                    level, grid * grid)
+        # Wipe orphaned chunks left over from a previous grid configuration.
+        # If the grid shrank or grew, old objects at coords outside the new
+        # grid would otherwise stay in R2 and (under a smaller new grid)
+        # leak through the level prefix listing. Best-effort — a failure
+        # here is logged but doesn't abort the regen.
+        try:
+            prefix = f"cache/tops-map-level{level}/"
+            for key in r2_storage.list_keys_with_prefix(prefix):
+                name = key[len(prefix):]
+                if not name.startswith("chunk-") or not name.endswith(".png"):
+                    continue
+                try:
+                    cx_str, cy_str = name[len("chunk-"):-len(".png")].split("-")
+                    ocx, ocy = int(cx_str), int(cy_str)
+                except (ValueError, IndexError):
+                    continue
+                if ocx >= grid or ocy >= grid:
+                    try:
+                        r2_storage.delete_object(key)
+                        db.delete_chunk_url(level, ocx, ocy)
+                    except Exception:
+                        logger.exception(
+                            "Failed to delete orphan chunk %s", key,
+                        )
+        except Exception:
+            logger.exception("Orphan-chunk cleanup pass failed for level %s", level)
 
-    chunks_to_render = list(iter_chunk_coords(only_bounds))
-    total_grid = CHUNK_GRID_SIZE * CHUNK_GRID_SIZE
+    chunks_to_render = list(iter_chunk_coords(grid, only_bounds))
+    total_grid = grid * grid
     tracker.mark_started(level, total_chunks=total_grid)
 
     # Count already-existing chunks outside the regen window as completed.
