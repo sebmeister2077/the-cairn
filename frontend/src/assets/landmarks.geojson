@@ -116,6 +116,11 @@
     },
     {
       "type": "Feature",
+      "properties": { "type": "Base", "label": "Arcadia", "z": 110 },
+      "geometry": { "type": "Point", "coordinates": [9550, -49550] }
+    },
+    {
+      "type": "Feature",
       "properties": { "type": "Base", "label": "Barony of Westwald", "z": 112 },
       "geometry": { "type": "Point", "coordinates": [-5240, -211] }
     },
