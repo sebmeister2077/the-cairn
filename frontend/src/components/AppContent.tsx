@@ -124,6 +124,20 @@ export function AppContent() {
     null,
   );
 
+  useEffect(() => {
+    const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
+    const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
+    if (isPageWithMapAssets) {
+      const linkEl = document.createElement("link");
+      linkEl.rel = "preconnect";
+      linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
+      document.head.appendChild(linkEl);
+      return () => {
+        document.head.removeChild(linkEl);
+      };
+    }
+  }, [location.pathname]);
+
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
   // This covers: page reload, opening a new tab, or session TTL expiry.
