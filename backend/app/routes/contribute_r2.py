@@ -305,6 +305,32 @@ def invalidate_combined_db_cache() -> None:
                 pass
 
 
+def _cached_db_is_valid(path: str) -> bool:
+    """Quick sanity check: the cached file is a SQLite DB with a
+    ``mappiece`` table. Returns False for missing files, empty files,
+    truncated downloads, or anything else that would later blow up
+    inside :func:`compute_level_geometry`. When this returns False the
+    caller drops the cache and re-downloads from R2.
+    """
+    try:
+        if not os.path.exists(path) or os.path.getsize(path) < 100:
+            return False
+        conn = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        try:
+            row = conn.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type='table' AND name=?",
+                (MAPPIECE_TABLE,),
+            ).fetchone()
+            return row is not None
+        finally:
+            conn.close()
+    except sqlite3.DatabaseError:
+        return False
+    except OSError:
+        return False
+
+
 def get_combined_db_cached() -> str:
     """Return a path to a local copy of ``globalservermap.db`` from R2.
 
@@ -330,8 +356,28 @@ def get_combined_db_cached() -> str:
             os.path.exists(cache_path)
             and _read_cached_etag(etag_path) == remote_etag
             and remote_etag
+            and _cached_db_is_valid(cache_path)
         ):
             return cache_path
+
+        # Either the ETag changed or the cached file is corrupt/empty
+        # (interrupted download, partially-decompressed .zst, etc.). In
+        # the corrupt case the ETag may still match, so wipe the sidecar
+        # too so we don't short-circuit on the next call before the
+        # download completes.
+        if os.path.exists(cache_path) and not _cached_db_is_valid(cache_path):
+            try:
+                os.unlink(cache_path)
+            except OSError:
+                pass
+            try:
+                os.unlink(etag_path)
+            except OSError:
+                pass
+            logger.warning(
+                "Cached combined.db at %s failed validation — re-downloading",
+                cache_path,
+            )
 
         # Refresh: download to a sibling .new path then atomically rename so
         # an interrupted download cannot corrupt the cached file.
@@ -390,6 +436,14 @@ def get_combined_db_cached() -> str:
 
             if not served_from_zst:
                 r2_storage.download_to_path(r2_storage.COMBINED_DB_KEY, new_path)
+            # Validate before swapping in: a bad zstd decompression or a
+            # truncated raw download would otherwise poison the cache and
+            # blow up every subsequent reader.
+            if not _cached_db_is_valid(new_path):
+                raise RuntimeError(
+                    "Downloaded combined.db is not a valid Vintage Story "
+                    "map database (missing mappiece table)"
+                )
             os.replace(new_path, cache_path)
             _write_cached_etag(etag_path, remote_etag)
             if not served_from_zst:

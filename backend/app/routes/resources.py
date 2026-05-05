@@ -45,6 +45,7 @@ from ..config import settings
 from ..core import database as db
 from ..core import feature_flags as ff
 from ..core import r2_storage
+from ..core.mapdb import DEFAULT_MAP_MIDDLE
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -828,12 +829,25 @@ async def resources_deposits(
         if not type_filter:
             type_filter = None
 
+    # Bounds translation: the rest of the app (MapViewer, contribute,
+    # tops-map) expresses world coords as *centered* around 0 — they pass
+    # through ``stats.start_x = min_x * TILE_SIZE - DEFAULT_MAP_MIDDLE`` on
+    # the way to the FE. The resource exporter mod, however, dumps the raw
+    # absolute Vintage Story block coordinates (e.g. ~512000) into
+    # deposits.sqlite. Translate the inbound bounds to absolute for the
+    # query and the outbound x/z back to centered so the FE can keep using
+    # one consistent coordinate system.
+    abs_min_x = min_x + DEFAULT_MAP_MIDDLE
+    abs_max_x = max_x + DEFAULT_MAP_MIDDLE
+    abs_min_z = min_z + DEFAULT_MAP_MIDDLE
+    abs_max_z = max_z + DEFAULT_MAP_MIDDLE
+
     page_limit = settings.RESOURCES_DEPOSITS_PAGE_LIMIT
     sql = (
         "SELECT rowid, type, x, y, z, qty, richness FROM deposits "
         "WHERE x >= ? AND x <= ? AND z >= ? AND z <= ?"
     )
-    params: list = [min_x, max_x, min_z, max_z]
+    params: list = [abs_min_x, abs_max_x, abs_min_z, abs_max_z]
     if cursor is not None:
         sql += " AND rowid > ?"
         params.append(int(cursor))
@@ -859,9 +873,9 @@ async def resources_deposits(
         "deposits": [
             {
                 "type": r[1],
-                "x": int(r[2]),
+                "x": int(r[2]) - DEFAULT_MAP_MIDDLE,
                 "y": int(r[3]),
-                "z": int(r[4]),
+                "z": int(r[4]) - DEFAULT_MAP_MIDDLE,
                 "qty": float(r[5]) if r[5] is not None else None,
                 "richness": float(r[6]) if r[6] is not None else None,
             }

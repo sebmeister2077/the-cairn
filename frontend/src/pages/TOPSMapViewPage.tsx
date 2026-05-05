@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Layers, Loader2, Pin, PinOff, Settings } from "lucide-react";
+import { Download, Layers, Loader2, Pin, PinOff, Settings, Sparkles, X } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -43,6 +43,10 @@ import {
   TLGroupingsDrawer,
   type TLGroupingsViewMode,
 } from "@/components/tops-map/TLGroupingsDrawer";
+import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
+import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
+import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
+import type { ResourceDeposit } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
@@ -206,6 +210,11 @@ export function TOPSMapViewPage() {
     return new Set();
   });
   const [editingGroupingId, setEditingGroupingId] = useState<string | null>(null);
+
+  // Resources overlay (admin-only). The hook is inert when `enabled` is false.
+  const resourcesOverlay = useResourcesOverlay({ enabled: isAdmin });
+  const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
+  const [selectedDeposit, setSelectedDeposit] = useState<ResourceDeposit | null>(null);
 
   // Persist view mode + active selection on change.
   useEffect(() => {
@@ -416,12 +425,39 @@ export function TOPSMapViewPage() {
   // Mirror viewport pan/zoom into the URL (debounced inside MapViewer). World
   // coords are rounded to whole blocks; the on-screen scale is kept to a few
   // decimals so the share is reproducible without bloating the URL.
+  //
+  // We pull `reportViewport` out of the resources hook into a stable ref so
+  // the callback identity doesn't change every time the hook re-renders
+  // (the hook returns a fresh object literal each render — depending on the
+  // whole object would otherwise create an infinite report→fetch→setState→
+  // re-render loop that hammers the deposits endpoint).
+  const reportResourcesViewport = resourcesOverlay.reportViewport;
+  const reportResourcesViewportRef = useRef(reportResourcesViewport);
+  useEffect(() => {
+    reportResourcesViewportRef.current = reportResourcesViewport;
+  }, [reportResourcesViewport]);
   const handleViewportChange = useCallback(
-    (info: { centerWorldX: number; centerWorldZ: number; pixelsPerBlock: number }) => {
+    (info: {
+      centerWorldX: number;
+      centerWorldZ: number;
+      pixelsPerBlock: number;
+      worldMinX: number;
+      worldMaxX: number;
+      worldMinZ: number;
+      worldMaxZ: number;
+    }) => {
       updateUrlParams({
         x: String(Math.round(info.centerWorldX)),
         z: String(Math.round(info.centerWorldZ)),
         zoom: info.pixelsPerBlock.toFixed(4),
+      });
+      // Notify resources hook so it can debounce-fetch deposits for the
+      // visible bounding box. No-op when not admin / no bundle active.
+      reportResourcesViewportRef.current({
+        worldMinX: info.worldMinX,
+        worldMaxX: info.worldMaxX,
+        worldMinZ: info.worldMinZ,
+        worldMaxZ: info.worldMaxZ,
       });
     },
     [updateUrlParams],
@@ -784,6 +820,20 @@ export function TOPSMapViewPage() {
           )}
 
           {isAdmin && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setResourcesDrawerOpen(true)}
+              title="Worldgen resources overlay"
+            >
+              <Sparkles className="size-4 mr-1" />
+              Resources
+              {resourcesOverlay.depositsLoading && <Loader2 className="size-3 ml-1 animate-spin" />}
+            </Button>
+          )}
+
+          {isAdmin && (
             <Dialog>
               <DialogTrigger
                 render={
@@ -882,6 +932,36 @@ export function TOPSMapViewPage() {
 
         {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
 
+        {isAdmin && selectedDeposit && (
+          <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
+            <Sparkles className="size-4 text-primary" />
+            <span className="font-medium capitalize">{selectedDeposit.type}</span>
+            <span className="text-muted-foreground font-mono text-xs">
+              ({selectedDeposit.x}, {selectedDeposit.y}, {selectedDeposit.z})
+            </span>
+            {selectedDeposit.qty != null && (
+              <span className="text-xs text-muted-foreground">
+                qty {selectedDeposit.qty.toFixed(2)}
+              </span>
+            )}
+            {selectedDeposit.richness != null && (
+              <span className="text-xs text-muted-foreground">
+                richness {selectedDeposit.richness.toFixed(2)}
+              </span>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="ml-auto"
+              onClick={() => setSelectedDeposit(null)}
+              aria-label="Dismiss deposit info"
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
+
         <MapViewer
           tileSet={tileSet}
           stats={stats}
@@ -910,6 +990,18 @@ export function TOPSMapViewPage() {
             const lvl = typeof next.id === "number" ? next.id : Number(next.id);
             if (Number.isFinite(lvl)) setSelectedLevel(lvl);
           }}
+          overlay={
+            isAdmin && tileSet ? (
+              <ResourcesOverlayLayer
+                state={resourcesOverlay}
+                stats={stats}
+                imageWidth={tileSet.imageWidth}
+                imageHeight={tileSet.imageHeight}
+                onDepositClick={setSelectedDeposit}
+                selectedDeposit={selectedDeposit}
+              />
+            ) : null
+          }
         />
         <TLGroupingsDrawer
           open={groupingsOpen}
@@ -927,6 +1019,13 @@ export function TOPSMapViewPage() {
           }}
           onStopEditing={() => setEditingGroupingId(null)}
         />
+        {isAdmin && (
+          <ResourcesDrawer
+            open={resourcesDrawerOpen}
+            onOpenChange={setResourcesDrawerOpen}
+            state={resourcesOverlay}
+          />
+        )}
       </CardContent>
     </Card>
   );

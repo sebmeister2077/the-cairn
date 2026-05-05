@@ -33,17 +33,13 @@ import {
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Slider, type SliderSnapMarker } from "@/components/ui/slider";
 
-interface SnapMarker {
-  level: number;
-  label: string;
-}
-
-const SNAP_MARKERS: SnapMarker[] = [
-  { level: 3, label: "Fast" },
-  { level: 10, label: "Balanced" },
-  { level: 15, label: "High" },
-  { level: 22, label: "Max" },
+const SNAP_MARKERS: Required<SliderSnapMarker>[] = [
+  { value: 3, label: "Fast" },
+  { value: 10, label: "Balanced" },
+  { value: 15, label: "High" },
+  { value: 22, label: "Max" },
 ];
 
 function formatBytes(n: number | null | undefined): string {
@@ -176,65 +172,27 @@ export function CompressionSettingsPanel() {
           </span>
         </div>
 
-        {/* Custom-styled slider. The native <input type=range> is layered
-            transparently on top of a painted track + thumb so we keep full
-            keyboard / screen-reader behaviour but get a themed look that
-            doesn't feel like a default OS widget. */}
-        <div className="relative h-6 select-none">
-          {/* Track background */}
-          <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-muted" />
-          {/* Filled portion */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-primary transition-[width] duration-75"
-            style={{ width: `${((level - 1) / 21) * 100}%` }}
-          />
-          {/* Snap tick marks */}
-          {SNAP_MARKERS.map((m) => {
-            const pct = ((m.level - 1) / 21) * 100;
-            const passed = level >= m.level;
-            return (
-              <div
-                key={`tick-${m.level}`}
-                className={`absolute top-1/2 -translate-y-1/2 w-px h-2.5 rounded-full pointer-events-none ${
-                  passed ? "bg-primary/60" : "bg-muted-foreground/40"
-                }`}
-                style={{ left: `${pct}%` }}
-              />
-            );
-          })}
-          {/* Painted thumb (purely visual; the real thumb is the
-              transparent native input above it) */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-4 rounded-full bg-background border-2 border-primary shadow-sm pointer-events-none transition-transform duration-75"
-            style={{ left: `${((level - 1) / 21) * 100}%` }}
-          />
-          <input
-            id="zstd-level"
-            type="range"
-            min={1}
-            max={22}
-            step={1}
-            value={level}
-            onChange={(e) => setLevel(parseInt(e.target.value, 10))}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer focus-visible:outline-none peer"
-            aria-label="Compression level"
-          />
-          {/* Focus ring drawn on the painted thumb when the native input is keyboard-focused */}
-          <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-4 rounded-full pointer-events-none ring-2 ring-ring ring-offset-2 ring-offset-background opacity-0 peer-focus-visible:opacity-100 transition-opacity"
-            style={{ left: `${((level - 1) / 21) * 100}%` }}
-          />
-        </div>
+        {/* Custom-styled themed range slider with snap tick marks. */}
+        <Slider
+          id="zstd-level"
+          min={1}
+          max={22}
+          step={1}
+          value={level}
+          onValueChange={(v) => setLevel(v)}
+          snapMarkers={SNAP_MARKERS}
+          aria-label="Compression level"
+        />
 
         {/* Snap-marker chips */}
         <div className="flex justify-between gap-1">
           {SNAP_MARKERS.map((m) => {
-            const active = level === m.level;
+            const active = level === m.value;
             return (
               <button
-                key={m.level}
+                key={m.value}
                 type="button"
-                onClick={() => setLevel(m.level)}
+                onClick={() => setLevel(m.value)}
                 className={`flex-1 px-2 py-1 rounded-md text-[10px] font-medium border transition-colors ${
                   active
                     ? "bg-primary/10 border-primary text-foreground"
@@ -242,7 +200,7 @@ export function CompressionSettingsPanel() {
                 }`}
               >
                 {m.label}
-                <span className="ml-1 font-mono opacity-70">{m.level}</span>
+                <span className="ml-1 font-mono opacity-70">{m.value}</span>
               </button>
             );
           })}

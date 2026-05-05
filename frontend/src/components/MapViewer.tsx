@@ -8,7 +8,7 @@ const BUTTON_ZOOM_FACTOR = 1.75;
 // reveals empty edges before the next render lands.
 const TILE_OVERSCAN_PX = 256;
 
-export type MapStats =  {
+export type MapStats = {
   pieces: number;
   size_mb: number;
   width_chunks: number;
@@ -17,7 +17,7 @@ export type MapStats =  {
   height_blocks: number;
   start_x: number;
   start_z: number;
-}
+};
 
 export interface WorldLineSegment {
   x1: number;
@@ -131,13 +131,28 @@ interface MapViewerProps {
    * `centerWorldZ` are the world-block coordinates currently under the
    * viewport center; `pixelsPerBlock` is the on-screen scale (independent of
    * which resolution level is active, so it survives resolution swaps).
+   * `worldMinX`/`worldMaxX`/`worldMinZ`/`worldMaxZ` describe the world-block
+   * rectangle currently visible in the viewport (useful for overlay layers
+   * that need to fetch viewport-bound data).
    * Requires `stats` to be set.
    */
   onViewportChange?: (info: {
     centerWorldX: number;
     centerWorldZ: number;
     pixelsPerBlock: number;
+    worldMinX: number;
+    worldMaxX: number;
+    worldMinZ: number;
+    worldMaxZ: number;
   }) => void;
+  /**
+   * Optional JSX rendered inside the same transformed container as the base
+   * tile imgs. Coordinates within `overlay` are interpreted in image-space
+   * pixels (top-left = 0,0; full extent = imgNatural.{w,h}); the viewer's
+   * pan/zoom transform applies automatically. Pointer events are enabled by
+   * default so individual children can attach click handlers.
+   */
+  overlay?: React.ReactNode;
   /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
@@ -173,6 +188,7 @@ export function MapViewer({
   focusZoom = 4,
   onViewportChange,
   initialView,
+  overlay,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -910,10 +926,17 @@ export function MapViewer({
       const worldZ = (imgY / imgNatural.h) * stats.height_blocks + stats.start_z;
       const pixelsPerBlock = (zoom * imgNatural.w) / stats.width_blocks;
       if (![worldX, worldZ, pixelsPerBlock].every(Number.isFinite)) return;
+      // World bounds of the visible viewport (in blocks).
+      const halfWblocks = containerSize.w / 2 / pixelsPerBlock;
+      const halfHblocks = containerSize.h / 2 / pixelsPerBlock;
       onViewportChange({
         centerWorldX: worldX,
         centerWorldZ: worldZ,
         pixelsPerBlock,
+        worldMinX: worldX - halfWblocks,
+        worldMaxX: worldX + halfWblocks,
+        worldMinZ: worldZ - halfHblocks,
+        worldMaxZ: worldZ + halfHblocks,
       });
     }, 300);
     return () => clearTimeout(handle);
@@ -1134,6 +1157,7 @@ export function MapViewer({
                 }}
               />
             ))}
+            {overlay}
           </div>
         ) : (
           <img
