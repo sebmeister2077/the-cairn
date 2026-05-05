@@ -1,6 +1,6 @@
 ﻿import { useEffect } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -19,8 +19,7 @@ const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;
 // matter how many times we retry. Hammering them just spams the server and
 // noisy network panels.
 const NON_RETRYABLE_STATUSES = new Set([400, 401, 403, 404, 422]);
-
-const queryClient = new QueryClient({
+const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
     queries: {
       staleTime: 60 * 1000,
@@ -43,7 +42,8 @@ const queryClient = new QueryClient({
       },
     },
   },
-});
+};
+const queryClient = new QueryClient(queryClientConfig);
 
 // Persist query cache in localStorage so things like the cached TOPS map
 // chunk URLs survive page reloads. We only persist queries that opt in via
@@ -77,6 +77,7 @@ export default function App() {
       client={queryClient}
       persistOptions={{
         persister,
+        hydrateOptions: queryClientConfig,
         maxAge: TWO_WEEKS,
         dehydrateOptions: {
           shouldDehydrateQuery: (query) =>
