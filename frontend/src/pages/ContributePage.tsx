@@ -60,6 +60,7 @@ export function ContributePage() {
 
       return shouldPoll ? pollingRate : false;
     },
+    meta: { persist: true },
   });
   const contributionInfo = contributeInfoQuery.data ?? null;
   const contributeInfoLoading = contributeInfoQuery.isLoading;

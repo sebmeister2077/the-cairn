@@ -358,6 +358,11 @@ def get_combined_db_cached() -> str:
             and remote_etag
             and _cached_db_is_valid(cache_path)
         ):
+            # Log a cache hit for monitoring, but only when the ETag is non-empty.
+            logger.info(
+                "Combined DB cache hit: ETag=%s, size=%.1f MiB",
+                remote_etag[:12], os.path.getsize(cache_path) / (1024 * 1024),
+            )
             return cache_path
 
         # Either the ETag changed or the cached file is corrupt/empty

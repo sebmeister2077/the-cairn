@@ -14,6 +14,9 @@ export function ContributionsCard({ info }: Props) {
   );
   const visibleApproved = info.approved.filter((a) => !revertedIds.has(a.id));
   if (visibleApproved.length === 0) return null;
+
+  const longestNameCharacters = visibleApproved.map((a) => a.contributor.length).max() ?? 0;
+
   return (
     <Card>
       <CardHeader>
@@ -24,25 +27,20 @@ export function ContributionsCard({ info }: Props) {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {visibleApproved
-            .slice()
-            .sort((a, b) => new Date(b.approved_at).getTime() - new Date(a.approved_at).getTime())
-            .map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0"
-              >
-                <div>
-                  <span className="font-medium">{a.contributor}</span>
-                  <span className="text-muted-foreground ml-2">
-                    +{a.tiles_new.toLocaleString()} new chunks
-                  </span>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(a.approved_at).toLocaleDateString()}
-                </span>
-              </div>
-            ))}
+          {visibleApproved.sortBy(["approved_at"], false).map((a) => (
+            <div
+              key={a.id}
+              className="flex items-center justify-between text-sm border-b last:border-0 pb-2 last:pb-0 gap-9"
+            >
+              <span className="font-medium max-w-7/12 truncate">{a.contributor}</span>
+              <span className="text-muted-foreground ml-auto">
+                +{a.tiles_new.toLocaleString()} new chunks
+              </span>
+              <span className="text-xs text-muted-foreground w-16 text-right">
+                {new Date(a.approved_at).toLocaleDateString()}
+              </span>
+            </div>
+          ))}
         </div>
       </CardContent>
     </Card>

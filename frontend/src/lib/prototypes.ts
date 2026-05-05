@@ -3,6 +3,7 @@ import type { ArrayKeys } from "@/models/UtilityTypes";
 declare global {
     interface Array<T> {
         last(): T | undefined;
+        max(): T extends number ? number : never;
         sortBy<Keys extends Array<T extends any[] ? ArrayKeys<T> : keyof T>>(keys: Keys, ascending?: boolean): T[];
     }
 }
@@ -13,8 +14,11 @@ export function setPrototypes() {
         last(): any {
             return this.slice(-1)[0];
         },
+        max(): any {
+            return Math.max(...this);
+        },
         sortBy<T extends object, Keys extends Array<T extends any[] ? ArrayKeys<T> : keyof T>>(keys: Keys, ascending = true) {
-            return this.sort((item1: T, item2: T) => {
+            return this.slice().sort((item1: T, item2: T) => {
                 const reversedKeys = [...keys].reverse() as Keys;
                 let key = reversedKeys.pop();
                 const firstCond = ascending ? 1 : -1;
