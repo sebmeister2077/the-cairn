@@ -1019,13 +1019,13 @@ export function TOPSMapViewPage() {
           }}
           onStopEditing={() => setEditingGroupingId(null)}
         />
-        {isAdmin && (
+        {/* {isAdmin && (
           <ResourcesDrawer
             open={resourcesDrawerOpen}
             onOpenChange={setResourcesDrawerOpen}
             state={resourcesOverlay}
           />
-        )}
+        )} */}
       </CardContent>
     </Card>
   );
