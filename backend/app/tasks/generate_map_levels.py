@@ -36,6 +36,7 @@ import logging
 import os
 import tempfile
 import threading
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Dict, List, Optional, Tuple
 
 from ..core import r2_storage
@@ -44,12 +45,43 @@ from ..core import database as db
 from ..core.mapdb import (
     RESOLUTION_LEVELS,
     compute_level_geometry,
+    encode_chunk_array_to_png,
     iter_chunk_coords,
     render_chunk_png,
+    render_level_streaming,
     world_block_bounds_to_chunk_indices,
 )
 
 logger = logging.getLogger("uvicorn.error")
+
+
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+# Opt-in switch for the parallelized regen pipeline. When enabled, each level
+# is rendered with:
+#   * One read-only/immutable SQLite scan per chunk-row instead of one query
+#     per chunk (mapdb.render_level_streaming).
+#   * A ThreadPoolExecutor that performs PNG encode + R2 upload concurrently
+#     so the next row's rendering overlaps with the previous row's I/O.
+# Disabled by default — set TOPS_MAP_PARALLEL_REGEN=1 in the worker env to
+# turn it on.
+PARALLEL_REGEN = _env_bool("TOPS_MAP_PARALLEL_REGEN", default=False)
+
+# Worker pool size for PNG encode + upload. Capped at 8 because the
+# bottleneck above that is usually outbound bandwidth, not CPU.
+PARALLEL_REGEN_WORKERS = max(
+    1,
+    min(
+        int(os.environ.get("TOPS_MAP_PARALLEL_REGEN_WORKERS", "0") or 0)
+        or min(8, (os.cpu_count() or 2)),
+        16,
+    ),
+)
 
 # Single in-process job lock so concurrent admin clicks don't double-launch.
 _job_lock = threading.Lock()
@@ -105,6 +137,128 @@ def _download_combined_db() -> str:
     """
     from ..routes.contribute_r2 import get_combined_db_cached
     return get_combined_db_cached()
+
+
+def _encode_and_upload_chunk(
+    level: int,
+    cx: int,
+    cy: int,
+    arr,  # Optional[np.ndarray]
+) -> int:
+    """Worker-thread task: PNG-encode one chunk's RGBA buffer and upload it
+    to R2. For empty/transparent chunks, deletes any pre-existing object so
+    the cache reflects the new state. Returns the number of bytes written
+    (0 for empty chunks).
+
+    Both Pillow's PNG encoder and boto3's HTTPS upload release the GIL for
+    the bulk of their work, so calling this from many threads in parallel
+    yields real speedup.
+    """
+    chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+    png = encode_chunk_array_to_png(arr)
+    if png is None:
+        try:
+            r2_storage.delete_object(chunk_key)
+        except Exception:
+            pass
+        try:
+            db.delete_chunk_url(level, cx, cy)
+        except Exception:
+            pass
+        return 0
+    r2_storage.upload_bytes(chunk_key, png, content_type="image/png")
+    try:
+        db.delete_chunk_url(level, cx, cy)
+    except Exception:
+        pass
+    return len(png)
+
+
+def _render_level_parallel(
+    db_path: str,
+    level: int,
+    geometry: dict,
+    only_bounds: Optional[Tuple[int, int, int, int]],
+    initial_completed: int,
+    total_grid: int,
+) -> Tuple[int, int]:
+    """Parallel render path: streams chunk RGBA buffers from one SQLite scan
+    per chunk-row and fans encode+upload out to a thread pool.
+
+    Returns ``(bytes_written, completed)``. Honours :func:`is_stop_requested`
+    between submissions and raises :class:`_StopRequested` if signaled.
+    """
+    grid = geometry["chunk_grid"]
+    if only_bounds is None:
+        bounds_for_streaming: Optional[Tuple[int, int, int, int]] = None
+    else:
+        bounds_for_streaming = only_bounds
+
+    bytes_written = 0
+    completed = initial_completed
+    workers = PARALLEL_REGEN_WORKERS
+    # Cap in-flight encode/upload tasks so a slow R2 doesn't let the
+    # generator outrun the pool and balloon memory with queued PNG buffers.
+    max_in_flight = max(workers * 2, 4)
+    in_flight: List[Tuple[int, int, "Future[int]"]] = []
+
+    progress_lock = threading.Lock()
+    last_logged_chunk: Dict[str, str] = {"key": ""}
+
+    def _drain_one() -> None:
+        nonlocal bytes_written, completed
+        cx_done, cy_done, fut = in_flight.pop(0)
+        try:
+            written = fut.result()
+        except Exception:
+            logger.exception(
+                "Level %s chunk (%s,%s) failed in parallel encode/upload",
+                level, cx_done, cy_done,
+            )
+            raise
+        with progress_lock:
+            bytes_written += written
+            completed += 1
+            last_logged_chunk["key"] = f"{cx_done}-{cy_done}"
+            tracker.update_progress(
+                level, completed, current_chunk=last_logged_chunk["key"]
+            )
+
+    logger.info(
+        "Level %s: parallel regen path enabled (workers=%s, row-stripe scan)",
+        level, workers,
+    )
+
+    with ThreadPoolExecutor(
+        max_workers=workers,
+        thread_name_prefix=f"tops-map-l{level}",
+    ) as executor:
+        try:
+            for cx, cy, arr in render_level_streaming(
+                db_path, level, geometry, bounds_for_streaming,
+            ):
+                if is_stop_requested():
+                    raise _StopRequested(
+                        f"stopped at level {level} after "
+                        f"{completed}/{total_grid} chunks"
+                    )
+                fut = executor.submit(
+                    _encode_and_upload_chunk, level, cx, cy, arr,
+                )
+                in_flight.append((cx, cy, fut))
+                # Backpressure: keep the in-flight queue bounded.
+                while len(in_flight) >= max_in_flight:
+                    _drain_one()
+        except _StopRequested:
+            # Don't wait on outstanding uploads — let executor cancel/exit
+            # via __exit__ (it will still wait for currently running tasks
+            # to finish, which is what we want for write consistency).
+            raise
+        # Drain remaining work.
+        while in_flight:
+            _drain_one()
+
+    return bytes_written, completed
 
 
 def _generate_level(
@@ -228,44 +382,51 @@ def _generate_level(
         completed = total_grid - len(chunks_to_render)
         tracker.update_progress(level, completed, current_chunk=None)
 
-    for cx, cy in chunks_to_render:
-        if is_stop_requested():
-            raise _StopRequested(
-                f"stopped at level {level} after {completed}/{total_grid} chunks"
-            )
-        try:
-            chunk_png = render_chunk_png(db_path, level, cx, cy, geometry=geometry)
-            chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
-            if chunk_png is None:
-                # Fully transparent — don't store it. Drop any pre-existing
-                # object + cached presigned URL so a re-generation can erase
-                # data from a previous run cleanly.
-                try:
-                    r2_storage.delete_object(chunk_key)
-                except Exception:
-                    pass
-                try:
-                    db.delete_chunk_url(level, cx, cy)
-                except Exception:
-                    pass
-            else:
-                r2_storage.upload_bytes(
-                    chunk_key,
-                    chunk_png,
-                    content_type="image/png",
+    if PARALLEL_REGEN and chunks_to_render:
+        bytes_written, completed = _render_level_parallel(
+            db_path, level, geometry, only_bounds,
+            initial_completed=completed,
+            total_grid=total_grid,
+        )
+    else:
+        for cx, cy in chunks_to_render:
+            if is_stop_requested():
+                raise _StopRequested(
+                    f"stopped at level {level} after {completed}/{total_grid} chunks"
                 )
-                bytes_written += len(chunk_png)
-                # Invalidate any stale presigned URL pointing at the previous
-                # version of this chunk.
-                try:
-                    db.delete_chunk_url(level, cx, cy)
-                except Exception:
-                    pass
-        except Exception as exc:
-            logger.exception("Level %s chunk (%s,%s) failed: %s", level, cx, cy, exc)
-            raise
-        completed += 1
-        tracker.update_progress(level, completed, current_chunk=f"{cx}-{cy}")
+            try:
+                chunk_png = render_chunk_png(db_path, level, cx, cy, geometry=geometry)
+                chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+                if chunk_png is None:
+                    # Fully transparent — don't store it. Drop any pre-existing
+                    # object + cached presigned URL so a re-generation can erase
+                    # data from a previous run cleanly.
+                    try:
+                        r2_storage.delete_object(chunk_key)
+                    except Exception:
+                        pass
+                    try:
+                        db.delete_chunk_url(level, cx, cy)
+                    except Exception:
+                        pass
+                else:
+                    r2_storage.upload_bytes(
+                        chunk_key,
+                        chunk_png,
+                        content_type="image/png",
+                    )
+                    bytes_written += len(chunk_png)
+                    # Invalidate any stale presigned URL pointing at the previous
+                    # version of this chunk.
+                    try:
+                        db.delete_chunk_url(level, cx, cy)
+                    except Exception:
+                        pass
+            except Exception as exc:
+                logger.exception("Level %s chunk (%s,%s) failed: %s", level, cx, cy, exc)
+                raise
+            completed += 1
+            tracker.update_progress(level, completed, current_chunk=f"{cx}-{cy}")
 
     # Best-effort: clean up any legacy assembled PNG so it can't be served stale.
     try:

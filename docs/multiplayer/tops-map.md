@@ -120,6 +120,43 @@ Memory-wise, the bound is "one chunk's RGBA buffer at a time" — a 1024×1024 R
 
 The status JSON shape is documented at the top of [generation_tracker.py](../../backend/app/core/generation_tracker.py); the relevant fields are `status` (one of `not_generated`, `generating`, `complete`, `failed`), `progress` (0..100), `current_chunk` (`"<cx>-<cy>"`), `completed_chunks`, `total_chunks`, `size_bytes`, `error`.
 
+### Geometry-change guard (partial regen safety)
+
+`_generate_level` re-reads the previous `metadata.json` from R2 before honouring an `affected_bounds` partial regen. If any of `scale`, `chunk_w`, `chunk_h`, `start_x`, `start_z`, `chunk_grid`, `image_w`, or `image_h` differ from the freshly-computed geometry, it logs a warning and promotes the request to a full regen.
+
+Why: chunks left untouched by a partial regen still live at keys `chunk-<cx>-<cy>.png`, but those `(cx, cy)` coordinates encode a different world region under the new metadata. Reusing them would silently misalign the stitched map. This commonly happens when an approval expands the world bounds (e.g. tens of thousands of blocks northward) — `min_z` shifts, `scale` typically grows, `start_z` changes, and every reused chunk would be drawn at the wrong pixel offset.
+
+First-ever generation (no prior `metadata.json`) is treated as "no prior state", so partial regens proceed normally — there's nothing to misalign against.
+
+### Parallel regen path (`TOPS_MAP_PARALLEL_REGEN`)
+
+Opt-in performance path implemented in [`_render_level_parallel`](../../backend/app/tasks/generate_map_levels.py) and [`render_level_streaming`](../../backend/app/core/mapdb.py). Disabled by default; toggled with environment variables on the worker process:
+
+| Variable | Default | Effect |
+|---|---|---|
+| `TOPS_MAP_PARALLEL_REGEN` | `0` (off) | When `1` / `true` / `yes` / `on`, every level inside a regen pass uses the parallel pipeline below. When off, the original serial loop runs and behaviour is unchanged. |
+| `TOPS_MAP_PARALLEL_REGEN_WORKERS` | `min(8, cpu_count())`, clamped to `[1, 16]` | Size of the per-level `ThreadPoolExecutor` that handles PNG encode + R2 upload. |
+
+What changes when the flag is on (per level):
+
+1. **One read-only / immutable SQLite connection per level** instead of one per chunk. `_open_mapdb_readonly` opens the cached combined DB via the URI `file:/...?mode=ro&immutable=1`, which lets SQLite skip locking, journal recovery, and file-change detection. Page cache is bumped to 32 MB and 256 MB of mmap is allowed. Roughly eliminates the ~1280 connection open/close pairs (256 chunks × 5 levels) the serial path does on a full regen.
+2. **One SELECT per chunk-row instead of one per chunk.** `render_level_streaming` walks the grid row-by-row (`cy = 0..grid-1`), issues a single `SELECT position, data FROM mappiece WHERE position BETWEEN ? AND ?` covering the whole row's z-range, decodes each tile blob exactly once, and distributes its pixels to every chunk in the row whose pixel rect the tile overlaps. Cuts query overhead by ~`grid`× — significant on level 5 (64×64 grid → 64 queries instead of 4096) and level 4 (32×32 → 32 queries instead of 1024).
+3. **PNG encode + R2 upload run in a thread pool.** As each chunk's RGBA buffer comes off the streaming generator, it is submitted to a `ThreadPoolExecutor` running `_encode_and_upload_chunk`. Both Pillow's PNG compressor (zlib in C) and boto3's HTTPS upload release the GIL for the bulk of their work, so a thread pool gives near-linear speedup up to the point where outbound bandwidth saturates.
+4. **Bounded in-flight queue.** At most `2 × TOPS_MAP_PARALLEL_REGEN_WORKERS` futures are pending at once. If R2 stalls, the streaming generator blocks before allocating more RGBA buffers, capping memory at roughly `(workers × chunk_w × chunk_h × 4) + (one row of buffers)`.
+5. **Stop signal** is checked between submissions; the executor's context manager waits for currently-running encode/upload tasks to finish before propagating the stop, so R2 never sees a half-uploaded PNG.
+
+What does **not** change:
+
+- The progress tracker keys (`completed_chunks`, `current_chunk`) and Supabase writes — `_render_level_parallel` updates them under a lock as each future resolves.
+- Empty-chunk handling (delete the R2 object + presigned URL row).
+- The geometry-change guard, orphan-chunk cleanup pass on full regen, and metadata.json upload at level end.
+- The regen-queue / coalesce / worker-loop scheduling above this layer.
+- R2 object keys, frontend stitching, presigned URL caching.
+
+Rollback: unset `TOPS_MAP_PARALLEL_REGEN` (or set it to `0`) and redeploy. No DB or R2 schema changes are involved, so flipping back and forth between passes is safe.
+
+When to enable: any time the worker process has ≥ 2 CPUs and reasonable outbound bandwidth to R2. On a single-CPU instance the gains are smaller but still real (the row-stripe SELECT alone is a win) and memory cost is modest.
+
 ### What burst approvals look like
 
 Five approvals landing inside a 5 s window now produce, in order:

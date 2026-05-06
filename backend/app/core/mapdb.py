@@ -93,6 +93,52 @@ def _open_mapdb(db_path: str) -> sqlite3.Connection:
     return conn
 
 
+def _open_mapdb_readonly(db_path: str) -> sqlite3.Connection:
+    """Open SQLite DB read-only with ``mode=ro&immutable=1``.
+
+    ``immutable=1`` tells SQLite the file will not change for the lifetime
+    of the connection, which lets it skip locking, journal recovery, and
+    file-change detection. Cuts per-query overhead noticeably for the
+    map-tile rendering hot path. Caller MUST guarantee the file is not
+    written to while the connection is open — true for the regen worker,
+    which only reads the cached combined.db.
+
+    ``check_same_thread=False`` is set so the same connection can be passed
+    to a worker thread; rendering serializes its own DB access so this is
+    safe (only one thread reads from the connection at a time).
+    """
+    # SQLite URI on Windows needs forward slashes and a leading slash on the
+    # absolute path: ``file:/C:/path/to.db?mode=ro&immutable=1``.
+    abs_path = os.path.abspath(db_path).replace("\\", "/")
+    if not abs_path.startswith("/"):
+        abs_path = "/" + abs_path
+    uri = f"file:{abs_path}?mode=ro&immutable=1"
+    conn = sqlite3.connect(uri, uri=True, check_same_thread=False)
+    cur = conn.cursor()
+    cur.execute("PRAGMA temp_store = MEMORY")
+    cur.execute("PRAGMA cache_size = -32768")  # 32 MB cache budget
+    cur.execute("PRAGMA mmap_size = 268435456")  # 256 MB memory-mapped reads
+    return conn
+
+
+def encode_chunk_array_to_png(arr: Optional[np.ndarray]) -> Optional[bytes]:
+    """Encode an RGBA chunk buffer to PNG bytes.
+
+    Returns ``None`` if ``arr`` is ``None`` or fully transparent (so callers
+    can skip storing/serving an empty chunk). Designed to be called from
+    worker threads — Pillow releases the GIL during PNG compression.
+    """
+    if arr is None:
+        return None
+    if not arr[..., 3].any():
+        return None
+    from PIL import Image
+    img = Image.fromarray(arr, "RGBA")
+    out = io.BytesIO()
+    img.save(out, format="PNG", optimize=False)
+    return out.getvalue()
+
+
 def _get_map_bounds(cur: sqlite3.Cursor) -> tuple[int, int, int, int, int]:
     """Return (count, min_x, max_x, min_z, max_z) from packed positions."""
     cur.execute(
@@ -659,6 +705,133 @@ def iter_chunk_coords(grid: int,
     for cy in range(cy_min, cy_max + 1):
         for cx in range(cx_min, cx_max + 1):
             yield cx, cy
+
+
+def render_level_streaming(
+    db_path: str,
+    level: int,
+    geometry: dict,
+    only_bounds: Optional[Tuple[int, int, int, int]] = None,
+) -> Iterator[Tuple[int, int, Optional[np.ndarray]]]:
+    """Render chunks for one level via a single SQLite scan per chunk-row.
+
+    Yields ``(cx, cy, rgba_array_or_None)`` as each chunk in the row finishes
+    rendering. ``None`` means the chunk has no map data (caller should treat
+    as transparent and skip storage). The array is a fresh ``(h, w, 4)``
+    uint8 numpy buffer the caller owns.
+
+    Compared to calling :func:`render_chunk_png` per-chunk this:
+
+    * Issues **one** ``SELECT`` per chunk-row instead of one per chunk,
+      cutting query overhead by ~``grid``× on large grids.
+    * Decodes each tile blob exactly once even when its pixels feed multiple
+      chunks (only happens on chunk boundaries; usually 1 chunk per tile).
+    * Opens a single read-only/immutable SQLite connection for the entire
+      level instead of opening+closing one per chunk.
+
+    ``only_bounds``: ``(cx_min, cy_min, cx_max, cy_max)`` inclusive, or
+    ``None`` for the full grid.
+
+    Memory: peak ≈ ``(cx_max - cx_min + 1) × chunk_w × chunk_h × 4`` bytes
+    (one row of RGBA buffers held simultaneously) plus one decoded tile.
+    """
+    grid = geometry["chunk_grid"]
+    if only_bounds is None:
+        cx_min, cy_min, cx_max, cy_max = 0, 0, grid - 1, grid - 1
+    else:
+        cx_min, cy_min, cx_max, cy_max = only_bounds
+
+    scale = geometry["scale"]
+    min_x = geometry["min_x"]
+    min_z = geometry["min_z"]
+
+    conn = _open_mapdb_readonly(db_path)
+    try:
+        cur = conn.cursor()
+        for cy in range(cy_min, cy_max + 1):
+            # Allocate output buffers for every chunk in this row.
+            row_buffers: Dict[int, np.ndarray] = {}
+            row_pixel_bounds: Dict[int, Tuple[int, int, int, int]] = {}
+            for cx in range(cx_min, cx_max + 1):
+                px0, py0, px1, py1 = _chunk_pixel_bounds(geometry, cx, cy)
+                w = px1 - px0
+                h = py1 - py0
+                if w <= 0 or h <= 0:
+                    yield cx, cy, None
+                    continue
+                row_buffers[cx] = np.zeros((h, w, 4), dtype=np.uint8)
+                row_pixel_bounds[cx] = (px0, py0, px1, py1)
+
+            if not row_buffers:
+                continue
+
+            # Block-coord extent covered by this row of chunks.
+            sample_cx = next(iter(row_buffers))
+            spx0, spy0, _spx1, spy1 = row_pixel_bounds[sample_cx]
+            row_by0 = spy0 * scale
+            row_by1 = spy1 * scale  # exclusive
+            row_bx0 = min(row_pixel_bounds[c][0] for c in row_buffers) * scale
+            row_bx1_excl = max(
+                row_pixel_bounds[c][2] for c in row_buffers
+            ) * scale
+
+            tz_lo = min_z + row_by0 // TILE_SIZE
+            tz_hi = min_z + (row_by1 - 1) // TILE_SIZE
+            tx_lo = min_x + row_bx0 // TILE_SIZE
+            tx_hi = min_x + (row_bx1_excl - 1) // TILE_SIZE
+
+            pos_min = (tz_lo << POSITION_BITS) | 0
+            pos_max = (tz_hi << POSITION_BITS) | POSITION_MASK
+            cur.execute(
+                "SELECT position, data FROM mappiece "
+                "WHERE position BETWEEN ? AND ?",
+                (pos_min, pos_max),
+            )
+
+            batch_size = 2000
+            while True:
+                rows = cur.fetchmany(batch_size)
+                if not rows:
+                    break
+                for pos_val, blob in rows:
+                    tx, tz = decode_position(pos_val)
+                    if tx < tx_lo or tx > tx_hi:
+                        continue
+
+                    if len(blob) == STANDARD_BLOB_SIZE:
+                        tile = decode_tile_numpy(blob)
+                    else:
+                        tile = decode_tile_fallback(blob)
+                    sampled = tile if scale == 1 else tile[::scale, ::scale]
+                    sh, sw = sampled.shape[:2]
+
+                    # Distribute tile pixels into every chunk in the row
+                    # whose pixel rect this tile overlaps. On most rows this
+                    # touches exactly one chunk; only at chunk boundaries
+                    # does it touch two.
+                    for cx, out_arr in row_buffers.items():
+                        px0, py0, _, _ = row_pixel_bounds[cx]
+                        chunk_arr_h, chunk_arr_w = out_arr.shape[:2]
+                        bx = (tx - min_x) * TILE_SIZE // scale - px0
+                        bz = (tz - min_z) * TILE_SIZE // scale - py0
+                        sx0 = max(0, -bx)
+                        sy0 = max(0, -bz)
+                        ew = min(sw, chunk_arr_w - bx)
+                        eh = min(sh, chunk_arr_h - bz)
+                        if ew > sx0 and eh > sy0:
+                            out_arr[
+                                bz + sy0:bz + eh,
+                                bx + sx0:bx + ew,
+                            ] = sampled[sy0:eh, sx0:ew]
+
+            # Hand off finished chunks; drop our reference so the caller's
+            # threadpool can free buffers as it finishes encode+upload.
+            for cx in sorted(row_buffers.keys()):
+                arr = row_buffers[cx]
+                yield cx, cy, arr
+            row_buffers.clear()
+    finally:
+        conn.close()
 
 
 def assemble_chunks_to_png(chunk_loader, geometry: dict) -> bytes:
