@@ -583,6 +583,62 @@ CREATE TABLE IF NOT EXISTS resources_upload_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_resources_jobs_recent
     ON resources_upload_jobs (created_at DESC);
+
+-- ---------------------------------------------------------------------------
+-- Landmarks (user-editable markers stored in R2 as landmarks.geojson)
+-- ---------------------------------------------------------------------------
+--
+-- The geojson file in R2 is the single source of truth for what's rendered.
+-- These tables hold the audit trail and the admin approval queue.
+--
+-- ``landmarks_audit`` is append-only. Every mutation (add by user, rename
+-- by owner, rename approved/rejected by admin, admin delete) writes one row.
+-- ``actor_display_name`` is snapshotted at action time so the log stays
+-- readable after rename/account deletion.
+CREATE TABLE IF NOT EXISTS landmarks_audit (
+    id                  BIGSERIAL PRIMARY KEY,
+    landmark_id         TEXT NOT NULL,
+    action              TEXT NOT NULL,
+    actor_api_key       TEXT,
+    actor_display_name  TEXT,
+    before_payload      JSONB,
+    after_payload       JSONB,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_landmarks_audit_landmark
+    ON landmarks_audit (landmark_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_landmarks_audit_actor
+    ON landmarks_audit (actor_api_key, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_landmarks_audit_created
+    ON landmarks_audit (created_at DESC);
+
+-- ``landmark_edit_requests`` is the pending-approval queue for renames of
+-- landmarks the user did NOT add (seeded or another user's). Renaming one's
+-- own landmark applies live and never inserts here. Status transitions:
+--   pending → approved   (admin approve)
+--   pending → rejected   (admin reject)
+--   pending → superseded (a newer request from same user for same landmark)
+CREATE TABLE IF NOT EXISTS landmark_edit_requests (
+    id                       TEXT PRIMARY KEY,
+    landmark_id              TEXT NOT NULL,
+    submitted_by_api_key     TEXT NOT NULL,
+    submitted_by_display_name TEXT NOT NULL,
+    current_label            TEXT NOT NULL,
+    proposed_label           TEXT NOT NULL,
+    status                   TEXT NOT NULL DEFAULT 'pending',
+    reviewed_by_api_key      TEXT,
+    reviewed_at              TIMESTAMPTZ,
+    review_note              TEXT,
+    created_at               TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_status
+    ON landmark_edit_requests (status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_landmark
+    ON landmark_edit_requests (landmark_id);
+CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_submitter
+    ON landmark_edit_requests (submitted_by_api_key, created_at DESC);
 """
 
 
@@ -2412,6 +2468,184 @@ def has_active_resources_upload_job() -> bool:
                 (_RESOURCES_JOB_ACTIVE_STATUSES,),
             )
             return cur.fetchone() is not None
+
+
+# ---------------------------------------------------------------------------
+# Landmarks audit + edit-request CRUD
+# ---------------------------------------------------------------------------
+
+def insert_landmark_audit(
+    *,
+    landmark_id: str,
+    action: str,
+    actor_api_key: Optional[str],
+    actor_display_name: Optional[str],
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+) -> None:
+    """Append-only audit record for a landmark mutation."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO landmarks_audit
+                       (landmark_id, action, actor_api_key, actor_display_name,
+                        before_payload, after_payload)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (
+                    landmark_id,
+                    action,
+                    actor_api_key,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                ),
+            )
+
+
+def list_landmark_audit(
+    *,
+    landmark_id: Optional[str] = None,
+    actor_api_key: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    where = []
+    params: list = []
+    if landmark_id:
+        where.append("landmark_id = %s")
+        params.append(landmark_id)
+    if actor_api_key:
+        where.append("actor_api_key = %s")
+        params.append(actor_api_key)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    params.extend([int(limit), int(offset)])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT id, landmark_id, action, actor_api_key,
+                           actor_display_name, before_payload, after_payload,
+                           created_at
+                       FROM landmarks_audit
+                       {where_sql}
+                       ORDER BY created_at DESC
+                       LIMIT %s OFFSET %s""",
+                params,
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def insert_landmark_edit_request(
+    *,
+    request_id: str,
+    landmark_id: str,
+    submitted_by_api_key: str,
+    submitted_by_display_name: str,
+    current_label: str,
+    proposed_label: str,
+) -> dict:
+    """Insert a pending rename request. Any prior pending request from the
+    same submitter for the same landmark is marked ``superseded`` so only the
+    newest one is actionable."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE landmark_edit_requests
+                       SET status = 'superseded'
+                       WHERE landmark_id = %s
+                         AND submitted_by_api_key = %s
+                         AND status = 'pending'""",
+                (landmark_id, submitted_by_api_key),
+            )
+            cur.execute(
+                """INSERT INTO landmark_edit_requests
+                       (id, landmark_id, submitted_by_api_key,
+                        submitted_by_display_name, current_label, proposed_label)
+                   VALUES (%s, %s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (
+                    request_id,
+                    landmark_id,
+                    submitted_by_api_key,
+                    submitted_by_display_name,
+                    current_label,
+                    proposed_label,
+                ),
+            )
+            return dict(cur.fetchone())
+
+
+def get_landmark_edit_request(request_id: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM landmark_edit_requests WHERE id = %s",
+                (request_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_landmark_edit_requests(
+    *,
+    status: Optional[str] = None,
+    submitted_by_api_key: Optional[str] = None,
+    landmark_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    where = []
+    params: list = []
+    if status:
+        where.append("status = %s")
+        params.append(status)
+    if submitted_by_api_key:
+        where.append("submitted_by_api_key = %s")
+        params.append(submitted_by_api_key)
+    if landmark_id:
+        where.append("landmark_id = %s")
+        params.append(landmark_id)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    params.extend([int(limit), int(offset)])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT * FROM landmark_edit_requests
+                       {where_sql}
+                       ORDER BY created_at DESC
+                       LIMIT %s OFFSET %s""",
+                params,
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def resolve_landmark_edit_request(
+    request_id: str,
+    *,
+    new_status: str,
+    reviewed_by_api_key: str,
+    review_note: Optional[str] = None,
+) -> Optional[dict]:
+    """Mark a request as ``approved`` / ``rejected`` / ``superseded``.
+
+    No-ops (returns None) if the row does not exist or is not currently
+    pending — protects against double-action races between two admins."""
+    if new_status not in ("approved", "rejected", "superseded"):
+        raise ValueError(f"invalid new_status: {new_status!r}")
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE landmark_edit_requests
+                       SET status = %s,
+                           reviewed_by_api_key = %s,
+                           reviewed_at = now(),
+                           review_note = %s
+                       WHERE id = %s AND status = 'pending'
+                       RETURNING *""",
+                (new_status, reviewed_by_api_key, review_note, request_id),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
 
 
 def reset_stuck_resources_upload_jobs() -> int:

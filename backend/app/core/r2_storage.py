@@ -695,6 +695,55 @@ def backup_manual_key(
     )
 
 
+# ---------------------------------------------------------------------------
+# Landmarks / translocators (Phase: user-editable landmarks)
+# ---------------------------------------------------------------------------
+#
+# Layout::
+#
+#   landmarks.geojson                                       -- live
+#   translocators.geojson                                   -- live
+#   backups/landmarks-YYYY-Www.geojson                      -- weekly auto
+#   backups/translocators-YYYY-Www.geojson
+#   backups/landmarks-YYYY-Www-manual-<unix_ts>.geojson     -- admin manual
+#   backups/translocators-YYYY-Www-manual-<unix_ts>.geojson
+#
+# Files are tiny JSON, so no compression / no multipart needed.
+
+LANDMARKS_LIVE_KEY = "landmarks.geojson"
+TRANSLOCATORS_LIVE_KEY = "translocators.geojson"
+
+
+def landmarks_live_key() -> str:
+    return LANDMARKS_LIVE_KEY
+
+
+def translocators_live_key() -> str:
+    return TRANSLOCATORS_LIVE_KEY
+
+
+def landmarks_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}landmarks-{iso_year:04d}-W{iso_week:02d}.geojson"
+
+
+def landmarks_backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}landmarks-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.geojson"
+    )
+
+
+def translocators_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}translocators-{iso_year:04d}-W{iso_week:02d}.geojson"
+
+
+def translocators_backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}translocators-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.geojson"
+    )
+
+
 def list_backup_objects() -> list:
     """Return raw R2 listing for ``backups/`` — dicts with Key, Size, LastModified."""
     out = []

@@ -34,6 +34,7 @@ from .routes import resources as admin_resources
 from .routes import account
 from .routes import invite
 from .routes import maintenance
+from .routes import landmarks as landmarks_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -553,6 +554,7 @@ app.include_router(admin_resources.router, prefix="/api")
 app.include_router(account.router, prefix="/api")
 app.include_router(invite.router, prefix="/api")
 app.include_router(maintenance.public_router, prefix="/api")
+app.include_router(landmarks_routes.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 

@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
   getTopsMapLevel,
+  getLandmarksUrl,
+  getTranslocatorsUrl,
   getStoredIsAdmin,
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
@@ -223,7 +225,7 @@ export function TOPSMapViewPage() {
   const [editingGroupingId, setEditingGroupingId] = useState<string | null>(null);
 
   // Resources overlay (admin-only). The hook is inert when `enabled` is false.
-  const resourcesOverlay = useResourcesOverlay({ enabled: isAdmin });
+  const resourcesOverlay = useResourcesOverlay({ enabled: false });
   const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<ResourceDeposit | null>(null);
 
@@ -272,9 +274,9 @@ export function TOPSMapViewPage() {
     }
 
     if (!landmarkLoadPromiseRef.current) {
-      const dataUrl = new URL("../assets/landmarks.geojson", import.meta.url).href;
       landmarkLoadPromiseRef.current = (async () => {
-        const res = await fetch(dataUrl);
+        const { url } = await getLandmarksUrl();
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Failed to load landmark data (${res.status})`);
         const data = await res.json();
 
@@ -321,9 +323,9 @@ export function TOPSMapViewPage() {
     }
 
     if (!translocatorLoadPromiseRef.current) {
-      const dataUrl = new URL("../assets/translocators.geojson", import.meta.url).href;
       translocatorLoadPromiseRef.current = (async () => {
-        const res = await fetch(dataUrl);
+        const { url } = await getTranslocatorsUrl();
+        const res = await fetch(url);
         if (!res.ok) throw new Error(`Failed to load translocator data (${res.status})`);
         const data = await res.json();
 

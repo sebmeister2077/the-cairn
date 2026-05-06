@@ -312,6 +312,35 @@ export async function getTopsMapStats() {
     return (await handleResponse(res)).json();
 }
 
+// ---------------------------------------------------------------------------
+// Landmarks / translocators presigned URL endpoints
+// ---------------------------------------------------------------------------
+
+export interface MarkerFileUrlResponse {
+    url: string;
+    etag: string;
+    /** Conservative reuse window in seconds. Frontend should re-request the
+     *  endpoint after this many seconds even if the URL still appears valid. */
+    expires_in_seconds: number;
+}
+
+/** Get a presigned GET URL for the live landmarks.geojson on R2.
+ *  No auth header required to redeem the returned URL — it's self-contained. */
+export async function getLandmarksUrl(): Promise<MarkerFileUrlResponse> {
+    const res = await fetch(`${API_BASE}/landmarks/url`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Get a presigned GET URL for the live translocators.geojson on R2. */
+export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
+    const res = await fetch(`${API_BASE}/translocators/url`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 /**
  * Fetch an image from a presigned URL (no auth header � the URL is self-contained).
  * Falls back to null on network error or non-200 status so callers can degrade gracefully.
