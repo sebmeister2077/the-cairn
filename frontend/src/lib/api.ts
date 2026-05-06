@@ -344,7 +344,7 @@ export interface LandmarkFeature {
     type: "Feature";
     properties: {
         id: string;
-        type: "Base" | "Server" | "Misc";
+        type: "Base" | "Server" | "Misc" | "Terminus";
         label: string;
         origin?: "seed" | "user" | string;
         added_by?: string | null;
@@ -370,7 +370,7 @@ export interface LandmarkEditRequest {
 
 export interface AddLandmarkBody {
     label: string;
-    type: "Base" | "Server" | "Misc";
+    type: "Base" | "Server" | "Misc" | "Terminus";
     x: number;
     z: number;
     y?: number;

@@ -187,7 +187,7 @@ function SignedInCard({
           <CardTitle className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
               {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-              <MapPin className="size-4" /> My landmarks
+              <MapPin className="size-4" /> Landmarks added by me
               {myFeatures.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
                   {myFeatures.length}
@@ -363,7 +363,7 @@ function AddLandmarkDialog({
 }) {
   const isAdmin = userReduxState("auth.isAdmin");
   const [label, setLabel] = useState("");
-  const [kind, setKind] = useState<"Base" | "Server" | "Misc">("Base");
+  const [kind, setKind] = useState<"Base" | "Server" | "Misc" | "Terminus">("Base");
   const [x, setX] = useState<string>("0");
   const [z, setZ] = useState<string>("0");
   const [y, setY] = useState<string>("");
@@ -432,6 +432,7 @@ function AddLandmarkDialog({
                 <SelectContent>
                   <SelectItem value="Base">Base</SelectItem>
                   <SelectItem value="Server">Server</SelectItem>
+                  <SelectItem value="Terminus">Terminus</SelectItem>
                   <SelectItem value="Misc">Misc (hidden by default)</SelectItem>
                 </SelectContent>
               </Select>
