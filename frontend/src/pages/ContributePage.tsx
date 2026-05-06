@@ -29,10 +29,6 @@ export function ContributePage() {
   const isAdmin = userReduxState("auth.isAdmin");
   const canContribute = userReduxState("auth.canContribute");
 
-  if (!canContribute) {
-    return <CantContributeCard />;
-  }
-
   // Contribute info via React Query. Phase 1: when at least one pending row
   // has a not-yet-ready match score we poll every 5 s so the badge updates
   // automatically while the worker grinds through its queue.
@@ -59,6 +55,7 @@ export function ContributePage() {
 
       return shouldPoll ? pollingRate : false;
     },
+    enabled: canContribute,
     meta: { persist: true },
   });
   const contributionInfo = contributeInfoQuery.data ?? null;
@@ -78,7 +75,7 @@ export function ContributePage() {
       // Fallback: fetch via authenticated proxy
       return getContributePreview(previewId!);
     },
-    enabled: !!previewId,
+    enabled: !!previewId && canContribute,
   });
   const previewBlob = previewQuery.data ?? null;
   const previewUrl = useMemo(
@@ -112,6 +109,10 @@ export function ContributePage() {
     },
     [queryClient],
   );
+
+  if (!canContribute) {
+    return <CantContributeCard />;
+  }
 
   const cooldownDays = contributionInfo?.cooldown_days ?? 7;
   const canContributeFromData = contributionInfo?.can_contribute !== false;
