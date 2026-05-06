@@ -6,11 +6,16 @@ import {
     type ResourceDeposit,
     type ResourcesManifest,
 } from "@/lib/api";
-
-const ACTIVE_LAYERS_KEY = "tops-map-resources-active-layers";
-const DEPOSIT_FILTERS_KEY = "tops-map-resources-deposit-filters";
-const OPACITY_KEY = "tops-map-resources-opacity";
-const SHOW_DEPOSITS_KEY = "tops-map-resources-show-deposits";
+import { store } from "@/store";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+    setActiveLayers as setActiveLayersAction,
+    toggleLayer as toggleLayerAction,
+    setOpacity as setOpacityAction,
+    setDepositsVisible as setDepositsVisibleAction,
+    setDepositTypeVisibility as setDepositTypeVisibilityAction,
+    toggleDepositType as toggleDepositTypeAction,
+} from "@/store/slices/resourcesOverlay";
 
 const VIEWPORT_DEBOUNCE_MS = 350;
 const MAX_DEPOSIT_PAGES = 5; // cap at ~25k deposits per viewport
@@ -78,26 +83,6 @@ interface UseResourcesOverlayOptions {
     enabled: boolean;
 }
 
-function loadJson<T>(key: string, fallback: T): T {
-    if (typeof window === "undefined") return fallback;
-    try {
-        const raw = window.localStorage.getItem(key);
-        if (raw == null) return fallback;
-        return JSON.parse(raw) as T;
-    } catch {
-        return fallback;
-    }
-}
-
-function saveJson(key: string, value: unknown) {
-    if (typeof window === "undefined") return;
-    try {
-        window.localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-        // ignore quota / privacy errors
-    }
-}
-
 export function useResourcesOverlay(
     opts: UseResourcesOverlayOptions,
 ): ResourcesOverlayState {
@@ -107,29 +92,53 @@ export function useResourcesOverlay(
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>(() =>
-        loadJson<Record<string, boolean>>(ACTIVE_LAYERS_KEY, {}),
+    // User-facing toggles live in the Redux slice in
+    // [store/slices/resourcesOverlay.ts]. Selectors here cause this hook
+    // to re-render only when the specific field changes; persistence is
+    // handled centrally by the store subscriber.
+    const dispatch = useAppDispatch();
+    const activeLayers = useAppSelector((s) => s.resourcesOverlay.activeLayers);
+    const opacity = useAppSelector((s) => s.resourcesOverlay.opacity);
+    const depositsVisible = useAppSelector((s) => s.resourcesOverlay.depositsVisible);
+    const depositTypeVisibility = useAppSelector(
+        (s) => s.resourcesOverlay.depositTypeVisibility,
     );
-    const [opacity, setOpacityState] = useState<number>(() =>
-        Math.min(1, Math.max(0, loadJson<number>(OPACITY_KEY, 0.55))),
+    const setActiveLayers = useCallback(
+        (
+            updater:
+                | Record<string, boolean>
+                | ((prev: Record<string, boolean>) => Record<string, boolean>),
+        ) => {
+            const current = store.getState().resourcesOverlay.activeLayers;
+            const next =
+                typeof updater === "function" ? updater(current) : updater;
+            // Reference-equal updates are no-ops in the slice anyway.
+            if (next !== current) dispatch(setActiveLayersAction(next));
+        },
+        [dispatch],
     );
-    const [depositsVisible, setDepositsVisibleState] = useState<boolean>(() =>
-        loadJson<boolean>(SHOW_DEPOSITS_KEY, true),
+    const setDepositTypeVisibility = useCallback(
+        (
+            updater:
+                | Record<string, boolean>
+                | ((prev: Record<string, boolean>) => Record<string, boolean>),
+        ) => {
+            const current = store.getState().resourcesOverlay.depositTypeVisibility;
+            const next =
+                typeof updater === "function" ? updater(current) : updater;
+            if (next !== current)
+                dispatch(setDepositTypeVisibilityAction(next));
+        },
+        [dispatch],
     );
-    const [depositTypeVisibility, setDepositTypeVisibility] = useState<
-        Record<string, boolean>
-    >(() => loadJson<Record<string, boolean>>(DEPOSIT_FILTERS_KEY, {}));
-
-    // Persist user preferences.
-    useEffect(() => saveJson(ACTIVE_LAYERS_KEY, activeLayers), [activeLayers]);
-    useEffect(() => saveJson(OPACITY_KEY, opacity), [opacity]);
-    useEffect(() => saveJson(SHOW_DEPOSITS_KEY, depositsVisible), [depositsVisible]);
-    useEffect(
-        () => saveJson(DEPOSIT_FILTERS_KEY, depositTypeVisibility),
-        [depositTypeVisibility],
+    const setOpacityState = useCallback(
+        (v: number) => dispatch(setOpacityAction(v)),
+        [dispatch],
     );
-
-    // Manifest fetch + refresh-on-expiry.
+    const setDepositsVisibleState = useCallback(
+        (v: boolean) => dispatch(setDepositsVisibleAction(v)),
+        [dispatch],
+    );
     useEffect(() => {
         if (!enabled) {
             setManifest(null);
@@ -213,21 +222,33 @@ export function useResourcesOverlay(
         });
     }, [manifest, layerIds]);
 
-    const toggleLayer = useCallback((id: string) => {
-        setActiveLayers((prev) => ({ ...prev, [id]: !prev[id] }));
-    }, []);
+    const toggleLayer = useCallback(
+        (id: string) => {
+            dispatch(toggleLayerAction(id));
+        },
+        [dispatch],
+    );
 
-    const setOpacity = useCallback((v: number) => {
-        setOpacityState(Math.min(1, Math.max(0, v)));
-    }, []);
+    const setOpacity = useCallback(
+        (v: number) => {
+            setOpacityState(Math.min(1, Math.max(0, v)));
+        },
+        [setOpacityState],
+    );
 
-    const setDepositsVisible = useCallback((v: boolean) => {
-        setDepositsVisibleState(v);
-    }, []);
+    const setDepositsVisible = useCallback(
+        (v: boolean) => {
+            setDepositsVisibleState(v);
+        },
+        [setDepositsVisibleState],
+    );
 
-    const toggleDepositType = useCallback((id: string) => {
-        setDepositTypeVisibility((prev) => ({ ...prev, [id]: !prev[id] }));
-    }, []);
+    const toggleDepositType = useCallback(
+        (id: string) => {
+            dispatch(toggleDepositTypeAction(id));
+        },
+        [dispatch],
+    );
 
     const setAllDepositTypes = useCallback(
         (visible: boolean) => {

@@ -1,4 +1,14 @@
 import type { QueryFunction } from "@tanstack/react-query";
+import { store } from "@/store";
+import {
+    setApiKey as setApiKeyAction,
+    setIsAdmin as setIsAdminAction,
+    setCanContribute as setCanContributeAction,
+    clearAuthFlags as clearAuthFlagsAction,
+    setAdminSession as setAdminSessionAction,
+    clearAdminSession as clearAdminSessionAction,
+    markCurrentKeyRejected,
+} from "@/store/slices/auth";
 
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 export const API_BASE = configuredApiBase || "/api";
@@ -7,23 +17,23 @@ export const API_BASE = configuredApiBase || "/api";
 const UPLOAD_API_BASE = API_BASE;
 
 function getApiKey(): string {
-    return localStorage.getItem("api_key") ?? "";
+    return store.getState().auth.apiKey;
 }
 
-// Tracks the API key value that the backend most recently rejected with a
-// 401. While this matches the currently-stored key, requests built via
-// ``authHeaders`` short-circuit (see ``handleResponse``) so we don't busy-
-// loop hammering the server (e.g. a react-query observer with staleTime: 0
-// that refetches as soon as ``queryClient.clear()`` purges its data).
-// The empty string is a valid sentinel meaning "no key was stored at the
-// time we got rejected"; we MUST NOT collapse that to ``null`` (otherwise
-// anonymous 401s would re-fire ``auth-rejected`` forever, since each call
-// would look like a fresh rejection). Cleared whenever the stored key
-// changes via ``setApiKey``.
-let rejectedApiKey: string | null = null;
-
+/**
+ * The auth state's `rejectedApiKey` field is the canonical "this key was
+ * just rejected" marker (see [store/slices/auth.ts]). It's an in-memory
+ * back-pressure signal: while it equals the current `apiKey`, any
+ * `authHeaders()`-driven request short-circuits in `handleResponse` so a
+ * react-query refetch storm doesn't busy-loop after `queryClient.clear()`.
+ *
+ * The empty string is a meaningful sentinel for "no key was stored when we
+ * got rejected" and must not collapse to `null`; the rejected marker resets
+ * to `null` only when `setApiKey` actually changes the stored value.
+ */
 export function isCurrentApiKeyRejected(): boolean {
-    return rejectedApiKey !== null && rejectedApiKey === getApiKey();
+    const { apiKey, rejectedApiKey } = store.getState().auth;
+    return rejectedApiKey !== null && rejectedApiKey === apiKey;
 }
 
 /**
@@ -42,20 +52,19 @@ export class ApiError extends Error {
 }
 
 export function setApiKey(key: string) {
-    const previous = localStorage.getItem("api_key");
+    const previous = store.getState().auth.apiKey;
     if (previous && previous !== key) {
         // The session was bound to the old key — drop it so the new key has
         // to assert its own passkey.
         clearAdminSession();
     }
-    localStorage.setItem("api_key", key);
+    store.dispatch(setApiKeyAction(key));
     if (previous !== key) {
-        // A different key — give it a fresh chance even if the previous
-        // one had been rejected.
-        rejectedApiKey = null;
         // Notify in-process listeners (banners, gating UI) that the stored
         // key changed. The browser only fires native ``storage`` events for
         // OTHER tabs, so we dispatch our own for this tab.
+        // (Phase 4 cleanup: drop this once every consumer reads via the
+        // store; kept for parity with the legacy contract.)
         try {
             window.dispatchEvent(new CustomEvent("api-key-change", { detail: { key } }));
         } catch {
@@ -72,38 +81,36 @@ export function getStoredApiKey(): string {
 //
 // After a successful WebAuthn assertion the server returns an opaque session
 // token. The frontend stores it here and forwards it via X-Admin-Session on
-// every admin request. Tokens expire server-side (default 8 h) � the backend
+// every admin request. Tokens expire server-side (default 8 h) — the backend
 // then returns 401 ``passkey_session_expired`` and the UI re-prompts.
 
-const ADMIN_SESSION_KEY = "admin_session";
-const ADMIN_SESSION_EXPIRES_KEY = "admin_session_expires";
-
 export function getAdminSession(): string | null {
-    const token = localStorage.getItem(ADMIN_SESSION_KEY);
-    if (!token) return null;
-    const exp = Number(localStorage.getItem(ADMIN_SESSION_EXPIRES_KEY) ?? "0");
-    if (exp && Date.now() > exp) {
+    const { adminSessionToken, adminSessionExpiresAt } = store.getState().auth;
+    if (!adminSessionToken) return null;
+    if (adminSessionExpiresAt && Date.now() > adminSessionExpiresAt) {
         clearAdminSession();
         return null;
     }
-    return token;
+    return adminSessionToken;
 }
 
 export function setAdminSession(token: string, ttlSeconds: number) {
-    localStorage.setItem(ADMIN_SESSION_KEY, token);
-    localStorage.setItem(ADMIN_SESSION_EXPIRES_KEY, String(Date.now() + ttlSeconds * 1000));
+    store.dispatch(
+        setAdminSessionAction({
+            token,
+            expiresAt: Date.now() + ttlSeconds * 1000,
+        }),
+    );
     window.dispatchEvent(new Event("admin-session-changed"));
 }
 
 export function clearAdminSession() {
-    localStorage.removeItem(ADMIN_SESSION_KEY);
-    localStorage.removeItem(ADMIN_SESSION_EXPIRES_KEY);
+    store.dispatch(clearAdminSessionAction());
     window.dispatchEvent(new Event("admin-session-changed"));
 }
 
 export function getAdminSessionExpiresAt(): number | null {
-    const exp = Number(localStorage.getItem(ADMIN_SESSION_EXPIRES_KEY) ?? "0");
-    return exp || null;
+    return store.getState().auth.adminSessionExpiresAt;
 }
 
 /**
@@ -120,20 +127,20 @@ export function authHeaders(extra?: Record<string, string>): Record<string, stri
 }
 
 export function getStoredIsAdmin(): boolean {
-    return localStorage.getItem("is_admin") === "true";
+    return store.getState().auth.isAdmin;
 }
 
 export function getStoredCanContribute(): boolean {
-    return localStorage.getItem("can_contribute") === "true"
-        || localStorage.getItem("is_admin") === "true";
+    const s = store.getState().auth;
+    return s.canContribute || s.isAdmin;
 }
 
 export function setStoredIsAdmin(value: boolean) {
-    localStorage.setItem("is_admin", value ? "true" : "false");
+    store.dispatch(setIsAdminAction(value));
 }
 
 export function setStoredCanContribute(value: boolean) {
-    localStorage.setItem("can_contribute", value ? "true" : "false");
+    store.dispatch(setCanContributeAction(value));
 }
 
 /**
@@ -145,8 +152,7 @@ export const PERSISTED_QUERY_CACHE_KEY = "vs-waypoints-query-cache";
 
 /** Remove cached admin / contributor flags from localStorage. */
 export function clearStoredAuthFlags() {
-    localStorage.removeItem("is_admin");
-    localStorage.removeItem("can_contribute");
+    store.dispatch(clearAuthFlagsAction());
 }
 
 /** Wipe the persisted React Query cache from localStorage. */
@@ -202,8 +208,9 @@ export async function handleResponse(res: Response) {
             // null. That distinction is what stops anonymous-user 401s
             // from re-firing the auth-rejected event in a loop.
             const currentKey = getApiKey();
-            const alreadyRejected = rejectedApiKey === currentKey;
-            rejectedApiKey = currentKey;
+            const alreadyRejected =
+                store.getState().auth.rejectedApiKey === currentKey;
+            store.dispatch(markCurrentKeyRejected());
             clearAdminSession();
             if (!alreadyRejected) {
                 window.dispatchEvent(new Event("auth-rejected"));

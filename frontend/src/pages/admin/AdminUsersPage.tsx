@@ -23,51 +23,23 @@ import {
 } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setAdminUsersFilters, type AdminUsersFilters } from "@/store/slices/adminUsersFilters";
 
-const FILTERS_STORAGE_KEY = "admin_users_filters_v1";
-
-type StoredFilters = {
-  q: string;
-  sort: string;
-  filterFlagged: boolean;
-  filterBanned: boolean;
-  filterGenesis: boolean;
-  includeDeleted: boolean;
-};
-
-const DEFAULT_FILTERS: StoredFilters = {
-  q: "",
-  sort: "joined_at",
-  filterFlagged: false,
-  filterBanned: false,
-  filterGenesis: false,
-  includeDeleted: true,
-};
-
-function loadStoredFilters(): StoredFilters {
-  try {
-    const raw = localStorage.getItem(FILTERS_STORAGE_KEY);
-    if (!raw) return DEFAULT_FILTERS;
-    const parsed = JSON.parse(raw) as Partial<StoredFilters>;
-    return { ...DEFAULT_FILTERS, ...parsed };
-  } catch {
-    return DEFAULT_FILTERS;
-  }
-}
+// Filters live in the Redux `adminUsersFilters` slice; the slice handles
+// load/persist/cross-tab sync. Keep the legacy type alias so existing
+// callsites in this file don't shift around.
+type StoredFilters = AdminUsersFilters;
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
-  const [filters, setFilters] = useState<StoredFilters>(loadStoredFilters());
-
-  useEffect(() => {
-    try {
-      const value: StoredFilters = filters;
-      localStorage.setItem(FILTERS_STORAGE_KEY, JSON.stringify(value));
-    } catch {
-      // ignore quota / serialization errors
-    }
-  }, [filters]);
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((s) => s.adminUsersFilters);
+  const setFilters = useCallback(
+    (next: StoredFilters) => dispatch(setAdminUsersFilters(next)),
+    [dispatch],
+  );
 
   const [banTarget, setBanTarget] = useState<AdminUserListItem | null>(null);
   const [siblingTarget, setSiblingTarget] = useState<AdminUserListItem | null>(null);

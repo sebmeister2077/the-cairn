@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setGroupings as setGroupingsAction } from "@/store/slices/tlGroupings";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 
@@ -206,31 +208,42 @@ export interface UseTLGroupingsResult {
 }
 
 /**
- * React hook wrapping the localStorage-backed grouping list. Mutations write
- * synchronously and the same hook instance in another tab is kept in sync via
- * the standard `storage` event.
+ * React hook wrapping the Redux-backed grouping list. Reads come from the
+ * `tlGroupings` slice, mutations dispatch `setGroupings(next)` and the
+ * slice's persistence subscriber writes to localStorage. Cross-tab sync is
+ * handled centrally by the store's storage-event reconciler, so this hook
+ * no longer needs a `storage` listener of its own.
  */
 export function useTLGroupings(): UseTLGroupingsResult {
-    const [groupings, setGroupings] = useState<TLGrouping[]>(() => loadGroupings());
+    const dispatch = useAppDispatch();
+    const groupings = useAppSelector((s) => s.tlGroupings.items);
 
-    // Cross-tab sync: when another tab writes the storage key we re-load.
+    // Helper that takes a producer, applies it against the latest slice
+    // value, and dispatches the new array. We deliberately do NOT pass the
+    // current `groupings` reference into deps so the returned callbacks
+    // remain stable across renders — every invocation reads the most
+    // recent state by closing over the dispatched action's reducer logic.
+    const update = useCallback(
+        (producer: (prev: TLGrouping[]) => TLGrouping[]) => {
+            // We need the freshest array, so route through the slice using a
+            // dispatched updater. The slice action sets state directly, so
+            // we compute against the value we currently see and rely on
+            // React-Redux's batched dispatch ordering to converge.
+            dispatch((dispatchInner, getState) => {
+                const prev = (getState as unknown as () => { tlGroupings: { items: TLGrouping[] } })()
+                    .tlGroupings.items;
+                const next = producer(prev);
+                if (next !== prev) dispatchInner(setGroupingsAction(next));
+            });
+        },
+        [dispatch],
+    );
+
+    // Keep the hook signature unchanged for callers, even though state now
+    // lives in the slice. `useEffect` import retained to avoid touching
+    // existing call sites — strip it once we're sure nothing else here uses it.
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        const onStorage = (e: StorageEvent) => {
-            if (e.key !== STORAGE_KEY) return;
-            setGroupings(parsePersisted(e.newValue));
-        };
-        window.addEventListener("storage", onStorage);
-        return () => window.removeEventListener("storage", onStorage);
-    }, []);
-
-    // Helper that takes a producer, applies it, persists, and updates state.
-    const update = useCallback((producer: (prev: TLGrouping[]) => TLGrouping[]) => {
-        setGroupings((prev) => {
-            const next = producer(prev);
-            saveGroupings(next);
-            return next;
-        });
+        // No-op: cross-tab sync handled by the store reconciler.
     }, []);
 
     const createGrouping = useCallback<UseTLGroupingsResult["createGrouping"]>(

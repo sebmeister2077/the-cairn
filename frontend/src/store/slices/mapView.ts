@@ -1,0 +1,106 @@
+// TOPS map view UI state shared between TOPSMapViewPage and the drawers.
+
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { lsRead, lsReadJson, lsWrite, lsWriteJson } from "../persistence";
+import { hydrateRoot } from "../rootActions";
+
+const SELECTED_LEVEL_LS = "tops-map-selected-level";
+const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
+const ACTIVE_LS = "tops-map-tl-groupings-active";
+
+export type TLGroupingsViewMode = "all" | "highlight" | "filter";
+
+export interface MapViewState {
+    selectedLevel: number | null;
+    groupingsViewMode: TLGroupingsViewMode;
+    activeGroupingIds: string[];
+}
+
+function readSelectedLevel(): number | null {
+    const raw = lsRead(SELECTED_LEVEL_LS);
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+}
+
+function readViewMode(): TLGroupingsViewMode {
+    const raw = lsRead(VIEW_MODE_LS);
+    return raw === "filter" || raw === "highlight" || raw === "all" ? raw : "all";
+}
+
+function readActive(): string[] {
+    const arr = lsReadJson<unknown>(ACTIVE_LS, []);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((v): v is string => typeof v === "string");
+}
+
+export function loadInitialMapViewState(): MapViewState {
+    return {
+        selectedLevel: readSelectedLevel(),
+        groupingsViewMode: readViewMode(),
+        activeGroupingIds: readActive(),
+    };
+}
+
+export const mapViewSlice = createSlice({
+    name: "mapView",
+    initialState: loadInitialMapViewState(),
+    reducers: {
+        setSelectedLevel(state, action: PayloadAction<number | null>) {
+            state.selectedLevel = action.payload;
+        },
+        setGroupingsViewMode(state, action: PayloadAction<TLGroupingsViewMode>) {
+            state.groupingsViewMode = action.payload;
+        },
+        setActiveGroupingIds(state, action: PayloadAction<string[]>) {
+            // Deduplicate defensively so callers can pass in the result of
+            // toggling without first checking.
+            state.activeGroupingIds = Array.from(new Set(action.payload));
+        },
+        toggleActiveGrouping(state, action: PayloadAction<string>) {
+            const id = action.payload;
+            const i = state.activeGroupingIds.indexOf(id);
+            if (i >= 0) state.activeGroupingIds.splice(i, 1);
+            else state.activeGroupingIds.push(id);
+        },
+    },
+    extraReducers: (builder) => {
+        builder.addCase(hydrateRoot, (state, action) => {
+            const next = action.payload.mapView as MapViewState | undefined;
+            return next ?? state;
+        });
+    },
+});
+
+export const {
+    setSelectedLevel,
+    setGroupingsViewMode,
+    setActiveGroupingIds,
+    toggleActiveGrouping,
+} = mapViewSlice.actions;
+
+export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {
+    const s = getSlice();
+    if (s.selectedLevel !== prev.selectedLevel && s.selectedLevel != null) {
+        lsWrite(SELECTED_LEVEL_LS, String(s.selectedLevel));
+    }
+    if (s.groupingsViewMode !== prev.groupingsViewMode) {
+        lsWrite(VIEW_MODE_LS, s.groupingsViewMode);
+    }
+    if (s.activeGroupingIds !== prev.activeGroupingIds) {
+        lsWriteJson(ACTIVE_LS, s.activeGroupingIds);
+    }
+}
+
+export function reconcileMapViewFromStorage(key: string) {
+    switch (key) {
+        case SELECTED_LEVEL_LS:
+            return setSelectedLevel(readSelectedLevel());
+        case VIEW_MODE_LS:
+            return setGroupingsViewMode(readViewMode());
+        case ACTIVE_LS:
+            return setActiveGroupingIds(readActive());
+        default:
+            return null;
+    }
+}

@@ -1,41 +1,32 @@
-// Theme preference storage + resolution helpers.
+// Theme preference helpers — Redux-backed.
 //
-// The user picks one of three preferences (Auto / Light / Dark). "Auto" follows
-// the OS via `prefers-color-scheme`. The resolved theme ("light" | "dark") is
-// applied by toggling a class on <html>; existing CSS variables in index.css
-// (`:root` for light, `.dark` for dark) handle the rest.
-//
-// Storage is versioned (mirrors lib/consent.ts) so we can invalidate values
-// later without leaving stale data behind.
+// The slice in [store/slices/theme.ts] owns the runtime value and writes
+// it to localStorage with the same versioned envelope as before. These
+// functions are kept as thin wrappers so non-React callers can stay on the
+// existing API surface (Phase 4 cleanup will fold them into selectors).
+
+import { store } from "@/store";
+import {
+    setThemePreference,
+    type ThemePreference,
+} from "@/store/slices/theme";
 
 export const THEME_VERSION = "1";
-const THEME_KEY = "theme_preference";
 
-export type ThemePreference = "auto" | "light" | "dark";
+export type { ThemePreference } from "@/store/slices/theme";
 export type ResolvedTheme = "light" | "dark";
 
 export const THEME_CHANGED_EVENT = "theme-changed";
 
 export function loadThemePreference(): ThemePreference {
-    try {
-        const raw = localStorage.getItem(THEME_KEY);
-        if (!raw) return "auto";
-        const [version, value] = raw.split(":");
-        if (version !== THEME_VERSION) return "auto";
-        if (value === "auto" || value === "light" || value === "dark") return value;
-        return "auto";
-    } catch {
-        return "auto";
-    }
+    return store.getState().theme.preference;
 }
 
 export function saveThemePreference(pref: ThemePreference) {
-    try {
-        localStorage.setItem(THEME_KEY, `${THEME_VERSION}:${pref}`);
-    } catch {
-        // ignore — storage may be disabled / denied
-    }
-    // Notify same-tab listeners (storage event only fires across tabs).
+    store.dispatch(setThemePreference(pref));
+    // Phase 4 cleanup: drop this once every consumer has switched to a
+    // useAppSelector. Kept dispatched so legacy ThemeProvider listeners
+    // still react during the transition.
     window.dispatchEvent(new CustomEvent(THEME_CHANGED_EVENT, { detail: pref }));
 }
 

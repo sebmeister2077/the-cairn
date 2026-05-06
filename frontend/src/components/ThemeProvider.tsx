@@ -1,13 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  THEME_CHANGED_EVENT,
   applyTheme,
   getSystemTheme,
-  loadThemePreference,
   saveThemePreference,
   type ResolvedTheme,
   type ThemePreference,
 } from "@/lib/theme";
+import { useAppSelector } from "@/store/hooks";
 
 interface ThemeContextValue {
   preference: ThemePreference;
@@ -18,11 +17,11 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // Initialize from storage so first render matches the pre-paint script in
-  // index.html (no class flicker after hydration).
-  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    typeof window === "undefined" ? "auto" : loadThemePreference(),
-  );
+  // Preference is owned by the Redux store now — selecting it makes this
+  // component re-render automatically when any caller dispatches a change
+  // (including cross-tab updates handled by store/crossTabSync.ts), so the
+  // legacy `THEME_CHANGED_EVENT` / `storage` listeners aren't needed here.
+  const preference = useAppSelector((s) => s.theme.preference);
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
     typeof window === "undefined" ? "light" : getSystemTheme(),
   );
@@ -47,35 +46,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
-  // Sync across tabs (storage event) and same-tab listeners (custom event).
-  useEffect(() => {
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== "theme_preference") return;
-      setPreferenceState(loadThemePreference());
-    };
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<ThemePreference>).detail;
-      if (detail === "auto" || detail === "light" || detail === "dark") {
-        setPreferenceState(detail);
-      } else {
-        setPreferenceState(loadThemePreference());
-      }
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(THEME_CHANGED_EVENT, onCustom);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(THEME_CHANGED_EVENT, onCustom);
-    };
-  }, []);
-
   const value = useMemo<ThemeContextValue>(
     () => ({
       preference,
       resolved,
       setPreference: (pref) => {
+        // Goes through the Redux slice; the selector above will re-render us.
         saveThemePreference(pref);
-        setPreferenceState(pref);
       },
     }),
     [preference, resolved],

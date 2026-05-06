@@ -8,6 +8,13 @@ import {
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
 } from "@/lib/api";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  setSelectedLevel as setSelectedLevelAction,
+  setGroupingsViewMode as setGroupingsViewModeAction,
+  setActiveGroupingIds as setActiveGroupingIdsAction,
+  toggleActiveGrouping as toggleActiveGroupingAction,
+} from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
   MapViewer,
@@ -55,9 +62,8 @@ import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo"
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
-const SELECTED_LEVEL_STORAGE_KEY = "tops-map-selected-level";
-const GROUPINGS_VIEW_MODE_STORAGE_KEY = "tops-map-tl-groupings-view-mode";
-const GROUPINGS_ACTIVE_STORAGE_KEY = "tops-map-tl-groupings-active";
+// Storage key constants moved into [store/slices/mapView.ts]; the slice
+// owns reads/writes so the page only talks to selectors + dispatch.
 
 /**
  * Compute how long (ms) the cached level info should be considered fresh based
@@ -186,29 +192,34 @@ export function TOPSMapViewPage() {
   const landmarkLoadPromiseRef = useRef<Promise<WorldPointMarker[]> | null>(null);
 
   // Favorite TL groupings (local-only). The groupings themselves persist via
-  // `useTLGroupings`; view-mode + active-selection are persisted separately so
-  // a reload returns the user to the same overlay state.
+  // `useTLGroupings`; view-mode + active-selection live in the Redux
+  // mapView slice (which preloaded them from localStorage on store
+  // construction). Selectors keep this component re-rendering only when
+  // those specific fields change.
   const groupingsStore = useTLGroupings();
+  const dispatch = useAppDispatch();
   const [groupingsOpen, setGroupingsOpen] = useState(false);
-  const [groupingsViewMode, setGroupingsViewMode] = useState<TLGroupingsViewMode>(() => {
-    if (typeof window === "undefined") return "all";
-    const stored = window.localStorage.getItem(GROUPINGS_VIEW_MODE_STORAGE_KEY);
-    return stored === "filter" || stored === "highlight" || stored === "all" ? stored : "all";
-  });
-  const [activeGroupingIds, setActiveGroupingIds] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set();
-    try {
-      const raw = window.localStorage.getItem(GROUPINGS_ACTIVE_STORAGE_KEY);
-      if (!raw) return new Set();
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return new Set(parsed.filter((v): v is string => typeof v === "string"));
-      }
-    } catch {
-      // fall through
-    }
-    return new Set();
-  });
+  const groupingsViewMode = useAppSelector((s) => s.mapView.groupingsViewMode);
+  const setGroupingsViewMode = useCallback(
+    (mode: TLGroupingsViewMode) => dispatch(setGroupingsViewModeAction(mode)),
+    [dispatch],
+  );
+  const activeGroupingIdsArray = useAppSelector((s) => s.mapView.activeGroupingIds);
+  // Many call sites want O(1) `.has()` lookups; memoise a Set view derived
+  // from the slice array. The Set identity changes only when the array
+  // reference does (i.e. on dispatch), keeping downstream effects stable.
+  const activeGroupingIds = useMemo(
+    () => new Set<string>(activeGroupingIdsArray),
+    [activeGroupingIdsArray],
+  );
+  const setActiveGroupingIds = useCallback(
+    (next: Set<string> | ((prev: Set<string>) => Set<string>)) => {
+      const resolved =
+        typeof next === "function" ? next(new Set<string>(activeGroupingIdsArray)) : next;
+      dispatch(setActiveGroupingIdsAction(Array.from(resolved)));
+    },
+    [dispatch, activeGroupingIdsArray],
+  );
   const [editingGroupingId, setEditingGroupingId] = useState<string | null>(null);
 
   // Resources overlay (admin-only). The hook is inert when `enabled` is false.
@@ -216,25 +227,12 @@ export function TOPSMapViewPage() {
   const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<ResourceDeposit | null>(null);
 
-  // Persist view mode + active selection on change.
-  useEffect(() => {
-    window.localStorage.setItem(GROUPINGS_VIEW_MODE_STORAGE_KEY, groupingsViewMode);
-  }, [groupingsViewMode]);
-  useEffect(() => {
-    window.localStorage.setItem(
-      GROUPINGS_ACTIVE_STORAGE_KEY,
-      JSON.stringify(Array.from(activeGroupingIds)),
-    );
-  }, [activeGroupingIds]);
-
-  const toggleActiveGrouping = useCallback((id: string) => {
-    setActiveGroupingIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }, []);
+  const toggleActiveGrouping = useCallback(
+    (id: string) => {
+      dispatch(toggleActiveGroupingAction(id));
+    },
+    [dispatch],
+  );
 
   // Stop editing if the grouping disappears (e.g. deleted from the drawer).
   useEffect(() => {
@@ -388,12 +386,26 @@ export function TOPSMapViewPage() {
     [statsQuery.data?.resolutions],
   );
 
-  const [selectedLevel, setSelectedLevel] = useState<number | null>(() => {
-    // URL beats persisted preference so a shared link always wins.
-    if (initialUrlParams.level != null) return initialUrlParams.level;
-    const stored = localStorage.getItem(SELECTED_LEVEL_STORAGE_KEY);
-    return stored ? Number(stored) : null;
-  });
+  // Selected level lives in the mapView slice so cross-tab sync + central
+  // persistence apply. URL parameter still wins on first paint and is
+  // re-applied on each change below.
+  const selectedLevel = useAppSelector((s) => s.mapView.selectedLevel);
+  const setSelectedLevel = useCallback(
+    (level: number | null) => dispatch(setSelectedLevelAction(level)),
+    [dispatch],
+  );
+  // If a `?level=` query param was provided on the *initial* navigation,
+  // override whatever the slice loaded from storage so deep links win.
+  const initialLevelAppliedRef = useRef(false);
+  useEffect(() => {
+    if (initialLevelAppliedRef.current) return;
+    initialLevelAppliedRef.current = true;
+    if (initialUrlParams.level != null && initialUrlParams.level !== selectedLevel) {
+      setSelectedLevel(initialUrlParams.level);
+    }
+    // Intentional one-shot: only applies the URL value at mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Pick a sensible level once the resolution list is known.
   useEffect(() => {
@@ -412,12 +424,12 @@ export function TOPSMapViewPage() {
     const lower = completedLevels.filter((l) => l <= (desired ?? 0));
     const next = lower.length > 0 ? Math.max(...lower) : completedLevels[0];
     setSelectedLevel(next);
-  }, [completedLevels, statsQuery.data, selectedLevel]);
+  }, [completedLevels, statsQuery.data, selectedLevel, setSelectedLevel]);
 
-  // Persist user's chosen level.
+  // Mirror selected level into the URL so the page is shareable. Persistence
+  // itself is handled by the slice's reducer subscriber.
   useEffect(() => {
     if (selectedLevel != null) {
-      localStorage.setItem(SELECTED_LEVEL_STORAGE_KEY, String(selectedLevel));
       updateUrlParams({ level: String(selectedLevel) });
     }
   }, [selectedLevel, updateUrlParams]);
