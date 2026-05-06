@@ -477,9 +477,9 @@ export function TOPSMapViewPage() {
     // already expired) we get exactly one refetch on mount; when it returns a
     // positive value we serve the persisted entry with no network call.
     staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
-    gcTime: 7 * 24 * 60 * 60 * 1000,
-    enabled: statsQuery.isSuccess && selectedLevel != null,
-    meta: { persist: true },
+    // gcTime: 7 * 24 * 60 * 60 * 1000,
+    // enabled: statsQuery.isSuccess && selectedLevel != null,
+    // meta: { persist: true },
   });
 
   const tileSet = useMemo(() => {
@@ -694,8 +694,8 @@ export function TOPSMapViewPage() {
         queryFn: () => getTopsMapLevel(candidate.level),
         staleTime: ({ state }) =>
           levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
-        gcTime: 7 * 24 * 60 * 60 * 1000,
-        meta: { persist: true },
+        // gcTime: 7 * 24 * 60 * 60 * 1000,
+        // meta: { persist: true },
       });
       if (!info.chunks?.length) throw new Error("Resolution chunks unavailable");
       // Note: we deliberately do NOT call setSelectedLevel here. The parent
