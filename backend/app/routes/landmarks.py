@@ -176,6 +176,18 @@ def _require_account_user(ctx: dict) -> dict:
     return user
 
 
+def _ctx_api_key_id(ctx: dict) -> Optional[str]:
+    """Return the ``api_keys.id`` UUID for the caller's API key.
+
+    For DB-backed keys ``ctx['info']`` is a row dict from ``api_keys`` and
+    contains ``id``. For env-var admin/legacy keys there is no DB row, so
+    the audit columns receive None (the schema permits NULL).
+    """
+    info = ctx.get("info") or {}
+    raw = info.get("id")
+    return str(raw) if raw is not None else None
+
+
 # ---------------------------------------------------------------------------
 # Read endpoints
 # ---------------------------------------------------------------------------
@@ -249,7 +261,7 @@ async def add_landmark(
         # This should be unreachable due to _require_account_user, but guard
         # against it just in case.
         raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
-    api_key = ctx["key"]
+    api_key_id = _ctx_api_key_id(ctx)
 
     properties: dict = {
         "id": landmark_id,
@@ -280,7 +292,7 @@ async def add_landmark(
             db.insert_landmark_audit,
             landmark_id=landmark_id,
             action="add",
-            actor_api_key=api_key,
+            actor_api_key_id=api_key_id,
             actor_display_name=display_name,
             after_payload=feature,
         )
@@ -306,7 +318,7 @@ async def rename_landmark(
     """
     user = _require_account_user(ctx)
     new_label = _normalise_label(payload.label)
-    api_key = ctx["key"]
+    api_key_id = _ctx_api_key_id(ctx)
     user_id = str(user["id"]) if user.get("id") is not None else None
     display_name = user.get("display_name") or "Anonymous"
 
@@ -332,7 +344,7 @@ async def rename_landmark(
                 db.insert_landmark_audit,
                 landmark_id=landmark_id,
                 action="edit_own",
-                actor_api_key=api_key,
+                actor_api_key_id=api_key_id,
                 actor_display_name=display_name,
                 before_payload=before,
                 after_payload=feature,
@@ -345,7 +357,7 @@ async def rename_landmark(
             db.insert_landmark_edit_request,
             request_id=request_id,
             landmark_id=landmark_id,
-            submitted_by_api_key=api_key,
+            submitted_by_api_key_id=api_key_id,
             submitted_by_display_name=display_name,
             current_label=current_label,
             proposed_label=new_label,
@@ -354,7 +366,7 @@ async def rename_landmark(
             db.insert_landmark_audit,
             landmark_id=landmark_id,
             action="edit_other_pending",
-            actor_api_key=api_key,
+            actor_api_key_id=api_key_id,
             actor_display_name=display_name,
             before_payload={"label": current_label},
             after_payload={"label": new_label, "edit_request_id": request_id},
@@ -369,10 +381,10 @@ async def list_my_edit_requests(
 ) -> dict:
     """Return the caller's recent rename requests (newest first)."""
     _require_account_user(ctx)
-    api_key = ctx["key"]
+    api_key_id = _ctx_api_key_id(ctx)
     rows = await asyncio.to_thread(
         db.list_landmark_edit_requests,
-        submitted_by_api_key=api_key,
+        submitted_by_api_key_id=api_key_id,
         limit=max(1, min(int(limit), 200)),
     )
     return {"edit_requests": [_serialise_edit_request(r) for r in rows]}

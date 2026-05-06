@@ -37,7 +37,7 @@ def upgrade() -> None:
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
         sa.Column("landmark_id", sa.String(), nullable=False),
         sa.Column("action", sa.String(), nullable=False),
-        sa.Column("actor_api_key", sa.String(), nullable=True),
+        sa.Column("actor_api_key_id", sa.String(), nullable=True),
         sa.Column("actor_display_name", sa.String(), nullable=True),
         sa.Column("before_payload", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("after_payload", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
@@ -57,7 +57,7 @@ def upgrade() -> None:
     op.create_index(
         "idx_landmarks_audit_actor",
         "landmarks_audit",
-        ["actor_api_key", sa.text("created_at DESC")],
+        ["actor_api_key_id", sa.text("created_at DESC")],
     )
     op.create_index(
         "idx_landmarks_audit_created",
@@ -70,7 +70,7 @@ def upgrade() -> None:
         "landmark_edit_requests",
         sa.Column("id", sa.String(), nullable=False),
         sa.Column("landmark_id", sa.String(), nullable=False),
-        sa.Column("submitted_by_api_key", sa.String(), nullable=False),
+        sa.Column("submitted_by_api_key_id", sa.String(), nullable=False),
         sa.Column("submitted_by_display_name", sa.String(), nullable=False),
         sa.Column("current_label", sa.String(), nullable=False),
         sa.Column("proposed_label", sa.String(), nullable=False),
@@ -80,7 +80,7 @@ def upgrade() -> None:
             server_default=sa.text("'pending'"),
             nullable=False,
         ),
-        sa.Column("reviewed_by_api_key", sa.String(), nullable=True),
+        sa.Column("reviewed_by_api_key_id", sa.String(), nullable=True),
         sa.Column("reviewed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("review_note", sa.String(), nullable=True),
         sa.Column(
@@ -104,7 +104,7 @@ def upgrade() -> None:
     op.create_index(
         "idx_landmark_edit_requests_submitter",
         "landmark_edit_requests",
-        ["submitted_by_api_key", sa.text("created_at DESC")],
+        ["submitted_by_api_key_id", sa.text("created_at DESC")],
     )
     op.execute("ALTER TABLE landmark_edit_requests ENABLE ROW LEVEL SECURITY;")
 

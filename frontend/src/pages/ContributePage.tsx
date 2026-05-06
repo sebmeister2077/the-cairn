@@ -12,8 +12,6 @@ import {
   fetchImageFromSignedUrl,
   getContributeInfo,
   getContributePreview,
-  getStoredCanContribute,
-  getStoredIsAdmin,
   recomputeMatchScore,
   rejectContribution,
   revertContribution,
@@ -22,13 +20,14 @@ import {
 import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
 import { contributeQueries } from "@/lib/constants/react-query";
 import type { ContributeInfo } from "@/models/contributions";
+import { userReduxState } from "@/store/hooks";
 import { useQuery, useQueryClient, type DefaultError } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function ContributePage() {
   const queryClient = useQueryClient();
-  const isAdmin = getStoredIsAdmin();
-  const canContribute = getStoredCanContribute();
+  const isAdmin = userReduxState("auth.isAdmin");
+  const canContribute = userReduxState("auth.canContribute");
 
   if (!canContribute) {
     return <CantContributeCard />;

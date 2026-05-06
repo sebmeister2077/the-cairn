@@ -34,8 +34,6 @@ export function RecentContributionsGridImpl({
   const [revertError, setRevertError] = useState<string | null>(null);
   // Two-step revert: clicking the destructive button stages the entry
   // here, which opens a themed ConfirmDialog instead of the browser's
-  // native window.confirm() (which feels jarring inside the admin UI
-  // and can't be styled per page).
   const [pendingRevert, setPendingRevert] = useState<HistoryEntry | null>(null);
   const opened = openId ? (history.find((h) => h.id === openId) ?? null) : null;
 

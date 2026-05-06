@@ -16,7 +16,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Loader2, MapPin, Pencil, Plus, UserPlus } from "lucide-react";
+import { ChevronDown, ChevronRight, Loader2, MapPin, Pencil, Plus, UserPlus } from "lucide-react";
 
 import {
   addLandmark,
@@ -67,7 +67,7 @@ async function fetchLandmarkFeatures(): Promise<LandmarkFeature[]> {
 }
 
 export function LandmarkManagementCard({ onLandmarksChanged }: Props) {
-  const apiKey = getStoredApiKey();
+  const apiKey = userReduxState("auth.apiKey");
   const accountQuery = useQuery({
     queryKey: ["account-me", apiKey ?? ""],
     queryFn: getMyAccountSafe,
@@ -129,6 +129,23 @@ function SignedInCard({
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<LandmarkFeature | null>(null);
   const [browseQuery, setBrowseQuery] = useState("");
+  // Collapsed by default so the side panel doesn't get dominated by this
+  // section. Persisted to localStorage so the user's preference sticks
+  // across reloads / page navigations.
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("lm-card-expanded") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("lm-card-expanded", expanded ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [expanded]);
 
   const featuresQuery = useQuery({
     queryKey: LANDMARKS_QUERY_KEY,
@@ -166,73 +183,93 @@ function SignedInCard({
   return (
     <>
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="cursor-pointer select-none" onClick={() => setExpanded((v) => !v)}>
           <CardTitle className="flex items-center justify-between text-sm">
             <span className="flex items-center gap-2">
+              {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
               <MapPin className="size-4" /> My landmarks
+              {myFeatures.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {myFeatures.length}
+                </Badge>
+              )}
+              {pendingRequests.length > 0 && (
+                <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px]">
+                  {pendingRequests.length} pending
+                </Badge>
+              )}
             </span>
-            <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                setAddOpen(true);
+              }}
+            >
               <Plus className="size-3 mr-1" />
               Add
             </Button>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-xs">
-          {featuresQuery.isLoading && (
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          )}
-          {featuresQuery.error && (
-            <p className="text-destructive">{(featuresQuery.error as Error).message}</p>
-          )}
-          {featuresQuery.data && myFeatures.length === 0 && (
-            <p className="text-muted-foreground italic">You haven't added any landmarks yet.</p>
-          )}
-          {myFeatures.map((feat) => (
-            <LandmarkRow
-              key={feat.properties.id}
-              feature={feat}
-              ownedByMe
-              onEdit={() => setEditing(feat)}
-            />
-          ))}
-
-          {pendingRequests.length > 0 && (
-            <div className="pt-2 border-t space-y-1.5">
-              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                Pending rename requests
-              </div>
-              {pendingRequests.map((r) => (
-                <PendingRequestRow key={r.id} request={r} />
-              ))}
-            </div>
-          )}
-
-          <div className="pt-2 border-t space-y-2">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              Suggest a rename for any landmark
-            </div>
-            <Input
-              value={browseQuery}
-              onChange={(e) => setBrowseQuery(e.target.value)}
-              placeholder="Search by label…"
-              className="h-8 text-xs"
-            />
-            {browseQuery.trim() && browseMatches.length === 0 && (
-              <p className="text-muted-foreground italic">No matches.</p>
+        {expanded && (
+          <CardContent className="space-y-3 text-xs">
+            {featuresQuery.isLoading && (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
             )}
-            {browseMatches.map((feat) => (
+            {featuresQuery.error && (
+              <p className="text-destructive">{(featuresQuery.error as Error).message}</p>
+            )}
+            {featuresQuery.data && myFeatures.length === 0 && (
+              <p className="text-muted-foreground italic">You haven't added any landmarks yet.</p>
+            )}
+            {myFeatures.map((feat) => (
               <LandmarkRow
                 key={feat.properties.id}
                 feature={feat}
-                ownedByMe={!!userId && feat.properties?.added_by_user_id === userId}
+                ownedByMe
                 onEdit={() => setEditing(feat)}
               />
             ))}
-            <p className="text-muted-foreground text-[10px]">
-              Renames on landmarks you didn't add are queued for admin review.
-            </p>
-          </div>
-        </CardContent>
+
+            {pendingRequests.length > 0 && (
+              <div className="pt-2 border-t space-y-1.5">
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                  Pending rename requests
+                </div>
+                {pendingRequests.map((r) => (
+                  <PendingRequestRow key={r.id} request={r} />
+                ))}
+              </div>
+            )}
+
+            <div className="pt-2 border-t space-y-2">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                Suggest a rename for any landmark
+              </div>
+              <Input
+                value={browseQuery}
+                onChange={(e) => setBrowseQuery(e.target.value)}
+                placeholder="Search by label…"
+                className="h-8 text-xs"
+              />
+              {browseQuery.trim() && browseMatches.length === 0 && (
+                <p className="text-muted-foreground italic">No matches.</p>
+              )}
+              {browseMatches.map((feat) => (
+                <LandmarkRow
+                  key={feat.properties.id}
+                  feature={feat}
+                  ownedByMe={!!userId && feat.properties?.added_by_user_id === userId}
+                  onEdit={() => setEditing(feat)}
+                />
+              ))}
+              <p className="text-muted-foreground text-[10px]">
+                Renames on landmarks you didn't add are queued for admin review.
+              </p>
+            </div>
+          </CardContent>
+        )}
       </Card>
 
       <AddLandmarkDialog

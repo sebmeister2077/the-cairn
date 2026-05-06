@@ -35,7 +35,7 @@ class LandmarksAudit(Base):
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     landmark_id: Mapped[str] = mapped_column(String, nullable=False)
     action: Mapped[str] = mapped_column(String, nullable=False)
-    actor_api_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    actor_api_key_id: Mapped[str | None] = mapped_column(String, nullable=True)
     actor_display_name: Mapped[str | None] = mapped_column(String, nullable=True)
     before_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     after_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -47,7 +47,7 @@ class LandmarksAudit(Base):
 
     __table_args__ = (
         Index("idx_landmarks_audit_landmark", "landmark_id", text("created_at DESC")),
-        Index("idx_landmarks_audit_actor", "actor_api_key", text("created_at DESC")),
+        Index("idx_landmarks_audit_actor", "actor_api_key_id", text("created_at DESC")),
         Index("idx_landmarks_audit_created", text("created_at DESC")),
     )
 
@@ -57,14 +57,14 @@ class LandmarkEditRequest(Base):
 
     id: Mapped[str] = mapped_column(String, primary_key=True)
     landmark_id: Mapped[str] = mapped_column(String, nullable=False)
-    submitted_by_api_key: Mapped[str] = mapped_column(String, nullable=False)
+    submitted_by_api_key_id: Mapped[str] = mapped_column(String, nullable=False)
     submitted_by_display_name: Mapped[str] = mapped_column(String, nullable=False)
     current_label: Mapped[str] = mapped_column(String, nullable=False)
     proposed_label: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(
         String, nullable=False, server_default=text("'pending'")
     )
-    reviewed_by_api_key: Mapped[str | None] = mapped_column(String, nullable=True)
+    reviewed_by_api_key_id: Mapped[str | None] = mapped_column(String, nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -84,7 +84,7 @@ class LandmarkEditRequest(Base):
         Index("idx_landmark_edit_requests_landmark", "landmark_id"),
         Index(
             "idx_landmark_edit_requests_submitter",
-            "submitted_by_api_key",
+            "submitted_by_api_key_id",
             text("created_at DESC"),
         ),
     )

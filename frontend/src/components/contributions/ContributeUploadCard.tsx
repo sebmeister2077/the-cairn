@@ -20,6 +20,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { contributeQueries } from "@/lib/constants/react-query";
+import { userReduxState } from "@/store/hooks";
 
 export function ContributeUploadCard({
   contributionInfo,
@@ -43,7 +44,7 @@ export function ContributeUploadCard({
   // Key/queryFn must match AppContent + AccountPage so the three observers
   // share a single in-flight request (otherwise /account/me is fetched twice
   // on reload of /contribute).
-  const accountApiKey = getStoredApiKey();
+  const accountApiKey = userReduxState("auth.apiKey");
   const accountQuery = useQuery({
     queryKey: ["account-me", accountApiKey ?? ""],
     queryFn: getMyAccountSafe,

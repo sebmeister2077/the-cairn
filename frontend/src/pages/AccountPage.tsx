@@ -22,10 +22,11 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { userReduxState } from "@/store/hooks";
 
 export function AccountPage() {
   const queryClient = useQueryClient();
-  const apiKey = getStoredApiKey();
+  const apiKey = userReduxState("auth.apiKey");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");

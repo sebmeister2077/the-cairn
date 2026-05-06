@@ -1,5 +1,5 @@
 import { useState, useCallback, type FormEvent } from "react";
-import { getMapStats, getStoredIsAdmin, renderMap } from "@/lib/api";
+import { getMapStats, renderMap } from "@/lib/api";
 import { MapViewer, type MapStats } from "@/components/MapViewer";
 import { FileUpload } from "@/components/FileUpload";
 import { MapDbFileHelp } from "@/components/MapDbFileHelp";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Download, Loader2 } from "lucide-react";
+import { userReduxState } from "@/store/hooks";
 
 const NON_ADMIN_MAX_MB = 200;
 const NON_ADMIN_MAX_BYTES = NON_ADMIN_MAX_MB * 1024 * 1024;
@@ -19,7 +20,7 @@ export function MapViewPage() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState("");
-  const isAdmin = getStoredIsAdmin();
+  const isAdmin = userReduxState("auth.isAdmin");
   const [fastPreview, setFastPreview] = useState(true);
   // Non-admins are locked into fast preview mode (full-detail rendering is too
   // expensive to expose publicly).

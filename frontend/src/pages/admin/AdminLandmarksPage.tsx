@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -187,6 +188,7 @@ function PendingEditRequestRow({
 
 function AuditFeedCard() {
   const queryClient = useQueryClient();
+  const [selectedForDeleteId, setSelectedForDeleteId] = useState<string | null>(null);
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-landmark-audit"],
     queryFn: () => adminListLandmarkAudit({ limit: 100 }),
@@ -224,14 +226,26 @@ function AuditFeedCard() {
               key={row.id}
               row={row}
               onDelete={() => {
-                if (window.confirm(`Hard-delete landmark ${row.landmark_id}?`)) {
-                  deleteMut.mutate(row.landmark_id);
-                }
+                setSelectedForDeleteId(row.landmark_id);
               }}
               deleting={deleteMut.isPending && deleteMut.variables === row.landmark_id}
             />
           ))}
         </div>
+        <ConfirmDialog
+          title="Confirm hard-delete"
+          description={`Hard-delete landmark ${selectedForDeleteId}?`}
+          open={selectedForDeleteId !== null}
+          onCancel={() => setSelectedForDeleteId(null)}
+          onConfirm={() => {
+            if (selectedForDeleteId) {
+              deleteMut.mutate(selectedForDeleteId);
+              setSelectedForDeleteId(null);
+            }
+          }}
+          confirmLabel="Delete"
+          variant="destructive"
+        />
       </CardContent>
     </Card>
   );
@@ -285,6 +299,7 @@ function AuditRow({
 
 function BackupsCard() {
   const queryClient = useQueryClient();
+  const [selectedForRestoreId, setSelectedForRestoreId] = useState<string | null>(null);
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-landmark-backups"],
     queryFn: adminListGeojsonBackups,
@@ -302,7 +317,10 @@ function BackupsCard() {
   const restoreMut = useMutation({
     mutationFn: ({ asset, key }: { asset: "landmarks" | "translocators"; key: string }) =>
       adminRestoreGeojsonBackup(asset, key),
-    onSuccess: invalidate,
+    onSuccess: () => {
+      setSelectedForRestoreId(null);
+      invalidate();
+    },
   });
 
   const grouped = useMemo(() => {
@@ -367,13 +385,7 @@ function BackupsCard() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        if (
-                          window.confirm(
-                            `Restore ${asset} from ${b.key}? This overwrites the live file.`,
-                          )
-                        ) {
-                          restoreMut.mutate({ asset, key: b.key });
-                        }
+                        setSelectedForRestoreId(b.key);
                       }}
                       disabled={restoreMut.isPending}
                       title="Restore this snapshot over the live file"
@@ -384,6 +396,19 @@ function BackupsCard() {
                         <RotateCcw className="size-3" />
                       )}
                     </Button>
+
+                    <ConfirmDialog
+                      title="Confirm restore"
+                      description={`Restore ${asset} from ${b.key}? This overwrites the live file.`}
+                      open={selectedForRestoreId === b.key}
+                      onCancel={() => setSelectedForRestoreId(null)}
+                      onConfirm={() => {
+                        restoreMut.mutate({ asset, key: b.key });
+                      }}
+                      loading={restoreMut.isPending && restoreMut.variables?.key === b.key}
+                      confirmLabel="Restore"
+                      variant="destructive"
+                    />
                   </div>
                 ))}
               </div>

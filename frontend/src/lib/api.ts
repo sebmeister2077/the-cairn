@@ -130,11 +130,6 @@ export function getStoredIsAdmin(): boolean {
     return store.getState().auth.isAdmin;
 }
 
-export function getStoredCanContribute(): boolean {
-    const s = store.getState().auth;
-    return s.canContribute || s.isAdmin;
-}
-
 export function setStoredIsAdmin(value: boolean) {
     store.dispatch(setIsAdminAction(value));
 }

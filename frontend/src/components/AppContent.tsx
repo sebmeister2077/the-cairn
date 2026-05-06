@@ -48,6 +48,7 @@ import {
 } from "@/lib/api";
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
+import { userReduxState } from "@/store/hooks";
 
 const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
@@ -302,7 +303,7 @@ export function AppContent() {
   // The queryKey includes the API key so switching keys invalidates the
   // cached answer immediately (otherwise a previously-registered key's
   // successful response would hide the dot for a freshly-pasted new key).
-  const apiKey = getStoredApiKey();
+  const apiKey = userReduxState("auth.apiKey");
   const { data: accountData } = useQuery<AccountMeResponse>({
     queryKey: ["account-me", apiKey ?? ""],
     queryFn: getMyAccountSafe,

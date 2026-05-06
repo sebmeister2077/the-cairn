@@ -2424,7 +2424,7 @@ def insert_landmark_audit(
     *,
     landmark_id: str,
     action: str,
-    actor_api_key: Optional[str],
+    actor_api_key_id: Optional[str],
     actor_display_name: Optional[str],
     before_payload: Optional[dict] = None,
     after_payload: Optional[dict] = None,
@@ -2434,13 +2434,13 @@ def insert_landmark_audit(
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO landmarks_audit
-                       (landmark_id, action, actor_api_key, actor_display_name,
+                       (landmark_id, action, actor_api_key_id, actor_display_name,
                         before_payload, after_payload)
                    VALUES (%s, %s, %s, %s, %s, %s)""",
                 (
                     landmark_id,
                     action,
-                    actor_api_key,
+                    actor_api_key_id,
                     actor_display_name,
                     json.dumps(before_payload) if before_payload is not None else None,
                     json.dumps(after_payload) if after_payload is not None else None,
@@ -2451,7 +2451,7 @@ def insert_landmark_audit(
 def list_landmark_audit(
     *,
     landmark_id: Optional[str] = None,
-    actor_api_key: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
 ) -> List[dict]:
@@ -2460,15 +2460,15 @@ def list_landmark_audit(
     if landmark_id:
         where.append("landmark_id = %s")
         params.append(landmark_id)
-    if actor_api_key:
-        where.append("actor_api_key = %s")
-        params.append(actor_api_key)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
     params.extend([int(limit), int(offset)])
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                f"""SELECT id, landmark_id, action, actor_api_key,
+                f"""SELECT id, landmark_id, action, actor_api_key_id,
                            actor_display_name, before_payload, after_payload,
                            created_at
                        FROM landmarks_audit
@@ -2484,7 +2484,7 @@ def insert_landmark_edit_request(
     *,
     request_id: str,
     landmark_id: str,
-    submitted_by_api_key: str,
+    submitted_by_api_key_id: str,
     submitted_by_display_name: str,
     current_label: str,
     proposed_label: str,
@@ -2498,20 +2498,20 @@ def insert_landmark_edit_request(
                 """UPDATE landmark_edit_requests
                        SET status = 'superseded'
                        WHERE landmark_id = %s
-                         AND submitted_by_api_key = %s
+                         AND submitted_by_api_key_id = %s
                          AND status = 'pending'""",
-                (landmark_id, submitted_by_api_key),
+                (landmark_id, submitted_by_api_key_id),
             )
             cur.execute(
                 """INSERT INTO landmark_edit_requests
-                       (id, landmark_id, submitted_by_api_key,
+                       (id, landmark_id, submitted_by_api_key_id,
                         submitted_by_display_name, current_label, proposed_label)
                    VALUES (%s, %s, %s, %s, %s, %s)
                    RETURNING *""",
                 (
                     request_id,
                     landmark_id,
-                    submitted_by_api_key,
+                    submitted_by_api_key_id,
                     submitted_by_display_name,
                     current_label,
                     proposed_label,
@@ -2534,7 +2534,7 @@ def get_landmark_edit_request(request_id: str) -> Optional[dict]:
 def list_landmark_edit_requests(
     *,
     status: Optional[str] = None,
-    submitted_by_api_key: Optional[str] = None,
+    submitted_by_api_key_id: Optional[str] = None,
     landmark_id: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
@@ -2544,9 +2544,9 @@ def list_landmark_edit_requests(
     if status:
         where.append("status = %s")
         params.append(status)
-    if submitted_by_api_key:
-        where.append("submitted_by_api_key = %s")
-        params.append(submitted_by_api_key)
+    if submitted_by_api_key_id:
+        where.append("submitted_by_api_key_id = %s")
+        params.append(submitted_by_api_key_id)
     if landmark_id:
         where.append("landmark_id = %s")
         params.append(landmark_id)
@@ -2568,7 +2568,7 @@ def resolve_landmark_edit_request(
     request_id: str,
     *,
     new_status: str,
-    reviewed_by_api_key: str,
+    reviewed_by_api_key_id: Optional[str],
     review_note: Optional[str] = None,
 ) -> Optional[dict]:
     """Mark a request as ``approved`` / ``rejected`` / ``superseded``.
@@ -2582,12 +2582,12 @@ def resolve_landmark_edit_request(
             cur.execute(
                 """UPDATE landmark_edit_requests
                        SET status = %s,
-                           reviewed_by_api_key = %s,
+                           reviewed_by_api_key_id = %s,
                            reviewed_at = now(),
                            review_note = %s
                        WHERE id = %s AND status = 'pending'
                        RETURNING *""",
-                (new_status, reviewed_by_api_key, review_note, request_id),
+                (new_status, reviewed_by_api_key_id, review_note, request_id),
             )
             row = cur.fetchone()
             return dict(row) if row else None

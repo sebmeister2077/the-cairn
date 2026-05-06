@@ -4,11 +4,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
   getTopsMapLevel,
-  getStoredIsAdmin,
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
 } from "@/lib/api";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector, userReduxState } from "@/store/hooks";
 import {
   setSelectedLevel as setSelectedLevelAction,
   setGroupingsViewMode as setGroupingsViewModeAction,
@@ -127,7 +126,7 @@ interface TopsMapStatsResponse extends MapStats {
 
 export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
-  const isAdmin = getStoredIsAdmin();
+  const isAdmin = userReduxState("auth.isAdmin");
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the

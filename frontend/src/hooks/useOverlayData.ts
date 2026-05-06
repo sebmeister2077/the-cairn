@@ -127,11 +127,13 @@ function useOverlayFile<T>(
             const json: unknown = await res.json();
             return { etag: info.etag, expiresAt, data: parse(json) };
         },
-        staleTime: ({ state }) => {
-            const d = state.data as CachedOverlay<T> | undefined;
-            if (!d) return 0;
-            return Math.max(0, d.expiresAt - Date.now());
-        },
+        staleTime: 0
+        //     ({ state }) => {
+        //     const d = state.data as CachedOverlay<T> | undefined;
+        //     if (!d) return 0;
+        //     return Math.max(0, d.expiresAt - Date.now());
+        // }
+        ,
         // Opt into the global persister (see App.tsx). Combined with the
         // `staleTime` above this means: persisted data is replayed on
         // mount, and we only call the URL endpoint again once its embedded

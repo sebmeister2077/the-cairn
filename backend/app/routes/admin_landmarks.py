@@ -43,13 +43,27 @@ class ReviewBody(BaseModel):
     note: Optional[str] = None
 
 
+def _admin_api_key_id(api_key: str) -> Optional[str]:
+    """Resolve the admin's ``api_keys.id`` UUID for audit logging.
+
+    The env-var admin key has no row in ``api_keys`` and therefore no UUID,
+    in which case audit columns receive None (the schema permits NULL).
+    Admins authenticated via a DB-backed key (e.g. a future invite-claimed
+    admin) get their real UUID recorded.
+    """
+    record = db.get_api_key(api_key)
+    if record and record.get("id") is not None:
+        return str(record["id"])
+    return None
+
+
 def _serialise_audit(row: dict) -> dict:
     created = row.get("created_at")
     return {
         "id": row["id"],
         "landmark_id": row["landmark_id"],
         "action": row["action"],
-        "actor_api_key": row.get("actor_api_key"),
+        "actor_api_key_id": row.get("actor_api_key_id"),
         "actor_display_name": row.get("actor_display_name"),
         "before_payload": row.get("before_payload"),
         "after_payload": row.get("after_payload"),
@@ -96,6 +110,7 @@ async def approve_edit_request(
     - The geojson critical section is held under ``_landmarks_lock`` so
       a concurrent user POST/PATCH can't stomp on the rename.
     """
+    reviewer_api_key_id = _admin_api_key_id(api_key)
     request_row = await asyncio.to_thread(db.get_landmark_edit_request, request_id)
     if request_row is None:
         raise HTTPException(status_code=404, detail="edit request not found")
@@ -118,7 +133,7 @@ async def approve_edit_request(
                 db.resolve_landmark_edit_request,
                 request_id,
                 new_status="rejected",
-                reviewed_by_api_key=api_key,
+                reviewed_by_api_key_id=reviewer_api_key_id,
                 review_note="Landmark no longer exists",
             )
             raise HTTPException(status_code=409, detail="landmark no longer exists")
@@ -132,7 +147,7 @@ async def approve_edit_request(
             db.resolve_landmark_edit_request,
             request_id,
             new_status="approved",
-            reviewed_by_api_key=api_key,
+            reviewed_by_api_key_id=reviewer_api_key_id,
             review_note=body.note,
         )
         if resolved is None:
@@ -145,7 +160,7 @@ async def approve_edit_request(
             db.insert_landmark_audit,
             landmark_id=landmark_id,
             action="admin_approve_rename",
-            actor_api_key=api_key,
+            actor_api_key_id=reviewer_api_key_id,
             actor_display_name="admin",
             before_payload=before,
             after_payload=feature,
@@ -163,11 +178,12 @@ async def reject_edit_request(
     body: ReviewBody,
     api_key: str = Depends(require_admin),
 ) -> dict:
+    reviewer_api_key_id = _admin_api_key_id(api_key)
     resolved = await asyncio.to_thread(
         db.resolve_landmark_edit_request,
         request_id,
         new_status="rejected",
-        reviewed_by_api_key=api_key,
+        reviewed_by_api_key_id=reviewer_api_key_id,
         review_note=body.note,
     )
     if resolved is None:
@@ -182,7 +198,7 @@ async def reject_edit_request(
         db.insert_landmark_audit,
         landmark_id=resolved["landmark_id"],
         action="admin_reject_rename",
-        actor_api_key=api_key,
+        actor_api_key_id=reviewer_api_key_id,
         actor_display_name="admin",
         before_payload={
             "current_label": resolved["current_label"],
@@ -205,10 +221,17 @@ async def list_audit(
     offset: int = 0,
     _: str = Depends(require_admin),
 ) -> dict:
+    actor_api_key_id: Optional[str] = None
+    if actor_api_key:
+        actor_db_api_key = await asyncio.to_thread(db.get_api_key, actor_api_key)
+        if not actor_db_api_key:
+            raise HTTPException(status_code=400, detail="actor_api_key filter not found")
+        actor_api_key_id = str(actor_db_api_key["id"])
+
     rows = await asyncio.to_thread(
         db.list_landmark_audit,
         landmark_id=landmark_id,
-        actor_api_key=actor_api_key,
+        actor_api_key_id=actor_api_key_id,
         limit=max(1, min(int(limit), 500)),
         offset=max(0, int(offset)),
     )
@@ -239,11 +262,12 @@ async def delete_landmark(
             if (f.get("properties") or {}).get("id") != landmark_id
         ]
         await asyncio.to_thread(landmarks_routes._save_landmarks_file, data)
+        actor_api_key_id = _admin_api_key_id(api_key)
         await asyncio.to_thread(
             db.insert_landmark_audit,
             landmark_id=landmark_id,
             action="admin_delete",
-            actor_api_key=api_key,
+            actor_api_key_id=actor_api_key_id,
             actor_display_name="admin",
             before_payload=feature,
         )
@@ -260,7 +284,7 @@ async def delete_landmark(
                 db.resolve_landmark_edit_request,
                 req["id"],
                 new_status="rejected",
-                reviewed_by_api_key=api_key,
+                reviewed_by_api_key_id=actor_api_key_id,
                 review_note="Landmark deleted",
             )
 
@@ -336,7 +360,7 @@ async def restore_geojson_backup(
             db.insert_landmark_audit,
             landmark_id=f"<{body.asset}-restore>",
             action="admin_restore_backup",
-            actor_api_key=api_key,
+            actor_api_key_id=_admin_api_key_id(api_key),
             actor_display_name="admin",
             after_payload={"asset": body.asset, "from_key": body.key},
         )
