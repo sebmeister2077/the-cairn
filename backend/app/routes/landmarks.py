@@ -263,10 +263,12 @@ async def add_landmark(
         raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
     api_key_id = _ctx_api_key_id(ctx)
 
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    payload_type = payload.type if is_admin else "Base"
+
     properties: dict = {
         "id": landmark_id,
-        "type": "Base",
-        # payload.type,
+        "type": payload_type,
         "label": label,
         "origin": "user",
         "added_by": display_name,
