@@ -391,6 +391,11 @@ function AddLandmarkDialog({
         throw new Error("Y must be an integer");
       }
       if (!label.trim()) throw new Error("Label is required");
+      //   Remove numbers with scientific notation (e.g. "1e3") because the backend expects integers and would reject those.
+      if (x.includes("e") || z.includes("e") || y.includes("e")) {
+        throw new Error("Coordinates must be integers (no scientific notation)");
+      }
+
       return addLandmark({ label: label.trim(), type: kind, x: xn, z: zn, y: yn });
     },
     onSuccess,
@@ -441,6 +446,7 @@ function AddLandmarkDialog({
                 id="lm-x"
                 inputMode="numeric"
                 value={x}
+                type="number"
                 onChange={(e) => setX(e.target.value)}
               />
             </div>
@@ -452,6 +458,7 @@ function AddLandmarkDialog({
                 id="lm-z"
                 inputMode="numeric"
                 value={z}
+                type="number"
                 onChange={(e) => setZ(e.target.value)}
               />
             </div>
@@ -463,6 +470,7 @@ function AddLandmarkDialog({
                 id="lm-y"
                 inputMode="numeric"
                 value={y}
+                type="number"
                 onChange={(e) => setY(e.target.value)}
               />
             </div>
