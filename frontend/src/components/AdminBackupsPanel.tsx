@@ -601,11 +601,15 @@ function RestoreDialog({
 
   if (!backup) return null;
 
+  function handleClose() {
+    onClose();
+    setCode("");
+  }
   return (
     <>
       <Dialog
         open={!!backup && !confirmFinal && !restore.isPending && !restore.isSuccess}
-        onOpenChange={(v) => !v && !restore.isPending && onClose()}
+        onOpenChange={(v) => !v && !restore.isPending && handleClose()}
       >
         <DialogContent>
           <DialogHeader>
@@ -635,7 +639,7 @@ function RestoreDialog({
           {error && <p className="text-xs text-destructive">{error}</p>}
 
           <DialogFooter>
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="ghost" onClick={handleClose}>
               Cancel
             </Button>
             <Button
@@ -665,6 +669,7 @@ function RestoreDialog({
           // admin isn't stuck staring at it; on success we close via onRestored.
           setConfirmFinal(false);
           restore.mutate();
+          // handleClose();
         }}
       />
     </>

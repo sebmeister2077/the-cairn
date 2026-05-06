@@ -26,7 +26,9 @@ from app.config import settings  # noqa: E402
 config = context.config
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    # ``disable_existing_loggers=False`` so we don't silence uvicorn's
+    # access/error/app loggers that were configured before migrations ran.
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Resolve the database URL. Prefer the live settings value; fall back to the
 # raw env var so ``alembic`` can be invoked in environments where

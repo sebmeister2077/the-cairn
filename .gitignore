@@ -12,6 +12,7 @@ backend/.venv/
 # IDE
 .vscode/
 .idea/
+.vs/
 
 # OS
 Thumbs.db
