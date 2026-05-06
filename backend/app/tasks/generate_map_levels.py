@@ -138,6 +138,45 @@ def _generate_level(
     }
 
     # Figure out which chunks to render this run.
+    #
+    # Geometry-change guard: if the world bbox / scale / origin has shifted
+    # since the last regen, every existing chunk's pixels correspond to a
+    # different world region under the new metadata.json. Reusing them would
+    # silently misalign the stitched map. In that case we promote the
+    # request to a full regen even if a partial bbox was supplied.
+    if affected_bounds is not None:
+        try:
+            prev_meta_raw = r2_storage.download_bytes(
+                r2_storage.tops_map_level_metadata_key(level)
+            )
+            prev_meta = json.loads(prev_meta_raw.decode("utf-8"))
+        except FileNotFoundError:
+            prev_meta = None
+        except Exception:
+            logger.exception(
+                "Level %s: could not read previous metadata.json; "
+                "forcing full regen", level,
+            )
+            prev_meta = {}  # truthy + missing keys → mismatch → full regen
+
+        if prev_meta is not None:
+            geometry_keys = (
+                "scale", "chunk_w", "chunk_h",
+                "start_x", "start_z", "chunk_grid",
+                "image_w", "image_h",
+            )
+            mismatched = [
+                k for k in geometry_keys
+                if prev_meta.get(k) != metadata.get(k)
+            ]
+            if mismatched:
+                logger.warning(
+                    "Level %s: geometry changed (%s); promoting partial regen "
+                    "to full regen to avoid stale chunk misalignment",
+                    level, ", ".join(mismatched),
+                )
+                affected_bounds = None
+
     only_bounds: Optional[Tuple[int, int, int, int]] = None
     if affected_bounds is not None:
         cx_min, cy_min, cx_max, cy_max = world_block_bounds_to_chunk_indices(
