@@ -40,6 +40,7 @@ class UpdateProfileRequest(BaseModel):
     is_hireable: Optional[bool] = None
     is_leaderboard_visible: Optional[bool] = None
     show_contributions: Optional[bool] = None
+    use_in_game_name: Optional[bool] = None
 
 
 def _serialise_user(user: dict, include_key: bool = False) -> dict:
@@ -50,6 +51,7 @@ def _serialise_user(user: dict, include_key: bool = False) -> dict:
         "id": str(user["id"]) if user.get("id") is not None else None,
         "display_name": user.get("display_name"),
         "in_game_name": user.get("in_game_name"),
+        "use_in_game_name": bool(user.get("use_in_game_name")),
         "is_hireable": bool(user.get("is_hireable")),
         "is_leaderboard_visible": bool(user.get("is_leaderboard_visible")),
         "show_contributions": bool(user.get("show_contributions")),
@@ -188,6 +190,55 @@ async def update_me(
         elif len(in_game_name) > 64:
             raise HTTPException(status_code=400, detail="In-game name is too long")
 
+    # Resolve the effective IGN that will be in the row after this PATCH so we
+    # can decide what to do with the use_in_game_name toggle.
+    if payload.clear_in_game_name:
+        effective_ign: Optional[str] = None
+    elif in_game_name is not None:
+        effective_ign = in_game_name
+    else:
+        effective_ign = user.get("in_game_name")
+
+    # Resolve the effective toggle state. The server is the source of truth
+    # for display_name when the toggle is on, so we may also need to write
+    # display_name as part of this same UPDATE.
+    prev_toggle = bool(user.get("use_in_game_name"))
+    if payload.use_in_game_name is None:
+        effective_toggle = prev_toggle
+    else:
+        effective_toggle = payload.use_in_game_name
+
+    # Auto-disable the toggle if the effective IGN ends up empty. This covers
+    # both the "user cleared IGN while toggle was on" and "user tried to enable
+    # toggle in the same request that cleared IGN" cases.
+    if effective_toggle and not effective_ign:
+        if payload.use_in_game_name is True:
+            # Explicit enable with no IGN -> hard error so the UI can react.
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "ign_required",
+                    "message": "Set an in-game name before enabling this option.",
+                },
+            )
+        effective_toggle = False
+
+    # Decide what (if anything) to write to display_name.
+    new_display_name: Optional[str] = None
+    new_toggle_value: Optional[bool] = payload.use_in_game_name
+    if effective_toggle and not prev_toggle:
+        # Transition OFF -> ON: mirror the IGN.
+        new_display_name = effective_ign
+        new_toggle_value = True
+    elif effective_toggle and prev_toggle and effective_ign and effective_ign != user.get("display_name"):
+        # Toggle stayed on but IGN changed: keep display_name in sync.
+        new_display_name = effective_ign
+    elif (not effective_toggle) and prev_toggle:
+        # Transition ON -> OFF (either explicit or auto-disabled): assign a
+        # fresh random display_name.
+        new_display_name = pick_unique_display_name(accounts_db.display_name_taken)
+        new_toggle_value = False
+
     updated = accounts_db.update_user_profile(
         api_key=ctx["key"],
         in_game_name=in_game_name,
@@ -195,6 +246,8 @@ async def update_me(
         is_hireable=payload.is_hireable,
         is_leaderboard_visible=payload.is_leaderboard_visible,
         show_contributions=payload.show_contributions,
+        use_in_game_name=new_toggle_value,
+        display_name=new_display_name,
     )
     if not updated:
         raise HTTPException(status_code=404, detail="User not found")
@@ -227,6 +280,18 @@ async def regenerate_name(ctx: dict = Depends(require_active_user)) -> dict:
     user = ctx["user"]
     if user is None:
         raise HTTPException(status_code=400, detail="Admin user has no display name")
+
+    if user.get("use_in_game_name"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "display_name_locked_to_ign",
+                "message": (
+                    "Display name is currently mirroring your in-game name. "
+                    "Disable that option before regenerating."
+                ),
+            },
+        )
 
     check_scoped_rate_limit(
         ctx["key"], "regenerate_name",

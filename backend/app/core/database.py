@@ -466,8 +466,9 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE IF NOT EXISTS users (
     api_key                TEXT PRIMARY KEY REFERENCES api_keys(key) ON DELETE CASCADE,
-    display_name           TEXT NOT NULL UNIQUE,
+    display_name           TEXT NOT NULL,
     in_game_name           TEXT,
+    use_in_game_name       BOOLEAN NOT NULL DEFAULT FALSE,
     is_hireable            BOOLEAN NOT NULL DEFAULT FALSE,
     is_leaderboard_visible BOOLEAN NOT NULL DEFAULT FALSE,
     show_contributions     BOOLEAN NOT NULL DEFAULT FALSE,

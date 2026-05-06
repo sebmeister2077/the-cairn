@@ -171,33 +171,9 @@ export function AccountPage() {
           <CardTitle className="text-base">Identity</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label className="text-xs text-muted-foreground">Display name</Label>
-            <div className="flex items-center gap-2 mt-1">
-              <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
-                {user.display_name}
-              </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => regenMut.mutate()}
-                disabled={regenMut.isPending}
-              >
-                <RefreshCw className="size-3" />
-                Regenerate
-              </Button>
-            </div>
-            {regenMut.error && (
-              <p className="text-xs text-destructive mt-1">{(regenMut.error as Error).message}</p>
-            )}
-            <p className="text-xs text-muted-foreground mt-1">
-              Regenerated {user.name_regen_count} times. Limited to 3 per day.
-            </p>
-          </div>
-          <Separator />
           <div className="space-y-1">
             <Label htmlFor="ign" className="text-xs text-muted-foreground">
-              In-game name (optional)
+              In-game name {user.use_in_game_name ? "" : "(optional)"}
             </Label>
             <div className="flex gap-2">
               <Input
@@ -221,9 +197,60 @@ export function AccountPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Used for hire-board matching. Other users may flag duplicates.
+              {user.use_in_game_name
+                ? "Saving will also update your public display name to match."
+                : "Used for hire-board matching. Other users may flag duplicates."}
             </p>
           </div>
+          <Separator />
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <Label>Use in-game name as display name</Label>
+              <p className="text-xs text-muted-foreground">
+                {user.in_game_name
+                  ? "When on, other users see your in-game name everywhere instead of a random handle."
+                  : "Set an in-game name first to enable this."}
+              </p>
+            </div>
+            <Switch
+              checked={user.use_in_game_name}
+              disabled={updateMut.isPending || (!user.in_game_name && !user.use_in_game_name)}
+              onCheckedChange={(v) => updateMut.mutate({ use_in_game_name: v })}
+            />
+          </div>
+          {!user.use_in_game_name && (
+            <>
+              <Separator />
+              <div>
+                <Label className="text-xs text-muted-foreground">Display name</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
+                    {user.display_name}
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => regenMut.mutate()}
+                    disabled={regenMut.isPending}
+                  >
+                    <RefreshCw className="size-3" />
+                    Regenerate
+                  </Button>
+                </div>
+                {regenMut.error && (
+                  <p className="text-xs text-destructive mt-1">
+                    {(regenMut.error as Error).message}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Regenerated {user.name_regen_count} times. Limited to 3 per day.
+                </p>
+              </div>
+            </>
+          )}
+          {updateMut.error && (
+            <p className="text-xs text-destructive">{(updateMut.error as Error).message}</p>
+          )}
         </CardContent>
       </Card>
 

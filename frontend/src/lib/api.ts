@@ -1268,6 +1268,7 @@ export interface AccountUser {
     id: string | null;
     display_name: string;
     in_game_name: string | null;
+    use_in_game_name: boolean;
     is_hireable: boolean;
     is_leaderboard_visible: boolean;
     show_contributions: boolean;
@@ -1345,6 +1346,7 @@ export async function updateMyAccount(payload: {
     is_hireable?: boolean;
     is_leaderboard_visible?: boolean;
     show_contributions?: boolean;
+    use_in_game_name?: boolean;
 }): Promise<{ user: AccountUser }> {
     const res = await fetch(`${API_BASE}/account/me`, {
         method: "PATCH",
