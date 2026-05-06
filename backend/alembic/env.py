@@ -6,6 +6,7 @@ present so Alembic can run. Migrations should write raw SQL via
 """
 
 from __future__ import annotations
+from app.db.base_all import Base
 
 import os
 import sys
@@ -51,7 +52,7 @@ def _resolve_db_url() -> str:
 config.set_main_option("sqlalchemy.url", _resolve_db_url())
 
 # No declarative models — migrations are hand-written raw SQL.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

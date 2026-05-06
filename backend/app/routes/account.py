@@ -47,6 +47,7 @@ def _serialise_user(user: dict, include_key: bool = False) -> dict:
     if not user:
         return {}
     out = {
+        "id": str(user["id"]) if user.get("id") is not None else None,
         "display_name": user.get("display_name"),
         "in_game_name": user.get("in_game_name"),
         "is_hireable": bool(user.get("is_hireable")),

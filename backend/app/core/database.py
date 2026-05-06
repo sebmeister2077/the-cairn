@@ -57,6 +57,7 @@ def get_conn():
 # ---------------------------------------------------------------------------
 # Schema bootstrap (idempotent)
 # ---------------------------------------------------------------------------
+# THIS WILL NOT BE UPDATED ANYMORE, USE THE ALEMBIC MIGRATION SYSTEM FOR FUTURE CHANGES TO THE DATABASE
 
 _SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS contributions (
@@ -458,6 +459,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
 # Created in a separate block so the trigram extension is enabled before the
 # GIN indexes that depend on it.
 # ---------------------------------------------------------------------------
+# THIS WILL NOT BE UPDATED ANYMORE, USE THE ALEMBIC MIGRATION SYSTEM FOR FUTURE CHANGES TO THE DATABASE
 
 _ACCOUNT_SCHEMA_SQL = """
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
@@ -583,62 +585,6 @@ CREATE TABLE IF NOT EXISTS resources_upload_jobs (
 
 CREATE INDEX IF NOT EXISTS idx_resources_jobs_recent
     ON resources_upload_jobs (created_at DESC);
-
--- ---------------------------------------------------------------------------
--- Landmarks (user-editable markers stored in R2 as landmarks.geojson)
--- ---------------------------------------------------------------------------
---
--- The geojson file in R2 is the single source of truth for what's rendered.
--- These tables hold the audit trail and the admin approval queue.
---
--- ``landmarks_audit`` is append-only. Every mutation (add by user, rename
--- by owner, rename approved/rejected by admin, admin delete) writes one row.
--- ``actor_display_name`` is snapshotted at action time so the log stays
--- readable after rename/account deletion.
-CREATE TABLE IF NOT EXISTS landmarks_audit (
-    id                  BIGSERIAL PRIMARY KEY,
-    landmark_id         TEXT NOT NULL,
-    action              TEXT NOT NULL,
-    actor_api_key       TEXT,
-    actor_display_name  TEXT,
-    before_payload      JSONB,
-    after_payload       JSONB,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_landmarks_audit_landmark
-    ON landmarks_audit (landmark_id, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_landmarks_audit_actor
-    ON landmarks_audit (actor_api_key, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_landmarks_audit_created
-    ON landmarks_audit (created_at DESC);
-
--- ``landmark_edit_requests`` is the pending-approval queue for renames of
--- landmarks the user did NOT add (seeded or another user's). Renaming one's
--- own landmark applies live and never inserts here. Status transitions:
---   pending → approved   (admin approve)
---   pending → rejected   (admin reject)
---   pending → superseded (a newer request from same user for same landmark)
-CREATE TABLE IF NOT EXISTS landmark_edit_requests (
-    id                       TEXT PRIMARY KEY,
-    landmark_id              TEXT NOT NULL,
-    submitted_by_api_key     TEXT NOT NULL,
-    submitted_by_display_name TEXT NOT NULL,
-    current_label            TEXT NOT NULL,
-    proposed_label           TEXT NOT NULL,
-    status                   TEXT NOT NULL DEFAULT 'pending',
-    reviewed_by_api_key      TEXT,
-    reviewed_at              TIMESTAMPTZ,
-    review_note              TEXT,
-    created_at               TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_status
-    ON landmark_edit_requests (status, created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_landmark
-    ON landmark_edit_requests (landmark_id);
-CREATE INDEX IF NOT EXISTS idx_landmark_edit_requests_submitter
-    ON landmark_edit_requests (submitted_by_api_key, created_at DESC);
 """
 
 

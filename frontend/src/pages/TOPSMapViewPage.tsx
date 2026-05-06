@@ -4,8 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
   getTopsMapLevel,
-  getLandmarksUrl,
-  getTranslocatorsUrl,
   getStoredIsAdmin,
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
@@ -16,11 +14,12 @@ import {
   setGroupingsViewMode as setGroupingsViewModeAction,
   setActiveGroupingIds as setActiveGroupingIdsAction,
   toggleActiveGrouping as toggleActiveGroupingAction,
+  setShowLandmarks as setShowLandmarksAction,
+  setShowTranslocators as setShowTranslocatorsAction,
 } from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
   MapViewer,
-  type LandmarkProperty,
   type MapStats,
   type MapTileSet,
   type WorldLineSegment,
@@ -54,10 +53,15 @@ import {
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
+import { LandmarkManagementCard } from "@/components/tops-map/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
+import {
+  useLandmarksOverlay,
+  useTranslocatorsOverlay,
+  LANDMARKS_QUERY_KEY,
+} from "@/hooks/useOverlayData";
 import type { ResourceDeposit } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
-import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
@@ -173,25 +177,38 @@ export function TOPSMapViewPage() {
     },
     [setSearchParams],
   );
-  const [showTranslocators, setShowTranslocators] = useState(false);
-  const [showLandmarks, setShowLandmarks] = useState(false);
-  const [translocatorSegments, setTranslocatorSegments] = useState<WorldLineSegment[]>([]);
-  const [translocatorCount, setTranslocatorCount] = useState(0);
+  const dispatch = useAppDispatch();
+  // Overlay-visibility toggles are persisted in the mapView slice so the
+  // user's preference survives reloads and cross-tab navigation.
+  const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
+  const setShowTranslocators = useCallback(
+    (next: boolean) => dispatch(setShowTranslocatorsAction(next)),
+    [dispatch],
+  );
+  const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
+  const setShowLandmarks = useCallback(
+    (next: boolean) => dispatch(setShowLandmarksAction(next)),
+    [dispatch],
+  );
   const [selectedTranslocator, setSelectedTranslocator] = useState<WorldLineSegment | null>(null);
   // When pinned, the displayed TL info stays put even if the user left-clicks
   // empty space. Cleared by clicking the pin icon, or by clicking any other TL
   // (which then becomes the new selection — pinned only if right-clicked).
   const [translocatorPinned, setTranslocatorPinned] = useState(false);
-  const [landmarkPoints, setLandmarkPoints] = useState<WorldPointMarker[]>([]);
-  const [landmarkCount, setLandmarkCount] = useState(0);
   const [landmarkSearch, setLandmarkSearch] = useState("");
   const [landmarkFocusPoint, setLandmarkFocusPoint] = useState<
     { x: number; z: number } | undefined
   >(undefined);
-  const translocatorCacheRef = useRef<WorldLineSegment[] | null>(null);
-  const translocatorLoadPromiseRef = useRef<Promise<WorldLineSegment[]> | null>(null);
-  const landmarkCacheRef = useRef<WorldPointMarker[] | null>(null);
-  const landmarkLoadPromiseRef = useRef<Promise<WorldPointMarker[]> | null>(null);
+
+  // Persisted, etag-aware overlay loaders. React Query handles dedupe,
+  // persistence (via the global persister), and re-fetch when the URL
+  // endpoint reports either a new etag or an expired window.
+  const landmarksQuery = useLandmarksOverlay();
+  const translocatorsQuery = useTranslocatorsOverlay();
+  const allLandmarks = landmarksQuery.data?.data;
+  const allTranslocators = translocatorsQuery.data?.data;
+  const landmarkCount = allLandmarks?.length ?? 0;
+  const translocatorCount = allTranslocators?.length ?? 0;
 
   // Favorite TL groupings (local-only). The groupings themselves persist via
   // `useTLGroupings`; view-mode + active-selection live in the Redux
@@ -199,7 +216,6 @@ export function TOPSMapViewPage() {
   // construction). Selectors keep this component re-rendering only when
   // those specific fields change.
   const groupingsStore = useTLGroupings();
-  const dispatch = useAppDispatch();
   const [groupingsOpen, setGroupingsOpen] = useState(false);
   const groupingsViewMode = useAppSelector((s) => s.mapView.groupingsViewMode);
   const setGroupingsViewMode = useCallback(
@@ -265,111 +281,17 @@ export function TOPSMapViewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingGroupingId]);
 
-  // Shared landmark loader — populates the cache and count without forcing
-  // the overlay on. Callers that need the rendered points (overlay toggle or
-  // landmark search) should consume the resolved promise themselves.
-  const ensureLandmarksLoaded = useCallback(() => {
-    if (landmarkCacheRef.current) {
-      return landmarkLoadPromiseRef.current ?? Promise.resolve(landmarkCacheRef.current);
-    }
+  // Drop the cached landmarks payload so the next render re-fetches the
+  // file. React Query handles dedupe + persistence; the new etag from the
+  // URL endpoint will skip the actual GET if the file body is unchanged.
+  const reloadLandmarks = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [...LANDMARKS_QUERY_KEY] });
+  }, [queryClient]);
 
-    if (!landmarkLoadPromiseRef.current) {
-      landmarkLoadPromiseRef.current = (async () => {
-        const { url } = await getLandmarksUrl();
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Failed to load landmark data (${res.status})`);
-        const data = await res.json();
-
-        const features = Array.isArray(data?.features) ? data.features : [];
-        const points: WorldPointMarker[] = [];
-
-        for (const feature of features) {
-          const geometry = feature?.geometry;
-          if (!geometry || geometry.type !== "Point") continue;
-          const coords = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-          const [x, z] = coords;
-          if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
-
-          const props = (feature?.properties ?? {}) as LandmarkProperty;
-
-          if (props.type === "Misc") continue;
-
-          points.push({
-            x,
-            z: -z,
-            label: typeof props.label === "string" ? props.label : undefined,
-            kind: typeof props.type === "string" ? props.type : undefined,
-          });
-        }
-
-        landmarkCacheRef.current = points;
-        setLandmarkCount(points.length);
-        return points;
-      })();
-      landmarkLoadPromiseRef.current.catch(() => {
-        // Allow retry on next call if the fetch failed.
-        landmarkLoadPromiseRef.current = null;
-      });
-    }
-
-    return landmarkLoadPromiseRef.current;
-  }, []);
-
-  // Same pattern for translocators — populate cache + count on demand without
-  // touching the rendered segments state.
-  const ensureTranslocatorsLoaded = useCallback(() => {
-    if (translocatorCacheRef.current) {
-      return translocatorLoadPromiseRef.current ?? Promise.resolve(translocatorCacheRef.current);
-    }
-
-    if (!translocatorLoadPromiseRef.current) {
-      translocatorLoadPromiseRef.current = (async () => {
-        const { url } = await getTranslocatorsUrl();
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`Failed to load translocator data (${res.status})`);
-        const data = await res.json();
-
-        const features = Array.isArray(data?.features) ? data.features : [];
-        const segments: WorldLineSegment[] = [];
-
-        for (const feature of features) {
-          const geometry = feature?.geometry;
-          if (!geometry || geometry.type !== "LineString") continue;
-          const coords = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
-          for (let i = 1; i < coords.length; i++) {
-            const [x1, z1raw] = coords[i - 1] ?? [];
-            const [x2, z2raw] = coords[i] ?? [];
-            const z1 = -z1raw;
-            const z2 = -z2raw;
-            if (
-              Number.isFinite(x1) &&
-              Number.isFinite(z1) &&
-              Number.isFinite(x2) &&
-              Number.isFinite(z2)
-            ) {
-              segments.push({ x1, z1, x2, z2 });
-            }
-          }
-        }
-
-        translocatorCacheRef.current = segments;
-        setTranslocatorCount(segments.length);
-        return segments;
-      })();
-      translocatorLoadPromiseRef.current.catch(() => {
-        translocatorLoadPromiseRef.current = null;
-      });
-    }
-
-    return translocatorLoadPromiseRef.current;
-  }, []);
-
-  // Load both overlay data files on mount so the "TLs found" / "Landmarks
-  // found" counts populate without requiring the user to toggle the overlays.
-  useEffect(() => {
-    void ensureTranslocatorsLoaded();
-    void ensureLandmarksLoaded();
-  }, [ensureTranslocatorsLoaded, ensureLandmarksLoaded]);
+  // Translocator segments to render. When the overlay is on we use the
+  // full set; otherwise we expose an empty array so the groupings drawer
+  // still has the data via `allTranslocators` directly.
+  const translocatorSegments = allTranslocators ?? [];
 
   const statsQuery = useQuery<TopsMapStatsResponse>({
     queryKey: ["tops-map-stats"],
@@ -597,42 +519,13 @@ export function TOPSMapViewPage() {
     setTranslocatorPinned(false);
   }, []);
 
-  // Always populate the segments state once the cache is loaded \u2014 the
-  // groupings drawer needs them for "missing" counts and edit-mode
-  // rendering even before the user toggles the overlay on.
-  useEffectWithAbort(
-    ({ signal }) => {
-      ensureTranslocatorsLoaded()
-        .then((segments) => {
-          if (signal.aborted) return;
-          setTranslocatorSegments(segments);
-        })
-        .catch(() => {
-          if (signal.aborted) return;
-          setTranslocatorSegments([]);
-        });
-    },
-    [ensureTranslocatorsLoaded],
-  );
-
-  useEffectWithAbort(
-    ({ signal }) => {
-      ensureLandmarksLoaded()
-        .then((points) => {
-          if (signal.aborted) return;
-          if (!showLandmarks) {
-            setLandmarkPoints(points.filter((p) => p.kind === "Server"));
-            return;
-          }
-          setLandmarkPoints(points);
-        })
-        .catch(() => {
-          if (signal.aborted) return;
-          setLandmarkPoints([]);
-        });
-    },
-    [showLandmarks, ensureLandmarksLoaded],
-  );
+  // Landmark points fed to the viewer. When the overlay is off we still
+  // surface "Server"-kind landmarks (always-on POIs) but hide everything
+  // else; toggling on swaps in the full set.
+  const landmarkPoints = useMemo<WorldPointMarker[]>(() => {
+    if (!allLandmarks) return [];
+    return showLandmarks ? allLandmarks : allLandmarks.filter((p) => p.kind === "Server");
+  }, [allLandmarks, showLandmarks]);
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
@@ -641,25 +534,21 @@ export function TOPSMapViewPage() {
 
   const landmarkSuggestions = useMemo(
     () =>
-      (landmarkCacheRef.current ?? landmarkPoints)
-        .map((pt) => pt.label?.replace(/\s+/g, " ").trim() ?? "")
-        .filter(Boolean),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [landmarkPoints],
+      (allLandmarks ?? []).map((pt) => pt.label?.replace(/\s+/g, " ").trim() ?? "").filter(Boolean),
+    [allLandmarks],
   );
 
   function handleLandmarkSelect(name: string) {
     setLandmarkSearch(name);
     const normalised = name.replace(/\s+/g, " ").trim().toLowerCase();
-    void ensureLandmarksLoaded().then((points) => {
-      const match = points.find(
-        (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
-      );
-      if (match) {
-        setLandmarkFocusPoint({ x: match.x, z: match.z });
-        setShowLandmarks(true);
-      }
-    });
+    const points = allLandmarks ?? [];
+    const match = points.find(
+      (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
+    );
+    if (match) {
+      setLandmarkFocusPoint({ x: match.x, z: match.z });
+      setShowLandmarks(true);
+    }
   }
 
   async function handleDownload() {
@@ -918,6 +807,7 @@ export function TOPSMapViewPage() {
             <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
           </span>
         </div>
+        <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
         {hasMap && (
           <div className="flex flex-col gap-1">
             <Label htmlFor="landmark-search" className="text-sm">
@@ -930,7 +820,6 @@ export function TOPSMapViewPage() {
               suggestions={landmarkSuggestions}
               onChange={setLandmarkSearch}
               onSelect={handleLandmarkSelect}
-              onFocus={() => void ensureLandmarksLoaded()}
             />
           </div>
         )}

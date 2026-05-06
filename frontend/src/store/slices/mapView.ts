@@ -7,6 +7,8 @@ import { hydrateRoot } from "../rootActions";
 const SELECTED_LEVEL_LS = "tops-map-selected-level";
 const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
 const ACTIVE_LS = "tops-map-tl-groupings-active";
+const SHOW_LANDMARKS_LS = "tops-map-show-landmarks";
+const SHOW_TRANSLOCATORS_LS = "tops-map-show-translocators";
 
 export type TLGroupingsViewMode = "all" | "highlight" | "filter";
 
@@ -14,6 +16,8 @@ export interface MapViewState {
     selectedLevel: number | null;
     groupingsViewMode: TLGroupingsViewMode;
     activeGroupingIds: string[];
+    showLandmarks: boolean;
+    showTranslocators: boolean;
 }
 
 function readSelectedLevel(): number | null {
@@ -39,6 +43,8 @@ export function loadInitialMapViewState(): MapViewState {
         selectedLevel: readSelectedLevel(),
         groupingsViewMode: readViewMode(),
         activeGroupingIds: readActive(),
+        showLandmarks: true,
+        showTranslocators: false
     };
 }
 
@@ -63,6 +69,12 @@ export const mapViewSlice = createSlice({
             if (i >= 0) state.activeGroupingIds.splice(i, 1);
             else state.activeGroupingIds.push(id);
         },
+        setShowLandmarks(state, action: PayloadAction<boolean>) {
+            state.showLandmarks = action.payload;
+        },
+        setShowTranslocators(state, action: PayloadAction<boolean>) {
+            state.showTranslocators = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -77,6 +89,8 @@ export const {
     setGroupingsViewMode,
     setActiveGroupingIds,
     toggleActiveGrouping,
+    setShowLandmarks,
+    setShowTranslocators,
 } = mapViewSlice.actions;
 
 export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {

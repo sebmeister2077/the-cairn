@@ -341,6 +341,203 @@ export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
     return (await handleResponse(res)).json();
 }
 
+// ---------------------------------------------------------------------------
+// Landmarks write endpoints (account-required)
+// ---------------------------------------------------------------------------
+
+export interface LandmarkFeature {
+    type: "Feature";
+    properties: {
+        id: string;
+        type: "Base" | "Server" | "Misc";
+        label: string;
+        origin?: "seed" | "user" | string;
+        added_by?: string | null;
+        added_by_user_id?: string | null;
+        added_at?: string | null;
+        z?: number; // elevation (Y)
+        [key: string]: unknown;
+    };
+    geometry: { type: "Point"; coordinates: [number, number] };
+}
+
+export interface LandmarkEditRequest {
+    id: string;
+    landmark_id: string;
+    current_label: string;
+    proposed_label: string;
+    status: "pending" | "approved" | "rejected" | "superseded";
+    submitted_by_display_name: string;
+    created_at: string;
+    reviewed_at?: string | null;
+    review_note?: string | null;
+}
+
+export interface AddLandmarkBody {
+    label: string;
+    type: "Base" | "Server" | "Misc";
+    x: number;
+    z: number;
+    y?: number;
+}
+
+export interface RenameLandmarkResponse {
+    applied: boolean;
+    landmark?: LandmarkFeature;
+    edit_request?: LandmarkEditRequest;
+    noop?: boolean;
+}
+
+export async function addLandmark(body: AddLandmarkBody): Promise<{ landmark: LandmarkFeature }> {
+    const res = await fetch(`${API_BASE}/landmarks`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function renameLandmark(
+    landmarkId: string,
+    label: string,
+): Promise<RenameLandmarkResponse> {
+    const res = await fetch(`${API_BASE}/landmarks/${encodeURIComponent(landmarkId)}`, {
+        method: "PATCH",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ label }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function listMyLandmarkEditRequests(
+    limit = 50,
+): Promise<{ edit_requests: LandmarkEditRequest[] }> {
+    const res = await fetch(
+        `${API_BASE}/landmarks/my-edit-requests?limit=${limit}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Admin landmarks endpoints
+// ---------------------------------------------------------------------------
+
+export interface LandmarkAuditEntry {
+    id: number;
+    landmark_id: string;
+    action: string;
+    actor_api_key: string | null;
+    actor_display_name: string | null;
+    before_payload: unknown;
+    after_payload: unknown;
+    created_at: string;
+}
+
+export interface GeojsonBackupEntry {
+    key: string;
+    asset: "landmarks" | "translocators";
+    kind: "scheduled" | "manual";
+    size: number;
+    last_modified: string | null;
+}
+
+export async function adminListLandmarkEditRequests(
+    status: "pending" | "approved" | "rejected" | "superseded" | "all" = "pending",
+): Promise<{ edit_requests: LandmarkEditRequest[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/landmarks/edit-requests?status=${status}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminApproveLandmarkEditRequest(
+    requestId: string,
+    note?: string,
+): Promise<{ edit_request: LandmarkEditRequest; landmark: LandmarkFeature }> {
+    const res = await fetch(
+        `${API_BASE}/admin/landmarks/edit-requests/${encodeURIComponent(requestId)}/approve`,
+        {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ note: note ?? null }),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRejectLandmarkEditRequest(
+    requestId: string,
+    note?: string,
+): Promise<{ edit_request: LandmarkEditRequest }> {
+    const res = await fetch(
+        `${API_BASE}/admin/landmarks/edit-requests/${encodeURIComponent(requestId)}/reject`,
+        {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify({ note: note ?? null }),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListLandmarkAudit(
+    opts: { landmark_id?: string; actor_api_key?: string; limit?: number; offset?: number } = {},
+): Promise<{ audit: LandmarkAuditEntry[] }> {
+    const params = new URLSearchParams();
+    if (opts.landmark_id) params.set("landmark_id", opts.landmark_id);
+    if (opts.actor_api_key) params.set("actor_api_key", opts.actor_api_key);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(
+        `${API_BASE}/admin/landmarks/audit${qs ? `?${qs}` : ""}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeleteLandmark(
+    landmarkId: string,
+): Promise<{ deleted: string; feature: LandmarkFeature }> {
+    const res = await fetch(
+        `${API_BASE}/admin/landmarks/${encodeURIComponent(landmarkId)}`,
+        { method: "DELETE", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListGeojsonBackups(): Promise<{ backups: GeojsonBackupEntry[] }> {
+    const res = await fetch(`${API_BASE}/admin/landmarks/backups`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateGeojsonBackup(
+    asset: "landmarks" | "translocators",
+): Promise<{ key: string }> {
+    const res = await fetch(`${API_BASE}/admin/landmarks/backups/create`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ asset }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRestoreGeojsonBackup(
+    asset: "landmarks" | "translocators",
+    key: string,
+): Promise<{ restored: string; from_key: string; live_key: string }> {
+    const res = await fetch(`${API_BASE}/admin/landmarks/backups/restore`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ asset, key, confirm: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 /**
  * Fetch an image from a presigned URL (no auth header � the URL is self-contained).
  * Falls back to null on network error or non-200 status so callers can degrade gracefully.
@@ -1073,6 +1270,7 @@ export async function getDefaultPublicInvite(): Promise<DefaultInviteRecord | nu
 // ---------------------------------------------------------------------------
 
 export interface AccountUser {
+    id: string | null;
     display_name: string;
     in_game_name: string | null;
     is_hireable: boolean;

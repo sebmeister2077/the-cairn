@@ -23,6 +23,7 @@ import { AdminFlagsPage } from "@/pages/admin/AdminFlagsPage";
 import { AdminFeatureFlagsPage } from "@/pages/admin/AdminFeatureFlagsPage";
 import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
+import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -78,6 +79,7 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/manage/feature-flags", label: "Feature Flags" },
     { value: "/manage/maintenance", label: "Maintenance" },
     { value: "/manage/resources", label: "Resources" },
+    { value: "/manage/landmarks", label: "Landmarks" },
   ],
 };
 
@@ -419,6 +421,7 @@ export function AppContent() {
           <Route path="/manage/feature-flags" element={<AdminFeatureFlagsPage />} />
           <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
+          <Route path="/manage/landmarks" element={<AdminLandmarksPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

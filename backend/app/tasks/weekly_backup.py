@@ -41,6 +41,15 @@ _stopped = False
 _RE_SCHEDULED = re.compile(r"^backups/backup-(\d{4})-W(\d{2})\.db(?:\.zst)?$")
 _RE_MANUAL = re.compile(r"^backups/backup-(\d{4})-W(\d{2})-manual-(\d+)\.db(?:\.zst)?$")
 
+# landmarks-2026-W17.geojson   |   landmarks-2026-W17-manual-<ts>.geojson
+# (and the same for translocators-)
+_RE_GEOJSON_SCHEDULED = re.compile(
+    r"^backups/(landmarks|translocators)-(\d{4})-W(\d{2})\.geojson$"
+)
+_RE_GEOJSON_MANUAL = re.compile(
+    r"^backups/(landmarks|translocators)-(\d{4})-W(\d{2})-manual-(\d+)\.geojson$"
+)
+
 
 def _now_iso_week() -> tuple:
     iso = datetime.now(timezone.utc).isocalendar()
@@ -199,13 +208,28 @@ def cleanup_old_backups() -> dict:
 def run_now() -> dict:
     """Synchronous: snapshot if due + run cleanup. Returns a small report."""
     created = None
+    geojson_created: List[str] = []
     if ff.is_feature_enabled("weekly_backups"):
         try:
             created = create_scheduled_snapshot_if_due()
         except Exception:
             logger.exception("weekly_backup: snapshot failed")
+        try:
+            geojson_created = create_scheduled_geojson_snapshots_if_due()
+        except Exception:
+            logger.exception("weekly_backup: geojson snapshot failed")
     cleanup = cleanup_old_backups() if ff.is_feature_enabled("weekly_backups") else {"deleted": 0}
-    return {"created": created, "cleanup": cleanup}
+    geojson_cleanup = (
+        cleanup_old_geojson_backups()
+        if ff.is_feature_enabled("weekly_backups")
+        else {"deleted": 0}
+    )
+    return {
+        "created": created,
+        "cleanup": cleanup,
+        "geojson_created": geojson_created,
+        "geojson_cleanup": geojson_cleanup,
+    }
 
 
 def _scheduled_run() -> None:
@@ -262,3 +286,150 @@ def stop() -> None:
         if _timer is not None:
             _timer.cancel()
             _timer = None
+
+
+# ---------------------------------------------------------------------------
+# Phase 4 — landmarks + translocators geojson backups
+# ---------------------------------------------------------------------------
+#
+# These run alongside the combined-DB snapshots in the same scheduler tick.
+# Storage layout (under ``backups/``):
+#   landmarks-YYYY-Www.geojson
+#   landmarks-YYYY-Www-manual-<unix>.geojson
+#   translocators-YYYY-Www.geojson
+#   translocators-YYYY-Www-manual-<unix>.geojson
+#
+# Each file is whatever bytes were live at the moment the snapshot was taken,
+# copied via R2 server-side ``copy_object`` (no download, no compression — the
+# files are tiny). Retention reuses ``BACKUP_KEEP_SCHEDULED`` /
+# ``BACKUP_KEEP_MANUAL`` and is applied per (kind, asset) pair.
+
+_GEOJSON_ASSETS = (
+    ("landmarks", r2_storage.landmarks_live_key,
+     r2_storage.landmarks_backup_scheduled_key,
+     r2_storage.landmarks_backup_manual_key),
+    ("translocators", r2_storage.translocators_live_key,
+     r2_storage.translocators_backup_scheduled_key,
+     r2_storage.translocators_backup_manual_key),
+)
+
+
+def _classify_geojson(key: str) -> Optional[tuple]:
+    """Return (asset, kind) for a backup key, or None if it's not a geojson backup."""
+    m = _RE_GEOJSON_SCHEDULED.match(key)
+    if m:
+        return (m.group(1), "scheduled")
+    m = _RE_GEOJSON_MANUAL.match(key)
+    if m:
+        return (m.group(1), "manual")
+    return None
+
+
+def list_geojson_backups() -> List[dict]:
+    """Return all geojson backup objects (landmarks + translocators), newest first."""
+    out = []
+    for obj in r2_storage.list_backup_objects():
+        cls = _classify_geojson(obj["key"])
+        if cls is None:
+            continue
+        asset, kind = cls
+        lm = obj.get("last_modified")
+        out.append(
+            {
+                "key": obj["key"],
+                "asset": asset,
+                "kind": kind,
+                "size": obj["size"],
+                "last_modified": lm.isoformat() if lm else None,
+            }
+        )
+    out.sort(key=lambda r: r["last_modified"] or "", reverse=True)
+    return out
+
+
+def create_scheduled_geojson_snapshots_if_due() -> List[str]:
+    """Create this week's scheduled landmarks + translocators snapshots.
+
+    Idempotent: if a snapshot for the current ISO week already exists for an
+    asset, it's skipped. Returns the list of newly-created keys.
+
+    Skips silently when the live source is missing (e.g. migration script
+    hasn't been run yet) — the next tick will pick it up once the file appears.
+    """
+    iso_year, iso_week = _now_iso_week()
+    created: List[str] = []
+    for asset, live_key_fn, sched_key_fn, _manual in _GEOJSON_ASSETS:
+        live_key = live_key_fn()
+        target = sched_key_fn(iso_year, iso_week)
+        if r2_storage.object_exists(target):
+            continue
+        if not r2_storage.object_exists(live_key):
+            logger.info(
+                "weekly_backup: %s live file missing — skipping snapshot",
+                asset,
+            )
+            continue
+        try:
+            r2_storage.copy_object(live_key, target)
+        except Exception:
+            logger.exception("weekly_backup: failed to snapshot %s", asset)
+            continue
+        created.append(target)
+        logger.info("weekly_backup: created scheduled %s snapshot %s", asset, target)
+    return created
+
+
+def create_manual_geojson_snapshot(asset: str) -> str:
+    """Force-create a manual snapshot of one geojson asset right now.
+
+    ``asset`` must be ``"landmarks"`` or ``"translocators"``.
+    """
+    matched = next((row for row in _GEOJSON_ASSETS if row[0] == asset), None)
+    if matched is None:
+        raise ValueError(f"unknown asset {asset!r}")
+    _name, live_key_fn, _sched, manual_key_fn = matched
+    live_key = live_key_fn()
+    if not r2_storage.object_exists(live_key):
+        raise FileNotFoundError(f"{asset} live file is not present in R2")
+    iso_year, iso_week = _now_iso_week()
+    ts = int(datetime.now(timezone.utc).timestamp())
+    target = manual_key_fn(iso_year, iso_week, ts)
+    r2_storage.copy_object(live_key, target)
+    logger.info("weekly_backup: created manual %s snapshot %s", asset, target)
+    return target
+
+
+def cleanup_old_geojson_backups() -> dict:
+    """Trim each (asset, kind) pair to its configured retention."""
+    backups = list_geojson_backups()
+    to_delete: List[str] = []
+    for asset, _live, _sched, _manual in _GEOJSON_ASSETS:
+        scheduled = [b for b in backups if b["asset"] == asset and b["kind"] == "scheduled"]
+        manual = [b for b in backups if b["asset"] == asset and b["kind"] == "manual"]
+        if settings.BACKUP_KEEP_SCHEDULED >= 0:
+            to_delete.extend(b["key"] for b in scheduled[settings.BACKUP_KEEP_SCHEDULED:])
+        if settings.BACKUP_KEEP_MANUAL >= 0:
+            to_delete.extend(b["key"] for b in manual[settings.BACKUP_KEEP_MANUAL:])
+    if to_delete:
+        r2_storage.delete_keys(to_delete)
+        logger.info("weekly_backup: deleted %d old geojson snapshots", len(to_delete))
+    return {"deleted": len(to_delete)}
+
+
+def restore_geojson_from_backup(asset: str, backup_key: str) -> str:
+    """Copy a backup geojson back over the live key. Returns the live key."""
+    matched = next((row for row in _GEOJSON_ASSETS if row[0] == asset), None)
+    if matched is None:
+        raise ValueError(f"unknown asset {asset!r}")
+    _name, live_key_fn, _sched, _manual = matched
+    if not r2_storage.object_exists(backup_key):
+        raise FileNotFoundError(f"backup not found: {backup_key}")
+    cls = _classify_geojson(backup_key)
+    if cls is None or cls[0] != asset:
+        raise ValueError(f"backup key {backup_key!r} does not match asset {asset!r}")
+    live_key = live_key_fn()
+    r2_storage.copy_object(backup_key, live_key)
+    r2_storage.invalidate_presigned_download_url(live_key)
+    logger.info("weekly_backup: restored %s from %s", asset, backup_key)
+    return live_key
+

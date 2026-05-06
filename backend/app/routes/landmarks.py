@@ -195,6 +195,7 @@ async def get_translocators_url() -> dict:
 # ---------------------------------------------------------------------------
 
 class AddLandmarkBody(BaseModel):
+    # Max
     label: str
     type: str = Field(..., description="One of: Base | Server | Misc")
     x: int
@@ -243,15 +244,21 @@ async def add_landmark(
     landmark_id = str(uuid.uuid4())
     now = _now_iso()
     display_name = user.get("display_name") or "Anonymous"
+    user_id = str(user["id"]) if user.get("id") is not None else None
+    if not user_id:
+        # This should be unreachable due to _require_account_user, but guard
+        # against it just in case.
+        raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
     api_key = ctx["key"]
 
     properties: dict = {
         "id": landmark_id,
-        "type": payload.type,
+        "type": "Base",
+        # payload.type,
         "label": label,
         "origin": "user",
         "added_by": display_name,
-        "added_by_user_id": api_key,
+        "added_by_user_id": user_id,
         "added_at": now,
     }
     if payload.y is not None:
@@ -262,7 +269,7 @@ async def add_landmark(
     feature = {
         "type": "Feature",
         "properties": properties,
-        "geometry": {"type": "Point", "coordinates": [int(payload.x), int(payload.z)]},
+        "geometry": {"type": "Point", "coordinates": [int(payload.x), -int(payload.z)]},
     }
 
     async with _landmarks_lock:
@@ -300,6 +307,7 @@ async def rename_landmark(
     user = _require_account_user(ctx)
     new_label = _normalise_label(payload.label)
     api_key = ctx["key"]
+    user_id = str(user["id"]) if user.get("id") is not None else None
     display_name = user.get("display_name") or "Anonymous"
 
     async with _landmarks_lock:
@@ -309,8 +317,8 @@ async def rename_landmark(
             raise HTTPException(status_code=404, detail="landmark not found")
         props = feature.setdefault("properties", {})
         current_label = str(props.get("label") or "")
-        owner_key = props.get("added_by_user_id")
-        is_owner = bool(owner_key) and owner_key == api_key
+        owner_id = props.get("added_by_user_id")
+        is_owner = bool(owner_id) and bool(user_id) and str(owner_id) == user_id
 
         if current_label == new_label:
             # No-op rename — don't write an edit request or audit row.
