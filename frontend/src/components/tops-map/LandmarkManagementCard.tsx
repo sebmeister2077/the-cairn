@@ -408,6 +408,11 @@ function AddLandmarkDialog({
           <DialogTitle>Add a landmark</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          <div className="rounded border border-amber-500/40 bg-amber-500/10 p-2 text-[11px] text-amber-900 dark:text-amber-200">
+            <strong>Heads up:</strong> landmarks are <em>global</em> — once added,
+            this landmark will appear on the map for everyone using TOPS Map. Please
+            only add real, useful locations and avoid duplicates or test entries.
+          </div>
           <div>
             <Label htmlFor="lm-label" className="mb-1">
               Label
