@@ -81,8 +81,8 @@ const subTabs: Record<string, SubTab[]> = {
     {
       value: "/multiplayer/contribute-tls",
       label: "Contribute TLs",
-      chip: "Soon",
-      // chipShownUntil: "2026-05-17",
+      chip: "New",
+      chipShownUntil: "2026-05-17",
     },
   ],
   "/general": [],
@@ -451,7 +451,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
-          {isAdmin && <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />}
+         <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />

@@ -824,14 +824,6 @@ export function TOPSMapViewPage() {
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        {showTranslocators && (
-          <SelectedTranslocatorHeader
-            selectedTranslocator={selectedTranslocator}
-            translocatorPinned={translocatorPinned}
-            handleUnpinTranslocator={handleUnpinTranslocator}
-          />
-        )}
-
         {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
 
         {isAdmin && selectedDeposit && (
