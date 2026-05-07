@@ -59,7 +59,7 @@ const BASE_CATEGORIES = [
 
 const ADMIN_CATEGORY = { value: "/manage", label: "Manage" };
 
-const subTabs: Record<string, { value: string; label: string }[]> = {
+const subTabs: Record<string, { value: string; label: string; chip?: string }[]> = {
   "/singleplayer": [
     { value: "/singleplayer/extract", label: "Extract" },
     { value: "/singleplayer/import", label: "Import" },
@@ -70,8 +70,8 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/multiplayer/identify", label: "Identify Maps" },
     { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
     { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
-    { value: "/multiplayer/contribute", label: "Contribute" },
-    { value: "/multiplayer/contribute-tls", label: "Contribute TLs" },
+    { value: "/multiplayer/contribute", label: "Contribute Map" },
+    { value: "/multiplayer/contribute-tls", label: "Contribute TLs", chip: "Soon" },
   ],
   "/general": [],
   "/manage": [
@@ -370,7 +370,19 @@ export function AppContent() {
               <TabsList variant="line">
                 {activeSubs.map((t) => (
                   <NavLink key={t.value} to={t.value} end>
-                    {() => <TabsTrigger value={t.value}>{t.label}</TabsTrigger>}
+                    {() => (
+                      <TabsTrigger value={t.value} className="relative">
+                        {t.label}
+                        {t.chip && (
+                          <Badge
+                            variant="default"
+                            className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                          >
+                            {t.chip}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    )}
                   </NavLink>
                 ))}
               </TabsList>
@@ -416,7 +428,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
-          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
+          {/* <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} /> */}
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />

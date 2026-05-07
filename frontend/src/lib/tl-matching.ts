@@ -2,16 +2,22 @@
  * Pair user-uploaded translocator waypoints with each other and detect
  * which ones already exist on the server.
  *
- * Algorithm summary (per-TL):
- *   1. Try to parse coordinates out of the label. If absent → unpaired.
+ * Algorithm summary (per-TL) — pairing is **bidirectional**:
+ *   1. Parse coordinates out of self's label. If absent → unpaired.
  *   2. Verify the parsed-target distance lies within the typical TL spacing
  *      window (1000–14000 blocks). If not → unpaired.
- *   3. Look for another *unpaired user TL* within 7 blocks of the parsed
- *      target → `new-confirmed`.
- *   4. Otherwise within 50 blocks: if it's the only candidate inside that
- *      radius → `new-confirmed` (unambiguous); if multiple candidates fall
- *      within 50 blocks → `new-unconfirmed` (genuinely ambiguous).
- *   5. Otherwise → `unpaired`.
+ *   3. Find every other unpaired waypoint `c` whose actual position is
+ *      within `APPROX_MATCH_RADIUS` of self's parsed target AND whose own
+ *      label parses to coords within `APPROX_MATCH_RADIUS` of self's
+ *      actual position (symmetric).
+ *   4. Among the symmetric candidates, pick the one with the smallest
+ *      worst-direction distance. Confidence is `"exact"` if both directions
+ *      are within `EXACT_MATCH_RADIUS` OR there is exactly one symmetric
+ *      candidate; otherwise `"approx"` (surfaces as `new-unconfirmed`).
+ *   5. If no symmetric partner exists → unpaired. One-way matches (label
+ *      points at the other side, but the other side's label points
+ *      elsewhere) are rejected, since they led to obviously wrong pairings
+ *      in practice.
  *
  * Independently, every formed pair is checked against the server's existing
  * translocator segments — if BOTH endpoints fall within a tolerance of the
@@ -34,15 +40,22 @@ import type {
 import { parseLabelCoords } from "./tl-parser";
 
 /** Match radius used for Pass-3 exact pairing and endpoint snapping. */
-export const EXACT_MATCH_RADIUS = 7;
-/** Fallback radius for `new-unconfirmed` user-TL pairing. */
-export const APPROX_MATCH_RADIUS = 50;
+export const EXACT_MATCH_RADIUS = 20;
+/**
+ * Tolerance used by the bidirectional pairing check. A pair is auto-formed
+ * only when EACH waypoint's parsed-label target lies within this many
+ * blocks of the OTHER waypoint's actual position. Players occasionally
+ * round / mistype labels by a few hundred blocks, so this is intentionally
+ * generous — but it must remain symmetric (one-way matches are rejected,
+ * because they led to obviously wrong pairings in practice).
+ */
+export const APPROX_MATCH_RADIUS = 400;
 /**
  * Generous tolerance used only when promoting a `new-unconfirmed` user pair
  * to `existing`. Confident pairs still use the strict `EXACT_MATCH_RADIUS`
  * — we only loosen the check when the user pair itself is uncertain.
  */
-export const EXISTING_MATCH_RADIUS = 100;
+export const EXISTING_MATCH_RADIUS = 200;
 /** Minimum sane label-target distance to even attempt label-based pairing. */
 export const MIN_TL_DISTANCE = 1000;
 /** Maximum sane label-target distance. Beyond this the label is likely stale. */
@@ -97,9 +110,23 @@ interface PairingResult {
 }
 
 /**
- * For the given waypoint, find an unpaired partner using the label-coord
- * algorithm described at the top of this file. Returns `null` if no partner
- * was found.
+ * For the given waypoint, find an unpaired partner using the bidirectional
+ * label-coord algorithm described at the top of this file.
+ *
+ * A candidate `c` is considered "symmetric" with `self` iff:
+ *   1. `self`'s label parses to coords within {@link APPROX_MATCH_RADIUS}
+ *      of `c`'s actual position, AND
+ *   2. `c`'s label parses to coords within {@link APPROX_MATCH_RADIUS} of
+ *      `self`'s actual position.
+ *
+ * Any one-way match (label points at the other side, but the other side's
+ * label points elsewhere) is rejected outright — those nearly always turn
+ * out to be wrong pairings in practice.
+ *
+ * Confidence: `"exact"` if both directions are within {@link
+ * EXACT_MATCH_RADIUS} OR if there's only one symmetric candidate within
+ * {@link APPROX_MATCH_RADIUS}; otherwise `"approx"` (will surface as
+ * `new-unconfirmed` for the user to verify).
  */
 function findPartner(
     self: ParsedWaypoint,
@@ -112,34 +139,50 @@ function findPartner(
     const labelDist = dist(self.x, self.z, target.x, target.z);
     if (labelDist < MIN_TL_DISTANCE || labelDist > MAX_TL_DISTANCE) return null;
 
-    // Find the closest unpaired user TL to the parsed target, and count how
-    // many other unpaired user TLs also fall within the approx radius —
-    // that determines whether the pairing is unambiguous.
     const approxR2 = APPROX_MATCH_RADIUS * APPROX_MATCH_RADIUS;
     const exactR2 = EXACT_MATCH_RADIUS * EXACT_MATCH_RADIUS;
+
     let bestIdx = -1;
-    let bestD2 = Infinity;
-    let withinApprox = 0;
+    // Score the symmetry by the worse of the two distances — a partner that
+    // is close in both directions wins over one that's tight in one
+    // direction and loose in the other.
+    let bestScore = Infinity;
+    let bestForward = Infinity;
+    let bestBackward = Infinity;
+    let symmetricCount = 0;
+
     for (let i = 0; i < candidates.length; i++) {
         if (consumed.has(i)) continue;
-        if (candidates[i].index === self.index) continue;
-        const d2 = dist2(candidates[i].x, candidates[i].z, target.x, target.z);
-        if (d2 <= approxR2) withinApprox++;
-        if (d2 < bestD2) {
-            bestD2 = d2;
+        const c = candidates[i];
+        if (c.index === self.index) continue;
+
+        // Forward: self's label → c's actual position.
+        const dForward2 = dist2(c.x, c.z, target.x, target.z);
+        if (dForward2 > approxR2) continue;
+
+        // Backward: c's label → self's actual position. Required for the
+        // pair to be considered symmetric.
+        const cTarget = parseLabelCoords(c.name);
+        if (!cTarget) continue;
+        const dBackward2 = dist2(self.x, self.z, cTarget.x, cTarget.z);
+        if (dBackward2 > approxR2) continue;
+
+        symmetricCount++;
+        const score = Math.max(dForward2, dBackward2);
+        if (score < bestScore) {
+            bestScore = score;
             bestIdx = i;
+            bestForward = dForward2;
+            bestBackward = dBackward2;
         }
     }
+
     if (bestIdx < 0) return null;
 
-    if (bestD2 <= exactR2) return { partnerIndex: bestIdx, confidence: "exact" };
-    if (bestD2 <= approxR2) {
-        // Only one candidate in the area → unambiguous, treat as confirmed.
-        // Multiple candidates → genuinely ambiguous, needs user review.
-        const confidence: TLPairConfidence = withinApprox <= 1 ? "exact" : "approx";
-        return { partnerIndex: bestIdx, confidence };
-    }
-    return null;
+    const bothExact = bestForward <= exactR2 && bestBackward <= exactR2;
+    const confidence: TLPairConfidence =
+        bothExact || symmetricCount === 1 ? "exact" : "approx";
+    return { partnerIndex: bestIdx, confidence };
 }
 
 /**
