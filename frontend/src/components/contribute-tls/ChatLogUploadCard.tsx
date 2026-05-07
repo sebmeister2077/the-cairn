@@ -8,6 +8,7 @@ import { parseChatLogWaypoints, extractTLs } from "@/lib/tl-parser";
 import { pairUserTLs } from "@/lib/tl-matching";
 import { setUserTLs } from "@/store/slices/contributeTLs";
 import type { WorldLineSegment } from "@/components/MapViewer";
+import { FilePathHelp, type FilePathHelpItem } from "../FilePathHelp";
 
 interface ChatLogUploadCardProps {
   serverSegments: WorldLineSegment[];
@@ -21,6 +22,12 @@ interface ParseSummary {
   unpaired: number;
   existing: number;
 }
+
+const LOG_FILE_PATHS: FilePathHelpItem[] = [
+  { label: "Windows", path: "%appdata%\\VintagestoryData\\Logs\\client-chat.log" },
+  { label: "Linux", path: "~/.config/VintagestoryData/Logs/client-chat.log" },
+  { label: "macOS", path: "~/Library/Application Support/VintagestoryData/Logs/client-chat.log" },
+];
 
 export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCardProps) {
   const dispatch = useAppDispatch();
@@ -84,13 +91,10 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               client-chat.log
             </code>{" "}
-            file. On Windows it lives at{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-              %AppData%\VintagestoryData\Logs\client-chat.log
-            </code>
-            .
+            file.
           </p>
           <p>Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter.</p>
+          <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
         </div>
 
         <div
