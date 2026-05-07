@@ -83,7 +83,7 @@ const subTabs: Record<string, { value: string; label: string; chip?: string }[]>
     { value: "/manage/feature-flags", label: "Feature Flags" },
     { value: "/manage/maintenance", label: "Maintenance" },
     { value: "/manage/resources", label: "Resources" },
-    { value: "/manage/landmarks", label: "Landmarks" },
+    { value: "/manage/waypoints-backup", label: "Waypoints & Backup" },
     { value: "/manage/translocators", label: "Translocators" },
   ],
 };
@@ -439,7 +439,7 @@ export function AppContent() {
           <Route path="/manage/feature-flags" element={<AdminFeatureFlagsPage />} />
           <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
-          <Route path="/manage/landmarks" element={<AdminLandmarksPage />} />
+          <Route path="/manage/waypoints-backup" element={<AdminLandmarksPage />} />
           <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />

@@ -18,7 +18,7 @@ export function AdminLandmarksPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Landmarks</h2>
+        <h2 className="text-xl font-semibold">Waypoints & Backup</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
           Review user-submitted landmark renames, inspect the audit log, and manage the
           landmarks/translocators backups.
