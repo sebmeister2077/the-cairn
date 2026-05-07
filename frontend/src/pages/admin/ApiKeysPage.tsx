@@ -46,18 +46,14 @@ import { CreateInviteLinkDialog } from "@/components/CreateInviteLinkDialog";
 import { CreatedInviteLinkDialog } from "@/components/CreatedInviteLinkDialog";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
 import { Pagination } from "@/components/Pagination";
+import { useDebounced } from "@/hooks/useDebounced";
+import { useAppDispatch, userReduxState } from "@/store/hooks";
+import { adminQueries } from "@/lib/constants/react-query";
+import { patchAdminApiKeysFilters } from "@/store/slices/adminApiKeysFilters";
+import { useDebounceCallback } from "@react-hook/debounce";
 
 const PAGE_SIZE = 50;
 const ACTIVE_KEYS_PAGE_SIZE = 10;
-
-function useDebounced<T>(value: T, delay = 300): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const t = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(t);
-  }, [value, delay]);
-  return debounced;
-}
 
 type Page<T> = { items: T[]; total: number; next_offset: number | null };
 
@@ -87,7 +83,11 @@ const ACTIVE_KEYS_SORT_OPTIONS: {
     sort: "bound_identity",
     order: "desc",
   },
-];
+] as const;
+
+function getSortOptionByValue(value: string) {
+  return ACTIVE_KEYS_SORT_OPTIONS.find((x) => x.value === value);
+}
 
 // Bound-identity filter options. Designed to be extended easily – add new
 // entries here (or surface a free-form identity input) without touching the
@@ -101,49 +101,35 @@ const BOUND_IDENTITY_FILTER_OPTIONS: { value: ApiKeyBoundIdentityFilter; label: 
 
 export function ApiKeysPage() {
   const queryClient = useQueryClient();
+  const dispatch = useAppDispatch();
   const [generateOpen, setGenerateOpen] = useState(false);
   const [createdKey, setCreatedKey] = useState<ApiKeyRecord | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createdInvite, setCreatedInvite] = useState<InviteLinkRecord | null>(null);
 
   // --- Active keys (page-based pagination) ---
-  const [activeKeysQ, setActiveKeysQ] = useState("");
-  const debouncedActiveKeysQ = useDebounced(activeKeysQ);
   const [activeKeysPage, setActiveKeysPage] = useState(0);
-  const [activeKeysSortValue, setActiveKeysSortValue] = useState<string>(
-    ACTIVE_KEYS_SORT_OPTIONS[0].value,
-  );
-  const activeKeysSortOption =
-    ACTIVE_KEYS_SORT_OPTIONS.find((o) => o.value === activeKeysSortValue) ??
-    ACTIVE_KEYS_SORT_OPTIONS[0];
-  const [activeKeysBoundFilter, setActiveKeysBoundFilter] =
-    useState<ApiKeyBoundIdentityFilter>("any");
+  const filters = userReduxState("adminApiKeysFilters");
+
   // Reset to first page whenever a filter/search/sort changes
   useEffect(() => {
     setActiveKeysPage(0);
-  }, [debouncedActiveKeysQ, activeKeysSortValue, activeKeysBoundFilter]);
-  const activeKeys = useQuery<Page<ApiKeyRecord>>({
-    queryKey: [
-      "admin-api-keys",
-      "active",
-      debouncedActiveKeysQ,
-      activeKeysPage,
-      ACTIVE_KEYS_PAGE_SIZE,
-      activeKeysSortValue,
-      activeKeysBoundFilter,
-    ],
-    queryFn: () =>
-      listApiKeys({
-        status: "active",
-        q: debouncedActiveKeysQ,
-        offset: activeKeysPage * ACTIVE_KEYS_PAGE_SIZE,
-        limit: ACTIVE_KEYS_PAGE_SIZE,
-        sort: activeKeysSortOption.sort,
-        order: activeKeysSortOption.order,
-        bound_identity: activeKeysBoundFilter,
-      }),
+  }, [filters]);
+
+  const adminActiveApiKeysQuery = adminQueries.apiKeys.active(
+    activeKeysPage,
+    ACTIVE_KEYS_PAGE_SIZE,
+    filters,
+  );
+  const activeKeys = useQuery({
+    ...adminActiveApiKeysQuery,
     placeholderData: keepPreviousData,
   });
+
+  const debouncedDispatch = useDebounceCallback(
+    (patch) => dispatch(patchAdminApiKeysFilters(patch)),
+    300,
+  );
 
   // --- Revoked keys (collapsed by default) ---
   const [showRevokedKeys, setShowRevokedKeys] = useState(false);
@@ -262,14 +248,17 @@ export function ApiKeysPage() {
           <div className="flex flex-wrap items-center gap-2">
             <div className="min-w-50 flex-1">
               <SearchInput
-                value={activeKeysQ}
-                onChange={setActiveKeysQ}
+                value={filters.q}
+                onChange={(q) => debouncedDispatch({ q })}
                 placeholder="Search by name or key…"
               />
             </div>
             <Select
-              value={activeKeysSortValue}
-              onValueChange={(v) => v && setActiveKeysSortValue(v)}
+              value={filters.sort}
+              onValueChange={(sortValue) =>
+                sortValue &&
+                dispatch(patchAdminApiKeysFilters({ ...getSortOptionByValue(sortValue) }))
+              }
             >
               <SelectTrigger className="w-45" aria-label="Sort active keys">
                 <SelectValue />
@@ -283,8 +272,10 @@ export function ApiKeysPage() {
               </SelectContent>
             </Select>
             <Select
-              value={activeKeysBoundFilter}
-              onValueChange={(v) => v && setActiveKeysBoundFilter(v as ApiKeyBoundIdentityFilter)}
+              value={filters.binding}
+              onValueChange={(binding) =>
+                binding && dispatch(patchAdminApiKeysFilters({ binding }))
+              }
             >
               <SelectTrigger className="w-40" aria-label="Filter by bound identity">
                 <SelectValue />
@@ -312,7 +303,7 @@ export function ApiKeysPage() {
             <LoadingRow />
           ) : activeKeyItems.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
-              {activeKeysQ || activeKeysBoundFilter !== "any"
+              {filters.q || filters.binding !== "any"
                 ? "No matching keys."
                 : "No active keys. Generate one to get started."}
             </p>

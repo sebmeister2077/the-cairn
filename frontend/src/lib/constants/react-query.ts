@@ -1,6 +1,7 @@
-import { createQueryKeys } from '@lukemorales/query-key-factory'
-import { API_BASE, authHeaders, getContributeInfo, getLandmarksUrl, handleResponse, listMyLandmarkEditRequests, type LandmarkFeature } from '../api'
+import { createQueryKeys, createQueryKeyStore } from '@lukemorales/query-key-factory'
+import { API_BASE, authHeaders, getContributeInfo, getLandmarksUrl, handleResponse, listApiKeys, listMyLandmarkEditRequests, type LandmarkFeature } from '../api'
 import type { QueryFunctionContext } from '@tanstack/react-query';
+import type { AdminApiKeysFilters } from '@/store/slices/adminApiKeysFilters';
 
 
 
@@ -29,4 +30,22 @@ export const landmarkQueries = createQueryKeys('landmarks', {
         queryKey: null,
         queryFn: () => listMyLandmarkEditRequests(50)
     },
+})
+
+
+export const adminQueries = createQueryKeyStore({
+    apiKeys: {
+        active: (pageNumber: number, pageSize: number, filters: AdminApiKeysFilters) => ({
+            queryKey: [pageNumber, pageSize, filters],
+            queryFn: () => listApiKeys({
+                status: "active",
+                q: filters.q,
+                offset: pageNumber * pageSize,
+                limit: pageSize,
+                sort: filters.sort,
+                order: filters.order,
+                bound_identity: filters.binding,
+            })
+        })
+    }
 })
