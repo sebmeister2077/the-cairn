@@ -482,6 +482,8 @@ function MapViewerWithUserTLs(props: InnerProps) {
       tileSet={tileSet}
       stats={stats}
       alt="Contribute translocators preview map"
+      showTLLegend
+      tlLegendShowContributeColors
       overlaySegments={serverSegments}
       interactionsLocked={interactionsLocked}
       focusPoint={focusPoint}

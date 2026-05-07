@@ -868,6 +868,7 @@ export function TOPSMapViewPage() {
           tileSet={tileSet}
           stats={stats}
           alt="TOPS global server map"
+          showTLLegend={showTranslocators}
           overlaySegments={visibleTranslocatorSegments}
           overlayPoints={landmarkPoints}
           onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}

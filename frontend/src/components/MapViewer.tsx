@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2 } from "lucide-react";
+import { TLLegendButton } from "@/components/TLLegendButton";
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -184,6 +185,18 @@ interface MapViewerProps {
    */
   interactionsLocked?: boolean;
   /**
+   * When true, render a small "color palette" button in the toolbar that
+   * opens a popover explaining what each translocator overlay color means.
+   * Off by default — enable on pages that show the TL overlay.
+   */
+  showTLLegend?: boolean;
+  /**
+   * When true (and {@link showTLLegend} is true), the legend popover also
+   * documents the light-blue "your new TLs" color used on the Contribute
+   * TLs page. Has no effect on its own.
+   */
+  tlLegendShowContributeColors?: boolean;
+  /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
    * (so this is meant to be sourced from the URL on initial page load).
@@ -221,6 +234,8 @@ export function MapViewer({
   overlay,
   overlayRender,
   interactionsLocked = false,
+  showTLLegend = false,
+  tlLegendShowContributeColors = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1180,6 +1195,11 @@ export function MapViewer({
             <Loader2 className="size-3 animate-spin" />
             Enhancing…
           </span>
+        )}
+        {showTLLegend && (
+          <div className="ml-auto">
+            <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
+          </div>
         )}
       </div>
       <div
