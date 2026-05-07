@@ -390,6 +390,12 @@ export interface AdminTranslocatorEntry {
     created_at: string;
 }
 
+export interface AdminTranslocatorContributor {
+    id: string;
+    name: string;
+    submission_count: number;
+}
+
 export interface TranslocatorAuditEntry {
     id: number;
     segment_id: string;
@@ -402,10 +408,26 @@ export interface TranslocatorAuditEntry {
     created_at: string;
 }
 
-export async function adminListTranslocators(): Promise<{
+export async function adminListTranslocators(
+    opts: {
+        actor_api_key_id?: string;
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<{
     translocators: AdminTranslocatorEntry[];
+    contributors: AdminTranslocatorContributor[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
 }> {
-    const res = await fetch(`${API_BASE}/admin/translocators`, {
+    const params = new URLSearchParams();
+    if (opts.actor_api_key_id) params.set("actor_api_key_id", opts.actor_api_key_id);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(`${API_BASE}/admin/translocators${qs ? `?${qs}` : ""}`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
@@ -419,7 +441,13 @@ export async function adminListTranslocatorAudit(
         limit?: number;
         offset?: number;
     } = {},
-): Promise<{ audit: TranslocatorAuditEntry[] }> {
+): Promise<{
+    audit: TranslocatorAuditEntry[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+}> {
     const params = new URLSearchParams();
     if (opts.segment_id) params.set("segment_id", opts.segment_id);
     if (opts.actor_api_key_id) params.set("actor_api_key_id", opts.actor_api_key_id);

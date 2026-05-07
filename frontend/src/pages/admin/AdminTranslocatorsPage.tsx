@@ -10,8 +10,8 @@
  * Both views require the env-var admin API key.
  */
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminDeleteTranslocator,
   adminDeleteTranslocatorsByUser,
@@ -26,10 +26,20 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Loader2, Trash2, Users } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ChevronLeft, ChevronRight, Loader2, Trash2, Users } from "lucide-react";
 
 const ADMIN_TLS_KEY = ["admin-translocators"] as const;
 const ADMIN_TLS_AUDIT_KEY = ["admin-translocators-audit"] as const;
+const LIVE_PAGE_SIZE = 10;
+const AUDIT_PAGE_SIZE = 20;
+const ALL_CONTRIBUTORS = "__all";
 
 function statKey(stats: Record<string, unknown> | null, key: string): string {
   if (!stats) return "—";
@@ -67,33 +77,28 @@ export function AdminTranslocatorsPage() {
 
 function LiveTranslocatorsCard() {
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(0);
+  const [contributorId, setContributorId] = useState(ALL_CONTRIBUTORS);
   const [singleDeleteId, setSingleDeleteId] = useState<string | null>(null);
   const [bulkDeleteUser, setBulkDeleteUser] = useState<{
     id: string;
     label: string;
-    count: number;
   } | null>(null);
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ADMIN_TLS_KEY,
-    queryFn: adminListTranslocators,
-  });
+  useEffect(() => {
+    setPage(0);
+  }, [contributorId]);
 
-  // Group by contributor so the "delete all from X" affordance shows an
-  // honest count.
-  const byUser = useMemo(() => {
-    const m = new Map<string, { label: string; count: number }>();
-    for (const row of data?.translocators ?? []) {
-      if (!row.still_present) continue;
-      const id = row.actor_api_key_id ?? "";
-      if (!id) continue;
-      const existing = m.get(id);
-      const label = row.actor_display_name || id;
-      if (existing) existing.count += 1;
-      else m.set(id, { label, count: 1 });
-    }
-    return m;
-  }, [data]);
+  const { data, isLoading, error } = useQuery({
+    queryKey: [...ADMIN_TLS_KEY, page, contributorId],
+    queryFn: () =>
+      adminListTranslocators({
+        actor_api_key_id: contributorId === ALL_CONTRIBUTORS ? undefined : contributorId,
+        limit: LIVE_PAGE_SIZE,
+        offset: page * LIVE_PAGE_SIZE,
+      }),
+    placeholderData: keepPreviousData,
+  });
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ADMIN_TLS_KEY });
@@ -112,9 +117,27 @@ function LiveTranslocatorsCard() {
   });
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="xl:-mx-4 2xl:-mx-8">
+      <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base">Live submissions</CardTitle>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            value={contributorId}
+            onValueChange={(value) => setContributorId(value ?? ALL_CONTRIBUTORS)}
+          >
+            <SelectTrigger size="sm" className="w-56 max-w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CONTRIBUTORS}>All contributors</SelectItem>
+              {(data?.contributors ?? []).map((contributor) => (
+                <SelectItem key={contributor.id} value={contributor.id}>
+                  {contributor.name} ({contributor.id})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading && (
@@ -132,28 +155,38 @@ function LiveTranslocatorsCard() {
           </p>
         )}
         {data && data.translocators.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="overflow-hidden rounded-md border">
+            <table className="w-full table-fixed text-xs">
+              <colgroup>
+                <col className="w-[11%]" />
+                <col className="w-[17%]" />
+                <col className="w-[21%]" />
+                <col className="w-[17%]" />
+                <col className="w-[8%]" />
+                <col className="w-[10%]" />
+                <col className="w-[7%]" />
+                <col className="w-[9%]" />
+              </colgroup>
               <thead className="text-muted-foreground">
-                <tr className="text-left border-b">
-                  <th className="py-1.5 pr-3 font-medium">Submitted</th>
-                  <th className="py-1.5 pr-3 font-medium">Contributor</th>
-                  <th className="py-1.5 pr-3 font-medium">Coordinates</th>
-                  <th className="py-1.5 pr-3 font-medium">Label</th>
+                <tr className="border-b text-left">
+                  <th className="px-2 py-1.5 font-medium">Submitted</th>
+                  <th className="px-2 py-1.5 font-medium">Contributor</th>
+                  <th className="px-2 py-1.5 font-medium">Coordinates</th>
+                  <th className="px-2 py-1.5 font-medium">Label</th>
                   <th
-                    className="py-1.5 pr-3 font-medium"
+                    className="px-2 py-1.5 font-medium"
                     title="Self-reported existing-pair match %"
                   >
                     Match %
                   </th>
                   <th
-                    className="py-1.5 pr-3 font-medium"
+                    className="px-2 py-1.5 font-medium"
                     title="Self-reported existing pairs they have"
                   >
                     Existing pairs
                   </th>
-                  <th className="py-1.5 pr-3 font-medium">Status</th>
-                  <th className="py-1.5 pr-3 font-medium text-right">Actions</th>
+                  <th className="px-2 py-1.5 font-medium">Status</th>
+                  <th className="px-2 py-1.5 font-medium text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -161,21 +194,15 @@ function LiveTranslocatorsCard() {
                   <TranslocatorRow
                     key={row.segment_id}
                     row={row}
-                    bulkInfo={
-                      row.actor_api_key_id ? (byUser.get(row.actor_api_key_id) ?? null) : null
-                    }
                     deleting={
                       singleDeleteMut.isPending && singleDeleteMut.variables === row.segment_id
                     }
                     onDelete={() => setSingleDeleteId(row.segment_id)}
                     onBulkDelete={() => {
                       if (!row.actor_api_key_id) return;
-                      const info = byUser.get(row.actor_api_key_id);
-                      if (!info) return;
                       setBulkDeleteUser({
                         id: row.actor_api_key_id,
-                        label: info.label,
-                        count: info.count,
+                        label: row.actor_display_name || row.actor_api_key_id,
                       });
                     }}
                   />
@@ -183,6 +210,14 @@ function LiveTranslocatorsCard() {
               </tbody>
             </table>
           </div>
+        )}
+        {data && (
+          <PageControls
+            page={page}
+            pageSize={LIVE_PAGE_SIZE}
+            total={data.total}
+            onPageChange={setPage}
+          />
         )}
         <ConfirmDialog
           title="Delete translocator"
@@ -202,7 +237,7 @@ function LiveTranslocatorsCard() {
           title="Delete all translocators from this user"
           description={
             bulkDeleteUser
-              ? `Hard-delete all ${bulkDeleteUser.count} live segment(s) contributed by ${bulkDeleteUser.label}? Each is captured in the audit log.`
+              ? `Hard-delete all live segment(s) contributed by ${bulkDeleteUser.label}? Each is captured in the audit log.`
               : ""
           }
           open={bulkDeleteUser !== null}
@@ -223,42 +258,42 @@ function LiveTranslocatorsCard() {
 
 function TranslocatorRow({
   row,
-  bulkInfo,
   deleting,
   onDelete,
   onBulkDelete,
 }: {
   row: AdminTranslocatorEntry;
-  bulkInfo: { label: string; count: number } | null;
   deleting: boolean;
   onDelete: () => void;
   onBulkDelete: () => void;
 }) {
   return (
     <tr className="border-b last:border-b-0 hover:bg-muted/40">
-      <td className="py-1.5 pr-3 whitespace-nowrap">{formatTimestamp(row.created_at)}</td>
-      <td className="py-1.5 pr-3">
-        <div className="font-medium">{row.actor_display_name || "—"}</div>
+      <td className="px-2 py-1.5 align-top">{formatTimestamp(row.created_at)}</td>
+      <td className="px-2 py-1.5 align-top">
+        <div className="font-medium wrap-break-word">{row.actor_display_name || "—"}</div>
         {row.actor_api_key_id && (
-          <div className="text-muted-foreground text-[10px]">{row.actor_api_key_id}</div>
+          <div className="break-all text-[10px] text-muted-foreground">{row.actor_api_key_id}</div>
         )}
       </td>
-      <td className="py-1.5 pr-3 font-mono whitespace-nowrap">{fmtCoords(row.coordinates)}</td>
-      <td className="py-1.5 pr-3">{row.label || "—"}</td>
-      <td className="py-1.5 pr-3 whitespace-nowrap">
+      <td className="wrap-break-word px-2 py-1.5 align-top font-mono">
+        {fmtCoords(row.coordinates)}
+      </td>
+      <td className="wrap-break-word px-2 py-1.5 align-top">{row.label || "—"}</td>
+      <td className="px-2 py-1.5 align-top">
         {statKey(row.submission_stats, "existing_match_pct")}
       </td>
-      <td className="py-1.5 pr-3 whitespace-nowrap">
+      <td className="px-2 py-1.5 align-top">
         {statKey(row.submission_stats, "existing_pair_count")}
       </td>
-      <td className="py-1.5 pr-3">
+      <td className="px-2 py-1.5 align-top">
         {row.still_present ? (
           <Badge variant="secondary">live</Badge>
         ) : (
           <Badge variant="outline">deleted</Badge>
         )}
       </td>
-      <td className="py-1.5 pr-3">
+      <td className="px-2 py-1.5 align-top">
         <div className="flex justify-end gap-1">
           {row.still_present && (
             <Button
@@ -276,13 +311,13 @@ function TranslocatorRow({
               )}
             </Button>
           )}
-          {bulkInfo && bulkInfo.count > 1 && (
+          {row.still_present && row.actor_api_key_id && (
             <Button
               type="button"
               size="sm"
               variant="ghost"
               onClick={onBulkDelete}
-              title={`Delete all ${bulkInfo.count} from ${bulkInfo.label}`}
+              title={`Delete all from ${row.actor_display_name || row.actor_api_key_id}`}
             >
               <Users className="size-4" />
             </Button>
@@ -294,15 +329,18 @@ function TranslocatorRow({
 }
 
 function TranslocatorAuditCard() {
+  const [page, setPage] = useState(0);
   const { data, isLoading, error } = useQuery({
-    queryKey: ADMIN_TLS_AUDIT_KEY,
-    queryFn: () => adminListTranslocatorAudit({ limit: 100 }),
+    queryKey: [...ADMIN_TLS_AUDIT_KEY, page],
+    queryFn: () =>
+      adminListTranslocatorAudit({ limit: AUDIT_PAGE_SIZE, offset: page * AUDIT_PAGE_SIZE }),
+    placeholderData: keepPreviousData,
   });
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Recent audit (latest 100)</CardTitle>
+        <CardTitle className="text-base">Recent audit</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {isLoading && (
@@ -319,6 +357,14 @@ function TranslocatorAuditCard() {
             <AuditRow key={row.id} row={row} />
           ))}
         </div>
+        {data && (
+          <PageControls
+            page={page}
+            pageSize={AUDIT_PAGE_SIZE}
+            total={data.total}
+            onPageChange={setPage}
+          />
+        )}
       </CardContent>
     </Card>
   );
@@ -326,19 +372,74 @@ function TranslocatorAuditCard() {
 
 function AuditRow({ row }: { row: TranslocatorAuditEntry }) {
   return (
-    <div className="px-3 py-2 text-xs space-y-0.5">
-      <div className="flex flex-wrap items-center gap-2">
+    <div className="min-w-0 space-y-0.5 px-3 py-2 text-xs">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Badge variant={row.action === "add" ? "secondary" : "destructive"}>{row.action}</Badge>
-        <span className="font-mono text-[11px] text-muted-foreground">{row.segment_id}</span>
+        <span className="min-w-0 break-all font-mono text-[11px] text-muted-foreground">
+          {row.segment_id}
+        </span>
         <span className="text-muted-foreground">by</span>
-        <span className="font-medium">{row.actor_display_name || row.actor_api_key_id || "—"}</span>
-        <span className="text-muted-foreground ml-auto">{formatTimestamp(row.created_at)}</span>
+        <span className="wrap-break-word font-medium">
+          {row.actor_display_name || row.actor_api_key_id || "—"}
+        </span>
+        <span className="ml-auto whitespace-nowrap text-muted-foreground">
+          {formatTimestamp(row.created_at)}
+        </span>
       </div>
       {row.submission_stats && (
-        <div className="text-[11px] text-muted-foreground">
-          stats: <span className="font-mono">{JSON.stringify(row.submission_stats)}</span>
+        <div className="wrap-break-word text-[11px] text-muted-foreground">
+          stats: <span className="break-all font-mono">{JSON.stringify(row.submission_stats)}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function PageControls({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const pageCount = Math.max(1, Math.ceil(total / pageSize));
+  const start = total === 0 ? 0 : page * pageSize + 1;
+  const end = Math.min(total, (page + 1) * pageSize);
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+      <span>
+        {start}-{end} of {total}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => onPageChange(Math.max(0, page - 1))}
+          disabled={page <= 0}
+          title="Previous page"
+        >
+          <ChevronLeft className="size-4" />
+        </Button>
+        <span>
+          Page {Math.min(page + 1, pageCount)} of {pageCount}
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => onPageChange(Math.min(pageCount - 1, page + 1))}
+          disabled={page + 1 >= pageCount}
+          title="Next page"
+        >
+          <ChevronRight className="size-4" />
+        </Button>
+      </div>
     </div>
   );
 }

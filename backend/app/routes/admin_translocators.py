@@ -58,6 +58,18 @@ def _serialise_audit(row: dict) -> dict:
     }
 
 
+def _page_payload(key: str, items: list, total: int, limit: int, offset: int) -> dict:
+    next_offset = offset + limit if offset + limit < total else None
+    return {
+        key: items,
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "next_offset": next_offset,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Audit feed
 # ---------------------------------------------------------------------------
@@ -71,15 +83,18 @@ async def list_audit(
     offset: int = 0,
     _: str = Depends(require_admin),
 ) -> dict:
-    rows = await asyncio.to_thread(
-        db.list_translocator_audit,
+    safe_limit = max(1, min(int(limit), 500))
+    safe_offset = max(0, int(offset))
+    page = await asyncio.to_thread(
+        db.list_translocator_audit_paginated,
         segment_id=segment_id,
         actor_api_key_id=actor_api_key_id,
         action=action,
-        limit=max(1, min(int(limit), 500)),
-        offset=max(0, int(offset)),
+        limit=safe_limit,
+        offset=safe_offset,
     )
-    return {"audit": [_serialise_audit(r) for r in rows]}
+    items = [_serialise_audit(r) for r in page["items"]]
+    return _page_payload("audit", items, int(page["total"]), safe_limit, safe_offset)
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +103,9 @@ async def list_audit(
 
 @router.get("")
 async def list_user_translocators(
+    actor_api_key_id: Optional[str] = None,
+    limit: int = 10,
+    offset: int = 0,
     _: str = Depends(require_admin),
 ) -> dict:
     """Return one entry per still-present user-contributed segment with
@@ -104,16 +122,20 @@ async def list_user_translocators(
         if sid:
             by_id[sid] = feat
 
-    # Pull all add rows so we can surface the per-batch submission_stats
-    # alongside the live coordinates.
-    rows = await asyncio.to_thread(
-        db.list_translocator_audit,
-        action="add",
-        limit=2000,
+    safe_limit = max(1, min(int(limit), 200))
+    safe_offset = max(0, int(offset))
+    page, contributors = await asyncio.gather(
+        asyncio.to_thread(
+            db.list_translocator_add_audit_paginated,
+            actor_api_key_id=actor_api_key_id,
+            limit=safe_limit,
+            offset=safe_offset,
+        ),
+        asyncio.to_thread(db.list_translocator_contributors),
     )
     out = []
     seen = set()
-    for r in rows:
+    for r in page["items"]:
         sid = r["segment_id"]
         if sid in seen:
             continue
@@ -149,7 +171,18 @@ async def list_user_translocators(
                 created.isoformat() if hasattr(created, "isoformat") else created
             ),
         })
-    return {"translocators": out}
+    payload = _page_payload(
+        "translocators", out, int(page["total"]), safe_limit, safe_offset
+    )
+    payload["contributors"] = [
+        {
+            "id": str(r["actor_api_key_id"]),
+            "name": r.get("actor_display_name") or str(r["actor_api_key_id"]),
+            "submission_count": int(r.get("submission_count") or 0),
+        }
+        for r in contributors
+    ]
+    return payload
 
 
 # ---------------------------------------------------------------------------
