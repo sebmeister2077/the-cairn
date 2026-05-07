@@ -16,6 +16,7 @@ import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
+import { ContributeTLsPage } from "@/pages/ContributeTLsPage";
 import { ApiKeysPage } from "@/pages/admin/ApiKeysPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminBannedIpsPage } from "@/pages/admin/AdminBannedIpsPage";
@@ -70,6 +71,7 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
     { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
     { value: "/multiplayer/contribute", label: "Contribute" },
+    { value: "/multiplayer/contribute-tls", label: "Contribute TLs" },
   ],
   "/general": [],
   "/manage": [
@@ -414,6 +416,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
+          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />

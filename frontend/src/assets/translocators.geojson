@@ -12955,6 +12955,74 @@
     },
     {
       "type": "Feature",
+      "properties": {
+        "depth1": 69,
+        "depth2": 93,
+        "label": "",
+        "tag": "",
+        "added_by": "Cairn"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [255, -29096],
+          [-6215, -30320]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "depth1": 87,
+        "depth2": 82,
+        "label": "",
+        "tag": "",
+        "added_by": "Cairn"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [0, -29034],
+          [-3538, -31336]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "depth1": 71,
+        "depth2": 62,
+        "label": "",
+        "tag": "",
+        "added_by": "Cairn"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-3548, -31375],
+          [1097, -33002]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "depth1": 32,
+        "depth2": 42,
+        "label": "",
+        "tag": "",
+        "added_by": "Cairn"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [1117, -32982],
+          [4956, -38480]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
       "properties": { "depth1": 118, "depth2": 80, "label": "", "tag": "" },
       "geometry": {
         "type": "LineString",

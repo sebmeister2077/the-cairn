@@ -9,6 +9,7 @@ import {
     clearAdminSession as clearAdminSessionAction,
     markCurrentKeyRejected,
 } from "@/store/slices/auth";
+import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
 
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 export const API_BASE = configuredApiBase || "/api";
@@ -332,6 +333,23 @@ export async function getLandmarksUrl(): Promise<MarkerFileUrlResponse> {
 export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
     const res = await fetch(`${API_BASE}/translocators/url`, {
         headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Contribute Translocators (Phase: frontend-only stub).
+// The backend endpoint is not implemented yet — callers should be prepared
+// for a 404 or 501 response and surface the error gracefully.
+// ---------------------------------------------------------------------------
+
+export async function contributeTLs(
+    payload: TLContributionPayload,
+): Promise<TLContributionResult> {
+    const res = await fetch(`${API_BASE}/contribute-tls`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
     });
     return (await handleResponse(res)).json();
 }

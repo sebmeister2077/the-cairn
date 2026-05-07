@@ -34,7 +34,11 @@ const ENVELOPE_VERSION = 1;
  *   ["resourcesOverlay"]     // forget overlay toggles between sessions
  *   ["adminUsersFilters"]    // always start with the default filters
  */
-export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [];
+export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
+    // The contribute-TLs page is a one-shot upload flow and stores parsed
+    // chat-log data plus transient UI state — both should reset on reload.
+    "contributeTLs",
+];
 
 /**
  * Per-slice cleaner applied **before** writing the envelope. Use it to

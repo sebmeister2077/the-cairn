@@ -154,6 +154,26 @@ interface MapViewerProps {
    */
   overlay?: React.ReactNode;
   /**
+   * Render-prop variant of {@link overlay}. Receives the current internal
+   * zoom along with the image-natural dimensions so consumers can size
+   * their handles inversely to zoom (so they remain a constant on-screen
+   * size). Coordinates returned in JSX are interpreted in image-space
+   * pixels, exactly like {@link overlay}.
+   */
+  overlayRender?: (info: {
+    zoom: number;
+    imgNatural: { w: number; h: number };
+    stats: MapStats | null;
+  }) => React.ReactNode;
+  /**
+   * When true, panning (mouse drag) and wheel zooming are disabled. The
+   * map still renders normally and the overlay still receives pointer
+   * events — used by features that need an unambiguous overlay drag
+   * gesture (e.g. moving a TL endpoint). The toolbar zoom buttons remain
+   * functional.
+   */
+  interactionsLocked?: boolean;
+  /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
    * (so this is meant to be sourced from the URL on initial page load).
@@ -189,6 +209,8 @@ export function MapViewer({
   onViewportChange,
   initialView,
   overlay,
+  overlayRender,
+  interactionsLocked = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -215,6 +237,10 @@ export function MapViewer({
   const zoomRef = useRef(zoom);
   const prevFocusPointRef = useRef<{ x: number; z: number } | undefined>(undefined);
   const panRef = useRef(pan);
+  const interactionsLockedRef = useRef(interactionsLocked);
+  useEffect(() => {
+    interactionsLockedRef.current = interactionsLocked;
+  }, [interactionsLocked]);
   const enhanceAbortRef = useRef<AbortController | null>(null);
 
   const activeUrl = enhancedUrl ?? imageUrl ?? null;
@@ -816,6 +842,10 @@ export function MapViewer({
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      // Wheel-zoom stays available even when interactions are locked —
+      // locking only disables panning so the user can still zoom in/out
+      // while dragging endpoint handles or otherwise interacting with the
+      // overlay.
       e.preventDefault();
       const rect = el.getBoundingClientRect();
       const factor = e.deltaY < 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR;
@@ -963,6 +993,7 @@ export function MapViewer({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (interactionsLockedRef.current) return;
     setDragging(true);
     setDragStart({ x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y });
   }, []);
@@ -1158,6 +1189,7 @@ export function MapViewer({
               />
             ))}
             {overlay}
+            {overlayRender?.({ zoom, imgNatural, stats })}
           </div>
         ) : (
           <img
