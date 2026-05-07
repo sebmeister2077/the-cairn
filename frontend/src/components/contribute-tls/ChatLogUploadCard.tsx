@@ -97,7 +97,11 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
             </code>{" "}
             file.
           </p>
-          <p>Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter.</p>
+          <p>
+            Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter, and the
+            corresponding TL labels only need to be approximate as long as they land within about
+            400 blocks of their matching exits for it to automatically link the TLs for you.
+          </p>
           <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
         </div>
 
