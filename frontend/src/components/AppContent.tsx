@@ -25,6 +25,7 @@ import { AdminFeatureFlagsPage } from "@/pages/admin/AdminFeatureFlagsPage";
 import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
+import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -83,6 +84,7 @@ const subTabs: Record<string, { value: string; label: string; chip?: string }[]>
     { value: "/manage/maintenance", label: "Maintenance" },
     { value: "/manage/resources", label: "Resources" },
     { value: "/manage/landmarks", label: "Landmarks" },
+    { value: "/manage/translocators", label: "Translocators" },
   ],
 };
 
@@ -428,7 +430,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
-          {/* <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} /> */}
+          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />
@@ -438,6 +440,7 @@ export function AppContent() {
           <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
           <Route path="/manage/landmarks" element={<AdminLandmarksPage />} />
+          <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

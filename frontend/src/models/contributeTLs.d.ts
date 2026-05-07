@@ -74,10 +74,27 @@ export interface TLContributionPayload {
         z2: number;
         label?: string;
     }>;
-    contributor?: string;
+    /**
+     * User-supplied (frontend-computed) batch statistics. Trusted as-is by
+     * the server and stored verbatim on every audit row of the batch so
+     * reviewers can gauge how well the submitter's existing TLs match
+     * what's already on the server.
+     */
+    stats: {
+        existing_match_pct: number;
+        existing_pair_count: number;
+    };
+    /** Optional client-supplied identifier so a batch can be correlated
+     * across the audit rows it produces. Server falls back to a UUID if
+     * absent. */
+    client_batch_id?: string;
 }
 
 export interface TLContributionResult {
     accepted: number;
-    pending_id?: string;
+    /** Number of submitted TLs the server detected as already present on the
+     * map and silently dropped (no audit row written). */
+    skipped_existing?: number;
+    /** Server-side identifier for the batch (echoed back). */
+    batch_id?: string;
 }

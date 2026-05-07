@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
+import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { userReduxState } from "@/store/hooks";
 
@@ -367,6 +368,10 @@ export function AccountPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* User-contributed translocators self-history. The card hides itself
+          when the caller has no contributions. */}
+      <MyTranslocatorContributionsCard />
 
       {/* Admin-only: passkey 2FA management. Renders nothing for non-admins
           or when the server has WebAuthn unconfigured. */}

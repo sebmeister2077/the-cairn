@@ -70,10 +70,25 @@ function parseTranslocators(json: unknown): WorldLineSegment[] {
     const segments: WorldLineSegment[] = [];
 
     for (const feature of features) {
-        const f = feature as { geometry?: { type?: string; coordinates?: unknown } };
+        const f = feature as {
+            geometry?: { type?: string; coordinates?: unknown };
+            properties?: Record<string, unknown>;
+        };
         const geometry = f?.geometry;
         if (!geometry || geometry.type !== "LineString") continue;
         const coords = Array.isArray(geometry.coordinates) ? geometry.coordinates : [];
+        const props = f.properties ?? {};
+        // User-contributed segments are stamped with `origin: "user"` and
+        // carry per-segment audit info on the feature itself, so the map
+        // hover can show "added by … at …" without an extra fetch.
+        const isUser = props.origin === "user";
+        const kind: WorldLineSegment["kind"] = isUser ? "user" : "default";
+        const segmentId = typeof props.id === "string" ? props.id : undefined;
+        const addedBy = typeof props.added_by === "string" ? props.added_by : undefined;
+        const addedAt = typeof props.added_at === "string" ? props.added_at : undefined;
+        const meta: WorldLineSegment["meta"] | undefined = isUser
+            ? { segmentId, addedBy, addedAt }
+            : undefined;
         for (let i = 1; i < coords.length; i++) {
             const [x1, z1raw] = (coords[i - 1] ?? []) as [number, number];
             const [x2, z2raw] = (coords[i] ?? []) as [number, number];
@@ -85,7 +100,7 @@ function parseTranslocators(json: unknown): WorldLineSegment[] {
                 Number.isFinite(x2) &&
                 Number.isFinite(z2)
             ) {
-                segments.push({ x1, z1, x2, z2 });
+                segments.push({ x1, z1, x2, z2, kind, meta });
             }
         }
     }

@@ -8,13 +8,10 @@
  */
 
 import { useState, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import {
-  setContributor,
-  setSubmittedCount,
-  resetContributeTLs,
-} from "@/store/slices/contributeTLs";
-import { useTranslocatorsOverlay } from "@/hooks/useOverlayData";
+import { setSubmittedCount, resetContributeTLs } from "@/store/slices/contributeTLs";
+import { useTranslocatorsOverlay, TRANSLOCATORS_QUERY_KEY } from "@/hooks/useOverlayData";
 import { ChatLogUploadCard } from "@/components/contribute-tls/ChatLogUploadCard";
 import { TLPreviewMap } from "@/components/contribute-tls/TLPreviewMap";
 import { TLReviewList } from "@/components/contribute-tls/TLReviewList";
@@ -22,25 +19,24 @@ import { EditTLDialog } from "@/components/contribute-tls/EditTLDialog";
 import { WhatToDoDialog } from "@/components/contribute-tls/WhatToDoDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
-import { contributeTLs } from "@/lib/api";
+import { contributeTLs, ApiError } from "@/lib/api";
 import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
 
 type Step = "upload" | "review" | "done";
 
 export function ContributeTLsPage() {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const userTLs = useAppSelector((s) => s.contributeTLs.userTLs);
-  const contributor = useAppSelector((s) => s.contributeTLs.contributor);
   const submittedCount = useAppSelector((s) => s.contributeTLs.submittedCount);
 
   const [step, setStep] = useState<Step>("upload");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [skippedExisting, setSkippedExisting] = useState<number>(0);
 
   const translocatorsQuery = useTranslocatorsOverlay();
   const serverSegments = useMemo(
@@ -99,6 +95,11 @@ export function ContributeTLsPage() {
     setSubmitting(true);
     setSubmitError(null);
     try {
+      // Existing-pair count + match% are user-supplied stats stored on each
+      // audit row so reviewers can sanity-check submitters.
+      const submittableTotal = submittable.length;
+      const denom = counts.existing + submittableTotal;
+      const existingMatchPct = denom === 0 ? 0 : Math.round((counts.existing / denom) * 1000) / 10;
       const payload: TLContributionPayload = {
         translocators: submittable
           .filter((tl) => tl.endpointB != null)
@@ -109,24 +110,42 @@ export function ContributeTLsPage() {
             z2: tl.endpointB!.z,
             label: tl.endpointA.label,
           })),
-        contributor: contributor.trim() || undefined,
+        stats: {
+          existing_match_pct: existingMatchPct,
+          existing_pair_count: counts.existing,
+        },
       };
       let result: TLContributionResult;
       try {
         result = await contributeTLs(payload);
       } catch (e: unknown) {
-        // Backend not implemented yet \u2014 surface a friendly message but
-        // still let the user "see" what would have been submitted.
-        const msg = e instanceof Error ? e.message : "Unknown error";
-        if (/404|not found|501|not implemented/i.test(msg)) {
-          setSubmitError(
-            "The backend endpoint isn't available yet (it's still being built). " +
-              "Your work is preserved on this page \u2014 please try again later.",
-          );
-          return;
+        if (e instanceof ApiError) {
+          if (e.status === 503) {
+            setSubmitError(
+              "Translocator contributions are currently disabled. Please try again later.",
+            );
+            return;
+          }
+          if (e.status === 403) {
+            setSubmitError(
+              "You need an account to contribute translocators. Create one and try again.",
+            );
+            return;
+          }
+          if (e.status === 404 || e.status === 501) {
+            setSubmitError(
+              "The backend endpoint isn\u2019t available yet. " +
+                "Your work is preserved on this page \u2014 please try again later.",
+            );
+            return;
+          }
         }
         throw e;
       }
+      setSkippedExisting(result.skipped_existing ?? 0);
+      // Refresh the live overlay so the user immediately sees their new TLs
+      // (in blue) on every map.
+      queryClient.invalidateQueries({ queryKey: TRANSLOCATORS_QUERY_KEY });
       dispatch(setSubmittedCount(result.accepted ?? submittable.length));
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : "Failed to submit");
@@ -148,12 +167,19 @@ export function ContributeTLsPage() {
         <CardContent className="space-y-4">
           <p>
             Thanks! Your contribution of <strong>{submittedCount ?? 0}</strong> translocator
-            {submittedCount === 1 ? "" : "s"} is now pending review.
+            {submittedCount === 1 ? "" : "s"} is now live on the map.
           </p>
+          {skippedExisting > 0 && (
+            <p className="text-sm text-muted-foreground">
+              <strong>{skippedExisting}</strong> submitted pair
+              {skippedExisting === 1 ? " was" : "s were"} already on the server and skipped.
+            </p>
+          )}
           <Button
             type="button"
             onClick={() => {
               dispatch(resetContributeTLs());
+              setSkippedExisting(0);
               setStep("upload");
             }}
           >
@@ -184,18 +210,6 @@ export function ContributeTLsPage() {
           </Button>
           <WhatToDoDialog />
           <div className="ml-auto flex items-end gap-2">
-            <div>
-              <Label htmlFor="contributor-name" className="text-xs">
-                Contributor name (optional)
-              </Label>
-              <Input
-                id="contributor-name"
-                value={contributor}
-                onChange={(e) => dispatch(setContributor(e.target.value))}
-                placeholder="e.g. your in-game name"
-                className="w-64"
-              />
-            </div>
             <Button
               type="button"
               onClick={openSubmitConfirm}
