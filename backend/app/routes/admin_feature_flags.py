@@ -43,6 +43,10 @@ async def patch_flag(
     body: FeatureFlagPatch,
     admin_key: str = Depends(require_admin),
 ):
+    # Trim incidental whitespace; a stray space in the key bypasses the
+    # exact-match lookup callers use (``get_feature_flag(key)``) and the
+    # update silently no-ops, leaving the wrong row enabled.
+    key = key.strip()
     # Capture the previous state so we can react to OFF -> ON transitions
     # (e.g. kicking the eager compression migration runner).
     previous = db.get_feature_flag(key)

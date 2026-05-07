@@ -24,6 +24,16 @@ export interface WorldLineSegment {
   z1: number;
   x2: number;
   z2: number;
+  /** Visual / data classification for the segment.
+   *  - "default" (or undefined): seeded translocator (purple).
+   *  - "user": user-contributed translocator (blue) — carries `meta`.
+   */
+  kind?: "default" | "user";
+  meta?: {
+    segmentId?: string;
+    addedBy?: string;
+    addedAt?: string;
+  };
 }
 
 export interface WorldPointMarker {
@@ -154,6 +164,26 @@ interface MapViewerProps {
    */
   overlay?: React.ReactNode;
   /**
+   * Render-prop variant of {@link overlay}. Receives the current internal
+   * zoom along with the image-natural dimensions so consumers can size
+   * their handles inversely to zoom (so they remain a constant on-screen
+   * size). Coordinates returned in JSX are interpreted in image-space
+   * pixels, exactly like {@link overlay}.
+   */
+  overlayRender?: (info: {
+    zoom: number;
+    imgNatural: { w: number; h: number };
+    stats: MapStats | null;
+  }) => React.ReactNode;
+  /**
+   * When true, panning (mouse drag) and wheel zooming are disabled. The
+   * map still renders normally and the overlay still receives pointer
+   * events — used by features that need an unambiguous overlay drag
+   * gesture (e.g. moving a TL endpoint). The toolbar zoom buttons remain
+   * functional.
+   */
+  interactionsLocked?: boolean;
+  /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
    * (so this is meant to be sourced from the URL on initial page load).
@@ -189,6 +219,8 @@ export function MapViewer({
   onViewportChange,
   initialView,
   overlay,
+  overlayRender,
+  interactionsLocked = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -215,6 +247,10 @@ export function MapViewer({
   const zoomRef = useRef(zoom);
   const prevFocusPointRef = useRef<{ x: number; z: number } | undefined>(undefined);
   const panRef = useRef(pan);
+  const interactionsLockedRef = useRef(interactionsLocked);
+  useEffect(() => {
+    interactionsLockedRef.current = interactionsLocked;
+  }, [interactionsLocked]);
   const enhanceAbortRef = useRef<AbortController | null>(null);
 
   const activeUrl = enhancedUrl ?? imageUrl ?? null;
@@ -239,20 +275,32 @@ export function MapViewer({
       imgNatural.w <= 0 ||
       imgNatural.h <= 0
     ) {
-      return [] as Array<{ x1: number; y1: number; x2: number; y2: number }>;
+      return [] as Array<{
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        kind?: "default" | "user";
+      }>;
     }
 
     const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
     const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
 
-    const projected: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const projected: Array<{
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      kind?: "default" | "user";
+    }> = [];
     for (const seg of overlaySegments) {
       const x1 = toImgX(seg.x1);
       const y1 = toImgY(seg.z1);
       const x2 = toImgX(seg.x2);
       const y2 = toImgY(seg.z2);
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
-      projected.push({ x1, y1, x2, y2 });
+      projected.push({ x1, y1, x2, y2, kind: seg.kind });
     }
 
     return projected;
@@ -614,28 +662,49 @@ export function MapViewer({
     const glowColor = "rgba(76, 29, 149, 0.55)";
     const portalOuter = "rgba(168, 85, 247, 0.95)";
     const portalInner = "rgba(221, 214, 254, 0.98)";
+    // User-contributed translocators are drawn in blue so they're visually
+    // distinct from the seeded purple ones. Hover style stays unified.
+    const userLineColor = "rgba(37, 99, 235, 0.95)";
+    const userGlowColor = "rgba(30, 58, 138, 0.55)";
+    const userPortalOuter = "rgba(59, 130, 246, 0.95)";
 
     const baseWidth = Math.max(0.9, 2.3 / Math.max(zoom, 0.1));
     const glowWidth = baseWidth * 2.4;
 
     if (projectedOverlaySegments.length > 0) {
-      ctx.strokeStyle = glowColor;
-      ctx.lineWidth = glowWidth;
-      ctx.beginPath();
+      // Split into default vs user-contributed so each kind gets its own
+      // colour pass. The single-batch draw is preserved per-kind to keep
+      // stroke calls minimal.
+      const defaultSegs: typeof projectedOverlaySegments = [];
+      const userSegs: typeof projectedOverlaySegments = [];
       for (const seg of projectedOverlaySegments) {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
+        if (seg.kind === "user") userSegs.push(seg);
+        else defaultSegs.push(seg);
       }
-      ctx.stroke();
 
-      ctx.strokeStyle = baseLineColor;
-      ctx.lineWidth = baseWidth;
-      ctx.beginPath();
-      for (const seg of projectedOverlaySegments) {
-        ctx.moveTo(seg.x1, seg.y1);
-        ctx.lineTo(seg.x2, seg.y2);
-      }
-      ctx.stroke();
+      const drawLinePass = (segs: typeof projectedOverlaySegments, line: string, glow: string) => {
+        if (segs.length === 0) return;
+        ctx.strokeStyle = glow;
+        ctx.lineWidth = glowWidth;
+        ctx.beginPath();
+        for (const seg of segs) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = line;
+        ctx.lineWidth = baseWidth;
+        ctx.beginPath();
+        for (const seg of segs) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+      };
+
+      drawLinePass(defaultSegs, baseLineColor, glowColor);
+      drawLinePass(userSegs, userLineColor, userGlowColor);
 
       if (hoveredOverlayIndex !== null && projectedOverlaySegments[hoveredOverlayIndex]) {
         const seg = projectedOverlaySegments[hoveredOverlayIndex];
@@ -666,19 +735,23 @@ export function MapViewer({
 
       const outerRadius = Math.max(1.8, 2.9 / Math.max(zoom, 0.1));
       const innerRadius = Math.max(0.8, outerRadius * 0.5);
-      for (const seg of projectedOverlaySegments) {
-        ctx.fillStyle = portalOuter;
-        ctx.beginPath();
-        ctx.arc(seg.x1, seg.y1, outerRadius, 0, Math.PI * 2);
-        ctx.arc(seg.x2, seg.y2, outerRadius, 0, Math.PI * 2);
-        ctx.fill();
+      const drawPortalDots = (segs: typeof projectedOverlaySegments, outer: string) => {
+        for (const seg of segs) {
+          ctx.fillStyle = outer;
+          ctx.beginPath();
+          ctx.arc(seg.x1, seg.y1, outerRadius, 0, Math.PI * 2);
+          ctx.arc(seg.x2, seg.y2, outerRadius, 0, Math.PI * 2);
+          ctx.fill();
 
-        ctx.fillStyle = portalInner;
-        ctx.beginPath();
-        ctx.arc(seg.x1, seg.y1, innerRadius, 0, Math.PI * 2);
-        ctx.arc(seg.x2, seg.y2, innerRadius, 0, Math.PI * 2);
-        ctx.fill();
-      }
+          ctx.fillStyle = portalInner;
+          ctx.beginPath();
+          ctx.arc(seg.x1, seg.y1, innerRadius, 0, Math.PI * 2);
+          ctx.arc(seg.x2, seg.y2, innerRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      };
+      drawPortalDots(defaultSegs, portalOuter);
+      drawPortalDots(userSegs, userPortalOuter);
     }
 
     if (projectedOverlayPoints.length > 0) {
@@ -816,6 +889,10 @@ export function MapViewer({
     const el = containerRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
+      // Wheel-zoom stays available even when interactions are locked —
+      // locking only disables panning so the user can still zoom in/out
+      // while dragging endpoint handles or otherwise interacting with the
+      // overlay.
       e.preventDefault();
       const rect = el.getBoundingClientRect();
       const factor = e.deltaY < 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR;
@@ -963,6 +1040,7 @@ export function MapViewer({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
+    if (interactionsLockedRef.current) return;
     setDragging(true);
     setDragStart({ x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y });
   }, []);
@@ -1158,6 +1236,7 @@ export function MapViewer({
               />
             ))}
             {overlay}
+            {overlayRender?.({ zoom, imgNatural, stats })}
           </div>
         ) : (
           <img

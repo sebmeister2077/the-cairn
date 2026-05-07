@@ -194,7 +194,12 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- everywhere). ON = combined DB keeps a raw + .zst pair (readers
     -- prefer .zst when its x-amz-meta-source-etag matches), backups and
     -- archives are written as .zst only. See plans/zstd-compression-plan.
-    ('compress_artefacts', FALSE)
+    ('compress_artefacts', FALSE),
+    -- User-contributed translocators. ON = POST /api/contribute-tls
+    -- accepts submissions and merges them live into translocators.geojson;
+    -- OFF = the endpoint returns 503 (frontend Contribute TLs page degrades
+    -- gracefully). Audit + admin endpoints work regardless of this flag.
+    ('translocator_contributions', FALSE)
 ON CONFLICT (key) DO NOTHING;
 
 -- Generic key/value settings table for non-boolean admin-tunable values
@@ -2479,6 +2484,205 @@ def list_landmark_audit(
                 params,
             )
             return [dict(r) for r in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Translocators audit CRUD (user-contributed TLs)
+# ---------------------------------------------------------------------------
+
+def insert_translocator_audit(
+    *,
+    segment_id: str,
+    action: str,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+    submission_stats: Optional[dict] = None,
+) -> None:
+    """Append-only audit record for a translocator mutation.
+
+    ``submission_stats`` is the user-supplied (frontend-computed) batch
+    statistics: ``{existing_match_pct, existing_pair_count, batch_id}``.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO translocators_audit
+                       (segment_id, action, actor_api_key_id, actor_display_name,
+                        before_payload, after_payload, submission_stats)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+                (
+                    segment_id,
+                    action,
+                    actor_api_key_id,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                    json.dumps(submission_stats) if submission_stats is not None else None,
+                ),
+            )
+
+
+def list_translocator_audit(
+    *,
+    segment_id: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    action: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    where = []
+    params: list = []
+    if segment_id:
+        where.append("segment_id = %s")
+        params.append(segment_id)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    params.extend([int(limit), int(offset)])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT id, segment_id, action, actor_api_key_id,
+                           actor_display_name, before_payload, after_payload,
+                           submission_stats, created_at
+                       FROM translocators_audit
+                       {where_sql}
+                       ORDER BY created_at DESC
+                       LIMIT %s OFFSET %s""",
+                params,
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_translocator_audit_paginated(
+    *,
+    segment_id: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    action: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if segment_id:
+        where.append("segment_id = %s")
+        params.append(segment_id)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM translocators_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, segment_id, action, actor_api_key_id,
+                           actor_display_name, before_payload, after_payload,
+                           submission_stats, created_at
+                       FROM translocators_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
+def list_translocator_add_audit_paginated(
+    *,
+    actor_api_key_id: Optional[str] = None,
+    limit: int = 10,
+    offset: int = 0,
+) -> dict:
+    where = ["action = %s"]
+    params: list = ["add"]
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    where_sql = " WHERE " + " AND ".join(where)
+    limit = max(1, min(int(limit), 200))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM translocators_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, segment_id, action, actor_api_key_id,
+                           actor_display_name, before_payload, after_payload,
+                           submission_stats, created_at
+                       FROM translocators_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
+def list_translocator_contributors() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT actor_api_key_id,
+                          COALESCE(MAX(actor_display_name), actor_api_key_id) AS actor_display_name,
+                          COUNT(*) AS submission_count
+                     FROM translocators_audit
+                    WHERE action = 'add'
+                      AND actor_api_key_id IS NOT NULL
+                    GROUP BY actor_api_key_id
+                    ORDER BY actor_display_name ASC NULLS LAST, actor_api_key_id ASC""",
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_translocator_audit_added_index() -> dict:
+    """Return ``{segment_id: {added_by, added_at, actor_api_key_id}}`` for
+    every still-current ``add`` row (i.e. no later ``delete`` row exists for
+    the same ``segment_id``).
+
+    Used by the public ``/api/translocators/audit`` endpoint to surface
+    contributor info on map hover, and by the admin listing to compute
+    ``still_present`` quickly.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT DISTINCT ON (segment_id)
+                          segment_id, action, actor_api_key_id,
+                          actor_display_name, created_at
+                     FROM translocators_audit
+                     ORDER BY segment_id, created_at DESC""",
+            )
+            out: dict = {}
+            for row in cur.fetchall():
+                if row["action"] != "add":
+                    continue
+                created = row["created_at"]
+                out[row["segment_id"]] = {
+                    "added_by": row["actor_display_name"],
+                    "added_by_api_key_id": row["actor_api_key_id"],
+                    "added_at": created.isoformat() if hasattr(created, "isoformat") else created,
+                }
+            return out
 
 
 def insert_landmark_edit_request(

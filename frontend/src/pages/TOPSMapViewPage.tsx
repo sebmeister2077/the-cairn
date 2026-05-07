@@ -52,7 +52,7 @@ import {
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
-import { LandmarkManagementCard } from "@/components/tops-map/LandmarkManagementCard";
+import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import {
   useLandmarksOverlay,

@@ -66,8 +66,8 @@ def _upload(geojson: dict, key: str, *, force: bool) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--landmarks", type=Path, required=True)
-    p.add_argument("--translocators", type=Path, required=True)
+    p.add_argument("--landmarks", type=Path, default=None)
+    p.add_argument("--translocators", type=Path, default=None)
     p.add_argument(
         "--force",
         action="store_true",
@@ -80,11 +80,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = p.parse_args(argv)
 
+    if args.landmarks is None and args.translocators is None:
+        print(
+            "ERROR: at least one of --landmarks or --translocators must be provided.",
+            file=sys.stderr,
+        )
+        return 2
+
     now = _now_iso()
-    for label, path, key in (
-        ("landmarks", args.landmarks, r2_storage.landmarks_live_key()),
-        ("translocators", args.translocators, r2_storage.translocators_live_key()),
-    ):
+    targets = []
+    if args.landmarks is not None:
+        targets.append(("landmarks", args.landmarks, r2_storage.landmarks_live_key()))
+    if args.translocators is not None:
+        targets.append(
+            ("translocators", args.translocators, r2_storage.translocators_live_key())
+        )
+    for label, path, key in targets:
         if not path.is_file():
             print(f"ERROR: {label} file not found: {path}", file=sys.stderr)
             return 2

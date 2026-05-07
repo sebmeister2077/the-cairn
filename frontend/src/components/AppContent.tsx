@@ -16,6 +16,7 @@ import { IdentifyMapsPage } from "@/pages/IdentifyMapsPage";
 import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
+import { ContributeTLsPage } from "@/pages/ContributeTLsPage";
 import { ApiKeysPage } from "@/pages/admin/ApiKeysPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminBannedIpsPage } from "@/pages/admin/AdminBannedIpsPage";
@@ -24,6 +25,7 @@ import { AdminFeatureFlagsPage } from "@/pages/admin/AdminFeatureFlagsPage";
 import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
+import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -58,7 +60,13 @@ const BASE_CATEGORIES = [
 
 const ADMIN_CATEGORY = { value: "/manage", label: "Manage" };
 
-const subTabs: Record<string, { value: string; label: string }[]> = {
+type SubTab = {
+  value: string;
+  label: string;
+  chip?: string;
+  chipShownUntil?: string;
+};
+const subTabs: Record<string, SubTab[]> = {
   "/singleplayer": [
     { value: "/singleplayer/extract", label: "Extract" },
     { value: "/singleplayer/import", label: "Import" },
@@ -69,7 +77,13 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/multiplayer/identify", label: "Identify Maps" },
     { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
     { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
-    { value: "/multiplayer/contribute", label: "Contribute" },
+    { value: "/multiplayer/contribute", label: "Contribute Map" },
+    {
+      value: "/multiplayer/contribute-tls",
+      label: "Contribute TLs",
+      chip: "New",
+      chipShownUntil: "2026-05-17",
+    },
   ],
   "/general": [],
   "/manage": [
@@ -80,7 +94,8 @@ const subTabs: Record<string, { value: string; label: string }[]> = {
     { value: "/manage/feature-flags", label: "Feature Flags" },
     { value: "/manage/maintenance", label: "Maintenance" },
     { value: "/manage/resources", label: "Resources" },
-    { value: "/manage/landmarks", label: "Landmarks" },
+    { value: "/manage/waypoints-backup", label: "Waypoints & Backup" },
+    { value: "/manage/translocators", label: "Translocators" },
   ],
 };
 
@@ -317,6 +332,16 @@ export function AppContent() {
   });
   const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
 
+  function shouldShowChip(t: SubTab) {
+    if (!t.chip) return false;
+    if (!t.chipShownUntil) return true;
+
+    try {
+      return new Date(t.chipShownUntil) > new Date();
+    } catch {
+      return false;
+    }
+  }
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
@@ -368,7 +393,19 @@ export function AppContent() {
               <TabsList variant="line">
                 {activeSubs.map((t) => (
                   <NavLink key={t.value} to={t.value} end>
-                    {() => <TabsTrigger value={t.value}>{t.label}</TabsTrigger>}
+                    {() => (
+                      <TabsTrigger value={t.value} className="relative">
+                        {t.label}
+                        {shouldShowChip(t) && (
+                          <Badge
+                            variant="default"
+                            className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                          >
+                            {t.chip}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    )}
                   </NavLink>
                 ))}
               </TabsList>
@@ -414,6 +451,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
+          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />
@@ -422,7 +460,8 @@ export function AppContent() {
           <Route path="/manage/feature-flags" element={<AdminFeatureFlagsPage />} />
           <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
-          <Route path="/manage/landmarks" element={<AdminLandmarksPage />} />
+          <Route path="/manage/waypoints-backup" element={<AdminLandmarksPage />} />
+          <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

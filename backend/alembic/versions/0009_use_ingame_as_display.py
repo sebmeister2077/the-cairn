@@ -1,8 +1,8 @@
 """use in-game name as display name
 
-Revision ID: 0008_use_ingame_as_display
-Revises: 0007_landmarks_tables
-Create Date: 2026-05-06
+Revision ID: 0009_use_ingame_as_display
+Revises: 0008_translocators_audit
+Create Date: 2026-05-07
 
 Adds the ``users.use_in_game_name`` toggle and drops the UNIQUE
 constraint on ``users.display_name`` so two players who legitimately
@@ -19,8 +19,8 @@ import sqlalchemy as sa
 from alembic import op
 
 
-revision: str = "0008_use_ingame_as_display"
-down_revision: Union[str, None] = "0007_landmarks_tables"
+revision: str = "0009_use_ingame_as_display"
+down_revision: Union[str, None] = "0008_translocators_audit"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

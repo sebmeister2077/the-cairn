@@ -9,6 +9,7 @@ import {
     clearAdminSession as clearAdminSessionAction,
     markCurrentKeyRejected,
 } from "@/store/slices/auth";
+import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
 
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 export const API_BASE = configuredApiBase || "/api";
@@ -337,6 +338,151 @@ export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// Contribute Translocators (Phase: frontend-only stub).
+// The backend endpoint is not implemented yet — callers should be prepared
+// for a 404 or 501 response and surface the error gracefully.
+// ---------------------------------------------------------------------------
+
+export async function contributeTLs(
+    payload: TLContributionPayload,
+): Promise<TLContributionResult> {
+    const res = await fetch(`${API_BASE}/contribute-tls`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// User-contributed translocators: read endpoints (account-required)
+// ---------------------------------------------------------------------------
+
+export interface MyTranslocatorContribution {
+    segment_id: string;
+    label?: string | null;
+    coordinates: number[][]; // [[x1, z1_geojson], [x2, z2_geojson]] (server convention, +Z = south)
+    submission_stats: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export async function getMyTranslocatorContributions(): Promise<{
+    contributions: MyTranslocatorContribution[];
+}> {
+    const res = await fetch(`${API_BASE}/account/contribute-tls`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Admin translocators (account + admin-only)
+// ---------------------------------------------------------------------------
+
+export interface AdminTranslocatorEntry {
+    segment_id: string;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    label: string | null;
+    coordinates: number[][];
+    submission_stats: Record<string, unknown> | null;
+    still_present: boolean;
+    created_at: string;
+}
+
+export interface AdminTranslocatorContributor {
+    id: string;
+    name: string;
+    submission_count: number;
+}
+
+export interface TranslocatorAuditEntry {
+    id: number;
+    segment_id: string;
+    action: string;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    before_payload: unknown;
+    after_payload: unknown;
+    submission_stats: Record<string, unknown> | null;
+    created_at: string;
+}
+
+export async function adminListTranslocators(
+    opts: {
+        actor_api_key_id?: string;
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<{
+    translocators: AdminTranslocatorEntry[];
+    contributors: AdminTranslocatorContributor[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+}> {
+    const params = new URLSearchParams();
+    if (opts.actor_api_key_id) params.set("actor_api_key_id", opts.actor_api_key_id);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(`${API_BASE}/admin/translocators${qs ? `?${qs}` : ""}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListTranslocatorAudit(
+    opts: {
+        segment_id?: string;
+        actor_api_key_id?: string;
+        action?: string;
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<{
+    audit: TranslocatorAuditEntry[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+}> {
+    const params = new URLSearchParams();
+    if (opts.segment_id) params.set("segment_id", opts.segment_id);
+    if (opts.actor_api_key_id) params.set("actor_api_key_id", opts.actor_api_key_id);
+    if (opts.action) params.set("action", opts.action);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/audit${qs ? `?${qs}` : ""}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeleteTranslocator(
+    segmentId: string,
+): Promise<{ deleted: string; feature: unknown }> {
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/${encodeURIComponent(segmentId)}`,
+        { method: "DELETE", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeleteTranslocatorsByUser(
+    actorApiKeyId: string,
+): Promise<{ deleted: number; segment_ids: string[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/by-user/${encodeURIComponent(actorApiKeyId)}`,
+        { method: "DELETE", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Landmarks write endpoints (account-required)
 // ---------------------------------------------------------------------------
 
@@ -344,7 +490,7 @@ export interface LandmarkFeature {
     type: "Feature";
     properties: {
         id: string;
-        type: "Base" | "Server" | "Misc";
+        type: "Base" | "Server" | "Misc" | "Terminus";
         label: string;
         origin?: "seed" | "user" | string;
         added_by?: string | null;
@@ -370,7 +516,7 @@ export interface LandmarkEditRequest {
 
 export interface AddLandmarkBody {
     label: string;
-    type: "Base" | "Server" | "Misc";
+    type: "Base" | "Server" | "Misc" | "Terminus";
     x: number;
     z: number;
     y?: number;

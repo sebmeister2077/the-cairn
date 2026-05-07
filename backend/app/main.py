@@ -36,6 +36,8 @@ from .routes import invite
 from .routes import maintenance
 from .routes import landmarks as landmarks_routes
 from .routes import admin_landmarks as admin_landmarks_routes
+from .routes import contribute_tls as contribute_tls_routes
+from .routes import admin_translocators as admin_translocators_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -557,6 +559,8 @@ app.include_router(invite.router, prefix="/api")
 app.include_router(maintenance.public_router, prefix="/api")
 app.include_router(landmarks_routes.router, prefix="/api")
 app.include_router(admin_landmarks_routes.router, prefix="/api")
+app.include_router(contribute_tls_routes.router, prefix="/api")
+app.include_router(admin_translocators_routes.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 

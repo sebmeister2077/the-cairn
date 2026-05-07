@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Download, Eye, EyeOff, Copy } from "lucide-react";
 import {
@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
+import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { userReduxState } from "@/store/hooks";
 
@@ -36,6 +37,11 @@ export function AccountPage() {
     queryFn: getMyAccountSafe,
     retry: false,
   });
+
+  useEffect(() => {
+    if (isLoading || error || !data?.user?.in_game_name) return;
+    setInGameName(data.user.in_game_name);
+  }, [data, isLoading, error]);
 
   // Derive registration state from the query result so it stays correct
   // even when the cache was already populated by another component (e.g.
@@ -77,11 +83,6 @@ export function AccountPage() {
   });
 
   const user = data?.user ?? null;
-
-  // Sync editable fields when user data loads.
-  if (user && inGameName === "" && user.in_game_name) {
-    setInGameName(user.in_game_name);
-  }
 
   if (!apiKey) {
     return (
@@ -394,6 +395,10 @@ export function AccountPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* User-contributed translocators self-history. The card hides itself
+          when the caller has no contributions. */}
+      <MyTranslocatorContributionsCard />
 
       {/* Admin-only: passkey 2FA management. Renders nothing for non-admins
           or when the server has WebAuthn unconfigured. */}

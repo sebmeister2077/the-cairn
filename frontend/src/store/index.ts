@@ -24,6 +24,7 @@ import { mapViewSlice } from "./slices/mapView";
 import { resourcesOverlaySlice } from "./slices/resourcesOverlay";
 import { adminUsersFiltersSlice } from "./slices/adminUsersFilters";
 import { tlGroupingsSlice } from "./slices/tlGroupings";
+import { contributeTLsSlice } from "./slices/contributeTLs";
 import {
     installRootPersistence,
     loadPersistedRoot,
@@ -42,6 +43,7 @@ const rootReducer = combineReducers({
     resourcesOverlay: resourcesOverlaySlice.reducer,
     adminUsersFilters: adminUsersFiltersSlice.reducer,
     tlGroupings: tlGroupingsSlice.reducer,
+    contributeTLs: contributeTLsSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
