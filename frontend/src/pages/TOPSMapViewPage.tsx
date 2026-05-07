@@ -856,48 +856,61 @@ export function TOPSMapViewPage() {
           </div>
         )}
 
-        <MapViewer
-          tileSet={tileSet}
-          stats={stats}
-          alt="TOPS global server map"
-          showTLLegend={showTranslocators}
-          overlaySegments={visibleTranslocatorSegments}
-          overlayPoints={landmarkPoints}
-          onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
-          onOverlaySegmentRightClick={
-            showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
-          }
-          highlightedSegment={
-            showTranslocators && !editingGrouping && translocatorPinned
-              ? selectedTranslocator
-              : undefined
-          }
-          highlightedSegments={highlightedTranslocatorSegments}
-          focusPoint={landmarkFocusPoint}
-          enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
-          initialView={initialUrlParams.initialView}
-          onViewportChange={handleViewportChange}
-          onTileSetEnhanced={(next) => {
-            // Persist the upgrade so future page loads start at the higher
-            // level. Runs after MapViewer's internal swap, so the resulting
-            // tileSet prop change is recognised as already-adopted (Case 1
-            // in the tileSet?.id effect) and doesn't re-scale pan/zoom.
-            const lvl = typeof next.id === "number" ? next.id : Number(next.id);
-            if (Number.isFinite(lvl)) setSelectedLevel(lvl);
-          }}
-          overlay={
-            isAdmin && tileSet ? (
-              <ResourcesOverlayLayer
-                state={resourcesOverlay}
-                stats={stats}
-                imageWidth={tileSet.imageWidth}
-                imageHeight={tileSet.imageHeight}
-                onDepositClick={setSelectedDeposit}
-                selectedDeposit={selectedDeposit}
-              />
-            ) : null
-          }
-        />
+        <div className="relative">
+          <MapViewer
+            tileSet={tileSet}
+            stats={stats}
+            alt="TOPS global server map"
+            showTLLegend={showTranslocators}
+            overlaySegments={visibleTranslocatorSegments}
+            overlayPoints={landmarkPoints}
+            onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
+            onOverlaySegmentRightClick={
+              showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
+            }
+            highlightedSegment={
+              showTranslocators && !editingGrouping && translocatorPinned
+                ? selectedTranslocator
+                : undefined
+            }
+            highlightedSegments={highlightedTranslocatorSegments}
+            focusPoint={landmarkFocusPoint}
+            enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
+            initialView={initialUrlParams.initialView}
+            onViewportChange={handleViewportChange}
+            onTileSetEnhanced={(next) => {
+              // Persist the upgrade so future page loads start at the higher
+              // level. Runs after MapViewer's internal swap, so the resulting
+              // tileSet prop change is recognised as already-adopted (Case 1
+              // in the tileSet?.id effect) and doesn't re-scale pan/zoom.
+              const lvl = typeof next.id === "number" ? next.id : Number(next.id);
+              if (Number.isFinite(lvl)) setSelectedLevel(lvl);
+            }}
+            overlay={
+              isAdmin && tileSet ? (
+                <ResourcesOverlayLayer
+                  state={resourcesOverlay}
+                  stats={stats}
+                  imageWidth={tileSet.imageWidth}
+                  imageHeight={tileSet.imageHeight}
+                  onDepositClick={setSelectedDeposit}
+                  selectedDeposit={selectedDeposit}
+                />
+              ) : null
+            }
+          />
+          {showTranslocators && selectedTranslocator && (
+            <SelectedTranslocatorHeader
+              selectedTranslocator={selectedTranslocator}
+              translocatorPinned={translocatorPinned}
+              handleUnpinTranslocator={handleUnpinTranslocator}
+              onClose={() => {
+                handleUnpinTranslocator();
+                setSelectedTranslocator(null);
+              }}
+            />
+          )}
+        </div>
         <TLGroupingsDrawer
           open={groupingsOpen}
           onOpenChange={setGroupingsOpen}

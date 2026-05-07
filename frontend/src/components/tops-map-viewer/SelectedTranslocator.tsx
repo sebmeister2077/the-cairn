@@ -1,4 +1,4 @@
-import { Pin, PinOff } from "lucide-react";
+import { Pin, PinOff, X } from "lucide-react";
 import type { WorldLineSegment } from "../MapViewer";
 import { Button } from "@/components/ui/button";
 
@@ -6,10 +6,17 @@ export function SelectedTranslocatorHeader({
   selectedTranslocator,
   translocatorPinned,
   handleUnpinTranslocator,
+  onClose,
 }: {
   selectedTranslocator: WorldLineSegment | null;
   translocatorPinned: boolean;
   handleUnpinTranslocator: () => void;
+  /**
+   * Optional dismiss handler. When provided, the card renders a close (X)
+   * button so the user can hide the floating overlay without having to
+   * click an empty area of the map.
+   */
+  onClose?: () => void;
 }) {
   if (!selectedTranslocator) return null;
   // User-contributed TLs carry attribution + a "User" badge so reviewers can
@@ -21,7 +28,20 @@ export function SelectedTranslocatorHeader({
     return Number.isNaN(d.getTime()) ? meta.addedAt : d.toLocaleString();
   })();
   return (
-    <div className="flex flex-wrap min-h-14 items-center gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
+    // Floating card: positioned absolutely over the bottom-left of the map
+    // so it doesn't shift the page layout when a translocator is selected.
+    // `pointer-events-auto` is set explicitly because callers may wrap this
+    // in a `pointer-events-none` overlay layer.
+    <div
+      className={[
+        "absolute left-2 bottom-2 z-20 max-w-[min(calc(100%-1rem),36rem)]",
+        "pointer-events-auto",
+        "flex flex-wrap items-center gap-x-4 gap-y-1",
+        "text-sm text-muted-foreground",
+        "rounded-md border bg-card/95 backdrop-blur shadow-lg",
+        "px-3 py-2",
+      ].join(" ")}
+    >
       {selectedTranslocator.kind === "user" && (
         <span
           className="rounded bg-blue-600/15 text-blue-700 dark:text-blue-300 text-xs font-medium px-2 py-0.5"
@@ -53,22 +73,34 @@ export function SelectedTranslocatorHeader({
           )}
         </span>
       )}
-      {translocatorPinned && (
+      {translocatorPinned ? (
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={handleUnpinTranslocator}
           title="Unpin translocator (also unpins on clicking another TL)"
-          className="ml-auto h-7 px-2 text-foreground"
+          className="h-7 px-2 text-foreground"
         >
           <Pin className="size-4 mr-1 fill-current" />
           Pinned
           <PinOff className="size-4 ml-1" />
         </Button>
+      ) : (
+        <span className="text-xs text-muted-foreground">Right-click a TL to pin</span>
       )}
-      {!translocatorPinned && (
-        <span className="ml-auto text-xs text-muted-foreground">Right-click a TL to pin</span>
+      {onClose && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onClose}
+          aria-label="Dismiss selected translocator"
+          title="Dismiss"
+          className="ml-1"
+        >
+          <X className="size-4" />
+        </Button>
       )}
     </div>
   );
