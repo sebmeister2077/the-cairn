@@ -390,7 +390,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
 
       <MapViewerWithUserTLs
         serverSegments={filteredServerSegments}
-        interactionsLocked={mapLocked || drag != null}
+        // interactionsLocked={mapLocked || drag != null}
         onOverlayPointerMove={handleOverlayPointerMove}
         onOverlayPointerUp={handleOverlayPointerUp}
         overlayRootRef={overlayRootRef}
@@ -413,7 +413,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
 
 interface InnerProps {
   serverSegments: WorldLineSegment[];
-  interactionsLocked: boolean;
+  interactionsLocked?: boolean;
   onOverlayPointerMove: (e: React.PointerEvent) => void;
   onOverlayPointerUp: (e: React.PointerEvent) => void;
   overlayRootRef: React.MutableRefObject<HTMLDivElement | null>;
