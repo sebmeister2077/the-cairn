@@ -42,7 +42,17 @@ function stripChatLogDecorations(line: string): string {
 
     return out.trim();
 }
-
+/**
+ *Examples of valid lines that we want to parse:
+    559: Peat at 2092, 119, 13129 #5D3D21 pick
+    560: Clay at 2107, 118, 13167 #F15A4A rocks
+    561: Peat at 1679, 119, 13789 #5D3D21 pick
+    562: Treasure Hunter at 244, 121, 753 #F9D0DC trader
+    563: 770 57560 at -2912, 139, 51371 #204EA2 spiral
+    564: -2910 51370 (Home) at 769, 139, 57556 #204EA2 spiral
+    565: -880 65200 at 892, 136, 57848 #204EA2 spiral
+    566: 890 57850 (Home) at -877, 110, 65193 #204EA2 spiral
+ */
 /**
  * Parse all waypoint lines from the given chat-log text. Lines that don't
  * match the waypoint pattern are silently ignored (this matters because
@@ -53,12 +63,19 @@ export function parseChatLogWaypoints(text: string): ParsedWaypoint[] {
     const lines = text.split(/\r?\n/);
     const out: ParsedWaypoint[] = [];
 
+    // remove duplicate calling of the /waypoint command
+    const indexSet = new Set<number>();
+
     for (let i = 0; i < lines.length; i++) {
         const inner = stripChatLogDecorations(lines[i]);
         if (!inner) continue;
         const m = WAYPOINT_RE.exec(inner);
         if (!m) continue;
         const [, indexStr, name, xStr, yStr, zStr, color, icon] = m;
+
+        if (indexSet.has(Number(indexStr))) continue;
+        indexSet.add(Number(indexStr));
+
         const x = Number(xStr);
         const y = Number(yStr);
         const z = Number(zStr);

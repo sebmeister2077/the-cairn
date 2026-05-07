@@ -24,9 +24,9 @@ interface ParseSummary {
 }
 
 const LOG_FILE_PATHS: FilePathHelpItem[] = [
-  { label: "Windows", path: "%appdata%\\VintagestoryData\\Logs\\client-chat.log" },
-  { label: "Linux", path: "~/.config/VintagestoryData/Logs/client-chat.log" },
-  { label: "macOS", path: "~/Library/Application Support/VintagestoryData/Logs/client-chat.log" },
+  { label: "Windows", path: "%appdata%\\VintagestoryData\\Logs\\" },
+  { label: "Linux", path: "~/.config/VintagestoryData/Logs/" },
+  { label: "macOS", path: "~/Library/Application Support/VintagestoryData/Logs/" },
 ];
 
 export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCardProps) {
