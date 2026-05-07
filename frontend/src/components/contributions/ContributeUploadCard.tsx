@@ -21,6 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { contributeQueries } from "@/lib/constants/react-query";
 import { userReduxState } from "@/store/hooks";
+import { MaintenanceChip } from "../MaintenanceChip";
 
 export function ContributeUploadCard({
   contributionInfo,
@@ -119,6 +120,7 @@ export function ContributeUploadCard({
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
           Contribute Map Data
+          <MaintenanceChip component="tops_contribute_map" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

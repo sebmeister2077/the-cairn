@@ -34,6 +34,8 @@ from ..core import accounts_db, database as db
 # admin from typo-ing a key that the frontend never reads.
 KNOWN_COMPONENTS = {
     "tops_map_viewer": "TOPS Map Viewer",
+    "tops_contribute_map": "TOPS Contribute Map",
+    "tops_contribute_tls": "TOPS Contribute TLS",
 }
 
 

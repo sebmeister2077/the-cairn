@@ -9,6 +9,7 @@ import { pairUserTLs } from "@/lib/tl-matching";
 import { setUserTLs } from "@/store/slices/contributeTLs";
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { FilePathHelp, type FilePathHelpItem } from "../FilePathHelp";
+import { MaintenanceChip } from "../MaintenanceChip";
 
 interface ChatLogUploadCardProps {
   serverSegments: WorldLineSegment[];
@@ -74,7 +75,10 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload your client-chat.log</CardTitle>
+        <CardTitle>
+          Upload your client-chat.log
+          <MaintenanceChip component="tops_contribute_tls" />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground space-y-2">
