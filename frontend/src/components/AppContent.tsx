@@ -60,7 +60,13 @@ const BASE_CATEGORIES = [
 
 const ADMIN_CATEGORY = { value: "/manage", label: "Manage" };
 
-const subTabs: Record<string, { value: string; label: string; chip?: string }[]> = {
+type SubTab = {
+  value: string;
+  label: string;
+  chip?: string;
+  chipShownUntil?: string;
+};
+const subTabs: Record<string, SubTab[]> = {
   "/singleplayer": [
     { value: "/singleplayer/extract", label: "Extract" },
     { value: "/singleplayer/import", label: "Import" },
@@ -72,7 +78,12 @@ const subTabs: Record<string, { value: string; label: string; chip?: string }[]>
     { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
     { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
     { value: "/multiplayer/contribute", label: "Contribute Map" },
-    { value: "/multiplayer/contribute-tls", label: "Contribute TLs", chip: "Soon" },
+    {
+      value: "/multiplayer/contribute-tls",
+      label: "Contribute TLs",
+      chip: "New",
+      chipShownUntil: "2026-05-17",
+    },
   ],
   "/general": [],
   "/manage": [
@@ -321,6 +332,16 @@ export function AppContent() {
   });
   const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
 
+  function shouldShowChip(t: SubTab) {
+    if (!t.chip) return false;
+    if (!t.chipShownUntil) return true;
+
+    try {
+      return new Date(t.chipShownUntil) > new Date();
+    } catch {
+      return false;
+    }
+  }
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
@@ -375,7 +396,7 @@ export function AppContent() {
                     {() => (
                       <TabsTrigger value={t.value} className="relative">
                         {t.label}
-                        {t.chip && (
+                        {shouldShowChip(t) && (
                           <Badge
                             variant="default"
                             className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"

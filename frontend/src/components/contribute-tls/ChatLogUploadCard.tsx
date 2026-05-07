@@ -90,10 +90,17 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
             </code>
             .
           </p>
-          <p>
-            Step 3. Upload the file below. Only translocator waypoints (the ones with the spiral
-            icon) are considered. The Y coordinate is ignored — only X/Z matter.
-          </p>
+          <p>Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter.</p>
+        </div>
+
+        <div
+          className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          role="note"
+        >
+          <strong>Heads up:</strong> only translocator waypoints (the ones with the{" "}
+          <code className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-xs">spiral</code>{" "}
+          icon) are read from your chat-log. Every other waypoint marking — bases, landmarks, notes,
+          custom icons, etc. — is <strong>ignored</strong> and never uploaded.
         </div>
 
         <FileUpload
