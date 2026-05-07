@@ -108,9 +108,9 @@ export function WhatToDoDialog() {
             <h4 className="font-semibold">Map controls</h4>
             <ul className="list-disc pl-5 text-muted-foreground space-y-1">
               <li>Pan with mouse-drag, zoom with the scroll wheel.</li>
-              <li>
+              {/* <li>
                 Toggle <strong>Lock map</strong> to drag endpoint handles without panning.
-              </li>
+              </li> */}
               <li>Endpoints snap to existing translocator endpoints within 7 blocks.</li>
             </ul>
           </section>

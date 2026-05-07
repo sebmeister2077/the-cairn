@@ -352,7 +352,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/30 px-3 py-2 text-sm">
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <Switch
             id="contribute-map-lock"
             checked={mapLocked}
@@ -362,7 +362,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
             {mapLocked ? <Lock className="size-4" /> : <Unlock className="size-4" />}
             Lock map
           </Label>
-        </div>
+        </div> */}
         <Button
           type="button"
           size="sm"
@@ -491,9 +491,16 @@ function MapViewerWithUserTLs(props: InnerProps) {
         const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
         const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
 
-        // Handle size in image-space pixels: keep ~10 on-screen pixels regardless of zoom.
-        const handleSize = 10 / Math.max(zoom, 0.001);
-        const half = handleSize / 2;
+        // Most handles stay ~10 on-screen pixels. Unpaired TLs grow when
+        // zoomed in so single endpoints are easier to spot and grab.
+        const safeZoom = Math.max(zoom, 0.001);
+        const baseHandleScreenSize = 10;
+        const unpairedHandleScreenSize = Math.min(
+          24,
+          baseHandleScreenSize + Math.max(0, zoom - 1) * 3,
+        );
+        const handleHalfForStatus = (status: TLStatus) =>
+          (status === "unpaired" ? unpairedHandleScreenSize : baseHandleScreenSize) / safeZoom / 2;
         const lineWidth = 2 / Math.max(zoom, 0.001);
 
         return (
@@ -534,6 +541,7 @@ function MapViewerWithUserTLs(props: InnerProps) {
                 if (tl.status === "existing") return null;
                 const color = STATUS_COLOR[tl.status];
                 const isSelected = tl.localId === selectedTLId;
+                const half = handleHalfForStatus(tl.status);
                 const aImgX = toImgX(tl.endpointA.x);
                 const aImgY = toImgY(tl.endpointA.z);
                 const liveDrag = drag && drag.tlLocalId === tl.localId ? drag : null;

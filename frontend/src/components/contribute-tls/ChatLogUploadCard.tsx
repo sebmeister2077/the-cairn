@@ -75,7 +75,7 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
   return (
     <Card>
       <CardHeader>
-        <CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2">
           Upload your client-chat.log
           <MaintenanceChip component="tops_contribute_tls" />
         </CardTitle>
