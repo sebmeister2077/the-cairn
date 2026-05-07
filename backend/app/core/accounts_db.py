@@ -76,8 +76,17 @@ def update_user_profile(
     is_leaderboard_visible: Optional[bool] = None,
     show_contributions: Optional[bool] = None,
     clear_in_game_name: bool = False,
+    use_in_game_name: Optional[bool] = None,
+    display_name: Optional[str] = None,
 ) -> Optional[dict]:
-    """Update mutable profile fields. Returns the updated row, or None if missing."""
+    """Update mutable profile fields. Returns the updated row, or None if missing.
+
+    ``display_name`` is normally not settable directly by the user, but the
+    account route passes it explicitly when toggling ``use_in_game_name``: it
+    mirrors the in-game name when the toggle goes ON, and is replaced with a
+    freshly generated random name when the toggle goes OFF. When ``display_name``
+    changes, ``last_name_change_at`` is bumped.
+    """
     sets: List[str] = []
     params: List = []
     if clear_in_game_name:
@@ -94,6 +103,13 @@ def update_user_profile(
     if show_contributions is not None:
         sets.append("show_contributions = %s")
         params.append(show_contributions)
+    if use_in_game_name is not None:
+        sets.append("use_in_game_name = %s")
+        params.append(use_in_game_name)
+    if display_name is not None:
+        sets.append("display_name = %s")
+        params.append(display_name)
+        sets.append("last_name_change_at = now()")
     if not sets:
         return get_user(api_key)
     params.append(api_key)
@@ -132,6 +148,7 @@ def soft_delete_user(api_key: str, tombstone_name: str) -> Optional[dict]:
                        SET deleted_at = %s,
                            display_name = %s,
                            in_game_name = NULL,
+                           use_in_game_name = FALSE,
                            is_hireable = FALSE,
                            is_leaderboard_visible = FALSE
                        WHERE api_key = %s AND deleted_at IS NULL

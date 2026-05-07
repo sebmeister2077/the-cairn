@@ -167,6 +167,20 @@ async def admin_regenerate_name(
     api_key: str,
     admin_key: str = Depends(require_admin),
 ) -> dict:
+    target = accounts_db.get_user(api_key)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.get("use_in_game_name"):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "display_name_locked_to_ign",
+                "message": (
+                    "User has opted to use their in-game name as display name. "
+                    "Disable that option on their account before regenerating."
+                ),
+            },
+        )
     new_name = pick_unique_display_name(accounts_db.display_name_taken)
     updated = accounts_db.regenerate_user_display_name(api_key, new_name)
     if not updated:
