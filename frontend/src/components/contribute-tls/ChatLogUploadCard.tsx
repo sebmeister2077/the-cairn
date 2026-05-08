@@ -41,9 +41,11 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
   const [parseSummary, setParseSummary] = useState<ParseSummary | null>(null);
 
   const translocatorsQuery = useTranslocatorsOverlay();
-  const isServerError = translocatorsQuery.isError;
-  const isServerLoadingMore = translocatorsQuery.isFetching && translocatorsQuery.failureCount > 0;
+  const isServerLoadingMoreThanOnce =
+    translocatorsQuery.isFetching && translocatorsQuery.failureCount > 0;
   const serverSegments = translocatorsQuery.data?.data ?? [];
+  const noServerTLsAvailable = serverSegments.length === 0;
+  const isServerError = translocatorsQuery.isError && noServerTLsAvailable;
 
   async function handleParse() {
     if (!file) return;
@@ -164,7 +166,7 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
             </p>
           </div>
         )}
-        {isServerLoadingMore && (
+        {isServerLoadingMoreThanOnce && noServerTLsAvailable && (
           <div className="flex gap-2 items-center text-sm">
             <Spinner />
             <span className="text-xs text-muted-foreground">Loading Server TL file</span>
@@ -184,15 +186,22 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            disabled={!file || working || !serverSegments.length}
+            disabled={!file || working || noServerTLsAvailable}
             onClick={handleParse}
             variant={parseSummary ? "outline" : "default"}
           >
-            {working && <Loader2 className="mr-2 size-4 animate-spin" />}
+            {working && <Spinner className="mr-2" />}
             {parseSummary ? "Re-parse file" : "Parse file"}
           </Button>
           {parseSummary && (
-            <Button type="button" onClick={onParsed}>
+            <Button
+              type="button"
+              onClick={() => {
+                if (noServerTLsAvailable) return;
+                onParsed();
+              }}
+              disabled={noServerTLsAvailable}
+            >
               Continue to review
             </Button>
           )}
