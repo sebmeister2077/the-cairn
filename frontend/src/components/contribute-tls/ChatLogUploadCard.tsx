@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useAppDispatch } from "@/store/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -99,8 +100,19 @@ export function ChatLogUploadCard({ serverSegments, onParsed }: ChatLogUploadCar
           </p>
           <p>
             Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter, and the
-            corresponding TL labels only need to be approximate as long as they land within about
-            400 blocks of their matching exits for it to automatically link the TLs for you.
+            automatic linker only works when each TL waypoint label includes the approximate X/Z
+            coordinates of the other end. The coordinates do not need to be exact, as long as both
+            labels point near their matching exits.
+          </p>
+          <p>
+            Need the full walkthrough? Read the{" "}
+            <NavLink
+              to="/blog/adding-translocators-with-contribute-tls"
+              className="underline decoration-dotted underline-offset-2 hover:text-primary"
+            >
+              Contribute TLs guide
+            </NavLink>
+            .
           </p>
           <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
         </div>

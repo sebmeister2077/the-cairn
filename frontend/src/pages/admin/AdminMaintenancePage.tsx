@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const QUICK_DURATIONS_HOURS: { label: string; hours: number }[] = [
   { label: "30 min", hours: 0.5 },
@@ -97,6 +98,9 @@ function ComponentNoticeCard({ component, notice, onChanged }: ComponentNoticeCa
   const [etaInput, setEtaInput] = useState<string>(() => toDatetimeLocal(notice?.eta_at ?? null));
   // Tick so the "fix in / overdue by" line stays fresh while admin lingers.
   const [, setTick] = useState(0);
+  const [showConfirmOffFor, setShowConfirmOffFor] = useState<KnownMaintenanceComponent | null>(
+    null,
+  );
   useEffect(() => {
     const id = window.setInterval(() => setTick((v) => v + 1), 30 * 1000);
     return () => window.clearInterval(id);
@@ -125,6 +129,7 @@ function ComponentNoticeCard({ component, notice, onChanged }: ComponentNoticeCa
       queryClient.invalidateQueries({ queryKey: ["admin-maintenance-notices"] });
       queryClient.invalidateQueries({ queryKey: ["maintenance-notices"] });
       onChanged();
+      setShowConfirmOffFor(null);
     },
   });
 
@@ -296,11 +301,7 @@ function ComponentNoticeCard({ component, notice, onChanged }: ComponentNoticeCa
               size="sm"
               variant="destructive"
               disabled={busy}
-              onClick={() => {
-                if (confirm(`Turn off maintenance for ${component.label}?`)) {
-                  clearMut.mutate();
-                }
-              }}
+              onClick={() => setShowConfirmOffFor(component)}
             >
               {clearMut.isPending ? (
                 <Loader2 className="size-3.5 mr-1 animate-spin" />
@@ -311,6 +312,14 @@ function ComponentNoticeCard({ component, notice, onChanged }: ComponentNoticeCa
             </Button>
           )}
         </div>
+        <ConfirmDialog
+          open={Boolean(showConfirmOffFor)}
+          title="Turn off?"
+          loading={clearMut.isPending}
+          description={`Turn off maintenance for ${showConfirmOffFor?.label}?`}
+          onConfirm={() => clearMut.mutate()}
+          onCancel={() => setShowConfirmOffFor(null)}
+        />
 
         {(upsertMut.error || clearMut.error) && (
           <p className="text-xs text-destructive">
