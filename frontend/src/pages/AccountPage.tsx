@@ -264,12 +264,11 @@ export function AccountPage() {
           <div className="flex items-center justify-between">
             <div>
               <Label>Available for hire</Label>
-              <p className="text-xs text-muted-foreground">
-                Show me on the hire board (admins only for now).
-              </p>
+              <p className="text-xs text-muted-foreground">Show me on the hire board. (WIP)</p>
             </div>
             <Switch
-              checked={user.is_hireable}
+              disabled
+              // checked={user.is_hireable}
               onCheckedChange={(v) => updateMut.mutate({ is_hireable: v })}
             />
           </div>
@@ -278,11 +277,12 @@ export function AccountPage() {
             <div>
               <Label>Show on leaderboards</Label>
               <p className="text-xs text-muted-foreground">
-                Opt-in to appear on future contributor leaderboards.
+                Opt-in to appear on contributor leaderboards. (WIP)
               </p>
             </div>
             <Switch
-              checked={user.is_leaderboard_visible}
+              disabled
+              // checked={user.is_leaderboard_visible}
               onCheckedChange={(v) => updateMut.mutate({ is_leaderboard_visible: v })}
             />
           </div>
@@ -291,12 +291,13 @@ export function AccountPage() {
             <div>
               <Label>Show Contributions</Label>
               <p className="text-xs text-muted-foreground">
-                Reveal who submitted each contribution on the Contribute page (e.g. "Made by Alex").
-                When off, contributors are shown as anonymous. Admins always see the names.
+                Reveal who submitted an explored area (WIP). Will fallback to the expedition
+                financier's name if disabled
               </p>
             </div>
             <Switch
-              checked={user.show_contributions}
+              disabled
+              // checked={user.show_contributions}
               onCheckedChange={(v) => updateMut.mutate({ show_contributions: v })}
             />
           </div>
