@@ -193,7 +193,7 @@ export function ContributeTLsPage() {
   if (step === "upload" || userTLs.length === 0) {
     return (
       <div className="max-w-3xl mx-auto space-y-4">
-        <ChatLogUploadCard serverSegments={serverSegments} onParsed={() => setStep("review")} />
+        <ChatLogUploadCard onParsed={() => setStep("review")} />
       </div>
     );
   }

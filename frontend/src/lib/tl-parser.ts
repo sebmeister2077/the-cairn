@@ -60,15 +60,30 @@ function stripChatLogDecorations(line: string): string {
  */
 export function parseChatLogWaypoints(text: string): ParsedWaypoint[] {
     if (!text) return [];
+    // indicates the user has joined the correct server
+    const topsWelcomeMessage = "[Chat] Welcome to the Official Public Server!";
+    // indicates the user has typed the /waypoint command and the waypoint list is starting
+    const startOfWaypoints = "[Chat] Your waypoints:";
     const lines = text.split(/\r?\n/);
     const out: ParsedWaypoint[] = [];
 
     // remove duplicate calling of the /waypoint command
     const indexSet = new Set<number>();
-
+    let isTopsServer = false;
+    let isWaypointListStarted = false;
     for (let i = 0; i < lines.length; i++) {
-        const inner = stripChatLogDecorations(lines[i]);
+        const line = lines[i]
+        const inner = stripChatLogDecorations(line);
         if (!inner) continue;
+        if (line.includes(topsWelcomeMessage)) {
+            isTopsServer = true;
+            continue;
+        }
+        if (line.includes(startOfWaypoints)) {
+            isWaypointListStarted = true;
+            continue;
+        }
+        if (!isTopsServer || !isWaypointListStarted) continue;
         const m = WAYPOINT_RE.exec(inner);
         if (!m) continue;
         const [, indexStr, name, xStr, yStr, zStr, color, icon] = m;
