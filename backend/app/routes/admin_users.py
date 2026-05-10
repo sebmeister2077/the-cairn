@@ -86,10 +86,10 @@ def _serialise_ban(ban: dict) -> dict:
         val = out.get(k)
         if val and hasattr(val, "isoformat"):
             out[k] = val.isoformat()
-    # Drop the raw admin key that issued the ban; expose only the last six
-    # chars so the admin UI can still distinguish operators.
-    raw = out.pop("banned_by", None)
-    out["banned_by_suffix"] = (raw or "")[-6:] if raw else None
+    # Drop the raw admin-key FK that issued the ban; expose only the last
+    # six chars of the UUID so the admin UI can still distinguish operators.
+    raw = out.pop("banned_by_key_id", None)
+    out["banned_by_suffix"] = (str(raw) or "")[-6:] if raw else None
     return out
 
 

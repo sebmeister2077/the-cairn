@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from .auth import verify_api_key_info, is_admin_key
 from .config import settings
 from .core.database import init_db, ensure_schema, close_db
+from .core import api_key_cache
 from .core import accounts_db
 from . import migrations as _migrations
 from .core import feature_flags as ff
@@ -166,23 +167,37 @@ async def lifespan(app: FastAPI):
             perf_counter() - step_started,
         )
 
+    # Make sure env-var ADMIN_API_KEY / API_KEYS exist as rows in api_keys
+    # so audit columns (FK to api_keys.id) can be populated for actions
+    # taken with those keys. Idempotent.
+    step_started = perf_counter()
+    try:
+        bootstrap_summary = api_key_cache.bootstrap_env_keys()
+        logger.info(
+            "Startup step api_key_cache bootstrap_env_keys: %s in %.3fs",
+            bootstrap_summary, perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover — startup must not crash
+        logger.warning("api_key_cache bootstrap_env_keys failed (non-fatal): %s", exc)
+
     # Account-system backfill: create users for legacy api_keys, mark genesis,
     # seed synthetic admin user. Idempotent — safe to run on every boot.
     step_started = perf_counter()
-    try:
-        result = accounts_db.backfill_users(
-            name_generator=generate_display_name,
-            forbidden_substrings=FORBIDDEN_SUBSTRINGS,
-            admin_key=settings.ADMIN_API_KEY,
-            legacy_keys=list(settings.API_KEYS or []),
-        )
-        logger.info(
-            "Startup step accounts backfill: created=%d genesis_marked=%d admin_seeded=%s in %.3fs",
-            result["created"], result["genesis_marked"], result["admin_seeded"],
-            perf_counter() - step_started,
-        )
-    except Exception as exc:  # pragma: no cover — startup must not crash
-        logger.warning("Account backfill failed (non-fatal): %s", exc)
+    # try:
+        # LEGACY
+        # result = accounts_db.backfill_users(
+        #     name_generator=generate_display_name,
+        #     forbidden_substrings=FORBIDDEN_SUBSTRINGS,
+        #     admin_key=settings.ADMIN_API_KEY,
+        #     legacy_keys=list(settings.API_KEYS or []),
+        # )
+        # logger.info(
+        #     "Startup step accounts backfill: created=%d genesis_marked=%d admin_seeded=%s in %.3fs",
+        #     result["created"], result["genesis_marked"], result["admin_seeded"],
+        #     perf_counter() - step_started,
+        # )
+    # except Exception as exc:  # pragma: no cover — startup must not crash
+    #     logger.warning("Account backfill failed (non-fatal): %s", exc)
 
     # Resume any TOPS-map regeneration work that was queued before the last
     # shutdown but never picked up by a worker (process restart mid-pass, etc.).

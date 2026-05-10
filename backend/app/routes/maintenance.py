@@ -52,8 +52,8 @@ def _serialise(row: dict) -> dict:
     # Never leak the admin key that last touched the notice. The public
     # endpoint is unauthenticated, so even a partial leak is unacceptable;
     # we expose only a short suffix for the admin-only UI to display.
-    raw = out.pop("updated_by_key", None)
-    out["updated_by_suffix"] = (raw or "")[-6:] if raw else None
+    raw = out.pop("updated_by_key_id", None)
+    out["updated_by_suffix"] = (str(raw) or "")[-6:] if raw else None
     return out
 
 

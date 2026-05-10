@@ -55,10 +55,15 @@ def _process_one(job: dict) -> None:
     )
 
     cid = job["id"]
-    requested_by_key = job.get("revert_requested_by_key") or ""
+    # Post-FK migration the row carries the UUID of the requester rather
+    # than the raw api_key string. Pass the id through to the merge so it
+    # can be written straight back into ``reverted_by_key_id`` and the
+    # audit log without round-tripping through the cache to recover the
+    # plaintext key.
+    requested_by_key_id = job.get("revert_requested_by_key_id") or ""
     attempts = int(job.get("revert_attempts") or 0)
     try:
-        result = run_revert_merge(cid, requested_by_key=requested_by_key)
+        result = run_revert_merge(cid, requested_by_key_id=requested_by_key_id)
         logger.info(
             "revert_contribution: %s reverted (deleted=%s restored=%s combined_total=%s)",
             cid,
@@ -81,7 +86,7 @@ def _process_one(job: dict) -> None:
                 logger.exception("revert_contribution: persist failure for %s", cid)
             return
         try:
-            db.enqueue_revert(cid, requested_by_key=requested_by_key)
+            db.enqueue_revert(cid, requested_by_key_id=requested_by_key_id)
         except Exception:
             logger.exception("revert_contribution: re-queue failed for %s", cid)
         return
@@ -106,7 +111,7 @@ def _process_one(job: dict) -> None:
                 )
             return
         try:
-            db.enqueue_revert(cid, requested_by_key=requested_by_key)
+            db.enqueue_revert(cid, requested_by_key_id=requested_by_key_id)
         except Exception:
             logger.exception(
                 "revert_contribution: re-queue after unknown error failed for %s",

@@ -325,11 +325,11 @@ def _serialize_link(link: dict, *, request: Optional[Request] = None) -> dict:
         "token": link["token"],
         "backup_key": link["backup_key"],
         "label": link.get("label"),
-        "created_by_suffix": (link.get("created_by") or "")[-6:],
+        "created_by_suffix": (str(link.get("created_by_key_id") or ""))[-6:],
         "created_at": link["created_at"].isoformat() if link.get("created_at") else None,
         "expires_at": expires_at.isoformat() if expires_at else None,
         "revoked_at": revoked_at.isoformat() if revoked_at else None,
-        "revoked_by_suffix": (link.get("revoked_by") or "")[-6:] if link.get("revoked_by") else None,
+        "revoked_by_suffix": (str(link.get("revoked_by_key_id") or ""))[-6:] if link.get("revoked_by_key_id") else None,
         "redeem_count": int(link.get("redeem_count") or 0),
         "success_count": int(link.get("success_count") or 0),
         "last_redeem_at": (

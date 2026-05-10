@@ -32,7 +32,40 @@ from pydantic import BaseModel
 from ..auth import verify_api_key, verify_contribute_permission, verify_permission
 from ..config import settings
 from ..rate_limiter import check_rate_limit
-from ..core import r2_storage, accounts_db, database as db
+from ..core import r2_storage, accounts_db, database as db, api_key_cache
+
+
+def _key_owns_row(api_key: str, row: dict, id_field: str = "submitted_by_key_id") -> bool:
+    """True when ``api_key`` resolves to the api_keys.id stored in ``row[id_field]``.
+
+    Used by the contribute routes for owner-only checks now that the
+    ``submitted_by_key`` TEXT column was replaced with a UUID FK.
+    """
+    if not api_key or not row:
+        return False
+    row_id = row.get(id_field)
+    if not row_id:
+        return False
+    caller_id = api_key_cache.ensure_id(api_key)
+    if caller_id is None:
+        return False
+    return str(row_id) == str(caller_id)
+
+
+def _row_submitted_by_admin(row: dict) -> bool:
+    """True when ``row['submitted_by_key_id']`` matches the configured
+    ADMIN_API_KEY's UUID. Replaces the old ``_is_admin_key(meta.get('submitted_by_key'))``
+    pattern."""
+    if not row:
+        return False
+    row_id = row.get("submitted_by_key_id")
+    admin_key = settings.ADMIN_API_KEY
+    if not row_id or not admin_key:
+        return False
+    admin_id = api_key_cache.ensure_id(admin_key)
+    if admin_id is None:
+        return False
+    return str(row_id) == str(admin_id)
 from ..core.mapdb import (
     POSITION_BITS,
     POSITION_MASK,
@@ -1527,7 +1560,7 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         region_max_x = row.pop("update_region_max_x", None)
         region_min_z = row.pop("update_region_min_z", None)
         region_max_z = row.pop("update_region_max_z", None)
-        owns_pending = api_key and row.get("submitted_by_key") == api_key
+        owns_pending = _key_owns_row(api_key, row)
         if region_min_x is not None and (is_admin_caller or owns_pending):
             row["update_region"] = [
                 int(region_min_x), int(region_max_x),
@@ -1577,15 +1610,15 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
         # to them) or an admin key, which must never leak. The trigger-
         # backed *_id columns (UUIDs) are the safe replacement; expose a
         # short suffix only when the UI needs to distinguish callers.
-        row.pop("submitted_by_key", None)
-        row.pop("approval_requested_by_key", None)
-        row.pop("revert_requested_by_key", None)
-        row.pop("reverted_by_key", None)
+        row.pop("submitted_by_key_id", None)
+        row.pop("approval_requested_by_key_id", None)
+        row.pop("revert_requested_by_key_id", None)
+        row.pop("reverted_by_key_id", None)
     for row in withdrawn:
-        row.pop("submitted_by_key", None)
-        row.pop("approval_requested_by_key", None)
-        row.pop("revert_requested_by_key", None)
-        row.pop("reverted_by_key", None)
+        row.pop("submitted_by_key_id", None)
+        row.pop("approval_requested_by_key_id", None)
+        row.pop("revert_requested_by_key_id", None)
+        row.pop("reverted_by_key_id", None)
         # Withdrawn rows also carry the same per-row admin/diagnostic
         # columns as pending; drop them so the payload shape stays minimal.
         row.pop("update_region_min_x", None)
@@ -1645,7 +1678,7 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
             )
             anonymise = (row.get("status") == "withdrawn") or not (
                 is_admin
-                or (api_key and row.get("submitted_by_key") == api_key)
+                or _key_owns_row(api_key, row)
             )
             entry = {
                 "id": cid,
@@ -1668,7 +1701,7 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
                     else row.get("withdrawn_at")
                 ),
                 "preview_signed_url": signed or None,
-                "is_mine": bool(api_key and row.get("submitted_by_key") == api_key),
+                "is_mine": _key_owns_row(api_key, row),
             }
             # Phase 2 — region bounds are public on approved rows (the area
             # is part of the published map by then). Withdrawn rows omit
@@ -2157,7 +2190,7 @@ async def contribute_region_preview(
         return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
     # Owner-only: don't let another contributor probe somebody else's pending
     # upload. Admins are exempt.
-    if not _is_admin_key(api_key) and meta.get("submitted_by_key") != api_key:
+    if not _is_admin_key(api_key) and not _key_owns_row(api_key, meta):
         return JSONResponse(status_code=403, content={"detail": "Not your contribution"})
 
     pending_key = r2_storage.pending_db_key(cid)
@@ -2369,7 +2402,7 @@ async def contribute_preview_region(
     # Privacy: pending region preview is admin-only (region bounds may be
     # exploration-sensitive). Owner-of-the-contribution also gets to see it
     # so they can verify their own selection.
-    if not _is_admin_key(api_key) and meta.get("submitted_by_key") != api_key:
+    if not _is_admin_key(api_key) and not _key_owns_row(api_key, meta):
         return JSONResponse(status_code=403, content={"detail": "Forbidden"})
 
     before_key = r2_storage.region_before_preview_key(contribution_id)
@@ -2752,10 +2785,10 @@ def run_approval_merge(contribution_id: str) -> dict:
     # Phase 0d: unified audit log for contribution approvals. The acting
     # admin's key is whoever clicked /approve in the route handler, captured
     # on the row at enqueue-time.
-    actor_key = meta.get("approval_requested_by_key") or ""
+    actor_key_id = meta.get("approval_requested_by_key_id")
     try:
         accounts_db.audit_log(
-            actor_key,
+            "",
             "contribution.approve",
             target=contribution_id,
             metadata={
@@ -2767,6 +2800,7 @@ def run_approval_merge(contribution_id: str) -> dict:
                     list(update_region) if update_region else None
                 ),
             },
+            admin_key_id=str(actor_key_id) if actor_key_id else None,
         )
     except Exception:
         pass
@@ -2867,14 +2901,16 @@ def run_approval_merge(contribution_id: str) -> dict:
     if archive_moved:
         retention_days = (
             settings.ADMIN_HISTORY_RETENTION_DAYS
-            if _is_admin_key(meta.get("submitted_by_key") or "")
+            if _row_submitted_by_admin(meta)
             else settings.HISTORY_RETENTION_DAYS
         )
         try:
-            db.set_preview_retained_until(
-                contribution_id,
-                datetime.now(timezone.utc) + timedelta(days=retention_days),
-            )
+            pass
+        #* archived DB will be always visible
+            # db.set_preview_retained_until(
+            #     contribution_id,
+            #     datetime.now(timezone.utc) + timedelta(days=retention_days),
+            # )
         except Exception:
             pass
 
@@ -2972,7 +3008,7 @@ async def contribute_withdraw(
             status_code=409,
             content={"detail": "Only pending contributions can be withdrawn"},
         )
-    if meta.get("submitted_by_key") != api_key:
+    if not _key_owns_row(api_key, meta):
         return JSONResponse(status_code=403, content={"detail": "You did not submit this contribution"})
 
     # Phase 3 — enforce the per-ISO-week cap before any state mutation.

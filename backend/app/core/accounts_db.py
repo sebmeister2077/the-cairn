@@ -8,10 +8,12 @@ only contains CRUD helpers.
 from datetime import datetime, timezone
 import json
 from typing import List, Optional
+from uuid import UUID
 
 import psycopg2.extras
 
 from .database import get_conn, get_state, set_state
+from . import api_key_cache
 
 
 # ---------------------------------------------------------------------------
@@ -42,22 +44,38 @@ def create_user(
     terms_version: str,
     genesis_for_ip: bool = False,
 ) -> dict:
-    """Create a users row. Caller must ensure display_name is unique."""
+    """Create a users row. Caller must ensure display_name is unique.
+
+    ``api_key`` is the auth-token string; we resolve it to the
+    ``api_keys.id`` UUID before insert (the schema only stores the FK
+    now).
+    """
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        raise ValueError("create_user: api_key not found in api_keys table")
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO users (api_key, display_name, terms_version, genesis_for_ip)
+                """INSERT INTO users (api_key_id, display_name, terms_version, genesis_for_ip)
                        VALUES (%s, %s, %s, %s)
                        RETURNING *""",
-                (api_key, display_name, terms_version, genesis_for_ip),
+                (str(key_id), display_name, terms_version, genesis_for_ip),
             )
             return dict(cur.fetchone())
 
 
 def get_user(api_key: str) -> Optional[dict]:
+    """Look up a users row by the caller's api_key string.
+
+    Translates the key to its ``api_keys.id`` UUID via the cache and
+    queries on ``users.api_key_id``.
+    """
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("SELECT * FROM users WHERE api_key = %s", (api_key,))
+            cur.execute("SELECT * FROM users WHERE api_key_id = %s", (str(key_id),))
             row = cur.fetchone()
             return dict(row) if row else None
 
@@ -112,8 +130,11 @@ def update_user_profile(
         sets.append("last_name_change_at = now()")
     if not sets:
         return get_user(api_key)
-    params.append(api_key)
-    sql = f"UPDATE users SET {', '.join(sets)} WHERE api_key = %s RETURNING *"
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
+    params.append(str(key_id))
+    sql = f"UPDATE users SET {', '.join(sets)} WHERE api_key_id = %s RETURNING *"
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(sql, params)
@@ -122,6 +143,9 @@ def update_user_profile(
 
 
 def regenerate_user_display_name(api_key: str, new_name: str) -> Optional[dict]:
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -129,9 +153,9 @@ def regenerate_user_display_name(api_key: str, new_name: str) -> Optional[dict]:
                        SET display_name = %s,
                            name_regen_count = name_regen_count + 1,
                            last_name_change_at = now()
-                       WHERE api_key = %s
+                       WHERE api_key_id = %s
                        RETURNING *""",
-                (new_name, api_key),
+                (new_name, str(key_id)),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -141,6 +165,9 @@ def soft_delete_user(api_key: str, tombstone_name: str) -> Optional[dict]:
     """Mark the user deleted, replace display_name with tombstone, clear personal fields,
     and revoke their API key. Returns the updated row, or None if not found."""
     now = datetime.now(timezone.utc)
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -151,51 +178,61 @@ def soft_delete_user(api_key: str, tombstone_name: str) -> Optional[dict]:
                            use_in_game_name = FALSE,
                            is_hireable = FALSE,
                            is_leaderboard_visible = FALSE
-                       WHERE api_key = %s AND deleted_at IS NULL
+                       WHERE api_key_id = %s AND deleted_at IS NULL
                        RETURNING *""",
-                (now, tombstone_name, api_key),
+                (now, tombstone_name, str(key_id)),
             )
             row = cur.fetchone()
             if not row:
                 return None
-            cur.execute("UPDATE api_keys SET revoked = TRUE WHERE key = %s", (api_key,))
+            cur.execute("UPDATE api_keys SET revoked = TRUE WHERE id = %s", (str(key_id),))
+            api_key_cache.invalidate(api_key)
             return dict(row)
 
 
 def reactivate_user(api_key: str) -> Optional[dict]:
     """Admin-only: clear deleted_at and un-revoke the key."""
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE users
                        SET deleted_at = NULL
-                       WHERE api_key = %s
+                       WHERE api_key_id = %s
                        RETURNING *""",
-                (api_key,),
+                (str(key_id),),
             )
             row = cur.fetchone()
             if not row:
                 return None
-            cur.execute("UPDATE api_keys SET revoked = FALSE WHERE key = %s", (api_key,))
+            cur.execute("UPDATE api_keys SET revoked = FALSE WHERE id = %s", (str(key_id),))
+            api_key_cache.invalidate(api_key)
             return dict(row)
 
 
 def rekey_user(old_key: str, new_key: str) -> Optional[dict]:
-    """Move a users row from old_key to a freshly created api_keys row.
+    """Move a users row from ``old_key`` to ``new_key`` and revoke the old.
 
-    The api_keys row for ``new_key`` must already exist. The old key is revoked.
-    Returns the updated users row, or None if old_key was not found.
+    Both api_keys rows must already exist. Returns the updated users row,
+    or None if ``old_key`` was not found.
     """
+    old_id = api_key_cache.ensure_id(old_key)
+    new_id = api_key_cache.ensure_id(new_key)
+    if old_id is None or new_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "UPDATE users SET api_key = %s WHERE api_key = %s RETURNING *",
-                (new_key, old_key),
+                "UPDATE users SET api_key_id = %s WHERE api_key_id = %s RETURNING *",
+                (str(new_id), str(old_id)),
             )
             row = cur.fetchone()
             if not row:
                 return None
-            cur.execute("UPDATE api_keys SET revoked = TRUE WHERE key = %s", (old_key,))
+            cur.execute("UPDATE api_keys SET revoked = TRUE WHERE id = %s", (str(old_id),))
+            api_key_cache.invalidate(old_key)
             return dict(row)
 
 
@@ -204,6 +241,7 @@ def find_active_users_by_ingame_name(
     exclude_key: str = "",
 ) -> List[dict]:
     """Return non-deleted users whose normalised in_game_name matches."""
+    exclude_id = api_key_cache.ensure_id(exclude_key) if exclude_key else None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -211,8 +249,9 @@ def find_active_users_by_ingame_name(
                        WHERE deleted_at IS NULL
                          AND in_game_name IS NOT NULL
                          AND lower(regexp_replace(trim(in_game_name), '\\s+', ' ', 'g')) = %s
-                         AND api_key <> %s""",
-                (normalised, exclude_key or ""),
+                         AND (%s::uuid IS NULL OR api_key_id <> %s::uuid)""",
+                (normalised, str(exclude_id) if exclude_id else None,
+                 str(exclude_id) if exclude_id else None),
             )
             return [dict(r) for r in cur.fetchall()]
 
@@ -253,7 +292,7 @@ def list_users(
     if filter_flagged:
         where.append(
             "EXISTS (SELECT 1 FROM user_flags f "
-            "WHERE f.flagged_user = u.api_key AND f.resolved_at IS NULL)"
+            "WHERE f.flagged_user_id = u.id AND f.resolved_at IS NULL)"
         )
     if not include_deleted:
         where.append("u.deleted_at IS NULL")
@@ -265,15 +304,16 @@ def list_users(
 
     sql = f"""
         SELECT u.*,
+               ak.key AS api_key,
                ak.last_used_at,
                ak.bound_identity,
                ak.revoked AS key_revoked,
                (SELECT COUNT(*) FROM user_flags f
-                  WHERE f.flagged_user = u.api_key AND f.resolved_at IS NULL) AS flag_count,
+                  WHERE f.flagged_user_id = u.id AND f.resolved_at IS NULL) AS flag_count,
                EXISTS (SELECT 1 FROM ip_bans b
                   WHERE b.ip_hash = ak.bound_identity) AS is_banned
           FROM users u
-          LEFT JOIN api_keys ak ON ak.key = u.api_key
+          LEFT JOIN api_keys ak ON ak.id = u.api_key_id
         {where_sql}
         ORDER BY {sort_sql}
         LIMIT %s OFFSET %s
@@ -292,22 +332,26 @@ def list_users(
 
 def get_user_with_key(api_key: str) -> Optional[dict]:
     """User row enriched with api_keys metadata and live counters."""
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """SELECT u.*,
+                          ak.key AS api_key,
                           ak.last_used_at,
                           ak.bound_identity,
                           ak.revoked AS key_revoked,
                           ak.usage_count,
                           (SELECT COUNT(*) FROM user_flags f
-                              WHERE f.flagged_user = u.api_key AND f.resolved_at IS NULL) AS flag_count,
+                              WHERE f.flagged_user_id = u.id AND f.resolved_at IS NULL) AS flag_count,
                           EXISTS (SELECT 1 FROM ip_bans b
                               WHERE b.ip_hash = ak.bound_identity) AS is_banned
                    FROM users u
-                   LEFT JOIN api_keys ak ON ak.key = u.api_key
-                   WHERE u.api_key = %s""",
-                (api_key,),
+                   LEFT JOIN api_keys ak ON ak.id = u.api_key_id
+                   WHERE u.api_key_id = %s""",
+                (str(key_id),),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -328,7 +372,7 @@ def get_user_stats() -> dict:
             total, active, hireable, deleted = cur.fetchone()
             cur.execute(
                 """SELECT COUNT(*) FROM users u
-                       JOIN api_keys ak ON ak.key = u.api_key
+                       JOIN api_keys ak ON ak.id = u.api_key_id
                        WHERE u.deleted_at IS NULL
                          AND u.display_name <> '__admin__'
                          AND ak.last_used_at > now() - interval '7 days'"""
@@ -337,7 +381,7 @@ def get_user_stats() -> dict:
             cur.execute("SELECT COUNT(*) FROM ip_bans WHERE expires_at > now()")
             (banned,) = cur.fetchone()
             cur.execute(
-                """SELECT COUNT(DISTINCT flagged_user) FROM user_flags
+                """SELECT COUNT(DISTINCT flagged_user_id) FROM user_flags
                        WHERE resolved_at IS NULL"""
             )
             (flagged,) = cur.fetchone()
@@ -360,14 +404,15 @@ def get_sibling_users(api_key: str) -> List[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """SELECT u.*, ak.last_used_at, ak.bound_identity, ak.revoked AS key_revoked
+                """SELECT u.*, ak.key AS api_key, ak.last_used_at,
+                          ak.bound_identity, ak.revoked AS key_revoked
                    FROM users u
-                   JOIN api_keys ak ON ak.key = u.api_key
+                   JOIN api_keys ak ON ak.id = u.api_key_id
                    WHERE ak.bound_identity = (
                        SELECT bound_identity FROM api_keys WHERE key = %s
                    )
                    AND ak.bound_identity IS NOT NULL
-                   AND u.api_key <> %s
+                   AND ak.key <> %s
                    ORDER BY u.joined_at""",
                 (api_key, api_key),
             )
@@ -381,9 +426,9 @@ def list_users_for_ip_hash(ip_hash: str) -> List[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """SELECT u.*, ak.bound_identity
+                """SELECT u.*, ak.key AS api_key, ak.bound_identity
                    FROM users u
-                   JOIN api_keys ak ON ak.key = u.api_key
+                   JOIN api_keys ak ON ak.id = u.api_key_id
                    WHERE ak.bound_identity = %s""",
                 (ip_hash,),
             )
@@ -410,9 +455,9 @@ def first_account_on_ip(ip_hash: str) -> Optional[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """SELECT u.*
+                """SELECT u.*, ak.key AS api_key
                    FROM users u
-                   JOIN api_keys ak ON ak.key = u.api_key
+                   JOIN api_keys ak ON ak.id = u.api_key_id
                    WHERE ak.bound_identity = %s
                      AND u.deleted_at IS NULL
                    ORDER BY u.joined_at ASC
@@ -455,21 +500,25 @@ def create_ip_ban(
     banned_by: str,
     expires_at: datetime,
 ) -> dict:
+    """Create or refresh an IP ban. ``banned_by`` is the admin's api_key
+    string; we resolve it to the FK ``banned_by_key_id`` UUID."""
+    banned_by_id = api_key_cache.ensure_id(banned_by)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """INSERT INTO ip_bans
-                       (ip_hash, reason_code, reason, admin_notes, banned_by, expires_at)
+                       (ip_hash, reason_code, reason, admin_notes, banned_by_key_id, expires_at)
                    VALUES (%s, %s, %s, %s, %s, %s)
                    ON CONFLICT (ip_hash) DO UPDATE
-                     SET reason_code = EXCLUDED.reason_code,
-                         reason      = EXCLUDED.reason,
-                         admin_notes = EXCLUDED.admin_notes,
-                         banned_by   = EXCLUDED.banned_by,
-                         banned_at   = now(),
-                         expires_at  = EXCLUDED.expires_at
+                     SET reason_code      = EXCLUDED.reason_code,
+                         reason           = EXCLUDED.reason,
+                         admin_notes      = EXCLUDED.admin_notes,
+                         banned_by_key_id = EXCLUDED.banned_by_key_id,
+                         banned_at        = now(),
+                         expires_at       = EXCLUDED.expires_at
                    RETURNING *""",
-                (ip_hash, reason_code, reason, admin_notes, banned_by, expires_at),
+                (ip_hash, reason_code, reason, admin_notes,
+                 str(banned_by_id) if banned_by_id else None, expires_at),
             )
             return dict(cur.fetchone())
 
@@ -517,13 +566,28 @@ def create_user_flag(
     related_user: Optional[str] = None,
     metadata: Optional[dict] = None,
 ) -> dict:
+    """Insert a user_flag. ``flagged_user`` / ``related_user`` are api_key
+    strings; the schema stores ``users.id`` UUIDs in the new
+    ``flagged_user_id`` / ``related_user_id`` columns, so we resolve
+    api_key → api_keys.id → users.id (via subquery in a single SELECT)."""
+    flagged_key_id = api_key_cache.ensure_id(flagged_user)
+    if flagged_key_id is None:
+        raise ValueError("create_user_flag: flagged_user api_key not found")
+    related_key_id = api_key_cache.ensure_id(related_user) if related_user else None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO user_flags (flagged_user, related_user, reason, metadata)
-                       VALUES (%s, %s, %s, %s)
+                """INSERT INTO user_flags (flagged_user_id, related_user_id, reason, metadata)
+                       VALUES (
+                           (SELECT id FROM users WHERE api_key_id = %s),
+                           (SELECT id FROM users WHERE api_key_id = %s),
+                           %s,
+                           %s
+                       )
                        RETURNING *""",
-                (flagged_user, related_user, reason,
+                (str(flagged_key_id),
+                 str(related_key_id) if related_key_id else None,
+                 reason,
                  json.dumps(metadata) if metadata else None),
             )
             return dict(cur.fetchone())
@@ -544,17 +608,26 @@ def list_user_flags(
         where.append("f.reason = %s")
         params.append(reason)
     if flagged_user:
-        where.append("f.flagged_user = %s")
-        params.append(flagged_user)
+        # flagged_user param is an api_key string; resolve to users.id via
+        # the api_keys/users join in a subquery.
+        flagged_key_id = api_key_cache.ensure_id(flagged_user)
+        if flagged_key_id is None:
+            return {"flags": [], "next_cursor": None}
+        where.append("f.flagged_user_id = (SELECT id FROM users WHERE api_key_id = %s)")
+        params.append(str(flagged_key_id))
     where_sql = ("WHERE " + " AND ".join(where)) if where else ""
     offset = int(cursor or 0)
     sql = f"""
         SELECT f.*,
                flagged.display_name AS flagged_display_name,
-               related.display_name AS related_display_name
+               flagged_ak.key       AS flagged_user,
+               related.display_name AS related_display_name,
+               related_ak.key       AS related_user
           FROM user_flags f
-          LEFT JOIN users flagged ON flagged.api_key = f.flagged_user
-          LEFT JOIN users related ON related.api_key = f.related_user
+          LEFT JOIN users     flagged    ON flagged.id    = f.flagged_user_id
+          LEFT JOIN api_keys  flagged_ak ON flagged_ak.id = flagged.api_key_id
+          LEFT JOIN users     related    ON related.id    = f.related_user_id
+          LEFT JOIN api_keys  related_ak ON related_ak.id = related.api_key_id
         {where_sql}
         ORDER BY f.created_at DESC
         LIMIT %s OFFSET %s
@@ -572,16 +645,19 @@ def list_user_flags(
 
 
 def resolve_user_flag(flag_id: int, admin_key: str, resolution: str) -> Optional[dict]:
+    """Mark a flag resolved. ``admin_key`` is the admin's api_key string;
+    we store its FK in ``resolved_by_key_id``."""
+    admin_key_id = api_key_cache.ensure_id(admin_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE user_flags
-                       SET resolved_at = now(),
-                           resolved_by = %s,
-                           resolution  = %s
+                       SET resolved_at        = now(),
+                           resolved_by_key_id = %s,
+                           resolution         = %s
                        WHERE id = %s
                        RETURNING *""",
-                (admin_key, resolution, flag_id),
+                (str(admin_key_id) if admin_key_id else None, resolution, flag_id),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -596,13 +672,26 @@ def audit_log(
     action: str,
     target: Optional[str] = None,
     metadata: Optional[dict] = None,
+    *,
+    admin_key_id: Optional[str] = None,
 ) -> None:
+    """Append an admin action to the audit log. Pass ``admin_key`` (the
+    plain api_key string) and the FK is resolved via the api-key cache,
+    OR pass ``admin_key_id`` directly when the caller already has the
+    UUID in hand (e.g. read off a contribution row's
+    ``approval_requested_by_key_id``)."""
+    if admin_key_id is None:
+        resolved = api_key_cache.ensure_id(admin_key)
+        admin_key_id = str(resolved) if resolved else None
+    else:
+        admin_key_id = str(admin_key_id) if admin_key_id else None
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                """INSERT INTO admin_audit_log (admin_key, action, target, metadata)
+                """INSERT INTO admin_audit_log (admin_key_id, action, target, metadata)
                        VALUES (%s, %s, %s, %s)""",
-                (admin_key, action, target,
+                (admin_key_id,
+                 action, target,
                  json.dumps(metadata) if metadata else None),
             )
 
@@ -618,14 +707,17 @@ def create_backup_download_link(
     expires_at: datetime,
     label: Optional[str],
 ) -> dict:
+    created_by_id = api_key_cache.ensure_id(created_by)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """INSERT INTO backup_download_links
-                       (token, backup_key, created_by, expires_at, label)
+                       (token, backup_key, created_by_key_id, expires_at, label)
                    VALUES (%s, %s, %s, %s, %s)
                    RETURNING *""",
-                (token, backup_key, created_by, expires_at, label),
+                (token, backup_key,
+                 str(created_by_id) if created_by_id else None,
+                 expires_at, label),
             )
             return dict(cur.fetchone())
 
@@ -694,14 +786,15 @@ def list_backup_download_redemptions(link_id: int) -> List[dict]:
 def revoke_backup_download_link(link_id: int, admin_key: str) -> Optional[dict]:
     """Mark a link revoked. Returns the updated row, or None if missing /
     already revoked (idempotent: re-revoking a revoked link is a no-op)."""
+    admin_key_id = api_key_cache.ensure_id(admin_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE backup_download_links
-                       SET revoked_at = now(), revoked_by = %s
+                       SET revoked_at = now(), revoked_by_key_id = %s
                        WHERE id = %s AND revoked_at IS NULL
                        RETURNING *""",
-                (admin_key, link_id),
+                (str(admin_key_id) if admin_key_id else None, link_id),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -733,6 +826,9 @@ def list_contributions_for_user(api_key: str) -> List[dict]:
     """All contributions submitted by api_key (any status), for export."""
     if not api_key:
         return []
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return []
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -740,9 +836,9 @@ def list_contributions_for_user(api_key: str) -> List[dict]:
                           approved_at, tiles_new, tiles_existing, combined_total,
                           withdrawn_at
                        FROM contributions
-                       WHERE submitted_by_key = %s
+                       WHERE submitted_by_key_id = %s
                        ORDER BY created_at DESC""",
-                (api_key,),
+                (str(key_id),),
             )
             return [dict(r) for r in cur.fetchall()]
 
@@ -830,9 +926,9 @@ def backfill_users(
         with get_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(
-                    """SELECT key FROM api_keys
+                    """SELECT key, id FROM api_keys
                        WHERE key = ANY(%s)
-                         AND key NOT IN (SELECT api_key FROM users)""",
+                         AND id NOT IN (SELECT api_key_id FROM users)""",
                     (eligible,),
                 )
                 missing = [r["key"] for r in cur.fetchall()]

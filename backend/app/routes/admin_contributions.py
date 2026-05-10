@@ -224,8 +224,19 @@ class RevertFatal(Exception):
     will not retry these."""
 
 
-def run_revert_merge(contribution_id: str, requested_by_key: str = "") -> dict:
+def run_revert_merge(
+    contribution_id: str,
+    requested_by_key: str = "",
+    *,
+    requested_by_key_id: str = "",
+) -> dict:
     """Execute one revert end-to-end. Called by the async worker.
+
+    Pass either ``requested_by_key`` (the plain api_key string — e.g.
+    when an admin triggers a synchronous revert from a route) OR
+    ``requested_by_key_id`` when the caller already has the FK UUID
+    (the async worker does, since the queue row stores
+    ``revert_requested_by_key_id``).
 
     Holds the global ``map_lock`` for the full duration so concurrent
     approve / restore operations can't race. Idempotent under crash:
@@ -235,6 +246,7 @@ def run_revert_merge(contribution_id: str, requested_by_key: str = "") -> dict:
     re-claims the queued row on next startup.
     """
     api_key = requested_by_key or ""
+    actor_key_id = requested_by_key_id or None
 
     meta = db.get_contribution(contribution_id)
     if not meta:
@@ -410,7 +422,11 @@ def run_revert_merge(contribution_id: str, requested_by_key: str = "") -> dict:
                         pass
 
         # 4) Mark the contribution as reverted.
-        db.mark_reverted(contribution_id, api_key)
+        db.mark_reverted(
+            contribution_id,
+            api_key,
+            reverted_by_key_id=actor_key_id,
+        )
         # Clear the queue bookkeeping so the row no longer reads as
         # ``revert_status='running'`` to /info viewers.
         try:
@@ -434,6 +450,7 @@ def run_revert_merge(contribution_id: str, requested_by_key: str = "") -> dict:
                 "combined_total": combined_total,
                 "affected_bounds": list(affected_bounds) if affected_bounds else None,
             },
+            admin_key_id=actor_key_id,
         )
     except Exception:
         logger.exception("revert: audit log failed for %s", contribution_id)

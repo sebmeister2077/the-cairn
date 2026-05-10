@@ -3,12 +3,14 @@
 import hashlib
 import hmac
 from typing import Optional
+from uuid import UUID
 
 from fastapi import Header, HTTPException, Query, Request
 
 from .config import settings
 from .core import database as db
 from .core import accounts_db
+from .core import api_key_cache
 
 def _get_client_ip(request: Request) -> str:
     forwarded_for = request.headers.get("X-Forwarded-For")
@@ -31,34 +33,67 @@ def _resolve_key(key: str, request: Request) -> Optional[dict]:
     """Validate a key and return its info dict, or None if invalid.
 
     Side-effects for DB keys: binds identity on first use (consume_once),
-    and updates last_used_at.
+    and updates last_used_at (throttled — see :mod:`api_key_cache`).
+
+    The returned dict always contains the ``id`` UUID of the resolved
+    ``api_keys`` row (env-var keys are upserted on startup so they have
+    one too). The synthetic ``is_admin`` flag is True iff the key
+    matches ``ADMIN_API_KEY``.
     """
-    # Admin env-var key — always valid, full access
-    if settings.ADMIN_API_KEY and key == settings.ADMIN_API_KEY:
-        return {"key": key, "permissions": "contribute", "is_admin": True}
+    # Fast path — cache hit (also bumps last_used_at + usage_count, throttled)
+    cached = api_key_cache.touch(key)
+    if cached is not None:
+        if cached.get("revoked"):
+            return None
+        return cached
 
-    # Legacy env-var keys — always valid, full access
-    if settings.API_KEYS and key in settings.API_KEYS:
-        return {"key": key, "permissions": "contribute", "is_admin": False}
+    if not db.is_available():
+        return None
 
-    # DB-backed dynamic keys
-    if db.is_available():
-        record = db.get_api_key(key)
-        if record and not record["revoked"]:
-            if record["consume_once"]:
-                client_ip_hash = _hash_ip(_get_client_ip(request))
-                bound = record.get("bound_identity")
-                if bound is None:
-                    db.bind_api_key(key, client_ip_hash)
-                elif bound != client_ip_hash:
-                    raise HTTPException(
-                        status_code=401,
-                        detail="API key is locked to another user",
-                    )
-            db.touch_api_key(key)
-            return dict(record)
+    record = db.get_api_key(key)
+    if not record or record.get("revoked"):
+        return None
 
-    return None
+    if record.get("consume_once"):
+        client_ip_hash = _hash_ip(_get_client_ip(request))
+        bound = record.get("bound_identity")
+        if bound is None:
+            db.bind_api_key(key, client_ip_hash)
+            record["bound_identity"] = client_ip_hash
+        elif bound != client_ip_hash:
+            raise HTTPException(
+                status_code=401,
+                detail="API key is locked to another user",
+            )
+
+    info = dict(record)
+    info["is_admin"] = bool(settings.ADMIN_API_KEY and key == settings.ADMIN_API_KEY)
+    return api_key_cache.put(key, info)
+
+
+def resolve_key_id(key: str) -> Optional[UUID]:
+    """Return the ``api_keys.id`` UUID for ``key``, or ``None`` if unknown.
+
+    Looks at the cache first, then falls back to a single ``SELECT``.
+    Use this from places that have a key string and need the id without
+    going through a ``Depends(verify_api_key_info)`` dependency
+    (e.g. inside helper functions). Does NOT bump usage counters.
+    """
+    cached = api_key_cache.peek(key)
+    if cached is not None:
+        val = cached.get("id")
+        if val is None:
+            return None
+        return val if isinstance(val, UUID) else UUID(str(val))
+    if not db.is_available():
+        return None
+    row = db.get_api_key(key)
+    if not row:
+        return None
+    val = row.get("id")
+    if val is None:
+        return None
+    return val if isinstance(val, UUID) else UUID(str(val))
 
 
 async def verify_api_key(
@@ -156,11 +191,16 @@ def is_admin_key(api_key: str) -> bool:
 def verify_permission(api_key: str, perm_name: str) -> bool:
     """Check whether ``api_key`` has the granular permission ``perm_name``.
 
-    Admins always pass. For DB-backed keys, the flag is read from
-    ``api_keys.extra_permissions`` (JSONB).
+    Admins always pass. For DB-backed keys, the flag is read from the
+    cached ``api_keys.extra_permissions`` (JSONB) — falling back to a
+    direct DB query only if the key is not cached.
     """
     if is_admin_key(api_key):
         return True
+    cached = api_key_cache.peek(api_key)
+    if cached is not None:
+        extras = cached.get("extra_permissions") or {}
+        return bool(extras.get(perm_name))
     if not db.is_available():
         return False
     extras = db.get_api_key_extra_permissions(api_key)

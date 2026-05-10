@@ -20,6 +20,20 @@ from ..config import settings
 _pool = None
 
 
+def _resolve_key_id(api_key: Optional[str]) -> Optional[str]:
+    """Translate an api_key string to its ``api_keys.id`` UUID (as ``str``).
+
+    Local helper to avoid an import cycle with :mod:`api_key_cache`.
+    Returns ``None`` for empty / unknown keys so callers can pass the
+    result straight into a NULLable FK column.
+    """
+    if not api_key:
+        return None
+    from . import api_key_cache  # local to break cycle
+    key_id = api_key_cache.ensure_id(api_key)
+    return str(key_id) if key_id else None
+
+
 def init_db():
     """Create a simple connection pool. Call once at startup."""
     global _pool
@@ -655,14 +669,15 @@ def create_contribution(
         download the file, count tiles, and either flip status to ``'valid'``
         and update ``tile_count`` — or delete the row + R2 object on failure.
     """
+    submitted_by_key_id = _resolve_key_id(api_key)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO contributions
-                       (id, contributor, tile_count, status, submitted_by_key,
+                       (id, contributor, tile_count, status, submitted_by_key_id,
                         validation_status)
                    VALUES (%s, %s, %s, 'pending', %s, %s)""",
-                (cid, contributor or "Anonymous", tile_count, api_key or None,
+                (cid, contributor or "Anonymous", tile_count, submitted_by_key_id,
                  validation_status),
             )
 
@@ -720,14 +735,17 @@ def get_user_pending_contribution(api_key: str) -> Optional[dict]:
     """Return the most recent pending (non-withdrawn) contribution submitted by api_key, or None."""
     if not api_key:
         return None
+    key_id = _resolve_key_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """SELECT * FROM contributions
-                   WHERE submitted_by_key = %s AND status = 'pending' AND withdrawn_at IS NULL
+                   WHERE submitted_by_key_id = %s AND status = 'pending' AND withdrawn_at IS NULL
                    ORDER BY created_at DESC
                    LIMIT 1""",
-                (api_key,),
+                (key_id,),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -737,20 +755,24 @@ def get_user_last_approval(api_key: str) -> Optional[dict]:
     """Return the most recent approved contribution submitted by api_key, or None."""
     if not api_key:
         return None
+    key_id = _resolve_key_id(api_key)
+    if key_id is None:
+        return None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """SELECT * FROM contributions
-                   WHERE submitted_by_key = %s AND status = 'approved'
+                   WHERE submitted_by_key_id = %s AND status = 'approved'
                    ORDER BY approved_at DESC NULLS LAST
                    LIMIT 1""",
-                (api_key,),
+                (key_id,),
             )
             row = cur.fetchone()
             return dict(row) if row else None
 
 
 def list_pending_contributions(requesting_key: str = "") -> List[dict]:
+    requesting_key_id = _resolve_key_id(requesting_key) if requesting_key else None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -758,11 +780,15 @@ def list_pending_contributions(requesting_key: str = "") -> List[dict]:
             )
             rows = [dict(r) for r in cur.fetchall()]
     for row in rows:
-        row["is_mine"] = bool(requesting_key and row.get("submitted_by_key") == requesting_key)
+        row["is_mine"] = bool(
+            requesting_key_id
+            and str(row.get("submitted_by_key_id") or "") == requesting_key_id
+        )
     return rows
 
 
 def list_withdrawn_contributions(requesting_key: str = "") -> List[dict]:
+    requesting_key_id = _resolve_key_id(requesting_key) if requesting_key else None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
@@ -770,7 +796,10 @@ def list_withdrawn_contributions(requesting_key: str = "") -> List[dict]:
             )
             rows = [dict(r) for r in cur.fetchall()]
     for row in rows:
-        row["is_mine"] = bool(requesting_key and row.get("submitted_by_key") == requesting_key)
+        row["is_mine"] = bool(
+            requesting_key_id
+            and str(row.get("submitted_by_key_id") or "") == requesting_key_id
+        )
     return rows
 
 
@@ -786,6 +815,9 @@ def withdraw_contribution(cid: str, api_key: str) -> bool:
     restart).
     """
     now = datetime.now(timezone.utc)
+    key_id = _resolve_key_id(api_key)
+    if key_id is None:
+        return False
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -795,8 +827,8 @@ def withdraw_contribution(cid: str, api_key: str) -> bool:
                        withdrawn_at = %s,
                        validation_status = NULL,
                        validation_error  = NULL
-                   WHERE id = %s AND status = 'pending' AND submitted_by_key = %s""",
-                (now, cid, api_key),
+                   WHERE id = %s AND status = 'pending' AND submitted_by_key_id = %s""",
+                (now, cid, key_id),
             )
             return cur.rowcount > 0
 
@@ -1018,14 +1050,17 @@ def count_user_withdrawals_in_iso_week(api_key: str, week_start: datetime) -> in
     """
     if not api_key:
         return 0
+    key_id = _resolve_key_id(api_key)
+    if key_id is None:
+        return 0
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """SELECT COUNT(*) FROM contributions
-                       WHERE submitted_by_key = %s
+                       WHERE submitted_by_key_id = %s
                          AND status = 'withdrawn'
                          AND withdrawn_at >= %s""",
-                (api_key, week_start),
+                (key_id, week_start),
             )
             row = cur.fetchone()
             return int(row[0]) if row else 0
@@ -1070,8 +1105,18 @@ def set_revert_metadata(
             )
 
 
-def mark_reverted(cid: str, reverted_by_key: str) -> bool:
+def mark_reverted(
+    cid: str,
+    reverted_by_key: str,
+    *,
+    reverted_by_key_id: Optional[str] = None,
+) -> bool:
     """Flip a contribution's status to 'reverted' and stamp the actor.
+
+    Pass either ``reverted_by_key`` (the plain api_key string — resolved
+    to its FK via the api-key cache) OR ``reverted_by_key_id`` when the
+    caller already has the UUID in hand (e.g. the async revert worker
+    reading ``revert_requested_by_key_id`` off the job row).
 
     Also removes the matching ``contribution_log`` row so the contribution
     no longer appears in the public "Approved Contributions" feed served
@@ -1080,15 +1125,18 @@ def mark_reverted(cid: str, reverted_by_key: str) -> bool:
     consistent.
     """
     now = datetime.now(timezone.utc)
+    if reverted_by_key_id is None:
+        reverted_by_key_id = _resolve_key_id(reverted_by_key)
+    actor_id = str(reverted_by_key_id) if reverted_by_key_id else None
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE contributions
                        SET status = 'reverted',
                            reverted_at = %s,
-                           reverted_by_key = %s
+                           reverted_by_key_id = %s
                    WHERE id = %s AND status = 'approved'""",
-                (now, reverted_by_key or None, cid),
+                (now, actor_id, cid),
             )
             updated = (cur.rowcount or 0) > 0
             if updated:
@@ -1386,8 +1434,16 @@ def set_validation_error(cid: str, reason: str) -> None:
 APPROVAL_MAX_ATTEMPTS = 3
 
 
-def enqueue_approval(cid: str, requested_by_key: str = "") -> bool:
+def enqueue_approval(
+    cid: str,
+    requested_by_key: str = "",
+    *,
+    requested_by_key_id: Optional[str] = None,
+) -> bool:
     """Mark a pending contribution as queued for async approval.
+
+    Pass either ``requested_by_key`` (the plain api_key string) OR
+    ``requested_by_key_id`` when the caller already has the UUID.
 
     Returns True if the row was updated (was 'pending' status with no
     in-flight approval), False if the row is already being approved or
@@ -1395,6 +1451,9 @@ def enqueue_approval(cid: str, requested_by_key: str = "") -> bool:
     ``approval_attempts`` back to 0 so a retry after a previous failure
     starts from a clean slate.
     """
+    if requested_by_key_id is None:
+        requested_by_key_id = _resolve_key_id(requested_by_key)
+    actor_id = str(requested_by_key_id) if requested_by_key_id else None
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -1402,12 +1461,12 @@ def enqueue_approval(cid: str, requested_by_key: str = "") -> bool:
                        SET approval_status   = 'queued',
                            approval_attempts = 0,
                            approval_error    = NULL,
-                           approval_requested_by_key = %s
+                           approval_requested_by_key_id = %s
                    WHERE id = %s
                      AND status = 'pending'
                      AND (approval_status IS NULL
                           OR approval_status = 'failed')""",
-                (requested_by_key or None, cid),
+                (actor_id, cid),
             )
             return cur.rowcount > 0
 
@@ -1507,8 +1566,16 @@ def clear_approval_state(cid: str) -> None:
 REVERT_MAX_ATTEMPTS = 3
 
 
-def enqueue_revert(cid: str, requested_by_key: str = "") -> bool:
+def enqueue_revert(
+    cid: str,
+    requested_by_key: str = "",
+    *,
+    requested_by_key_id: Optional[str] = None,
+) -> bool:
     """Mark an approved contribution as queued for async revert.
+
+    Pass either ``requested_by_key`` (the plain api_key string) OR
+    ``requested_by_key_id`` when the caller already has the UUID.
 
     Returns True if the row was updated (was 'approved' status with no
     in-flight revert), False if it's already being reverted, has been
@@ -1516,6 +1583,9 @@ def enqueue_revert(cid: str, requested_by_key: str = "") -> bool:
     ``revert_attempts`` back to 0 so a retry after a previous failure
     starts from a clean slate.
     """
+    if requested_by_key_id is None:
+        requested_by_key_id = _resolve_key_id(requested_by_key)
+    actor_id = str(requested_by_key_id) if requested_by_key_id else None
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -1523,12 +1593,12 @@ def enqueue_revert(cid: str, requested_by_key: str = "") -> bool:
                        SET revert_status   = 'queued',
                            revert_attempts = 0,
                            revert_error    = NULL,
-                           revert_requested_by_key = %s
+                           revert_requested_by_key_id = %s
                    WHERE id = %s
                      AND status = 'approved'
                      AND (revert_status IS NULL
                           OR revert_status = 'failed')""",
-                (requested_by_key or None, cid),
+                (actor_id, cid),
             )
             return cur.rowcount > 0
 
@@ -1786,7 +1856,7 @@ def list_api_keys_paginated(
                            u.display_name,
                            u.in_game_name
                       FROM api_keys k
-                      LEFT JOIN users u ON u.api_key = k.key
+                      LEFT JOIN users u ON u.api_key_id = k.id
                       {where_sql}
                       {order_sql}
                       LIMIT %s OFFSET %s""",
@@ -1828,6 +1898,13 @@ def revoke_api_key(key: str):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("UPDATE api_keys SET revoked = TRUE WHERE key = %s", (key,))
+    # Drop any cached resolution so a subsequent auth attempt re-reads the
+    # row and sees ``revoked = TRUE`` immediately.
+    try:
+        from . import api_key_cache
+        api_key_cache.invalidate(key)
+    except Exception:
+        pass
 
 
 def set_tops_map_stats(stats: dict):
@@ -2164,7 +2241,7 @@ def list_api_keys_by_invite(token: str) -> List[dict]:
                           u.joined_at AS user_joined_at,
                           u.deleted_at AS user_deleted_at
                        FROM api_keys k
-                       LEFT JOIN users u ON u.api_key = k.key
+                       LEFT JOIN users u ON u.api_key_id = k.id
                        WHERE k.source_invite_token = %s
                        ORDER BY k.created_at DESC""",
                 (token,),
@@ -2820,14 +2897,15 @@ def reset_stuck_resources_upload_jobs() -> int:
 
 def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optional[dict]:
     """Set a flag's state. Returns the resulting row, or None if the key is unknown."""
+    updated_by_key_id = _resolve_key_id(updated_by_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE feature_flags
-                       SET enabled = %s, updated_at = now(), updated_by_key = %s
+                       SET enabled = %s, updated_at = now(), updated_by_key_id = %s
                        WHERE key = %s
                        RETURNING *""",
-                (enabled, updated_by_key or None, key),
+                (enabled, updated_by_key_id, key),
             )
             row = cur.fetchone()
             return dict(row) if row else None
@@ -2858,17 +2936,18 @@ def set_app_setting(key: str, value, updated_by_key: str = "") -> dict:
     """Upsert ``value`` (any JSON-serialisable Python object) under ``key``.
     Returns the resulting row."""
     payload = psycopg2.extras.Json(value)
+    updated_by_key_id = _resolve_key_id(updated_by_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO app_settings (key, value, updated_by_key)
+                """INSERT INTO app_settings (key, value, updated_by_key_id)
                        VALUES (%s, %s, %s)
                        ON CONFLICT (key) DO UPDATE
                            SET value = EXCLUDED.value,
                                updated_at = now(),
-                               updated_by_key = EXCLUDED.updated_by_key
+                               updated_by_key_id = EXCLUDED.updated_by_key_id
                        RETURNING *""",
-                (key, payload, updated_by_key or None),
+                (key, payload, updated_by_key_id),
             )
             return dict(cur.fetchone())
 
@@ -2915,25 +2994,26 @@ def upsert_maintenance_notice(
     only when the notice transitions from inactive to active so the public
     chip's elapsed/remaining countdown stays anchored to the original
     activation time across subsequent ETA updates."""
+    updated_by_key_id = _resolve_key_id(updated_by_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """INSERT INTO maintenance_notices
-                       (component, active, message, started_at, eta_at, updated_at, updated_by_key)
+                       (component, active, message, started_at, eta_at, updated_at, updated_by_key_id)
                    VALUES (%s, %s, %s, now(), %s, now(), %s)
                    ON CONFLICT (component) DO UPDATE SET
-                       active         = EXCLUDED.active,
-                       message        = EXCLUDED.message,
-                       eta_at         = EXCLUDED.eta_at,
-                       updated_at     = now(),
-                       updated_by_key = EXCLUDED.updated_by_key,
-                       started_at     = CASE
+                       active            = EXCLUDED.active,
+                       message           = EXCLUDED.message,
+                       eta_at            = EXCLUDED.eta_at,
+                       updated_at        = now(),
+                       updated_by_key_id = EXCLUDED.updated_by_key_id,
+                       started_at        = CASE
                            WHEN maintenance_notices.active = FALSE AND EXCLUDED.active = TRUE
                                THEN now()
                            ELSE maintenance_notices.started_at
                        END
                    RETURNING *""",
-                (component, active, message or "", eta_at, updated_by_key or None),
+                (component, active, message or "", eta_at, updated_by_key_id),
             )
             row = cur.fetchone()
             return dict(row)
@@ -2941,16 +3021,17 @@ def upsert_maintenance_notice(
 
 def clear_maintenance_notice(component: str, updated_by_key: str = "") -> Optional[dict]:
     """Mark the notice as inactive without deleting the row."""
+    updated_by_key_id = _resolve_key_id(updated_by_key)
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """UPDATE maintenance_notices
                        SET active = FALSE,
                            updated_at = now(),
-                           updated_by_key = %s
+                           updated_by_key_id = %s
                        WHERE component = %s
                        RETURNING *""",
-                (updated_by_key or None, component),
+                (updated_by_key_id, component),
             )
             row = cur.fetchone()
             return dict(row) if row else None

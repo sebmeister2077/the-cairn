@@ -26,8 +26,8 @@ class FeatureFlagPatch(BaseModel):
 def _scrub_flag(r: dict) -> dict:
     if r.get("updated_at") and hasattr(r["updated_at"], "isoformat"):
         r["updated_at"] = r["updated_at"].isoformat()
-    raw = r.pop("updated_by_key", None)
-    r["updated_by_suffix"] = (raw or "")[-6:] if raw else None
+    raw = r.pop("updated_by_key_id", None)
+    r["updated_by_suffix"] = (str(raw) or "")[-6:] if raw else None
     return r
 
 
