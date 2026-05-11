@@ -7,6 +7,7 @@ import { RevertedContributionsSection } from "@/components/contributions/Reverte
 import { WithdrawnContributionsCard } from "@/components/contributions/WithdrawnContributionsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import {
   approveContribution,
   fetchImageFromSignedUrl,
@@ -202,34 +203,33 @@ export function ContributePage() {
       />
 
       {/* Pending contributions */}
-      {contributionInfo && contributionInfo.pending.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Pending Contributions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {actionError && <p className="text-sm text-destructive">{actionError}</p>}
+      <Card>
+        <CardHeader className="flex">
+          <CardTitle className="inline-flex text-base">Pending Contributions</CardTitle>
+          {contributeInfoQuery.isFetching && <Spinner className="ml-auto" />}
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {actionError && <p className="text-sm text-destructive">{actionError}</p>}
 
-            {contributionInfo.pending.map((p) => (
-              <PendingContributionsSection
-                key={p.id}
-                contribution={p}
-                contributeInfo={contributionInfo}
-                isAdmin={!!isAdmin}
-                previewId={previewId}
-                previewUrl={previewUrl}
-                previewLoading={previewLoading}
-                actionLoading={actionLoading}
-                handlePreview={handlePreview}
-                handleWithdraw={handleWithdraw}
-                handleApprove={handleApprove}
-                setRejectingId={setRejectingId}
-                handleRecomputeMatchScore={handleRecomputeMatchScore}
-              />
-            ))}
-          </CardContent>
-        </Card>
-      )}
+          {contributionInfo?.pending.map((p) => (
+            <PendingContributionsSection
+              key={p.id}
+              contribution={p}
+              contributeInfo={contributionInfo}
+              isAdmin={!!isAdmin}
+              previewId={previewId}
+              previewUrl={previewUrl}
+              previewLoading={previewLoading}
+              actionLoading={actionLoading}
+              handlePreview={handlePreview}
+              handleWithdraw={handleWithdraw}
+              handleApprove={handleApprove}
+              setRejectingId={setRejectingId}
+              handleRecomputeMatchScore={handleRecomputeMatchScore}
+            />
+          ))}
+        </CardContent>
+      </Card>
 
       {/* Approved history. Reverted entries are excluded here (they appear
           in their own admin-only section below the Recent contributions
