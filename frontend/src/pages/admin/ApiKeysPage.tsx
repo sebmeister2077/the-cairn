@@ -51,6 +51,7 @@ import { useAppDispatch, userReduxState } from "@/store/hooks";
 import { adminQueries } from "@/lib/constants/react-query";
 import { patchAdminApiKeysFilters } from "@/store/slices/adminApiKeysFilters";
 import { useDebounceCallback } from "@react-hook/debounce";
+import { Spinner } from "@/components/ui/spinner";
 
 const PAGE_SIZE = 50;
 const ACTIVE_KEYS_PAGE_SIZE = 10;
@@ -239,10 +240,11 @@ export function ApiKeysPage() {
       )}
 
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">
+        <CardHeader className="flex pb-2">
+          <CardTitle className="inline-flex text-base">
             Active{activeKeys.isSuccess ? ` (${activeKeysTotal})` : ""}
           </CardTitle>
+          {activeKeys.isFetching && <Spinner className="ml-auto" />}
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -410,13 +412,14 @@ export function ApiKeysPage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">
+        <CardHeader className="flex pb-2">
+          <CardTitle className="inline-flex text-base">
             Active Invite Links
             {activeInvites.isSuccess
               ? ` (${activeInviteItems.length} of ${activeInvitesTotal})`
               : ""}
           </CardTitle>
+          {activeInvites.isFetching && <Spinner className="ml-auto" />}
         </CardHeader>
         <CardContent className="space-y-3">
           <SearchInput
