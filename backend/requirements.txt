@@ -12,3 +12,5 @@ pyotp>=2.9.0
 cryptography>=42.0.0
 webauthn>=2.0.0
 zstandard>=0.22.0
+opencv-python-headless>=4.9.0
+rapidocr-onnxruntime>=1.3.0

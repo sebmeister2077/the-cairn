@@ -26,6 +26,7 @@ import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
+import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -96,6 +97,7 @@ const subTabs: Record<string, SubTab[]> = {
     { value: "/manage/resources", label: "Resources" },
     { value: "/manage/waypoints-backup", label: "Waypoints & Backup" },
     { value: "/manage/translocators", label: "Translocators" },
+    { value: "/manage/tl-screenshots", label: "TL Screenshots" },
   ],
 };
 
@@ -478,6 +480,7 @@ export function AppContent() {
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
           <Route path="/manage/waypoints-backup" element={<AdminLandmarksPage />} />
           <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
+          <Route path="/manage/tl-screenshots" element={<AdminTLScreenshotsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />

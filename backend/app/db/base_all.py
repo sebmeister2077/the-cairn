@@ -11,3 +11,4 @@ from app.db.base import Base  # noqa: F401  (re-exported)
 # Side-effect imports — registers tables with Base.metadata.
 from app.db.models import landmarks  # noqa: F401
 from app.db.models import translocators  # noqa: F401
+from app.db.models import screenshot_tl_requests  # noqa: F401

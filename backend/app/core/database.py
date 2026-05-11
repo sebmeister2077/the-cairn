@@ -213,7 +213,13 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- accepts submissions and merges them live into translocators.geojson;
     -- OFF = the endpoint returns 503 (frontend Contribute TLs page degrades
     -- gracefully). Audit + admin endpoints work regardless of this flag.
-    ('translocator_contributions', FALSE)
+    ('translocator_contributions', FALSE),
+    -- Screenshot-based translocator contribution path. Independent of
+    -- ``translocator_contributions``: ON = POST
+    -- /api/contribute-tls/screenshots/* accepts uploads and queues OCR +
+    -- minimap analysis; OFF = those endpoints return 404 and the
+    -- frontend tab hides the form.
+    ('translocator_screenshot_contributions', FALSE)
 ON CONFLICT (key) DO NOTHING;
 
 -- Generic key/value settings table for non-boolean admin-tunable values
@@ -3247,3 +3253,255 @@ def count_webauthn_credentials(api_key: str) -> int:
             row = cur.fetchone()
             return int(row[0]) if row else 0
 
+
+
+
+
+# ---------------------------------------------------------------------------
+# Translocator screenshot requests CRUD (screenshot-based TL contributions)
+# ---------------------------------------------------------------------------
+
+def insert_tl_screenshot_request(
+    *,
+    request_id: str,
+    submitter_api_key_id: Optional[str],
+    submitter_display_name: Optional[str],
+    screenshot_a_key: str,
+    screenshot_b_key: str,
+    screenshot_a_taken_at,
+    screenshot_b_taken_at,
+    label: Optional[str],
+) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO translocator_screenshot_requests
+                       (id, status, submitter_api_key_id, submitter_display_name,
+                        screenshot_a_key, screenshot_b_key,
+                        screenshot_a_taken_at, screenshot_b_taken_at,
+                        label, analysis_status)
+                   VALUES (%s, 'pending', %s, %s, %s, %s, %s, %s, %s, 'queued')
+                   RETURNING *""",
+                (
+                    request_id,
+                    submitter_api_key_id,
+                    submitter_display_name,
+                    screenshot_a_key,
+                    screenshot_b_key,
+                    screenshot_a_taken_at,
+                    screenshot_b_taken_at,
+                    label,
+                ),
+            )
+            return dict(cur.fetchone())
+
+
+def get_tl_screenshot_request(request_id: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM translocator_screenshot_requests WHERE id = %s",
+                (request_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_tl_screenshot_requests_paginated(
+    *,
+    status: Optional[str] = None,
+    submitter_api_key_id: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if status:
+        where.append("status = %s")
+        params.append(status)
+    if submitter_api_key_id:
+        where.append("submitter_api_key_id = %s")
+        params.append(submitter_api_key_id)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    safe_limit = max(1, min(int(limit), 200))
+    safe_offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM translocator_screenshot_requests {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT * FROM translocator_screenshot_requests
+                       {where_sql}
+                       ORDER BY created_at DESC
+                       LIMIT %s OFFSET %s""",
+                params + [safe_limit, safe_offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
+def count_pending_tl_screenshot_requests_for_user(api_key_id: str) -> int:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM translocator_screenshot_requests
+                    WHERE submitter_api_key_id = %s AND status = 'pending'""",
+                (api_key_id,),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+
+
+def claim_pending_tl_screenshot_analysis() -> Optional[dict]:
+    """Atomically claim one queued analysis job by flipping
+    `analysis_status` from 'queued' to 'running'. Returns the claimed
+    row or None if the queue is empty."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE translocator_screenshot_requests
+                       SET analysis_status = 'running',
+                           updated_at = NOW()
+                     WHERE id = (
+                        SELECT id FROM translocator_screenshot_requests
+                         WHERE status = 'pending'
+                           AND analysis_status = 'queued'
+                         ORDER BY created_at ASC
+                         LIMIT 1
+                         FOR UPDATE SKIP LOCKED
+                     )
+                 RETURNING *""",
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def set_tl_screenshot_analysis_result(
+    request_id: str,
+    *,
+    ocr_a: dict,
+    ocr_b: dict,
+    coords_a: dict,
+    coords_b: dict,
+    minimap_match: dict,
+    validation_warnings: list,
+    minimap_crop_a_key: Optional[str],
+    minimap_crop_b_key: Optional[str],
+) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE translocator_screenshot_requests
+                       SET ocr_a = %s,
+                           ocr_b = %s,
+                           coords_a = %s,
+                           coords_b = %s,
+                           minimap_match = %s,
+                           validation_warnings = %s,
+                           minimap_crop_a_key = %s,
+                           minimap_crop_b_key = %s,
+                           analysis_status = 'done',
+                           analysis_error = NULL,
+                           updated_at = NOW()
+                     WHERE id = %s""",
+                (
+                    json.dumps(ocr_a),
+                    json.dumps(ocr_b),
+                    json.dumps(coords_a),
+                    json.dumps(coords_b),
+                    json.dumps(minimap_match),
+                    json.dumps(validation_warnings),
+                    minimap_crop_a_key,
+                    minimap_crop_b_key,
+                    request_id,
+                ),
+            )
+
+
+def set_tl_screenshot_analysis_failed(request_id: str, error: str) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE translocator_screenshot_requests
+                       SET analysis_status = 'failed',
+                           analysis_error = %s,
+                           updated_at = NOW()
+                     WHERE id = %s""",
+                (error[:1000], request_id),
+            )
+
+
+def update_tl_screenshot_request_coords(
+    request_id: str,
+    *,
+    coords_a: Optional[dict] = None,
+    coords_b: Optional[dict] = None,
+    label: Optional[str] = None,
+) -> Optional[dict]:
+    sets = []
+    params: list = []
+    if coords_a is not None:
+        sets.append("coords_a = %s")
+        params.append(json.dumps(coords_a))
+    if coords_b is not None:
+        sets.append("coords_b = %s")
+        params.append(json.dumps(coords_b))
+    if label is not None:
+        sets.append("label = %s")
+        params.append(label)
+    if not sets:
+        return get_tl_screenshot_request(request_id)
+    sets.append("updated_at = NOW()")
+    params.append(request_id)
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""UPDATE translocator_screenshot_requests
+                        SET {', '.join(sets)}
+                      WHERE id = %s
+                  RETURNING *""",
+                params,
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def finalise_tl_screenshot_request(
+    request_id: str,
+    *,
+    status: str,
+    decision_actor_api_key_id: Optional[str],
+    decision_reason: Optional[str] = None,
+    resulting_segment_id: Optional[str] = None,
+) -> Optional[dict]:
+    """Set terminal status (approved | rejected | withdrawn) and clear R2
+    key columns so the row no longer references deleted objects."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE translocator_screenshot_requests
+                        SET status = %s,
+                            decision_actor_api_key_id = %s,
+                            decision_reason = %s,
+                            decision_at = NOW(),
+                            resulting_segment_id = %s,
+                            screenshot_a_key = NULL,
+                            screenshot_b_key = NULL,
+                            minimap_crop_a_key = NULL,
+                            minimap_crop_b_key = NULL,
+                            updated_at = NOW()
+                      WHERE id = %s
+                  RETURNING *""",
+                (
+                    status,
+                    decision_actor_api_key_id,
+                    decision_reason,
+                    resulting_segment_id,
+                    request_id,
+                ),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None

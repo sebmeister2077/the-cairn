@@ -376,6 +376,152 @@ export async function getMyTranslocatorContributions(): Promise<{
 }
 
 // ---------------------------------------------------------------------------
+// Screenshot-based TL contributions (account-required, flag-gated)
+// ---------------------------------------------------------------------------
+
+import type {
+    TLScreenshotRequest,
+    TLScreenshotUploadUrlResponse,
+} from "@/models/tlScreenshots";
+
+export async function requestTLScreenshotUploadUrls(): Promise<TLScreenshotUploadUrlResponse> {
+    const res = await fetch(`${API_BASE}/contribute-tls/screenshots/upload-url`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Direct PUT of a PNG to a presigned R2 URL (no auth header on the PUT). */
+export async function uploadScreenshotToR2(
+    presignedUrl: string,
+    blob: Blob,
+): Promise<void> {
+    const res = await fetch(presignedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "image/png" },
+        body: blob,
+    });
+    if (!res.ok) {
+        throw new ApiError(`R2 upload failed: ${res.status}`, res.status);
+    }
+}
+
+export async function completeTLScreenshotUpload(
+    requestId: string,
+    label: string | null,
+): Promise<TLScreenshotRequest> {
+    const res = await fetch(`${API_BASE}/contribute-tls/screenshots/complete`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ request_id: requestId, label }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function listMyTLScreenshotRequests(): Promise<{
+    items: TLScreenshotRequest[];
+    total: number;
+}> {
+    const res = await fetch(`${API_BASE}/contribute-tls/screenshots/mine`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function withdrawTLScreenshotRequest(
+    requestId: string,
+): Promise<{ withdrawn: string }> {
+    const res = await fetch(
+        `${API_BASE}/contribute-tls/screenshots/${requestId}/withdraw`,
+        { method: "POST", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin endpoints --------------------------------------------------------
+
+export async function listAdminTLScreenshotRequests(params: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+} = {}): Promise<{
+    items: TLScreenshotRequest[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+}> {
+    const qs = new URLSearchParams();
+    if (params.status) qs.set("status", params.status);
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    const url = `${API_BASE}/admin/translocators/screenshots${qs.toString() ? `?${qs}` : ""}`;
+    const res = await fetch(url, { headers: authHeaders() });
+    return (await handleResponse(res)).json();
+}
+
+export async function getAdminTLScreenshotRequest(
+    id: string,
+): Promise<TLScreenshotRequest> {
+    const res = await fetch(`${API_BASE}/admin/translocators/screenshots/${id}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function patchAdminTLScreenshotRequest(
+    id: string,
+    body: {
+        coords_a?: { x: number | null; y?: number | null; z: number | null };
+        coords_b?: { x: number | null; y?: number | null; z: number | null };
+        label?: string | null;
+    },
+): Promise<TLScreenshotRequest> {
+    const res = await fetch(`${API_BASE}/admin/translocators/screenshots/${id}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function approveAdminTLScreenshotRequest(
+    id: string,
+    label: string | null,
+): Promise<{
+    approved: string;
+    segment_id: string;
+    feature: unknown;
+    request: TLScreenshotRequest | null;
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/screenshots/${id}/approve`,
+        {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ label }),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function rejectAdminTLScreenshotRequest(
+    id: string,
+    reason: string,
+): Promise<{ rejected: string; request: TLScreenshotRequest | null }> {
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/screenshots/${id}/reject`,
+        {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ reason }),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Admin translocators (account + admin-only)
 // ---------------------------------------------------------------------------
 
