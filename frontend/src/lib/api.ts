@@ -996,6 +996,50 @@ export interface ContributionRegion {
     max_z: number;
 }
 
+/**
+ * Error thrown by the upload helpers when the failure looks transient and
+ * the caller should retry (network reset, 5xx, 408, 429, expired URL).
+ * Distinct from generic ``Error`` so the retry loops can decide whether to
+ * back off or bail immediately.
+ */
+class TransientUploadError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "TransientUploadError";
+    }
+}
+
+/** HTTP status codes that are worth retrying when seen on a presigned PUT. */
+function isRetriableStatus(status: number): boolean {
+    if (status === 408 || status === 425 || status === 429) return true;
+    if (status >= 500 && status < 600) return true;
+    // 403 from R2 on a presigned PUT after a long stall is almost always
+    // "Request has expired" — re-signing on the retry will fix it.
+    if (status === 403) return true;
+    return false;
+}
+
+/** Sleep with jitter, but wake early if the browser reports ``online``. */
+function backoffDelay(attempt: number): Promise<void> {
+    const baseMs = Math.min(30_000, 1000 * 2 ** attempt);
+    const jitterMs = Math.random() * 500;
+    const totalMs = baseMs + jitterMs;
+    return new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            window.removeEventListener("online", finish);
+            clearTimeout(timer);
+            resolve();
+        };
+        const timer = setTimeout(finish, totalMs);
+        // If the browser was offline (e.g. VPN dropped), wake as soon as it
+        // reports the link is back instead of waiting out the full backoff.
+        window.addEventListener("online", finish, { once: true });
+    });
+}
+
 function uploadFileToUrl(
     session: ContributeUploadSession,
     file: File,
@@ -1030,10 +1074,18 @@ function uploadFileToUrl(
                     detail = xhr.responseText;
                 }
             }
-            reject(new Error(detail));
+            const err = isRetriableStatus(xhr.status)
+                ? new TransientUploadError(detail)
+                : new Error(detail);
+            reject(err);
         };
 
-        xhr.onerror = () => reject(new Error("Network error during direct upload"));
+        // ``onerror`` fires for any transport-level failure — DNS / TLS / TCP
+        // reset / VPN reconnect — so it's always classified as transient.
+        xhr.onerror = () =>
+            reject(new TransientUploadError("Network error during direct upload"));
+        xhr.ontimeout = () =>
+            reject(new TransientUploadError("Upload timed out"));
         xhr.send(file);
     });
 }
@@ -1044,26 +1096,56 @@ export async function contributeMap(
     onProgress?: (percent: number) => void,
     region?: ContributionRegion | null,
 ): Promise<Record<string, unknown>> {
-    // R2/S3 single-PUT is hard-capped at 5 GiB. Switch to multipart well
-    // before that to leave headroom and to get parallelisable parts.
-    const MULTIPART_THRESHOLD_BYTES = 4 * 1024 * 1024 * 1024; // 4 GiB
+    // R2/S3 single-PUT is hard-capped at 5 GiB. The threshold is set well
+    // below that so most non-trivial uploads go through the multipart path,
+    // which gives us per-chunk retry on transient failures (VPN reconnect,
+    // Wi-Fi roam, ISP NAT timeout) instead of restarting the whole transfer.
+    // Backend ``MULTIPART_PART_SIZE`` is 64 MiB; uploads at or below that
+    // would be a single part anyway, so the single-PUT path is fine for
+    // smaller files where a full restart is cheap.
+    const MULTIPART_THRESHOLD_BYTES = 100 * 1024 * 1024; // 100 MiB
     if (file.size > MULTIPART_THRESHOLD_BYTES) {
         return contributeMapMultipart(file, contributor, onProgress, region);
     }
 
-    const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({
-            contributor,
-            file_name: file.name,
-            size_bytes: file.size,
-        }),
-    });
-    const uploadSession = (await handleResponse(initRes)).json() as Promise<ContributeUploadSession>;
-    const session = await uploadSession;
+    // Small file: single-PUT with a small retry loop. Each retry re-issues
+    // ``/contribute/upload-url`` so the presigned URL is fresh; the file is
+    // re-uploaded from byte 0 (the cost is tolerable below the multipart
+    // threshold).
+    const SINGLE_PUT_MAX_ATTEMPTS = 3;
+    let attempt = 0;
+    let lastErr: unknown;
+    let session: ContributeUploadSession | null = null;
+    while (attempt < SINGLE_PUT_MAX_ATTEMPTS) {
+        try {
+            const initRes = await fetch(`${UPLOAD_API_BASE}/contribute/upload-url`, {
+                method: "POST",
+                headers: authHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({
+                    contributor,
+                    file_name: file.name,
+                    size_bytes: file.size,
+                }),
+            });
+            session = (await (await handleResponse(initRes)).json()) as ContributeUploadSession;
 
-    await uploadFileToUrl(session, file, onProgress);
+            // Reset progress on retry so the bar doesn't look stuck.
+            if (attempt > 0) onProgress?.(0);
+            await uploadFileToUrl(session, file, onProgress);
+            break;
+        } catch (err) {
+            lastErr = err;
+            attempt += 1;
+            if (
+                attempt >= SINGLE_PUT_MAX_ATTEMPTS ||
+                !(err instanceof TransientUploadError)
+            ) {
+                throw err;
+            }
+            await backoffDelay(attempt);
+        }
+    }
+    if (!session) throw lastErr ?? new Error("Upload failed");
     onProgress?.(98);
 
     const completeBody: Record<string, unknown> = {
@@ -1129,6 +1211,9 @@ function uploadOnePart(
             if (xhr.status >= 200 && xhr.status < 300) {
                 const etag = xhr.getResponseHeader("ETag");
                 if (!etag) {
+                    // Missing ETag is a CORS misconfiguration on the bucket,
+                    // not a transient failure — surface it as a hard error so
+                    // the caller doesn't loop pointlessly.
                     reject(new Error(
                         "Upload succeeded but server did not return an ETag header. " +
                         "The R2 bucket CORS policy must expose the ETag header.",
@@ -1145,11 +1230,68 @@ function uploadOnePart(
             } catch {
                 if (xhr.responseText) detail = xhr.responseText;
             }
-            reject(new Error(detail));
+            const err = isRetriableStatus(xhr.status)
+                ? new TransientUploadError(detail)
+                : new Error(detail);
+            reject(err);
         };
-        xhr.onerror = () => reject(new Error("Network error during part upload"));
+        xhr.onerror = () =>
+            reject(new TransientUploadError("Network error during part upload"));
+        xhr.ontimeout = () =>
+            reject(new TransientUploadError("Part upload timed out"));
         xhr.send(blob);
     });
+}
+
+/** Sign + PUT a single part with retry on transient failures (network drop,
+ *  5xx, expired URL, 429). Re-signs every attempt so a stale presigned URL
+ *  isn't reused after a long backoff (e.g. VPN reconnect). The per-part
+ *  progress counter is reset on each retry so the UI doesn't show a stale
+ *  partial value. */
+async function uploadOnePartWithRetry(
+    contributionId: string,
+    partNumber: number,
+    blob: Blob,
+    onChunkProgress: (loaded: number) => void,
+    maxAttempts = 5,
+): Promise<string> {
+    let attempt = 0;
+    let lastErr: unknown;
+    while (attempt < maxAttempts) {
+        try {
+            const signRes = await fetch(
+                `${UPLOAD_API_BASE}/contribute/multipart/sign-part`,
+                {
+                    method: "POST",
+                    headers: authHeaders({ "Content-Type": "application/json" }),
+                    body: JSON.stringify({
+                        contribution_id: contributionId,
+                        part_number: partNumber,
+                    }),
+                },
+            );
+            const signed = (await (await handleResponse(signRes)).json()) as MultipartSignPartResponse;
+
+            // Reset this part's progress: any partial value from the prior
+            // attempt is no longer accurate.
+            onChunkProgress(0);
+
+            return await uploadOnePart(signed.url, signed.method, blob, (loaded) => {
+                onChunkProgress(loaded);
+            });
+        } catch (err) {
+            lastErr = err;
+            attempt += 1;
+            if (
+                attempt >= maxAttempts ||
+                !(err instanceof TransientUploadError)
+            ) {
+                throw err;
+            }
+            await backoffDelay(attempt);
+        }
+    }
+    throw lastErr ?? new Error("Part upload failed");
 }
 
 async function contributeMapMultipart(
@@ -1178,7 +1320,8 @@ async function contributeMapMultipart(
         for (const n of partLoaded) sum += n;
         // Cap part-upload progress at 95% so the /complete round-trip
         // accounts for the final 3% (matching the single-PUT path).
-        onProgress(Math.min(Math.round((sum / file.size) * 95), 95));
+        const percent = Math.min(Math.round((sum / file.size) * 95), 95)
+        onProgress(percent);
     };
 
     const parts: { PartNumber: number; ETag: string }[] = [];
@@ -1191,23 +1334,10 @@ async function contributeMapMultipart(
             const end = Math.min(start + partSize, file.size);
             const blob = file.slice(start, end);
 
-            const signRes = await fetch(
-                `${UPLOAD_API_BASE}/contribute/multipart/sign-part`,
-                {
-                    method: "POST",
-                    headers: authHeaders({ "Content-Type": "application/json" }),
-                    body: JSON.stringify({
-                        contribution_id: session.contribution_id,
-                        part_number: partNumber,
-                    }),
-                },
-            );
-            const signed = (await (await handleResponse(signRes)).json()) as MultipartSignPartResponse;
-
             const partIndex = partNumber - 1;
-            const etag = await uploadOnePart(
-                signed.url,
-                signed.method,
+            const etag = await uploadOnePartWithRetry(
+                session.contribution_id,
+                partNumber,
                 blob,
                 (loaded) => {
                     partLoaded[partIndex] = loaded;
