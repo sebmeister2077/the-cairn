@@ -535,8 +535,21 @@ CREATE TABLE IF NOT EXISTS user_flags (
     resolution    TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_flags_unresolved
-    ON user_flags (flagged_user) WHERE resolved_at IS NULL;
+-- NOTE: the legacy ``flagged_user`` text column was replaced by
+-- ``flagged_user_id`` (UUID FK -> users.id) in alembic 0010 and the
+-- text column was dropped. The unresolved-flag index now lives on
+-- ``flagged_user_id``; recreating the legacy index here would fail
+-- with "column flagged_user does not exist" against a migrated DB.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+         WHERE table_name = 'user_flags' AND column_name = 'flagged_user'
+    ) THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_user_flags_unresolved
+                     ON user_flags (flagged_user) WHERE resolved_at IS NULL';
+    END IF;
+END$$;
 CREATE INDEX IF NOT EXISTS idx_user_flags_created
     ON user_flags (created_at DESC);
 
@@ -625,9 +638,20 @@ def ensure_schema():
             cur.execute(_ACCOUNT_SCHEMA_SQL)
             # Migration: ensure user_flags FKs have ON UPDATE CASCADE so admin
             # rekey (which updates users.api_key) does not violate the FK.
+            # Only relevant on pre-0010 schemas where the legacy
+            # ``flagged_user`` / ``related_user`` text columns still exist;
+            # 0010 dropped both columns (and their FKs) in favour of UUID
+            # ``flagged_user_id`` / ``related_user_id``.
             cur.execute("""
                 DO $$
                 BEGIN
+                    IF NOT EXISTS (
+                        SELECT 1 FROM information_schema.columns
+                         WHERE table_name = 'user_flags'
+                           AND column_name = 'flagged_user'
+                    ) THEN
+                        RETURN;
+                    END IF;
                     IF EXISTS (
                         SELECT 1 FROM information_schema.referential_constraints
                         WHERE constraint_name = 'user_flags_flagged_user_fkey'
