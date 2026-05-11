@@ -50,7 +50,7 @@ import {
 } from "@/lib/api";
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
-import { userReduxState } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 
 const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
@@ -103,9 +103,9 @@ function getActiveCategory(pathname: string) {
   for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
-  // Root path (/) defaults to General. Standalone pages like /privacy and
-  // /terms intentionally have no active tab.
-  if (pathname === "/") return "/general";
+  // Standalone pages like /privacy and /terms intentionally have no
+  // active tab. The root path "/" redirects to the TOPS map viewer, so
+  // we don't need to special-case it here.
   return "";
 }
 
@@ -318,7 +318,7 @@ export function AppContent() {
   // The queryKey includes the API key so switching keys invalidates the
   // cached answer immediately (otherwise a previously-registered key's
   // successful response would hide the dot for a freshly-pasted new key).
-  const apiKey = userReduxState("auth.apiKey");
+  const apiKey = useReduxState("auth.apiKey");
   const { data: accountData } = useQuery<AccountMeResponse>({
     queryKey: ["account-me", apiKey ?? ""],
     queryFn: getMyAccountSafe,
@@ -358,6 +358,18 @@ export function AppContent() {
                 Admin
               </Badge>
             )}
+            <NavLink to="/general">
+              <Button
+                variant="ghost"
+                size="sm"
+                title="What is Cairn? Learn about the project and its tools."
+              >
+                <span aria-hidden="true" className="mr-1">
+                  &#9432;
+                </span>
+                About
+              </Button>
+            </NavLink>
             <NavLink to="/account">
               <Button variant="ghost" size="sm" className="relative">
                 Account
@@ -440,7 +452,11 @@ export function AppContent() {
           </Card>
         )}
         <Routes>
-          <Route path="/" element={<GeneralPage />} />
+          {/* The vast majority of visitors come for the TOPS map viewer, so
+              send them straight there instead of greeting them with the
+              project intro. The intro / tool overview is still reachable via
+              the "General" tab in the nav. */}
+          <Route path="/" element={<Navigate to="/multiplayer/tops-map" replace />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
           <Route path="/singleplayer/extract" element={<ExtractPage />} />
           <Route path="/singleplayer/import" element={<ImportPage />} />
@@ -451,7 +467,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
-         <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
+          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />

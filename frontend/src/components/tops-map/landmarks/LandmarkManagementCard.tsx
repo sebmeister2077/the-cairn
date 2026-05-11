@@ -29,7 +29,7 @@ import {
   type LandmarkEditRequest,
   type LandmarkFeature,
 } from "@/lib/api";
-import { userReduxState } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 import { LandmarkAddDialog } from "./LandmarkAddDialog";
 import { LandmarkRenameDialog } from "./LandmarkRenameDialog";
 import { LandmarkRow, PendingRequestRow } from "./LandmarkRow";
@@ -52,7 +52,7 @@ async function fetchLandmarkFeatures(): Promise<LandmarkFeature[]> {
 }
 
 export function LandmarkManagementCard({ onLandmarksChanged }: Props) {
-  const apiKey = userReduxState("auth.apiKey");
+  const apiKey = useReduxState("auth.apiKey");
   const accountQuery = useQuery({
     queryKey: ["account-me", apiKey ?? ""],
     queryFn: getMyAccountSafe,

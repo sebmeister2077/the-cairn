@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addLandmark, type LandmarkFeature, renameLandmark } from "@/lib/api";
-import { userReduxState } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -31,7 +31,7 @@ export function LandmarkAddDialog({
   onOpenChange: (v: boolean) => void;
   onSuccess: () => void;
 }) {
-  const isAdmin = userReduxState("auth.isAdmin");
+  const isAdmin = useReduxState("auth.isAdmin");
   const [label, setLabel] = useState("");
   const [kind, setKind] = useState<"Base" | "Server" | "Misc" | "Terminus">("Base");
   const [x, setX] = useState<string>("0");

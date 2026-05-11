@@ -7,7 +7,7 @@ import {
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
 } from "@/lib/api";
-import { useAppDispatch, useAppSelector, userReduxState } from "@/store/hooks";
+import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
   setSelectedLevel as setSelectedLevelAction,
   setGroupingsViewMode as setGroupingsViewModeAction,
@@ -126,7 +126,8 @@ interface TopsMapStatsResponse extends MapStats {
 
 export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
-  const isAdmin = userReduxState("auth.isAdmin");
+  const isAdmin = useReduxState("auth.isAdmin");
+  const apiKey = useReduxState("auth.apiKey");
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the
@@ -296,6 +297,7 @@ export function TOPSMapViewPage() {
     queryKey: ["tops-map-stats"],
     queryFn: getTopsMapStats,
     staleTime: STALE_TIME,
+    enabled: Boolean(apiKey),
   });
 
   // Resolution selection. Defaults to whatever the user picked last, falling

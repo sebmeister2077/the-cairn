@@ -21,14 +21,14 @@ import {
 import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
 import { contributeQueries } from "@/lib/constants/react-query";
 import type { ContributeInfo } from "@/models/contributions";
-import { userReduxState } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 import { useQuery, useQueryClient, type DefaultError } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function ContributePage() {
   const queryClient = useQueryClient();
-  const isAdmin = userReduxState("auth.isAdmin");
-  const canContribute = userReduxState("auth.canContribute");
+  const isAdmin = useReduxState("auth.isAdmin");
+  const canContribute = useReduxState("auth.canContribute");
 
   // Contribute info via React Query. Phase 1: when at least one pending row
   // has a not-yet-ready match score we poll every 5 s so the badge updates

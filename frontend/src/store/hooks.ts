@@ -9,7 +9,7 @@ export const useAppDispatch: () => AppDispatch = useDispatch;
 /** Typed `useSelector` — narrows to the app's RootState. */
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 
-export function userReduxState<P extends Path<RootState>>(path: P): PathValue<RootState, P> {
+export function useReduxState<P extends Path<RootState>>(path: P): PathValue<RootState, P> {
     return useSelector((state: RootState) => {
         const parts = path.split(".");
         return parts.reduce((prev, current) => (prev as any)[current as any], state) as PathValue<RootState, P>;

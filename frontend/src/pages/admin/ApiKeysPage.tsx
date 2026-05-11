@@ -47,7 +47,7 @@ import { CreatedInviteLinkDialog } from "@/components/CreatedInviteLinkDialog";
 import { LoadMoreButton } from "@/components/LoadMoreButton";
 import { Pagination } from "@/components/Pagination";
 import { useDebounced } from "@/hooks/useDebounced";
-import { useAppDispatch, userReduxState } from "@/store/hooks";
+import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { adminQueries } from "@/lib/constants/react-query";
 import { patchAdminApiKeysFilters } from "@/store/slices/adminApiKeysFilters";
 import { useDebounceCallback } from "@react-hook/debounce";
@@ -110,7 +110,7 @@ export function ApiKeysPage() {
 
   // --- Active keys (page-based pagination) ---
   const [activeKeysPage, setActiveKeysPage] = useState(0);
-  const filters = userReduxState("adminApiKeysFilters");
+  const filters = useReduxState("adminApiKeysFilters");
 
   // Reset to first page whenever a filter/search/sort changes
   useEffect(() => {

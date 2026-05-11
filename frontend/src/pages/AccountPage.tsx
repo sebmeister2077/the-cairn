@@ -23,11 +23,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { userReduxState } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 
 export function AccountPage() {
   const queryClient = useQueryClient();
-  const apiKey = userReduxState("auth.apiKey");
+  const apiKey = useReduxState("auth.apiKey");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -113,8 +113,8 @@ export function AccountPage() {
         <CardHeader>
           <CardTitle>Create your account</CardTitle>
           <CardDescription>
-            Your API key isn't yet linked to an account. Accept the terms and a random display name
-            will be generated for you.
+            Accept the terms and a random display name will be generated for you. Creating account
+            is not needed for viewing & contributing the map
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
