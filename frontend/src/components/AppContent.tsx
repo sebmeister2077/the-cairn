@@ -144,19 +144,19 @@ export function AppContent() {
     null,
   );
 
-  // useEffect(() => {
-  //   const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
-  //   const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
-  //   if (isPageWithMapAssets) {
-  //     const linkEl = document.createElement("link");
-  //     linkEl.rel = "preconnect";
-  //     linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
-  //     document.head.appendChild(linkEl);
-  //     return () => {
-  //       document.head.removeChild(linkEl);
-  //     };
-  //   }
-  // }, [location.pathname]);
+  useEffect(() => {
+    const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
+    const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
+    if (isPageWithMapAssets) {
+      const linkEl = document.createElement("link");
+      linkEl.rel = "preconnect";
+      linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
+      document.head.appendChild(linkEl);
+      return () => {
+        document.head.removeChild(linkEl);
+      };
+    }
+  }, [location.pathname]);
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -348,12 +348,19 @@ export function AppContent() {
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex flex-col items-start gap-1">
+          <a
+            href="/"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/");
+            }}
+            className="flex flex-col items-start gap-1"
+          >
             <Logo className="h-10 w-auto" />
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
               Unofficial fan project &mdash; not affiliated with Anego Studios
             </span>
-          </div>
+          </a>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <Badge variant="default" className="bg-amber-500 text-white hover:bg-amber-500">
