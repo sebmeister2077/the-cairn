@@ -361,8 +361,8 @@ async def lifespan(app: FastAPI):
         except Exception:
             pass
         try:
-            from .core import api_key_cache
-            flushed = api_key_cache.flush_all()
+            from .core import api_key_cache as _akc
+            flushed = _akc.flush_all()
             if flushed:
                 logger.info("Flushed pending api_key usage for %d key(s) at shutdown", flushed)
         except Exception as exc:
