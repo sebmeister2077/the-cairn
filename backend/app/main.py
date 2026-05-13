@@ -360,6 +360,13 @@ async def lifespan(app: FastAPI):
             weekly_backup.stop()
         except Exception:
             pass
+        try:
+            from .core import api_key_cache
+            flushed = api_key_cache.flush_all()
+            if flushed:
+                logger.info("Flushed pending api_key usage for %d key(s) at shutdown", flushed)
+        except Exception as exc:
+            logger.warning("api_key_cache.flush_all at shutdown failed (non-fatal): %s", exc)
         close_db()
         logger.info("Shutdown close_db completed in %.3fs", perf_counter() - shutdown_started)
 

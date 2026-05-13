@@ -89,20 +89,26 @@ def touch(key: str) -> Optional[dict]:
 
         last_used = entry.get("last_used_at")
         if last_used is None or now - last_used > STALE_AFTER:
+            # Stale eviction — don't drop pending usage increments on the
+            # floor; queue them for a flush after we release the lock.
+            stale_pending = entry.get("_pending_uses", 0)
             _cache.pop(key, None)
-            return None
+            if stale_pending > 0 and last_used is not None:
+                flush_pending = stale_pending
+                flush_last_used = last_used
+                needs_flush = True
+        else:
+            entry["last_used_at"] = now
+            entry["_pending_uses"] = entry.get("_pending_uses", 0) + 1
 
-        entry["last_used_at"] = now
-        entry["_pending_uses"] = entry.get("_pending_uses", 0) + 1
+            if now - entry.get("_last_db_flush", now) >= TOUCH_FLUSH_INTERVAL:
+                flush_pending = entry["_pending_uses"]
+                flush_last_used = entry["last_used_at"]
+                entry["_pending_uses"] = 0
+                entry["_last_db_flush"] = now
+                needs_flush = True
 
-        if now - entry.get("_last_db_flush", now) >= TOUCH_FLUSH_INTERVAL:
-            flush_pending = entry["_pending_uses"]
-            flush_last_used = entry["last_used_at"]
-            entry["_pending_uses"] = 0
-            entry["_last_db_flush"] = now
-            needs_flush = True
-
-        info_copy = {k: v for k, v in entry.items() if not k.startswith("_")}
+            info_copy = {k: v for k, v in entry.items() if not k.startswith("_")}
 
     if needs_flush:
         _flush_to_db(key, flush_pending, flush_last_used)
@@ -154,6 +160,28 @@ def invalidate_all() -> None:
     """Clear the entire cache. Useful in tests."""
     with _lock:
         _cache.clear()
+
+
+def flush_all() -> int:
+    """Flush all pending usage counters to the DB without evicting entries.
+
+    Call from app shutdown so a redeploy / restart doesn't silently
+    discard the in-memory increments accumulated since the last
+    per-key flush. Returns the number of keys that had pending writes.
+    """
+    pending: list[tuple[str, int, datetime]] = []
+    now = datetime.now(timezone.utc)
+    with _lock:
+        for key, entry in _cache.items():
+            n = entry.get("_pending_uses", 0)
+            last_used = entry.get("last_used_at")
+            if n > 0 and last_used is not None:
+                pending.append((key, n, last_used))
+                entry["_pending_uses"] = 0
+                entry["_last_db_flush"] = now
+    for key, n, last_used in pending:
+        _flush_to_db(key, n, last_used)
+    return len(pending)
 
 
 def get_id(key: str) -> Optional[UUID]:
