@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AddingTranslocatorsWithContributeTLsPost } from "./AddingTranslocatorsWithContributeTLsPost";
 import { ContributingToTopsMapPost } from "./ContributingToTopsMapPost";
+import { SubmittingTranslocatorScreenshotsPost } from "./SubmittingTranslocatorScreenshotsPost";
 
 export interface BlogPostMeta {
     slug: string;
@@ -14,6 +15,16 @@ export interface BlogPostMeta {
 
 // Posts are listed newest-first.
 export const BLOG_POSTS: BlogPostMeta[] = [
+    {
+        slug: "submitting-translocator-screenshots",
+        title: "Submitting Translocator Links with Screenshots",
+        excerpt:
+            "How to take clear endpoint screenshots, upload a TL pair for review, understand analysis status, and read warnings before admin approval.",
+        date: "2026-05-15",
+        readingMinutes: 7,
+        tags: ["guide", "multiplayer", "translocators", "screenshots"],
+        Component: SubmittingTranslocatorScreenshotsPost,
+    },
     {
         slug: "adding-translocators-with-contribute-tls",
         title: "Adding Translocators with Contribute TLs",
