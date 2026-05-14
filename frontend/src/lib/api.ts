@@ -486,6 +486,23 @@ export async function patchAdminTLScreenshotRequest(
     return (await handleResponse(res)).json();
 }
 
+export async function retryAdminTLScreenshotAnalysis(
+    id: string,
+): Promise<{
+    retried: string;
+    worker_spawned: boolean;
+    request: TLScreenshotRequest;
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/translocators/screenshots/${id}/retry-analysis`,
+        {
+            method: "POST",
+            headers: authHeaders(),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
 export async function approveAdminTLScreenshotRequest(
     id: string,
     label: string | null,

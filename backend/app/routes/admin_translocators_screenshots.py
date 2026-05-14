@@ -4,6 +4,8 @@
 - ``GET    /admin/translocators/screenshots/{id}`` detail (with presigned
   URLs for the screenshots and minimap crops)
 - ``PATCH  /admin/translocators/screenshots/{id}`` admin edits OCR'd coords
+- ``POST   /admin/translocators/screenshots/{id}/retry-analysis`` requeues
+    analysis for a pending request
 - ``POST   /admin/translocators/screenshots/{id}/approve`` merges into
   ``translocators.geojson`` (sharing ``_translocators_lock`` with the
   chat-log path) and deletes the screenshot R2 objects.
@@ -199,17 +201,79 @@ def _now_iso() -> str:
 
 
 def _delete_request_objects(row: dict) -> None:
-    for k in (
+    keys = [
         row.get("screenshot_a_key"),
         row.get("screenshot_b_key"),
         row.get("minimap_crop_a_key"),
         row.get("minimap_crop_b_key"),
-    ):
+        # Server-map crops live at deterministic R2 keys (no DB column).
+        r2_storage.tl_screenshot_server_crop_key(row["id"], "a"),
+        r2_storage.tl_screenshot_server_crop_key(row["id"], "b"),
+    ]
+    for k in keys:
         if k:
             try:
                 r2_storage.delete_object(k)
             except Exception:
                 logger.exception("tl_screenshot admin: delete %s failed", k)
+
+
+def _delete_analysis_objects(row: dict) -> None:
+    keys = [
+        row.get("minimap_crop_a_key"),
+        row.get("minimap_crop_b_key"),
+        r2_storage.tl_screenshot_server_crop_key(row["id"], "a"),
+        r2_storage.tl_screenshot_server_crop_key(row["id"], "b"),
+    ]
+    for k in keys:
+        if k:
+            try:
+                r2_storage.delete_object(k)
+            except Exception:
+                logger.exception("tl_screenshot admin: delete analysis object %s failed", k)
+
+
+@router.post("/{request_id}/retry-analysis")
+async def retry_analysis(
+    request_id: str,
+    api_key: str = Depends(require_admin),
+) -> dict:
+    row = await asyncio.to_thread(db.get_tl_screenshot_request, request_id)
+    if row is None:
+        raise HTTPException(status_code=404, detail="not found")
+    if row.get("status") != "pending":
+        raise HTTPException(
+            status_code=409,
+            detail=f"cannot retry analysis for a {row.get('status')} request",
+        )
+    if row.get("analysis_status") == "running":
+        raise HTTPException(status_code=409, detail="analysis is already running")
+
+    await asyncio.to_thread(_delete_analysis_objects, row)
+    updated = await asyncio.to_thread(db.retry_tl_screenshot_analysis, request_id)
+    if updated is None:
+        raise HTTPException(status_code=409, detail="request could not be requeued")
+
+    spawned = False
+    try:
+        from ..tasks import process_tl_screenshot_request as screenshot_worker
+        spawned = screenshot_worker.start_job()
+    except Exception:
+        logger.exception("tl_screenshot admin: failed to start retry worker")
+    accounts_db.audit_log(
+        api_key,
+        "tl_screenshot.retry_analysis",
+        target=request_id,
+        metadata={
+            "previous_analysis_status": row.get("analysis_status"),
+            "worker_spawned": spawned,
+        },
+    )
+    return {
+        "retried": request_id,
+        "worker_spawned": spawned,
+        "request": user_routes._serialise_request(updated, include_urls=True),
+    }
 
 
 @router.post("/{request_id}/approve")

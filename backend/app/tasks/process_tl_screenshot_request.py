@@ -135,6 +135,24 @@ def _process_one(row: dict) -> None:
             chunks_used=0, scale=None, sampled_window=None,
         )
 
+    # Persist the server-map window each match used so the admin can
+    # eyeball it next to the user's minimap crop in the review dialog.
+    # Failures are non-fatal — the rest of the analysis still works.
+    for slot, match in (("a", match_a), ("b", match_b)):
+        if match.sampled_image is None:
+            continue
+        try:
+            r2_storage.upload_bytes(
+                r2_storage.tl_screenshot_server_crop_key(request_id, slot),
+                pipeline.numpy_to_png_bytes(match.sampled_image),
+                content_type="image/png",
+            )
+        except Exception:
+            logger.exception(
+                "tl_screenshot worker: server-crop upload failed for %s slot %s",
+                request_id, slot,
+            )
+
     warnings = pipeline.build_validation_warnings(
         ocr_a=ocr_a, ocr_b=ocr_b,
         coords_a=coords_a, coords_b=coords_b,

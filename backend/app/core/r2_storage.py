@@ -776,6 +776,15 @@ def tl_screenshot_minimap_crop_key(request_id: str, slot: str) -> str:
     return f"{TL_SCREENSHOT_PREFIX}{request_id}-{slot}-minimap.png"
 
 
+def tl_screenshot_server_crop_key(request_id: str, slot: str) -> str:
+    """R2 key for the level-5 server-map window that the analysis worker
+    matched the user's minimap crop against. Lets the admin compare both
+    images side-by-side in the review dialog."""
+    if slot not in ("a", "b"):
+        raise ValueError(f"slot must be 'a' or 'b', got {slot!r}")
+    return f"{TL_SCREENSHOT_PREFIX}{request_id}-{slot}-server-crop.png"
+
+
 def list_backup_objects() -> list:
     """Return raw R2 listing for ``backups/`` — dicts with Key, Size, LastModified."""
     out = []

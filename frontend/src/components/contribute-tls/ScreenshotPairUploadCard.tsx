@@ -12,6 +12,7 @@
  */
 
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -138,7 +139,14 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
           <strong>coordinate readout</strong> (default: bottom of the HUD, e.g.{" "}
           <code>X=1234 Y=110 Z=-5678</code>). We use OCR to read the coordinates and compare the
           minimap against the server map to verify authenticity. An admin reviews every submission
-          before it's added to the live map.
+          before it's added to the live map. Need examples? Read the{" "}
+          <NavLink
+            to="/blog/submitting-translocator-screenshots"
+            className="underline decoration-dotted underline-offset-2 hover:text-primary"
+          >
+            screenshot submission guide
+          </NavLink>
+          .
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

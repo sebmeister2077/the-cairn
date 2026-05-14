@@ -3458,6 +3458,33 @@ def set_tl_screenshot_analysis_failed(request_id: str, error: str) -> None:
             )
 
 
+def retry_tl_screenshot_analysis(request_id: str) -> Optional[dict]:
+    """Reset a pending screenshot request so the analysis worker reprocesses it."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE translocator_screenshot_requests
+                       SET analysis_status = 'queued',
+                           analysis_error = NULL,
+                           ocr_a = NULL,
+                           ocr_b = NULL,
+                           coords_a = NULL,
+                           coords_b = NULL,
+                           minimap_match = NULL,
+                           validation_warnings = '[]'::jsonb,
+                           minimap_crop_a_key = NULL,
+                           minimap_crop_b_key = NULL,
+                           updated_at = NOW()
+                     WHERE id = %s
+                       AND status = 'pending'
+                       AND analysis_status <> 'running'
+                 RETURNING *""",
+                (request_id,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
 def update_tl_screenshot_request_coords(
     request_id: str,
     *,

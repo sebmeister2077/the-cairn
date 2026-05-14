@@ -61,6 +61,11 @@ export interface TLScreenshotRequest {
     screenshot_b_url?: string | null;
     minimap_a_url?: string | null;
     minimap_b_url?: string | null;
+    // Stitched & cropped level-5 server-map window the analysis worker
+    // matched the minimap crop against. Null when the area is unexplored
+    // on the server map (no chunks available).
+    server_minimap_a_url?: string | null;
+    server_minimap_b_url?: string | null;
 }
 
 export interface TLScreenshotUploadUrlResponse {

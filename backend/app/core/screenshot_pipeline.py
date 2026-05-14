@@ -57,16 +57,48 @@ MINIMAP_MIN_SIDE_PX = 80
 MINIMAP_EDGE_PROMINENCE = 2.5
 
 # Half-window in BLOCKS sampled from the level-5 cache around the player
-# coordinate when scoring the minimap. Enough room to allow for the user
-# zooming out (minimap can show 200-300 blocks across at the widest UI scale).
-LEVEL5_HALF_WINDOW_BLOCKS = 192
+# coordinate when scoring the minimap. Generous so even a heavily-zoomed-out
+# minimap (which can show ~300+ blocks across at the lowest UI scale) still
+# fits inside the sampled area with slop for matching.
+LEVEL5_HALF_WINDOW_BLOCKS = 256
 
-# Scale candidates used by multi-scale template matching. The minimap on
-# screen has 1 minimap pixel covering N world blocks; that ratio depends
-# on the user's chosen UI scale. We resize the candidate region (sampled
-# from the level-5 cache at 1 block per pixel) by these factors before
-# matching against the minimap crop.
-TEMPLATE_MATCH_SCALES = [0.4, 0.55, 0.7, 0.85, 1.0, 1.25, 1.5, 1.75, 2.0]
+# UI overlays drawn on top of the minimap (player dot, waypoint pins,
+# prospecting dots) are vivid, high-saturation colours that don't exist
+# in the server map crop. We detect them by HSV saturation and inpaint
+# them out before matching so they neither add noise nor anchor a false
+# correlation peak.
+OVERLAY_SATURATION_MIN = 170     # 0–255; fairly aggressive cut-off
+OVERLAY_VALUE_MIN = 90           # ignore dark/black UI text
+OVERLAY_INPAINT_RADIUS = 4       # px; cv2.inpaint Telea radius
+
+# ORB feature-matching parameters. ORB is scale- and rotation-invariant
+# and copes well with the very different rendering of the in-game minimap
+# (3D-shaded) vs the level-5 server cache (flat per-block colour).
+#
+# These are tuned for a HARD case: the minimap is often zoomed in so far
+# that it covers <2% of the 512x512-block server crop. Two consequences:
+#
+#   * The pyramid must span a wide scale range. Default (8 levels, 1.2x)
+#     only covers ~3.6x; a heavily-zoomed-in minimap can be 5-6x larger
+#     px/block than the flat server cache. We use 12 levels at 1.15x to
+#     cover ~5.4x.
+#   * Lowe's ratio test gets unreliable when one image covers a tiny
+#     fraction of the other: every query descriptor has thousands of
+#     unrelated candidates, so the runner-up is almost always close to
+#     the true match. We loosen the ratio and rely on RANSAC for the
+#     real outlier rejection.
+#   * Scoring as ``inliers / len(good)`` is noisy with small ``good``
+#     counts. We instead score by absolute inlier count saturating at
+#     ``ORB_INLIER_TARGET`` so "few but geometrically consistent" still
+#     reports a meaningful non-zero score.
+ORB_MAX_FEATURES = 4000          # generous for the bigger server crop
+ORB_PYRAMID_LEVELS = 12
+ORB_PYRAMID_SCALE = 1.15
+ORB_EDGE_THRESHOLD = 8           # let features sit close to the border
+ORB_LOWE_RATIO = 0.85            # permissive; RANSAC rejects the noise
+ORB_MIN_GOOD_MATCHES = 4         # cv2.findHomography needs >= 4
+ORB_RANSAC_REPROJ_PX = 8.0       # px; allow some shading distortion
+ORB_INLIER_TARGET = 25           # inliers; >= this saturates score to 1.0
 
 
 @dataclass
@@ -100,6 +132,10 @@ class MinimapMatchResult:
     chunks_used: int
     scale: Optional[float]
     sampled_window: Optional[dict]  # {x_min, x_max, z_min, z_max}
+    # The stitched & cropped server-map window used as the match-template
+    # search space. Kept off ``to_dict`` so it doesn't get persisted as
+    # JSON; the worker uploads it to R2 separately for admin review.
+    sampled_image: Optional[np.ndarray] = None
 
     def to_dict(self) -> dict:
         return {
@@ -404,6 +440,119 @@ def _get_rapidocr_engine():
 # Minimap-vs-server comparison via level-5 chunks
 # ---------------------------------------------------------------------------
 
+def _inpaint_minimap_overlays(rgb: np.ndarray, cv2) -> np.ndarray:
+    """Replace high-saturation UI overlay pixels (player dot, waypoint pins,
+    prospecting markers, etc.) with the surrounding terrain via Telea
+    inpainting.
+
+    The server-map crop has none of these, so leaving them in the template
+    drops the correlation peak and adds spurious matches wherever the
+    server map happens to have similarly bright pixels. We dilate the
+    raw HSV mask slightly so anti-aliased pixel rings are also removed.
+    """
+    try:
+        hsv = cv2.cvtColor(rgb, cv2.COLOR_RGB2HSV)
+        sat = hsv[..., 1]
+        val = hsv[..., 2]
+        mask = ((sat >= OVERLAY_SATURATION_MIN) & (val >= OVERLAY_VALUE_MIN)).astype(
+            np.uint8
+        ) * 255
+        if not mask.any():
+            return rgb
+        # Dilate to capture the soft edge of each marker.
+        kernel = np.ones((3, 3), dtype=np.uint8)
+        mask = cv2.dilate(mask, kernel, iterations=2)
+        bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+        inpainted = cv2.inpaint(bgr, mask, OVERLAY_INPAINT_RADIUS, cv2.INPAINT_TELEA)
+        return cv2.cvtColor(inpainted, cv2.COLOR_BGR2RGB)
+    except Exception:
+        logger.exception("_inpaint_minimap_overlays failed; falling back to raw RGB")
+        return rgb
+
+
+def _canny(gray: np.ndarray, cv2) -> np.ndarray:
+    """Auto-thresholded Canny edge map. Smoothed first so JPEG-style noise
+    in the minimap doesn't dominate the edge response."""
+    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
+    median = float(np.median(blurred))
+    lo = int(max(0, 0.66 * median))
+    hi = int(min(255, 1.33 * median))
+    return cv2.Canny(blurred, lo, hi)
+
+
+def _orb_geometric_match(
+    minimap_gray: np.ndarray,
+    sampled_gray: np.ndarray,
+    cv2,
+) -> Tuple[float, int, int]:
+    """Match the minimap into the sampled server crop via ORB + RANSAC.
+
+    Returns ``(score, inlier_count, good_match_count)`` where ``score``
+    is in ``[0, 1]`` and is computed from the absolute inlier count
+    saturating at ``ORB_INLIER_TARGET``. A genuine match yields a tight,
+    geometrically-consistent cluster of inliers; a wrong location yields
+    scattered matches that RANSAC discards almost entirely (typically 0-3
+    inliers → score < 0.15).
+    """
+    orb = cv2.ORB_create(
+        nfeatures=ORB_MAX_FEATURES,
+        scaleFactor=ORB_PYRAMID_SCALE,
+        nlevels=ORB_PYRAMID_LEVELS,
+        edgeThreshold=ORB_EDGE_THRESHOLD,
+    )
+    kp_a, des_a = orb.detectAndCompute(minimap_gray, None)
+    kp_b, des_b = orb.detectAndCompute(sampled_gray, None)
+    if des_a is None or des_b is None or len(kp_a) < 2 or len(kp_b) < 2:
+        return 0.0, 0, 0
+
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+    try:
+        knn = bf.knnMatch(des_a, des_b, k=2)
+    except cv2.error:
+        return 0.0, 0, 0
+
+    # Lowe's ratio test: keep matches that are noticeably better than the
+    # runner-up. The ratio is intentionally permissive (0.85) because the
+    # minimap may cover a tiny fraction of the server crop, in which case
+    # every query descriptor finds a near-duplicate runner-up by chance.
+    # RANSAC below filters the geometric noise that survives.
+    good = []
+    for pair in knn:
+        if len(pair) < 2:
+            continue
+        m, n = pair
+        if m.distance < ORB_LOWE_RATIO * n.distance:
+            good.append(m)
+
+    if len(good) < ORB_MIN_GOOD_MATCHES:
+        return 0.0, 0, len(good)
+
+    src_pts = np.float32(
+        [kp_a[m.queryIdx].pt for m in good]
+    ).reshape(-1, 1, 2)
+    dst_pts = np.float32(
+        [kp_b[m.trainIdx].pt for m in good]
+    ).reshape(-1, 1, 2)
+
+    # Homography is a superset of similarity (scale + translation +
+    # rotation + perspective). For a flat 2D map projection the result
+    # should be very close to a similarity transform, so RANSAC inliers
+    # are a strong "these matches agree on a single placement" signal.
+    _H, mask = cv2.findHomography(
+        src_pts, dst_pts, cv2.RANSAC, ORB_RANSAC_REPROJ_PX,
+    )
+    if mask is None:
+        return 0.0, 0, len(good)
+
+    inliers = int(mask.sum())
+    # Saturating absolute-count score. Wrong locations rarely produce
+    # >3 RANSAC inliers; real matches commonly produce 10-50+. Mapping
+    # 25 inliers → 1.0 keeps the useful range monotonic without making
+    # "good but small overlap" matches look bad.
+    score = min(1.0, inliers / float(ORB_INLIER_TARGET))
+    return float(max(0.0, score)), inliers, len(good)
+
+
 def compare_minimap_to_level5(
     minimap: Image.Image,
     *,
@@ -438,7 +587,7 @@ def compare_minimap_to_level5(
     if sampled is None or chunks_used == 0:
         return MinimapMatchResult(
             score=0.0, method="no_chunks", chunks_used=0,
-            scale=None, sampled_window=window,
+            scale=None, sampled_window=window, sampled_image=sampled,
         )
 
     try:
@@ -447,46 +596,46 @@ def compare_minimap_to_level5(
         logger.warning("opencv-python-headless not installed; minimap match disabled")
         return MinimapMatchResult(
             score=0.0, method="opencv_unavailable", chunks_used=chunks_used,
-            scale=None, sampled_window=window,
+            scale=None, sampled_window=window, sampled_image=sampled,
         )
 
     try:
         sampled_gray = cv2.cvtColor(sampled, cv2.COLOR_RGB2GRAY)
-        minimap_gray = cv2.cvtColor(
-            np.asarray(minimap.convert("RGB")), cv2.COLOR_RGB2GRAY
+        minimap_rgb = np.asarray(minimap.convert("RGB"))
+        minimap_clean = _inpaint_minimap_overlays(minimap_rgb, cv2)
+        minimap_gray = cv2.cvtColor(minimap_clean, cv2.COLOR_RGB2GRAY)
+
+        # The in-game minimap and the level-5 server cache render the same
+        # blocks with very different visuals: the minimap has full 3D
+        # lighting/shading, the cache is flat per-block colour. That kills
+        # raw pixel correlation (NCC, edges) even at the correct location.
+        # Instead, do feature-based matching with geometric verification:
+        #   1. ORB keypoints + descriptors on both images
+        #   2. BFMatcher.knnMatch(k=2) + Lowe ratio test for "good" matches
+        #   3. RANSAC homography over the good matches; count inliers
+        # A real match yields a tight, geometrically-consistent cluster of
+        # inliers; a wrong location yields scattered noise that RANSAC
+        # rejects almost entirely. The reported score is the inlier ratio.
+        score, inliers, kp_count = _orb_geometric_match(
+            minimap_gray, sampled_gray, cv2,
         )
-        best_score = -1.0
-        best_scale: Optional[float] = None
-        for scale in TEMPLATE_MATCH_SCALES:
-            new_w = max(8, int(minimap_gray.shape[1] * scale))
-            new_h = max(8, int(minimap_gray.shape[0] * scale))
-            if new_w >= sampled_gray.shape[1] or new_h >= sampled_gray.shape[0]:
-                continue
-            templ = cv2.resize(
-                minimap_gray, (new_w, new_h), interpolation=cv2.INTER_AREA
-            )
-            res = cv2.matchTemplate(sampled_gray, templ, cv2.TM_CCOEFF_NORMED)
-            _min_v, max_v, _min_l, _max_l = cv2.minMaxLoc(res)
-            if max_v > best_score:
-                best_score = float(max_v)
-                best_scale = float(scale)
-        if best_score < 0:
-            return MinimapMatchResult(
-                score=0.0, method="error", chunks_used=chunks_used,
-                scale=None, sampled_window=window,
-            )
         return MinimapMatchResult(
-            score=max(0.0, min(1.0, best_score)),
-            method="matchTemplate",
+            score=score,
+            method="orb_ransac",
             chunks_used=chunks_used,
-            scale=best_scale,
+            # ``scale`` is no longer a single zoom factor (ORB is scale-
+            # invariant), so we surface the absolute inlier count instead
+            # so the admin can see "matched 42 keypoints, 38 geometrically
+            # consistent" rather than guessing what 0.7 means.
+            scale=float(inliers) if kp_count > 0 else None,
             sampled_window=window,
+            sampled_image=sampled,
         )
     except Exception:
-        logger.exception("compare_minimap_to_level5: matchTemplate failed")
+        logger.exception("compare_minimap_to_level5: orb match failed")
         return MinimapMatchResult(
             score=0.0, method="error", chunks_used=chunks_used,
-            scale=None, sampled_window=window,
+            scale=None, sampled_window=window, sampled_image=sampled,
         )
 
 
@@ -516,22 +665,27 @@ def _sample_level5_window(
     image_h = int(metadata.get("image_h", 0))
     chunk_w = int(metadata.get("chunk_w", 0))
     chunk_h = int(metadata.get("chunk_h", 0))
-    min_chunk_x = int(metadata.get("min_x", 0))
-    min_chunk_z = int(metadata.get("min_z", 0))
     scale = int(metadata.get("scale", 1)) or 1
 
     if image_w <= 0 or image_h <= 0 or chunk_w <= 0 or chunk_h <= 0:
         return None, 0, None
 
     # World block (x, z) -> image pixel (px, py).
-    map_origin_block_x = min_chunk_x * TILE_SIZE
-    map_origin_block_z = min_chunk_z * TILE_SIZE
-    # Frontend convention: +Z = north; map convention: +Z = south. Flip.
-    world_block_x = x_center
-    world_block_z = -z_center
+    #
+    # OCR returns coordinates in the same centered VS world-block space the
+    # frontend uses (range roughly ±512000 around 0). The level metadata
+    # exposes ``start_x`` / ``start_z`` as the centered world-block coord of
+    # the image's top-left pixel — i.e. ``min_chunk_* * TILE_SIZE -
+    # DEFAULT_MAP_MIDDLE``. We must use those, not raw ``min_x * TILE_SIZE``,
+    # otherwise the computed pixel center is offset by ~512000 blocks and
+    # always falls outside the image (→ chunks_used=0 → "no_chunks" warning
+    # even though the data is there). No Z flip: the map renderer and the
+    # frontend both treat +Z as image-down, matching the OCR coord.
+    start_block_x = int(metadata.get("start_x", 0))
+    start_block_z = int(metadata.get("start_z", 0))
 
-    px_center = int((world_block_x - map_origin_block_x) / scale)
-    py_center = int((world_block_z - map_origin_block_z) / scale)
+    px_center = int((x_center - start_block_x) / scale)
+    py_center = int((z_center - start_block_z) / scale)
 
     half = max(8, int(half_window_blocks / scale))
     px0 = max(0, px_center - half)

@@ -38,7 +38,7 @@ router = APIRouter(prefix="/contribute-tls/screenshots", tags=["contribute-tls-s
 
 _FLAG_KEY = "translocator_screenshot_contributions"
 _LABEL_MAX_LEN = 200
-_MAX_PENDING_PER_USER = 3
+_MAX_PENDING_PER_USER = 15
 _UPLOAD_URL_TTL_SECONDS = 900
 _MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024  # 8 MiB
 
@@ -130,6 +130,18 @@ def _serialise_request(row: dict, *, include_urls: bool = False) -> dict:
         out["screenshot_b_url"] = _maybe_presign(row.get("screenshot_b_key"))
         out["minimap_a_url"] = _maybe_presign(row.get("minimap_crop_a_key"))
         out["minimap_b_url"] = _maybe_presign(row.get("minimap_crop_b_key"))
+        # Server-map crop the analysis worker matched against. Stored at a
+        # deterministic R2 key so we don't need a DB column; presign with
+        # verify_exists=True so we return null when the worker couldn't
+        # sample (no level-5 chunks for this area).
+        out["server_minimap_a_url"] = _maybe_presign(
+            r2_storage.tl_screenshot_server_crop_key(row["id"], "a"),
+            verify_exists=True,
+        )
+        out["server_minimap_b_url"] = _maybe_presign(
+            r2_storage.tl_screenshot_server_crop_key(row["id"], "b"),
+            verify_exists=True,
+        )
     return out
 
 
@@ -137,7 +149,7 @@ def _iso(value):
     return value.isoformat() if hasattr(value, "isoformat") else value
 
 
-def _maybe_presign(key: Optional[str]) -> Optional[str]:
+def _maybe_presign(key: Optional[str], *, verify_exists: bool = False) -> Optional[str]:
     if not key:
         return None
     try:
@@ -145,7 +157,7 @@ def _maybe_presign(key: Optional[str]) -> Optional[str]:
             key,
             expires_seconds=_UPLOAD_URL_TTL_SECONDS,
             content_type="image/png",
-            verify_exists=False,
+            verify_exists=verify_exists,
         )
         return url or None
     except Exception:

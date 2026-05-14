@@ -12,12 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import {
   approveAdminTLScreenshotRequest,
   getAdminTLScreenshotRequest,
   patchAdminTLScreenshotRequest,
   rejectAdminTLScreenshotRequest,
+  retryAdminTLScreenshotAnalysis,
 } from "@/lib/api";
 import type { TLScreenshotRequest } from "@/models/tlScreenshots";
 
@@ -117,6 +118,18 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
     onError: (e: unknown) => setActionError(e instanceof Error ? e.message : "Approve failed"),
   });
 
+  const retryAnalysis = useMutation({
+    mutationFn: async () => {
+      if (!requestId) throw new Error("no request id");
+      return await retryAdminTLScreenshotAnalysis(requestId);
+    },
+    onSuccess: ({ request }) => {
+      queryClient.setQueryData(["admin-tl-screenshot", requestId], request);
+      queryClient.invalidateQueries({ queryKey: ["admin-tl-screenshots"] });
+    },
+    onError: (e: unknown) => setActionError(e instanceof Error ? e.message : "Retry failed"),
+  });
+
   const reject = useMutation({
     mutationFn: async () => {
       if (!requestId) throw new Error("no request id");
@@ -131,8 +144,9 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
   });
 
   const r = detail.data;
-  const busy = patch.isPending || approve.isPending || reject.isPending;
+  const busy = patch.isPending || approve.isPending || retryAnalysis.isPending || reject.isPending;
   const isPending = r?.status === "pending";
+  const analysisBusy = r?.analysis_status === "queued" || r?.analysis_status === "running";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,6 +179,7 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                 heading="Screenshot A"
                 screenshotUrl={r.screenshot_a_url}
                 minimapUrl={r.minimap_a_url}
+                serverMinimapUrl={r.server_minimap_a_url}
                 ocrText={r.ocr_a?.raw_text}
                 ocrConfidence={r.ocr_a?.confidence}
                 minimapMatch={r.minimap_match?.a}
@@ -178,6 +193,7 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                 heading="Screenshot B"
                 screenshotUrl={r.screenshot_b_url}
                 minimapUrl={r.minimap_b_url}
+                serverMinimapUrl={r.server_minimap_b_url}
                 ocrText={r.ocr_b?.raw_text}
                 ocrConfidence={r.ocr_b?.confidence}
                 minimapMatch={r.minimap_match?.b}
@@ -247,6 +263,20 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                   {approve.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                   Approve & merge
                 </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => retryAnalysis.mutate()}
+                  disabled={busy || analysisBusy}
+                  title={analysisBusy ? "Analysis is already queued or running" : "Retry analysis"}
+                >
+                  {retryAnalysis.isPending ? (
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <RotateCcw className="mr-2 size-4" />
+                  )}
+                  Retry analysis
+                </Button>
                 <div className="ml-auto flex items-center gap-2">
                   <Input
                     type="text"
@@ -308,6 +338,7 @@ interface SlotProps {
   heading: string;
   screenshotUrl: string | null | undefined;
   minimapUrl: string | null | undefined;
+  serverMinimapUrl: string | null | undefined;
   ocrText: string | undefined;
   ocrConfidence: number | undefined;
   minimapMatch: { score: number; method: string; chunks_used: number } | undefined;
@@ -322,6 +353,7 @@ function SlotPanel({
   heading,
   screenshotUrl,
   minimapUrl,
+  serverMinimapUrl,
   ocrText,
   ocrConfidence,
   minimapMatch,
@@ -345,16 +377,38 @@ function SlotPanel({
       ) : (
         <div className="text-xs text-muted-foreground">Screenshot unavailable.</div>
       )}
-      {minimapUrl && (
-        <div className="space-y-1">
-          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Auto-detected minimap crop
+      {(minimapUrl || serverMinimapUrl) && (
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Auto-detected minimap crop
+            </div>
+            {minimapUrl ? (
+              <img
+                src={minimapUrl}
+                alt={`${heading} minimap`}
+                className="w-full max-h-32 object-contain rounded border border-border bg-muted"
+              />
+            ) : (
+              <div className="text-xs text-muted-foreground">Not detected.</div>
+            )}
           </div>
-          <img
-            src={minimapUrl}
-            alt={`${heading} minimap`}
-            className="max-h-32 object-contain rounded border border-border bg-muted"
-          />
+          <div className="space-y-1">
+            <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              Server map crop (compared against)
+            </div>
+            {serverMinimapUrl ? (
+              <img
+                src={serverMinimapUrl}
+                alt={`${heading} server map crop`}
+                className="w-full max-h-32 object-contain rounded border border-border bg-muted"
+              />
+            ) : (
+              <div className="text-xs text-muted-foreground">
+                No server-map data for that area yet.
+              </div>
+            )}
+          </div>
         </div>
       )}
       {ocrText && (
