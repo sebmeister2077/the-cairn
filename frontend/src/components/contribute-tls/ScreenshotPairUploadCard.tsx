@@ -11,14 +11,15 @@
  *   3. calls /complete which inserts the DB row and queues OCR + minimap match.
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import { NavLink } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload, X } from "lucide-react";
+import { ClipboardPaste, Loader2, Upload, X } from "lucide-react";
 import {
   ApiError,
   completeTLScreenshotUpload,
@@ -47,8 +48,18 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
   const [slotB, setSlotB] = useState<SlotState>(EMPTY_SLOT);
   const [label, setLabel] = useState("");
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [pasteHint, setPasteHint] = useState<string | null>(null);
+  // Refs hold the latest slot state so the global paste handler stays stable.
+  const slotARef = useRef(slotA);
+  const slotBRef = useRef(slotB);
+  useEffect(() => {
+    slotARef.current = slotA;
+  }, [slotA]);
+  useEffect(() => {
+    slotBRef.current = slotB;
+  }, [slotB]);
 
-  function pickFile(file: File | null, slot: "a" | "b") {
+  const pickFile = useCallback((file: File | null, slot: "a" | "b") => {
     const setter = slot === "a" ? setSlotA : setSlotB;
     if (file == null) {
       setter(EMPTY_SLOT);
@@ -75,7 +86,97 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
       previewUrl: URL.createObjectURL(file),
       error: null,
     });
-  }
+  }, []);
+
+  // Decide which slot a pasted/dropped image should fill.
+  const targetSlotForPaste = useCallback((): "a" | "b" | null => {
+    const aEmpty = slotARef.current.file == null;
+    const bEmpty = slotBRef.current.file == null;
+    if (aEmpty) return "a";
+    if (bEmpty) return "b";
+    return null;
+  }, []);
+
+  const acceptPastedImage = useCallback(
+    (file: File, preferredSlot?: "a" | "b") => {
+      const slot = preferredSlot ?? targetSlotForPaste();
+      if (slot == null) {
+        setPasteHint("Both slots already have an image. Remove one first to paste a new image.");
+        return;
+      }
+      // Snipping Tool drops files as "image.png"; give them a more useful name.
+      const named =
+        file.name && file.name !== "image.png"
+          ? file
+          : new File([file], `pasted-screenshot-${slot}-${Date.now()}.png`, { type: file.type });
+      pickFile(named, slot);
+      setPasteHint(`Pasted into Screenshot ${slot.toUpperCase()}.`);
+    },
+    [pickFile, targetSlotForPaste],
+  );
+
+  // Global paste handler scoped to when the card is mounted. Active anywhere
+  // on the page so users don't have to click the card first after using
+  // Shift+Win+S.
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            acceptPastedImage(file);
+            return;
+          }
+        }
+      }
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [acceptPastedImage]);
+
+  const pasteFromClipboardButton = useCallback(
+    async (slot: "a" | "b") => {
+      setPasteHint(null);
+      // navigator.clipboard.read is available in Chromium-based browsers and
+      // requires a secure context + user gesture (this click satisfies both).
+      const clipboard = navigator.clipboard as Clipboard & {
+        read?: () => Promise<ClipboardItems>;
+      };
+      if (typeof clipboard.read !== "function") {
+        setPasteHint(
+          "Your browser doesn't support reading images from the clipboard. Press Ctrl+V instead.",
+        );
+        return;
+      }
+      try {
+        const items = await clipboard.read();
+        for (const item of items) {
+          const pngType =
+            item.types.find((t) => t === "image/png") ??
+            item.types.find((t) => t.startsWith("image/"));
+          if (pngType) {
+            const blob = await item.getType(pngType);
+            const file = new File([blob], `pasted-screenshot-${slot}-${Date.now()}.png`, {
+              type: pngType,
+            });
+            acceptPastedImage(file, slot);
+            return;
+          }
+        }
+        setPasteHint("No image found on the clipboard. Take a screenshot first (Shift+Win+S).");
+      } catch (err) {
+        setPasteHint(
+          err instanceof Error && err.name === "NotAllowedError"
+            ? "Clipboard permission denied. You can still press Ctrl+V to paste."
+            : "Couldn't read the clipboard. You can still press Ctrl+V to paste.",
+        );
+      }
+    },
+    [acceptPastedImage],
+  );
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -96,6 +197,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
       setSlotB(EMPTY_SLOT);
       setLabel("");
       setSubmitError(null);
+      setPasteHint(null);
       queryClient.invalidateQueries({ queryKey: ["my-tl-screenshot-requests"] });
       onSubmitted?.(req.id);
     },
@@ -148,6 +250,17 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
           </NavLink>
           .
         </p>
+        <p className="text-xs text-muted-foreground">
+          Tip: use <kbd className="rounded border px-1">Shift</kbd>+
+          <kbd className="rounded border px-1">Win</kbd>+
+          <kbd className="rounded border px-1">S</kbd> (Windows) or{" "}
+          <kbd className="rounded border px-1">Shift</kbd>+
+          <kbd className="rounded border px-1">Cmd</kbd>+
+          <kbd className="rounded border px-1">4</kbd> (macOS) to capture, then press{" "}
+          <kbd className="rounded border px-1">Ctrl</kbd>+
+          <kbd className="rounded border px-1">V</kbd> anywhere on this page — the image will fill
+          the next empty slot.
+        </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SlotPicker
@@ -155,6 +268,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
             slot={slotA}
             onPick={(f) => pickFile(f, "a")}
             onClear={() => setSlotA(EMPTY_SLOT)}
+            onPasteClick={() => pasteFromClipboardButton("a")}
             disabled={mutation.isPending}
           />
           <SlotPicker
@@ -162,9 +276,16 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
             slot={slotB}
             onPick={(f) => pickFile(f, "b")}
             onClear={() => setSlotB(EMPTY_SLOT)}
+            onPasteClick={() => pasteFromClipboardButton("b")}
             disabled={mutation.isPending}
           />
         </div>
+
+        {pasteHint && (
+          <p className="text-xs text-muted-foreground" role="status">
+            {pasteHint}
+          </p>
+        )}
 
         <div className="space-y-1">
           <Label htmlFor="tl-screenshot-label">Optional label</Label>
@@ -205,10 +326,11 @@ interface SlotPickerProps {
   slot: SlotState;
   onPick: (file: File | null) => void;
   onClear: () => void;
+  onPasteClick: () => void;
   disabled?: boolean;
 }
 
-function SlotPicker({ label, slot, onPick, onClear, disabled }: SlotPickerProps) {
+function SlotPicker({ label, slot, onPick, onClear, onPasteClick, disabled }: SlotPickerProps) {
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -233,12 +355,25 @@ function SlotPicker({ label, slot, onPick, onClear, disabled }: SlotPickerProps)
           </p>
         </div>
       ) : (
-        <Input
-          type="file"
-          accept={ACCEPTED_TYPES.join(",")}
-          disabled={disabled}
-          onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-        />
+        <div className="space-y-2">
+          <Input
+            type="file"
+            accept={ACCEPTED_TYPES.join(",")}
+            disabled={disabled}
+            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={disabled}
+            onClick={onPasteClick}
+            className="w-full"
+          >
+            <ClipboardPaste className="mr-2 size-4" />
+            Paste from clipboard
+          </Button>
+        </div>
       )}
       {slot.error && <p className="text-xs text-destructive">{slot.error}</p>}
     </div>
