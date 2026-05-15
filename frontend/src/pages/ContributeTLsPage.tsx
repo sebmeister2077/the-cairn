@@ -27,14 +27,12 @@ export function ContributeTLsPage() {
         <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />
         </TabsContent>
-        {isAdmin && (
-          <TabsContent value="screenshots" className="pt-2">
-            <div className="max-w-3xl mx-auto space-y-4">
-              <ScreenshotPairUploadCard />
-              <MyScreenshotRequestsList />
-            </div>
-          </TabsContent>
-        )}
+        <TabsContent value="screenshots" className="pt-2">
+          <div className="max-w-3xl mx-auto space-y-4">
+            <ScreenshotPairUploadCard />
+            <MyScreenshotRequestsList />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
