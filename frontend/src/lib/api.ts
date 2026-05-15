@@ -38,17 +38,49 @@ export function isCurrentApiKeyRejected(): boolean {
 }
 
 /**
+ * Structured error payload returned by FastAPI when a route raises
+ * ``HTTPException(detail={"code": "...", "message": "..."})``. Extra
+ * keys are preserved verbatim so callers can read e.g. ``retry_after``.
+ */
+export interface ApiErrorDetail {
+    code?: string;
+    message?: string;
+    [key: string]: unknown;
+}
+
+/**
  * Error thrown by ``handleResponse`` when the backend returns a non-2xx
  * status. Carries the HTTP ``status`` so callers (including the React Query
  * retry logic in App.tsx) can react differently to auth errors vs. transient
  * failures without falling back to brittle string parsing.
+ *
+ * When the backend returns a structured ``{detail: {code, message, ...}}``
+ * body the parsed object is preserved on ``detail`` and the human-readable
+ * ``message`` is used as the Error ``message`` (so logging / instanceof-Error
+ * paths still show useful text instead of ``"[object Object]"``).
  */
 export class ApiError extends Error {
     public readonly status: number;
-    constructor(message: string, status: number) {
+    public readonly detail: ApiErrorDetail | string | null;
+    public readonly code: string | null;
+    constructor(
+        detail: ApiErrorDetail | string | null,
+        status: number,
+    ) {
+        const message =
+            typeof detail === "string"
+                ? detail
+                : (detail && typeof detail.message === "string" && detail.message) ||
+                  (detail && typeof detail.code === "string" && detail.code) ||
+                  `HTTP ${status}`;
         super(message);
         this.name = "ApiError";
         this.status = status;
+        this.detail = detail;
+        this.code =
+            detail && typeof detail === "object" && typeof detail.code === "string"
+                ? detail.code
+                : null;
     }
 }
 
@@ -213,7 +245,7 @@ export async function handleResponse(res: Response) {
             }
         }
         const body = await res.json().catch(() => ({ detail: res.statusText }));
-        throw new ApiError(body.detail ?? `HTTP ${res.status}`, res.status);
+        throw new ApiError(body?.detail ?? `HTTP ${res.status}`, res.status);
     }
     return res;
 }
@@ -2617,10 +2649,12 @@ export function uploadResourcesBundle(
                 }
                 return;
             }
-            let detail = `Upload failed (${xhr.status})`;
+            let detail: ApiErrorDetail | string = `Upload failed (${xhr.status})`;
             try {
                 const body = JSON.parse(xhr.responseText);
-                if (body && typeof body.detail === "string") detail = body.detail;
+                if (body && body.detail !== undefined && body.detail !== null) {
+                    detail = body.detail;
+                }
             } catch {
                 // ignore
             }

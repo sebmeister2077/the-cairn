@@ -34,10 +34,7 @@ export function PendingContributionsSection({
   handleRecomputeMatchScore: (contributionId: string) => void;
 }) {
   const previewBlocked =
-    !isAdmin &&
-    !contributeInfo?.is_admin &&
-    contributeInfo?.heavy_compute_enabled === false &&
-    !contribution.preview_image_url;
+    contributeInfo?.heavy_compute_enabled === false && !contribution.preview_signed_url;
   const isPreviewLoading = previewLoading && previewId === contribution.id;
   const previewDisabled = isPreviewLoading || previewBlocked;
   const previewTitle = previewBlocked

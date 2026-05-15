@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import {
+  ApiError,
   approveContribution,
   fetchImageFromSignedUrl,
   getContributeInfo,
@@ -17,6 +18,7 @@ import {
   rejectContribution,
   revertContribution,
   withdrawContribution,
+  type ApiErrorDetail,
 } from "@/lib/api";
 import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
 import { contributeQueries } from "@/lib/constants/react-query";
@@ -84,6 +86,7 @@ export function ContributePage() {
     [previewBlob],
   );
   const previewLoading = previewQuery.isFetching;
+  const isHeavyComputeDisable = contributionInfo?.heavy_compute_enabled === false;
 
   useEffect(() => {
     return () => {
