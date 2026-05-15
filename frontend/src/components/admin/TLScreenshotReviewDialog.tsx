@@ -157,9 +157,7 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
     parseInt32(coordsB.x),
     parseInt32(coordsB.z),
   ];
-  const coordsValid = parsedCoords.every(
-    (v) => v !== null && !Number.isNaN(v),
-  );
+  const coordsValid = parsedCoords.every((v) => v !== null && !Number.isNaN(v));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

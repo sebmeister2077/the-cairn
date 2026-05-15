@@ -297,7 +297,13 @@ export function TOPSMapViewPage() {
     queryKey: ["tops-map-stats"],
     queryFn: getTopsMapStats,
     staleTime: STALE_TIME,
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+    // Always re-validate on page (re)load so the user sees fresh stats /
+    // resolutions if anything changed server-side, while still rendering
+    // the persisted cached payload immediately.
+    refetchOnMount: "always",
     enabled: Boolean(apiKey),
+    meta: { persist: true },
   });
 
   // Resolution selection. Defaults to whatever the user picked last, falling
@@ -414,9 +420,13 @@ export function TOPSMapViewPage() {
     // already expired) we get exactly one refetch on mount; when it returns a
     // positive value we serve the persisted entry with no network call.
     staleTime: ({ state }) => levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
-    // gcTime: 7 * 24 * 60 * 60 * 1000,
-    // enabled: statsQuery.isSuccess && selectedLevel != null,
-    // meta: { persist: true },
+    gcTime: 7 * 24 * 60 * 60 * 1000,
+    // Always re-validate on page (re)load. The cached payload still renders
+    // immediately (so a server outage stays viewable for the lifetime of the
+    // signed URLs); this just kicks off a background refresh so any newly
+    // contributed tiles show up on reload.
+    refetchOnMount: "always",
+    meta: { persist: true },
   });
 
   const tileSet = useMemo(() => {
@@ -469,12 +479,16 @@ export function TOPSMapViewPage() {
   const hasMap = tileSet != null;
   const [downloading, setDownloading] = useState(false);
 
-  // Derive loading / error from query states
-  const loading = statsQuery.isFetching
-    ? "Reading global server map…"
-    : levelInfoQuery.isFetching && !tileSet
-      ? "Loading map chunks…"
-      : "";
+  // Derive loading / error from query states. Only surface the loading chip
+  // when we have nothing to render yet — background revalidations (triggered
+  // on every reload by `refetchOnMount: "always"`) shouldn't replace the
+  // cached map with a spinner.
+  const loading =
+    statsQuery.isFetching && !statsQuery.data
+      ? "Reading global server map…"
+      : levelInfoQuery.isFetching && !tileSet
+        ? "Loading map chunks…"
+        : "";
   const error =
     statsQuery.error instanceof Error
       ? statsQuery.error.message
@@ -598,8 +612,8 @@ export function TOPSMapViewPage() {
         queryFn: () => getTopsMapLevel(candidate.level),
         staleTime: ({ state }) =>
           levelInfoStaleTimeMs(state.data as TopsMapLevelChunks | undefined),
-        // gcTime: 7 * 24 * 60 * 60 * 1000,
-        // meta: { persist: true },
+        gcTime: 7 * 24 * 60 * 60 * 1000,
+        meta: { persist: true },
       });
       if (!info.chunks?.length) throw new Error("Resolution chunks unavailable");
       // Note: we deliberately do NOT call setSelectedLevel here. The parent
@@ -825,9 +839,7 @@ export function TOPSMapViewPage() {
           </div>
         )}
         {error && <p className="text-red-500 text-sm">{error}</p>}
-
         {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
-
         {isAdmin && selectedDeposit && (
           <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
             <Sparkles className="size-4 text-primary" />
@@ -857,7 +869,6 @@ export function TOPSMapViewPage() {
             </Button>
           </div>
         )}
-
         <div className="relative">
           <MapViewer
             tileSet={tileSet}

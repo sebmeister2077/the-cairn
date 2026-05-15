@@ -1147,7 +1147,8 @@ export function MapViewer({
     [hoveredOverlayIndex, onOverlaySegmentRightClick, overlaySegments],
   );
 
-  if (!activeUrl && !activeTileSet) return null;
+  console.log(activeUrl, activeTileSet);
+  // if (!activeUrl && !activeTileSet) return null;
 
   const canvasClass = ["relative overflow-hidden bg-black/90", bordered ? "rounded-md border" : ""]
     .filter(Boolean)
