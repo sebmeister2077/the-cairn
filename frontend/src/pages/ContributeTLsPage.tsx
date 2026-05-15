@@ -21,7 +21,7 @@ export function ContributeTLsPage() {
     <div className="space-y-4">
       <Tabs defaultValue="screenshots">
         <TabsList variant="line">
-          <TabsTrigger value="screenshots">From screenshots (WIP)</TabsTrigger>
+          <TabsTrigger value="screenshots">From screenshots</TabsTrigger>
           <TabsTrigger value="chatlog">From chat log</TabsTrigger>
         </TabsList>
         <TabsContent value="chatlog" className="pt-2">
