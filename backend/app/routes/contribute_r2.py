@@ -2300,7 +2300,7 @@ async def contribute_preview(
     # this is the path that OOM-kills the worker, so admin can flip
     # ``heavy_compute_enabled`` OFF and have non-admin callers wait until
     # the bulk-run button is pressed from a beefier machine. Admin bypasses.
-    if not _is_admin_key(api_key) and not is_heavy_compute_allowed():
+    if not is_heavy_compute_allowed():
         return JSONResponse(
             status_code=503,
             content={
