@@ -238,14 +238,27 @@ def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int
     x1 = int(w * MINIMAP_SEARCH_RIGHT_FRAC)
     region = arr[y0:y1, x0:x1]
     rh, rw = region.shape[:2]
+    logger.info(
+        "screenshot_pipeline: detect_minimap_bbox start image=%dx%d search_region=%dx%d "
+        "(top=%g bottom=%g left=%g right=%g min_side=%d)",
+        w, h, rw, rh,
+        MINIMAP_SEARCH_TOP_FRAC, MINIMAP_SEARCH_BOTTOM_FRAC,
+        MINIMAP_SEARCH_LEFT_FRAC, MINIMAP_SEARCH_RIGHT_FRAC,
+        MINIMAP_MIN_SIDE_PX,
+    )
     if rh < MINIMAP_MIN_SIDE_PX or rw < MINIMAP_MIN_SIDE_PX:
+        logger.warning(
+            "screenshot_pipeline: detect_minimap_bbox bail: search region %dx%d below min_side=%d",
+            rw, rh, MINIMAP_MIN_SIDE_PX,
+        )
         return None
 
     try:
         import cv2  # type: ignore
     except Exception:
-        logger.warning(
-            "opencv-python-headless not installed; minimap detection disabled"
+        logger.exception(
+            "screenshot_pipeline: detect_minimap_bbox bail: cv2 import failed "
+            "(opencv-python-headless missing or native libs unavailable, e.g. libGL/libglib)"
         )
         return None
 
@@ -265,6 +278,10 @@ def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int
     left_hi = max(left_lo + 1, int(rw * 0.90))
     left_slice = col_strength[left_lo:left_hi]
     if left_slice.size == 0:
+        logger.warning(
+            "screenshot_pipeline: detect_minimap_bbox bail: empty left_slice (rw=%d lo=%d hi=%d)",
+            rw, left_lo, left_hi,
+        )
         return None
     left_col = left_lo + int(np.argmax(left_slice))
 
@@ -273,6 +290,10 @@ def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int
     bot_lo = max(2, int(rh * 0.20))
     bot_hi = rh - 1
     if bot_hi <= bot_lo:
+        logger.warning(
+            "screenshot_pipeline: detect_minimap_bbox bail: bot_hi<=bot_lo (rh=%d lo=%d hi=%d)",
+            rh, bot_lo, bot_hi,
+        )
         return None
     bot_slice = row_strength[bot_lo:bot_hi]
     bottom_row = bot_lo + int(np.argmax(bot_slice))
@@ -409,13 +430,20 @@ def _run_rapidocr(image: Image.Image) -> Tuple[str, float]:
     manually.
     """
     try:
-        from rapidocr_onnxruntime import RapidOCR  # type: ignore
+        from rapidocr_onnxruntime import RapidOCR  # type: ignore  # noqa: F401
     except Exception:
-        logger.warning("rapidocr_onnxruntime not installed; OCR disabled")
+        logger.exception(
+            "screenshot_pipeline: _run_rapidocr bail: rapidocr_onnxruntime import failed "
+            "(package missing or onnxruntime native libs unavailable)"
+        )
         return "", 0.0
 
     engine = _get_rapidocr_engine()
     if engine is None:
+        logger.warning(
+            "screenshot_pipeline: _run_rapidocr bail: RapidOCR engine is None "
+            "(init previously failed for this process — see earlier 'rapidocr engine init failed')"
+        )
         return "", 0.0
 
     arr = np.asarray(image.convert("RGB"))
@@ -462,6 +490,10 @@ def _get_rapidocr_engine():
     if _rapidocr_engine is not None:
         return _rapidocr_engine
     if _rapidocr_init_failed:
+        logger.warning(
+            "screenshot_pipeline: _get_rapidocr_engine returning None — "
+            "init was marked failed earlier this process"
+        )
         return None
     try:
         from rapidocr_onnxruntime import RapidOCR  # type: ignore
@@ -469,7 +501,10 @@ def _get_rapidocr_engine():
         _rapidocr_engine = RapidOCR()
         logger.info("screenshot_pipeline: RapidOCR engine ready")
     except Exception:
-        logger.exception("rapidocr engine init failed; disabling OCR for this process")
+        logger.exception(
+            "screenshot_pipeline: rapidocr engine init failed; disabling OCR for this process "
+            "(check HOME is writable for model cache, RAM during model load, and onnxruntime native deps)"
+        )
         _rapidocr_init_failed = True
         return None
     return _rapidocr_engine
