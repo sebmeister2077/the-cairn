@@ -21,15 +21,14 @@ export function AddingTranslocatorsWithContributeTLsPost() {
   return (
     <div className="space-y-6 text-sm leading-relaxed">
       <Lede>
-        The <strong>Contribute TLs</strong> page turns your in-game translocator waypoints into
-        map-ready pairs. You give it your <Code>client-chat.log</Code>, it pulls out only spiral
-        waypoints, compares them with the existing TOPS translocator layer, and gives you a review
-        screen where you can confirm, fix, or remove entries before they go live. You only need a
-        Cairn account so your own TLs can be reverted cleanly later and abusive submissions are
-        easier to stop; your public contributor name can still stay anonymous.
+        This guide is for the <strong>Contribute TLs</strong> workflow that uses your own in-game
+        Vintage Story waypoints. You run <Code>/waypoint list details</Code>, upload the resulting
+        <Code>client-chat.log</Code>, and Cairn turns the spiral waypoint entries in that log into
+        map-ready translocator pairs. After parsing, you review the waypoint-derived pairs, fix or
+        remove anything uncertain, and submit only the TLs you want added to the TOPS map.
       </Lede>
 
-      <Section title="Before you start" icon={<FileText className="size-4" />}>
+      <Section title="Before you upload waypoints" icon={<FileText className="size-4" />}>
         <P>
           Create or sign in to a Cairn account before submitting. This does not mean your name has
           to be public: you can keep your contribution anonymous while still letting Cairn know
@@ -37,14 +36,15 @@ export function AddingTranslocatorsWithContributeTLsPost() {
           to revert their own contribution later and gives admins a practical way to limit abuse.
         </P>
         <P>
-          Open Vintage Story on the server where your translocator waypoints live, then type this in
-          chat:
+          Open Vintage Story on the server where your translocator waypoints live. This page does
+          not read screenshots or map files; it reads the waypoint list that Vintage Story writes
+          into your chat log. To export that list, type this in chat:
         </P>
         <Pre>{`/waypoint list details`}</Pre>
         <P>
           The command prints your full waypoint list into chat. It is only visible to you, but it is
-          also written into <Code>client-chat.log</Code>, which is the file Cairn needs for TL
-          contributions.
+          also written into <Code>client-chat.log</Code>. That log file is the upload source for
+          this Contribute TLs flow.
         </P>
         <Callout>
           Only waypoints using the <Code>spiral</Code> icon are read. Bases, notes, landmarks, and
@@ -57,7 +57,7 @@ export function AddingTranslocatorsWithContributeTLsPost() {
         </Callout>
       </Section>
 
-      <Section title="Step 1: upload your chat log" icon={<Upload className="size-4" />}>
+      <Section title="Step 1: upload your waypoint chat log" icon={<Upload className="size-4" />}>
         <P>
           Go to the{" "}
           <NavLink
@@ -69,11 +69,13 @@ export function AddingTranslocatorsWithContributeTLsPost() {
           . The upload card shows the usual log locations for Windows, Linux, and macOS. On Windows,
           the file is normally here:
         </P>
-        <Pre>{`%appdata%\VintagestoryData\Logs\client-chat.log`}</Pre>
+        <Pre>{String.raw`%appdata%\VintagestoryData\Logs\client-chat.log`}</Pre>
         <P>
           Choose <Code>client-chat.log</Code>, click <strong>Parse file</strong>, and wait for the
-          summary. If the page says it found no spiral waypoints, run{" "}
-          <Code>/waypoint list details</Code> in-game again and upload the updated log.
+          summary. Cairn parses the waypoint entries from that log locally in the browser, then
+          keeps only spiral-icon waypoints for TL pairing. If the page says it found no spiral
+          waypoints, run <Code>/waypoint list details</Code> in-game again and upload the updated
+          log.
         </P>
 
         <ImageFigure
@@ -83,8 +85,14 @@ export function AddingTranslocatorsWithContributeTLsPost() {
         />
       </Section>
 
-      <Section title="Step 2: read the parse summary" icon={<CheckCircle2 className="size-4" />}>
-        <P>The summary gives you a quick sense of how much cleanup the batch needs:</P>
+      <Section
+        title="Step 2: read the waypoint parse summary"
+        icon={<CheckCircle2 className="size-4" />}
+      >
+        <P>
+          The summary is about the spiral waypoints found in your uploaded chat log. It gives you a
+          quick sense of how much cleanup the waypoint batch needs:
+        </P>
         <Ul>
           <li>
             <strong>Already on the map</strong> means Cairn recognized both endpoints as an existing
@@ -92,8 +100,9 @@ export function AddingTranslocatorsWithContributeTLsPost() {
             submit.
           </li>
           <li>
-            <strong>New pairs</strong> are the TLs Cairn thinks can be submitted. Some may still
-            need review if their waypoint labels point near more than one possible partner.
+            <strong>New pairs</strong> are the waypoint-derived TLs Cairn thinks can be submitted.
+            Some may still need review if their waypoint labels point near more than one possible
+            partner.
           </li>
           <li>
             <strong>Unpaired</strong> entries have only one usable endpoint. You will need to link
@@ -105,12 +114,15 @@ export function AddingTranslocatorsWithContributeTLsPost() {
         </P>
       </Section>
 
-      <Section title="Step 3: review the map" icon={<MapPinned className="size-4" />}>
+      <Section
+        title="Step 3: review the waypoint pairs on the map"
+        icon={<MapPinned className="size-4" />}
+      >
         <P>
-          The review screen has the TOPS map on the left and your parsed translocators on the right.
-          Click a row to zoom the map to that TL. Click an endpoint on the map to select the
-          matching row. The colors match the review status, so you can scan for the entries that
-          need action.
+          The review screen has the TOPS map on the left and the translocator pairs parsed from your
+          uploaded waypoints on the right. Click a row to zoom the map to that TL. Click an endpoint
+          on the map to select the matching row. The colors match the review status, so you can scan
+          for the entries that need action.
         </P>
 
         <ImageFigure
@@ -185,12 +197,14 @@ export function AddingTranslocatorsWithContributeTLsPost() {
       <Section title="Step 4: submit" icon={<Send className="size-4" />}>
         <P>
           When the batch is ready, click <strong>Submit contribution</strong>. The confirmation
-          dialog shows how many confirmed and review-needed TLs will be submitted, plus how many
-          entries will be skipped because they are unpaired, invalid, or already on the map.
+          dialog shows how many confirmed and review-needed waypoint pairs will be submitted, plus
+          how many entries will be skipped because they are unpaired, invalid, or already on the
+          map.
         </P>
         <P>
-          Submittable TLs go live immediately after the backend accepts them. The map overlay is
-          refreshed so you can see the new blue translocator lines without leaving the page.
+          Submittable TLs from your waypoint upload go live immediately after the backend accepts
+          them. The map overlay is refreshed so you can see the new blue translocator lines without
+          leaving the page.
         </P>
       </Section>
 

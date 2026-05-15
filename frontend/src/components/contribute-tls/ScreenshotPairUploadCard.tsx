@@ -144,7 +144,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
             to="/blog/submitting-translocator-screenshots"
             className="underline decoration-dotted underline-offset-2 hover:text-primary"
           >
-            screenshot submission guide
+            Screenshot submission guide
           </NavLink>
           .
         </p>

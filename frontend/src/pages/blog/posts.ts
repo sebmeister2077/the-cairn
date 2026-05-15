@@ -17,7 +17,7 @@ export interface BlogPostMeta {
 export const BLOG_POSTS: BlogPostMeta[] = [
     {
         slug: "submitting-translocator-screenshots",
-        title: "Submitting Translocator Links with Screenshots",
+        title: "Adding Translocators using Screenshots",
         excerpt:
             "How to take clear endpoint screenshots, upload a TL pair for review, understand analysis status, and read warnings before admin approval.",
         date: "2026-05-15",
@@ -26,13 +26,13 @@ export const BLOG_POSTS: BlogPostMeta[] = [
         Component: SubmittingTranslocatorScreenshotsPost,
     },
     {
-        slug: "adding-translocators-with-contribute-tls",
-        title: "Adding Translocators with Contribute TLs",
+        slug: "adding-translocators-using-waypoints",
+        title: "Adding Translocators using waypoints",
         excerpt:
             "A step-by-step guide to exporting your spiral waypoints, uploading client-chat.log, reviewing pairings, and submitting TLs to the shared TOPS map.",
         date: "2026-05-08",
         readingMinutes: 6,
-        tags: ["guide", "multiplayer", "translocators"],
+        tags: ["guide", "multiplayer", "translocators", "waypoints"],
         Component: AddingTranslocatorsWithContributeTLsPost,
     },
     {

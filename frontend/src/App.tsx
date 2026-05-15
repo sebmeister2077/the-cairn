@@ -1,5 +1,5 @@
 ﻿import { useEffect } from "react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, useLocation } from "react-router-dom";
 import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
@@ -44,6 +44,17 @@ const queryClientConfig: QueryClientConfig = {
   },
 };
 const queryClient = new QueryClient(queryClientConfig);
+
+function ScrollToTop() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [location.pathname]);
+
+  return null;
+}
 
 // Persist query cache in localStorage so things like the cached TOPS map
 // chunk URLs survive page reloads. We only persist queries that opt in via
@@ -91,6 +102,7 @@ export default function App() {
       }}
     >
       <BrowserRouter>
+        <ScrollToTop />
         <AppContent />
       </BrowserRouter>
       {import.meta.env.DEV && (

@@ -116,10 +116,10 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
           <p>
             Need the full walkthrough? Read the{" "}
             <NavLink
-              to="/blog/adding-translocators-with-contribute-tls"
+              to="/blog/adding-translocators-using-waypoints"
               className="underline decoration-dotted underline-offset-2 hover:text-primary"
             >
-              Contribute TLs guide
+              Contribute waypoints guide
             </NavLink>
             .
           </p>
