@@ -36,6 +36,74 @@ def is_job_running() -> bool:
     return _active_thread is not None and _active_thread.is_alive()
 
 
+def _load_existing_tl_pairs_world_z() -> list:
+    """Pull the live translocators.geojson and return ``[(x1, z1, x2, z2)]``
+    in WORLD-Z space (i.e. +Z = north, matching OCR coords). The geojson
+    stores +Z = south so we negate on the way out, mirroring how
+    contribute_tls.py negates on the way in.
+
+    Returns ``[]`` on any error so duplicate-pair detection degrades to a
+    no-op instead of failing the analysis.
+    """
+    # Late import to avoid circular import (routes -> tasks at app startup).
+    try:
+        from ..routes import contribute_tls as ct  # type: ignore
+    except Exception:
+        logger.exception("tl_screenshot worker: contribute_tls import failed")
+        return []
+    try:
+        data = ct._load_translocators_file()  # noqa: SLF001 — internal helper
+    except Exception:
+        logger.exception("tl_screenshot worker: live translocators load failed")
+        return []
+    try:
+        geo_pairs = ct._existing_segments(data)  # noqa: SLF001
+    except Exception:
+        logger.exception("tl_screenshot worker: existing-segments parse failed")
+        return []
+    # Convert geojson Z (+south) -> world Z (+north).
+    return [(x1, -z1, x2, -z2) for (x1, z1, x2, z2) in geo_pairs]
+
+
+def _build_duplicate_warnings(
+    request_id: str, coords_a: dict, coords_b: dict
+) -> list:
+    """Wrap pipeline.build_duplicate_pair_warnings with the IO needed to
+    fetch live TLs + other pending requests. Errors fall back to ``[]``."""
+    existing = _load_existing_tl_pairs_world_z()
+    try:
+        rows = db.list_pending_tl_screenshot_coords_excluding(request_id)
+    except Exception:
+        logger.exception(
+            "tl_screenshot worker: list other pending coords failed for %s",
+            request_id,
+        )
+        rows = []
+    other_pending: list = []
+    for r in rows:
+        ca = r.get("coords_a") or {}
+        cb = r.get("coords_b") or {}
+        try:
+            xa = ca.get("x"); za = ca.get("z")
+            xb = cb.get("x"); zb = cb.get("z")
+            if None in (xa, za, xb, zb):
+                continue
+            other_pending.append({
+                "coords": (int(xa), int(za), int(xb), int(zb)),
+                "submitter_display_name": r.get("submitter_display_name"),
+                "submitter_api_key_id": r.get("submitter_api_key_id"),
+                "id": r.get("id"),
+            })
+        except (TypeError, ValueError):
+            continue
+    return pipeline.build_duplicate_pair_warnings(
+        coords_a=coords_a,
+        coords_b=coords_b,
+        existing_pairs=existing,
+        other_pending=other_pending,
+    )
+
+
 def _process_one(row: dict) -> None:
     """Run the full pipeline for one screenshot request and persist."""
     request_id = row["id"]
@@ -171,6 +239,19 @@ def _process_one(row: dict) -> None:
             "severity": "warning",
             "message": "Screenshot B: could not locate the minimap frame in the top-right.",
         })
+
+    # Duplicate-pair warnings: this TL is already on the map, OR another
+    # user has a pending screenshot request for the same pair. Best-effort
+    # — failures here must not abort the rest of the analysis.
+    try:
+        warnings.extend(
+            _build_duplicate_warnings(request_id, coords_a, coords_b)
+        )
+    except Exception:
+        logger.exception(
+            "tl_screenshot worker: duplicate-pair warning generation failed for %s",
+            request_id,
+        )
 
     minimap_match_payload = {
         "a": match_a.to_dict(),

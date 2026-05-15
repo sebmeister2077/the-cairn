@@ -20,3 +20,5 @@ Thumbs.db
 
 
 resourceexporter-example-output/
+TLSSTestData/
+**/TLContributeExamples/

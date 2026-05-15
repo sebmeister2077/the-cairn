@@ -3379,6 +3379,26 @@ def count_pending_tl_screenshot_requests_for_user(api_key_id: str) -> int:
             return int(row[0]) if row else 0
 
 
+def list_pending_tl_screenshot_coords_excluding(request_id: str) -> List[dict]:
+    """Return ``[{id, submitter_api_key_id, submitter_display_name,
+    coords_a, coords_b}]`` for every other ``pending`` screenshot request
+    that already has parsed coords. Used by the analysis worker to flag
+    overlapping pending submissions from other users."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, submitter_api_key_id, submitter_display_name,
+                          coords_a, coords_b
+                     FROM translocator_screenshot_requests
+                    WHERE status = 'pending'
+                      AND id <> %s
+                      AND coords_a IS NOT NULL
+                      AND coords_b IS NOT NULL""",
+                (request_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
 def claim_pending_tl_screenshot_analysis() -> Optional[dict]:
     """Atomically claim one queued analysis job by flipping
     `analysis_status` from 'queued' to 'running'. Returns the claimed

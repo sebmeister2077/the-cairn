@@ -908,6 +908,114 @@ def build_validation_warnings(
 
 
 # ---------------------------------------------------------------------------
+# Duplicate-pair warnings (existing live TLs + other pending submissions)
+# ---------------------------------------------------------------------------
+
+DUPLICATE_PAIR_RADIUS_BLOCKS = 200
+
+
+def _coord_pair_endpoints_overlap(
+    a: tuple,
+    b: tuple,
+    *,
+    radius: int = DUPLICATE_PAIR_RADIUS_BLOCKS,
+) -> bool:
+    """Orientation-agnostic: do TL pair ``a``'s endpoints both fall within
+    ``radius`` blocks of TL pair ``b``'s endpoints? Both pairs must be in
+    the SAME coordinate space (either both world-Z or both geojson-Z)."""
+    ax1, az1, ax2, az2 = a
+    bx1, bz1, bx2, bz2 = b
+    r2 = radius * radius
+
+    def near(x1: int, z1: int, x2: int, z2: int) -> bool:
+        dx = x1 - x2
+        dz = z1 - z2
+        return dx * dx + dz * dz <= r2
+
+    fwd = near(ax1, az1, bx1, bz1) and near(ax2, az2, bx2, bz2)
+    rev = near(ax1, az1, bx2, bz2) and near(ax2, az2, bx1, bz1)
+    return fwd or rev
+
+
+def build_duplicate_pair_warnings(
+    *,
+    coords_a: dict,
+    coords_b: dict,
+    existing_pairs: list,
+    other_pending: list,
+    radius: int = DUPLICATE_PAIR_RADIUS_BLOCKS,
+) -> list:
+    """Warnings for "this TL is already on the map" and "another user has
+    a pending submission for this TL pair".
+
+    All coordinate inputs MUST be in the same Z convention as the OCR
+    coords (i.e. world space, +Z = north). The caller is responsible for
+    flipping geojson-stored Z before passing it in.
+
+    ``existing_pairs`` — list of ``(x1, z1, x2, z2)`` tuples for live TLs.
+    ``other_pending`` — list of ``{coords: (x1, z1, x2, z2),
+    submitter_display_name: str|None}``.
+    """
+    warnings: list = []
+
+    def _coord(d, k):
+        v = d.get(k) if isinstance(d, dict) else None
+        return int(v) if isinstance(v, (int, float)) else None
+
+    xa, za = _coord(coords_a, "x"), _coord(coords_a, "z")
+    xb, zb = _coord(coords_b, "x"), _coord(coords_b, "z")
+    if xa is None or za is None or xb is None or zb is None:
+        # Without coords we can't compare. The coords_missing warning from
+        # build_validation_warnings already flags this case.
+        return warnings
+
+    submitted = (xa, za, xb, zb)
+
+    for e in existing_pairs:
+        try:
+            if _coord_pair_endpoints_overlap(submitted, e, radius=radius):
+                warnings.append({
+                    "code": "tl_pair_already_exists",
+                    "severity": "warning",
+                    "message": (
+                        f"This TL pair is within {radius} blocks of a translocator "
+                        f"already on the map "
+                        f"(({e[0]}, {e[1]}) ↔ ({e[2]}, {e[3]})). "
+                        f"Likely a duplicate submission."
+                    ),
+                })
+                break
+        except (TypeError, ValueError):
+            continue
+
+    seen_submitters: set = set()
+    for entry in other_pending:
+        c = entry.get("coords")
+        if not c:
+            continue
+        try:
+            if not _coord_pair_endpoints_overlap(submitted, c, radius=radius):
+                continue
+        except (TypeError, ValueError):
+            continue
+        who = entry.get("submitter_display_name") or "another user"
+        if who in seen_submitters:
+            continue
+        seen_submitters.add(who)
+        warnings.append({
+            "code": "tl_pair_pending_other_user",
+            "severity": "warning",
+            "message": (
+                f"Another pending screenshot submission from {who} covers this "
+                f"same TL pair (within {radius} blocks). Review both before "
+                f"approving to avoid double entries."
+            ),
+        })
+
+    return warnings
+
+
+# ---------------------------------------------------------------------------
 # PNG <-> bytes helpers
 # ---------------------------------------------------------------------------
 
