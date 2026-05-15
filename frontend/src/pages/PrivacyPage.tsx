@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const LAST_UPDATED = "April 23, 2026";
+const LAST_UPDATED = "May 15, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
@@ -56,12 +56,12 @@ export function PrivacyPage() {
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              A way to temporarily identify your browser session so we can authenticate requests,
-              remember your access, and help prevent abuse.
+              Your <strong>API key</strong>, which both authenticates your requests and identifies
+              your account.
             </li>
             <li>
-              Your permission state, so the interface can show the tools available to you without an
-              extra round-trip.
+              Your permission state (e.g. admin, contributor), so the interface can show the tools
+              available to you without an extra round-trip.
             </li>
             <li>Whether you accepted this notice, so we do not need to show it on every visit.</li>
             <li>
@@ -107,7 +107,11 @@ export function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1">
             <li>
               <strong>IP address</strong> &mdash; used in memory by our rate limiter to prevent
-              abuse. It is not persisted to a database.
+              abuse. We do <strong>not</strong> persist your raw IP. We do persist a one-way{" "}
+              <strong>HMAC-SHA256 hash</strong> of it (computed with a secret salt) so we can:
+              detect when multiple accounts use the same connection (alt-account / abuse review),
+              and enforce IP-level bans against accounts that violate these terms. The hash is
+              non-reversible and cannot be used to recover the original IP.
             </li>
             <li>
               <strong>Standard request logs</strong> &mdash; the backend host (Render) records
@@ -123,16 +127,74 @@ export function PrivacyPage() {
         </section>
 
         <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">4a. Your account profile</h2>
+          <p>When you first use an API key, we create an account for you. The account stores:</p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              An auto-generated <strong>display name</strong> (e.g. <em>Bright-Explorer-1234</em>).
+              You do not pick it; we generate it for you and you can ask for a new random one. It is
+              shown publicly next to any contribution you make.
+            </li>
+            <li>
+              An optional <strong>in-game name</strong> that you can set yourself, used on opt-in
+              leaderboards and to identify you to other players.
+            </li>
+            <li>
+              Opt-in flags you control: whether you appear on the public <strong>hireable</strong>{" "}
+              list, on the public <strong>leaderboard</strong>, and whether your contribution stats
+              are shown publicly.
+            </li>
+            <li>
+              The version of the Terms you accepted, when you accepted them, and when your account
+              was created.
+            </li>
+            <li>
+              A flag indicating whether your account was the first one ever created on its IP hash
+              (used by admins to distinguish original accounts from alts behind the same
+              connection).
+            </li>
+          </ul>
+          <p>
+            We do <strong>not</strong> ask for, and do not store, an email, password, real name, or
+            any other identifier beyond what is listed above.
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">4b. Moderation records</h2>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              <strong>User flags</strong> &mdash; the system automatically records review flags such
+              as &ldquo;another account exists on this IP hash&rdquo; or &ldquo;your in-game name
+              collides with another user's&rdquo;. Admins can resolve these as valid, abusive, or
+              dismissed. Flags do not block your access on their own.
+            </li>
+            <li>
+              <strong>IP-hash bans</strong> &mdash; if your connection is banned for abuse, the ban
+              is stored against the IP hash (not the raw IP) together with the reason code, admin
+              notes, and expiry.
+            </li>
+            <li>
+              <strong>Admin audit log</strong> &mdash; an append-only log of moderation actions
+              (bans, account deletions, name regenerations, re-keys, flag resolutions) for
+              accountability.
+            </li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">5. Server-side records</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
               <strong>Object storage</strong> &mdash; the community map database, pending
-              contribution files, rendered preview PNGs, and cached map chunks.
+              contribution files, rendered preview PNGs, cached map chunks as well as waypoint data.
             </li>
             <li>
-              <strong>Application database</strong> &mdash; metadata about contributions (id,
-              status, timestamps, source filename, file size, contributor reference) and an audit
-              log of approved merges.
+              <strong>Application database</strong> &mdash; metadata about contrib utions (id,
+              status, timestamps, source filename, file size, contributor reference); an audit log
+              of approved merges; the <strong>account profile</strong> fields described in section
+              4a; the <strong>moderation records</strong> described in section 4b; and your API key
+              bound to the hashed IP it was first used on.
             </li>
           </ul>
         </section>
@@ -187,6 +249,18 @@ export function PrivacyPage() {
               Approved community-map contributions: <strong>retained indefinitely</strong> as part
               of the shared map and cannot be individually withdrawn.
             </li>
+            <li>
+              Account profile: retained until you delete your account (see section 9). On deletion,
+              your account is <strong>soft-deleted</strong>: the row is kept but your display name
+              is replaced with an opaque tombstone, your in-game name and opt-in flags are cleared,
+              and your API key is revoked. Any contributions you made remain in the shared map under
+              the now-anonymised tombstone.
+            </li>
+            <li>
+              IP-hash bans: kept until the configured expiry (default 365 days), then ignored. Rows
+              may persist after expiry until manually purged.
+            </li>
+            <li>Admin audit log: retained indefinitely for accountability.</li>
             <li>Backend access logs: retained per the hosting provider's default policy.</li>
           </ul>
         </section>
@@ -195,8 +269,25 @@ export function PrivacyPage() {
           <h2 className="text-base font-semibold text-foreground">9. Your rights</h2>
           <p>
             Depending on your location (e.g. EU/UK GDPR or CCPA), you may have rights to access,
-            correct, delete, restrict, or port your personal data, and to object to processing. To
-            exercise these rights, contact us at{" "}
+            correct, delete, restrict, or port your personal data, and to object to processing. Two
+            of these rights are built into the Service:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              <strong>Access / portability:</strong> the <strong>Account</strong> page in the app
+              offers a one-click data export (also available via{" "}
+              <code className="rounded bg-muted px-1 text-xs">GET /api/account/export</code>) that
+              returns your full account profile and the metadata of your contributions in JSON.
+            </li>
+            <li>
+              <strong>Erasure:</strong> the <strong>Account</strong> page lets you self-delete your
+              account at any time (also available via{" "}
+              <code className="rounded bg-muted px-1 text-xs">DELETE /api/account/me</code>), which
+              performs the soft-delete described in section 8.
+            </li>
+          </ul>
+          <p>
+            For any other request (correction, restriction, objection, or questions), contact us at{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="underline">
               {CONTACT_EMAIL}
             </a>
@@ -205,7 +296,8 @@ export function PrivacyPage() {
           <p>
             <strong>Important:</strong> contributions to the community map become part of an
             aggregated dataset. Once merged, an individual contribution cannot be identified or
-            erased. Please consider this before contributing.
+            erased &mdash; even after you delete your account. Please consider this before
+            contributing.
           </p>
         </section>
 

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const LAST_UPDATED = "April 26, 2026";
+const LAST_UPDATED = "May 15, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function TermsPage() {
@@ -38,19 +38,40 @@ export function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">3. API keys</h2>
+          <h2 className="text-base font-semibold text-foreground">3. API keys and accounts</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>Access is invite-only. API keys are issued at the operator's discretion.</li>
             <li>
               You are responsible for keeping your API key confidential. Treat it like a password.
             </li>
             <li>
-              The operator may revoke any key at any time, with or without notice, for abuse,
-              suspected unauthorised use, or any other reason.
+              On first use, your API key is automatically bound to a one-way hash of the IP address
+              it was used from. This binding is used by the operator to detect alt accounts and to
+              enforce IP-level bans. See the{" "}
+              <a href="/privacy" className="underline">
+                Privacy Policy
+              </a>{" "}
+              for details.
             </li>
             <li>
-              You must not share your key publicly or use it on behalf of users to whom you have not
-              been authorised to delegate access.
+              An <strong>account profile</strong> is created for you the first time you use the
+              Service. It includes an auto-generated public display name and optional fields you
+              control (in-game name, hireable status, leaderboard visibility). You may regenerate
+              your display name a limited number of times, change your in-game name, export your
+              data, or delete your account at any time from the <strong>Account</strong> page.
+              Account deletion is a soft-delete: your profile is anonymised and your API key is
+              revoked, but contributions you made to the community map remain in the shared dataset
+              under the anonymised display name.
+            </li>
+            <li>
+              The operator may revoke any key, regenerate any display name, or soft-delete any
+              account at any time, with or without notice, for abuse, suspected unauthorised use, or
+              any other reason.
+            </li>
+            <li>
+              You must not share your key publicly, use it on behalf of users to whom you have not
+              been authorised to delegate access, create alt accounts to evade rate limits or bans,
+              or impersonate another user via your display name or in-game name.
             </li>
           </ul>
         </section>
@@ -232,9 +253,10 @@ export function TermsPage() {
         <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">13. Changes to these Terms</h2>
           <p>
-            We may update these Terms. Material changes will bump the consent version, which will
-            re-display the consent banner. The “Last updated” date at the top of this page reflects
-            the most recent revision. Continued use after changes means you accept the new Terms.
+            We may update these Terms. Material changes will bump both the consent banner version
+            and the server-side terms version recorded on your account, prompting you to re-accept
+            on your next visit. The “Last updated” date at the top of this page reflects the most
+            recent revision. Continued use after changes means you accept the new Terms.
           </p>
         </section>
 
