@@ -156,10 +156,10 @@ export function PendingContributionsSection({
       </div>
 
       {/* Preview image */}
-      {previewId === contribution.id && (
+      {previewId === contribution.id && previewUrl && (
         <div className="rounded-md border overflow-hidden bg-black/5">
           <MapViewer
-            imageUrl={previewId === contribution.id ? previewUrl : null}
+            imageUrl={previewUrl}
             alt="Merge preview"
             height="60vh"
             bordered={false}
