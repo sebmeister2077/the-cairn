@@ -17,6 +17,7 @@ from __future__ import annotations
 import gc
 import logging
 import threading
+import time
 from typing import Optional
 
 from PIL import Image
@@ -120,7 +121,17 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
     """
     # 1. Download + EXIF strip. Failures here propagate up; the caller
     # turns them into ``analysis_status='failed'`` rows.
+    t_slot = time.monotonic()
+    logger.info(
+        "tl_screenshot worker: %s slot %s starting (key=%s)",
+        request_id, slot, key,
+    )
+    t0 = time.monotonic()
     raw = r2_storage.download_bytes(key)
+    logger.info(
+        "tl_screenshot worker: %s slot %s downloaded %d bytes in %.2fs",
+        request_id, slot, len(raw), time.monotonic() - t0,
+    )
     try:
         clean = pipeline.strip_exif_keep_timestamps(raw)
     finally:
@@ -140,8 +151,17 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
     # 2. Decode once, derive minimap + OCR off the same PIL image, then
     # drop both the bytes and the image as soon as we no longer need them.
     img = Image.open(io.BytesIO(clean.clean_png_bytes))
+    logger.info(
+        "tl_screenshot worker: %s slot %s decoded image %dx%d mode=%s",
+        request_id, slot, img.width, img.height, img.mode,
+    )
     try:
+        t1 = time.monotonic()
         bbox = pipeline.detect_minimap_bbox(img)
+        logger.info(
+            "tl_screenshot worker: %s slot %s minimap bbox=%s (%.2fs)",
+            request_id, slot, bbox, time.monotonic() - t1,
+        )
         minimap_img = pipeline.crop_minimap(img, bbox) if bbox else None
 
         crop_key: Optional[str] = r2_storage.tl_screenshot_minimap_crop_key(
@@ -164,6 +184,10 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
             crop_key = None
 
         ocr = pipeline.ocr_coordinates(img)
+        logger.info(
+            "tl_screenshot worker: %s slot %s OCR done x=%s y=%s z=%s conf=%.3f",
+            request_id, slot, ocr.x, ocr.y, ocr.z, ocr.confidence,
+        )
     finally:
         # Free the full-res screenshot before the (memory-heavy) ORB
         # match runs. ``clean`` still holds the cleaned PNG bytes —
@@ -179,14 +203,25 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
 
     # 3. Minimap-vs-server match. Skip when we lack the inputs.
     if minimap_img is not None and ocr.x is not None and ocr.z is not None:
+        t2 = time.monotonic()
         match = pipeline.compare_minimap_to_level5(
             minimap_img, x_center=int(ocr.x), z_center=int(ocr.z)
+        )
+        logger.info(
+            "tl_screenshot worker: %s slot %s minimap match method=%s score=%.3f "
+            "chunks_used=%d (%.2fs)",
+            request_id, slot, match.method, match.score, match.chunks_used,
+            time.monotonic() - t2,
         )
     else:
         match = pipeline.MinimapMatchResult(
             score=0.0,
             method="no_minimap" if minimap_img is None else "no_coords",
             chunks_used=0, scale=None, sampled_window=None,
+        )
+        logger.info(
+            "tl_screenshot worker: %s slot %s skipping minimap match (method=%s)",
+            request_id, slot, match.method,
         )
 
     # Free the minimap PIL crop now that ORB has consumed it.
@@ -220,6 +255,11 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
     # the caller starts on the other slot.
     gc.collect()
 
+    logger.info(
+        "tl_screenshot worker: %s slot %s complete in %.2fs",
+        request_id, slot, time.monotonic() - t_slot,
+    )
+
     return {
         "ocr": ocr,
         "coords": coords,
@@ -241,6 +281,11 @@ def _process_one(row: dict) -> None:
     request_id = row["id"]
     key_a = row.get("screenshot_a_key")
     key_b = row.get("screenshot_b_key")
+    logger.info(
+        "tl_screenshot worker: starting analysis for %s (key_a=%s key_b=%s)",
+        request_id, key_a, key_b,
+    )
+    t_total = time.monotonic()
     if not key_a or not key_b:
         db.set_tl_screenshot_analysis_failed(
             request_id, "missing screenshot R2 keys"
@@ -319,6 +364,13 @@ def _process_one(row: dict) -> None:
         validation_warnings=warnings,
         minimap_crop_a_key=result_a["crop_key"],
         minimap_crop_b_key=result_b["crop_key"],
+    )
+    logger.info(
+        "tl_screenshot worker: %s analysis persisted in %.2fs total "
+        "(coords_a=%s coords_b=%s warnings=%d match_a=%s/%.2f match_b=%s/%.2f)",
+        request_id, time.monotonic() - t_total,
+        coords_a, coords_b, len(warnings),
+        match_a.method, match_a.score, match_b.method, match_b.score,
     )
 
 

@@ -210,7 +210,7 @@ def strip_exif_keep_timestamps(png_bytes: bytes) -> StripResult:
 # Minimap detection (numpy-only, no OpenCV needed)
 # ---------------------------------------------------------------------------
 
-def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int]]:
+def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int]]:  # noqa: C901
     """Locate the minimap in the top-right corner of the image.
 
     Returns ``(x, y, w, h)`` in image-pixel coords or ``None`` if no
@@ -283,16 +283,35 @@ def detect_minimap_bbox(image: Image.Image) -> Optional[Tuple[int, int, int, int
         col_strength[left_col] < col_med * MINIMAP_EDGE_PROMINENCE
         or row_strength[bottom_row] < row_med * MINIMAP_EDGE_PROMINENCE
     ):
+        logger.info(
+            "screenshot_pipeline: minimap bbox rejected (weak edges) image=%dx%d region=%dx%d "
+            "col_strength=%.1f vs %.1f*%g, row_strength=%.1f vs %.1f*%g",
+            w, h, rw, rh,
+            float(col_strength[left_col]), col_med, MINIMAP_EDGE_PROMINENCE,
+            float(row_strength[bottom_row]), row_med, MINIMAP_EDGE_PROMINENCE,
+        )
         return None
 
     side_w = rw - left_col
     side_h = bottom_row
     if side_w < MINIMAP_MIN_SIDE_PX or side_h < MINIMAP_MIN_SIDE_PX:
+        logger.info(
+            "screenshot_pipeline: minimap bbox rejected (too small) side=%dx%d min=%d region=%dx%d",
+            side_w, side_h, MINIMAP_MIN_SIDE_PX, rw, rh,
+        )
         return None
     aspect = side_w / max(1, side_h)
     if not (0.55 <= aspect <= 1.8):
+        logger.info(
+            "screenshot_pipeline: minimap bbox rejected (bad aspect) side=%dx%d aspect=%.2f",
+            side_w, side_h, aspect,
+        )
         return None
 
+    logger.info(
+        "screenshot_pipeline: minimap bbox detected at (%d,%d) size=%dx%d (region %dx%d, left_col=%d bot_row=%d)",
+        x0 + left_col, y0, side_w, side_h, rw, rh, left_col, bottom_row,
+    )
     return (x0 + left_col, y0, side_w, side_h)
 
 
@@ -347,10 +366,18 @@ def ocr_coordinates(image: Image.Image) -> OCRResult:
     nothing is parsed from the crop.
     """
     raw_text, confidence = _run_rapidocr(_hud_crop(image))
+    logger.info(
+        "screenshot_pipeline: HUD-crop OCR text=%r conf=%.3f",
+        (raw_text or "")[:200], confidence,
+    )
     x, y, z = _parse_coord_text(raw_text)
     if x is None or z is None:
         # Try the full image — some users move the HUD.
         full_text, full_conf = _run_rapidocr(image)
+        logger.info(
+            "screenshot_pipeline: full-image OCR fallback text=%r conf=%.3f",
+            (full_text or "")[:200], full_conf,
+        )
         if full_text:
             fx, fy, fz = _parse_coord_text(full_text)
             if fx is not None and fz is not None:
@@ -361,6 +388,10 @@ def ocr_coordinates(image: Image.Image) -> OCRResult:
             if len(full_text) > len(raw_text):
                 raw_text = full_text
                 confidence = max(confidence, full_conf)
+    logger.info(
+        "screenshot_pipeline: OCR parsed coords x=%s y=%s z=%s conf=%.3f",
+        x, y, z, confidence,
+    )
     return OCRResult(x=x, y=y, z=z, raw_text=raw_text, confidence=confidence)
 
 
@@ -391,10 +422,16 @@ def _run_rapidocr(image: Image.Image) -> Tuple[str, float]:
     try:
         result, _elapsed = engine(arr)
     except Exception:
-        logger.exception("rapidocr inference failed")
+        logger.exception(
+            "rapidocr inference failed (image %dx%d)", image.width, image.height
+        )
         return "", 0.0
 
     if not result:
+        logger.info(
+            "screenshot_pipeline: rapidocr returned no text (image %dx%d)",
+            image.width, image.height,
+        )
         return "", 0.0
 
     parts: List[str] = []
@@ -428,7 +465,9 @@ def _get_rapidocr_engine():
         return None
     try:
         from rapidocr_onnxruntime import RapidOCR  # type: ignore
+        logger.info("screenshot_pipeline: initialising RapidOCR engine (first call)")
         _rapidocr_engine = RapidOCR()
+        logger.info("screenshot_pipeline: RapidOCR engine ready")
     except Exception:
         logger.exception("rapidocr engine init failed; disabling OCR for this process")
         _rapidocr_init_failed = True
@@ -658,6 +697,10 @@ def _sample_level5_window(
     # the level metadata as ``min_x/min_z`` (chunk indices).
     metadata = _load_level5_metadata()
     if metadata is None:
+        logger.warning(
+            "screenshot_pipeline: level-5 metadata.json missing/unreadable on R2 "
+            "(check R2_BUCKET_NAME / endpoint / pre-generated tops cache)"
+        )
         return None, 0, None
 
     chunk_grid = int(metadata.get("chunk_grid", 64))
@@ -711,19 +754,39 @@ def _sample_level5_window(
 
     cells: dict = {}  # (cx, cy) -> np.ndarray
     chunks_used = 0
+    missing = 0
+    decode_fail = 0
     for cy in range(cy_min, cy_max + 1):
         for cx in range(cx_min, cx_max + 1):
             key = r2_storage.tops_map_level_chunk_key(5, cx, cy)
             try:
                 raw = r2_storage.download_bytes(key)
             except FileNotFoundError:
+                missing += 1
+                continue
+            except Exception:
+                logger.exception(
+                    "screenshot_pipeline: level-5 chunk download failed key=%s", key
+                )
+                missing += 1
                 continue
             try:
                 tile = np.asarray(Image.open(io.BytesIO(raw)).convert("RGB"))
             except Exception:
+                logger.exception(
+                    "screenshot_pipeline: level-5 chunk decode failed key=%s", key
+                )
+                decode_fail += 1
                 continue
             cells[(cx, cy)] = tile
             chunks_used += 1
+
+    logger.info(
+        "screenshot_pipeline: level-5 sample around (x=%d,z=%d) chunks=%d missing=%d decode_fail=%d "
+        "grid=(%d..%d, %d..%d) px_window=(%d,%d,%d,%d) image=%dx%d",
+        x_center, z_center, chunks_used, missing, decode_fail,
+        cx_min, cx_max, cy_min, cy_max, px0, py0, px1, py1, image_w, image_h,
+    )
 
     if not cells:
         return None, 0, window_dict
@@ -765,14 +828,29 @@ def _sample_level5_window(
 
 def _load_level5_metadata() -> Optional[dict]:
     """Download the level-5 metadata.json from R2. Returns None if missing."""
+    key = r2_storage.tops_map_level_metadata_key(5)
     try:
         import json
-        raw = r2_storage.download_bytes(r2_storage.tops_map_level_metadata_key(5))
-        return json.loads(raw.decode("utf-8"))
+        raw = r2_storage.download_bytes(key)
+        meta = json.loads(raw.decode("utf-8"))
+        logger.info(
+            "screenshot_pipeline: loaded level-5 metadata key=%s image=%sx%s chunk=%sx%s "
+            "grid=%s scale=%s start=(%s,%s)",
+            key, meta.get("image_w"), meta.get("image_h"),
+            meta.get("chunk_w"), meta.get("chunk_h"),
+            meta.get("chunk_grid"), meta.get("scale"),
+            meta.get("start_x"), meta.get("start_z"),
+        )
+        return meta
     except FileNotFoundError:
+        logger.warning(
+            "screenshot_pipeline: level-5 metadata key not found on R2: %s "
+            "(bucket=%s) \u2014 run pregenerate_tops_map_cache.py?",
+            key, r2_storage._bucket(),
+        )
         return None
     except Exception:
-        logger.exception("screenshot_pipeline: failed to load level-5 metadata")
+        logger.exception("screenshot_pipeline: failed to load level-5 metadata key=%s", key)
         return None
 
 
