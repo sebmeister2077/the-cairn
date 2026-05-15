@@ -1,6 +1,20 @@
-import { Pin, PinOff, X } from "lucide-react";
+import { useState } from "react";
+import { Check, Copy, Pin, PinOff, X } from "lucide-react";
 import type { WorldLineSegment } from "../MapViewer";
 import { Button } from "@/components/ui/button";
+
+// Y coordinate used for the generated /waypoint commands. Translocator
+// endpoints are stored as 2D coords on the tops map, so we pin Y to a
+// reasonable surface value — the user can always edit the waypoint in-game.
+const WAYPOINT_Y = 110;
+
+function buildWaypointCommands(seg: WorldLineSegment): string {
+  const { x1, z1, x2, z2 } = seg;
+  return [
+    `/waypoint addati spiral ${x1} ${WAYPOINT_Y} ${z1} false purple TL to ${x2} ${z2}`,
+    `/waypoint addati spiral ${x2} ${WAYPOINT_Y} ${z2} false purple TL to ${x1} ${z1}`,
+  ].join("\n");
+}
 
 export function SelectedTranslocatorHeader({
   selectedTranslocator,
@@ -18,7 +32,32 @@ export function SelectedTranslocatorHeader({
    */
   onClose?: () => void;
 }) {
+  const [copied, setCopied] = useState(false);
   if (!selectedTranslocator) return null;
+
+  const handleCopyWaypointCommands = async () => {
+    if (!selectedTranslocator) return;
+    const text = buildWaypointCommands(selectedTranslocator);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-secure contexts / older browsers.
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Silently ignore — clipboard may be blocked by permissions.
+    }
+  };
   // User-contributed TLs carry attribution + a "User" badge so reviewers can
   // tell at a glance whether a segment came from a community submission.
   const meta = selectedTranslocator.kind === "user" ? selectedTranslocator.meta : undefined;
@@ -89,6 +128,26 @@ export function SelectedTranslocatorHeader({
       ) : (
         <span className="text-xs text-muted-foreground">Right-click a TL to pin</span>
       )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleCopyWaypointCommands}
+        title={`Copy /waypoint commands for both endpoints to clipboard`}
+        className="h-7 px-2 text-foreground"
+      >
+        {copied ? (
+          <>
+            <Check className="size-4 mr-1" />
+            Copied
+          </>
+        ) : (
+          <>
+            <Copy className="size-4 mr-1" />
+            Copy waypoints
+          </>
+        )}
+      </Button>
       {onClose && (
         <Button
           type="button"
