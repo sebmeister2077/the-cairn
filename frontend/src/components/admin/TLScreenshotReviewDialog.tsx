@@ -364,10 +364,10 @@ function SlotPanel({
   editable,
 }: SlotProps) {
   return (
-    <div className="rounded-md border border-border p-3 space-y-2">
-      <div className="font-medium text-sm">{heading}</div>
+    <div className="rounded-md border border-border p-3 space-y-2 flex flex-col gap-2">
+      <div className="font-medium text-sm mb-0">{heading}</div>
       {screenshotUrl ? (
-        <a href={screenshotUrl} target="_blank" rel="noopener noreferrer">
+        <a href={screenshotUrl} target="_blank" rel="noopener noreferrer mb-0">
           <img
             src={screenshotUrl}
             alt={heading}
@@ -375,10 +375,10 @@ function SlotPanel({
           />
         </a>
       ) : (
-        <div className="text-xs text-muted-foreground">Screenshot unavailable.</div>
+        <div className="text-xs text-muted-foreground mb-0">Screenshot unavailable.</div>
       )}
       {(minimapUrl || serverMinimapUrl) && (
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 mb-0">
           <div className="space-y-1">
             <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
               Auto-detected minimap crop
@@ -412,7 +412,7 @@ function SlotPanel({
         </div>
       )}
       {ocrText && (
-        <div className="text-xs">
+        <div className="text-xs mb-0">
           <div className="text-muted-foreground">
             OCR (conf {ocrConfidence?.toFixed(2) ?? "?"}):
           </div>
@@ -420,12 +420,12 @@ function SlotPanel({
         </div>
       )}
       {minimapMatch && (
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs mb-0 text-muted-foreground mt-auto">
           Minimap match: <strong>{minimapMatch.score.toFixed(3)}</strong> ({minimapMatch.method},{" "}
           {minimapMatch.chunks_used} chunks)
         </div>
       )}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 mb-0">
         <div>
           <Label className="text-[10px]">X</Label>
           <Input
