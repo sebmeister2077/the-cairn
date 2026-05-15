@@ -14,6 +14,7 @@ admin can still view the raw screenshots and type coords manually.
 
 from __future__ import annotations
 
+import gc
 import logging
 import threading
 from typing import Optional
@@ -104,111 +105,104 @@ def _build_duplicate_warnings(
     )
 
 
-def _process_one(row: dict) -> None:
-    """Run the full pipeline for one screenshot request and persist."""
-    request_id = row["id"]
-    key_a = row.get("screenshot_a_key")
-    key_b = row.get("screenshot_b_key")
-    if not key_a or not key_b:
-        db.set_tl_screenshot_analysis_failed(
-            request_id, "missing screenshot R2 keys"
-        )
-        return
+def _process_slot(request_id: str, slot: str, key: str) -> dict:
+    """Run the full per-slot pipeline (download, EXIF strip, re-upload,
+    minimap detect/crop/upload, OCR, minimap match, server-crop upload)
+    for one screenshot and return everything the caller needs to build
+    warnings + persist the row.
 
+    Memory discipline: every large intermediate (raw bytes, cleaned
+    bytes, full-resolution PIL/numpy copies, the sampled server-map
+    crop) is released as soon as it is no longer needed and a final
+    ``gc.collect()`` is fired before returning. The peak working set
+    for the slot is therefore one decoded screenshot + one ORB pass,
+    not "both screenshots simultaneously" like the original pipeline.
+    """
+    # 1. Download + EXIF strip. Failures here propagate up; the caller
+    # turns them into ``analysis_status='failed'`` rows.
+    raw = r2_storage.download_bytes(key)
     try:
-        raw_a = r2_storage.download_bytes(key_a)
-        raw_b = r2_storage.download_bytes(key_b)
-    except Exception as exc:
-        logger.exception("tl_screenshot worker: download failed for %s", request_id)
-        db.set_tl_screenshot_analysis_failed(request_id, f"download: {exc}")
-        return
+        clean = pipeline.strip_exif_keep_timestamps(raw)
+    finally:
+        del raw
+    taken_at = clean.taken_at
 
+    # Re-upload the cleaned PNG (no metadata). Non-fatal — originals
+    # still work for review.
     try:
-        clean_a = pipeline.strip_exif_keep_timestamps(raw_a)
-        clean_b = pipeline.strip_exif_keep_timestamps(raw_b)
-    except Exception as exc:
-        logger.exception("tl_screenshot worker: EXIF strip failed for %s", request_id)
-        db.set_tl_screenshot_analysis_failed(request_id, f"exif: {exc}")
-        return
-
-    # Re-upload the cleaned PNGs so on-disk copies have no metadata. We also
-    # store the EXIF-extracted timestamps separately on the request row.
-    try:
-        r2_storage.upload_bytes(key_a, clean_a.clean_png_bytes, content_type="image/png")
-        r2_storage.upload_bytes(key_b, clean_b.clean_png_bytes, content_type="image/png")
+        r2_storage.upload_bytes(key, clean.clean_png_bytes, content_type="image/png")
     except Exception:
-        # Non-fatal — the originals still work for review.
-        logger.exception("tl_screenshot worker: re-upload of cleaned PNG failed for %s", request_id)
+        logger.exception(
+            "tl_screenshot worker: re-upload of cleaned PNG failed for %s slot %s",
+            request_id, slot,
+        )
 
-    img_a = Image.open(io.BytesIO(clean_a.clean_png_bytes))
-    img_b = Image.open(io.BytesIO(clean_b.clean_png_bytes))
+    # 2. Decode once, derive minimap + OCR off the same PIL image, then
+    # drop both the bytes and the image as soon as we no longer need them.
+    img = Image.open(io.BytesIO(clean.clean_png_bytes))
+    try:
+        bbox = pipeline.detect_minimap_bbox(img)
+        minimap_img = pipeline.crop_minimap(img, bbox) if bbox else None
 
-    # Minimap detection.
-    bbox_a = pipeline.detect_minimap_bbox(img_a)
-    bbox_b = pipeline.detect_minimap_bbox(img_b)
-    minimap_a_img = pipeline.crop_minimap(img_a, bbox_a) if bbox_a else None
-    minimap_b_img = pipeline.crop_minimap(img_b, bbox_b) if bbox_b else None
+        crop_key: Optional[str] = r2_storage.tl_screenshot_minimap_crop_key(
+            request_id, slot
+        )
+        if minimap_img is not None:
+            try:
+                r2_storage.upload_bytes(
+                    crop_key,
+                    pipeline.pil_to_png_bytes(minimap_img),
+                    content_type="image/png",
+                )
+            except Exception:
+                logger.exception(
+                    "tl_screenshot worker: minimap crop %s upload failed for %s",
+                    slot, request_id,
+                )
+                crop_key = None
+        else:
+            crop_key = None
 
-    # Cache the minimap crop in R2 so the admin UI can display it side-by-side.
-    crop_a_key = r2_storage.tl_screenshot_minimap_crop_key(request_id, "a")
-    crop_b_key = r2_storage.tl_screenshot_minimap_crop_key(request_id, "b")
-    if minimap_a_img is not None:
+        ocr = pipeline.ocr_coordinates(img)
+    finally:
+        # Free the full-res screenshot before the (memory-heavy) ORB
+        # match runs. ``clean`` still holds the cleaned PNG bytes —
+        # release those too; the match only needs the minimap crop.
         try:
-            r2_storage.upload_bytes(
-                crop_a_key, pipeline.pil_to_png_bytes(minimap_a_img), content_type="image/png"
-            )
+            img.close()
         except Exception:
-            logger.exception("tl_screenshot worker: minimap crop A upload failed for %s", request_id)
-            crop_a_key = None
-    else:
-        crop_a_key = None
-    if minimap_b_img is not None:
-        try:
-            r2_storage.upload_bytes(
-                crop_b_key, pipeline.pil_to_png_bytes(minimap_b_img), content_type="image/png"
-            )
-        except Exception:
-            logger.exception("tl_screenshot worker: minimap crop B upload failed for %s", request_id)
-            crop_b_key = None
-    else:
-        crop_b_key = None
+            pass
+        del img
+        del clean
 
-    # OCR per slot.
-    ocr_a = pipeline.ocr_coordinates(img_a)
-    ocr_b = pipeline.ocr_coordinates(img_b)
+    coords = {"x": ocr.x, "y": ocr.y, "z": ocr.z}
 
-    # Initial coords mirror OCR (admin can edit later).
-    coords_a = {"x": ocr_a.x, "y": ocr_a.y, "z": ocr_a.z}
-    coords_b = {"x": ocr_b.x, "y": ocr_b.y, "z": ocr_b.z}
-
-    # Minimap match — only meaningful if we have coords AND a detected minimap.
-    if minimap_a_img is not None and ocr_a.x is not None and ocr_a.z is not None:
-        match_a = pipeline.compare_minimap_to_level5(
-            minimap_a_img, x_center=int(ocr_a.x), z_center=int(ocr_a.z)
+    # 3. Minimap-vs-server match. Skip when we lack the inputs.
+    if minimap_img is not None and ocr.x is not None and ocr.z is not None:
+        match = pipeline.compare_minimap_to_level5(
+            minimap_img, x_center=int(ocr.x), z_center=int(ocr.z)
         )
     else:
-        match_a = pipeline.MinimapMatchResult(
+        match = pipeline.MinimapMatchResult(
             score=0.0,
-            method="no_minimap" if minimap_a_img is None else "no_coords",
-            chunks_used=0, scale=None, sampled_window=None,
-        )
-    if minimap_b_img is not None and ocr_b.x is not None and ocr_b.z is not None:
-        match_b = pipeline.compare_minimap_to_level5(
-            minimap_b_img, x_center=int(ocr_b.x), z_center=int(ocr_b.z)
-        )
-    else:
-        match_b = pipeline.MinimapMatchResult(
-            score=0.0,
-            method="no_minimap" if minimap_b_img is None else "no_coords",
+            method="no_minimap" if minimap_img is None else "no_coords",
             chunks_used=0, scale=None, sampled_window=None,
         )
 
-    # Persist the server-map window each match used so the admin can
-    # eyeball it next to the user's minimap crop in the review dialog.
-    # Failures are non-fatal — the rest of the analysis still works.
-    for slot, match in (("a", match_a), ("b", match_b)):
-        if match.sampled_image is None:
-            continue
+    # Free the minimap PIL crop now that ORB has consumed it.
+    try:
+        if minimap_img is not None:
+            minimap_img.close()
+    except Exception:
+        pass
+    del minimap_img
+
+    # 4. Persist the server-map crop the match used so the admin UI
+    # can show it side-by-side with the user's minimap. Then drop the
+    # numpy buffer immediately — it is the largest single allocation
+    # left over from the slot and would otherwise live until the row
+    # is persisted.
+    if match.sampled_image is not None:
         try:
             r2_storage.upload_bytes(
                 r2_storage.tl_screenshot_server_crop_key(request_id, slot),
@@ -220,20 +214,77 @@ def _process_one(row: dict) -> None:
                 "tl_screenshot worker: server-crop upload failed for %s slot %s",
                 request_id, slot,
             )
+        match.sampled_image = None
+
+    # Encourage CPython to release pooled numpy / OpenCV buffers before
+    # the caller starts on the other slot.
+    gc.collect()
+
+    return {
+        "ocr": ocr,
+        "coords": coords,
+        "match": match,
+        "bbox": bbox,
+        "taken_at": taken_at,
+        "crop_key": crop_key,
+    }
+
+
+def _process_one(row: dict) -> None:
+    """Run the full pipeline for one screenshot request and persist.
+
+    Slots are processed strictly sequentially so the worker only ever
+    holds one decoded screenshot in memory at a time — important on the
+    512 MB Render plan, where keeping both 4K screenshots resident
+    alongside the OCR + ORB working set is enough to OOM the process.
+    """
+    request_id = row["id"]
+    key_a = row.get("screenshot_a_key")
+    key_b = row.get("screenshot_b_key")
+    if not key_a or not key_b:
+        db.set_tl_screenshot_analysis_failed(
+            request_id, "missing screenshot R2 keys"
+        )
+        return
+
+    try:
+        result_a = _process_slot(request_id, "a", key_a)
+    except Exception as exc:
+        logger.exception(
+            "tl_screenshot worker: slot A pipeline failed for %s", request_id
+        )
+        db.set_tl_screenshot_analysis_failed(request_id, f"slot_a: {exc}")
+        return
+
+    # Make doubly sure slot A's working set is gone before slot B starts.
+    gc.collect()
+
+    try:
+        result_b = _process_slot(request_id, "b", key_b)
+    except Exception as exc:
+        logger.exception(
+            "tl_screenshot worker: slot B pipeline failed for %s", request_id
+        )
+        db.set_tl_screenshot_analysis_failed(request_id, f"slot_b: {exc}")
+        return
+
+    ocr_a = result_a["ocr"]; ocr_b = result_b["ocr"]
+    coords_a = result_a["coords"]; coords_b = result_b["coords"]
+    match_a = result_a["match"]; match_b = result_b["match"]
 
     warnings = pipeline.build_validation_warnings(
         ocr_a=ocr_a, ocr_b=ocr_b,
         coords_a=coords_a, coords_b=coords_b,
         minimap_a=match_a, minimap_b=match_b,
-        taken_at_a=clean_a.taken_at, taken_at_b=clean_b.taken_at,
+        taken_at_a=result_a["taken_at"], taken_at_b=result_b["taken_at"],
     )
-    if bbox_a is None:
+    if result_a["bbox"] is None:
         warnings.append({
             "code": "minimap_not_detected",
             "severity": "warning",
             "message": "Screenshot A: could not locate the minimap frame in the top-right.",
         })
-    if bbox_b is None:
+    if result_b["bbox"] is None:
         warnings.append({
             "code": "minimap_not_detected",
             "severity": "warning",
@@ -266,8 +317,8 @@ def _process_one(row: dict) -> None:
         coords_b=coords_b,
         minimap_match=minimap_match_payload,
         validation_warnings=warnings,
-        minimap_crop_a_key=crop_a_key,
-        minimap_crop_b_key=crop_b_key,
+        minimap_crop_a_key=result_a["crop_key"],
+        minimap_crop_b_key=result_b["crop_key"],
     )
 
 

@@ -147,6 +147,19 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
   const busy = patch.isPending || approve.isPending || retryAnalysis.isPending || reject.isPending;
   const isPending = r?.status === "pending";
   const analysisBusy = r?.analysis_status === "queued" || r?.analysis_status === "running";
+  // Approve & merge requires all four endpoint coordinates to be valid
+  // integers. Without them the backend has nothing to write into
+  // ``translocators.geojson``, so block the action client-side instead
+  // of letting the request 4xx after the user clicks.
+  const parsedCoords = [
+    parseInt32(coordsA.x),
+    parseInt32(coordsA.z),
+    parseInt32(coordsB.x),
+    parseInt32(coordsB.z),
+  ];
+  const coordsValid = parsedCoords.every(
+    (v) => v !== null && !Number.isNaN(v),
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -259,7 +272,16 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                   {patch.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                   Save edits
                 </Button>
-                <Button type="button" onClick={() => approve.mutate()} disabled={busy}>
+                <Button
+                  type="button"
+                  onClick={() => approve.mutate()}
+                  disabled={busy || !coordsValid}
+                  title={
+                    coordsValid
+                      ? undefined
+                      : "Set both A and B coordinates (X and Z) before approving."
+                  }
+                >
                   {approve.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                   Approve & merge
                 </Button>
