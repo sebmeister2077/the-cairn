@@ -78,7 +78,7 @@ const subTabs: Record<string, SubTab[]> = {
     { value: "/multiplayer/identify", label: "Identify Maps" },
     { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
     { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
-    { value: "/multiplayer/contribute", label: "Contribute Map" },
+    { value: "/multiplayer/contribute-map", label: "Contribute Map" },
     {
       value: "/multiplayer/contribute-tls",
       label: "Contribute TLs",
@@ -476,6 +476,7 @@ export function AppContent() {
           <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
           <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
+          <Route path="/multiplayer/contribute-map" element={<ContributePage />} />
           <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />

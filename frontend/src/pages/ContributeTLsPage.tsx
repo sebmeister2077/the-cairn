@@ -17,10 +17,10 @@ import { MyScreenshotRequestsList } from "@/components/contribute-tls/MyScreensh
 export function ContributeTLsPage() {
   return (
     <div className="space-y-4">
-      <Tabs defaultValue="chatlog">
+      <Tabs defaultValue="screenshots">
         <TabsList variant="line">
+          <TabsTrigger value="screenshots">From screenshots</TabsTrigger>
           <TabsTrigger value="chatlog">From chat log</TabsTrigger>
-          <TabsTrigger value="screenshots">From screenshots (WIP)</TabsTrigger>
         </TabsList>
         <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />
