@@ -246,17 +246,27 @@ async def retry_analysis(
             status_code=409,
             detail=f"cannot retry analysis for a {row.get('status')} request",
         )
-    if row.get("analysis_status") == "running":
+
+    # ``analysis_status='running'`` is normally protected, but the worker
+    # lives in this process: if the previous process OOM-crashed the row
+    # is stranded with no live thread owning it. Allow the reset in that
+    # case so the admin isn't stuck waiting for a worker that will never
+    # finish.
+    from ..tasks import process_tl_screenshot_request as screenshot_worker
+    is_running = row.get("analysis_status") == "running"
+    worker_alive = screenshot_worker.is_job_running()
+    if is_running and worker_alive:
         raise HTTPException(status_code=409, detail="analysis is already running")
 
     await asyncio.to_thread(_delete_analysis_objects, row)
-    updated = await asyncio.to_thread(db.retry_tl_screenshot_analysis, request_id)
+    updated = await asyncio.to_thread(
+        db.retry_tl_screenshot_analysis, request_id, allow_running=is_running
+    )
     if updated is None:
         raise HTTPException(status_code=409, detail="request could not be requeued")
 
     spawned = False
     try:
-        from ..tasks import process_tl_screenshot_request as screenshot_worker
         spawned = screenshot_worker.start_job()
     except Exception:
         logger.exception("tl_screenshot admin: failed to start retry worker")
@@ -267,6 +277,7 @@ async def retry_analysis(
         metadata={
             "previous_analysis_status": row.get("analysis_status"),
             "worker_spawned": spawned,
+            "recovered_stuck_running": is_running and not worker_alive,
         },
     )
     return {

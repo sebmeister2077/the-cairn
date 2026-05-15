@@ -326,3 +326,28 @@ def start_job() -> bool:
         _active_thread = t
         t.start()
         return True
+
+
+def kick_on_startup() -> None:
+    """Recover from a previous process that died mid-analysis.
+
+    Any row stuck in ``analysis_status='running'`` is by definition
+    orphaned (the worker thread lives inside the server process), so we
+    requeue it and spawn the worker so it gets reprocessed without an
+    admin having to click ``Retry analysis`` manually. Safe no-op when
+    nothing is queued.
+    """
+    try:
+        revived = db.reset_stuck_tl_screenshot_analysis()
+    except Exception:
+        logger.exception("tl_screenshot worker: reset_stuck on startup failed")
+        revived = 0
+    if revived:
+        logger.info(
+            "tl_screenshot worker: revived %d stuck 'running' analysis row(s)",
+            revived,
+        )
+    try:
+        start_job()
+    except Exception:
+        logger.exception("tl_screenshot worker: startup kick start_job failed")

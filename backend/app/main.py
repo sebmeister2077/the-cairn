@@ -339,6 +339,20 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("compress_workers startup kick failed (non-fatal): %s", exc)
 
+    # Resume any TL-screenshot analysis left ``analysis_status='running'``
+    # by a previous process. The worker is in-process so a crash mid-OCR
+    # (e.g. Render OOM) strands the row forever otherwise.
+    step_started = perf_counter()
+    try:
+        from .tasks import process_tl_screenshot_request as tl_screenshot_worker
+        tl_screenshot_worker.kick_on_startup()
+        logger.info(
+            "Startup step tl_screenshot_worker kick completed in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("tl_screenshot_worker startup kick failed (non-fatal): %s", exc)
+
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
     try:
