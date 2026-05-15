@@ -51,30 +51,23 @@ export function PrivacyPage() {
           <p>
             We use your browser's <strong>local storage</strong> to keep the Service working. We do{" "}
             <strong>not</strong> use third-party tracking cookies, advertising cookies, or
-            analytics. The keys we set are:
+            analytics. The specific items saved in your browser may change over time as features are
+            added, changed, or removed. Examples of what may be stored include:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <code className="rounded bg-muted px-1 text-xs">api_key</code> &mdash; your personal
-              API key, used to authenticate API requests.
+              A way to temporarily identify your browser session so we can authenticate requests,
+              remember your access, and help prevent abuse.
             </li>
             <li>
-              <code className="rounded bg-muted px-1 text-xs">is_admin</code>,{" "}
-              <code className="rounded bg-muted px-1 text-xs">can_contribute</code> &mdash; cached
-              permission flags so the UI can render without a round-trip.
+              Your permission state, so the interface can show the tools available to you without an
+              extra round-trip.
             </li>
+            <li>Whether you accepted this notice, so we do not need to show it on every visit.</li>
             <li>
-              <code className="rounded bg-muted px-1 text-xs">storage_consent</code> &mdash;
-              remembers whether you accepted this notice.
-            </li>
-            <li>
-              <code className="rounded bg-muted px-1 text-xs">vs-waypoints-query-cache</code>{" "}
-              &mdash; a cache of recently fetched data (e.g. map tile URLs) so the app loads faster
-              on revisits.
-            </li>
-            <li>
-              <code className="rounded bg-muted px-1 text-xs">tops-map-selected-level</code> &mdash;
-              the last map zoom level you viewed.
+              Quality-of-life preferences and cached data, such as recently fetched map information
+              or your last viewed map state, so the app loads faster and feels consistent when you
+              return.
             </li>
           </ul>
           <p>
@@ -133,16 +126,13 @@ export function PrivacyPage() {
           <h2 className="text-base font-semibold text-foreground">5. Server-side records</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>Cloudflare R2</strong> &mdash; the community map database, pending
+              <strong>Object storage</strong> &mdash; the community map database, pending
               contribution files, rendered preview PNGs, and cached map chunks.
             </li>
             <li>
-              <strong>Supabase Postgres</strong> &mdash; metadata about contributions (id, status,
-              timestamps, source filename, file size, contributor reference) and an audit log of
-              approved merges.
-            </li>
-            <li>
-              <strong>Backend configuration</strong> &mdash; the set of valid API keys.
+              <strong>Application database</strong> &mdash; metadata about contributions (id,
+              status, timestamps, source filename, file size, contributor reference) and an audit
+              log of approved merges.
             </li>
           </ul>
         </section>
