@@ -45,10 +45,7 @@ function Combobox({
   // Close on outside click
   React.useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     }
@@ -107,20 +104,21 @@ function Combobox({
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"
-        aria-activedescendant={
-          activeIndex >= 0 ? `${id}-opt-${activeIndex}` : undefined
-        }
+        aria-activedescendant={activeIndex >= 0 ? `${id}-opt-${activeIndex}` : undefined}
         value={value}
         placeholder={placeholder}
         onChange={(e) => {
           onChange(e.target.value);
           setOpen(true);
         }}
-        onFocus={() => { setOpen(true); onFocus?.(); }}
+        onFocus={() => {
+          setOpen(true);
+          onFocus?.();
+        }}
         onKeyDown={handleKeyDown}
         className={cn(
           "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80",
-          className
+          className,
         )}
       />
       {open && filtered.length > 0 && (
@@ -141,9 +139,7 @@ function Combobox({
               data-active={i === activeIndex ? "" : undefined}
               className={cn(
                 "cursor-pointer select-none rounded-md px-2 py-1 text-sm",
-                i === activeIndex
-                  ? "bg-accent text-accent-foreground"
-                  : "hover:bg-accent/50"
+                i === activeIndex ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
               )}
               onMouseDown={(e) => {
                 e.preventDefault(); // keep focus on input

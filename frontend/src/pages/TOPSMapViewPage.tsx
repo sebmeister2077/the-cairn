@@ -1153,7 +1153,7 @@ function FullscreenControlsOverlay({
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
-      <div className="pointer-events-auto absolute top-14 left-3">
+      <div className="pointer-events-auto absolute top-16 left-6">
         <Button
           type="button"
           variant="secondary"
@@ -1168,7 +1168,7 @@ function FullscreenControlsOverlay({
       </div>
 
       {/* Top-right: stacked toggles + groupings. */}
-      <div className="pointer-events-auto absolute top-14 right-3 flex w-72 flex-col gap-2">
+      <div className="pointer-events-auto absolute top-16 right-6 flex w-72 flex-col gap-2">
         <div
           onClick={() => setShowTranslocators(!showTranslocators)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
@@ -1225,7 +1225,7 @@ function FullscreenControlsOverlay({
       </div>
 
       {/* Bottom-left: landmark search. */}
-      <div className="pointer-events-auto absolute bottom-3 left-3 w-72 rounded-md border bg-background/95 p-2 shadow-md backdrop-blur">
+      <div className="pointer-events-auto absolute bottom-6 left-6 w-72 rounded-md border bg-background/95 p-2 shadow-md backdrop-blur">
         <Label
           htmlFor="landmark-search-fullscreen"
           className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
