@@ -59,6 +59,13 @@ export function ContributePage() {
       return shouldPoll ? pollingRate : false;
     },
     enabled: canContribute,
+    // Persisted cache restores `dataUpdatedAt` from the previous session, so
+    // the global 60 s staleTime would suppress the refetch on mount if you
+    // reload within that window. Force a refetch on every mount so contributor
+    // data is always re-validated after a reload (the persisted snapshot
+    // still renders instantly while the network request is in flight).
+    staleTime: 0,
+    refetchOnMount: "always",
     meta: { persist: true },
   });
   const contributionInfo = contributeInfoQuery.data ?? null;
