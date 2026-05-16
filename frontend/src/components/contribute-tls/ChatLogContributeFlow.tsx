@@ -9,6 +9,7 @@
 import { useState, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useReduxState } from "@/store/hooks";
 import { setSubmittedCount, resetContributeTLs } from "@/store/slices/contributeTLs";
 import { useTranslocatorsOverlay, TRANSLOCATORS_QUERY_KEY } from "@/hooks/useOverlayData";
 import { ChatLogUploadCard } from "@/components/contribute-tls/ChatLogUploadCard";
@@ -19,9 +20,18 @@ import { WhatToDoDialog } from "@/components/contribute-tls/WhatToDoDialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle2, Clipboard, ClipboardCheck } from "lucide-react";
 import { contributeTLs, ApiError } from "@/lib/api";
+import { matchedServerSegmentKeys, segmentKey } from "@/lib/tl-matching";
 import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
+
+/**
+ * Default Y value used when generating `/waypoint addati spiral` commands
+ * for server TLs the admin doesn't have yet. Server segments are stored as
+ * 2D (x/z), so we emit a sentinel altitude — the admin can correct it
+ * in-game by walking to the spiral marker.
+ */
+const ADMIN_WAYPOINT_DEFAULT_Y = 1;
 
 type Step = "upload" | "review" | "done";
 
@@ -30,12 +40,14 @@ export function ChatLogContributeFlow() {
   const queryClient = useQueryClient();
   const userTLs = useAppSelector((s) => s.contributeTLs.userTLs);
   const submittedCount = useAppSelector((s) => s.contributeTLs.submittedCount);
+  const isAdmin = useReduxState("auth.isAdmin");
 
   const [step, setStep] = useState<Step>("upload");
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [skippedExisting, setSkippedExisting] = useState<number>(0);
+  const [copiedAdminCommands, setCopiedAdminCommands] = useState(false);
 
   const translocatorsQuery = useTranslocatorsOverlay();
   const serverSegments = useMemo(
@@ -65,6 +77,41 @@ export function ChatLogContributeFlow() {
     return c;
   }, [userTLs]);
   const submittableCount = counts.confirmed + counts.unconfirmed;
+
+  /**
+   * Admin-only: `/waypoint addati spiral` commands for every server TL
+   * the admin doesn't have yet (i.e. server segments not matched by any
+   * of the user TLs parsed from this chat log). Two commands per TL,
+   * one per endpoint, labelled with the opposite endpoint's coords.
+   */
+  const adminMissingWaypointCommands = useMemo(() => {
+    if (!isAdmin) return [];
+    const covered = matchedServerSegmentKeys(userTLs);
+    const out: string[] = [];
+    for (const seg of serverSegments) {
+      if (covered.has(segmentKey(seg))) continue;
+      const x1 = Math.round(seg.x1);
+      const z1 = Math.round(seg.z1);
+      const x2 = Math.round(seg.x2);
+      const z2 = Math.round(seg.z2);
+      const y = ADMIN_WAYPOINT_DEFAULT_Y;
+      out.push(`/waypoint addati spiral ${x1} ${y} ${z1} false purple TL to ${x2} ${z2}`);
+      out.push(`/waypoint addati spiral ${x2} ${y} ${z2} false purple TL to ${x1} ${z1}`);
+    }
+    return out;
+  }, [isAdmin, serverSegments, userTLs]);
+
+  async function handleCopyAdminMissingCommands() {
+    if (adminMissingWaypointCommands.length === 0) return;
+    try {
+      await navigator.clipboard.writeText(adminMissingWaypointCommands.join("\n"));
+      setCopiedAdminCommands(true);
+      window.setTimeout(() => setCopiedAdminCommands(false), 2000);
+    } catch {
+      // Clipboard write can fail in insecure contexts; ignore — the
+      // button will simply not flip to "Copied!" so the admin notices.
+    }
+  }
 
   function openSubmitConfirm() {
     if (submittableCount === 0) {
@@ -199,6 +246,32 @@ export function ChatLogContributeFlow() {
           </Button>
           <WhatToDoDialog />
           <div className="ml-auto flex items-end gap-2">
+            {isAdmin && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCopyAdminMissingCommands}
+                disabled={adminMissingWaypointCommands.length === 0}
+                title={
+                  adminMissingWaypointCommands.length === 0
+                    ? "You already have a waypoint for every server TL"
+                    : "Copy /waypoint addati commands for server TLs missing from your chat log"
+                }
+              >
+                {copiedAdminCommands ? (
+                  <ClipboardCheck className="mr-2 size-4" />
+                ) : (
+                  <Clipboard className="mr-2 size-4" />
+                )}
+                {copiedAdminCommands
+                  ? "Copied!"
+                  : `Copy missing TL waypoints${
+                      adminMissingWaypointCommands.length > 0
+                        ? ` (${adminMissingWaypointCommands.length})`
+                        : ""
+                    }`}
+              </Button>
+            )}
             <Button
               type="button"
               onClick={openSubmitConfirm}
