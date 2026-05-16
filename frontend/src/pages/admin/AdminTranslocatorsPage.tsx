@@ -117,7 +117,7 @@ function LiveTranslocatorsCard() {
   });
 
   return (
-    <Card className="xl:-mx-4 2xl:-mx-8">
+    <Card className="">
       <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
         <CardTitle className="text-base">Live submissions</CardTitle>
         <div className="flex flex-wrap items-center gap-2">
