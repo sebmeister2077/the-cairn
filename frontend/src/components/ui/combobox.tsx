@@ -12,6 +12,12 @@ interface ComboboxProps {
   placeholder?: string;
   id?: string;
   className?: string;
+  /**
+   * When true, render the suggestion list *above* the input instead of below.
+   * Useful when the combobox sits near the bottom of the viewport (e.g. a
+   * floating fullscreen panel) and the default downward list would be clipped.
+   */
+  dropUp?: boolean;
 }
 
 function Combobox({
@@ -23,6 +29,7 @@ function Combobox({
   placeholder,
   id,
   className,
+  dropUp = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(-1);
@@ -120,7 +127,10 @@ function Combobox({
         <ul
           ref={listRef}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border border-input bg-popover p-1 shadow-md"
+          className={cn(
+            "absolute z-50 max-h-48 w-full overflow-auto rounded-lg border border-input bg-popover p-1 shadow-md",
+            dropUp ? "bottom-full mb-1" : "mt-1",
+          )}
         >
           {filtered.map((item, i) => (
             <li

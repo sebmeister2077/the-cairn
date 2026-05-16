@@ -1240,6 +1240,7 @@ function FullscreenControlsOverlay({
           suggestions={landmarkSuggestions}
           onChange={onLandmarkSearchChange}
           onSelect={onLandmarkSelect}
+          dropUp
         />
       </div>
     </div>
