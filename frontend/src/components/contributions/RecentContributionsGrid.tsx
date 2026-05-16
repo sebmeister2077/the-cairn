@@ -1,6 +1,6 @@
 import type { HistoryEntry } from "@/models/contributions";
 import { ImageOff, Loader2, Undo2, History } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapViewer } from "../MapViewer";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -35,8 +35,15 @@ export function RecentContributionsGridImpl({
   // Two-step revert: clicking the destructive button stages the entry
   // here, which opens a themed ConfirmDialog instead of the browser's
   const [pendingRevert, setPendingRevert] = useState<HistoryEntry | null>(null);
+  const mapElemendContainerRef = useRef<HTMLDivElement | null>(null);
   const opened = openId ? (history.find((h) => h.id === openId) ?? null) : null;
 
+  useEffect(() => {
+    if (!mapElemendContainerRef.current) return;
+    mapElemendContainerRef.current.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [openId]);
   const requestRevert = (entry: HistoryEntry) => {
     setRevertError(null);
     setPendingRevert(entry);
@@ -171,7 +178,10 @@ export function RecentContributionsGridImpl({
 
         {/* Click-to-enlarge inline view */}
         {opened && opened.preview_signed_url && (
-          <div className="rounded-md border overflow-hidden bg-black/5">
+          <div
+            className="rounded-md border overflow-hidden bg-black/5"
+            ref={mapElemendContainerRef}
+          >
             <MapViewer
               imageUrl={opened.preview_signed_url}
               alt={`Preview of contribution ${opened.id}`}
