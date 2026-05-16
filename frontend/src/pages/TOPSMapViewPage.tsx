@@ -15,6 +15,8 @@ import {
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
   setShowTranslocators as setShowTranslocatorsAction,
+  setShowFullscreen as setShowFullscreenAction,
+  setShowRecentlyAdded as setShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
@@ -37,7 +39,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Layers, Loader2, Pin, PinOff, Settings, Sparkles, X } from "lucide-react";
+import {
+  Download,
+  Layers,
+  Loader2,
+  Maximize2,
+  Minimize2,
+  Pin,
+  PinOff,
+  Search,
+  Settings,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
@@ -67,6 +81,11 @@ import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo"
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
+// "Recently added" window for the favourites+recent filter (request #6 from
+// the fullscreen redesign): TLs whose `meta.addedAt` is within this many ms
+// of "now" are considered fresh and union'd into the visible set when the
+// user toggles "Include recently added".
+const RECENT_TL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 // Storage key constants moved into [store/slices/mapView.ts]; the slice
 // owns reads/writes so the page only talks to selectors + dispatch.
 
@@ -190,6 +209,25 @@ export function TOPSMapViewPage() {
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
     [dispatch],
   );
+  // Fullscreen mode (local, not persisted): hides the page chrome and renders
+  // the map at viewport size with floating control panels.
+  // const [isFullscreen, setIsFullscreen] = useState(false);
+  const isFullscreen = useReduxState("mapView.isFullscreen");
+  const setIsFullscreen = useCallback(
+    (next: boolean) => dispatch(setShowFullscreenAction(next)),
+    [dispatch],
+  );
+  // "Include recently added TLs" augments the favourites filter. When ON, the
+  // visible TL set is the union of (active grouping members) and TLs whose
+  // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
+  // their favourite groupings *and* still see freshly contributed segments
+  // from the community.
+  const showRecentlyAddedTLs = useAppSelector((s) => s.mapView.showRecentlyAdded);
+  const setShowRecentlyAddedTLs = useCallback(
+    (next: boolean) => dispatch(setShowRecentlyAddedAction(next)),
+    [dispatch],
+  );
+
   const [selectedTranslocator, setSelectedTranslocator] = useState<WorldLineSegment | null>(null);
   // When pinned, the displayed TL info stays put even if the user left-clicks
   // empty space. Cleared by clicking the pin icon, or by clicking any other TL
@@ -650,19 +688,50 @@ export function TOPSMapViewPage() {
     return set;
   }, [activeGroupingIds, groupingsStore.groupings]);
 
+  // Set of TLIds whose `meta.addedAt` is within the recent-window. Only user-
+  // contributed segments carry `meta`, so seeded TLs naturally never appear
+  // here. Memoised on the segment list so it only recomputes when the
+  // overlay payload actually changes.
+  const recentTLIdSet = useMemo(() => {
+    const cutoff = Date.now() - RECENT_TL_WINDOW_MS;
+    const set = new Set<string>();
+    for (const seg of translocatorSegments) {
+      const addedAt = seg.meta?.addedAt;
+      if (!addedAt) continue;
+      const t = Date.parse(addedAt);
+      if (Number.isFinite(t) && t >= cutoff) set.add(tlIdFor(seg));
+    }
+    return set;
+  }, [translocatorSegments]);
+
   // Segments the viewer renders. In edit mode we always show every TL so the
-  // user can click any of them; otherwise filter mode narrows the set.
+  // user can click any of them; otherwise filter mode narrows the set,
+  // optionally augmented with recently-added TLs.
   const visibleTranslocatorSegments = useMemo(() => {
     if (!showTranslocators) return undefined;
     if (editingGrouping) return translocatorSegments;
-    if (groupingsViewMode === "filter" && activeTLIdSet.size > 0) {
-      return translocatorSegments.filter((seg) => activeTLIdSet.has(tlIdFor(seg)));
-    }
-    return translocatorSegments;
-  }, [showTranslocators, editingGrouping, groupingsViewMode, activeTLIdSet, translocatorSegments]);
+    const filterByGroupings = groupingsViewMode === "filter" && activeTLIdSet.size > 0;
+    if (!filterByGroupings && !showRecentlyAddedTLs) return translocatorSegments;
+    return translocatorSegments.filter((seg) => {
+      const id = tlIdFor(seg);
+      if (filterByGroupings && activeTLIdSet.has(id)) return true;
+      if (showRecentlyAddedTLs && recentTLIdSet.has(id)) return true;
+      return false;
+    });
+  }, [
+    showTranslocators,
+    editingGrouping,
+    groupingsViewMode,
+    activeTLIdSet,
+    translocatorSegments,
+    showRecentlyAddedTLs,
+    recentTLIdSet,
+  ]);
 
   // Segments the viewer should highlight. In edit mode = current grouping's
-  // members; in highlight mode = active grouping union; otherwise none.
+  // members; in highlight mode = active grouping union; recently-added TLs
+  // are highlighted additively whenever the toggle is on (regardless of mode)
+  // so freshly contributed segments visually stand out.
   const highlightedTranslocatorSegments = useMemo(() => {
     if (!showTranslocators) return undefined;
     if (editingGrouping) {
@@ -670,211 +739,269 @@ export function TOPSMapViewPage() {
       const out = translocatorSegments.filter((seg) => memberSet.has(tlIdFor(seg)));
       return out.length > 0 ? out : undefined;
     }
-    if (groupingsViewMode === "highlight" && activeTLIdSet.size > 0) {
-      const out = translocatorSegments.filter((seg) => activeTLIdSet.has(tlIdFor(seg)));
-      return out.length > 0 ? out : undefined;
+    const highlightByGroupings = groupingsViewMode === "highlight" && activeTLIdSet.size > 0;
+    if (!highlightByGroupings && !showRecentlyAddedTLs) return undefined;
+    const seen = new Set<string>();
+    const out: WorldLineSegment[] = [];
+    for (const seg of translocatorSegments) {
+      const id = tlIdFor(seg);
+      if (seen.has(id)) continue;
+      const matchGroup = highlightByGroupings && activeTLIdSet.has(id);
+      const matchRecent = showRecentlyAddedTLs && recentTLIdSet.has(id);
+      if (matchGroup || matchRecent) {
+        out.push(seg);
+        seen.add(id);
+      }
     }
-    return undefined;
-  }, [showTranslocators, editingGrouping, groupingsViewMode, activeTLIdSet, translocatorSegments]);
+    return out.length > 0 ? out : undefined;
+  }, [
+    showTranslocators,
+    editingGrouping,
+    groupingsViewMode,
+    activeTLIdSet,
+    translocatorSegments,
+    showRecentlyAddedTLs,
+    recentTLIdSet,
+  ]);
 
+  // Filtering is active when the visible TL list has actually been narrowed
+  // — either by the favourites filter or the include-recently-added filter.
   const filteringActive =
     !editingGrouping &&
-    groupingsViewMode === "filter" &&
-    activeTLIdSet.size > 0 &&
-    visibleTranslocatorSegments != null;
+    ((groupingsViewMode === "filter" && activeTLIdSet.size > 0) || showRecentlyAddedTLs) &&
+    visibleTranslocatorSegments != null &&
+    visibleTranslocatorSegments.length !== translocatorSegments.length;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex flex-wrap items-center gap-2">
-          <span>TOPS Map Viewer</span>
-          <MaintenanceChip component="tops_map_viewer" />
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Explore the community-contributed global server map built from player contributions.
-        </p>
-      </CardHeader>
-      <CardContent className="grid gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          {loading && (
-            <Button disabled>
-              <Loader2 className="size-4 mr-1 animate-spin" />
-              {loading}
-            </Button>
-          )}
-          {!loading && hasMap && (
-            <>
+    <Card
+      className={
+        isFullscreen
+          ? "fixed inset-0 z-50 m-0 rounded-none border-0 bg-background overflow-hidden"
+          : undefined
+      }
+    >
+      {!isFullscreen && (
+        <CardHeader>
+          <CardTitle className="flex flex-wrap items-center gap-2">
+            <span>TOPS Map Viewer</span>
+            <MaintenanceChip component="tops_map_viewer" />
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Explore the community-contributed global server map built from player contributions.
+          </p>
+        </CardHeader>
+      )}
+      <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
+        {!isFullscreen && (
+          <>
+            <div className="flex flex-wrap items-center gap-2">
+              {loading && (
+                <Button disabled>
+                  <Loader2 className="size-4 mr-1 animate-spin" />
+                  {loading}
+                </Button>
+              )}
+              {!loading && hasMap && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleDownload}
+                    disabled={downloading}
+                  >
+                    {downloading ? (
+                      <Loader2 className="size-4 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="size-4 mr-1" />
+                    )}
+                    {downloading ? "Building PNG…" : "Download PNG"}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={handleReload}>
+                    Reload
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsFullscreen(true)}
+                    title="Enter fullscreen map view"
+                  >
+                    <Maximize2 className="size-4 mr-1" />
+                    Fullscreen
+                  </Button>
+                </>
+              )}
+              {!loading && !hasMap && error && (
+                <Button type="button" onClick={handleReload}>
+                  Retry
+                </Button>
+              )}
+
+              {/* Resolution selector — visible whenever multiple completed levels exist. */}
+              {completedLevels.length > 1 && (
+                <ResolutionSelector
+                  selectedLevel={selectedLevel}
+                  setSelectedLevel={setSelectedLevel}
+                  resolutionLevels={statsQuery.data?.resolutions}
+                />
+              )}
+
+              {isAdmin && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setResourcesDrawerOpen(true)}
+                  title="Worldgen resources overlay"
+                >
+                  <Sparkles className="size-4 mr-1" />
+                  Resources
+                  {resourcesOverlay.depositsLoading && (
+                    <Loader2 className="size-3 ml-1 animate-spin" />
+                  )}
+                </Button>
+              )}
+
+              {isAdmin && (
+                <Dialog>
+                  <DialogTrigger
+                    render={
+                      <Button type="button" variant="outline" size="sm">
+                        <Settings className="size-4 mr-1" />
+                        Map cache
+                      </Button>
+                    }
+                  />
+                  <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
+                    <DialogHeader>
+                      <DialogTitle>TOPS map resolution cache</DialogTitle>
+                    </DialogHeader>
+                    <AdminResolutionPanel
+                      onLevelComplete={() => {
+                        queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+                        queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={showTranslocators}
+                onCheckedChange={setShowTranslocators}
+                aria-label="Show translocator overlay"
+              />
+              <Label>Show translocators</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                TLs found:{" "}
+                <span className="font-medium text-foreground">
+                  {filteringActive
+                    ? `${(visibleTranslocatorSegments?.length ?? 0).toLocaleString()} / ${translocatorCount.toLocaleString()} shown`
+                    : translocatorCount.toLocaleString()}
+                </span>
+              </span>
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleDownload}
-                disabled={downloading}
+                size="sm"
+                className="ml-auto"
+                onClick={() => setGroupingsOpen(true)}
               >
-                {downloading ? (
-                  <Loader2 className="size-4 mr-1 animate-spin" />
-                ) : (
-                  <Download className="size-4 mr-1" />
+                <Layers className="size-4 mr-1" />
+                Groupings
+                {activeGroupingIds.size > 0 && (
+                  <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                    {activeGroupingIds.size}
+                  </span>
                 )}
-                {downloading ? "Building PNG…" : "Download PNG"}
               </Button>
-              <Button type="button" variant="outline" onClick={handleReload}>
-                Reload
-              </Button>
-            </>
-          )}
-          {!loading && !hasMap && error && (
-            <Button type="button" onClick={handleReload}>
-              Retry
-            </Button>
-          )}
-
-          {/* Resolution selector — visible whenever multiple completed levels exist. */}
-          {completedLevels.length > 1 && (
-            <ResolutionSelector
-              selectedLevel={selectedLevel}
-              setSelectedLevel={setSelectedLevel}
-              resolutionLevels={statsQuery.data?.resolutions}
-            />
-          )}
-
-          {isAdmin && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setResourcesDrawerOpen(true)}
-              title="Worldgen resources overlay"
-            >
-              <Sparkles className="size-4 mr-1" />
-              Resources
-              {resourcesOverlay.depositsLoading && <Loader2 className="size-3 ml-1 animate-spin" />}
-            </Button>
-          )}
-
-          {isAdmin && (
-            <Dialog>
-              <DialogTrigger
-                render={
-                  <Button type="button" variant="outline" size="sm">
-                    <Settings className="size-4 mr-1" />
-                    Map cache
-                  </Button>
-                }
+            </div>
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={showRecentlyAddedTLs}
+                onCheckedChange={setShowRecentlyAddedTLs}
+                aria-label="Include recently added translocators"
               />
-              <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
-                <DialogHeader>
-                  <DialogTitle>TOPS map resolution cache</DialogTitle>
-                </DialogHeader>
-                <AdminResolutionPanel
-                  onLevelComplete={() => {
-                    queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
-                    queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
-                  }}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-          <Switch
-            checked={showTranslocators}
-            onCheckedChange={setShowTranslocators}
-            aria-label="Show translocator overlay"
-          />
-          <Label>Show translocators</Label>
-          <span className="text-xs text-muted-foreground ml-2">
-            TLs found:{" "}
-            <span className="font-medium text-foreground">
-              {filteringActive
-                ? `${(visibleTranslocatorSegments?.length ?? 0).toLocaleString()} / ${translocatorCount.toLocaleString()} shown`
-                : translocatorCount.toLocaleString()}
-            </span>
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            onClick={() => setGroupingsOpen(true)}
-          >
-            <Layers className="size-4 mr-1" />
-            Groupings
-            {activeGroupingIds.size > 0 && (
-              <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                {activeGroupingIds.size}
+              <Label>Include recently added TLs (last 14 days)</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                {recentTLIdSet.size.toLocaleString()} recent
               </span>
-            )}
-          </Button>
-        </div>
-        <GroupEditingInfo
-          editingGrouping={editingGrouping}
-          setEditingGroupingId={setEditingGroupingId}
-        />
-        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-          <Switch
-            checked={showLandmarks}
-            onCheckedChange={setShowLandmarks}
-            aria-label="Show landmarks overlay"
-          />
-          <Label>Show landmarks</Label>
-          <span className="text-xs text-muted-foreground ml-2">
-            Landmarks found:{" "}
-            <span className="font-medium text-foreground">{landmarkCount.toLocaleString()}</span>
-          </span>
-        </div>
-        <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
-        {hasMap && (
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="landmark-search" className="text-sm">
-              Search landmark
-            </Label>
-            <Combobox
-              id="landmark-search"
-              placeholder="Type to search…"
-              value={landmarkSearch}
-              suggestions={landmarkSuggestions}
-              onChange={setLandmarkSearch}
-              onSelect={handleLandmarkSelect}
+            </div>
+            <GroupEditingInfo
+              editingGrouping={editingGrouping}
+              setEditingGroupingId={setEditingGroupingId}
             />
-          </div>
-        )}
-        {error && <p className="text-red-500 text-sm">{error}</p>}
-        {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
-        {isAdmin && selectedDeposit && (
-          <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
-            <Sparkles className="size-4 text-primary" />
-            <span className="font-medium capitalize">{selectedDeposit.type}</span>
-            <span className="text-muted-foreground font-mono text-xs">
-              ({selectedDeposit.x}, {selectedDeposit.y}, {selectedDeposit.z})
-            </span>
-            {selectedDeposit.qty != null && (
-              <span className="text-xs text-muted-foreground">
-                qty {selectedDeposit.qty.toFixed(2)}
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={showLandmarks}
+                onCheckedChange={setShowLandmarks}
+                aria-label="Show landmarks overlay"
+              />
+              <Label>Show landmarks</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                Landmarks found:{" "}
+                <span className="font-medium text-foreground">
+                  {landmarkCount.toLocaleString()}
+                </span>
               </span>
+            </div>
+            <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
+            {hasMap && (
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="landmark-search" className="text-sm">
+                  Search landmark
+                </Label>
+                <Combobox
+                  id="landmark-search"
+                  placeholder="Type to search…"
+                  value={landmarkSearch}
+                  suggestions={landmarkSuggestions}
+                  onChange={setLandmarkSearch}
+                  onSelect={handleLandmarkSelect}
+                />
+              </div>
             )}
-            {selectedDeposit.richness != null && (
-              <span className="text-xs text-muted-foreground">
-                richness {selectedDeposit.richness.toFixed(2)}
-              </span>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
+            {isAdmin && selectedDeposit && (
+              <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
+                <Sparkles className="size-4 text-primary" />
+                <span className="font-medium capitalize">{selectedDeposit.type}</span>
+                <span className="text-muted-foreground font-mono text-xs">
+                  ({selectedDeposit.x}, {selectedDeposit.y}, {selectedDeposit.z})
+                </span>
+                {selectedDeposit.qty != null && (
+                  <span className="text-xs text-muted-foreground">
+                    qty {selectedDeposit.qty.toFixed(2)}
+                  </span>
+                )}
+                {selectedDeposit.richness != null && (
+                  <span className="text-xs text-muted-foreground">
+                    richness {selectedDeposit.richness.toFixed(2)}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="ml-auto"
+                  onClick={() => setSelectedDeposit(null)}
+                  aria-label="Dismiss deposit info"
+                >
+                  <X className="size-4" />
+                </Button>
+              </div>
             )}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="ml-auto"
-              onClick={() => setSelectedDeposit(null)}
-              aria-label="Dismiss deposit info"
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
+          </>
         )}
-        <div className="relative">
+        <div className={isFullscreen ? "absolute inset-0" : "relative"}>
           <MapViewer
             tileSet={tileSet}
             stats={stats}
             alt="TOPS global server map"
+            height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
             showTLLegend={showTranslocators}
+            tlLegendShowRecentColor
             overlaySegments={visibleTranslocatorSegments}
             overlayPoints={landmarkPoints}
             onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
@@ -923,6 +1050,28 @@ export function TOPSMapViewPage() {
               }}
             />
           )}
+          {isFullscreen && (
+            <FullscreenControlsOverlay
+              onExitFullscreen={() => setIsFullscreen(false)}
+              showTranslocators={showTranslocators}
+              setShowTranslocators={setShowTranslocators}
+              translocatorCount={translocatorCount}
+              visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
+              filteringActive={filteringActive}
+              showLandmarks={showLandmarks}
+              setShowLandmarks={setShowLandmarks}
+              landmarkCount={landmarkCount}
+              includeRecentlyAddedTLs={showRecentlyAddedTLs}
+              setIncludeRecentlyAddedTLs={setShowRecentlyAddedTLs}
+              recentTLCount={recentTLIdSet.size}
+              activeGroupingCount={activeGroupingIds.size}
+              onOpenGroupings={() => setGroupingsOpen(true)}
+              landmarkSearch={landmarkSearch}
+              landmarkSuggestions={landmarkSuggestions}
+              onLandmarkSearchChange={setLandmarkSearch}
+              onLandmarkSelect={handleLandmarkSelect}
+            />
+          )}
         </div>
         <TLGroupingsDrawer
           open={groupingsOpen}
@@ -949,5 +1098,150 @@ export function TOPSMapViewPage() {
         )} */}
       </CardContent>
     </Card>
+  );
+}
+
+interface FullscreenControlsOverlayProps {
+  onExitFullscreen: () => void;
+  showTranslocators: boolean;
+  setShowTranslocators: (next: boolean) => void;
+  translocatorCount: number;
+  visibleTranslocatorCount: number;
+  filteringActive: boolean;
+  showLandmarks: boolean;
+  setShowLandmarks: (next: boolean) => void;
+  landmarkCount: number;
+  includeRecentlyAddedTLs: boolean;
+  setIncludeRecentlyAddedTLs: (next: boolean) => void;
+  recentTLCount: number;
+  activeGroupingCount: number;
+  onOpenGroupings: () => void;
+  landmarkSearch: string;
+  landmarkSuggestions: string[];
+  onLandmarkSearchChange: (next: string) => void;
+  onLandmarkSelect: (name: string) => void;
+}
+
+/**
+ * Floating control surfaces rendered over the map while in fullscreen mode.
+ * Kept to the minimum required interactions (exit, groupings, TL/landmark
+ * toggles, recently-added filter, landmark search) so the map itself stays
+ * the focus. The panel is `pointer-events-none` at the root and individual
+ * controls re-enable pointer events, allowing the user to pan the map
+ * through the gaps between panels.
+ */
+function FullscreenControlsOverlay({
+  onExitFullscreen,
+  showTranslocators,
+  setShowTranslocators,
+  translocatorCount,
+  visibleTranslocatorCount,
+  filteringActive,
+  showLandmarks,
+  setShowLandmarks,
+  landmarkCount,
+  includeRecentlyAddedTLs,
+  setIncludeRecentlyAddedTLs,
+  recentTLCount,
+  activeGroupingCount,
+  onOpenGroupings,
+  landmarkSearch,
+  landmarkSuggestions,
+  onLandmarkSearchChange,
+  onLandmarkSelect,
+}: FullscreenControlsOverlayProps) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10">
+      {/* Top-left: exit fullscreen. */}
+      <div className="pointer-events-auto absolute top-14 left-3">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onExitFullscreen}
+          title="Exit fullscreen"
+          className="shadow-md"
+        >
+          <Minimize2 className="size-4 mr-1" />
+          Exit fullscreen
+        </Button>
+      </div>
+
+      {/* Top-right: stacked toggles + groupings. */}
+      <div className="pointer-events-auto absolute top-14 right-3 flex w-72 flex-col gap-2">
+        <div
+          onClick={() => setShowTranslocators(!showTranslocators)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch checked={showTranslocators} aria-label="Show translocator overlay" />
+          <Label className="cursor-pointer">Translocators</Label>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {filteringActive
+              ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
+              : translocatorCount.toLocaleString()}
+          </span>
+        </div>
+        <div
+          onClick={() => setShowLandmarks(!showLandmarks)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
+          <Label className="cursor-pointer">Landmarks</Label>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {landmarkCount.toLocaleString()}
+          </span>
+        </div>
+        <div
+          onClick={() => setIncludeRecentlyAddedTLs(!includeRecentlyAddedTLs)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch
+            checked={includeRecentlyAddedTLs}
+            aria-label="Include recently added translocators"
+          />
+          <Label className="cursor-pointer text-xs leading-tight">
+            Recently added TLs
+            <span className="block text-[10px] text-muted-foreground">last 14 days</span>
+          </Label>
+          <span className="ml-auto text-xs text-muted-foreground">
+            {recentTLCount.toLocaleString()}
+          </span>
+        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onOpenGroupings}
+          className="shadow-md"
+        >
+          <Layers className="size-4 mr-1" />
+          Groupings
+          {activeGroupingCount > 0 && (
+            <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+              {activeGroupingCount}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {/* Bottom-left: landmark search. */}
+      <div className="pointer-events-auto absolute bottom-3 left-3 w-72 rounded-md border bg-background/95 p-2 shadow-md backdrop-blur">
+        <Label
+          htmlFor="landmark-search-fullscreen"
+          className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
+        >
+          <Search className="size-3" />
+          Search landmark
+        </Label>
+        <Combobox
+          id="landmark-search-fullscreen"
+          placeholder="Type to search…"
+          value={landmarkSearch}
+          suggestions={landmarkSuggestions}
+          onChange={onLandmarkSearchChange}
+          onSelect={onLandmarkSelect}
+        />
+      </div>
+    </div>
   );
 }

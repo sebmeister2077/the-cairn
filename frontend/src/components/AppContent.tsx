@@ -52,6 +52,7 @@ import {
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useReduxState } from "@/store/hooks";
+import { cn } from "@/lib/utils";
 
 const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
@@ -470,7 +471,12 @@ export function AppContent() {
           )}
         </nav>
       </header>
-      <main className="container mx-auto px-4 py-6 max-w-3xl flex-1 w-full">
+      <main
+        className={cn(
+          "container mx-auto px-4 py-6 max-w-3xl flex-1 w-full",
+          isTopsPage && "max-w-6xl",
+        )}
+      >
         {authRejected && (
           <AuthRejectedBanner
             kind={authRejected.kind}

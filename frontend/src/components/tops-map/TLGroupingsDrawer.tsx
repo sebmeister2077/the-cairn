@@ -215,6 +215,12 @@ export function TLGroupingsDrawer({
                 No groupings yet. Create one and click TLs on the map to add them.
               </div>
             )}
+            {groupings.length > 0 && (
+              <p className="mb-2 text-[11px] text-muted-foreground">
+                Tip: click a grouping’s name to rename it. Use the pencil icon to add or remove TLs
+                from the grouping by clicking them on the map.
+              </p>
+            )}
 
             <ul className="flex flex-col gap-2">
               {groupings.map((g) => {

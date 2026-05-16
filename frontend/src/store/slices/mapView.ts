@@ -18,6 +18,8 @@ export interface MapViewState {
     activeGroupingIds: string[];
     showLandmarks: boolean;
     showTranslocators: boolean;
+    showRecentlyAdded: boolean;
+    isFullscreen: boolean;
 }
 
 function readSelectedLevel(): number | null {
@@ -44,7 +46,9 @@ export function loadInitialMapViewState(): MapViewState {
         groupingsViewMode: readViewMode(),
         activeGroupingIds: readActive(),
         showLandmarks: true,
-        showTranslocators: false
+        showTranslocators: false,
+        showRecentlyAdded: false,
+        isFullscreen: false,
     };
 }
 
@@ -75,6 +79,12 @@ export const mapViewSlice = createSlice({
         setShowTranslocators(state, action: PayloadAction<boolean>) {
             state.showTranslocators = action.payload;
         },
+        setShowRecentlyAdded(state, action: PayloadAction<boolean>) {
+            state.showRecentlyAdded = action.payload;
+        },
+        setShowFullscreen(state, action: PayloadAction<boolean>) {
+            state.isFullscreen = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -91,6 +101,8 @@ export const {
     toggleActiveGrouping,
     setShowLandmarks,
     setShowTranslocators,
+    setShowRecentlyAdded,
+    setShowFullscreen,
 } = mapViewSlice.actions;
 
 export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {
