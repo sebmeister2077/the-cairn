@@ -83,7 +83,7 @@ const subTabs: Record<string, SubTab[]> = {
       value: "/multiplayer/contribute-tls",
       label: "Contribute TLs",
       chip: "New",
-      chipShownUntil: "2026-05-17",
+      chipShownUntil: "2026-05-23",
     },
   ],
   "/general": [],
