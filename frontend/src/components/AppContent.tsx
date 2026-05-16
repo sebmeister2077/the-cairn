@@ -57,17 +57,52 @@ const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
   { value: "/singleplayer", label: "Singleplayer" },
   { value: "/multiplayer", label: "Multiplayer" },
-];
+] as const;
 
-const ADMIN_CATEGORY = { value: "/manage", label: "Manage" };
+const ADMIN_CATEGORY = { value: "/manage", label: "Manage" } as const;
 
-type SubTab = {
-  value: string;
+const NavigationRoutes = {
+  Singleplayer: {
+    Extract: "/singleplayer/extract",
+    Import: "/singleplayer/import",
+    Commands: "/singleplayer/commands",
+    Delete: "/singleplayer/delete",
+  },
+  Multiplayer: {
+    Identify: "/multiplayer/identify",
+    MapViewer: "/multiplayer/map-viewer",
+    TOPSMap: "/multiplayer/tops-map",
+    ContributeMap: "/multiplayer/contribute-map",
+    ContributeTLs: "/multiplayer/contribute-tls",
+  },
+  General: {},
+  Manage: {
+    ApiKeys: "/manage/api-keys",
+    Users: "/manage/users",
+    BannedIPs: "/manage/banned-ips",
+    Flags: "/manage/flags",
+    FeatureFlags: "/manage/feature-flags",
+    Maintenance: "/manage/maintenance",
+    Resources: "/manage/resources",
+    WaypointsBackup: "/manage/waypoints-backup",
+    Translocators: "/manage/translocators",
+    TLScreenshots: "/manage/tl-screenshots",
+  },
+} as const;
+type SubTab<V extends any = string> = {
+  value: V;
   label: string;
   chip?: string;
   chipShownUntil?: string;
 };
-const subTabs: Record<string, SubTab[]> = {
+type SubtabKey = keyof typeof NavigationRoutes;
+type SubtabKeyToValue<K extends SubtabKey> =
+  (typeof NavigationRoutes)[K][keyof (typeof NavigationRoutes)[K]];
+
+type Subtabs = {
+  [K in SubtabKey as `/${Lowercase<K>}`]: SubTab<SubtabKeyToValue<K>>[];
+};
+const subTabs: Subtabs = {
   "/singleplayer": [
     { value: "/singleplayer/extract", label: "Extract" },
     { value: "/singleplayer/import", label: "Import" },
@@ -101,14 +136,25 @@ const subTabs: Record<string, SubTab[]> = {
   ],
 };
 
-function getActiveCategory(pathname: string) {
+function getActiveCategory(pathname: string): `/${Lowercase<SubtabKey>}` | null {
   for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
   // Standalone pages like /privacy and /terms intentionally have no
   // active tab. The root path "/" redirects to the TOPS map viewer, so
   // we don't need to special-case it here.
-  return "";
+  return null;
+}
+
+function shouldShowChip(t: SubTab) {
+  if (!t.chip) return false;
+  if (!t.chipShownUntil) return true;
+
+  try {
+    return new Date(t.chipShownUntil) > new Date();
+  } catch {
+    return false;
+  }
 }
 
 export function AppContent() {
@@ -143,6 +189,32 @@ export function AppContent() {
   const [authRejected, setAuthRejected] = useState<{ kind: "had-key" } | { kind: "no-key" } | null>(
     null,
   );
+
+  // Detect "API key set but no account registered yet" so we can nudge the
+  // user toward the Account page (otherwise the 403 from /account/me is
+  // silent and they have no idea they need to click Account → Register).
+  // The queryKey includes the API key so switching keys invalidates the
+  // cached answer immediately (otherwise a previously-registered key's
+  // successful response would hide the dot for a freshly-pasted new key).
+  const apiKey = useReduxState("auth.apiKey");
+  const { data: accountData } = useQuery<AccountMeResponse>({
+    queryKey: ["account-me", apiKey ?? ""],
+    queryFn: getMyAccountSafe,
+    enabled: !!apiKey,
+    retry: false,
+    // Always refetch on mount / focus so the indicator reflects reality
+    // even if a stale entry was rehydrated from the persisted cache.
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+  });
+  const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
+  const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
+  const activeCategory = getActiveCategory(location.pathname);
+  const activeSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
+  const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
+
+  const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
 
   useEffect(() => {
     const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
@@ -282,68 +354,32 @@ export function AppContent() {
 
   // Auto-claim whenever a pending invite enters the state machine. The
   // dialog is purely informational — there is no "Claim" button anymore.
-  useEffect(() => {
-    if (!inviteClaim || inviteClaim.status !== "pending") return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const result = await claimInvite(inviteClaim.token);
-        if (cancelled) return;
-        setApiKey(result.key);
-        const status = await checkAuthStatus();
-        if (cancelled) return;
-        setStoredIsAdmin(status.is_admin);
-        setStoredCanContribute(status.can_contribute);
-        setIsAdmin(status.is_admin);
-        // Success: silently dismiss the splash. The api-key-change event
-        // already updated ``hasApiKey`` so the rest of the UI lights up.
-        setInviteClaim(null);
-      } catch (e: unknown) {
-        if (cancelled) return;
-        const msg = e instanceof Error ? e.message : "Could not set up access automatically";
-        setInviteClaim((prev) => prev && { ...prev, status: "error", error: msg });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [inviteClaim]);
+  useEffectWithAbort(
+    ({ signal }) => {
+      if (!inviteClaim || inviteClaim.status !== "pending") return;
+      (async () => {
+        try {
+          const result = await claimInvite(inviteClaim.token);
+          if (signal.aborted) return;
+          setApiKey(result.key);
+          const status = await checkAuthStatus();
+          if (signal.aborted) return;
+          setStoredIsAdmin(status.is_admin);
+          setStoredCanContribute(status.can_contribute);
+          setIsAdmin(status.is_admin);
+          // Success: silently dismiss the splash. The api-key-change event
+          // already updated ``hasApiKey`` so the rest of the UI lights up.
+          setInviteClaim(null);
+        } catch (e: unknown) {
+          if (signal.aborted) return;
+          const msg = e instanceof Error ? e.message : "Could not set up access automatically";
+          setInviteClaim((prev) => prev && { ...prev, status: "error", error: msg });
+        }
+      })();
+    },
+    [inviteClaim],
+  );
 
-  const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
-  const activeCategory = getActiveCategory(location.pathname);
-  const activeSubs = subTabs[activeCategory] ?? [];
-  const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
-
-  // Detect "API key set but no account registered yet" so we can nudge the
-  // user toward the Account page (otherwise the 403 from /account/me is
-  // silent and they have no idea they need to click Account → Register).
-  // The queryKey includes the API key so switching keys invalidates the
-  // cached answer immediately (otherwise a previously-registered key's
-  // successful response would hide the dot for a freshly-pasted new key).
-  const apiKey = useReduxState("auth.apiKey");
-  const { data: accountData } = useQuery<AccountMeResponse>({
-    queryKey: ["account-me", apiKey ?? ""],
-    queryFn: getMyAccountSafe,
-    enabled: !!apiKey,
-    retry: false,
-    // Always refetch on mount / focus so the indicator reflects reality
-    // even if a stale entry was rehydrated from the persisted cache.
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-  });
-  const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
-
-  function shouldShowChip(t: SubTab) {
-    if (!t.chip) return false;
-    if (!t.chipShownUntil) return true;
-
-    try {
-      return new Date(t.chipShownUntil) > new Date();
-    } catch {
-      return false;
-    }
-  }
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="border-b">
