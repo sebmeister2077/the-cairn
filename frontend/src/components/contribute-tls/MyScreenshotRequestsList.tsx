@@ -6,9 +6,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Trash2 } from "lucide-react";
+import { Check, Copy, Loader2, Trash2 } from "lucide-react";
 import { listMyTLScreenshotRequests, withdrawTLScreenshotRequest } from "@/lib/api";
-import type { TLScreenshotRequest } from "@/models/tlScreenshots";
+import type { TLScreenshotCoords, TLScreenshotRequest } from "@/models/tlScreenshots";
+import { useCopy } from "@/components/useCopy";
 
 const QUERY_KEY = ["my-tl-screenshot-requests"] as const;
 
@@ -93,6 +94,9 @@ interface RowProps {
 function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
   const a = request.coords_a;
   const b = request.coords_b;
+  const { copied, copy } = useCopy();
+  const cmdA = buildWaypointCommand(a, b);
+  const cmdB = buildWaypointCommand(b, a);
   return (
     <div className="rounded-md border border-border p-3 text-sm space-y-1">
       <div className="flex items-center justify-between gap-2">
@@ -121,6 +125,48 @@ function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
       <div className="font-mono text-xs">
         A: {fmtCoord(a)} &nbsp;→&nbsp; B: {fmtCoord(b)}
       </div>
+      {(cmdA || cmdB) && (
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          {cmdA && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2"
+              onClick={() => copy(cmdA, "a")}
+              title={cmdA}
+            >
+              {copied === "a" ? (
+                <Check className="size-3 text-emerald-600" />
+              ) : (
+                <Copy className="size-3" />
+              )}
+              <span className="ml-1 text-xs">
+                {copied === "a" ? "Copied A!" : "Copy command A"}
+              </span>
+            </Button>
+          )}
+          {cmdB && (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2"
+              onClick={() => copy(cmdB, "b")}
+              title={cmdB}
+            >
+              {copied === "b" ? (
+                <Check className="size-3 text-emerald-600" />
+              ) : (
+                <Copy className="size-3" />
+              )}
+              <span className="ml-1 text-xs">
+                {copied === "b" ? "Copied B!" : "Copy command B"}
+              </span>
+            </Button>
+          )}
+        </div>
+      )}
       {request.validation_warnings.length > 0 && (
         <ul className="mt-1 space-y-0.5">
           {request.validation_warnings.map((w, i) => (
@@ -157,6 +203,22 @@ function fmtCoord(c: TLScreenshotRequest["coords_a"]): string {
   const x = c.x ?? "?";
   const z = c.z ?? "?";
   return `(${x}, ${z})`;
+}
+
+/**
+ * Builds a `/waypoint addati` command for the `source` endpoint, with the
+ * `other` endpoint's x/z embedded in the waypoint title so players can see
+ * where the TL leads. Returns null if any required coordinate is missing
+ * (source needs x/y/z; destination needs x/z).
+ */
+function buildWaypointCommand(
+  source: TLScreenshotCoords | null,
+  other: TLScreenshotCoords | null,
+): string | null {
+  if (!source || !other) return null;
+  if (source.x == null || source.y == null || source.z == null) return null;
+  if (other.x == null || other.z == null) return null;
+  return `/waypoint addati spiral ${source.x} ${source.y} ${source.z} false purple TL to ${other.x}, ${other.z}`;
 }
 
 function StatusPill({ status }: { status: TLScreenshotRequest["status"] }) {
