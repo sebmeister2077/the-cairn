@@ -90,7 +90,7 @@ const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
 // the fullscreen redesign): TLs whose `meta.addedAt` is within this many ms
 // of "now" are considered fresh and union'd into the visible set when the
-// user toggles "Include recently added".
+// user toggles "Emphasize recently added".
 const RECENT_TL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 // Storage key constants moved into [store/slices/mapView.ts]; the slice
 // owns reads/writes so the page only talks to selectors + dispatch.
@@ -223,7 +223,7 @@ export function TOPSMapViewPage() {
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
   );
-  // "Include recently added TLs" augments the favourites filter. When ON, the
+  // "Emphasize recently added TLs" augments the favourites filter. When ON, the
   // visible TL set is the union of (active grouping members) and TLs whose
   // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
   // their favourite groupings *and* still see freshly contributed segments
@@ -1013,9 +1013,9 @@ export function TOPSMapViewPage() {
               <Switch
                 checked={showRecentlyAddedTLs}
                 onCheckedChange={toggleShowRecentlyAddedTLs}
-                aria-label="Include recently added translocators"
+                aria-label="Emphasize recently added translocators"
               />
-              <Label>Include recently added TLs (last 14 days)</Label>
+              <Label>Emphasize recently added TLs (last 14 days)</Label>
               <span className="text-xs text-muted-foreground ml-2">
                 {recentTLIdSet.size.toLocaleString()} recent
               </span>

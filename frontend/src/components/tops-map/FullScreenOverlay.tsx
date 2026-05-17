@@ -81,7 +81,7 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
   );
-  // "Include recently added TLs" augments the favourites filter. When ON, the
+  // "Emphasize recently added TLs" augments the favourites filter. When ON, the
   // visible TL set is the union of (active grouping members) and TLs whose
   // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
   // their favourite groupings *and* still see freshly contributed segments
@@ -146,7 +146,7 @@ export function FullscreenControlsOverlay({
         >
           <Switch
             checked={showRecentlyAddedTLs}
-            aria-label="Include recently added translocators"
+            aria-label="Emphasize recently added translocators"
           />
           <Label className="cursor-pointer text-xs leading-tight">
             Recently added TLs
