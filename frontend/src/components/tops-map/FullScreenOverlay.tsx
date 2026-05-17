@@ -15,6 +15,7 @@ import {
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
+import { HomePositionControls } from "./HomePositionControls";
 
 type FullscreenControlsOverlayProps = {
   translocatorCount: number;
@@ -28,6 +29,11 @@ type FullscreenControlsOverlayProps = {
   landmarkSuggestions: string[];
   onLandmarkSearchChange: (next: string) => void;
   onLandmarkSelect: (name: string) => void;
+  favoriteStartingPosition: { x: number; z: number; zoom?: number } | null;
+  canSaveCurrentAsHome: boolean;
+  onJumpHome: () => void;
+  onSaveCurrentAsHome: () => void;
+  onClearHome: () => void;
 };
 
 /**
@@ -50,6 +56,11 @@ export function FullscreenControlsOverlay({
   landmarkSuggestions,
   onLandmarkSearchChange,
   onLandmarkSelect,
+  favoriteStartingPosition,
+  canSaveCurrentAsHome,
+  onJumpHome,
+  onSaveCurrentAsHome,
+  onClearHome,
 }: FullscreenControlsOverlayProps) {
   const dispatch = useAppDispatch();
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
@@ -83,7 +94,7 @@ export function FullscreenControlsOverlay({
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
-      <div className="pointer-events-auto absolute top-16 left-6">
+      <div className="pointer-events-auto absolute top-16 left-6  flex items-center gap-2">
         <Button
           type="button"
           variant="secondary"
@@ -95,6 +106,14 @@ export function FullscreenControlsOverlay({
           <Minimize2 className="size-4 mr-1" />
           Exit fullscreen
         </Button>
+        <HomePositionControls
+          favorite={favoriteStartingPosition}
+          canSaveCurrent={canSaveCurrentAsHome}
+          onJumpHome={onJumpHome}
+          onSaveCurrent={onSaveCurrentAsHome}
+          onClear={onClearHome}
+          compact
+        />
       </div>
 
       {/* Top-right: stacked toggles + groupings. */}

@@ -20,6 +20,13 @@ export interface MapViewState {
     showTranslocators: boolean;
     showRecentlyAdded: boolean;
     isFullscreen: boolean;
+    /**
+     * User's preferred "home" location on the TOPS map. When set, the page
+     * uses this as the initial viewport on first paint (instead of spawn
+     * 0,0) and exposes a "Jump home" button. Persisted via the root
+     * envelope so it survives reloads + cross-tab.
+     */
+    favoriteStartingPosition: { x: number; z: number; zoom?: number } | null;
 }
 
 function readSelectedLevel(): number | null {
@@ -49,6 +56,7 @@ export function loadInitialMapViewState(): MapViewState {
         showTranslocators: false,
         showRecentlyAdded: false,
         isFullscreen: false,
+        favoriteStartingPosition: null,
     };
 }
 
@@ -85,6 +93,15 @@ export const mapViewSlice = createSlice({
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
         },
+        setFavoriteStartingPosition(
+            state,
+            action: PayloadAction<{ x: number; z: number; zoom?: number } | null>,
+        ) {
+            state.favoriteStartingPosition = action.payload;
+        },
+        clearFavoriteStartingPosition(state) {
+            state.favoriteStartingPosition = null;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -103,6 +120,8 @@ export const {
     setShowTranslocators,
     toggleShowRecentlyAdded,
     setShowFullscreen,
+    setFavoriteStartingPosition,
+    clearFavoriteStartingPosition,
 } = mapViewSlice.actions;
 
 export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {

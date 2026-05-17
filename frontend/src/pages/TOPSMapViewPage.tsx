@@ -17,6 +17,8 @@ import {
   setShowTranslocators as setShowTranslocatorsAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
+  setFavoriteStartingPosition as setFavoriteStartingPositionAction,
+  clearFavoriteStartingPosition as clearFavoriteStartingPositionAction,
 } from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
@@ -41,6 +43,7 @@ import {
 } from "@/components/ui/select";
 import {
   Download,
+  Home,
   Layers,
   Loader2,
   Maximize2,
@@ -80,6 +83,7 @@ import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/Selecte
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
+import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -284,6 +288,42 @@ export function TOPSMapViewPage() {
   const [resourcesDrawerOpen, setResourcesDrawerOpen] = useState(false);
   const [selectedDeposit, setSelectedDeposit] = useState<ResourceDeposit | null>(null);
 
+  // Favorite "home" position — persisted in the mapView slice so it survives
+  // reload + cross-tab. Used as the initial viewport when the URL has no
+  // explicit x/z, and reachable on demand via the Home button.
+  const favoriteStartingPosition = useAppSelector((s) => s.mapView.favoriteStartingPosition);
+  const setFavoriteStartingPosition = useCallback(
+    (pos: { x: number; z: number; zoom?: number } | null) =>
+      dispatch(setFavoriteStartingPositionAction(pos)),
+    [dispatch],
+  );
+  const clearFavoriteStartingPosition = useCallback(
+    () => dispatch(clearFavoriteStartingPositionAction()),
+    [dispatch],
+  );
+  // Most recently reported viewport center (from MapViewer's onViewportChange).
+  // Kept in a ref so handlers can capture "set current view as home" without
+  // re-rendering on every pan.
+  const lastViewportRef = useRef<{
+    centerWorldX: number;
+    centerWorldZ: number;
+    pixelsPerBlock: number;
+  } | null>(null);
+  // Snapshot of the favorite position frozen at first render — used as the
+  // one-shot `initialView` seed for MapViewer when the URL has no explicit
+  // x/z. Subsequent changes to the favorite don't reseed the viewport.
+  const favoriteInitialViewRef = useRef<
+    { centerWorldX: number; centerWorldZ: number; pixelsPerBlock: number } | undefined
+  >(
+    favoriteStartingPosition
+      ? {
+          centerWorldX: favoriteStartingPosition.x,
+          centerWorldZ: favoriteStartingPosition.z,
+          pixelsPerBlock: favoriteStartingPosition.zoom ?? 1,
+        }
+      : undefined,
+  );
+
   const toggleActiveGrouping = useCallback(
     (id: string) => {
       dispatch(toggleActiveGroupingAction(id));
@@ -428,6 +468,11 @@ export function TOPSMapViewPage() {
       worldMinZ: number;
       worldMaxZ: number;
     }) => {
+      lastViewportRef.current = {
+        centerWorldX: info.centerWorldX,
+        centerWorldZ: info.centerWorldZ,
+        pixelsPerBlock: info.pixelsPerBlock,
+      };
       updateUrlParams({
         x: String(Math.round(info.centerWorldX)),
         z: String(Math.round(info.centerWorldZ)),
@@ -604,6 +649,27 @@ export function TOPSMapViewPage() {
       setShowLandmarks(true);
     }
   }
+
+  /**
+   * Fly to the user's saved starting position (or spawn 0,0 as a fallback).
+   * A fresh object reference is required — MapViewer flies only when the
+   * `focusPoint` identity changes.
+   */
+  const handleJumpHome = useCallback(() => {
+    const pos = favoriteStartingPosition ?? { x: 0, z: 0 };
+    setLandmarkFocusPoint({ x: pos.x, z: pos.z });
+  }, [favoriteStartingPosition]);
+
+  /** Save the current viewport center (and zoom) as the favorite start. */
+  const handleSetCurrentAsHome = useCallback(() => {
+    const v = lastViewportRef.current;
+    if (!v) return;
+    setFavoriteStartingPosition({
+      x: Math.round(v.centerWorldX),
+      z: Math.round(v.centerWorldZ),
+      zoom: v.pixelsPerBlock,
+    });
+  }, [setFavoriteStartingPosition]);
 
   async function handleDownload() {
     if (!levelInfoQuery.data || downloading) return;
@@ -829,6 +895,13 @@ export function TOPSMapViewPage() {
                     <Maximize2 className="size-4 mr-1" />
                     Fullscreen
                   </Button>
+                  <HomePositionControls
+                    favorite={favoriteStartingPosition}
+                    canSaveCurrent={lastViewportRef.current != null}
+                    onJumpHome={handleJumpHome}
+                    onSaveCurrent={handleSetCurrentAsHome}
+                    onClear={clearFavoriteStartingPosition}
+                  />
                 </>
               )}
               {!loading && !hasMap && error && (
@@ -1002,7 +1075,6 @@ export function TOPSMapViewPage() {
             alt="TOPS global server map"
             height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
             showTLLegend={showTranslocators}
-            tlLegendShowRecentColor
             overlaySegments={visibleTranslocatorSegments}
             overlayPoints={landmarkPoints}
             onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
@@ -1017,7 +1089,7 @@ export function TOPSMapViewPage() {
             highlightedSegments={highlightedTranslocatorSegments}
             focusPoint={landmarkFocusPoint}
             enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
-            initialView={initialUrlParams.initialView}
+            initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
             onViewportChange={handleViewportChange}
             onTileSetEnhanced={(next) => {
               // Persist the upgrade so future page loads start at the higher
@@ -1064,6 +1136,11 @@ export function TOPSMapViewPage() {
               landmarkSuggestions={landmarkSuggestions}
               onLandmarkSearchChange={setLandmarkSearch}
               onLandmarkSelect={handleLandmarkSelect}
+              favoriteStartingPosition={favoriteStartingPosition}
+              canSaveCurrentAsHome={lastViewportRef.current != null}
+              onJumpHome={handleJumpHome}
+              onSaveCurrentAsHome={handleSetCurrentAsHome}
+              onClearHome={clearFavoriteStartingPosition}
             />
           )}
         </div>

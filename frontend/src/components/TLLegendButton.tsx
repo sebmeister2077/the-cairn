@@ -13,13 +13,8 @@ import { Palette } from "lucide-react";
 import { Label } from "./ui/label";
 
 interface TLLegendButtonProps {
-  /** When true, also show the light-blue "your new TL" entry. */
+  /** When true, also show the light-blue "Your new TLs" entry. */
   showContributeColors?: boolean;
-  /**
-   * When true, also show the "recently added" highlight color used on the
-   * TOPS map page when the "Include recently added TLs" toggle is on.
-   */
-  showRecentColor?: boolean;
   /** Optional extra classes for the trigger button (positioning, etc.). */
   className?: string;
 }
@@ -37,9 +32,6 @@ interface LegendEntry {
 const SERVER_COLOR = "rgb(139, 92, 246)"; // violet-500
 const USER_COLOR = "rgb(37, 99, 235)"; // blue-600
 const NEW_COLOR = "rgb(14, 165, 233)"; // sky-500
-// Highlight stroke MapViewer uses for hovered + `highlightedSegments`. The
-// TOPS map page reuses this style to flag recently-added TLs.
-const RECENT_COLOR = "rgb(243, 232, 255)"; // purple-100
 
 const BASE_ENTRIES: LegendEntry[] = [
   {
@@ -62,19 +54,7 @@ const CONTRIBUTE_ENTRY: LegendEntry = {
     "Only visible while you're working on the Contribute TLs page.",
 };
 
-const RECENT_ENTRY: LegendEntry = {
-  color: RECENT_COLOR,
-  title: "Recently added",
-  description:
-    "Highlighted while the \u201cInclude recently added TLs\u201d toggle is on \u2014 " +
-    "TLs contributed by other players within the last 14 days.",
-};
-
-export function TLLegendButton({
-  showContributeColors = false,
-  showRecentColor = false,
-  className,
-}: TLLegendButtonProps) {
+export function TLLegendButton({ showContributeColors = false, className }: TLLegendButtonProps) {
   const [open, setOpen] = React.useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const popoverRef = React.useRef<HTMLDivElement>(null);
@@ -113,11 +93,7 @@ export function TLLegendButton({
     };
   }, [open]);
 
-  const entries = [
-    ...BASE_ENTRIES,
-    ...(showContributeColors ? [CONTRIBUTE_ENTRY] : []),
-    ...(showRecentColor ? [RECENT_ENTRY] : []),
-  ];
+  const entries = showContributeColors ? [...BASE_ENTRIES, CONTRIBUTE_ENTRY] : BASE_ENTRIES;
 
   return (
     <>

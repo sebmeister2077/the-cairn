@@ -197,12 +197,6 @@ interface MapViewerProps {
    */
   tlLegendShowContributeColors?: boolean;
   /**
-   * When true (and {@link showTLLegend} is true), the legend popover also
-   * documents the lavender highlight color used to flag recently-added TLs
-   * on the TOPS map page.
-   */
-  tlLegendShowRecentColor?: boolean;
-  /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
    * (so this is meant to be sourced from the URL on initial page load).
@@ -242,7 +236,6 @@ export function MapViewer({
   interactionsLocked = false,
   showTLLegend = false,
   tlLegendShowContributeColors = false,
-  tlLegendShowRecentColor = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1205,10 +1198,7 @@ export function MapViewer({
         )}
         {showTLLegend && (
           <div className="ml-auto">
-            <TLLegendButton
-              showContributeColors={tlLegendShowContributeColors}
-              showRecentColor={tlLegendShowRecentColor}
-            />
+            <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
           </div>
         )}
       </div>
