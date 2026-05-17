@@ -50,6 +50,7 @@ import {
   Minimize2,
   Pin,
   PinOff,
+  RefreshCw,
   Search,
   Settings,
   Sparkles,
@@ -580,6 +581,12 @@ export function TOPSMapViewPage() {
         ? levelInfoQuery.error.message
         : "";
 
+  // Background-refresh indicator for the Reload button. Distinct from
+  // `loading` (which is only set when we have nothing to render yet); this
+  // is true while a refetch is in flight *and* the map is already visible,
+  // so the user sees a subtle spinner instead of the whole map blanking out.
+  const isReloading = (statsQuery.isFetching || levelInfoQuery.isFetching) && hasMap;
+
   useEffect(() => {
     if (!showTranslocators) {
       setSelectedTranslocator(null);
@@ -883,7 +890,19 @@ export function TOPSMapViewPage() {
                     )}
                     {downloading ? "Building PNG…" : "Download PNG"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={handleReload}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleReload}
+                    disabled={isReloading}
+                    title={isReloading ? "Refreshing map data…" : "Refresh map data"}
+                    aria-busy={isReloading}
+                  >
+                    <RefreshCw
+                      className={`size-4 mr-1 transition-transform animate-spin ${
+                        isReloading ? "running" : "paused"
+                      }`}
+                    />
                     Reload
                   </Button>
                   <Button
