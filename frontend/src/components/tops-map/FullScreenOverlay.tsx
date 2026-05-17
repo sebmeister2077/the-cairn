@@ -88,7 +88,7 @@ export function FullscreenControlsOverlay({
   // from the community.
   const showRecentlyAddedTLs = useAppSelector((s) => s.mapView.showRecentlyAdded);
   const toggleShowRecentlyAddedTLs = useCallback(
-    () => dispatch(toggleShowRecentlyAddedAction()),
+    (next?: boolean) => dispatch(toggleShowRecentlyAddedAction(next)),
     [dispatch],
   );
   return (
@@ -124,24 +124,14 @@ export function FullscreenControlsOverlay({
         >
           <Switch checked={showTranslocators} aria-label="Show translocator overlay" />
           <Label className="cursor-pointer">Translocators</Label>
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground select-none">
             {filteringActive
               ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
               : translocatorCount.toLocaleString()}
           </span>
         </div>
         <div
-          onClick={() => setShowLandmarks(!showLandmarks)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
-          <Label className="cursor-pointer">Landmarks</Label>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {landmarkCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => toggleShowRecentlyAddedTLs()}
+          onClick={() => toggleShowRecentlyAddedTLs(!showRecentlyAddedTLs)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
           <Switch
@@ -152,8 +142,18 @@ export function FullscreenControlsOverlay({
             Recently added TLs
             <span className="block text-[10px] text-muted-foreground">last 14 days</span>
           </Label>
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ml-auto text-xs text-muted-foreground select-none">
             {recentTLCount.toLocaleString()}
+          </span>
+        </div>
+        <div
+          onClickCapture={() => setShowLandmarks(!showLandmarks)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
+          <Label className="cursor-pointer">Landmarks</Label>
+          <span className="ml-auto text-xs text-muted-foreground select-none">
+            {landmarkCount.toLocaleString()}
           </span>
         </div>
         <Button
@@ -166,7 +166,7 @@ export function FullscreenControlsOverlay({
           <Layers className="size-4 mr-1" />
           Groupings
           {activeGroupingCount > 0 && (
-            <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+            <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground select-none">
               {activeGroupingCount}
             </span>
           )}

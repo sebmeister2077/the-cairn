@@ -87,8 +87,12 @@ export const mapViewSlice = createSlice({
         setShowTranslocators(state, action: PayloadAction<boolean>) {
             state.showTranslocators = action.payload;
         },
-        toggleShowRecentlyAdded(state, action: PayloadAction) {
-            state.showRecentlyAdded = !state.showRecentlyAdded;
+        toggleShowRecentlyAdded(state, action: PayloadAction<boolean | undefined>) {
+            if (action.payload !== undefined) {
+                state.showRecentlyAdded = action.payload;
+            } else {
+                state.showRecentlyAdded = !state.showRecentlyAdded;
+            }
         },
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
