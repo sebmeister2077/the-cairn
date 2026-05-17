@@ -9,6 +9,7 @@ const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
 const ACTIVE_LS = "tops-map-tl-groupings-active";
 const SHOW_LANDMARKS_LS = "tops-map-show-landmarks";
 const SHOW_TRANSLOCATORS_LS = "tops-map-show-translocators";
+const STARFIELD_ENABLED_LS = "tops-map-starfield-enabled";
 
 export type TLGroupingsViewMode = "all" | "highlight" | "filter";
 
@@ -20,6 +21,12 @@ export interface MapViewState {
     showTranslocators: boolean;
     showRecentlyAdded: boolean;
     isFullscreen: boolean;
+    /**
+     * When true, the TOPS map viewer renders an animated starfield behind
+     * the tiles instead of a flat dark background. Pure-CSS; persists
+     * across reloads. Default ON.
+     */
+    starfieldEnabled: boolean;
     /**
      * User's preferred "home" location on the TOPS map. When set, the page
      * uses this as the initial viewport on first paint (instead of spawn
@@ -47,6 +54,7 @@ function readActive(): string[] {
     return arr.filter((v): v is string => typeof v === "string");
 }
 
+
 export function loadInitialMapViewState(): MapViewState {
     return {
         selectedLevel: readSelectedLevel(),
@@ -56,6 +64,7 @@ export function loadInitialMapViewState(): MapViewState {
         showTranslocators: false,
         showRecentlyAdded: false,
         isFullscreen: false,
+        starfieldEnabled: true,
         favoriteStartingPosition: null,
     };
 }
@@ -97,6 +106,9 @@ export const mapViewSlice = createSlice({
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
         },
+        setStarfieldEnabled(state, action: PayloadAction<boolean>) {
+            state.starfieldEnabled = action.payload;
+        },
         setFavoriteStartingPosition(
             state,
             action: PayloadAction<{ x: number; z: number; zoom?: number } | null>,
@@ -109,8 +121,14 @@ export const mapViewSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
-            const next = action.payload.mapView as MapViewState | undefined;
-            return next ?? state;
+            // Merge the persisted payload over the current (default-initialised)
+            // state so newly-added fields fall back to their defaults for
+            // users whose envelope was written before the field existed.
+            // Without this, `return next` would leave `starfieldEnabled` (and
+            // any future additions) as `undefined` on existing accounts.
+            const next = action.payload.mapView as Partial<MapViewState> | undefined;
+             if (!next) return state;
+            return { ...state, ...next };
         });
     },
 });
@@ -124,6 +142,7 @@ export const {
     setShowTranslocators,
     toggleShowRecentlyAdded,
     setShowFullscreen,
+    setStarfieldEnabled,
     setFavoriteStartingPosition,
     clearFavoriteStartingPosition,
 } = mapViewSlice.actions;

@@ -23,11 +23,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { useReduxState } from "@/store/hooks";
+import { useAppDispatch, useReduxState } from "@/store/hooks";
+import { setStarfieldEnabled } from "@/store/slices/mapView";
 
 export function AccountPage() {
   const queryClient = useQueryClient();
   const apiKey = useReduxState("auth.apiKey");
+  const dispatch = useAppDispatch();
+  const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -316,6 +319,21 @@ export function AccountPage() {
           <div className="flex items-center justify-between">
             <Label>Theme</Label>
             <ThemeSwitcher />
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label htmlFor="starfield-toggle">Animated starfield on map</Label>
+              <p className="text-xs text-muted-foreground">
+                Show a subtle cosmos backdrop behind unexplored areas of the TOPS map. Pure CSS,
+                GPU-only — turn off if you prefer a flat dark background.
+              </p>
+            </div>
+            <Switch
+              id="starfield-toggle"
+              checked={starfieldEnabled}
+              onCheckedChange={(v) => dispatch(setStarfieldEnabled(v))}
+            />
           </div>
         </CardContent>
       </Card>

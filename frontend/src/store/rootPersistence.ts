@@ -21,6 +21,7 @@ import type { Store } from "@reduxjs/toolkit";
 import { lsRead, lsRemove, lsWrite } from "./persistence";
 import { hydrateRoot } from "./rootActions";
 import type { RootState } from "./index";
+import { loadInitialMapViewState } from "./slices/mapView";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -77,6 +78,12 @@ const NORMALIZE_ON_READ: {
         }
         return { ...s, rejectedApiKey: null };
     },
+    // Merge stored mapView fields over a fresh default state so newly-added
+    // fields (e.g. `starfieldEnabled`) fall back to their slice defaults
+    // for users whose envelope was written before the field existed. Without
+    // this, `preloadedState` replaces the slice's `initialState` verbatim
+    // and missing fields end up `undefined` at runtime.
+    mapView: (s) => ({ ...loadInitialMapViewState(), ...s }),
 };
 
 interface Envelope {

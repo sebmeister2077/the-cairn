@@ -223,6 +223,9 @@ export function TOPSMapViewPage() {
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
   );
+  // Animated cosmos background behind the map tiles. User-toggleable from
+  // the AccountPage Appearance card; persisted in localStorage.
+  const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
   // "Emphasize recently added TLs" augments the favourites filter. When ON, the
   // visible TL set is the union of (active grouping members) and TLs whose
   // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
@@ -1094,6 +1097,7 @@ export function TOPSMapViewPage() {
             alt="TOPS global server map"
             height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
             showTLLegend={showTranslocators}
+            starfield={starfieldEnabled}
             overlaySegments={visibleTranslocatorSegments}
             overlayPoints={landmarkPoints}
             onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}

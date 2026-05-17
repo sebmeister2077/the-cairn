@@ -164,3 +164,94 @@
     @apply font-sans;
   }
 }
+
+/* ===== Map viewer starfield background =====
+ *
+ * Pure-CSS animated cosmos for the TOPS map canvas. The container that gets
+ * this class should be `position: relative` and `overflow: hidden`; this
+ * fills it with a deep-space base + two parallax star layers via
+ * pseudo-elements. Animations are GPU-only (background-position translate +
+ * opacity) so cost stays negligible even at full screen. Honours
+ * `prefers-reduced-motion`.
+ */
+.starfield {
+  background-color: #04060f;
+  background-image:
+    radial-gradient(ellipse at 18% 28%, rgba(82, 44, 138, 0.32), transparent 55%),
+    radial-gradient(ellipse at 82% 72%, rgba(28, 70, 140, 0.30), transparent 60%),
+    radial-gradient(ellipse at 50% 50%, rgba(96, 48, 140, 0.16), transparent 75%);
+  overflow: hidden;
+}
+
+.starfield::before,
+.starfield::after {
+  content: "";
+  position: absolute;
+  inset: -25%;
+  pointer-events: none;
+  background-repeat: repeat;
+  will-change: transform, opacity;
+}
+
+.starfield::before {
+  /* dense small stars */
+  background-image:
+    radial-gradient(1px 1px at 25px 12px, #ffffff, transparent 60%),
+    radial-gradient(1px 1px at 78px 96px, rgba(255, 255, 255, 0.85), transparent 60%),
+    radial-gradient(1.5px 1.5px at 132px 38px, #ffffff, transparent 60%),
+    radial-gradient(1px 1px at 210px 168px, rgba(205, 222, 255, 0.9), transparent 60%),
+    radial-gradient(1px 1px at 56px 220px, #ffffff, transparent 60%),
+    radial-gradient(1.2px 1.2px at 180px 248px, rgba(255, 246, 220, 0.85), transparent 60%);
+  background-size: 260px 260px;
+  animation: starfield-drift 220s linear infinite;
+  opacity: 0.85;
+}
+
+.starfield::after {
+  /*sparser,largertwinklingstars*/
+  background-image: radial-gradient(2px 2px at 80px 60px, rgba(255, 255, 240, 0.95), transparent 60%), radial-gradient(2.5px 2.5px at 310px 188px, rgba(180, 210, 255, 0.9), transparent 60%), radial-gradient(2px 2px at 60px 360px, rgba(255, 222, 200, 0.85), transparent 60%), radial-gradient(3px 3px at 420px 80px, #ffffff, transparent 60%), radial-gradient(2px 2px at 480px 440px, rgba(200, 220, 255, 0.85), transparent 60%);
+  background-size: 520px 520px;
+  animation: starfield-drift-slow 340s linear infinite, starfield-twinkle 7s ease-in-out infinite;
+  opacity: 0.9;
+  -webkit-animation: starfield-drift-slow 340s linear infinite, starfield-twinkle 7s ease-in-out infinite;
+}
+
+@keyframes starfield-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-260px, -260px, 0);
+  }
+}
+
+@keyframes starfield-drift-slow {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(520px, -520px, 0);
+  }
+}
+
+@keyframes starfield-twinkle {
+
+  0%,
+  100% {
+    opacity: 0.9;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .starfield::before,
+  .starfield::after {
+    animation: none;
+  }
+}

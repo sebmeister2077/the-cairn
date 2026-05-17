@@ -197,6 +197,12 @@ interface MapViewerProps {
    */
   tlLegendShowContributeColors?: boolean;
   /**
+   * When true, the canvas renders an animated CSS starfield behind the
+   * tiles instead of the default flat dark background. Empty/uncovered
+   * tile area shows the cosmos through the transparent PNGs.
+   */
+  starfield?: boolean;
+  /**
    * Optional view to restore once `stats` and the first tile/image have
    * loaded. Applied at most once per mount; subsequent updates are ignored
    * (so this is meant to be sourced from the URL on initial page load).
@@ -236,6 +242,7 @@ export function MapViewer({
   interactionsLocked = false,
   showTLLegend = false,
   tlLegendShowContributeColors = false,
+  starfield = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -1149,7 +1156,11 @@ export function MapViewer({
 
   // if (!activeUrl && !activeTileSet) return null;
 
-  const canvasClass = ["relative overflow-hidden bg-black/90", bordered ? "rounded-md border" : ""]
+  const canvasClass = [
+    "relative overflow-hidden",
+    starfield ? "starfield" : "bg-black/90",
+    bordered ? "rounded-md border" : "",
+  ]
     .filter(Boolean)
     .join(" ");
 
