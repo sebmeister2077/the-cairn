@@ -83,14 +83,27 @@ def upload_file_with_metadata(
 
 
 def download_bytes(key: str) -> bytes:
-    """Download an object from R2 as bytes. Raises FileNotFoundError if missing."""
+    """Download an object from R2 as bytes. Raises FileNotFoundError if missing.
+
+    Always closes the underlying StreamingBody so the HTTPS connection is
+    returned to botocore's pool and the response buffer is freed promptly
+    (otherwise the body stays referenced via the connection's response
+    object until the next request on the same connection).
+    """
     try:
         resp = _get_client().get_object(Bucket=_bucket(), Key=key)
-        return resp["Body"].read()
     except ClientError as e:
         if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
             raise FileNotFoundError(f"R2 object not found: {key}")
         raise
+    body = resp["Body"]
+    try:
+        return body.read()
+    finally:
+        try:
+            body.close()
+        except Exception:
+            pass
 
 
 def download_range(key: str, start: int, length: int) -> bytes:
@@ -108,11 +121,18 @@ def download_range(key: str, start: int, length: int) -> bytes:
             Key=key,
             Range=f"bytes={start}-{end_inclusive}",
         )
-        return resp["Body"].read()
     except ClientError as e:
         if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
             raise FileNotFoundError(f"R2 object not found: {key}")
         raise
+    body = resp["Body"]
+    try:
+        return body.read()
+    finally:
+        try:
+            body.close()
+        except Exception:
+            pass
 
 
 def download_to_path(key: str, local_path: str):

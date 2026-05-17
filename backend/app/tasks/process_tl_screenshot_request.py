@@ -150,53 +150,50 @@ def _process_slot(request_id: str, slot: str, key: str) -> dict:
 
     # 2. Decode once, derive minimap + OCR off the same PIL image, then
     # drop both the bytes and the image as soon as we no longer need them.
-    img = Image.open(io.BytesIO(clean.clean_png_bytes))
-    logger.info(
-        "tl_screenshot worker: %s slot %s decoded image %dx%d mode=%s",
-        request_id, slot, img.width, img.height, img.mode,
+    # ``with Image.open(...)`` guarantees the underlying file/BytesIO is
+    # closed even if minimap detection, OCR, or the upload raises.
+    crop_key: Optional[str] = r2_storage.tl_screenshot_minimap_crop_key(
+        request_id, slot
     )
+    minimap_img = None
     try:
-        t1 = time.monotonic()
-        bbox = pipeline.detect_minimap_bbox(img)
-        logger.info(
-            "tl_screenshot worker: %s slot %s minimap bbox=%s (%.2fs)",
-            request_id, slot, bbox, time.monotonic() - t1,
-        )
-        minimap_img = pipeline.crop_minimap(img, bbox) if bbox else None
+        with Image.open(io.BytesIO(clean.clean_png_bytes)) as img:
+            logger.info(
+                "tl_screenshot worker: %s slot %s decoded image %dx%d mode=%s",
+                request_id, slot, img.width, img.height, img.mode,
+            )
+            t1 = time.monotonic()
+            bbox = pipeline.detect_minimap_bbox(img)
+            logger.info(
+                "tl_screenshot worker: %s slot %s minimap bbox=%s (%.2fs)",
+                request_id, slot, bbox, time.monotonic() - t1,
+            )
+            minimap_img = pipeline.crop_minimap(img, bbox) if bbox else None
 
-        crop_key: Optional[str] = r2_storage.tl_screenshot_minimap_crop_key(
-            request_id, slot
-        )
-        if minimap_img is not None:
-            try:
-                r2_storage.upload_bytes(
-                    crop_key,
-                    pipeline.pil_to_png_bytes(minimap_img),
-                    content_type="image/png",
-                )
-            except Exception:
-                logger.exception(
-                    "tl_screenshot worker: minimap crop %s upload failed for %s",
-                    slot, request_id,
-                )
+            if minimap_img is not None:
+                try:
+                    r2_storage.upload_bytes(
+                        crop_key,
+                        pipeline.pil_to_png_bytes(minimap_img),
+                        content_type="image/png",
+                    )
+                except Exception:
+                    logger.exception(
+                        "tl_screenshot worker: minimap crop %s upload failed for %s",
+                        slot, request_id,
+                    )
+                    crop_key = None
+            else:
                 crop_key = None
-        else:
-            crop_key = None
 
-        ocr = pipeline.ocr_coordinates(img)
-        logger.info(
-            "tl_screenshot worker: %s slot %s OCR done x=%s y=%s z=%s conf=%.3f",
-            request_id, slot, ocr.x, ocr.y, ocr.z, ocr.confidence,
-        )
+            ocr = pipeline.ocr_coordinates(img)
+            logger.info(
+                "tl_screenshot worker: %s slot %s OCR done x=%s y=%s z=%s conf=%.3f",
+                request_id, slot, ocr.x, ocr.y, ocr.z, ocr.confidence,
+            )
     finally:
-        # Free the full-res screenshot before the (memory-heavy) ORB
-        # match runs. ``clean`` still holds the cleaned PNG bytes —
-        # release those too; the match only needs the minimap crop.
-        try:
-            img.close()
-        except Exception:
-            pass
-        del img
+        # Drop the cleaned PNG bytes; the rest of the pipeline only needs
+        # the minimap crop. ``img`` is already closed by the ``with`` block.
         del clean
 
     coords = {"x": ocr.x, "y": ocr.y, "z": ocr.z}
