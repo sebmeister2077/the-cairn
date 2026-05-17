@@ -16,7 +16,7 @@ import {
   setShowLandmarks as setShowLandmarksAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowFullscreen as setShowFullscreenAction,
-  setShowRecentlyAdded as setShowRecentlyAddedAction,
+  toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
@@ -79,6 +79,7 @@ import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
+import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -223,8 +224,8 @@ export function TOPSMapViewPage() {
   // their favourite groupings *and* still see freshly contributed segments
   // from the community.
   const showRecentlyAddedTLs = useAppSelector((s) => s.mapView.showRecentlyAdded);
-  const setShowRecentlyAddedTLs = useCallback(
-    (next: boolean) => dispatch(setShowRecentlyAddedAction(next)),
+  const toggleShowRecentlyAddedTLs = useCallback(
+    () => dispatch(toggleShowRecentlyAddedAction()),
     [dispatch],
   );
 
@@ -919,7 +920,7 @@ export function TOPSMapViewPage() {
             <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
               <Switch
                 checked={showRecentlyAddedTLs}
-                onCheckedChange={setShowRecentlyAddedTLs}
+                onCheckedChange={toggleShowRecentlyAddedTLs}
                 aria-label="Include recently added translocators"
               />
               <Label>Include recently added TLs (last 14 days)</Label>
@@ -1052,17 +1053,10 @@ export function TOPSMapViewPage() {
           )}
           {isFullscreen && (
             <FullscreenControlsOverlay
-              onExitFullscreen={() => setIsFullscreen(false)}
-              showTranslocators={showTranslocators}
-              setShowTranslocators={setShowTranslocators}
               translocatorCount={translocatorCount}
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
               filteringActive={filteringActive}
-              showLandmarks={showLandmarks}
-              setShowLandmarks={setShowLandmarks}
               landmarkCount={landmarkCount}
-              includeRecentlyAddedTLs={showRecentlyAddedTLs}
-              setIncludeRecentlyAddedTLs={setShowRecentlyAddedTLs}
               recentTLCount={recentTLIdSet.size}
               activeGroupingCount={activeGroupingIds.size}
               onOpenGroupings={() => setGroupingsOpen(true)}
@@ -1098,151 +1092,5 @@ export function TOPSMapViewPage() {
         )} */}
       </CardContent>
     </Card>
-  );
-}
-
-interface FullscreenControlsOverlayProps {
-  onExitFullscreen: () => void;
-  showTranslocators: boolean;
-  setShowTranslocators: (next: boolean) => void;
-  translocatorCount: number;
-  visibleTranslocatorCount: number;
-  filteringActive: boolean;
-  showLandmarks: boolean;
-  setShowLandmarks: (next: boolean) => void;
-  landmarkCount: number;
-  includeRecentlyAddedTLs: boolean;
-  setIncludeRecentlyAddedTLs: (next: boolean) => void;
-  recentTLCount: number;
-  activeGroupingCount: number;
-  onOpenGroupings: () => void;
-  landmarkSearch: string;
-  landmarkSuggestions: string[];
-  onLandmarkSearchChange: (next: string) => void;
-  onLandmarkSelect: (name: string) => void;
-}
-
-/**
- * Floating control surfaces rendered over the map while in fullscreen mode.
- * Kept to the minimum required interactions (exit, groupings, TL/landmark
- * toggles, recently-added filter, landmark search) so the map itself stays
- * the focus. The panel is `pointer-events-none` at the root and individual
- * controls re-enable pointer events, allowing the user to pan the map
- * through the gaps between panels.
- */
-function FullscreenControlsOverlay({
-  onExitFullscreen,
-  showTranslocators,
-  setShowTranslocators,
-  translocatorCount,
-  visibleTranslocatorCount,
-  filteringActive,
-  showLandmarks,
-  setShowLandmarks,
-  landmarkCount,
-  includeRecentlyAddedTLs,
-  setIncludeRecentlyAddedTLs,
-  recentTLCount,
-  activeGroupingCount,
-  onOpenGroupings,
-  landmarkSearch,
-  landmarkSuggestions,
-  onLandmarkSearchChange,
-  onLandmarkSelect,
-}: FullscreenControlsOverlayProps) {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-10">
-      {/* Top-left: exit fullscreen. */}
-      <div className="pointer-events-auto absolute top-16 left-6">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onExitFullscreen}
-          title="Exit fullscreen"
-          className="shadow-md"
-        >
-          <Minimize2 className="size-4 mr-1" />
-          Exit fullscreen
-        </Button>
-      </div>
-
-      {/* Top-right: stacked toggles + groupings. */}
-      <div className="pointer-events-auto absolute top-16 right-6 flex w-72 flex-col gap-2">
-        <div
-          onClick={() => setShowTranslocators(!showTranslocators)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showTranslocators} aria-label="Show translocator overlay" />
-          <Label className="cursor-pointer">Translocators</Label>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {filteringActive
-              ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
-              : translocatorCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowLandmarks(!showLandmarks)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
-          <Label className="cursor-pointer">Landmarks</Label>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {landmarkCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => setIncludeRecentlyAddedTLs(!includeRecentlyAddedTLs)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch
-            checked={includeRecentlyAddedTLs}
-            aria-label="Include recently added translocators"
-          />
-          <Label className="cursor-pointer text-xs leading-tight">
-            Recently added TLs
-            <span className="block text-[10px] text-muted-foreground">last 14 days</span>
-          </Label>
-          <span className="ml-auto text-xs text-muted-foreground">
-            {recentTLCount.toLocaleString()}
-          </span>
-        </div>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onOpenGroupings}
-          className="shadow-md"
-        >
-          <Layers className="size-4 mr-1" />
-          Groupings
-          {activeGroupingCount > 0 && (
-            <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-              {activeGroupingCount}
-            </span>
-          )}
-        </Button>
-      </div>
-
-      {/* Bottom-left: landmark search. */}
-      <div className="pointer-events-auto absolute bottom-6 left-6 w-72 rounded-md border bg-background/95 p-2 shadow-md backdrop-blur">
-        <Label
-          htmlFor="landmark-search-fullscreen"
-          className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
-        >
-          <Search className="size-3" />
-          Search landmark
-        </Label>
-        <Combobox
-          id="landmark-search-fullscreen"
-          placeholder="Type to search…"
-          value={landmarkSearch}
-          suggestions={landmarkSuggestions}
-          onChange={onLandmarkSearchChange}
-          onSelect={onLandmarkSelect}
-          dropUp
-        />
-      </div>
-    </div>
   );
 }
