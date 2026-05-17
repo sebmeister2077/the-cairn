@@ -95,6 +95,9 @@ export const mapViewSlice = createSlice({
         },
         setShowTranslocators(state, action: PayloadAction<boolean>) {
             state.showTranslocators = action.payload;
+            if (!state.showTranslocators) {
+                state.showRecentlyAdded = false;
+            }
         },
         toggleShowRecentlyAdded(state, action: PayloadAction<boolean | undefined>) {
             if (action.payload !== undefined) {
@@ -127,7 +130,7 @@ export const mapViewSlice = createSlice({
             // Without this, `return next` would leave `starfieldEnabled` (and
             // any future additions) as `undefined` on existing accounts.
             const next = action.payload.mapView as Partial<MapViewState> | undefined;
-             if (!next) return state;
+            if (!next) return state;
             return { ...state, ...next };
         });
     },

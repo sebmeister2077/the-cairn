@@ -16,6 +16,7 @@ import {
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
 import { HomePositionControls } from "./HomePositionControls";
+import { cn } from "@/lib/utils";
 
 type FullscreenControlsOverlayProps = {
   translocatorCount: number;
@@ -131,14 +132,25 @@ export function FullscreenControlsOverlay({
           </span>
         </div>
         <div
-          onClick={() => toggleShowRecentlyAddedTLs(!showRecentlyAddedTLs)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          onClick={() => showTranslocators && toggleShowRecentlyAddedTLs(!showRecentlyAddedTLs)}
+          className={cn(
+            "flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+            {
+              "opacity-50": !showTranslocators,
+              "cursor-pointer": showTranslocators,
+            },
+          )}
         >
           <Switch
+            disabled={!showTranslocators}
             checked={showRecentlyAddedTLs}
             aria-label="Emphasize recently added translocators"
           />
-          <Label className="cursor-pointer text-xs leading-tight">
+          <Label
+            className={cn(" text-xs leading-tight", {
+              "cursor-pointer": showTranslocators,
+            })}
+          >
             Recently added TLs
             <span className="block text-[10px] text-muted-foreground">last 14 days</span>
           </Label>
@@ -147,7 +159,7 @@ export function FullscreenControlsOverlay({
           </span>
         </div>
         <div
-          onClickCapture={() => setShowLandmarks(!showLandmarks)}
+          onClick={() => setShowLandmarks(!showLandmarks)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
           <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
