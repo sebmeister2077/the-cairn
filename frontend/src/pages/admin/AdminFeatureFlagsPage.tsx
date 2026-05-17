@@ -181,8 +181,8 @@ interface FlagCategory {
 const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
   {
     id: "contribution",
-    label: "Contribution workflow",
-    description: "Behaviour of the Multiplayer → Contribute review pipeline.",
+    label: "Map Contribution workflow",
+    description: "Behaviour of the Multiplayer → Contribute Map review pipeline.",
     flags: [
       {
         key: "match_score",
@@ -225,6 +225,29 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
         key: "backup_restore",
         title: "Backup restore",
         help: "Allow admins to restore the combined map from a weekly snapshot (TOTP-gated).",
+      },
+    ],
+  },
+  {
+    id: "waypoints",
+    label: "Waypoints, landmarks & translocators",
+    description:
+      "User-editable map markers — landmark additions and the chat-log / screenshot translocator contribution paths.",
+    flags: [
+      {
+        key: "landmark_additions_enabled",
+        title: "Landmark additions",
+        help: "ON = non-admin accounts can POST /api/landmarks to add a new landmark to the live geojson. OFF = the endpoint returns 503 for non-admins (admins always bypass). Existing rename / edit-request flow is unaffected — only NEW additions are gated.",
+      },
+      {
+        key: "translocator_contributions",
+        title: "Translocator contributions (chat log)",
+        help: "ON = POST /api/contribute-tls accepts client-chat.log batches and merges them live into translocators.geojson. OFF = the endpoint returns 503 and the Contribute TLs page degrades gracefully. Non-admin callers are additionally rate-limited to 3 submissions per 24h.",
+      },
+      {
+        key: "translocator_screenshot_contributions",
+        title: "Translocator contributions (screenshots)",
+        help: "ON = POST /api/contribute-tls/screenshots/* accepts uploads and queues OCR + minimap analysis. OFF = those endpoints return 404 and the frontend tab hides the form. Independent of the chat-log flag above.",
       },
     ],
   },

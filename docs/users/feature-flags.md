@@ -177,6 +177,9 @@ default; flipping ON exposes the feature to the relevant audience.
 | `weekly_backups` | Weekly snapshot of `globalservermap.db`. The scheduler thread always runs; the flag controls whether snapshots are actually written. |
 | `per_contribution_revert` | Admin "Revert" button on approved contributions, within `REVERT_WINDOW_DAYS`. |
 | `backup_restore` | Admin restore-from-backup endpoint (additionally TOTP-gated). |
+| `landmark_additions_enabled` | **Default ON.** Non-admin `POST /api/landmarks` (add new landmark). When OFF, non-admin callers get HTTP `503` with `{"detail": {"code": "feature_disabled", ...}}`. Rename / edit-request flow is unaffected. Admins always bypass. |
+| `translocator_contributions` | Chat-log `POST /api/contribute-tls` flow. Non-admin callers are additionally rate-limited to **3 submissions per 24 h** (admins bypass). |
+| `translocator_screenshot_contributions` | Screenshot-based translocator contribution path (`POST /api/contribute-tls/screenshots/*`). |
 
 ## Toggling a flag
 

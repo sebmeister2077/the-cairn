@@ -40,6 +40,7 @@ from pydantic import BaseModel, Field
 
 from ..auth import require_active_user
 from ..core import database as db
+from ..core import feature_flags
 from ..core import r2_storage
 
 
@@ -78,6 +79,15 @@ _LABEL_MAX_LEN = 200
 _ACCOUNT_REQUIRED_DETAIL = {
     "code": "account_required",
     "message": "Create an account to add or rename landmarks.",
+}
+
+# Feature flag gating NEW landmark additions for non-admin callers. Rename /
+# edit-request flows are unaffected — only POST /api/landmarks is gated.
+_ADDITIONS_FLAG_KEY = "landmark_additions_enabled"
+
+_ADDITIONS_DISABLED_DETAIL = {
+    "code": "feature_disabled",
+    "message": "Adding new landmarks is currently disabled.",
 }
 
 
@@ -242,6 +252,15 @@ async def add_landmark(
 ) -> dict:
     """Append a new user-added landmark to the live geojson file (live edit)."""
     user = _require_account_user(ctx)
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    # Kill switch — non-admin additions are gated by ``landmark_additions_enabled``.
+    # Default ON so behaviour is unchanged when the row is missing or the DB
+    # read fails. Admins always bypass so they can keep adding landmarks
+    # (e.g. seed data) while the flag is OFF.
+    if not is_admin and not feature_flags.is_feature_enabled_default(
+        _ADDITIONS_FLAG_KEY, True
+    ):
+        raise HTTPException(status_code=503, detail=_ADDITIONS_DISABLED_DETAIL)
     if payload.type not in _ALLOWED_TYPES:
         raise HTTPException(
             status_code=400,
@@ -263,7 +282,6 @@ async def add_landmark(
         raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
     api_key_id = _ctx_api_key_id(ctx)
 
-    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
     payload_type = payload.type if is_admin else "Base"
 
     properties: dict = {

@@ -40,6 +40,7 @@ from ..auth import require_active_user
 from ..core import database as db
 from ..core import feature_flags
 from ..core import r2_storage
+from ..rate_limiter import check_scoped_rate_limit
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -69,6 +70,12 @@ _EXISTING_DEDUPE_RADIUS = 200
 _LABEL_MAX_LEN = 200
 
 _FLAG_KEY = "translocator_contributions"
+
+# Per-user daily cap on chat-log batch submissions. Admins (env-var
+# ``ADMIN_API_KEY`` or DB ``is_admin``) bypass.
+_BATCH_RATE_SCOPE = "contribute-tls-batch"
+_BATCH_RATE_MAX = 3
+_BATCH_RATE_WINDOW = 86400  # 24 hours
 
 _ACCOUNT_REQUIRED_DETAIL = {
     "code": "account_required",
@@ -252,6 +259,19 @@ async def contribute_translocators(
         raise HTTPException(status_code=503, detail=_FLAG_OFF_DETAIL)
 
     user = _require_account_user(ctx)
+
+    # Daily cap for non-admin callers. Admins bypass so they can backfill /
+    # test without burning a slot. Counts each ``POST /contribute-tls`` call
+    # regardless of how many segments were ultimately accepted — the limit
+    # is on submissions (the expensive read-modify-upload of R2), not pairs.
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    if not is_admin:
+        check_scoped_rate_limit(
+            ctx["key"],
+            _BATCH_RATE_SCOPE,
+            _BATCH_RATE_MAX,
+            _BATCH_RATE_WINDOW,
+        )
 
     items = payload.translocators
     if len(items) > _MAX_BATCH:
