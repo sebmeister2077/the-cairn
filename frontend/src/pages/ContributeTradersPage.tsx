@@ -45,6 +45,14 @@ import {
 } from "@/lib/trader-types";
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
 import { MaintenanceChip } from "@/components/MaintenanceChip";
+import { FilePathHelp, type FilePathHelpItem } from "@/components/FilePathHelp";
+import { NavLink } from "react-router-dom";
+
+const LOG_FILE_PATHS: FilePathHelpItem[] = [
+  { label: "Windows", path: "%appdata%\\VintagestoryData\\Logs\\" },
+  { label: "Linux", path: "~/.config/VintagestoryData/Logs/" },
+  { label: "macOS", path: "~/Library/Application Support/VintagestoryData/Logs/" },
+];
 
 const MY_TRADERS_QUERY_KEY = ["my-trader-contributions"] as const;
 
@@ -326,16 +334,51 @@ function ChatLogTradersFlow() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          1. In-game, type{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
-            /waypoint list details
-          </code>
-          . 2. Save your chat log. 3. Upload it here. We pick out every waypoint whose icon is{" "}
-          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trader</code>, guess
-          the type from the label, and let you review before submission. Limit:{" "}
-          <b>one chat-log submission per day</b>.
-        </p>
+        <div className="text-sm text-muted-foreground space-y-2">
+          <p>
+            Step 1. In-game, type{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              /waypoint list details
+            </code>
+            . The server will print the full list of your waypoints into the chat (only visible to
+            you).
+          </p>
+          <p>
+            Step 2. Find your{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              client-chat.log
+            </code>{" "}
+            file.
+          </p>
+          <p>
+            Step 3. Upload the file below. We pick out every waypoint whose icon is{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trader</code>, guess
+            the type from the label, and let you review before submission. Limit:{" "}
+            <b>one chat-log submission per day</b>.
+          </p>
+          <p>
+            Need the full walkthrough? Read the{" "}
+            <NavLink
+              to="/blog/adding-translocators-using-waypoints"
+              className="underline decoration-dotted underline-offset-2 hover:text-primary"
+            >
+              Contribute waypoints guide
+            </NavLink>
+            .
+          </p>
+          <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
+        </div>
+
+        <div
+          className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          role="note"
+        >
+          <strong>Heads up:</strong> only trader waypoints (the ones with the{" "}
+          <code className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-xs">trader</code>{" "}
+          icon) are read from your chat-log. Every other waypoint marking — bases, landmarks,
+          translocators, notes, custom icons, etc. — is <strong>ignored</strong> and never uploaded.
+        </div>
+
         <FileUpload
           id="trader-chat-log"
           label="client-chat.log"
