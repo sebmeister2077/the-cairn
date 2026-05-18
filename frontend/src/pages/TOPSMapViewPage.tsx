@@ -674,8 +674,25 @@ export function TOPSMapViewPage() {
         base.push(t);
       }
     }
+    // Always-on house glyph for the user's saved favorite position. Drawn
+    // last so the marker sits on top of any colocated landmark/trader dot.
+    if (favoriteStartingPosition) {
+      base.push({
+        x: favoriteStartingPosition.x,
+        z: favoriteStartingPosition.z,
+        kind: "Home",
+        label: "Home",
+      });
+    }
     return base;
-  }, [allLandmarks, showLandmarks, showTraders, allTraders, traderTypeFilterSet]);
+  }, [
+    allLandmarks,
+    showLandmarks,
+    showTraders,
+    allTraders,
+    traderTypeFilterSet,
+    favoriteStartingPosition,
+  ]);
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
@@ -1269,6 +1286,7 @@ export function TOPSMapViewPage() {
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
               filteringActive={filteringActive}
               landmarkCount={landmarkCount}
+              traderCount={traderCount}
               recentTLCount={recentTLIdSet.size}
               activeGroupingCount={activeGroupingIds.size}
               onOpenGroupings={() => setGroupingsOpen(true)}

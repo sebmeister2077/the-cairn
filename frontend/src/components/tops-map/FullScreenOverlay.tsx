@@ -4,7 +4,7 @@ import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Combobox } from "../ui/combobox";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   setSelectedLevel as setSelectedLevelAction,
   setGroupingsViewMode as setGroupingsViewModeAction,
@@ -12,9 +12,17 @@ import {
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
   setShowTranslocators as setShowTranslocatorsAction,
+  setShowTraders as setShowTradersAction,
+  toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  TRADER_TYPE_COLORS,
+  type TraderType,
+} from "@/lib/trader-types";
 import { HomePositionControls } from "./HomePositionControls";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +31,7 @@ type FullscreenControlsOverlayProps = {
   visibleTranslocatorCount: number;
   filteringActive: boolean;
   landmarkCount: number;
+  traderCount: number;
   recentTLCount: number;
   activeGroupingCount: number;
   onOpenGroupings: () => void;
@@ -50,6 +59,7 @@ export function FullscreenControlsOverlay({
   visibleTranslocatorCount,
   filteringActive,
   landmarkCount,
+  traderCount,
   recentTLCount,
   activeGroupingCount,
   onOpenGroupings,
@@ -72,6 +82,17 @@ export function FullscreenControlsOverlay({
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
   const setShowLandmarks = useCallback(
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
+    [dispatch],
+  );
+  const showTraders = useAppSelector((s) => s.mapView.showTraders);
+  const setShowTraders = useCallback(
+    (next: boolean) => dispatch(setShowTradersAction(next)),
+    [dispatch],
+  );
+  const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
+  const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
+  const toggleTraderType = useCallback(
+    (t: TraderType) => dispatch(toggleTraderTypeFilterAction(t)),
     [dispatch],
   );
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
@@ -118,7 +139,7 @@ export function FullscreenControlsOverlay({
       </div>
 
       {/* Top-right: stacked toggles + groupings. */}
-      <div className="pointer-events-auto absolute top-16 right-6 flex w-72 flex-col gap-2">
+      <div className="pointer-events-auto absolute top-16 right-6 flex w-80 flex-col gap-2">
         <div
           onClick={() => setShowTranslocators(!showTranslocators)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
@@ -167,6 +188,80 @@ export function FullscreenControlsOverlay({
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {landmarkCount.toLocaleString()}
           </span>
+        </div>
+        <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
+          <div
+            onClick={() => setShowTraders(!showTraders)}
+            className="cursor-pointer flex items-center gap-2"
+          >
+            <Switch checked={showTraders} aria-label="Show traders overlay" />
+            <Label className="cursor-pointer">Traders</Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {traderCount.toLocaleString()}
+            </span>
+          </div>
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+            style={{
+              gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
+            }}
+            aria-hidden={!(showTraders && traderCount > 0)}
+          >
+            <div className="overflow-hidden min-h-0">
+              <div className="flex flex-wrap gap-1 pt-2">
+                {TRADER_TYPES.map((t, i) => {
+                  const active = traderTypeFilterSet.has(t);
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTraderType(t);
+                      }}
+                      tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+                      className={cn(
+                        "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                        showTraders &&
+                          traderCount > 0 &&
+                          "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                        "transition-colors duration-150",
+                        active ? "bg-foreground text-background" : "bg-background",
+                      )}
+                      style={{
+                        borderColor: TRADER_TYPE_COLORS[t],
+                        animationDelay: `${i * 35}ms`,
+                        animationDuration: "260ms",
+                      }}
+                      aria-pressed={active}
+                      title={TRADER_TYPE_LABELS[t]}
+                    >
+                      <span
+                        aria-hidden
+                        className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                        style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                      />
+                      {TRADER_TYPE_LABELS[t]}
+                    </button>
+                  );
+                })}
+                {traderTypeFilterSet.size > 0 && (
+                  <span
+                    className={cn(
+                      "text-[10px] text-muted-foreground ml-1 self-center",
+                      showTraders && traderCount > 0 && "animate-in fade-in-0 fill-mode-both",
+                    )}
+                    style={{
+                      animationDelay: `${TRADER_TYPES.length * 35}ms`,
+                      animationDuration: "260ms",
+                    }}
+                  >
+                    {traderTypeFilterSet.size}/{TRADER_TYPES.length} types
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
         <Button
           type="button"

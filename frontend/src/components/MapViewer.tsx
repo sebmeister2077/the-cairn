@@ -42,9 +42,11 @@ export interface WorldPointMarker {
   z: number;
   label?: string;
   /** Visual classification. `"Trader"` markers are drawn as colored dots
-   *  using `color` (defaulting to cyan if absent); other kinds use the
-   *  built-in landmark palette (cyan dot for Base/Misc, gold star for Server). */
-  kind?: "Base" | "Server" | "Misc" | "Trader";
+   *  using `color` (defaulting to cyan if absent); `"Home"` is drawn as a
+   *  house glyph (used for the user's saved favorite position); other kinds
+   *  use the built-in landmark palette (cyan dot for Base/Misc, gold star
+   *  for Server). */
+  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
 }
@@ -794,7 +796,7 @@ export function MapViewer({
       // Regular (Base etc.) points — cyan dot with white core.
       ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server" || pt.kind === "Trader") continue;
+        if (pt.kind === "Server" || pt.kind === "Trader" || pt.kind === "Home") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointOuter, 0, Math.PI * 2);
         ctx.fill();
@@ -802,7 +804,7 @@ export function MapViewer({
 
       ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server" || pt.kind === "Trader") continue;
+        if (pt.kind === "Server" || pt.kind === "Trader" || pt.kind === "Home") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointInner, 0, Math.PI * 2);
         ctx.fill();
@@ -850,6 +852,43 @@ export function MapViewer({
         ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
         ctx.stroke();
       }
+
+      // Home (favorite location) markers — small house glyph in warm amber
+      // with a dark outline so it stays legible over any biome tile. Drawn
+      // last so it sits on top of every other point kind.
+      const homeSize = Math.max(2.2, 3.6 / Math.max(zoom, 0.1));
+      const homeStroke = Math.max(0.3, 0.55 / Math.max(zoom, 0.1));
+      const drawHouse = (cx: number, cy: number) => {
+        const half = homeSize;
+        const bodyTopY = cy - half * 0.15;
+        const bodyBottomY = cy + half;
+        const leftX = cx - half;
+        const rightX = cx + half;
+        const roofPeakY = cy - half;
+        // Outline path: roof triangle + body rectangle as one closed shape.
+        ctx.beginPath();
+        ctx.moveTo(leftX, bodyBottomY);
+        ctx.lineTo(leftX, bodyTopY);
+        ctx.lineTo(cx, roofPeakY);
+        ctx.lineTo(rightX, bodyTopY);
+        ctx.lineTo(rightX, bodyBottomY);
+        ctx.closePath();
+      };
+      ctx.lineJoin = "round";
+      ctx.lineWidth = homeStroke;
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "Home") continue;
+        drawHouse(pt.x, pt.y);
+        ctx.fillStyle = pt.color ?? "rgba(245, 158, 11, 0.95)";
+        ctx.fill();
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.stroke();
+        // Door: small dark rectangle in the lower-center for legibility.
+        const doorW = homeSize * 0.32;
+        const doorH = homeSize * 0.55;
+        ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+        ctx.fillRect(pt.x - doorW / 2, pt.y + homeSize - doorH, doorW, doorH);
+      }
     }
   }, [
     containerSize.h,
@@ -896,6 +935,8 @@ export function MapViewer({
     for (const pt of projectedOverlayPoints) {
       const raw = (pt.label ?? "").replace(/\s+/g, " ").trim();
       if (!raw) continue;
+      // Home markers are icon-only; never render their label badge.
+      if (pt.kind === "Home") continue;
 
       // Convert image-space point to screen space.
       const sx = pt.x * zoom + pan.x;
