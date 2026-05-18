@@ -556,8 +556,8 @@ export function AppContent() {
       </header>
       <main
         className={cn(
-          "container mx-auto px-4 py-6 max-w-3xl flex-1 w-full",
-          isTopsPage && "max-w-6xl",
+          "container mx-auto px-4 py-6 max-w-6xl flex-1 w-full",
+          // isTopsPage && "max-w-6xl",
         )}
       >
         {authRejected && (

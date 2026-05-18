@@ -43,6 +43,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, Loader2, Trash2, Undo2 } from "lucide-react";
 
 const ADMIN_TRADERS_KEY = ["admin-traders"] as const;
@@ -212,40 +220,114 @@ function LiveTradersCard() {
           <p className="text-sm text-muted-foreground">No traders match the current filter.</p>
         )}
         {traders.length > 0 && (
-          <ul className="space-y-1 text-sm">
-            {traders.map((t) => (
-              <li
-                key={t.trader_id}
-                className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5"
-              >
-                {typeBadge(t.trader_type)}
-                <span className="font-medium">{t.label || "(no label)"}</span>
-                <span className="text-xs text-muted-foreground">{fmtCoords(t.coordinates)}</span>
-                {t.duplicate_flagged && (
-                  <Badge variant="outline" className="text-amber-600">
-                    duplicate?
-                  </Badge>
-                )}
-                <span className="ml-auto text-xs text-muted-foreground">
-                  by {t.actor_display_name ?? "—"} · {t.source ?? "—"} ·{" "}
-                  {formatTimestamp(t.created_at)}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label="Delete trader"
-                  disabled={singleDeleteMut.isPending && singleDeleteMut.variables === t.trader_id}
-                  onClick={() => setSingleDeleteId(t.trader_id)}
-                >
-                  {singleDeleteMut.isPending && singleDeleteMut.variables === t.trader_id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                </Button>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto rounded border">
+            <Table className="text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-32">Type</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead className="w-32">Coords</TableHead>
+                  <TableHead className="w-28">Match</TableHead>
+                  <TableHead className="w-20">Flags</TableHead>
+                  <TableHead className="w-40">Contributor</TableHead>
+                  <TableHead className="w-24">Source</TableHead>
+                  <TableHead className="w-40">Added</TableHead>
+                  <TableHead className="w-12 text-right" aria-label="Actions" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {traders.map((t) => {
+                  const status = (t.submission_stats ?? {}) as Record<string, unknown>;
+                  const matchPoints =
+                    typeof status.existing_match_pct === "number"
+                      ? status.existing_match_pct
+                      : null;
+                  const matchCount =
+                    typeof status.existing_match_count === "number"
+                      ? status.existing_match_count
+                      : null;
+                  const displayMatchChip = matchPoints !== null && matchCount !== null;
+                  const matchTone =
+                    matchPoints == null
+                      ? "text-muted-foreground"
+                      : matchPoints >= 50
+                        ? "text-amber-600"
+                        : matchPoints >= 20
+                          ? "text-yellow-600"
+                          : "text-emerald-600";
+                  const isRowDeleting =
+                    singleDeleteMut.isPending && singleDeleteMut.variables === t.trader_id;
+
+                  return (
+                    <TableRow key={t.trader_id}>
+                      <TableCell>
+                        {typeBadge(t.trader_type) ?? (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <span className="block truncate" title={t.label ?? undefined}>
+                          {t.label || "(no label)"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {fmtCoords(t.coordinates)}
+                      </TableCell>
+                      <TableCell>
+                        {displayMatchChip ? (
+                          <Badge
+                            variant="outline"
+                            className={matchTone}
+                            title="Share of this submission that matched traders already on the map"
+                          >
+                            {matchPoints != null ? `${matchPoints.toFixed(1)}%` : "—"}
+                            {matchCount != null ? ` (${matchCount})` : ""}
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {t.duplicate_flagged ? (
+                          <Badge variant="outline" className="text-amber-600">
+                            dup?
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        <span className="block truncate" title={t.actor_display_name ?? undefined}>
+                          {t.actor_display_name ?? "—"}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {t.source ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatTimestamp(t.created_at)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Delete trader"
+                          disabled={isRowDeleting}
+                          onClick={() => setSingleDeleteId(t.trader_id)}
+                        >
+                          {isRowDeleting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
         <Pagination page={page} onPage={setPage} hasNext={nextOffset != null} />
       </CardContent>
