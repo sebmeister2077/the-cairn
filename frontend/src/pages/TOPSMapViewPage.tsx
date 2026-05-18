@@ -15,6 +15,8 @@ import {
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
   setShowTranslocators as setShowTranslocatorsAction,
+  setShowTraders as setShowTradersAction,
+  toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
   setFavoriteStartingPosition as setFavoriteStartingPositionAction,
@@ -75,8 +77,16 @@ import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
+  useTradersOverlay,
   LANDMARKS_QUERY_KEY,
 } from "@/hooks/useOverlayData";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  TRADER_TYPE_COLORS,
+  isTraderType,
+  type TraderType,
+} from "@/lib/trader-types";
 import type { ResourceDeposit } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
@@ -252,10 +262,24 @@ export function TOPSMapViewPage() {
   // endpoint reports either a new etag or an expired window.
   const landmarksQuery = useLandmarksOverlay();
   const translocatorsQuery = useTranslocatorsOverlay();
+  const tradersQuery = useTradersOverlay();
   const allLandmarks = landmarksQuery.data?.data;
   const allTranslocators = translocatorsQuery.data?.data;
+  const allTraders = tradersQuery.data?.data;
   const landmarkCount = allLandmarks?.length ?? 0;
   const translocatorCount = allTranslocators?.length ?? 0;
+  const traderCount = allTraders?.length ?? 0;
+  const showTraders = useAppSelector((s) => s.mapView.showTraders);
+  const setShowTraders = useCallback(
+    (next: boolean) => dispatch(setShowTradersAction(next)),
+    [dispatch],
+  );
+  const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
+  const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
+  const toggleTraderType = useCallback(
+    (t: TraderType) => dispatch(toggleTraderTypeFilterAction(t)),
+    [dispatch],
+  );
 
   // Favorite TL groupings (local-only). The groupings themselves persist via
   // `useTLGroupings`; view-mode + active-selection live in the Redux
@@ -632,9 +656,25 @@ export function TOPSMapViewPage() {
   // surface "Server"-kind landmarks (always-on POIs) but hide everything
   // else; toggling on swaps in the full set.
   const landmarkPoints = useMemo<WorldPointMarker[]>(() => {
-    if (!allLandmarks) return [];
-    return showLandmarks ? allLandmarks : allLandmarks.filter((p) => p.kind === "Server");
-  }, [allLandmarks, showLandmarks]);
+    const base: WorldPointMarker[] = [];
+    if (allLandmarks) {
+      const ls = showLandmarks ? allLandmarks : allLandmarks.filter((p) => p.kind === "Server");
+      base.push(...ls);
+    }
+    if (showTraders && allTraders) {
+      for (const t of allTraders) {
+        if (
+          traderTypeFilterSet.size > 0 &&
+          isTraderType(t.trader_type) &&
+          !traderTypeFilterSet.has(t.trader_type)
+        ) {
+          continue;
+        }
+        base.push(t);
+      }
+    }
+    return base;
+  }, [allLandmarks, showLandmarks, showTraders, allTraders, traderTypeFilterSet]);
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
@@ -1041,6 +1081,53 @@ export function TOPSMapViewPage() {
                 </span>
               </span>
             </div>
+            {tradersQuery.data && (
+              <div className="flex flex-col gap-2 rounded-md border px-3 py-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={showTraders}
+                    onCheckedChange={setShowTraders}
+                    aria-label="Show traders overlay"
+                  />
+                  <Label>Show traders</Label>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    Traders mapped:{" "}
+                    <span className="font-medium text-foreground">
+                      {traderCount.toLocaleString()}
+                    </span>
+                  </span>
+                </div>
+                {showTraders && traderCount > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {TRADER_TYPES.map((t) => {
+                      const active = traderTypeFilterSet.has(t);
+                      return (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => toggleTraderType(t)}
+                          className={`rounded-full border px-2 py-0.5 text-xs ${active ? "bg-foreground text-background" : "bg-background"}`}
+                          style={{ borderColor: TRADER_TYPE_COLORS[t] }}
+                          aria-pressed={active}
+                        >
+                          <span
+                            aria-hidden
+                            className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                            style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                          />
+                          {TRADER_TYPE_LABELS[t]}
+                        </button>
+                      );
+                    })}
+                    {traderTypeFilterSet.size > 0 && (
+                      <span className="text-xs text-muted-foreground ml-1 self-center">
+                        Showing {traderTypeFilterSet.size} of {TRADER_TYPES.length} types
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
             {hasMap && (
               <div className="flex flex-col gap-1">

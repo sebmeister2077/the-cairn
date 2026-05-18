@@ -732,6 +732,7 @@ def backup_manual_key(
 
 LANDMARKS_LIVE_KEY = "landmarks.geojson"
 TRANSLOCATORS_LIVE_KEY = "translocators.geojson"
+TRADERS_LIVE_KEY = "traders.geojson"
 
 
 def landmarks_live_key() -> str:
@@ -740,6 +741,10 @@ def landmarks_live_key() -> str:
 
 def translocators_live_key() -> str:
     return TRANSLOCATORS_LIVE_KEY
+
+
+def traders_live_key() -> str:
+    return TRADERS_LIVE_KEY
 
 
 def landmarks_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
@@ -760,6 +765,17 @@ def translocators_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
 def translocators_backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
     return (
         f"{BACKUP_KEY_PREFIX}translocators-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.geojson"
+    )
+
+
+def traders_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}traders-{iso_year:04d}-W{iso_week:02d}.geojson"
+
+
+def traders_backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}traders-{iso_year:04d}-W{iso_week:02d}"
         f"-manual-{unix_timestamp}.geojson"
     )
 

@@ -41,7 +41,12 @@ export interface WorldPointMarker {
   x: number;
   z: number;
   label?: string;
-  kind?: "Base" | "Server" | "Misc";
+  /** Visual classification. `"Trader"` markers are drawn as colored dots
+   *  using `color` (defaulting to cyan if absent); other kinds use the
+   *  built-in landmark palette (cyan dot for Base/Misc, gold star for Server). */
+  kind?: "Base" | "Server" | "Misc" | "Trader";
+  /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
+  color?: string;
 }
 export type LandmarkProperty = {
   label: string;
@@ -367,18 +372,24 @@ export function MapViewer({
       imgNatural.w <= 0 ||
       imgNatural.h <= 0
     ) {
-      return [] as Array<{ x: number; y: number; label?: string; kind?: string }>;
+      return [] as Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
     }
 
     const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
     const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
 
-    const projected: Array<{ x: number; y: number; label?: string; kind?: string }> = [];
+    const projected: Array<{
+      x: number;
+      y: number;
+      label?: string;
+      kind?: string;
+      color?: string;
+    }> = [];
     for (const pt of overlayPoints) {
       const x = toImgX(pt.x);
       const y = toImgY(pt.z);
       if (![x, y].every(Number.isFinite)) continue;
-      projected.push({ x, y, label: pt.label, kind: pt.kind });
+      projected.push({ x, y, label: pt.label, kind: pt.kind, color: pt.color });
     }
 
     return projected;
@@ -783,7 +794,7 @@ export function MapViewer({
       // Regular (Base etc.) points — cyan dot with white core.
       ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server") continue;
+        if (pt.kind === "Server" || pt.kind === "Trader") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointOuter, 0, Math.PI * 2);
         ctx.fill();
@@ -791,10 +802,25 @@ export function MapViewer({
 
       ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server") continue;
+        if (pt.kind === "Server" || pt.kind === "Trader") continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointInner, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Trader markers — per-type colored dot with thin dark outline so the
+      // color reads cleanly against any biome tile.
+      const traderOuter = Math.max(2.4, 4.0 / Math.max(zoom, 0.1));
+      const traderStroke = Math.max(0.4, 0.8 / Math.max(zoom, 0.1));
+      ctx.lineWidth = traderStroke;
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "Trader") continue;
+        ctx.fillStyle = pt.color ?? "rgba(34, 211, 238, 0.92)";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, traderOuter, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       }
 
       // Spawn (Server) markers — larger gold five-point star with dark outline.

@@ -300,7 +300,7 @@ async def delete_landmark(
 # loss surface is at most a week of edits and the audit log preserves what
 # was there.
 
-_VALID_ASSETS = ("landmarks", "translocators")
+_VALID_ASSETS = ("landmarks", "translocators", "traders")
 
 
 class GeojsonBackupCreateBody(BaseModel):

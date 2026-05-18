@@ -19,6 +19,9 @@ export interface MapViewState {
     activeGroupingIds: string[];
     showLandmarks: boolean;
     showTranslocators: boolean;
+    showTraders: boolean;
+    /** When non-empty, restrict trader markers to these trader_type values. */
+    traderTypeFilter: string[];
     showRecentlyAdded: boolean;
     isFullscreen: boolean;
     /**
@@ -62,6 +65,8 @@ export function loadInitialMapViewState(): MapViewState {
         activeGroupingIds: readActive(),
         showLandmarks: true,
         showTranslocators: false,
+        showTraders: false,
+        traderTypeFilter: [],
         showRecentlyAdded: false,
         isFullscreen: false,
         starfieldEnabled: true,
@@ -98,6 +103,18 @@ export const mapViewSlice = createSlice({
             if (!state.showTranslocators) {
                 state.showRecentlyAdded = false;
             }
+        },
+        setShowTraders(state, action: PayloadAction<boolean>) {
+            state.showTraders = action.payload;
+        },
+        setTraderTypeFilter(state, action: PayloadAction<string[]>) {
+            state.traderTypeFilter = Array.from(new Set(action.payload));
+        },
+        toggleTraderTypeFilter(state, action: PayloadAction<string>) {
+            const t = action.payload;
+            const i = state.traderTypeFilter.indexOf(t);
+            if (i >= 0) state.traderTypeFilter.splice(i, 1);
+            else state.traderTypeFilter.push(t);
         },
         toggleShowRecentlyAdded(state, action: PayloadAction<boolean | undefined>) {
             if (action.payload !== undefined) {
@@ -143,6 +160,9 @@ export const {
     toggleActiveGrouping,
     setShowLandmarks,
     setShowTranslocators,
+    setShowTraders,
+    setTraderTypeFilter,
+    toggleTraderTypeFilter,
     toggleShowRecentlyAdded,
     setShowFullscreen,
     setStarfieldEnabled,

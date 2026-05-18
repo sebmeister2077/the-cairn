@@ -44,10 +44,10 @@ _RE_MANUAL = re.compile(r"^backups/backup-(\d{4})-W(\d{2})-manual-(\d+)\.db(?:\.
 # landmarks-2026-W17.geojson   |   landmarks-2026-W17-manual-<ts>.geojson
 # (and the same for translocators-)
 _RE_GEOJSON_SCHEDULED = re.compile(
-    r"^backups/(landmarks|translocators)-(\d{4})-W(\d{2})\.geojson$"
+    r"^backups/(landmarks|translocators|traders)-(\d{4})-W(\d{2})\.geojson$"
 )
 _RE_GEOJSON_MANUAL = re.compile(
-    r"^backups/(landmarks|translocators)-(\d{4})-W(\d{2})-manual-(\d+)\.geojson$"
+    r"^backups/(landmarks|translocators|traders)-(\d{4})-W(\d{2})-manual-(\d+)\.geojson$"
 )
 
 
@@ -311,6 +311,9 @@ _GEOJSON_ASSETS = (
     ("translocators", r2_storage.translocators_live_key,
      r2_storage.translocators_backup_scheduled_key,
      r2_storage.translocators_backup_manual_key),
+    ("traders", r2_storage.traders_live_key,
+     r2_storage.traders_backup_scheduled_key,
+     r2_storage.traders_backup_manual_key),
 )
 
 

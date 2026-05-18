@@ -2792,6 +2792,271 @@ def list_translocator_audit_added_index() -> dict:
             return out
 
 
+# ---------------------------------------------------------------------------
+# Traders audit CRUD (user-contributed Traders)
+# ---------------------------------------------------------------------------
+
+def insert_trader_audit(
+    *,
+    trader_id: str,
+    action: str,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    source: Optional[str] = None,
+    trader_type: Optional[str] = None,
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+    submission_stats: Optional[dict] = None,
+    duplicate_flagged: bool = False,
+) -> int:
+    """Append-only audit record for a trader mutation. Returns row id."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO traders_audit
+                       (trader_id, action, source, trader_type,
+                        actor_api_key_id, actor_display_name,
+                        before_payload, after_payload, submission_stats,
+                        duplicate_flagged)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    trader_id,
+                    action,
+                    source,
+                    trader_type,
+                    actor_api_key_id,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                    json.dumps(submission_stats) if submission_stats is not None else None,
+                    bool(duplicate_flagged),
+                ),
+            )
+            return int(cur.fetchone()[0])
+
+
+def get_trader_audit_row(audit_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, trader_id, action, source, trader_type,
+                          actor_api_key_id, actor_display_name,
+                          before_payload, after_payload, submission_stats,
+                          duplicate_flagged, created_at
+                     FROM traders_audit
+                    WHERE id = %s""",
+                (int(audit_id),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_trader_audit_paginated(
+    *,
+    trader_id: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    action: Optional[str] = None,
+    trader_type: Optional[str] = None,
+    source: Optional[str] = None,
+    duplicate_flagged: Optional[bool] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if trader_id:
+        where.append("trader_id = %s")
+        params.append(trader_id)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    if trader_type:
+        where.append("trader_type = %s")
+        params.append(trader_type)
+    if source:
+        where.append("source = %s")
+        params.append(source)
+    if duplicate_flagged is not None:
+        where.append("duplicate_flagged = %s")
+        params.append(bool(duplicate_flagged))
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM traders_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, trader_id, action, source, trader_type,
+                           actor_api_key_id, actor_display_name,
+                           before_payload, after_payload, submission_stats,
+                           duplicate_flagged, created_at
+                       FROM traders_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
+def list_trader_add_audit_paginated(
+    *,
+    actor_api_key_id: Optional[str] = None,
+    trader_type: Optional[str] = None,
+    limit: int = 10,
+    offset: int = 0,
+) -> dict:
+    where = ["action = 'add'"]
+    params: list = []
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if trader_type:
+        where.append("trader_type = %s")
+        params.append(trader_type)
+    where_sql = " WHERE " + " AND ".join(where)
+    limit = max(1, min(int(limit), 200))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM traders_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, trader_id, action, source, trader_type,
+                           actor_api_key_id, actor_display_name,
+                           before_payload, after_payload, submission_stats,
+                           duplicate_flagged, created_at
+                       FROM traders_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
+def list_trader_contributors() -> List[dict]:
+    """Per-contributor aggregate: total adds + adds in last 7 days. Used by
+    the admin Traders view to render the contributor sidebar."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT actor_api_key_id,
+                          COALESCE(MAX(actor_display_name), actor_api_key_id) AS actor_display_name,
+                          COUNT(*) FILTER (WHERE action = 'add') AS total_added,
+                          COUNT(*) FILTER (
+                              WHERE action = 'add'
+                                AND created_at >= now() - INTERVAL '7 days'
+                          ) AS added_last_7d,
+                          MAX(created_at) FILTER (WHERE action = 'add') AS last_submission_at
+                     FROM traders_audit
+                    WHERE actor_api_key_id IS NOT NULL
+                    GROUP BY actor_api_key_id
+                    ORDER BY total_added DESC,
+                             actor_display_name ASC NULLS LAST""",
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+            for r in rows:
+                ts = r.get("last_submission_at")
+                if ts is not None and hasattr(ts, "isoformat"):
+                    r["last_submission_at"] = ts.isoformat()
+            return rows
+
+
+def get_trader_user_stats(actor_api_key_id: str) -> dict:
+    """Per-user stats for the contributor panel."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT
+                       COUNT(*) FILTER (WHERE action = 'add') AS total_added,
+                       COUNT(*) FILTER (
+                           WHERE action = 'add'
+                             AND created_at >= now() - INTERVAL '7 days'
+                       ) AS added_last_7d,
+                       COUNT(*) FILTER (WHERE action = 'add' AND source = 'chatlog') AS chatlog_added,
+                       COUNT(*) FILTER (WHERE action = 'add' AND source = 'manual')  AS manual_added,
+                       MAX(created_at) FILTER (WHERE action = 'add') AS last_submission_at
+                     FROM traders_audit
+                    WHERE actor_api_key_id = %s""",
+                (actor_api_key_id,),
+            )
+            row = dict(cur.fetchone() or {})
+            ts = row.get("last_submission_at")
+            if ts is not None and hasattr(ts, "isoformat"):
+                row["last_submission_at"] = ts.isoformat()
+            return {
+                "total_added": int(row.get("total_added") or 0),
+                "added_last_7d": int(row.get("added_last_7d") or 0),
+                "chatlog_added": int(row.get("chatlog_added") or 0),
+                "manual_added": int(row.get("manual_added") or 0),
+                "last_submission_at": row.get("last_submission_at"),
+            }
+
+
+def list_trader_audit_added_index() -> dict:
+    """Return ``{trader_id: {added_by, added_at, actor_api_key_id, trader_type, source}}``
+    for every still-current ``add`` row (no later ``delete`` for the same id).
+    Used by ``/api/traders/audit`` and admin lists."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT DISTINCT ON (trader_id)
+                          trader_id, action, source, trader_type,
+                          actor_api_key_id, actor_display_name, created_at
+                     FROM traders_audit
+                     ORDER BY trader_id, created_at DESC""",
+            )
+            out: dict = {}
+            for row in cur.fetchall():
+                if row["action"] != "add":
+                    continue
+                created = row["created_at"]
+                out[row["trader_id"]] = {
+                    "added_by": row["actor_display_name"],
+                    "added_by_api_key_id": row["actor_api_key_id"],
+                    "added_at": created.isoformat() if hasattr(created, "isoformat") else created,
+                    "trader_type": row["trader_type"],
+                    "source": row["source"],
+                }
+            return out
+
+
+def count_trader_submissions_in_window(
+    *,
+    actor_api_key_id: str,
+    source: str,
+    window_seconds: int,
+) -> int:
+    """Per-source submission counter used by the contribute endpoint rate
+    limiter (1/day chatlog, 15/day manual). Counts ``add`` rows."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM traders_audit
+                    WHERE action = 'add'
+                      AND actor_api_key_id = %s
+                      AND source = %s
+                      AND created_at >= now() - (%s || ' seconds')::INTERVAL""",
+                (actor_api_key_id, source, int(window_seconds)),
+            )
+            return int(cur.fetchone()[0])
+
+
+
 def insert_landmark_edit_request(
     *,
     request_id: str,

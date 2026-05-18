@@ -71,8 +71,8 @@ export class ApiError extends Error {
             typeof detail === "string"
                 ? detail
                 : (detail && typeof detail.message === "string" && detail.message) ||
-                  (detail && typeof detail.code === "string" && detail.code) ||
-                  `HTTP ${status}`;
+                (detail && typeof detail.code === "string" && detail.code) ||
+                `HTTP ${status}`;
         super(message);
         this.name = "ApiError";
         this.status = status;
@@ -2484,6 +2484,258 @@ export async function adminListBackupDownloadLinks(): Promise<{ links: BackupDow
     return (await handleResponse(res)).json();
 }
 
+// ---------------------------------------------------------------------------
+// Traders (user-contributed POIs) — viewer, contribute, account stats, admin
+// ---------------------------------------------------------------------------
+
+import type { TraderType } from "@/lib/trader-types";
+
+/**
+ * Response shape for ``GET /api/traders/url``. ``url`` is null when the
+ * viewer flag is off (``disabled: true``) or when no traders have been
+ * contributed yet (``empty: true``); callers should treat both as "no
+ * overlay" and not retry.
+ */
+export interface TradersUrlResponse {
+    url: string | null;
+    etag?: string;
+    expires_in_seconds?: number;
+    disabled?: boolean;
+    empty?: boolean;
+}
+
+export async function getTradersUrl(): Promise<TradersUrlResponse> {
+    const res = await fetch(`${API_BASE}/traders/url`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface TraderContributionItem {
+    x: number;
+    z: number;
+    y?: number;
+    label?: string;
+    trader_type: TraderType;
+}
+
+export interface TraderContributionPayload {
+    traders: TraderContributionItem[];
+    source: "chatlog" | "manual";
+    stats?: {
+        chatlog_parsed_count?: number;
+        inferred_confidence_avg?: number;
+    };
+    client_batch_id?: string;
+}
+
+export interface TraderContributionResult {
+    accepted: number;
+    duplicate_flagged_count: number;
+    batch_id: string;
+}
+
+export async function contributeTraders(
+    payload: TraderContributionPayload,
+): Promise<TraderContributionResult> {
+    const res = await fetch(`${API_BASE}/contribute-traders`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface TraderAuditMapEntry {
+    added_by: string | null;
+    added_at: string | null;
+    trader_type: TraderType | null;
+    source: "chatlog" | "manual" | null;
+}
+
+export async function getTradersAuditIndex(): Promise<{
+    traders: Record<string, TraderAuditMapEntry>;
+}> {
+    const res = await fetch(`${API_BASE}/traders/audit`);
+    return (await handleResponse(res)).json();
+}
+
+export interface MyTraderContribution {
+    id: number;
+    trader_id: string;
+    action: string;
+    source: "chatlog" | "manual" | null;
+    trader_type: TraderType | null;
+    after_payload: Record<string, unknown> | null;
+    submission_stats: Record<string, unknown> | null;
+    duplicate_flagged: boolean;
+    created_at: string;
+}
+
+export interface MyTraderContributionStats {
+    total_added: number;
+    added_last_7d: number;
+    chatlog_added: number;
+    manual_added: number;
+    last_submission_at: string | null;
+}
+
+export async function getMyTraderContributions(params: {
+    limit?: number;
+    offset?: number;
+} = {}): Promise<{
+    items: MyTraderContribution[];
+    total: number;
+    stats: MyTraderContributionStats;
+}> {
+    const qs = new URLSearchParams();
+    if (params.limit != null) qs.set("limit", String(params.limit));
+    if (params.offset != null) qs.set("offset", String(params.offset));
+    const suffix = qs.toString() ? `?${qs}` : "";
+    const res = await fetch(`${API_BASE}/account/contribute-traders${suffix}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// --- Admin Traders ----------------------------------------------------------
+
+export interface AdminTraderAuditRow {
+    id: number;
+    trader_id: string;
+    action: string;
+    source: "chatlog" | "manual" | "admin" | null;
+    trader_type: TraderType | null;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    before_payload: Record<string, unknown> | null;
+    after_payload: Record<string, unknown> | null;
+    submission_stats: Record<string, unknown> | null;
+    duplicate_flagged: boolean;
+    created_at: string;
+}
+
+export async function adminListTraderAudit(params: {
+    trader_id?: string;
+    actor_api_key_id?: string;
+    action?: string;
+    trader_type?: TraderType;
+    source?: string;
+    duplicate_flagged?: boolean;
+    limit?: number;
+    offset?: number;
+} = {}): Promise<{
+    audit: AdminTraderAuditRow[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+}> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+        if (v != null) qs.set(k, String(v));
+    }
+    const suffix = qs.toString() ? `?${qs}` : "";
+    const res = await fetch(`${API_BASE}/admin/traders/audit${suffix}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface AdminTraderRow {
+    trader_id: string;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    label: string | null;
+    trader_type: TraderType | null;
+    source: "chatlog" | "manual" | null;
+    coordinates: number[];
+    submission_stats: Record<string, unknown> | null;
+    duplicate_flagged: boolean;
+    still_present: boolean;
+    created_at: string;
+}
+
+export interface AdminTraderContributor {
+    id: string;
+    name: string;
+    total_added: number;
+    added_last_7d: number;
+    last_submission_at: string | null;
+}
+
+export async function adminListTraders(params: {
+    actor_api_key_id?: string;
+    trader_type?: TraderType;
+    limit?: number;
+    offset?: number;
+} = {}): Promise<{
+    traders: AdminTraderRow[];
+    total: number;
+    limit: number;
+    offset: number;
+    next_offset: number | null;
+    contributors: AdminTraderContributor[];
+}> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+        if (v != null) qs.set(k, String(v));
+    }
+    const suffix = qs.toString() ? `?${qs}` : "";
+    const res = await fetch(`${API_BASE}/admin/traders${suffix}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminEditTrader(
+    traderId: string,
+    body: { label?: string; trader_type?: TraderType; x?: number; z?: number },
+): Promise<{ updated: string; feature: unknown }> {
+    const res = await fetch(`${API_BASE}/admin/traders/${encodeURIComponent(traderId)}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeleteTrader(traderId: string): Promise<{
+    deleted: string;
+    feature: unknown;
+}> {
+    const res = await fetch(`${API_BASE}/admin/traders/${encodeURIComponent(traderId)}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeleteTradersByUser(actorApiKeyId: string): Promise<{
+    deleted: number;
+    trader_ids: string[];
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/traders/by-user/${encodeURIComponent(actorApiKeyId)}`,
+        { method: "DELETE", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRevertTraderAudit(auditId: number): Promise<{
+    reverted: string;
+    audit_id: number;
+    still_present: boolean;
+}> {
+    const res = await fetch(`${API_BASE}/admin/traders/audit/${auditId}/revert`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ confirm: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+
 export async function adminListBackupDownloadRedemptions(
     linkId: number,
 ): Promise<{ redemptions: BackupDownloadRedemption[] }> {
@@ -2755,3 +3007,4 @@ export async function getResourcesDeposits(opts: {
     });
     return (await handleResponse(res)).json();
 }
+

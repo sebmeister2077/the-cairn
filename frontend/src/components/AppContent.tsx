@@ -17,6 +17,7 @@ import { MapViewPage } from "@/pages/MapViewPage";
 import { TOPSMapViewPage } from "@/pages/TOPSMapViewPage";
 import { ContributePage } from "@/pages/ContributePage";
 import { ContributeTLsPage } from "@/pages/ContributeTLsPage";
+import { ContributeTradersPage } from "@/pages/ContributeTradersPage";
 import { ApiKeysPage } from "@/pages/admin/ApiKeysPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminBannedIpsPage } from "@/pages/admin/AdminBannedIpsPage";
@@ -26,6 +27,7 @@ import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
+import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
@@ -75,6 +77,7 @@ const NavigationRoutes = {
     TOPSMap: "/multiplayer/tops-map",
     ContributeMap: "/multiplayer/contribute-map",
     ContributeTLs: "/multiplayer/contribute-tls",
+    ContributeTraders: "/multiplayer/contribute-traders",
   },
   General: {},
   Manage: {
@@ -87,6 +90,7 @@ const NavigationRoutes = {
     Resources: "/manage/resources",
     WaypointsBackup: "/manage/waypoints-backup",
     Translocators: "/manage/translocators",
+    Traders: "/manage/traders",
     TLScreenshots: "/manage/tl-screenshots",
   },
 } as const;
@@ -121,6 +125,12 @@ const subTabs: Subtabs = {
       chip: "New",
       chipShownUntil: "2026-05-23",
     },
+    {
+      value: "/multiplayer/contribute-traders",
+      label: "Contribute Traders",
+      chip: "New",
+      chipShownUntil: "2026-06-02",
+    },
   ],
   "/general": [],
   "/manage": [
@@ -133,6 +143,7 @@ const subTabs: Subtabs = {
     { value: "/manage/resources", label: "Resources" },
     { value: "/manage/waypoints-backup", label: "Waypoints & Backup" },
     { value: "/manage/translocators", label: "Translocators" },
+    { value: "/manage/traders", label: "Traders" },
     { value: "/manage/tl-screenshots", label: "TL Screenshots" },
   ],
 };
@@ -520,6 +531,7 @@ export function AppContent() {
           <Route path="/multiplayer/contribute" element={<ContributePage />} />
           <Route path="/multiplayer/contribute-map" element={<ContributePage />} />
           <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
+          <Route path="/multiplayer/contribute-traders" element={<ContributeTradersPage />} />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
           <Route path="/manage/api-keys" element={<ApiKeysPage />} />
           <Route path="/manage/users" element={<AdminUsersPage />} />
@@ -530,6 +542,7 @@ export function AppContent() {
           <Route path="/manage/resources" element={<AdminResourcesPage />} />
           <Route path="/manage/waypoints-backup" element={<AdminLandmarksPage />} />
           <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
+          <Route path="/manage/traders" element={<AdminTradersPage />} />
           <Route path="/manage/tl-screenshots" element={<AdminTLScreenshotsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/general" element={<GeneralPage />} />

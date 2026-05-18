@@ -41,6 +41,8 @@ from .routes import contribute_tls as contribute_tls_routes
 from .routes import contribute_tls_screenshots as contribute_tls_screenshots_routes
 from .routes import admin_translocators as admin_translocators_routes
 from .routes import admin_translocators_screenshots as admin_translocators_screenshots_routes
+from .routes import contribute_traders as contribute_traders_routes
+from .routes import admin_traders as admin_traders_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -600,6 +602,8 @@ app.include_router(admin_landmarks_routes.router, prefix="/api")
 app.include_router(contribute_tls_routes.router, prefix="/api")
 app.include_router(contribute_tls_screenshots_routes.router, prefix="/api")
 app.include_router(admin_translocators_routes.router, prefix="/api")
+app.include_router(contribute_traders_routes.router, prefix="/api")
+app.include_router(admin_traders_routes.router, prefix="/api")
 app.include_router(admin_translocators_screenshots_routes.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
