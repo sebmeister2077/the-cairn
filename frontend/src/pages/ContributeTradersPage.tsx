@@ -120,17 +120,26 @@ interface TraderEditorRowProps {
   onChange: (next: TraderCandidate) => void;
   onRemove: () => void;
   showCoords?: boolean;
+  showLabel?: boolean;
 }
 
-function TraderEditorRow({ candidate, onChange, onRemove, showCoords }: TraderEditorRowProps) {
+function TraderEditorRow({
+  candidate,
+  onChange,
+  onRemove,
+  showCoords,
+  showLabel = true,
+}: TraderEditorRowProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5">
-      <Input
-        className="h-8 flex-1 min-w-48"
-        placeholder="Label (e.g. Trader Survival Goods)"
-        value={candidate.label}
-        onChange={(e) => onChange({ ...candidate, label: e.target.value })}
-      />
+      {showLabel && (
+        <Input
+          className="h-8 flex-1 min-w-48"
+          placeholder="Label (e.g. Trader Survival Goods)"
+          value={candidate.label}
+          onChange={(e) => onChange({ ...candidate, label: e.target.value })}
+        />
+      )}
       {showCoords && (
         <>
           <Input
@@ -470,9 +479,19 @@ function ManualTraderEntryFlow() {
               key={c.localId}
               candidate={c}
               showCoords
-              onChange={(next) =>
-                setCandidates((prev) => prev.map((p) => (p.localId === c.localId ? next : p)))
-              }
+              showLabel={false}
+              onChange={(next) => {
+                // Manual flow: derive the label from the chosen type so
+                // the user doesn't have to type it. Re-derive whenever
+                // the type changes (including from null -> a value).
+                const derivedLabel =
+                  next.trader_type && isTraderType(next.trader_type)
+                    ? TRADER_TYPE_LABELS[next.trader_type]
+                    : "";
+                setCandidates((prev) =>
+                  prev.map((p) => (p.localId === c.localId ? { ...next, label: derivedLabel } : p)),
+                );
+              }}
               onRemove={() =>
                 setCandidates((prev) =>
                   prev.length === 1

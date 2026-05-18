@@ -230,7 +230,7 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
   },
   {
     id: "waypoints",
-    label: "Waypoints, landmarks & translocators",
+    label: "Waypoints: landmarks, translocators & traders",
     description:
       "User-editable map markers — landmark additions and the chat-log / screenshot translocator contribution paths.",
     flags: [
@@ -248,6 +248,26 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
         key: "translocator_screenshot_contributions",
         title: "Translocator contributions (screenshots)",
         help: "ON = POST /api/contribute-tls/screenshots/* accepts uploads and queues OCR + minimap analysis. OFF = those endpoints return 404 and the frontend tab hides the form. Independent of the chat-log flag above.",
+      },
+      {
+        key: "traders_chatlog_contributions",
+        title: "Trader contributions (chat log)",
+        help: "ON = POST /api/contribute-traders accepts client-chat.log batches and merges them into pending contributions for admin review. OFF = the endpoint returns 503 and the Contribute Traders page degrades gracefully. Non-admin callers are additionally rate-limited to 3 submissions per 24h.",
+      },
+      {
+        key: "traders_manual_contributions",
+        title: "Trader contributions (manual form)",
+        help: "ON = POST /api/contribute-traders/manual accepts admin-submitted batches of trader waypoints (e.g. from a spreadsheet) and merges them into pending contributions for review. OFF = the endpoint returns 503 and the frontend tab hides the form.",
+      },
+      {
+        key: "traders_viewer",
+        title: "Trader viewer",
+        help: "ON = the public map viewer shows chat-log-contributed traders in a distinct style (e.g. different icon or color) so users can easily see which traders were contributed by the community vs. hand-curated by admins. OFF = all traders look the same on the map regardless of source.",
+      },
+      {
+        key: "per_traders_revert",
+        title: "Per-contribution revert for traders",
+        help: "Allow admins to undo a single approved trader contribution within REVERT_WINDOW_DAYS, without reverting other contributions that touched the same area. This is a more surgical alternative to the global per_contribution_revert flag for the specific case of traders, where a single bad batch can be reverted without disturbing other pending or approved contributions.",
       },
     ],
   },
