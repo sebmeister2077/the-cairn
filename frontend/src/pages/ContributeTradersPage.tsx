@@ -44,6 +44,7 @@ import {
   type TraderType,
 } from "@/lib/trader-types";
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
+import { MaintenanceChip } from "@/components/MaintenanceChip";
 
 const MY_TRADERS_QUERY_KEY = ["my-trader-contributions"] as const;
 
@@ -323,7 +324,10 @@ function ChatLogTradersFlow() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Upload client-chat.log</CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          Upload client-chat.log
+          <MaintenanceChip component="tops_contribute_traders_log" />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
@@ -465,7 +469,10 @@ function ManualTraderEntryFlow() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Add traders manually</CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          Add traders manually
+          <MaintenanceChip component="tops_contribute_traders_manual" />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">

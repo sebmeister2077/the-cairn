@@ -87,7 +87,7 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           Upload your client-chat.log
-          <MaintenanceChip component="tops_contribute_tls" />
+          <MaintenanceChip component="tops_contribute_tls_log" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -35,7 +35,10 @@ from ..core import accounts_db, database as db
 KNOWN_COMPONENTS = {
     "tops_map_viewer": "TOPS Map Viewer",
     "tops_contribute_map": "TOPS Contribute Map",
-    "tops_contribute_tls": "TOPS Contribute TLS",
+    "tops_contribute_tls_log": "TOPS Contribute TLS (chat-log)",
+    "tops_contribute_tls_screenshot": "TOPS Contribute TLS (screenshot)",
+    "tops_contribute_traders_log": "TOPS Contribute Traders (chat-log)",
+    "tops_contribute_traders_manual": "TOPS Contribute Traders (manual)",
 }
 
 

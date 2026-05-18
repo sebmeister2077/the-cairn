@@ -26,6 +26,7 @@ import {
   requestTLScreenshotUploadUrls,
   uploadScreenshotToR2,
 } from "@/lib/api";
+import { MaintenanceChip } from "../MaintenanceChip";
 
 const MAX_BYTES = 8 * 1024 * 1024;
 const ACCEPTED_TYPES = ["image/png"];
@@ -232,7 +233,10 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit a translocator pair via screenshots</CardTitle>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          Submit a translocator pair via screenshots
+          <MaintenanceChip component="tops_contribute_tls_screenshot" />
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { listActiveMaintenanceNotices, type MaintenanceNotice } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // refresh notice list every 5 minutes
 
@@ -70,20 +71,27 @@ export function MaintenanceChip({ component, className }: MaintenanceChipProps) 
   if (notice.message) tooltipParts.push(notice.message);
   if (etaMs != null) tooltipParts.push(`ETA: ${new Date(etaMs).toLocaleString()}`);
   tooltipParts.push(`Started: ${new Date(startedMs).toLocaleString()}`);
+  const title = tooltipParts.join("\n");
 
   return (
-    <Badge
-      variant="outline"
-      title={tooltipParts.join("\n")}
-      className={cn(
-        "gap-1 border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300 cursor-help",
-        overdue && "border-destructive/50 bg-destructive/10 text-destructive",
-        className,
-      )}
-    >
-      <Wrench className="size-3" />
-      {label}
-    </Badge>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Badge
+            variant="outline"
+            className={cn(
+              "gap-1 border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300 cursor-help",
+              overdue && "border-destructive/50 bg-destructive/10 text-destructive",
+              className,
+            )}
+          >
+            <Wrench className="size-3" />
+            {label}
+          </Badge>
+        }
+      />
+      <TooltipContent>{title}</TooltipContent>
+    </Tooltip>
   );
 }
 
