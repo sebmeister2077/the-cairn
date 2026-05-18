@@ -89,23 +89,19 @@ function filterOutKnownTraders(
 
 export function ContributeTradersPage() {
   return (
-    <div className="space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4">
       <Tabs defaultValue="chatlog">
         <TabsList variant="line">
           <TabsTrigger value="chatlog">From chat log</TabsTrigger>
           <TabsTrigger value="manual">Manual entry</TabsTrigger>
         </TabsList>
-        <TabsContent value="chatlog" className="pt-2">
-          <div className="max-w-3xl mx-auto space-y-4">
-            <ChatLogTradersFlow />
-            <MyTradersList />
-          </div>
+        <TabsContent value="chatlog" className="pt-2 space-y-4">
+          <ChatLogTradersFlow />
+          <MyTradersList />
         </TabsContent>
-        <TabsContent value="manual" className="pt-2">
-          <div className="max-w-3xl mx-auto space-y-4">
-            <ManualTraderEntryFlow />
-            <MyTradersList />
-          </div>
+        <TabsContent value="manual" className="pt-2 space-y-4">
+          <ManualTraderEntryFlow />
+          <MyTradersList />
         </TabsContent>
       </Tabs>
     </div>

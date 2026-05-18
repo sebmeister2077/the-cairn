@@ -18,7 +18,7 @@ import { useReduxState } from "@/store/hooks";
 export function ContributeTLsPage() {
   const isAdmin = useReduxState("auth.isAdmin");
   return (
-    <div className="space-y-4">
+    <div className="max-w-3xl mx-auto space-y-4">
       <Tabs defaultValue="screenshots">
         <TabsList variant="line">
           <TabsTrigger value="screenshots">From screenshots</TabsTrigger>
@@ -27,11 +27,9 @@ export function ContributeTLsPage() {
         <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />
         </TabsContent>
-        <TabsContent value="screenshots" className="pt-2">
-          <div className="max-w-3xl mx-auto space-y-4">
-            <ScreenshotPairUploadCard />
-            <MyScreenshotRequestsList />
-          </div>
+        <TabsContent value="screenshots" className="pt-2 space-y-4">
+          <ScreenshotPairUploadCard />
+          <MyScreenshotRequestsList />
         </TabsContent>
       </Tabs>
     </div>
