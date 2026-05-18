@@ -95,6 +95,7 @@ import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo"
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
+import { cn } from "@/lib/utils";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -1082,7 +1083,7 @@ export function TOPSMapViewPage() {
               </span>
             </div>
             {tradersQuery.data && (
-              <div className="flex flex-col gap-2 rounded-md border px-3 py-2 text-sm">
+              <div className={cn("flex flex-col rounded-md border px-3 py-2 text-sm")}>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={showTraders}
@@ -1097,35 +1098,64 @@ export function TOPSMapViewPage() {
                     </span>
                   </span>
                 </div>
-                {showTraders && traderCount > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {TRADER_TYPES.map((t) => {
-                      const active = traderTypeFilterSet.has(t);
-                      return (
-                        <button
-                          key={t}
-                          type="button"
-                          onClick={() => toggleTraderType(t)}
-                          className={`rounded-full border px-2 py-0.5 text-xs ${active ? "bg-foreground text-background" : "bg-background"}`}
-                          style={{ borderColor: TRADER_TYPE_COLORS[t] }}
-                          aria-pressed={active}
+                <div
+                  className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+                  style={{
+                    gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
+                  }}
+                  aria-hidden={!(showTraders && traderCount > 0)}
+                >
+                  <div className="overflow-hidden min-h-0">
+                    <div className="flex flex-wrap gap-1 pt-3">
+                      {TRADER_TYPES.map((t, i) => {
+                        const active = traderTypeFilterSet.has(t);
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => toggleTraderType(t)}
+                            tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                              showTraders &&
+                                traderCount > 0 &&
+                                "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                              "transition-colors duration-150",
+                              active ? "bg-foreground text-background" : "bg-background",
+                            )}
+                            style={{
+                              borderColor: TRADER_TYPE_COLORS[t],
+                              animationDelay: `${i * 35}ms`,
+                              animationDuration: "260ms",
+                            }}
+                            aria-pressed={active}
+                          >
+                            <span
+                              aria-hidden
+                              className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                              style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                            />
+                            {TRADER_TYPE_LABELS[t]}
+                          </button>
+                        );
+                      })}
+                      {traderTypeFilterSet.size > 0 && (
+                        <span
+                          className={cn(
+                            "text-xs text-muted-foreground ml-1 self-center",
+                            showTraders && traderCount > 0 && "animate-in fade-in-0 fill-mode-both",
+                          )}
+                          style={{
+                            animationDelay: `${TRADER_TYPES.length * 35}ms`,
+                            animationDuration: "260ms",
+                          }}
                         >
-                          <span
-                            aria-hidden
-                            className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                            style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
-                          />
-                          {TRADER_TYPE_LABELS[t]}
-                        </button>
-                      );
-                    })}
-                    {traderTypeFilterSet.size > 0 && (
-                      <span className="text-xs text-muted-foreground ml-1 self-center">
-                        Showing {traderTypeFilterSet.size} of {TRADER_TYPES.length} types
-                      </span>
-                    )}
+                          Showing {traderTypeFilterSet.size} of {TRADER_TYPES.length} types
+                        </span>
+                      )}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
