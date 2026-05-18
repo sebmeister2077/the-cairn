@@ -48,7 +48,9 @@ import {
   claimInvite,
   getDefaultPublicInvite,
   getMyAccountSafe,
+  getAdminPendingCounts,
   type AccountMeResponse,
+  type AdminPendingCounts,
   type DefaultInviteRecord,
 } from "@/lib/api";
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
@@ -169,6 +171,33 @@ function shouldShowChip(t: SubTab) {
   }
 }
 
+/**
+ * Map a nav-item path to the number of pending admin items it represents.
+ * Top-level category paths aggregate the counts of every sub-tab beneath
+ * them so the badge is visible even when the admin hasn't opened the tab.
+ */
+function getPendingCountFor(value: string, counts: AdminPendingCounts | undefined): number {
+  if (!counts) return 0;
+  switch (value) {
+    case "/multiplayer/contribute-map":
+      return counts.map_contributions;
+    case "/manage/waypoints-backup":
+      return counts.landmark_renames;
+    case "/manage/tl-screenshots":
+      return counts.translocator_screenshots;
+    case "/multiplayer":
+      return counts.map_contributions;
+    case "/manage":
+      return counts.landmark_renames + counts.translocator_screenshots;
+    default:
+      return 0;
+  }
+}
+
+function formatPendingCount(n: number): string {
+  return n > 9 ? "9+" : String(n);
+}
+
 export function AppContent() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
@@ -221,6 +250,19 @@ export function AppContent() {
     refetchOnWindowFocus: true,
   });
   const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
+  // Fetch pending admin review counts once when an admin enters the site so
+  // the relevant nav items can show a badge ("you have things to review").
+  // No polling — staleTime: Infinity means we only refetch on a hard reload
+  // or when the API key changes (different admin → different cache key).
+  const { data: pendingCounts } = useQuery<AdminPendingCounts>({
+    queryKey: ["admin-pending-counts", apiKey ?? ""],
+    queryFn: getAdminPendingCounts,
+    enabled: !!isAdmin && !!apiKey,
+    retry: false,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  });
   const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
@@ -450,33 +492,63 @@ export function AppContent() {
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">
           <Tabs value={activeCategory}>
             <TabsList>
-              {categories.map((c) => (
-                <NavLink key={c.value} to={c.value} end={false}>
-                  {() => <TabsTrigger value={c.value}>{c.label}</TabsTrigger>}
-                </NavLink>
-              ))}
-            </TabsList>
-          </Tabs>
-          {activeSubs.length > 0 && (
-            <Tabs value={activeSub}>
-              <TabsList variant="line">
-                {activeSubs.map((t) => (
-                  <NavLink key={t.value} to={t.value} end>
+              {categories.map((c) => {
+                const pending = getPendingCountFor(c.value, pendingCounts);
+                return (
+                  <NavLink key={c.value} to={c.value} end={false}>
                     {() => (
-                      <TabsTrigger value={t.value} className="relative">
-                        {t.label}
-                        {shouldShowChip(t) && (
+                      <TabsTrigger value={c.value} className="relative">
+                        {c.label}
+                        {pending > 0 && (
                           <Badge
                             variant="default"
-                            className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                            aria-label={`${pending} pending review${pending === 1 ? "" : "s"}`}
+                            title={`${pending} item${pending === 1 ? "" : "s"} awaiting your review`}
+                            className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
                           >
-                            {t.chip}
+                            {formatPendingCount(pending)}
                           </Badge>
                         )}
                       </TabsTrigger>
                     )}
                   </NavLink>
-                ))}
+                );
+              })}
+            </TabsList>
+          </Tabs>
+          {activeSubs.length > 0 && (
+            <Tabs value={activeSub}>
+              <TabsList variant="line">
+                {activeSubs.map((t) => {
+                  const pending = getPendingCountFor(t.value, pendingCounts);
+                  return (
+                    <NavLink key={t.value} to={t.value} end>
+                      {() => (
+                        <TabsTrigger value={t.value} className="relative">
+                          {t.label}
+                          {shouldShowChip(t) && (
+                            <Badge
+                              variant="default"
+                              className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                            >
+                              {t.chip}
+                            </Badge>
+                          )}
+                          {pending > 0 && (
+                            <Badge
+                              variant="default"
+                              aria-label={`${pending} pending review${pending === 1 ? "" : "s"}`}
+                              title={`${pending} item${pending === 1 ? "" : "s"} awaiting your review`}
+                              className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                            >
+                              {formatPendingCount(pending)}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                      )}
+                    </NavLink>
+                  );
+                })}
               </TabsList>
             </Tabs>
           )}

@@ -57,6 +57,27 @@ def _serialise(record: dict) -> dict:
     return out
 
 
+@router.get("/admin/pending-counts")
+async def pending_counts(_: str = Depends(require_admin)) -> dict:
+    """Aggregated counts of admin queues that need review.
+
+    Used by the frontend to badge nav items on entry so the admin sees at
+    a glance whether anything is waiting. The endpoint stays cheap by
+    issuing one ``COUNT(*)`` per queue rather than fetching rows.
+    """
+    if not db.is_available():
+        return {
+            "map_contributions": 0,
+            "landmark_renames": 0,
+            "translocator_screenshots": 0,
+        }
+    return {
+        "map_contributions": db.count_pending_contributions(),
+        "landmark_renames": db.count_landmark_edit_requests("pending"),
+        "translocator_screenshots": db.count_tl_screenshot_requests("pending"),
+    }
+
+
 @router.get("/admin/keys")
 async def list_keys(
     _: str = Depends(require_admin),

@@ -473,6 +473,20 @@ export async function withdrawTLScreenshotRequest(
 
 // --- Admin endpoints --------------------------------------------------------
 
+export interface AdminPendingCounts {
+    map_contributions: number;
+    landmark_renames: number;
+    translocator_screenshots: number;
+}
+
+/** Aggregated counts of admin review queues. Used to badge nav items on entry. */
+export async function getAdminPendingCounts(): Promise<AdminPendingCounts> {
+    const res = await fetch(`${API_BASE}/admin/pending-counts`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 export async function listAdminTLScreenshotRequests(params: {
     status?: string;
     limit?: number;

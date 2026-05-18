@@ -801,6 +801,15 @@ def get_user_last_approval(api_key: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
+def count_pending_contributions() -> int:
+    """Cheap count of contributions awaiting admin review."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM contributions WHERE status = 'pending'")
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+
+
 def list_pending_contributions(requesting_key: str = "") -> List[dict]:
     requesting_key_id = _resolve_key_id(requesting_key) if requesting_key else None
     with get_conn() as conn:
@@ -3108,6 +3117,18 @@ def get_landmark_edit_request(request_id: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
+def count_landmark_edit_requests(status: str = "pending") -> int:
+    """Cheap count of landmark rename requests in a given status."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM landmark_edit_requests WHERE status = %s",
+                (status,),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
+
+
 def list_landmark_edit_requests(
     *,
     status: Optional[str] = None,
@@ -3594,6 +3615,18 @@ def get_tl_screenshot_request(request_id: str) -> Optional[dict]:
             )
             row = cur.fetchone()
             return dict(row) if row else None
+
+
+def count_tl_screenshot_requests(status: str = "pending") -> int:
+    """Cheap count of TL screenshot review requests in a given status."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM translocator_screenshot_requests WHERE status = %s",
+                (status,),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
 
 
 def list_tl_screenshot_requests_paginated(
