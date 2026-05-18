@@ -215,10 +215,11 @@ function buildWaypointCommand(
   source: TLScreenshotCoords | null,
   other: TLScreenshotCoords | null,
 ): string | null {
+  const seaLevelY = 110;
   if (!source || !other) return null;
-  if (source.x == null || source.y == null || source.z == null) return null;
+  if (source.x == null || source.z == null) return null;
   if (other.x == null || other.z == null) return null;
-  return `/waypoint addati spiral ${source.x} ${source.y} ${source.z} false purple TL to ${other.x}, ${other.z}`;
+  return `/waypoint addati spiral ${source.x} ${source.y ?? seaLevelY} ${source.z} false purple TL to ${other.x}, ${other.z}`;
 }
 
 function StatusPill({ status }: { status: TLScreenshotRequest["status"] }) {
