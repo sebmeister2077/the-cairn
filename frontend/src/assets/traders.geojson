@@ -1,0 +1,1475 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "597dcbcb-2bdc-4790-897b-407f4ee101a5",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          413,
+          -5681,
+          112
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "a1233f80-2a51-4564-b194-64a746a35ad0",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2341,
+          -12597,
+          123
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "beedbe26-bacd-492d-abe2-4dfea0fecb13",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2695,
+          -12013,
+          113
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "dbe544b1-25b7-4a74-b9e0-fbc4cb649275",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1255,
+          -12108,
+          120
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "6e8d213b-e6c1-405e-b21e-7e91a6efd30b",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3110,
+          -12590,
+          114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "03fac55d-95cc-41de-b2ce-4e482f53d394",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10330,
+          -14431,
+          113
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "58ffd10d-c90f-4f65-82f6-3080c4cad19f",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          11099,
+          -14455,
+          122
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4545c620-27da-4ead-ac6a-252fe9d2e6c2",
+        "label": "Luxuries",
+        "trader_type": "luxuries",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10728,
+          -15125,
+          115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "919eef06-381c-4215-a0b9-3eecf55b4ef7",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9426,
+          -14878,
+          127
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c0569219-fa3b-4b25-8b23-34b994c6aa1b",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3,
+          -8206,
+          124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cc793174-ae80-4dcc-bd74-a45f47b010ea",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          239,
+          -5078,
+          117
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "03cc8288-2689-44b1-b9c3-e5acc5569da7",
+        "label": "Luxuries",
+        "trader_type": "luxuries",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          185,
+          -4297,
+          119
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "aa1737ce-c458-4af9-8929-487a72ff8fed",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1897,
+          -12121,
+          114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7446a274-0851-4f42-a735-e7d03bfea3fa",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1741,
+          -11359,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "d9591973-1397-4e4f-806f-b9d297cad0aa",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10529,
+          -18353,
+          123
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0d67d827-864f-4f2c-9a83-6cee67b7d55a",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -25,
+          -18762,
+          118
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "af37702c-f9e7-4802-bd65-59af072b9124",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2609,
+          -233,
+          118
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0a13dd5b-0cc4-44ff-97a2-43e90c5578a4",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5590,
+          -19333,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "29d4a14c-c7d8-485b-a8b1-2a63eaa87d87",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2579,
+          -23406,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "60165636-ec3c-4032-bde6-39179653044a",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2574,
+          -24111,
+          119
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "dac781e9-2ab1-4a0d-9f47-c77dae6cf935",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -354,
+          -4649,
+          115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4c4207d2-38de-4e4e-9a03-eacd1187b765",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4232,
+          -12945,
+          131
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e5d4d059-0c52-4df6-83d6-48b0a7c9cab5",
+        "label": "Artisan",
+        "trader_type": "artisan",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5,
+          -1269,
+          127
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9b7edd32-f36d-4ac0-8eb0-6e399601ec36",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          68,
+          19,
+          126
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "66bcb1dd-c50b-4c27-89fe-882135f3fbbf",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          391,
+          -28608,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "404313fa-d0bc-4053-866f-4517236c0192",
+        "label": "Artisan",
+        "trader_type": "artisan",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8034,
+          -32385,
+          121
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "d64d8064-edbf-4e86-a911-35744d09f514",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7419,
+          -19133,
+          122
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "26d45590-c255-4754-a481-151afb35a220",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1828,
+          -36419,
+          131
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e89151bf-e0c3-4668-8f43-79f4f7d3522d",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -302,
+          -16978,
+          118
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "fd58f389-2395-4994-ae92-d6ad5cdf0280",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -20009,
+          -43859,
+          120
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "64922a91-8fe3-4e5f-98e4-30f046a18f5b",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -21072,
+          -44669,
+          120
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cf4f29f2-5c91-4245-82db-d7cfed8c2d34",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -21334,
+          -44134,
+          114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0b822959-4986-44d2-80f3-488d7016ea1c",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -20703,
+          -43740,
+          119
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "ee3fae29-69c2-4ccf-8961-0a1034090f15",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -21471,
+          -42760,
+          117
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "874e23a2-b33c-4854-883b-d786b0579f6a",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -20114,
+          -43064,
+          113
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e3d81989-0f2c-4953-981c-0ab8f3f5e581",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          244,
+          -753,
+          121
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c0ace284-ff80-471b-b391-5f76d79d817f",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1979,
+          -13612,
+          120
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "d3ed198d-8759-4883-b506-7098c3153e0b",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6101,
+          -19961,
+          113
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "63d81fb3-3bf4-40be-9cce-59dbccd71f60",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          6177,
+          -20109,
+          121
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "028445e0-9b98-4ed5-9dc3-b804b9ec4e03",
+        "label": "Luxuries",
+        "trader_type": "luxuries",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          3222,
+          -13207,
+          124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "f8a8a7fc-adca-4b71-a583-6da4ca8d6775",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2688,
+          -13677,
+          117
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7b66be39-de53-4fb6-9a4a-13ec508942ba",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9807,
+          -26298,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "272e8437-f911-4888-b666-e62c6c5d6739",
+        "label": "Luxuries",
+        "trader_type": "luxuries",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8031,
+          -34589,
+          115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c9b75976-723b-40bd-9470-f43dc1806d92",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:25:50.234263+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -899,
+          -65204,
+          114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "94ee9bf0-c57d-4c63-a76a-0e04f7764d5d",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "manual",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:27:01.823957+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          49000,
+          -23369
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c96e92be-8606-4352-bd7c-ac839464d525",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "manual",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T20:27:01.823957+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51955,
+          -30443
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "d88f53c7-941f-4a86-9184-b6e370dbe44f",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7670,
+          -16830,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0bc86b81-d087-434a-a4b7-0b20627a0e20",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7870,
+          -19569,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "85f1480f-e399-4877-855c-aa8b62fcb1b6",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -9305,
+          -12457,
+          114
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e4044a65-fd0c-427d-b379-b5863c182634",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7314,
+          -18469,
+          124
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "0de162e4-61da-41c4-a65f-194e3e58516b",
+        "label": "Building Materials",
+        "trader_type": "building_materials",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -12075,
+          -17193,
+          117
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "edee0592-c390-4019-8339-894f2c8af3fe",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -8180,
+          -19012,
+          135
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e14eb8ab-6dd0-4a8a-b4c4-379eeddaa521",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7851,
+          -17883,
+          1
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "f0468e5c-4dd1-4a9c-a3d0-a694a05b1895",
+        "label": "Commodities",
+        "trader_type": "commodities",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -854,
+          -23827,
+          115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "d77b886c-baa5-4958-bbee-92d0552ebb5d",
+        "label": "Agriculture",
+        "trader_type": "agriculture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3569,
+          -24478,
+          122
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "7a3bcfa6-b2e7-4b5e-afd2-e7500e838054",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3124,
+          -25030,
+          132
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "35da26d2-3482-4657-ae59-d003de92e0b0",
+        "label": "Luxuries",
+        "trader_type": "luxuries",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -1037,
+          -14908,
+          112
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "457550c1-a831-4811-a335-029bebd7fbad",
+        "label": "Furniture",
+        "trader_type": "furniture",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -1613,
+          -16271,
+          110
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "a2622ce3-d0f2-4cb7-8795-1a9f5f671433",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -104,
+          747,
+          119
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "a2823ead-8e16-437b-bb9f-54509d6f3e1a",
+        "label": "Artisan",
+        "trader_type": "artisan",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11,
+          -3586,
+          116
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "8f4a7514-33e9-4661-b8b7-4e402deaa8cf",
+        "label": "Survival Goods",
+        "trader_type": "survival_goods",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2307,
+          -25203,
+          111
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "434daec1-0965-4ca1-b9e7-503d4eb547e0",
+        "label": "Treasure Hunter",
+        "trader_type": "treasure_hunter",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          51,
+          -19417,
+          115
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c45ec946-7cb0-4a4f-afe0-68c4a7897363",
+        "label": "Artisan",
+        "trader_type": "artisan",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -11947,
+          -17856,
+          133
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "c411df61-5810-4d71-b6b3-6da64d95e67c",
+        "label": "Clothing",
+        "trader_type": "clothing",
+        "source": "chatlog",
+        "tag": "user",
+        "origin": "user",
+        "added_by": "Rekvaren",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-18T20:40:24.704537+00:00",
+        "duplicate_flagged": false
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          683,
+          -18643,
+          114
+        ]
+      }
+    }
+  ]
+}

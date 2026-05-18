@@ -126,6 +126,13 @@ interface TraderEditorRowProps {
   onRemove: () => void;
   showCoords?: boolean;
   showLabel?: boolean;
+  /**
+   * If true, render the parsed waypoint label as a read-only preview
+   * instead of an editable input. Used by the chat-log flow, which
+   * always stores the canonical ``TRADER_TYPE_LABELS[trader_type]``
+   * server-side and discards whatever the user typed in-game.
+   */
+  labelReadOnly?: boolean;
 }
 
 function TraderEditorRow({
@@ -134,17 +141,26 @@ function TraderEditorRow({
   onRemove,
   showCoords,
   showLabel = true,
+  labelReadOnly = false,
 }: TraderEditorRowProps) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5">
-      {showLabel && (
-        <Input
-          className="h-8 flex-1 min-w-48"
-          placeholder="Label (e.g. Trader Survival Goods)"
-          value={candidate.label}
-          onChange={(e) => onChange({ ...candidate, label: e.target.value })}
-        />
-      )}
+      {showLabel &&
+        (labelReadOnly ? (
+          <span
+            className="flex-1 min-w-48 truncate text-sm text-muted-foreground"
+            title={candidate.label}
+          >
+            {candidate.label || <em>(no label)</em>}
+          </span>
+        ) : (
+          <Input
+            className="h-8 flex-1 min-w-48"
+            placeholder="Label (e.g. Trader Survival Goods)"
+            value={candidate.label}
+            onChange={(e) => onChange({ ...candidate, label: e.target.value })}
+          />
+        ))}
       {showCoords && (
         <>
           <Input
@@ -208,15 +224,24 @@ function readyForSubmit(candidates: TraderCandidate[]): TraderCandidate[] {
   );
 }
 
-function toApiItems(candidates: TraderCandidate[]): TraderContributionItem[] {
-  return candidates.map((c) => ({
-    x: Math.trunc(c.x),
-    z: Math.trunc(c.z),
-    y: Number.isFinite(c.y) ? Math.trunc(c.y as number) : undefined,
-    label: c.label?.trim() || undefined,
+function toApiItems(
+  candidates: TraderCandidate[],
+  options: { forceCanonicalLabel?: boolean } = {},
+): TraderContributionItem[] {
+  return candidates.map((c) => {
     // safe: readyForSubmit filtered out null types
-    trader_type: c.trader_type as TraderType,
-  }));
+    const traderType = c.trader_type as TraderType;
+    const label = options.forceCanonicalLabel
+      ? TRADER_TYPE_LABELS[traderType]
+      : c.label?.trim() || undefined;
+    return {
+      x: Math.trunc(c.x),
+      z: Math.trunc(c.z),
+      y: Number.isFinite(c.y) ? Math.trunc(c.y as number) : undefined,
+      label,
+      trader_type: traderType,
+    };
+  });
 }
 
 function formatApiError(e: unknown): string {
@@ -300,7 +325,12 @@ function ChatLogTradersFlow() {
     setSubmitResult(null);
     try {
       const result = await contributeTraders({
-        traders: toApiItems(ready),
+        // Chat-log labels come from arbitrary user waypoint titles
+        // (e.g. "Agro", "TREASURE HUNTER", "Optal the treasure hunter"),
+        // so we discard them and let the server store the canonical
+        // ``TRADER_TYPE_LABELS[trader_type]`` instead. The manual flow
+        // keeps the user-typed label.
+        traders: toApiItems(ready, { forceCanonicalLabel: true }),
         source: "chatlog",
         stats: {
           chatlog_parsed_count: parsedCount,
@@ -420,6 +450,7 @@ function ChatLogTradersFlow() {
                 <TraderEditorRow
                   key={c.localId}
                   candidate={c}
+                  labelReadOnly
                   onChange={(next) =>
                     setCandidates((prev) => prev.map((p) => (p.localId === c.localId ? next : p)))
                   }
