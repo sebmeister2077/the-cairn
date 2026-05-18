@@ -137,11 +137,16 @@ async def list_user_traders(
 
     safe_limit = max(1, min(int(limit), 200))
     safe_offset = max(0, int(offset))
+    # Restrict the audit query to ids that still exist in the geojson so
+    # already-deleted / reverted traders don't keep showing up in the
+    # admin list (and so the Delete button doesn't 404 on a stale id).
+    live_ids = list(by_id.keys())
     page, contributors = await asyncio.gather(
         asyncio.to_thread(
             db.list_trader_add_audit_paginated,
             actor_api_key_id=actor_api_key_id,
             trader_type=trader_type,
+            trader_ids=live_ids,
             limit=safe_limit,
             offset=safe_offset,
         ),
@@ -338,22 +343,49 @@ async def delete_user_traders_bulk(
     api_key: str = Depends(require_admin),
 ) -> dict:
     admin_id = _admin_api_key_id(api_key)
+    # The geojson stores ``added_by_user_id`` (account id) while admin
+    # tooling identifies contributors by ``actor_api_key_id`` (the api key
+    # that submitted the audit row). Those are different identifiers, so
+    # we resolve the trader ids via the audit table first and then drop
+    # the matching geojson features by id.
+    add_rows = await asyncio.to_thread(
+        db.list_trader_add_audit_paginated,
+        actor_api_key_id=actor_api_key_id,
+        limit=200,
+        offset=0,
+    )
+    ids_to_drop: set = set()
+    for r in add_rows.get("items") or []:
+        tid = r.get("trader_id")
+        if tid:
+            ids_to_drop.add(tid)
+    # Walk additional pages if the user has more than the page size.
+    total = int(add_rows.get("total") or 0)
+    fetched = len(add_rows.get("items") or [])
+    while fetched < total:
+        page = await asyncio.to_thread(
+            db.list_trader_add_audit_paginated,
+            actor_api_key_id=actor_api_key_id,
+            limit=200,
+            offset=fetched,
+        )
+        items = page.get("items") or []
+        if not items:
+            break
+        for r in items:
+            tid = r.get("trader_id")
+            if tid:
+                ids_to_drop.add(tid)
+        fetched += len(items)
+
+    if not ids_to_drop:
+        return {"deleted": 0, "trader_ids": []}
+
     async with contribute_traders_routes._traders_lock:
         data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
-        ids_to_drop: set = set()
-        for feat in data.get("features") or []:
-            if not isinstance(feat, dict):
-                continue
-            props = feat.get("properties") or {}
-            if props.get("origin") != "user":
-                continue
-            owner = props.get("added_by_user_id")
-            if owner and str(owner) == str(actor_api_key_id):
-                ids_to_drop.add(props.get("id"))
-        ids_to_drop.discard(None)
-        if not ids_to_drop:
-            return {"deleted": 0, "trader_ids": []}
         removed = _drop_features_by_ids(data, ids_to_drop)
+        if not removed:
+            return {"deleted": 0, "trader_ids": []}
         await asyncio.to_thread(contribute_traders_routes._save_traders_file, data)
         for feat in removed:
             tid = (feat.get("properties") or {}).get("id")

@@ -2539,6 +2539,8 @@ export interface TraderContributionPayload {
     stats?: {
         chatlog_parsed_count?: number;
         inferred_confidence_avg?: number;
+        existing_match_count?: number;
+        existing_match_pct?: number;
     };
     client_batch_id?: string;
 }

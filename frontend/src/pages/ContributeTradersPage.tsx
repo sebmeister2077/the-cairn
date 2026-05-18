@@ -43,9 +43,48 @@ import {
   type TraderCandidate,
   type TraderType,
 } from "@/lib/trader-types";
-import { TRADERS_QUERY_KEY } from "@/hooks/useOverlayData";
+import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
 
 const MY_TRADERS_QUERY_KEY = ["my-trader-contributions"] as const;
+
+/**
+ * Radius (in blocks) used to suppress chat-log candidates that match a
+ * trader already present in the public overlay. Mirrors
+ * ``_DUPLICATE_RADIUS`` in ``backend/app/routes/contribute_traders.py``
+ * so the client filters out the exact same submissions the server would
+ * mark as duplicates — saves the user from scrolling through a wall of
+ * already-known traders every time they re-upload their chat log.
+ */
+const KNOWN_TRADER_DEDUPE_RADIUS = 60;
+
+function filterOutKnownTraders(
+  candidates: TraderCandidate[],
+  existing: readonly TraderMarker[] | undefined,
+): { kept: TraderCandidate[]; removed: number } {
+  if (!existing || existing.length === 0) {
+    return { kept: candidates, removed: 0 };
+  }
+  const r2 = KNOWN_TRADER_DEDUPE_RADIUS * KNOWN_TRADER_DEDUPE_RADIUS;
+  const kept: TraderCandidate[] = [];
+  let removed = 0;
+  for (const c of candidates) {
+    let isKnown = false;
+    for (const t of existing) {
+      const dx = c.x - t.x;
+      const dz = c.z - t.z;
+      if (dx * dx + dz * dz <= r2) {
+        isKnown = true;
+        break;
+      }
+    }
+    if (isKnown) {
+      removed += 1;
+    } else {
+      kept.push(c);
+    }
+  }
+  return { kept, removed };
+}
 
 export function ContributeTradersPage() {
   return (
@@ -180,9 +219,12 @@ function formatApiError(e: unknown): string {
 
 function ChatLogTradersFlow() {
   const queryClient = useQueryClient();
+  const tradersQuery = useTradersOverlay();
+  const knownTraders = tradersQuery.data?.data;
   const [file, setFile] = useState<File | null>(null);
   const [candidates, setCandidates] = useState<TraderCandidate[]>([]);
   const [parsedCount, setParsedCount] = useState(0);
+  const [knownFilteredCount, setKnownFilteredCount] = useState(0);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -200,13 +242,21 @@ function ChatLogTradersFlow() {
     try {
       const text = await file.text();
       const out = extractTradersFromChatLog(text);
-      setCandidates(out.candidates);
+      const { kept, removed } = filterOutKnownTraders(out.candidates, knownTraders);
+      setCandidates(kept);
       setParsedCount(out.parsedWaypointCount);
+      setKnownFilteredCount(removed);
       if (out.candidates.length === 0) {
         setParseError(
           "No trader waypoints found in this file. " +
             'Make sure you typed "/waypoint list details" in-game first and ' +
             'that some waypoints use the "trader" icon.',
+        );
+      } else if (kept.length === 0) {
+        setParseError(
+          `All ${removed} trader waypoint${removed === 1 ? "" : "s"} in this chat log ` +
+            "already match a trader on the map (within " +
+            `${KNOWN_TRADER_DEDUPE_RADIUS} blocks). Nothing new to submit.`,
         );
       }
     } catch (e) {
@@ -214,9 +264,20 @@ function ChatLogTradersFlow() {
     } finally {
       setParsing(false);
     }
-  }, [file]);
+  }, [file, knownTraders]);
 
   const ready = useMemo(() => readyForSubmit(candidates), [candidates]);
+
+  // Match-percentage stat (mirrors the TL chat-log flow's
+  // ``existing_match_pct``): denom = filtered-out known traders + the
+  // submittable batch size, numerator = filtered-out known traders. So a
+  // chat log that's 100% already-known traders scores 100; a fully fresh
+  // batch scores 0. Rounded to 1 decimal.
+  const existingMatchPct = useMemo(() => {
+    const denom = knownFilteredCount + ready.length;
+    if (denom === 0) return 0;
+    return Math.round((knownFilteredCount / denom) * 1000) / 10;
+  }, [knownFilteredCount, ready.length]);
 
   const handleSubmit = useCallback(async () => {
     if (ready.length === 0) return;
@@ -230,6 +291,8 @@ function ChatLogTradersFlow() {
         stats: {
           chatlog_parsed_count: parsedCount,
           inferred_confidence_avg: averageInferredConfidence(candidates),
+          existing_match_count: knownFilteredCount,
+          existing_match_pct: existingMatchPct,
         },
       });
       setSubmitResult({
@@ -238,6 +301,7 @@ function ChatLogTradersFlow() {
       });
       setCandidates([]);
       setFile(null);
+      setKnownFilteredCount(0);
       queryClient.invalidateQueries({ queryKey: [...TRADERS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [...MY_TRADERS_QUERY_KEY] });
     } catch (e) {
@@ -245,7 +309,7 @@ function ChatLogTradersFlow() {
     } finally {
       setSubmitting(false);
     }
-  }, [ready, parsedCount, candidates, queryClient]);
+  }, [ready, parsedCount, candidates, knownFilteredCount, existingMatchPct, queryClient]);
 
   return (
     <Card>
@@ -277,7 +341,15 @@ function ChatLogTradersFlow() {
           {parsedCount > 0 && (
             <span className="text-xs text-muted-foreground">
               {parsedCount.toLocaleString()} waypoints scanned ·{" "}
-              {candidates.length.toLocaleString()} traders found
+              {candidates.length.toLocaleString()} new trader
+              {candidates.length === 1 ? "" : "s"} found
+              {knownFilteredCount > 0 && (
+                <>
+                  {" "}
+                  · {knownFilteredCount.toLocaleString()} already on the map (filtered) ·{" "}
+                  <b>{existingMatchPct.toFixed(1)}% match</b> with existing traders
+                </>
+              )}
             </span>
           )}
         </div>

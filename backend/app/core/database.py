@@ -2921,6 +2921,7 @@ def list_trader_add_audit_paginated(
     *,
     actor_api_key_id: Optional[str] = None,
     trader_type: Optional[str] = None,
+    trader_ids: Optional[List[str]] = None,
     limit: int = 10,
     offset: int = 0,
 ) -> dict:
@@ -2932,6 +2933,14 @@ def list_trader_add_audit_paginated(
     if trader_type:
         where.append("trader_type = %s")
         params.append(trader_type)
+    if trader_ids is not None:
+        # Restrict to the explicit id set. Empty list means "no matches"
+        # — short-circuit before hitting the DB so we don't ship a bogus
+        # ``ANY('{}')`` clause.
+        if not trader_ids:
+            return {"items": [], "total": 0}
+        where.append("trader_id = ANY(%s)")
+        params.append(list(trader_ids))
     where_sql = " WHERE " + " AND ".join(where)
     limit = max(1, min(int(limit), 200))
     offset = max(0, int(offset))

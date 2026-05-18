@@ -243,6 +243,13 @@ class TraderContributionStats(BaseModel):
 
     chatlog_parsed_count: int = Field(0, ge=0)
     inferred_confidence_avg: float = Field(0.0, ge=0.0, le=1.0)
+    # Mirrors the TL contribution flow: how many parsed chat-log trader
+    # waypoints already matched a trader on the live map (within the
+    # client-side dedupe radius), and the resulting "% of this batch that
+    # was already known" percentage. Useful for reviewers to gauge whether
+    # a chat-log upload is mostly noise vs. new coverage.
+    existing_match_count: int = Field(0, ge=0)
+    existing_match_pct: float = Field(0.0, ge=0.0, le=100.0)
 
 
 class TraderContributionBody(BaseModel):
@@ -385,6 +392,8 @@ async def contribute_traders(
         "batch_id": batch_id,
         "chatlog_parsed_count": int(payload.stats.chatlog_parsed_count),
         "inferred_confidence_avg": float(payload.stats.inferred_confidence_avg),
+        "existing_match_count": int(payload.stats.existing_match_count),
+        "existing_match_pct": float(payload.stats.existing_match_pct),
     }
     for feat, is_dup in accepted:
         await asyncio.to_thread(

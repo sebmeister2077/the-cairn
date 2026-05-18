@@ -100,7 +100,7 @@ function LiveTradersCard() {
     setPage(0);
   }, [contributorId, typeFilter]);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: [...ADMIN_TRADERS_KEY, page, contributorId, typeFilter],
     queryFn: () =>
       adminListTraders({
@@ -143,6 +143,11 @@ function LiveTradersCard() {
           <span className="text-xs font-normal text-muted-foreground">
             ({total.toLocaleString()} total)
           </span>
+          {isFetching && !isLoading && (
+            <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> refreshing
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -180,13 +185,18 @@ function LiveTradersCard() {
             <Button
               variant="outline"
               size="sm"
+              disabled={bulkDeleteMut.isPending}
               onClick={() => {
                 const c = contributors.find((x) => x.id === contributorId);
                 if (c) setBulkDeleteUser({ id: c.id, label: c.name });
               }}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete all by this user
+              {bulkDeleteMut.isPending ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4 mr-1" />
+              )}
+              {bulkDeleteMut.isPending ? "Deleting…" : "Delete all by this user"}
             </Button>
           )}
         </div>
@@ -224,9 +234,14 @@ function LiveTradersCard() {
                   variant="ghost"
                   size="sm"
                   aria-label="Delete trader"
+                  disabled={singleDeleteMut.isPending && singleDeleteMut.variables === t.trader_id}
                   onClick={() => setSingleDeleteId(t.trader_id)}
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {singleDeleteMut.isPending && singleDeleteMut.variables === t.trader_id ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
                 </Button>
               </li>
             ))}
