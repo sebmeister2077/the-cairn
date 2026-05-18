@@ -91,13 +91,33 @@ export default function App() {
         hydrateOptions: queryClientConfig,
         maxAge: TWO_WEEKS,
         dehydrateOptions: {
-          shouldDehydrateQuery: (query) =>
-            query.state.status === "success" &&
-            (query.meta as { persist?: boolean } | undefined)?.persist === true &&
+          shouldDehydrateQuery: (query) => {
+            if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;
             // Gate persistence on having an API key in storage so that
             // queries fetched while logged in don't outlive logout /
             // account deletion / a 401 wipe.
-            !!getStoredApiKey(),
+            if (!getStoredApiKey()) return false;
+            // Persist any query that currently has usable data — even if
+            // the latest refetch errored. TanStack Query keeps `state.data`
+            // populated on refetch failure but flips `state.status` to
+            // "error", so gating on status === "success" would drop the
+            // entry from the next snapshot and the persister would wipe it
+            // from storage. The whole point of persisting overlay /
+            // tileSet queries is to survive exactly this kind of transient
+            // backend outage, so we deliberately keep the previous good
+            // payload around for the next page load to hydrate from.
+            // Null/undefined success payloads are still skipped so they
+            // can't overwrite a previously-good entry.
+            const data = query.state.data as unknown;
+            if (data == null) return false;
+            // CachedOverlay wraps payloads in `{ etag, expiresAt, data }`,
+            // so look one level in for that shape too.
+            if (typeof data === "object" && data !== null && "data" in data) {
+              const inner = (data as { data?: unknown }).data;
+              if (inner == null) return false;
+            }
+            return true;
+          },
         },
       }}
     >
