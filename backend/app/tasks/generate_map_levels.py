@@ -34,8 +34,10 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import tempfile
 import threading
+import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Dict, List, Optional, Tuple
 
@@ -137,6 +139,43 @@ def _download_combined_db() -> str:
     """
     from ..routes.contribute_r2 import get_combined_db_cached
     return get_combined_db_cached()
+
+
+def _snapshot_combined_db() -> str:
+    """Copy the shared cached combined.db to a worker-private path.
+
+    The shared cache returned by :func:`get_combined_db_cached` is
+    *atomically replaced in place* whenever another caller (e.g. the
+    approval merge flow uploading a new combined.db) observes an ETag
+    change. If the regen worker held only the shared path string for the
+    duration of a multi-level pass, levels rendered after such a swap
+    would silently use a different DB — producing per-level
+    ``metadata.json`` files whose ``start_x``/``width_blocks`` disagree
+    with each other and with the global stats, which manifests on the
+    frontend as overlay waypoints appearing shifted on some levels.
+
+    Taking a private copy at the start of each pass pins the DB snapshot
+    for the whole pass so every level renders consistently. The copy is
+    deleted at the end of the pass.
+    """
+    src = _download_combined_db()
+    # Place the snapshot next to the shared cache so it lives on the same
+    # (large) persistent disk the cache uses, not on /tmp which on Render
+    # is small.
+    snap_dir = os.path.dirname(src) or tempfile.gettempdir()
+    snap_path = os.path.join(
+        snap_dir, f"combined.regen-snapshot.{os.getpid()}.{int(time.time())}.db"
+    )
+    t0 = time.time()
+    shutil.copyfile(src, snap_path)
+    logger.info(
+        "Combined DB snapshot pinned for regen pass: %s -> %s (%.1f MiB in %.2fs)",
+        src,
+        snap_path,
+        os.path.getsize(snap_path) / (1024 * 1024),
+        time.time() - t0,
+    )
+    return snap_path
 
 
 def _encode_and_upload_chunk(
@@ -570,7 +609,7 @@ def _worker_loop():
 
             db_path: Optional[str] = None
             try:
-                db_path = _download_combined_db()
+                db_path = _snapshot_combined_db()
                 stopped = False
                 for lvl in sorted(plan.keys()):
                     if stopped:
@@ -612,9 +651,18 @@ def _worker_loop():
                         tracker.mark_failed(lvl, str(exc))
                     except Exception:
                         pass
-            # Note: ``db_path`` is the shared cached combined.db; do NOT
-            # delete it here. The cache is invalidated when something
-            # uploads a new combined.db (approval merge, admin restore).
+            finally:
+                # ``db_path`` is a worker-private snapshot of the shared
+                # combined.db cache (see :func:`_snapshot_combined_db`).
+                # Always delete it after the pass so old snapshots don't
+                # accumulate on the persistent disk.
+                if db_path and os.path.exists(db_path):
+                    try:
+                        os.unlink(db_path)
+                    except OSError:
+                        logger.exception(
+                            "Failed to delete regen DB snapshot %s", db_path
+                        )
     finally:
         # Defensive: never leave _active_thread pointing at a finished thread.
         with _job_lock:
