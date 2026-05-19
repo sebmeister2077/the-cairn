@@ -1,0 +1,14 @@
+2026-05-19 18:58:16 [INFO] Regen file logger attached: C:\Users\Sebas\source\repos\extract-VS-waypoints\backend\logs\regen.log
+2026-05-19 18:58:41 [INFO] Upload dedup cache armed: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db.upload.db (4096 entries known)
+2026-05-19 18:58:41 [INFO] Canonical combined.db mtime captured: 1779197988.951 (C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db)
+2026-05-19 18:58:51 [INFO] Combined DB snapshot pinned for regen pass: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db -> C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.regen-snapshot.27752.1779206321.db (10098.5 MiB in 10.22s)
+2026-05-19 18:58:52 [INFO] Sidecar RGBA cache linked for regen snapshot: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.regen-snapshot.27752.1779206321.db.cache.db (598.8 MiB)
+2026-05-19 18:59:13 [INFO] Level 5: full regeneration of all 4096 chunks
+2026-05-19 18:59:14 [INFO] Level 5: parallel regen path enabled (workers=8, row-stripe scan)
+2026-05-19 19:25:42 [INFO] Level 5 complete: 1161322179 bytes across 4096 chunks
+2026-05-19 19:29:23 [INFO] Upload dedup cache armed: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db.upload.db (4096 entries known)
+2026-05-19 19:29:23 [INFO] Canonical combined.db mtime captured: 1779197988.951 (C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db)
+2026-05-19 19:29:34 [INFO] Combined DB snapshot pinned for regen pass: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.cache.db -> C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.regen-snapshot.27752.1779208163.db (10098.5 MiB in 10.77s)
+2026-05-19 19:29:34 [INFO] Sidecar RGBA cache linked for regen snapshot: C:\Users\Sebas\AppData\Local\Temp\vs-waypoints-dev\combined.regen-snapshot.27752.1779208163.db.cache.db (598.8 MiB)
+2026-05-19 19:29:55 [INFO] Level 5: SKIPPED entire level (combined.db mtime unchanged since last successful regen; reusing 1161322179 bytes across 4096 chunks)
+2026-05-19 19:31:01 [INFO] Regen file logger attached: C:\Users\Sebas\source\repos\extract-VS-waypoints\backend\logs\regen.log

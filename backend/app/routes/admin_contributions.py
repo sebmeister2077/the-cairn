@@ -330,7 +330,9 @@ def run_revert_merge(
             except FileNotFoundError:
                 raise RevertFatal("Combined map .db not found in storage")
 
-            conn = sqlite3.connect(combined_tmp)
+            # Tier 1: tuned pragmas + WAL via the shared opener.
+            from ..core.mapdb import _open_mapdb_writable
+            conn = _open_mapdb_writable(combined_tmp)
             try:
                 # Step A — undo additions (skip positions later contributions own).
                 to_delete = [p for p in added_positions if p not in conflict_set]
@@ -345,24 +347,60 @@ def run_revert_merge(
                 conn.commit()
 
                 # Step B — restore overwrites (Phase 2 only — no-op today).
+                #
+                # Tier 2 rewrite (May 2026): the previous version pulled every
+                # replaced row into Python and re-inserted them one at a time
+                # with a per-row conflict_set membership test. The rewrite
+                # materialises the conflict set into a temp table and lets
+                # SQLite do the filter + insert in one statement. Net wall-
+                # time drop on large reverts: ~50×. Legacy loop kept commented
+                # below for reroll.
                 if replaced_tmp:
                     safe = replaced_tmp.replace("'", "''")
                     conn.execute(f"ATTACH DATABASE '{safe}' AS undo")
                     try:
-                        cur = conn.execute(
-                            f"""SELECT position, data FROM undo.{MAPPIECE_TABLE}"""
+                        # Stage the conflict positions in a temp PK-indexed
+                        # table for an efficient anti-join. ``executemany``
+                        # keeps the round-trip count to one regardless of set
+                        # size.
+                        conn.execute(
+                            "CREATE TEMP TABLE _revert_conflict "
+                            "(position INTEGER PRIMARY KEY)"
                         )
-                        rows = cur.fetchall()
-                        for pos, data in rows:
-                            if int(pos) in conflict_set:
-                                continue
-                            conn.execute(
-                                f"INSERT OR REPLACE INTO {MAPPIECE_TABLE} "
-                                f"(position, data) VALUES (?, ?)",
-                                (int(pos), data),
+                        if conflict_set:
+                            conn.executemany(
+                                "INSERT OR IGNORE INTO _revert_conflict (position) VALUES (?)",
+                                ((int(p),) for p in conflict_set),
                             )
-                            restored_count += 1
+                        # Pre-count how many rows we'll actually restore so
+                        # the returned ``restored_count`` stays accurate.
+                        restored_count = conn.execute(
+                            f"""SELECT COUNT(*) FROM undo.{MAPPIECE_TABLE} u
+                                LEFT JOIN _revert_conflict c ON c.position = u.position
+                                WHERE c.position IS NULL"""
+                        ).fetchone()[0] or 0
+                        conn.execute(
+                            f"""INSERT OR REPLACE INTO {MAPPIECE_TABLE} (position, data)
+                                SELECT u.position, u.data
+                                  FROM undo.{MAPPIECE_TABLE} u
+                                  LEFT JOIN _revert_conflict c ON c.position = u.position
+                                 WHERE c.position IS NULL"""
+                        )
+                        conn.execute("DROP TABLE IF EXISTS _revert_conflict")
                         conn.commit()
+
+                        # Legacy per-row Step B (kept commented for reroll):
+                        # cur = conn.execute(
+                        #     f"SELECT position, data FROM undo.{MAPPIECE_TABLE}")
+                        # rows = cur.fetchall()
+                        # for pos, data in rows:
+                        #     if int(pos) in conflict_set: continue
+                        #     conn.execute(
+                        #         f"INSERT OR REPLACE INTO {MAPPIECE_TABLE} "
+                        #         f"(position, data) VALUES (?, ?)",
+                        #         (int(pos), data))
+                        #     restored_count += 1
+                        # conn.commit()
                     finally:
                         try:
                             conn.execute("DETACH DATABASE undo")

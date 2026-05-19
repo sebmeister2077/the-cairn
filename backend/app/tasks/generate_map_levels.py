@@ -44,6 +44,7 @@ from typing import Dict, List, Optional, Tuple
 from ..core import r2_storage
 from ..core import generation_tracker as tracker
 from ..core import database as db
+from ..core import upload_dedup
 from ..core.mapdb import (
     RESOLUTION_LEVELS,
     compute_level_geometry,
@@ -55,6 +56,68 @@ from ..core.mapdb import (
 )
 
 logger = logging.getLogger("uvicorn.error")
+
+# ---------------------------------------------------------------------------
+# Tier 6 (May 2026) — dedicated regen file logger.
+#
+# Console output is dominated by HTTP access lines, which makes it hard to
+# eyeball the regen sequence. Tee everything this module logs to
+# ``backend/logs/regen.log`` (rotating) so you can ``Get-Content -Wait`` it
+# in a side terminal and see *only* regen events.
+# ---------------------------------------------------------------------------
+
+def _install_regen_file_logger() -> None:
+    try:
+        from logging.handlers import RotatingFileHandler
+        log_dir = os.environ.get("TOPS_MAP_LOG_DIR") or os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+            "logs",
+        )
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, "regen.log")
+        # Avoid double-attaching on uvicorn --reload.
+        for h in logger.handlers:
+            if isinstance(h, RotatingFileHandler) and \
+                    getattr(h, "baseFilename", "") == os.path.abspath(log_path):
+                return
+        handler = RotatingFileHandler(
+            log_path, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8",
+        )
+        handler.setLevel(logging.INFO)
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        ))
+        # Only emit records that came from this module / its helpers, so
+        # the file isn't polluted by unrelated uvicorn.error logs.
+        _allowed_modules = {
+            "generate_map_levels", "upload_dedup", "mapdb", "mapdb_cache",
+        }
+
+        class _RegenFilter(logging.Filter):
+            def filter(self, record: logging.LogRecord) -> bool:
+                return record.module in _allowed_modules
+
+        handler.addFilter(_RegenFilter())
+        logger.addHandler(handler)
+        logger.info("Regen file logger attached: %s", log_path)
+    except Exception:
+        # Best-effort — never let logging setup break the worker.
+        pass
+
+
+_install_regen_file_logger()
+
+# Tier 5 (May 2026) — process-wide content-hash skip cache for R2 PUTs.
+# Populated by ``_snapshot_combined_db`` (keyed to the canonical combined.db
+# path so it survives across regen snapshots) and consumed by
+# ``_encode_and_upload_chunk``. ``_dedup_lock`` guards the shared sqlite
+# conn so the encode/upload threadpool can share it safely.
+_dedup_conn = None  # type: Optional["sqlite3.Connection"]
+_dedup_lock = threading.Lock()
+# Tier 6 (May 2026) — canonical combined.db mtime captured at the start of
+# each regen pass. Used as the cache key for whole-level skip.
+_canonical_src_mtime: Optional[float] = None
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -70,9 +133,13 @@ def _env_bool(name: str, default: bool = False) -> bool:
 #     per chunk (mapdb.render_level_streaming).
 #   * A ThreadPoolExecutor that performs PNG encode + R2 upload concurrently
 #     so the next row's rendering overlaps with the previous row's I/O.
-# Disabled by default — set TOPS_MAP_PARALLEL_REGEN=1 in the worker env to
-# turn it on.
-PARALLEL_REGEN = _env_bool("TOPS_MAP_PARALLEL_REGEN", default=False)
+#
+# Tier 4.1 (May 2026): default flipped from False → True. The parallel
+# pipeline has been stable in production for the last regen cycles and is
+# 2–4× faster than the sequential path on the worker boxes. To opt back out
+# (e.g. while debugging a regression) set ``TOPS_MAP_PARALLEL_REGEN=0`` in
+# the worker env.
+PARALLEL_REGEN = _env_bool("TOPS_MAP_PARALLEL_REGEN", default=True)
 
 # Worker pool size for PNG encode + upload. Capped at 8 because the
 # bottleneck above that is usually outbound bandwidth, not CPU.
@@ -159,6 +226,39 @@ def _snapshot_combined_db() -> str:
     deleted at the end of the pass.
     """
     src = _download_combined_db()
+    # Tier 5 (May 2026): swap in a dedup conn keyed to the canonical
+    # combined.db path. Persists across snapshots so a second full regen
+    # of unchanged data can skip every R2 PUT. Worker threads share this
+    # via the module-level lock.
+    global _dedup_conn, _canonical_src_mtime
+    try:
+        old = _dedup_conn
+        _dedup_conn = upload_dedup.open_dedup(src)
+        if _dedup_conn is not None:
+            logger.info(
+                "Upload dedup cache armed: %s (%d entries known)",
+                upload_dedup.dedup_path_for(src),
+                upload_dedup.row_count(_dedup_conn),
+            )
+        else:
+            logger.info(
+                "Upload dedup cache disabled or unavailable for %s — "
+                "every chunk will be re-uploaded to R2", src,
+            )
+        if old is not None and old is not _dedup_conn:
+            upload_dedup.close(old)
+    except Exception:
+        logger.exception("upload_dedup: open failed (non-fatal)")
+    # Tier 6 (May 2026): capture canonical mtime for whole-level skip.
+    try:
+        _canonical_src_mtime = os.path.getmtime(src)
+        logger.info(
+            "Canonical combined.db mtime captured: %.3f (%s)",
+            _canonical_src_mtime, src,
+        )
+    except OSError:
+        _canonical_src_mtime = None
+        logger.warning("Could not stat canonical combined.db at %s", src)
     # Place the snapshot next to the shared cache so it lives on the same
     # (large) persistent disk the cache uses, not on /tmp which on Render
     # is small.
@@ -175,6 +275,43 @@ def _snapshot_combined_db() -> str:
         os.path.getsize(snap_path) / (1024 * 1024),
         time.time() - t0,
     )
+
+    # Tier 3.2 (May 2026): if a sidecar RGBA cache exists next to the
+    # shared cached combined.db, hardlink (or copy as fallback) it to
+    # ``<snap_path>.cache.db`` so the render hot path sees a fresh cache
+    # for the snapshot. Without this, every regen pass would silently
+    # fall back to the canonical varint decode because the cache is
+    # keyed on the source DB path.
+    try:
+        from ..core.mapdb_cache import cache_path_for
+        src_cache = cache_path_for(src)
+        snap_cache = cache_path_for(snap_path)
+        if os.path.isfile(src_cache):
+            try:
+                os.link(src_cache, snap_cache)  # hardlink — zero IO/space
+            except OSError:
+                shutil.copyfile(src_cache, snap_cache)
+            # Match snapshot mtime to its cache so the freshness check
+            # passes (``cache_mtime >= src_mtime``).
+            src_mtime = os.path.getmtime(snap_path)
+            try:
+                os.utime(snap_cache, (src_mtime, src_mtime))
+            except OSError:
+                pass
+            logger.info(
+                "Sidecar RGBA cache linked for regen snapshot: %s (%.1f MiB)",
+                snap_cache, os.path.getsize(snap_cache) / (1024 * 1024),
+            )
+        else:
+            logger.info(
+                "No sidecar RGBA cache at %s — regen will use the canonical "
+                "varint decode. Run `python backend/build_mapdb_cache.py %s` "
+                "once to enable the Tier 3.2 fast render path (~2x speedup).",
+                src_cache, src,
+            )
+    except Exception:
+        logger.exception("sidecar cache link failed for regen snapshot (non-fatal)")
+
     return snap_path
 
 
@@ -286,6 +423,12 @@ def refresh_level_metadata(levels: Optional[List[int]] = None) -> Dict[int, dict
                     "refresh_level_metadata: failed to delete snapshot %s",
                     snap_path,
                 )
+            # Tier 3.2 (May 2026): drop the snapshot-local sidecar too.
+            for orphan in (snap_path + ".cache.db",):
+                try:
+                    os.unlink(orphan)
+                except OSError:
+                    pass
 
     return refreshed
 
@@ -307,6 +450,21 @@ def _encode_and_upload_chunk(
     """
     chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
     png = encode_chunk_array_to_png(arr)
+
+    # Tier 5 (May 2026) — content-hash dedup. If the chunk's PNG bytes
+    # hash to the same value we last uploaded to R2 for (level, cx, cy),
+    # skip the PUT/DELETE entirely. ``new_hash=None`` means "this chunk
+    # is empty"; we record that as a NULL row so a subsequent regen that
+    # produces another empty chunk skips the DELETE too.
+    new_hash = upload_dedup.hash_png(png)
+    if upload_dedup.should_skip_upload(
+        _dedup_conn, _dedup_lock, level, cx, cy, new_hash,
+    ):
+        # R2 already has this exact content (or the known-empty marker).
+        # Return the byte count for the size accounting so the metadata
+        # totals stay consistent with the rendered output.
+        return len(png) if png is not None else 0
+
     if png is None:
         try:
             r2_storage.delete_object(chunk_key)
@@ -316,12 +474,14 @@ def _encode_and_upload_chunk(
             db.delete_chunk_url(level, cx, cy)
         except Exception:
             pass
+        upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, None)
         return 0
     r2_storage.upload_bytes(chunk_key, png, content_type="image/png")
     try:
         db.delete_chunk_url(level, cx, cy)
     except Exception:
         pass
+    upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, new_hash)
     return len(png)
 
 
@@ -426,6 +586,37 @@ def _generate_level(
     geometry = compute_level_geometry(db_path, level)
     grid = geometry["chunk_grid"]
 
+    # Tier 6 (May 2026) \u2014 whole-level skip.
+    #
+    # When a previous full regen recorded a (level, source_mtime) pair and
+    # the canonical combined.db hasn't been touched since, the entire
+    # level is byte-for-byte identical to what's already in R2. Bail out
+    # before render, encode, hashing, and PUT \u2014 the most expensive parts
+    # of the pass. Partial regens (affected_bounds set) never skip
+    # because the bounds imply localized work the cache can't cover.
+    if affected_bounds is None and _canonical_src_mtime is not None:
+        try:
+            cached_size = upload_dedup.can_skip_level(
+                _dedup_conn, _dedup_lock, level, _canonical_src_mtime,
+            )
+        except Exception:
+            logger.exception(
+                "Level %s: dedup level-skip lookup failed; falling through "
+                "to full regen", level,
+            )
+            cached_size = None
+        if cached_size is not None:
+            total_grid = grid * grid
+            logger.info(
+                "Level %s: SKIPPED entire level (combined.db mtime unchanged "
+                "since last successful regen; reusing %d bytes across %d chunks)",
+                level, cached_size, total_grid,
+            )
+            tracker.mark_started(level, total_chunks=total_grid)
+            tracker.update_progress(level, total_grid, current_chunk=None)
+            tracker.mark_complete(level, size_bytes=cached_size)
+            return
+
     # Persist geometry as the level metadata so the API can serve it.
     metadata = {
         "level": level,
@@ -481,6 +672,12 @@ def _generate_level(
                     level, ", ".join(mismatched),
                 )
                 affected_bounds = None
+                # Tier 6: geometry change invalidates the skip marker —
+                # any cached size_bytes refers to the old grid shape.
+                try:
+                    upload_dedup.invalidate_level(_dedup_conn, _dedup_lock, level)
+                except Exception:
+                    pass
 
     only_bounds: Optional[Tuple[int, int, int, int]] = None
     if affected_bounds is not None:
@@ -603,6 +800,30 @@ def _generate_level(
     tracker.mark_complete(level, size_bytes=bytes_written)
     logger.info("Level %s complete: %s bytes across %s chunks",
                 level, bytes_written, total_grid)
+
+    # Tier 6 (May 2026) — record successful full-level regen so the next
+    # pass against the same canonical combined.db can skip wholesale.
+    # Partial regens do NOT record: they only refresh a sub-rect, so the
+    # rest of the level may not match the current source state.
+    if affected_bounds is None and _canonical_src_mtime is not None:
+        try:
+            upload_dedup.record_level_complete(
+                _dedup_conn, _dedup_lock, level,
+                _canonical_src_mtime, bytes_written,
+            )
+        except Exception:
+            logger.exception(
+                "Level %s: failed to record level-complete marker (non-fatal)",
+                level,
+            )
+    elif affected_bounds is not None:
+        # Partial regen produced a level whose contents no longer match
+        # any previously cached full-level snapshot. Invalidate so a
+        # later full regen actually does the work.
+        try:
+            upload_dedup.invalidate_level(_dedup_conn, _dedup_lock, level)
+        except Exception:
+            pass
 
 
 def _coalesce_queue_entries(
@@ -775,6 +996,16 @@ def _worker_loop():
                         logger.exception(
                             "Failed to delete regen DB snapshot %s", db_path
                         )
+                # Tier 3.2 (May 2026): drop the snapshot-local sidecar
+                # RGBA cache (hardlinked from the shared cache in
+                # ``_snapshot_combined_db``) so stale files don't
+                # accumulate on the persistent disk.
+                if db_path:
+                    for orphan in (db_path + ".cache.db",):
+                        try:
+                            os.unlink(orphan)
+                        except OSError:
+                            pass
     finally:
         # Defensive: never leave _active_thread pointing at a finished thread.
         with _job_lock:

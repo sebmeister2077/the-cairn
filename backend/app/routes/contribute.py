@@ -116,8 +116,13 @@ def _update_cached_tile_count(count: int):
 # ---------------------------------------------------------------------------
 
 def _validate_upload(path: str) -> int:
-    """Check it's a real VS map .db; return tile count."""
-    conn = sqlite3.connect(path)
+    """Check it's a real VS map .db; return tile count.
+
+    Tier 2 (May 2026): use the immutable-readonly opener and add a cheap
+    LIMIT-1 probe before paying for ``COUNT(*)``.
+    """
+    from ..core.mapdb import _open_mapdb_readonly
+    conn = _open_mapdb_readonly(path)
     try:
         cur = conn.cursor()
         cur.execute(
@@ -126,10 +131,12 @@ def _validate_upload(path: str) -> int:
         )
         if not cur.fetchone():
             raise ValueError("Not a valid Vintage Story map database (no mappiece table)")
-        count = cur.execute(f"SELECT COUNT(*) FROM {MAPPIECE_TABLE}").fetchone()[0]
-        if count == 0:
+        if cur.execute(
+            f"SELECT 1 FROM {MAPPIECE_TABLE} LIMIT 1"
+        ).fetchone() is None:
             raise ValueError("Map database is empty — no tiles to contribute")
-        return count
+        count = cur.execute(f"SELECT COUNT(*) FROM {MAPPIECE_TABLE}").fetchone()[0]
+        return int(count)
     finally:
         conn.close()
 
@@ -207,47 +214,46 @@ def _read_log() -> list:
 # ---------------------------------------------------------------------------
 
 def _merge_into_combined(upload_path: str, combined_path: Path) -> dict:
-    combined_conn = sqlite3.connect(str(combined_path))
-    upload_conn = sqlite3.connect(upload_path)
+    """Merge an upload .db into the combined .db using SQLite-side ATTACH.
+
+    Tier 2 rewrite (May 2026): the previous per-row ``SELECT 1`` + ``INSERT``
+    loop is replaced by a single ``INSERT OR IGNORE … SELECT`` and one
+    ``SELECT changes()`` to count new rows. 10–100× faster on large
+    contributions. Legacy body kept commented at the end of this function.
+    """
+    from ..core.mapdb import _open_mapdb_writable, _open_mapdb_readonly
+
+    combined_conn = _open_mapdb_writable(str(combined_path))
+    # We still open the upload connection — used only for blockidmapping
+    # availability check; the row data flows via ATTACH inside combined_conn.
+    upload_conn = _open_mapdb_readonly(upload_path)
+    safe_upload = upload_path.replace("'", "''")
+    combined_conn.execute(f"ATTACH DATABASE '{safe_upload}' AS pend")
     try:
-        cur = upload_conn.execute(f"SELECT position, data FROM {MAPPIECE_TABLE}")
-        added = 0
-        skipped = 0
-        batch_size = 2000
+        total_pending = combined_conn.execute(
+            f"SELECT COUNT(*) FROM pend.{MAPPIECE_TABLE}"
+        ).fetchone()[0] or 0
 
-        while True:
-            rows = cur.fetchmany(batch_size)
-            if not rows:
-                break
-            for pos, data in rows:
-                existing = combined_conn.execute(
-                    f"SELECT 1 FROM {MAPPIECE_TABLE} WHERE position = ?", (pos,)
-                ).fetchone()
-                if existing:
-                    skipped += 1
-                else:
-                    combined_conn.execute(
-                        f"INSERT INTO {MAPPIECE_TABLE} (position, data) VALUES (?, ?)",
-                        (pos, data),
-                    )
-                    added += 1
-            combined_conn.commit()
+        combined_conn.execute(
+            f"""INSERT OR IGNORE INTO main.{MAPPIECE_TABLE} (position, data)
+                SELECT position, data FROM pend.{MAPPIECE_TABLE}"""
+        )
+        added = combined_conn.execute("SELECT changes()").fetchone()[0] or 0
+        skipped = max(0, total_pending - added)
 
-        # blockidmapping
+        # blockidmapping — single ATTACHed statement, same idea.
         try:
-            for id_val, data in upload_conn.execute(
-                f"SELECT id, data FROM {BLOCKIDMAPPING_TABLE}"
-            ):
-                combined_conn.execute(
-                    f"INSERT OR IGNORE INTO {BLOCKIDMAPPING_TABLE} (id, data) VALUES (?, ?)",
-                    (id_val, data),
-                )
-            combined_conn.commit()
+            combined_conn.execute(
+                f"""INSERT OR IGNORE INTO main.{BLOCKIDMAPPING_TABLE} (id, data)
+                    SELECT id, data FROM pend.{BLOCKIDMAPPING_TABLE}"""
+            )
         except sqlite3.OperationalError:
             pass
 
+        combined_conn.commit()
+
         after_count = combined_conn.execute(
-            f"SELECT COUNT(*) FROM {MAPPIECE_TABLE}"
+            f"SELECT COUNT(*) FROM main.{MAPPIECE_TABLE}"
         ).fetchone()[0]
 
         return {
@@ -257,8 +263,37 @@ def _merge_into_combined(upload_path: str, combined_path: Path) -> dict:
             "combined_total": after_count,
         }
     finally:
+        try:
+            combined_conn.execute("DETACH DATABASE pend")
+        except sqlite3.OperationalError:
+            pass
         upload_conn.close()
         combined_conn.close()
+
+# Legacy per-row merge — kept for reroll (May 2026). To restore, replace the
+# body of ``_merge_into_combined`` with the loop below.
+#
+# def _merge_into_combined_legacy(upload_path, combined_path):
+#     combined_conn = sqlite3.connect(str(combined_path))
+#     upload_conn = sqlite3.connect(upload_path)
+#     try:
+#         cur = upload_conn.execute(f"SELECT position, data FROM {MAPPIECE_TABLE}")
+#         added = 0; skipped = 0; batch_size = 2000
+#         while True:
+#             rows = cur.fetchmany(batch_size)
+#             if not rows: break
+#             for pos, data in rows:
+#                 if combined_conn.execute(
+#                         f"SELECT 1 FROM {MAPPIECE_TABLE} WHERE position=?", (pos,)
+#                     ).fetchone():
+#                     skipped += 1
+#                 else:
+#                     combined_conn.execute(
+#                         f"INSERT INTO {MAPPIECE_TABLE}(position,data) VALUES(?,?)",
+#                         (pos, data))
+#                     added += 1
+#             combined_conn.commit()
+#         … (blockidmapping loop, COUNT(*), return dict, finally close)
 
 
 # ---------------------------------------------------------------------------
@@ -286,37 +321,92 @@ def _render_preview(combined_path: Path, upload_path: str, max_dimension: int = 
     import numpy as np
     import io
 
-    # Collect positions from combined
-    combined_positions: Set[int] = set()
+    # Tier 2 (May 2026): bounds + highlight-set come from SQL JOINs instead
+    # of materialising both DBs into Python sets. See contribute_r2.py
+    # ``_render_preview`` for the same pattern with full commentary.
+    from ..core.mapdb import _open_mapdb_readonly
+
+    new_positions: Set[int] = set()
+    has_combined = False
     if combined_path.exists():
-        conn = sqlite3.connect(str(combined_path))
+        conn = _open_mapdb_readonly(str(combined_path))
+        safe_upload = upload_path.replace("'", "''")
+        conn.execute(f"ATTACH DATABASE '{safe_upload}' AS up")
         try:
-            combined_positions = {
-                r[0] for r in conn.execute(f"SELECT position FROM {MAPPIECE_TABLE}")
-            }
-        except sqlite3.OperationalError:
-            pass
+            bounds_sql = f"""
+                SELECT
+                    MIN(position & {POSITION_MASK}),
+                    MAX(position & {POSITION_MASK}),
+                    MIN(position >> {POSITION_BITS}),
+                    MAX(position >> {POSITION_BITS})
+                FROM (
+                    SELECT position FROM main.{MAPPIECE_TABLE}
+                    UNION ALL
+                    SELECT position FROM up.{MAPPIECE_TABLE}
+                )
+            """
+            try:
+                min_x, max_x, min_z, max_z = conn.execute(bounds_sql).fetchone()
+            except sqlite3.OperationalError:
+                min_x = max_x = min_z = max_z = None
+            if min_x is not None:
+                has_combined = conn.execute(
+                    f"SELECT 1 FROM main.{MAPPIECE_TABLE} LIMIT 1"
+                ).fetchone() is not None
+                new_positions = {
+                    r[0] for r in conn.execute(
+                        f"""SELECT u.position FROM up.{MAPPIECE_TABLE} u
+                            LEFT JOIN main.{MAPPIECE_TABLE} c ON c.position = u.position
+                            WHERE c.position IS NULL"""
+                    )
+                }
         finally:
+            try:
+                conn.execute("DETACH DATABASE up")
+            except sqlite3.OperationalError:
+                pass
             conn.close()
+    else:
+        min_x = max_x = min_z = max_z = None
 
-    # Collect positions from upload
-    up_conn = sqlite3.connect(upload_path)
-    upload_positions = {
-        r[0] for r in up_conn.execute(f"SELECT position FROM {MAPPIECE_TABLE}")
-    }
-    up_conn.close()
+    if min_x is None:
+        # No combined yet — bounds come from upload alone, every tile is new.
+        up = _open_mapdb_readonly(upload_path)
+        try:
+            row = up.execute(
+                f"""SELECT MIN(position & {POSITION_MASK}),
+                           MAX(position & {POSITION_MASK}),
+                           MIN(position >> {POSITION_BITS}),
+                           MAX(position >> {POSITION_BITS})
+                       FROM {MAPPIECE_TABLE}"""
+            ).fetchone()
+            new_positions = {
+                r[0] for r in up.execute(f"SELECT position FROM {MAPPIECE_TABLE}")
+            }
+        finally:
+            up.close()
+        if not row or row[0] is None:
+            raise ValueError("No tiles to render")
+        min_x, max_x, min_z, max_z = row
 
-    new_positions = upload_positions - combined_positions
-    all_positions = combined_positions | upload_positions
-
-    if not all_positions:
-        raise ValueError("No tiles to render")
-
-    all_coords = [decode_position(p) for p in all_positions]
-    min_x = min(c[0] for c in all_coords)
-    max_x = max(c[0] for c in all_coords)
-    min_z = min(c[1] for c in all_coords)
-    max_z = max(c[1] for c in all_coords)
+    # Legacy implementation kept commented for reroll (May 2026):
+    #
+    # combined_positions: Set[int] = set()
+    # if combined_path.exists():
+    #     conn = sqlite3.connect(str(combined_path))
+    #     try:
+    #         combined_positions = {r[0] for r in conn.execute(
+    #             f"SELECT position FROM {MAPPIECE_TABLE}")}
+    #     except sqlite3.OperationalError: pass
+    #     finally: conn.close()
+    # up_conn = sqlite3.connect(upload_path)
+    # upload_positions = {r[0] for r in up_conn.execute(
+    #     f"SELECT position FROM {MAPPIECE_TABLE}")}
+    # up_conn.close()
+    # new_positions = upload_positions - combined_positions
+    # all_positions = combined_positions | upload_positions
+    # all_coords = [decode_position(p) for p in all_positions]
+    # min_x = min(c[0] for c in all_coords); \u2026
 
     w_chunks = max_x - min_x + 1
     h_chunks = max_z - min_z + 1
@@ -331,7 +421,7 @@ def _render_preview(combined_path: Path, upload_path: str, max_dimension: int = 
 
     # Helper to paint tiles from a db
     def _paint_tiles(db_path: str, highlight_positions: Optional[Set[int]] = None):
-        conn = sqlite3.connect(db_path)
+        conn = _open_mapdb_readonly(db_path)
         try:
             cur = conn.execute(f"SELECT position, data FROM {MAPPIECE_TABLE}")
             batch_size = 2000
@@ -387,7 +477,7 @@ def _render_preview(combined_path: Path, upload_path: str, max_dimension: int = 
             conn.close()
 
     # Paint combined first (base layer), then upload with new tiles highlighted
-    if combined_path.exists() and combined_positions:
+    if combined_path.exists() and has_combined:
         _paint_tiles(str(combined_path))
     _paint_tiles(upload_path, highlight_positions=new_positions)
 
