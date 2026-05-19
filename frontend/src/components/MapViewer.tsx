@@ -1,7 +1,9 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2 } from "lucide-react";
+import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2, Maximize2 } from "lucide-react";
 import { TLLegendButton } from "@/components/TLLegendButton";
+import { useAppDispatch, useReduxState } from "@/store/hooks";
+import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -95,10 +97,13 @@ interface MapViewerProps {
   alt?: string;
   /** CSS height of the canvas, e.g. "70vh" or "400px". */
   height?: string;
+  /** When true, render a "fullscreen" button in the toolbar that calls `onRequestFullscreen`. */
+  showFullscreenControl?: boolean;
   /**
    * When provided, auto-enhance fires when the user zooms in past a threshold.
    * The function must return a Blob of the map at a higher max dimension.
    */
+
   enhanceFn?: (maxDim: number) => Promise<Blob>;
   /**
    * Tile-mode equivalent of `enhanceFn`. When provided alongside `tileSet`,
@@ -249,6 +254,7 @@ export function MapViewer({
   interactionsLocked = false,
   showTLLegend = false,
   tlLegendShowContributeColors = false,
+  showFullscreenControl = false,
   starfield = false,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
@@ -277,6 +283,14 @@ export function MapViewer({
   const prevFocusPointRef = useRef<{ x: number; z: number } | undefined>(undefined);
   const panRef = useRef(pan);
   const interactionsLockedRef = useRef(interactionsLocked);
+
+  const dispatch = useAppDispatch();
+  const isFullscreen = useReduxState("mapView.isFullscreen");
+  const setIsFullscreen = useCallback(
+    (next: boolean) => dispatch(setShowFullscreenAction(next)),
+    [dispatch],
+  );
+
   useEffect(() => {
     interactionsLockedRef.current = interactionsLocked;
   }, [interactionsLocked]);
@@ -1274,11 +1288,24 @@ export function MapViewer({
             Enhancing…
           </span>
         )}
-        {showTLLegend && (
-          <div className="ml-auto">
-            <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {showFullscreenControl && !isFullscreen && (
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => setIsFullscreen(true)}
+              title="Enter fullscreen map view"
+            >
+              <Maximize2 className="size-4 mr-1" />
+              Fullscreen
+            </Button>
+          )}
+          {showTLLegend && (
+            <div className="">
+              <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
+            </div>
+          )}
+        </div>
       </div>
       <div
         ref={containerRef}

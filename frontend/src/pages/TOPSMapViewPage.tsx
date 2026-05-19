@@ -230,10 +230,6 @@ export function TOPSMapViewPage() {
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullscreen = useReduxState("mapView.isFullscreen");
-  const setIsFullscreen = useCallback(
-    (next: boolean) => dispatch(setShowFullscreenAction(next)),
-    [dispatch],
-  );
   // Animated cosmos background behind the map tiles. User-toggleable from
   // the AccountPage Appearance card; persisted in localStorage.
   const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
@@ -966,15 +962,6 @@ export function TOPSMapViewPage() {
                     />
                     Reload
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setIsFullscreen(true)}
-                    title="Enter fullscreen map view"
-                  >
-                    <Maximize2 className="size-4 mr-1" />
-                    Fullscreen
-                  </Button>
                   <HomePositionControls
                     favorite={favoriteStartingPosition}
                     canSaveCurrent={lastViewportRef.current != null}
@@ -1231,6 +1218,7 @@ export function TOPSMapViewPage() {
             alt="TOPS global server map"
             height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
             showTLLegend={showTranslocators}
+            showFullscreenControl
             starfield={starfieldEnabled}
             overlaySegments={visibleTranslocatorSegments}
             overlayPoints={landmarkPoints}
