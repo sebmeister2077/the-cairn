@@ -90,6 +90,20 @@ export default function App() {
         persister,
         hydrateOptions: queryClientConfig,
         maxAge: TWO_WEEKS,
+        // Bump this string whenever a persisted query payload's shape or
+        // semantics changes in a way that would corrupt rendering if a
+        // returning user hydrated from an old snapshot. The persister
+        // discards (and rewrites) the cache when this value differs from
+        // what's stored.
+        //
+        // 2026-05-19 — v2: per-level TOPS map metadata (`tops-map-level/{n}`)
+        // could drift out of sync with the global stats during a server
+        // regen race (fixed backend-side). Users with the stale metadata
+        // in localStorage would keep projecting waypoint overlays into
+        // the wrong world bounds even after the backend was fixed, until
+        // their cache happened to refetch. Bumping the buster forces a
+        // clean hydration on next load.
+        buster: "v2-2026-05-19-tops-map-bounds",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;
