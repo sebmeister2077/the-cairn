@@ -26,13 +26,19 @@ export function LandmarkBackupsCard() {
   };
 
   const createMut = useMutation({
-    mutationFn: (asset: "landmarks" | "translocators") => adminCreateGeojsonBackup(asset),
+    mutationFn: (asset: "landmarks" | "translocators" | "traders") =>
+      adminCreateGeojsonBackup(asset),
     onSuccess: invalidate,
   });
 
   const restoreMut = useMutation({
-    mutationFn: ({ asset, key }: { asset: "landmarks" | "translocators"; key: string }) =>
-      adminRestoreGeojsonBackup(asset, key),
+    mutationFn: ({
+      asset,
+      key,
+    }: {
+      asset: "landmarks" | "translocators" | "traders";
+      key: string;
+    }) => adminRestoreGeojsonBackup(asset, key),
     onSuccess: () => {
       setSelectedForRestoreId(null);
       invalidate();
@@ -43,8 +49,11 @@ export function LandmarkBackupsCard() {
     const out = {
       landmarks: [] as GeojsonBackupEntry[],
       translocators: [] as GeojsonBackupEntry[],
+      traders: [] as GeojsonBackupEntry[],
     };
-    for (const b of data?.backups ?? []) out[b.asset].push(b);
+    for (const b of data?.backups ?? []) {
+      out[b.asset].push(b);
+    }
     return out;
   }, [data]);
 
@@ -60,7 +69,7 @@ export function LandmarkBackupsCard() {
           </div>
         )}
         {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
-        {(["landmarks", "translocators"] as const).map((asset) => (
+        {(["landmarks", "translocators", "traders"] as const).map((asset) => (
           <div key={asset} className="space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold capitalize">{asset}</h3>

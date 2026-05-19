@@ -786,7 +786,7 @@ export interface LandmarkAuditEntry {
 
 export interface GeojsonBackupEntry {
     key: string;
-    asset: "landmarks" | "translocators";
+    asset: "landmarks" | "translocators" | "traders";
     kind: "scheduled" | "manual";
     size: number;
     last_modified: string | null;
@@ -866,7 +866,7 @@ export async function adminListGeojsonBackups(): Promise<{ backups: GeojsonBacku
 }
 
 export async function adminCreateGeojsonBackup(
-    asset: "landmarks" | "translocators",
+    asset: "landmarks" | "translocators" | "traders",
 ): Promise<{ key: string }> {
     const res = await fetch(`${API_BASE}/admin/landmarks/backups/create`, {
         method: "POST",
@@ -877,7 +877,7 @@ export async function adminCreateGeojsonBackup(
 }
 
 export async function adminRestoreGeojsonBackup(
-    asset: "landmarks" | "translocators",
+    asset: "landmarks" | "translocators" | "traders",
     key: string,
 ): Promise<{ restored: string; from_key: string; live_key: string }> {
     const res = await fetch(`${API_BASE}/admin/landmarks/backups/restore`, {
