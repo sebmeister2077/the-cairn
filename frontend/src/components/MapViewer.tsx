@@ -1300,11 +1300,18 @@ export function MapViewer({
               Fullscreen
             </Button>
           )}
-          {showTLLegend && (
-            <div className="">
+          <div
+            className={`grid transition-[grid-template-columns,opacity] duration-300 ease-out ${
+              showTLLegend
+                ? "grid-cols-[1fr] opacity-100"
+                : "grid-cols-[0fr] opacity-0 pointer-events-none"
+            }`}
+            aria-hidden={!showTLLegend}
+          >
+            <div className="overflow-hidden min-w-0">
               <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
             </div>
-          )}
+          </div>
         </div>
       </div>
       <div
