@@ -309,10 +309,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
           Metadata refreshed for {refreshMetadataSuccess.length} level
           {refreshMetadataSuccess.length === 1 ? "" : "s"}:{" "}
           {refreshMetadataSuccess
-            .map(
-              (m) =>
-                `L${m.level} (start_x=${m.start_x}, w=${m.width_blocks})`,
-            )
+            .map((m) => `L${m.level} (start_x=${m.start_x}, w=${m.width_blocks})`)
             .join(", ")}
         </p>
       )}

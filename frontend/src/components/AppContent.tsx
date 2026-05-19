@@ -57,6 +57,7 @@ import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useReduxState } from "@/store/hooks";
 import { cn } from "@/lib/utils";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 const BASE_CATEGORIES = [
   { value: "/general", label: "General" },
@@ -592,36 +593,232 @@ export function AppContent() {
               the "General" tab in the nav. */}
           <Route path="/" element={<Navigate to="/multiplayer/tops-map" replace />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
-          <Route path="/singleplayer/extract" element={<ExtractPage />} />
-          <Route path="/singleplayer/import" element={<ImportPage />} />
-          <Route path="/singleplayer/commands" element={<CommandsPage />} />
-          <Route path="/singleplayer/delete" element={<DeletePage />} />
+          <Route
+            path="/singleplayer/extract"
+            element={
+              <ErrorBoundary title="Extract failed" resetKeys={[location.pathname]}>
+                <ExtractPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/singleplayer/import"
+            element={
+              <ErrorBoundary title="Import failed" resetKeys={[location.pathname]}>
+                <ImportPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/singleplayer/commands"
+            element={
+              <ErrorBoundary title="Commands failed" resetKeys={[location.pathname]}>
+                <CommandsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/singleplayer/delete"
+            element={
+              <ErrorBoundary title="Delete failed" resetKeys={[location.pathname]}>
+                <DeletePage />
+              </ErrorBoundary>
+            }
+          />
           <Route path="/multiplayer" element={<Navigate to="/multiplayer/identify" replace />} />
-          <Route path="/multiplayer/identify" element={<IdentifyMapsPage />} />
-          <Route path="/multiplayer/map-viewer" element={<MapViewPage />} />
-          <Route path="/multiplayer/tops-map" element={<TOPSMapViewPage />} />
-          <Route path="/multiplayer/contribute" element={<ContributePage />} />
-          <Route path="/multiplayer/contribute-map" element={<ContributePage />} />
-          <Route path="/multiplayer/contribute-tls" element={<ContributeTLsPage />} />
-          <Route path="/multiplayer/contribute-traders" element={<ContributeTradersPage />} />
+          <Route
+            path="/multiplayer/identify"
+            element={
+              <ErrorBoundary title="Identify failed" resetKeys={[location.pathname]}>
+                <IdentifyMapsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/map-viewer"
+            element={
+              <ErrorBoundary title="Map Viewer failed" resetKeys={[location.pathname]}>
+                <MapViewPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/tops-map"
+            element={
+              <ErrorBoundary title="TOPS Map failed" resetKeys={[location.pathname]}>
+                <TOPSMapViewPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/contribute"
+            element={
+              <ErrorBoundary title="Contribute failed" resetKeys={[location.pathname]}>
+                <ContributePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/contribute-map"
+            element={
+              <ErrorBoundary title="Contribute Map failed" resetKeys={[location.pathname]}>
+                <ContributePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/contribute-tls"
+            element={
+              <ErrorBoundary title="Contribute TLs failed" resetKeys={[location.pathname]}>
+                <ContributeTLsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/multiplayer/contribute-traders"
+            element={
+              <ErrorBoundary title="Contribute Traders failed" resetKeys={[location.pathname]}>
+                <ContributeTradersPage />
+              </ErrorBoundary>
+            }
+          />
           <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
-          <Route path="/manage/api-keys" element={<ApiKeysPage />} />
-          <Route path="/manage/users" element={<AdminUsersPage />} />
-          <Route path="/manage/banned-ips" element={<AdminBannedIpsPage />} />
-          <Route path="/manage/flags" element={<AdminFlagsPage />} />
-          <Route path="/manage/feature-flags" element={<AdminFeatureFlagsPage />} />
-          <Route path="/manage/maintenance" element={<AdminMaintenancePage />} />
-          <Route path="/manage/resources" element={<AdminResourcesPage />} />
-          <Route path="/manage/waypoints-backup" element={<AdminLandmarksPage />} />
-          <Route path="/manage/translocators" element={<AdminTranslocatorsPage />} />
-          <Route path="/manage/traders" element={<AdminTradersPage />} />
-          <Route path="/manage/tl-screenshots" element={<AdminTLScreenshotsPage />} />
-          <Route path="/account" element={<AccountPage />} />
-          <Route path="/general" element={<GeneralPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/blog" element={<BlogIndexPage />} />
-          <Route path="/blog/:slug" element={<BlogPostPage />} />
+          <Route
+            path="/manage/api-keys"
+            element={
+              <ErrorBoundary title="API Keys failed" resetKeys={[location.pathname]}>
+                <ApiKeysPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/users"
+            element={
+              <ErrorBoundary title="Users failed" resetKeys={[location.pathname]}>
+                <AdminUsersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/banned-ips"
+            element={
+              <ErrorBoundary title="Banned IPs failed" resetKeys={[location.pathname]}>
+                <AdminBannedIpsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/flags"
+            element={
+              <ErrorBoundary title="Flags failed" resetKeys={[location.pathname]}>
+                <AdminFlagsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/feature-flags"
+            element={
+              <ErrorBoundary title="Feature Flags failed" resetKeys={[location.pathname]}>
+                <AdminFeatureFlagsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/maintenance"
+            element={
+              <ErrorBoundary title="Maintenance failed" resetKeys={[location.pathname]}>
+                <AdminMaintenancePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/resources"
+            element={
+              <ErrorBoundary title="Resources failed" resetKeys={[location.pathname]}>
+                <AdminResourcesPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/waypoints-backup"
+            element={
+              <ErrorBoundary title="Waypoints failed" resetKeys={[location.pathname]}>
+                <AdminLandmarksPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/translocators"
+            element={
+              <ErrorBoundary title="Translocators failed" resetKeys={[location.pathname]}>
+                <AdminTranslocatorsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/traders"
+            element={
+              <ErrorBoundary title="Traders failed" resetKeys={[location.pathname]}>
+                <AdminTradersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/tl-screenshots"
+            element={
+              <ErrorBoundary title="TL Screenshots failed" resetKeys={[location.pathname]}>
+                <AdminTLScreenshotsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/account"
+            element={
+              <ErrorBoundary title="Account failed" resetKeys={[location.pathname]}>
+                <AccountPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/general"
+            element={
+              <ErrorBoundary title="General failed" resetKeys={[location.pathname]}>
+                <GeneralPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <ErrorBoundary title="Privacy failed" resetKeys={[location.pathname]}>
+                <PrivacyPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <ErrorBoundary title="Terms failed" resetKeys={[location.pathname]}>
+                <TermsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/blog"
+            element={
+              <ErrorBoundary title="Blog failed" resetKeys={[location.pathname]}>
+                <BlogIndexPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/blog/:slug"
+            element={
+              <ErrorBoundary title="Blog Post failed" resetKeys={[location.pathname]}>
+                <BlogPostPage />
+              </ErrorBoundary>
+            }
+          />
         </Routes>
       </main>
       <footer className="border-t mt-8">
