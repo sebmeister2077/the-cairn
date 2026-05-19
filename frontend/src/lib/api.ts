@@ -1035,6 +1035,31 @@ export async function stopMapGeneration(): Promise<MapGenerationStatus> {
     });
     return (await handleResponse(res)).json();
 }
+
+export interface RefreshedLevelMetadata {
+    level: number;
+    start_x: number;
+    start_z: number;
+    width_blocks: number;
+    height_blocks: number;
+    image_w: number;
+    image_h: number;
+    scale: number;
+}
+
+/** Recompute and re-upload per-level ``metadata.json`` from the current
+ *  combined.db without re-rendering any chunks. Cheap repair for when
+ *  per-level bounds drift out of sync with the underlying tiles. */
+export async function refreshMapMetadata(
+    levels?: number[],
+): Promise<{ refreshed: RefreshedLevelMetadata[] }> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/refresh-metadata`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ levels: levels ?? null }),
+    });
+    return (await handleResponse(res)).json();
+}
 export async function getContributeInfo(signal?: AbortSignal) {
     const res = await fetch(`${API_BASE}/contribute/info`, {
         headers: authHeaders(),

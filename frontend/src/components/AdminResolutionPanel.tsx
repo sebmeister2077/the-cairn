@@ -4,6 +4,7 @@ import {
   deleteMapLevel,
   getMapGenerationStatus,
   markMapLevelStatus,
+  refreshMapMetadata,
   requestMapGeneration,
   stopMapGeneration,
   type MapGenerationStatus,
@@ -19,6 +20,7 @@ import {
   AlertCircle,
   Circle,
   OctagonX,
+  FileCog,
 } from "lucide-react";
 
 const STATUS_QUERY_KEY = ["admin-tops-map-generation-status"];
@@ -138,6 +140,13 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     },
   });
 
+  const refreshMetadataMutation = useMutation({
+    mutationFn: () => refreshMapMetadata(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+    },
+  });
+
   const markMutation = useMutation({
     mutationFn: ({ level, status }: { level: number; status: "complete" | "failed" }) =>
       markMapLevelStatus(
@@ -207,7 +216,11 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
           ? stopMutation.error.message
           : markMutation.error instanceof Error
             ? markMutation.error.message
-            : null;
+            : refreshMetadataMutation.error instanceof Error
+              ? refreshMetadataMutation.error.message
+              : null;
+
+  const refreshMetadataSuccess = refreshMetadataMutation.data?.refreshed ?? null;
 
   return (
     <div className="grid gap-3">
@@ -253,6 +266,26 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
           )}
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => refreshMetadataMutation.mutate()}
+            disabled={isRunning || refreshMetadataMutation.isPending}
+            title="Recompute and re-upload each level's metadata.json from the current combined DB without re-rendering chunks. Fixes overlay misalignment caused by drifted per-level bounds."
+          >
+            {refreshMetadataMutation.isPending ? (
+              <>
+                <Loader2 className="size-3 mr-1 animate-spin" />
+                Refreshing…
+              </>
+            ) : (
+              <>
+                <FileCog className="size-3 mr-1" />
+                Refresh metadata
+              </>
+            )}
+          </Button>
+          <Button
+            type="button"
             size="sm"
             onClick={() => generateMutation.mutate(undefined)}
             disabled={isRunning || generateMutation.isPending}
@@ -270,6 +303,19 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
       </div>
 
       {errorMessage && <p className="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>}
+
+      {refreshMetadataSuccess && !refreshMetadataMutation.isPending && (
+        <p className="text-xs text-green-700 dark:text-green-400">
+          Metadata refreshed for {refreshMetadataSuccess.length} level
+          {refreshMetadataSuccess.length === 1 ? "" : "s"}:{" "}
+          {refreshMetadataSuccess
+            .map(
+              (m) =>
+                `L${m.level} (start_x=${m.start_x}, w=${m.width_blocks})`,
+            )
+            .join(", ")}
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-md border">
         <table className="w-full text-sm">

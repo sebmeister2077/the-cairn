@@ -25,6 +25,7 @@ from ..core.mapdb import RESOLUTION_LEVELS
 from ..tasks.generate_map_levels import (
     is_job_running,
     is_stop_requested,
+    refresh_level_metadata,
     request_stop,
     start_job,
 )
@@ -274,6 +275,10 @@ class GenerateMapLevelsRequest(BaseModel):
     affected_bounds: Optional[dict] = None  # {min_x, max_x, min_z, max_z} world blocks
 
 
+class RefreshMapMetadataRequest(BaseModel):
+    levels: Optional[List[int]] = None  # None = all configured levels
+
+
 class MarkLevelStatusRequest(BaseModel):
     status: str  # "complete" or "failed"
     error: Optional[str] = None  # required when status == "failed"
@@ -342,6 +347,57 @@ async def request_map_generation(
         raise HTTPException(status_code=500, detail="Could not enqueue generation request")
 
     return _generation_status_payload()
+
+
+@router.post("/admin/tops-map/refresh-metadata", status_code=200)
+async def refresh_map_metadata(
+    body: RefreshMapMetadataRequest,
+    _: str = Depends(require_admin),
+):
+    """Recompute and re-upload each level's ``metadata.json`` from the
+    current ``combined.db`` *without* re-rendering any chunks.
+
+    Use this to repair overlay misalignment when per-level metadata bounds
+    drifted out of sync with the underlying tiles (e.g. a contribution
+    landed mid-regen-pass and only some levels got the new geometry
+    written). Runs synchronously — geometry compute is cheap because it
+    only scans the ``mappiece`` index, not pixel data.
+
+    Refuses to run while a full regeneration job is in flight to avoid
+    racing the worker that's about to rewrite metadata itself.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot refresh metadata while generation is running",
+        )
+
+    if body.levels is not None:
+        invalid = [lvl for lvl in body.levels if lvl not in RESOLUTION_LEVELS]
+        if invalid:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown level(s): {invalid}. Valid: {list(RESOLUTION_LEVELS)}",
+            )
+
+    refreshed = refresh_level_metadata(body.levels)
+    return {
+        "refreshed": [
+            {
+                "level": lvl,
+                "start_x": meta["start_x"],
+                "start_z": meta["start_z"],
+                "width_blocks": meta["width_blocks"],
+                "height_blocks": meta["height_blocks"],
+                "image_w": meta["image_w"],
+                "image_h": meta["image_h"],
+                "scale": meta["scale"],
+            }
+            for lvl, meta in sorted(refreshed.items())
+        ],
+    }
 
 
 @router.post("/admin/tops-map/stop", status_code=202)

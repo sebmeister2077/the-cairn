@@ -178,6 +178,118 @@ def _snapshot_combined_db() -> str:
     return snap_path
 
 
+def refresh_level_metadata(levels: Optional[List[int]] = None) -> Dict[int, dict]:
+    """Recompute and re-upload ``metadata.json`` for the given levels without
+    re-rendering any chunks.
+
+    This is a cheap repair for the case where per-level ``metadata.json``
+    bounds drifted out of sync with the current ``combined.db`` (e.g. a
+    contribution was approved mid-regen-pass and only some levels got the
+    new geometry written). Each level's tiles already cover the new world
+    region thanks to per-chunk addressing; only the geometry header was
+    stale, so rewriting it is enough to fix overlay alignment in the
+    frontend.
+
+    The previous metadata's ``size_bytes`` field is preserved (since we
+    are not re-rendering chunks we can't recompute it accurately).
+    Returns a dict mapping ``level -> new_metadata`` for every level
+    successfully refreshed.
+    """
+    if levels is None:
+        levels_to_refresh = sorted(RESOLUTION_LEVELS.keys())
+    else:
+        levels_to_refresh = sorted(
+            {lvl for lvl in levels if lvl in RESOLUTION_LEVELS}
+        )
+        if not levels_to_refresh:
+            return {}
+
+    # Single private snapshot for the whole batch so every level sees the
+    # same DB state — same reasoning as ``_snapshot_combined_db`` for the
+    # full-regen worker.
+    snap_path = _snapshot_combined_db()
+    refreshed: Dict[int, dict] = {}
+    try:
+        for level in levels_to_refresh:
+            try:
+                geometry = compute_level_geometry(snap_path, level)
+            except Exception:
+                logger.exception(
+                    "refresh_level_metadata: level %s geometry compute failed",
+                    level,
+                )
+                continue
+
+            metadata = {
+                "level": level,
+                "max_dimension": RESOLUTION_LEVELS[level],
+                "image_w": geometry["image_w"],
+                "image_h": geometry["image_h"],
+                "chunk_w": geometry["chunk_w"],
+                "chunk_h": geometry["chunk_h"],
+                "chunk_grid": geometry["chunk_grid"],
+                "scale": geometry["scale"],
+                "width_blocks": geometry["width_blocks"],
+                "height_blocks": geometry["height_blocks"],
+                "start_x": geometry["start_x"],
+                "start_z": geometry["start_z"],
+            }
+
+            # Preserve size_bytes from previous metadata when present so the
+            # admin UI doesn't flip to 0 after a metadata-only refresh.
+            try:
+                prev_raw = r2_storage.download_bytes(
+                    r2_storage.tops_map_level_metadata_key(level)
+                )
+                prev_meta = json.loads(prev_raw.decode("utf-8"))
+                if "size_bytes" in prev_meta:
+                    metadata["size_bytes"] = prev_meta["size_bytes"]
+            except FileNotFoundError:
+                pass
+            except Exception:
+                logger.exception(
+                    "refresh_level_metadata: could not read previous "
+                    "metadata.json for level %s (continuing)", level,
+                )
+
+            try:
+                r2_storage.upload_bytes(
+                    r2_storage.tops_map_level_metadata_key(level),
+                    json.dumps(metadata).encode("utf-8"),
+                    content_type="application/json",
+                )
+            except Exception:
+                logger.exception(
+                    "refresh_level_metadata: upload failed for level %s",
+                    level,
+                )
+                continue
+
+            try:
+                from ..routes import tops_map_r2 as _tops_map_r2
+                _tops_map_r2.invalidate_level_metadata_cache(level)
+            except Exception:
+                pass
+
+            refreshed[level] = metadata
+            logger.info(
+                "refresh_level_metadata: level %s metadata refreshed "
+                "(start_x=%s width_blocks=%s)",
+                level, metadata["start_x"], metadata["width_blocks"],
+            )
+    finally:
+        if snap_path and os.path.exists(snap_path):
+            try:
+                os.unlink(snap_path)
+            except OSError:
+                logger.exception(
+                    "refresh_level_metadata: failed to delete snapshot %s",
+                    snap_path,
+                )
+
+    return refreshed
+
+
 def _encode_and_upload_chunk(
     level: int,
     cx: int,
