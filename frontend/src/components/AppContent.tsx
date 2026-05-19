@@ -29,6 +29,7 @@ import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
+import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -66,6 +67,7 @@ const BASE_CATEGORIES = [
 ] as const;
 
 const ADMIN_CATEGORY = { value: "/manage", label: "Manage" } as const;
+const USAGE_CATEGORY = { value: "/usage", label: "Usage" } as const;
 
 const NavigationRoutes = {
   Singleplayer: {
@@ -95,6 +97,9 @@ const NavigationRoutes = {
     Translocators: "/manage/translocators",
     Traders: "/manage/traders",
     TLScreenshots: "/manage/tl-screenshots",
+  },
+  Usage: {
+    Overview: "/usage",
   },
 } as const;
 type SubTab<V extends any = string> = {
@@ -149,10 +154,11 @@ const subTabs: Subtabs = {
     { value: "/manage/traders", label: "Traders" },
     { value: "/manage/tl-screenshots", label: "TL Screenshots" },
   ],
+  "/usage": [],
 };
 
 function getActiveCategory(pathname: string): `/${Lowercase<SubtabKey>}` | null {
-  for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY]) {
+  for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
   // Standalone pages like /privacy and /terms intentionally have no
@@ -264,7 +270,9 @@ export function AppContent() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
-  const categories = isAdmin ? [...BASE_CATEGORIES, ADMIN_CATEGORY] : BASE_CATEGORIES;
+  const categories = isAdmin
+    ? [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]
+    : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
@@ -768,6 +776,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="TL Screenshots failed" resetKeys={[location.pathname]}>
                 <AdminTLScreenshotsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/usage"
+            element={
+              <ErrorBoundary title="Usage failed" resetKeys={[location.pathname]}>
+                <AdminUsagePage />
               </ErrorBoundary>
             }
           />

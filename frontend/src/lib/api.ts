@@ -3049,3 +3049,143 @@ export async function getResourcesDeposits(opts: {
     return (await handleResponse(res)).json();
 }
 
+
+// --- Admin Usage dashboard --------------------------------------------------
+
+export type UsageGranularity = "hour" | "day" | "week";
+
+export interface UsageWindow {
+    from: string;
+    to: string;
+}
+
+export interface UsageSummary extends UsageWindow {
+    previous_from: string;
+    previous_to: string;
+    totals: { events: number; previous_events: number; distinct_actors: number };
+    per_category: Array<{ category: string; count: number; previous_count: number }>;
+}
+
+export interface UsageTimeline extends UsageWindow {
+    granularity: UsageGranularity;
+    group_by: "category" | "event_type";
+    buckets: Array<{ bucket: string; series: string; count: number }>;
+}
+
+export interface UsageHeatmap extends UsageWindow {
+    cells: Array<{ day_of_week: number; hour: number; count: number }>;
+}
+
+export interface UsageContributions extends UsageWindow {
+    granularity: UsageGranularity;
+    buckets: Array<{ bucket: string; event_type: string; count: number }>;
+    known_event_types: string[];
+}
+
+export interface UsageAdminActivity extends UsageWindow {
+    granularity: UsageGranularity;
+    buckets: Array<{ bucket: string; action: string; count: number }>;
+    recent: Array<{
+        id: number;
+        created_at: string;
+        action: string;
+        actor_api_key_id: string | null;
+        metadata: Record<string, unknown> | null;
+    }>;
+}
+
+export interface UsageQueueVelocity extends UsageWindow {
+    queues: {
+        map_contributions?: { median_seconds: number | null; p90_seconds: number | null; reviewed: number };
+        landmark_edits?: { median_seconds: number | null; p90_seconds: number | null; reviewed: number };
+        tl_screenshots?: { median_seconds: number | null; p90_seconds: number | null; reviewed: number };
+    };
+    backlog: { map_contributions: number; landmark_edits: number; tl_screenshots: number };
+}
+
+export interface UsageDownloads extends UsageWindow {
+    granularity: UsageGranularity;
+    buckets: Array<{ bucket: string; success: boolean; count: number }>;
+    recent: Array<{
+        id: number;
+        link_id: number;
+        redeemed_at: string | null;
+        ip_hash: string | null;
+        user_agent: string | null;
+        success: boolean;
+        failure_reason: string | null;
+    }>;
+}
+
+export interface UsageModeration extends UsageWindow {
+    granularity: UsageGranularity;
+    bans_created: Array<{ bucket: string; count: number }>;
+    flags_created: Array<{ bucket: string; count: number }>;
+    flags_resolved: Array<{ bucket: string; count: number }>;
+}
+
+export interface UsageApiKeys extends UsageWindow {
+    granularity: UsageGranularity;
+    new_keys: Array<{ bucket: string; count: number }>;
+    active_keys: Array<{ bucket: string; count: number }>;
+}
+
+export interface UsageTopActors extends UsageWindow {
+    category: string | null;
+    actors: Array<{
+        actor_api_key_id: string;
+        display_name: string | null;
+        count: number;
+    }>;
+}
+
+export interface UsageWindowParams {
+    from?: string;
+    to?: string;
+}
+
+export interface UsageGranularityParams extends UsageWindowParams {
+    granularity?: UsageGranularity;
+}
+
+function _usageQS(params: Record<string, string | number | undefined | null>): string {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+        if (v == null || v === "") continue;
+        qs.set(k, String(v));
+    }
+    const s = qs.toString();
+    return s ? `?${s}` : "";
+}
+
+async function _usageGet<T>(path: string, params: Record<string, string | number | undefined | null>, signal?: AbortSignal): Promise<T> {
+    const res = await fetch(`${API_BASE}/admin/usage/${path}${_usageQS(params)}`, {
+        headers: authHeaders(),
+        signal,
+    });
+    return (await handleResponse(res)).json();
+}
+
+export const adminUsage = {
+    summary: (p: UsageWindowParams, signal?: AbortSignal) =>
+        _usageGet<UsageSummary>("summary", { from: p.from, to: p.to }, signal),
+    timeline: (p: UsageGranularityParams & { group_by?: "category" | "event_type"; category?: string; event_type?: string }, signal?: AbortSignal) =>
+        _usageGet<UsageTimeline>("timeline", { from: p.from, to: p.to, granularity: p.granularity, group_by: p.group_by, category: p.category, event_type: p.event_type }, signal),
+    heatmap: (p: UsageWindowParams & { category?: string }, signal?: AbortSignal) =>
+        _usageGet<UsageHeatmap>("heatmap", { from: p.from, to: p.to, category: p.category }, signal),
+    contributions: (p: UsageGranularityParams, signal?: AbortSignal) =>
+        _usageGet<UsageContributions>("contributions", { from: p.from, to: p.to, granularity: p.granularity }, signal),
+    adminActivity: (p: UsageGranularityParams & { limit_recent?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageAdminActivity>("admin-activity", { from: p.from, to: p.to, granularity: p.granularity, limit_recent: p.limit_recent }, signal),
+    queueVelocity: (p: UsageWindowParams, signal?: AbortSignal) =>
+        _usageGet<UsageQueueVelocity>("queue-velocity", { from: p.from, to: p.to }, signal),
+    downloads: (p: UsageGranularityParams & { limit_recent?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageDownloads>("downloads", { from: p.from, to: p.to, granularity: p.granularity, limit_recent: p.limit_recent }, signal),
+    moderation: (p: UsageGranularityParams, signal?: AbortSignal) =>
+        _usageGet<UsageModeration>("moderation", { from: p.from, to: p.to, granularity: p.granularity }, signal),
+    apiKeys: (p: UsageGranularityParams, signal?: AbortSignal) =>
+        _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity }, signal),
+    topActors: (p: UsageWindowParams & { category?: string; limit?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
+};
+

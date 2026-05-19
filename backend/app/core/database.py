@@ -34,6 +34,29 @@ def _resolve_key_id(api_key: Optional[str]) -> Optional[str]:
     return str(key_id) if key_id else None
 
 
+def _emit_usage_event(
+    event_type: str,
+    *,
+    actor_api_key_id: Optional[str] = None,
+    category: Optional[str] = None,
+    metadata: Optional[dict] = None,
+) -> None:
+    """Fire-and-forget mirror of a domain mutation into ``usage_events``.
+
+    Lazy-imported to avoid an import cycle at module load. Never raises.
+    """
+    try:
+        from . import usage_events
+        usage_events.record(
+            event_type,
+            actor_api_key_id=actor_api_key_id,
+            category=category,
+            metadata=metadata,
+        )
+    except Exception:  # pragma: no cover — recorder must not block
+        pass
+
+
 def init_db():
     """Create a simple connection pool. Call once at startup."""
     global _pool
@@ -710,6 +733,12 @@ def create_contribution(
                 (cid, contributor or "Anonymous", tile_count, submitted_by_key_id,
                  validation_status),
             )
+    _emit_usage_event(
+        "contribution.submitted",
+        actor_api_key_id=submitted_by_key_id,
+        category="contribution",
+        metadata={"contribution_id": cid, "tile_count": int(tile_count)},
+    )
 
 
 def set_update_region(
@@ -2568,6 +2597,12 @@ def insert_landmark_audit(
                     json.dumps(after_payload) if after_payload is not None else None,
                 ),
             )
+    _emit_usage_event(
+        f"landmark.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={"landmark_id": landmark_id},
+    )
 
 
 def list_landmark_audit(
@@ -2638,6 +2673,12 @@ def insert_translocator_audit(
                     json.dumps(submission_stats) if submission_stats is not None else None,
                 ),
             )
+    _emit_usage_event(
+        f"translocator.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={"segment_id": segment_id},
+    )
 
 
 def list_translocator_audit(
@@ -2842,7 +2883,18 @@ def insert_trader_audit(
                     bool(duplicate_flagged),
                 ),
             )
-            return int(cur.fetchone()[0])
+            audit_row_id = int(cur.fetchone()[0])
+    _emit_usage_event(
+        f"trader.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={
+            "trader_id": trader_id,
+            "source": source,
+            "trader_type": trader_type,
+        },
+    )
+    return audit_row_id
 
 
 def get_trader_audit_row(audit_id: int) -> Optional[dict]:
@@ -3612,7 +3664,14 @@ def insert_tl_screenshot_request(
                     label,
                 ),
             )
-            return dict(cur.fetchone())
+            screenshot_row = dict(cur.fetchone())
+    _emit_usage_event(
+        "tl_screenshot.uploaded",
+        actor_api_key_id=submitter_api_key_id,
+        category="contribution",
+        metadata={"request_id": request_id},
+    )
+    return screenshot_row
 
 
 def get_tl_screenshot_request(request_id: str) -> Optional[dict]:

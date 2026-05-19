@@ -694,6 +694,22 @@ def audit_log(
                  action, target,
                  json.dumps(metadata) if metadata else None),
             )
+    # Mirror into the analytics fact table so the Usage dashboard can
+    # render admin activity over time without joining two tables. Imported
+    # lazily to avoid a circular import at module load.
+    try:
+        from . import usage_events
+        meta_for_event = dict(metadata) if metadata else {}
+        if target is not None:
+            meta_for_event.setdefault("target", str(target))
+        usage_events.record(
+            f"admin.{action}",
+            actor_api_key_id=admin_key_id,
+            category="admin",
+            metadata=meta_for_event or None,
+        )
+    except Exception:  # pragma: no cover — never block the audit write
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -816,6 +832,21 @@ def record_backup_download_redemption(
                    VALUES (%s, %s, %s, %s, %s)""",
                 (link_id, ip_hash, user_agent, success, failure_reason),
             )
+    # Mirror into usage_events for the admin Usage dashboard. No actor key
+    # — the redeemer is anonymous (they only have the share-link token).
+    try:
+        from . import usage_events
+        usage_events.record(
+            "backup.redeemed" if success else "backup.redeem_failed",
+            category="download",
+            metadata={
+                "link_id": int(link_id),
+                "failure_reason": failure_reason,
+            },
+            ip_hash=ip_hash,
+        )
+    except Exception:  # pragma: no cover — recorder must not block
+        pass
 
 
 # ---------------------------------------------------------------------------

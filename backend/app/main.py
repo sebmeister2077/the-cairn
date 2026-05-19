@@ -43,6 +43,7 @@ from .routes import admin_translocators as admin_translocators_routes
 from .routes import admin_translocators_screenshots as admin_translocators_screenshots_routes
 from .routes import contribute_traders as contribute_traders_routes
 from .routes import admin_traders as admin_traders_routes
+from .routes import admin_usage as admin_usage_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -605,6 +606,7 @@ app.include_router(admin_translocators_routes.router, prefix="/api")
 app.include_router(contribute_traders_routes.router, prefix="/api")
 app.include_router(admin_traders_routes.router, prefix="/api")
 app.include_router(admin_translocators_screenshots_routes.router, prefix="/api")
+app.include_router(admin_usage_routes.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 
