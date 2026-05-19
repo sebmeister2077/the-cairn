@@ -41,10 +41,10 @@ import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..auth import require_active_user
+from ..auth import require_active_user, verify_api_key
 from ..core import database as db
 from ..core import feature_flags
 from ..core import r2_storage
@@ -421,7 +421,7 @@ async def contribute_traders(
 # ---------------------------------------------------------------------------
 
 @router.get("/traders/url")
-async def get_traders_url(_: dict = Depends(require_active_user)) -> dict:
+async def get_traders_url(request: Request, api_key: str = Depends(verify_api_key)) -> dict:
     """Presigned download URL for the live traders.geojson. Returns
     ``{url: None, disabled: True}`` when the viewer flag is off, and
     ``{url: None, empty: True}`` when no traders have been contributed yet
