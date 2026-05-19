@@ -91,8 +91,8 @@ function SignInCTA({ reason }: { reason: "no-key" | "no-account" }) {
         <div className="flex-1">
           <p>
             {reason === "no-key"
-              ? "Set up an API key to add or rename landmarks."
-              : "Create an account to add or rename landmarks."}
+              ? "Set up an API key to add traders and add/rename landmarks."
+              : "Create an account to add traders and add/rename landmarks."}
           </p>
           <Link to="/account" className="text-primary hover:underline text-xs">
             Go to Account →
