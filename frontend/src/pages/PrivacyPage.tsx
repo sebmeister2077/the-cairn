@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const LAST_UPDATED = "May 15, 2026";
+const LAST_UPDATED = "May 20, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
@@ -51,8 +51,10 @@ export function PrivacyPage() {
           <p>
             We use your browser's <strong>local storage</strong> to keep the Service working. We do{" "}
             <strong>not</strong> use third-party tracking cookies, advertising cookies, or
-            analytics. The specific items saved in your browser may change over time as features are
-            added, changed, or removed. Examples of what may be stored include:
+            third-party analytics services (no Google Analytics, no Plausible, no pixels, etc.). We
+            do keep a first-party usage log on our own backend &mdash; see section 4c. The specific
+            items saved in your browser may change over time as features are added, changed, or
+            removed. Examples of what may be stored include:
           </p>
           <ul className="list-disc pl-5 space-y-1">
             <li>
@@ -183,6 +185,41 @@ export function PrivacyPage() {
         </section>
 
         <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">4c. Internal usage log</h2>
+          <p>
+            To understand how the Service is used, spot abuse patterns, and plan capacity, the
+            backend records a small <strong>usage event</strong> each time certain actions happen
+            (for example: a contribution is submitted, an admin approves or rejects a contribution,
+            a backup download link is redeemed, a moderation action is taken). Each event stores:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              The event type and category (e.g. <em>contribution.submitted</em>).
+            </li>
+            <li>A timestamp (UTC).</li>
+            <li>
+              The opaque identifier of the API key that performed the action (the same identifier
+              already tied to your account profile &mdash; never the raw key itself).
+            </li>
+            <li>
+              A small JSON metadata blob with non-identifying context such as the affected
+              contribution id, landmark id, or tile count.
+            </li>
+            <li>
+              For backup-link redemptions, the same <strong>IP hash</strong> described in section 4
+              (never the raw IP).
+            </li>
+          </ul>
+          <p>
+            This log is visible only to admins through an internal dashboard and is{" "}
+            <strong>never shared with third parties</strong>. It is retained indefinitely so we can
+            compare activity over time. If you delete your account, past events stay in the log but
+            are no longer linked to a real display name &mdash; they remain attached only to the
+            same opaque tombstone described in section 8.
+          </p>
+        </section>
+
+        <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">5. Server-side records</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
@@ -261,6 +298,10 @@ export function PrivacyPage() {
               may persist after expiry until manually purged.
             </li>
             <li>Admin audit log: retained indefinitely for accountability.</li>
+            <li>
+              Internal usage events (section 4c): retained indefinitely; soft-deleted accounts are
+              anonymised but their past events remain in aggregate counts.
+            </li>
             <li>Backend access logs: retained per the hosting provider's default policy.</li>
           </ul>
         </section>
