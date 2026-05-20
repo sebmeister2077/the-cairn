@@ -8,7 +8,7 @@ from time import perf_counter
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .auth import verify_api_key_info, is_admin_key
 from .config import settings
@@ -441,7 +441,7 @@ import re as _re
 _access_logger = logging.getLogger("app.access")
 _SLOW_REQUEST_SECONDS = 2.0
 # Skip noisy/health-style paths from the per-request log to keep output useful.
-_ACCESS_LOG_SKIP = _re.compile(r"^/api/health$")
+_ACCESS_LOG_SKIP = _re.compile(r"^(?:/api/health|/robots\.txt)$")
 
 
 def _client_ip(request: Request) -> str:
@@ -634,6 +634,11 @@ app.include_router(maintenance.admin_router, prefix="/api")
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
+async def robots_txt():
+    return "User-agent: *\nDisallow: /\n"
 
 
 @app.get("/api/me")
