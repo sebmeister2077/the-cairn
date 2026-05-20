@@ -31,9 +31,19 @@ _CHUNK_URL_REFRESH_BUFFER_SECONDS = 30 * 60
 # In-process cache for level metadata.json. The metadata is immutable for the
 # lifetime of a generated level, so re-fetching it from R2 on every request is
 # pure overhead. Cleared by `invalidate_level_metadata_cache(level)` when a
-# level is regenerated or deleted.
+# level is regenerated or deleted *in this process*.
+#
+# Cross-process invalidation: when the R2 object is rewritten by another
+# process (e.g. a local admin running refresh-metadata against the prod R2
+# bucket), this process never sees the `invalidate_level_metadata_cache` call
+# and would otherwise serve its stale parsed copy forever. To prevent that we
+# also revalidate the ETag against R2 at most once every
+# `_METADATA_REVALIDATE_AFTER_SECONDS`. A HEAD that matches the cached ETag
+# costs a single cheap round-trip and lets us keep serving the parsed dict.
+# A mismatch triggers a re-download.
 _metadata_cache: dict = {}
 _metadata_lock = threading.Lock()
+_METADATA_REVALIDATE_AFTER_SECONDS = 60
 
 # Throttle for the opportunistic expired-URL cleanup. Running a DELETE on every
 # request added a Supabase round-trip to the hot path for no reason — once per
@@ -57,16 +67,47 @@ def _read_db() -> bytes:
 def _level_metadata(level: int) -> dict:
     """Load level metadata.json from R2 (geometry needed for stitching).
 
-    Cached in process memory after the first successful fetch; invalidated
-    via ``invalidate_level_metadata_cache(level)`` when the level changes.
+    Cached in process memory. The cached entry is revalidated against R2's
+    ETag at most once per ``_METADATA_REVALIDATE_AFTER_SECONDS`` so an
+    out-of-process rewrite (e.g. admin refresh-metadata hitting R2 from a
+    different host) can't leave us serving stale geometry indefinitely.
+    Call ``invalidate_level_metadata_cache(level)`` for immediate eviction
+    inside this process.
     """
+    key = r2_storage.tops_map_level_metadata_key(level)
+    now = datetime.now(timezone.utc)
     cached = _metadata_cache.get(level)
     if cached is not None:
-        return cached
-    raw = r2_storage.download_bytes(r2_storage.tops_map_level_metadata_key(level))
+        if (now - cached["checked_at"]).total_seconds() < _METADATA_REVALIDATE_AFTER_SECONDS:
+            return cached["parsed"]
+        # Stale enough to revalidate. HEAD R2 for the current ETag; if it
+        # matches what we cached, the parsed copy is still valid — just bump
+        # the freshness timestamp and reuse it.
+        try:
+            current_etag = r2_storage.get_object_etag(key)
+        except Exception:
+            # Network blip — keep serving the cached copy rather than failing
+            # the request; we'll try to revalidate again on the next call.
+            return cached["parsed"]
+        if current_etag and current_etag == cached.get("etag"):
+            with _metadata_lock:
+                entry = _metadata_cache.get(level)
+                if entry is not None:
+                    entry["checked_at"] = now
+            return cached["parsed"]
+        # ETag changed — fall through to re-download.
+    raw = r2_storage.download_bytes(key)
     parsed = json.loads(raw.decode("utf-8"))
+    try:
+        etag = r2_storage.get_object_etag(key)
+    except Exception:
+        etag = ""
     with _metadata_lock:
-        _metadata_cache[level] = parsed
+        _metadata_cache[level] = {
+            "parsed": parsed,
+            "etag": etag,
+            "checked_at": datetime.now(timezone.utc),
+        }
     return parsed
 
 
