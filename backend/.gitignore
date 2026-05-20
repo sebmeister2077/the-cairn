@@ -9,3 +9,4 @@ venv/
 
 *.db
 /logs/regen.log
+regen.log
