@@ -103,7 +103,7 @@ export default function App() {
         // the wrong world bounds even after the backend was fixed, until
         // their cache happened to refetch. Bumping the buster forces a
         // clean hydration on next load.
-        buster: "v2-2026-05-19-tops-map-bounds",
+        buster: "v2-2026-05-20-tops-map-bounds",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;
