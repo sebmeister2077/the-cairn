@@ -352,7 +352,7 @@ async def approve_request(
         },
     }
 
-    async with contribute_tls_routes._translocators_lock:
+    async with contribute_tls_routes.translocators_write_lock("admin_screenshot_approve"):
         data = await asyncio.to_thread(contribute_tls_routes._load_translocators_file)
         data.setdefault("features", []).append(feature)
         await asyncio.to_thread(contribute_tls_routes._save_translocators_file, data)

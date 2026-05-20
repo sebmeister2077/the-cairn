@@ -235,9 +235,16 @@ def run_now() -> dict:
 def _scheduled_run() -> None:
     global _timer
     try:
-        result = run_now()
-        if result.get("created") or result["cleanup"]["deleted"]:
-            logger.info("weekly_backup: tick %s", result)
+        # Multi-instance safety: the snapshot writes to a shared R2 key
+        # (``backups/backup-YYYY-Www.db``) so only the elected leader may
+        # take this tick. Everyone else just re-arms the timer.
+        from ..core import leader_election
+        if not leader_election.should_run_scheduled_jobs():
+            logger.debug("weekly_backup: skipping tick — not leader")
+        else:
+            result = run_now()
+            if result.get("created") or result["cleanup"]["deleted"]:
+                logger.info("weekly_backup: tick %s", result)
     except Exception:
         logger.exception("weekly_backup: scheduled run failed")
     finally:

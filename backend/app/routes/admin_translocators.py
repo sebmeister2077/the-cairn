@@ -215,7 +215,7 @@ async def delete_user_translocator(
     """Remove a single user-contributed segment from the live geojson and
     write a ``delete`` audit row capturing the pre-delete feature."""
     actor_api_key_id = _admin_api_key_id(api_key)
-    async with contribute_tls_routes._translocators_lock:
+    async with contribute_tls_routes.translocators_write_lock("admin_delete"):
         data = await asyncio.to_thread(
             contribute_tls_routes._load_translocators_file
         )
@@ -251,7 +251,7 @@ async def delete_user_translocators_bulk(
     user. One geojson rewrite, one audit row per removed segment, plus a
     summary entry on the cross-cutting admin audit log."""
     admin_id = _admin_api_key_id(api_key)
-    async with contribute_tls_routes._translocators_lock:
+    async with contribute_tls_routes.translocators_write_lock("admin_bulk_delete"):
         data = await asyncio.to_thread(
             contribute_tls_routes._load_translocators_file
         )

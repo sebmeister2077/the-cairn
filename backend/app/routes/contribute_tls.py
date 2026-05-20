@@ -26,9 +26,11 @@ in the user-contributed colour.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -49,6 +51,59 @@ router = APIRouter(tags=["contribute-tls"])
 # Single-process serialisation of read-modify-upload of translocators.geojson.
 # Shared with admin_translocators delete paths via attribute access.
 _translocators_lock = asyncio.Lock()
+
+# How long to wait for the DB-backed cross-process lease before giving up
+# and surfacing a 503 to the client. The critical section is milliseconds
+# so 15s of patience is generous.
+_GEOJSON_LOCK_WAIT_SECONDS = 15.0
+_GEOJSON_LOCK_POLL_SECONDS = 0.1
+
+
+@contextlib.asynccontextmanager
+async def translocators_write_lock(action: str):
+    """Combine the in-process ``_translocators_lock`` with the DB-backed
+    ``geojson_lock(resource='translocators')`` lease so two backend
+    replicas cannot both read-modify-upload the geojson at the same time.
+
+    Surfaces HTTP 503 when the cross-instance lease cannot be acquired
+    within :data:`_GEOJSON_LOCK_WAIT_SECONDS` rather than blocking
+    indefinitely — a stuck holder means something is wrong on the other
+    side and the caller should retry instead of holding an HTTP worker.
+    """
+    async with _translocators_lock:
+        token: Optional[str] = None
+        deadline = time.monotonic() + _GEOJSON_LOCK_WAIT_SECONDS
+        while True:
+            try:
+                token = await asyncio.to_thread(
+                    db.try_acquire_geojson_lock, "translocators", action
+                )
+            except Exception:
+                logger.exception("translocators: DB lock acquisition raised")
+                raise HTTPException(
+                    status_code=503,
+                    detail="translocators lock backend unavailable; retry",
+                )
+            if token:
+                break
+            if time.monotonic() >= deadline:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "translocators.geojson is locked by another writer; "
+                        "retry in a few seconds"
+                    ),
+                )
+            await asyncio.sleep(_GEOJSON_LOCK_POLL_SECONDS)
+        try:
+            yield token
+        finally:
+            try:
+                await asyncio.to_thread(
+                    db.release_geojson_lock, "translocators", token
+                )
+            except Exception:
+                logger.exception("translocators: DB lock release raised")
 
 # Coordinate sanity limits. Same as landmarks.py.
 _COORD_LIMIT = 4_000_000
@@ -314,7 +369,7 @@ async def contribute_translocators(
     accepted_features: list = []
     skipped_existing = 0
 
-    async with _translocators_lock:
+    async with translocators_write_lock("contribute"):
         data = await asyncio.to_thread(_load_translocators_file)
         existing = _existing_segments(data)
 

@@ -233,7 +233,7 @@ async def edit_user_trader(
     api_key: str = Depends(require_admin),
 ) -> dict:
     admin_id = _admin_api_key_id(api_key)
-    async with contribute_traders_routes._traders_lock:
+    async with contribute_traders_routes.traders_write_lock("admin_edit"):
         data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
         target = None
         for feat in data.get("features") or []:
@@ -316,7 +316,7 @@ async def delete_user_trader(
     api_key: str = Depends(require_admin),
 ) -> dict:
     admin_id = _admin_api_key_id(api_key)
-    async with contribute_traders_routes._traders_lock:
+    async with contribute_traders_routes.traders_write_lock("admin_delete"):
         data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
         removed = _drop_features_by_ids(data, {trader_id})
         if not removed:
@@ -381,7 +381,7 @@ async def delete_user_traders_bulk(
     if not ids_to_drop:
         return {"deleted": 0, "trader_ids": []}
 
-    async with contribute_traders_routes._traders_lock:
+    async with contribute_traders_routes.traders_write_lock("admin_bulk_delete"):
         data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
         removed = _drop_features_by_ids(data, ids_to_drop)
         if not removed:
@@ -443,7 +443,7 @@ async def revert_trader_audit(
     if row.get("action") != "add":
         raise HTTPException(status_code=400, detail="can only revert 'add' rows")
     trader_id = row["trader_id"]
-    async with contribute_traders_routes._traders_lock:
+    async with contribute_traders_routes.traders_write_lock("admin_revert"):
         data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
         removed = _drop_features_by_ids(data, {trader_id})
         if removed:

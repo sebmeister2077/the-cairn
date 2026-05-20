@@ -70,16 +70,24 @@ def run_now() -> dict:
 def _scheduled_run() -> None:
     global _timer
     try:
-        result = _sweep_once()
-        logger.info("cleanup_history: swept %s", result)
+        # Multi-instance safety: only the leader runs the sweep to avoid
+        # two instances racing on the same history rows / R2 archive moves.
+        from ..core import leader_election
+        if not leader_election.should_run_scheduled_jobs():
+            logger.debug("cleanup_history: skipping tick — not leader")
+        else:
+            result = _sweep_once()
+            logger.info("cleanup_history: swept %s", result)
     except Exception:
         logger.exception("cleanup_history: sweep raised; will retry next interval")
     # Opportunistic leak sweeper for the async archive-compression worker —
     # re-enqueue any pending/<id>.db files that should have been moved to
     # archived/<id>.db.zst already. Cheap when compression is OFF.
     try:
+        from ..core import leader_election
         from . import compress_workers
-        compress_workers.sweep_pending_archives()
+        if leader_election.should_run_scheduled_jobs():
+            compress_workers.sweep_pending_archives()
     except Exception:
         logger.exception("cleanup_history: compress sweep raised")
     finally:

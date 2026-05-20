@@ -28,9 +28,11 @@ audit log + admin queue; see [backend/app/core/database.py].
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -52,10 +54,54 @@ router = APIRouter(tags=["landmarks"])
 _PRESIGN_TTL_SECONDS = 7 * 24 * 60 * 60
 
 # Single-process serialisation of read-modify-upload of the geojson file.
-# The file is small (<1 MB), so the critical section is milliseconds.
-# If the deployment ever scales out beyond one backend replica this
-# becomes insufficient and needs a DB-backed advisory lock.
+# Wrapped by ``landmarks_write_lock`` below together with a DB-backed
+# lease so two backend replicas cannot stomp each other's writes.
 _landmarks_lock = asyncio.Lock()
+
+_GEOJSON_LOCK_WAIT_SECONDS = 15.0
+_GEOJSON_LOCK_POLL_SECONDS = 0.1
+
+
+@contextlib.asynccontextmanager
+async def landmarks_write_lock(action: str):
+    """In-process + DB-backed mutex around landmarks.geojson read-modify-upload.
+
+    See ``contribute_tls.translocators_write_lock`` for the rationale.
+    """
+    async with _landmarks_lock:
+        token: Optional[str] = None
+        deadline = time.monotonic() + _GEOJSON_LOCK_WAIT_SECONDS
+        while True:
+            try:
+                token = await asyncio.to_thread(
+                    db.try_acquire_geojson_lock, "landmarks", action
+                )
+            except Exception:
+                logger.exception("landmarks: DB lock acquisition raised")
+                raise HTTPException(
+                    status_code=503,
+                    detail="landmarks lock backend unavailable; retry",
+                )
+            if token:
+                break
+            if time.monotonic() >= deadline:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "landmarks.geojson is locked by another writer; "
+                        "retry in a few seconds"
+                    ),
+                )
+            await asyncio.sleep(_GEOJSON_LOCK_POLL_SECONDS)
+        try:
+            yield token
+        finally:
+            try:
+                await asyncio.to_thread(
+                    db.release_geojson_lock, "landmarks", token
+                )
+            except Exception:
+                logger.exception("landmarks: DB lock release raised")
 
 # Allowed type values must mirror the frontend's ``LandmarkProperty.type`` union
 # in [frontend/src/components/MapViewer.tsx]. Misc landmarks are filtered out
@@ -304,7 +350,7 @@ async def add_landmark(
         "geometry": {"type": "Point", "coordinates": [int(payload.x), -int(payload.z)]},
     }
 
-    async with _landmarks_lock:
+    async with landmarks_write_lock("add"):
         data = await asyncio.to_thread(_load_landmarks_file)
         data["features"].append(feature)
         await asyncio.to_thread(_save_landmarks_file, data)
@@ -342,7 +388,7 @@ async def rename_landmark(
     user_id = str(user["id"]) if user.get("id") is not None else None
     display_name = user.get("display_name") or "Anonymous"
 
-    async with _landmarks_lock:
+    async with landmarks_write_lock("rename"):
         data = await asyncio.to_thread(_load_landmarks_file)
         feature = _find_feature(data, landmark_id)
         if feature is None:

@@ -190,6 +190,33 @@ CREATE TABLE IF NOT EXISTS map_lock (
     expires_at      TIMESTAMPTZ NOT NULL
 );
 
+-- Per-resource mutex for the small geojson files served from R2
+-- (translocators, traders, landmarks). The contribute + admin routes do
+-- a read-modify-upload of the geojson; with multiple server replicas the
+-- in-process ``asyncio.Lock`` is insufficient so we additionally take a
+-- short DB-backed lease around the critical section. ``resource`` is the
+-- bare resource name ('translocators' | 'traders' | 'landmarks').
+CREATE TABLE IF NOT EXISTS geojson_lock (
+    resource        TEXT PRIMARY KEY,
+    holder_token    TEXT NOT NULL,
+    holder_action   TEXT NOT NULL,
+    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at      TIMESTAMPTZ NOT NULL
+);
+
+-- Single-row leader-election table. Periodic scheduled jobs that touch
+-- shared R2 keys (weekly backups, history cleanup) only run on the
+-- instance currently holding this lease. Followers refresh ``is_leader``
+-- in-memory from a background loop; a crashed leader auto-releases via
+-- ``expires_at``.
+CREATE TABLE IF NOT EXISTS instance_leader (
+    id              TEXT PRIMARY KEY,
+    holder_token    TEXT NOT NULL,
+    instance_label  TEXT NOT NULL,
+    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at      TIMESTAMPTZ NOT NULL
+);
+
 -- Feature flags consulted by both backend (gating endpoints) and frontend
 -- (gating UI). A flag is OFF by default if its row is missing.
 CREATE TABLE IF NOT EXISTS feature_flags (
@@ -2413,6 +2440,178 @@ def with_map_lock(action: str):
             release_map_lock(token)
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Geojson lock — per-resource mutex (translocators / traders / landmarks)
+# ---------------------------------------------------------------------------
+#
+# The contribute + admin routes do a read-modify-upload of the small
+# geojson files served from R2. The historical in-process ``asyncio.Lock``
+# only serialises within one process; with multiple backend replicas we
+# also need a DB-backed lease so the two instances can't both fetch v1,
+# both append, and both upload (last write wins, earlier additions lost).
+#
+# Lease is short (60s default) because the critical section is milliseconds.
+# Callers should wrap acquisition with a small async wait loop and surface
+# HTTP 503 on starvation rather than blocking forever.
+
+
+class GeojsonLocked(Exception):
+    """Raised when the per-resource geojson lock cannot be acquired."""
+
+
+GEOJSON_LOCK_TTL_SECONDS = 60
+_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks"}
+
+
+def try_acquire_geojson_lock(
+    resource: str,
+    action: str,
+    ttl_seconds: int = GEOJSON_LOCK_TTL_SECONDS,
+) -> Optional[str]:
+    """Atomic single-shot acquire. Returns the holder token on success or
+    ``None`` when another holder still owns a non-expired lease."""
+    if resource not in _VALID_GEOJSON_RESOURCES:
+        raise ValueError(f"Invalid geojson lock resource: {resource}")
+    token = _secrets.token_hex(16)
+    now = datetime.now(timezone.utc)
+    expires = now + _timedelta(seconds=ttl_seconds)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO geojson_lock
+                       (resource, holder_token, holder_action, acquired_at, expires_at)
+                   VALUES (%s, %s, %s, %s, %s)
+                   ON CONFLICT (resource) DO UPDATE
+                       SET holder_token  = EXCLUDED.holder_token,
+                           holder_action = EXCLUDED.holder_action,
+                           acquired_at   = EXCLUDED.acquired_at,
+                           expires_at    = EXCLUDED.expires_at
+                       WHERE geojson_lock.expires_at < now()
+                   RETURNING holder_token""",
+                (resource, token, action, now, expires),
+            )
+            row = cur.fetchone()
+            if row is None or row[0] != token:
+                return None
+    return token
+
+
+def release_geojson_lock(resource: str, token: str) -> bool:
+    """Release the lock if we still own it. Returns True iff a row was removed."""
+    if not token:
+        return False
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM geojson_lock WHERE resource = %s AND holder_token = %s",
+                (resource, token),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def force_release_geojson_lock(resource: str) -> bool:
+    """Admin override — drop the lease unconditionally."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM geojson_lock WHERE resource = %s", (resource,))
+            return (cur.rowcount or 0) > 0
+
+
+def get_geojson_lock_info(resource: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT holder_action, acquired_at, expires_at
+                       FROM geojson_lock
+                       WHERE resource = %s""",
+                (resource,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+# ---------------------------------------------------------------------------
+# Instance leader-election lease
+# ---------------------------------------------------------------------------
+#
+# Scheduled jobs that write to shared R2 keys (weekly backup, history
+# cleanup) must run on at most one instance at a time. The follower
+# instances refresh ``is_leader`` in-memory from a background loop that
+# tries to refresh or claim this single-row lease every few seconds.
+#
+# Lease is intentionally longer than the geojson lock — it's refreshed
+# in the background while the leader is healthy, so most callers see a
+# stable answer.
+
+INSTANCE_LEADER_ID = "singleton"
+INSTANCE_LEADER_TTL_SECONDS = 60
+
+
+def acquire_or_refresh_instance_leader(
+    token: str,
+    instance_label: str,
+    ttl_seconds: int = INSTANCE_LEADER_TTL_SECONDS,
+) -> bool:
+    """Try to extend our existing lease, or claim it if no holder / expired.
+
+    Returns True iff we now hold the lease. Caller-side ``token`` is a
+    long-lived random string generated once per process; passing the same
+    token to repeated calls is what makes refreshes idempotent.
+    """
+    if not token:
+        return False
+    now = datetime.now(timezone.utc)
+    expires = now + _timedelta(seconds=ttl_seconds)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO instance_leader
+                       (id, holder_token, instance_label, acquired_at, expires_at)
+                   VALUES (%s, %s, %s, %s, %s)
+                   ON CONFLICT (id) DO UPDATE
+                       SET holder_token   = EXCLUDED.holder_token,
+                           instance_label = EXCLUDED.instance_label,
+                           acquired_at    = CASE
+                               WHEN instance_leader.holder_token = EXCLUDED.holder_token
+                                   THEN instance_leader.acquired_at
+                               ELSE EXCLUDED.acquired_at
+                           END,
+                           expires_at     = EXCLUDED.expires_at
+                       WHERE instance_leader.holder_token = EXCLUDED.holder_token
+                          OR instance_leader.expires_at  < now()
+                   RETURNING holder_token""",
+                (INSTANCE_LEADER_ID, token, instance_label, now, expires),
+            )
+            row = cur.fetchone()
+            return bool(row) and row[0] == token
+
+
+def release_instance_leader(token: str) -> bool:
+    """Voluntarily relinquish the lease (called on graceful shutdown)."""
+    if not token:
+        return False
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM instance_leader WHERE id = %s AND holder_token = %s",
+                (INSTANCE_LEADER_ID, token),
+            )
+            return (cur.rowcount or 0) > 0
+
+
+def get_instance_leader_info() -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT holder_token, instance_label, acquired_at, expires_at
+                       FROM instance_leader
+                       WHERE id = %s""",
+                (INSTANCE_LEADER_ID,),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
 
 
 # ---------------------------------------------------------------------------

@@ -105,6 +105,22 @@ class Settings:
     # endpoint falls back to the request's own base URL.
     PUBLIC_BASE_URL: str = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
 
+    # --- Multi-instance coordination (leader election + geojson lock) ---
+    # Whether this instance should run scheduled jobs (weekly backup,
+    # history cleanup) that write shared R2 keys:
+    #   "auto"   — compete for leadership, only the leader runs them
+    #              (recommended for production deployments).
+    #   "always" — fire them regardless of leadership (legacy single-
+    #              instance behaviour).
+    #   "never"  — never fire them. Set this on a local dev / map-render
+    #              instance that points at production Postgres + R2 so it
+    #              cannot race the production scheduler.
+    RUN_SCHEDULED_JOBS: str = os.environ.get("RUN_SCHEDULED_JOBS", "auto").strip().lower()
+    # Human-readable label for this instance (shown in admin diagnostics
+    # and used as the ``instance_label`` recorded on the leader-election
+    # lease row). Defaults to ``<hostname>:<pid>`` when empty.
+    INSTANCE_LABEL: str = os.environ.get("INSTANCE_LABEL", "").strip()
+
     # --- Phase 4b: per-contribution revert ---
     # How long after approval a contribution can still be reverted (days).
     # Beyond this admins must restore from a Phase-4a backup.

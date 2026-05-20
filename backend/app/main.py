@@ -287,6 +287,22 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Resources upload-jobs startup reset failed (non-fatal): %s", exc)
 
+    # Multi-instance coordination — start the leader-election background
+    # refresh loop BEFORE any scheduled-job timers can fire so the first
+    # tick sees an accurate ``is_leader()`` answer. No-op when
+    # ``RUN_SCHEDULED_JOBS=never`` (local map-render instance).
+    step_started = perf_counter()
+    try:
+        from .core import leader_election
+        leader_election.start()
+        logger.info(
+            "Startup step leader_election started in %.3fs (info=%s)",
+            perf_counter() - step_started,
+            leader_election.current_info(),
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Leader election failed to start (non-fatal): %s", exc)
+
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:
@@ -375,6 +391,11 @@ async def lifespan(app: FastAPI):
         try:
             from .tasks import weekly_backup
             weekly_backup.stop()
+        except Exception:
+            pass
+        try:
+            from .core import leader_election
+            await leader_election.stop()
         except Exception:
             pass
         try:

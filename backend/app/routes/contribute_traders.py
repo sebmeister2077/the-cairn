@@ -34,9 +34,11 @@ trader of any type is **still accepted** but the audit row carries
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
+import time
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -56,6 +58,51 @@ router = APIRouter(tags=["contribute-traders"])
 # Single-process serialisation of read-modify-upload of traders.geojson.
 # Shared with admin_traders delete / restore paths via attribute access.
 _traders_lock = asyncio.Lock()
+
+_GEOJSON_LOCK_WAIT_SECONDS = 15.0
+_GEOJSON_LOCK_POLL_SECONDS = 0.1
+
+
+@contextlib.asynccontextmanager
+async def traders_write_lock(action: str):
+    """In-process + DB-backed mutex around traders.geojson read-modify-upload.
+
+    See ``contribute_tls.translocators_write_lock`` for the rationale.
+    """
+    async with _traders_lock:
+        token: Optional[str] = None
+        deadline = time.monotonic() + _GEOJSON_LOCK_WAIT_SECONDS
+        while True:
+            try:
+                token = await asyncio.to_thread(
+                    db.try_acquire_geojson_lock, "traders", action
+                )
+            except Exception:
+                logger.exception("traders: DB lock acquisition raised")
+                raise HTTPException(
+                    status_code=503,
+                    detail="traders lock backend unavailable; retry",
+                )
+            if token:
+                break
+            if time.monotonic() >= deadline:
+                raise HTTPException(
+                    status_code=503,
+                    detail=(
+                        "traders.geojson is locked by another writer; "
+                        "retry in a few seconds"
+                    ),
+                )
+            await asyncio.sleep(_GEOJSON_LOCK_POLL_SECONDS)
+        try:
+            yield token
+        finally:
+            try:
+                await asyncio.to_thread(
+                    db.release_geojson_lock, "traders", token
+                )
+            except Exception:
+                logger.exception("traders: DB lock release raised")
 
 # Coordinate sanity limits. Same as landmarks / translocators.
 _COORD_LIMIT = 4_000_000
@@ -346,7 +393,7 @@ async def contribute_traders(
 
     accepted: list = []  # list of (feature_dict, duplicate_flag)
 
-    async with _traders_lock:
+    async with traders_write_lock("contribute"):
         data = await asyncio.to_thread(_load_traders_file)
         existing = _existing_points(data)
 

@@ -123,7 +123,7 @@ async def approve_edit_request(
     landmark_id = request_row["landmark_id"]
     proposed_label = request_row["proposed_label"]
 
-    async with landmarks_routes._landmarks_lock:
+    async with landmarks_routes.landmarks_write_lock("admin_approve_rename"):
         data = await asyncio.to_thread(landmarks_routes._load_landmarks_file)
         feature = landmarks_routes._find_feature(data, landmark_id)
         if feature is None:
@@ -252,7 +252,7 @@ async def delete_landmark(
     Any pending rename requests for this landmark are auto-rejected so the
     queue stays clean.
     """
-    async with landmarks_routes._landmarks_lock:
+    async with landmarks_routes.landmarks_write_lock("admin_delete"):
         data = await asyncio.to_thread(landmarks_routes._load_landmarks_file)
         feature = landmarks_routes._find_feature(data, landmark_id)
         if feature is None:
@@ -327,7 +327,7 @@ async def create_geojson_backup(
         raise HTTPException(status_code=400, detail=f"asset must be one of {_VALID_ASSETS}")
     # Hold the per-asset lock so the manual snapshot can't capture a torn
     # write from a concurrent user POST/PATCH.
-    async with landmarks_routes._landmarks_lock:
+    async with landmarks_routes.landmarks_write_lock("admin_backup_create"):
         try:
             key = await asyncio.to_thread(weekly_backup.create_manual_geojson_snapshot, body.asset)
         except FileNotFoundError as exc:
@@ -347,7 +347,7 @@ async def restore_geojson_backup(
             status_code=400,
             detail="confirm must be true — restore overwrites the live file",
         )
-    async with landmarks_routes._landmarks_lock:
+    async with landmarks_routes.landmarks_write_lock("admin_backup_restore"):
         try:
             live_key = await asyncio.to_thread(
                 weekly_backup.restore_geojson_from_backup, body.asset, body.key
