@@ -96,11 +96,11 @@ export const OPERATIONAL_FLAGS: OperationalFlagSpec[] = [
     defaultEnabled: true,
     whenOn:
       "Preview rendering, upload validation, and match-score computation run normally for every caller. " +
-      "This is the right setting whenever the server has the RAM/CPU to spare.",
+      "This is the right setting whenever the server has the RAM/CPU & disk space to spare.",
     whenOff:
-      "Non-admin /contribute/preview and /contribute/preview-region requests return HTTP 503. " +
+      "/contribute/preview and /contribute/preview-region requests return HTTP 503. " +
       "New uploads are still accepted but the validate_uploads and match-score workers are NOT auto-spawned \u2014 rows pile up in 'pending' until the bulk-run button below is pressed. " +
-      "Already-running workers continue to drain whatever they were processing. Admins (env-var ADMIN_API_KEY) bypass the gate everywhere.",
+      "Already-running workers continue to drain whatever they were processing. ",
     alarmState: "off",
     alarmText: "heavy compute paused",
     caveat:
