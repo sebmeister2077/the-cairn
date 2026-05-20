@@ -66,19 +66,19 @@ export function isTraderType(s: unknown): s is TraderType {
  * heuristic only matters for the chat-log path.
  */
 const TYPE_KEYWORDS: Record<TraderType, string[]> = {
-    agriculture: ["agriculture", "farmer"],// "farm", "crops", "crop", "seeds", "seed"],
+    agriculture: ["agriculture", "farmer", "agricultural"],// "farm", "crops", "crop", "seeds", "seed"],
     artisan: ["artisan"],// "tools", "tool", "smith", "blacksmith"],
     building_materials: [
         "building materials",
         "building material",
-        "building"],
+        "building", "build", 'builder'],
     //     "stones",
     //     "stone",
     //     "masonry",
     //     "construction",
     // ],
-    clothing: ["clothing", "tailor", "clothes"],// "garments", "garment"],
-    commodities: ["commodities", "commodity"], // "general goods", "general"],
+    clothing: ["clothing", "tailor", "clothes", "cloth"],// "garments", "garment"],
+    commodities: ["commodities", "commodity", "comodity", "general goods", "general", "common"],
     furniture: ["furniture"],// "carpenter"],
     luxuries: ["luxuries", "luxury"], // "fine"],
     survival_goods: ["survival goods", "survival good", "survival"],

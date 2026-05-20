@@ -222,6 +222,11 @@ CREATE TABLE IF NOT EXISTS instance_leader (
 CREATE TABLE IF NOT EXISTS feature_flags (
     key             TEXT PRIMARY KEY,
     enabled         BOOLEAN NOT NULL DEFAULT FALSE,
+    -- Optional numeric override for admin-tunable quotas (per-day caps,
+    -- max batch sizes, dedupe radii, cooldowns). NULL means "use the
+    -- default baked into the route handler"; see ``feature_flags.get_int``
+    -- and alembic 0018_feature_flag_value_int.
+    value_int       INTEGER,
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_by_key  TEXT
 );
@@ -269,7 +274,20 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- /api/contribute-tls/screenshots/* accepts uploads and queues OCR +
     -- minimap analysis; OFF = those endpoints return 404 and the
     -- frontend tab hides the form.
-    ('translocator_screenshot_contributions', FALSE)
+    ('translocator_screenshot_contributions', FALSE),
+    -- Quota-only rows: ``enabled`` is unused for these (the actual
+    -- feature gate is a separate boolean flag like
+    -- ``traders_manual_contributions``). ``value_int`` is NULL → handler
+    -- default applies; admins can override from the Feature Flags page.
+    ('traders_chatlog_daily_cap', TRUE),
+    ('traders_manual_daily_cap', TRUE),
+    ('traders_max_batch', TRUE),
+    ('traders_dedupe_radius', TRUE),
+    ('translocators_chatlog_daily_cap', TRUE),
+    ('translocators_max_batch', TRUE),
+    ('translocators_dedupe_radius', TRUE),
+    ('translocator_screenshots_max_pending', TRUE),
+    ('map_contribution_cooldown_days', TRUE)
 ON CONFLICT (key) DO NOTHING;
 
 -- Generic key/value settings table for non-boolean admin-tunable values
@@ -527,6 +545,13 @@ ALTER TABLE invite_links
 ADD COLUMN IF NOT EXISTS is_default_public BOOLEAN NOT NULL DEFAULT FALSE;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
     ON invite_links ((is_default_public)) WHERE is_default_public = TRUE;
+
+-- Admin-tunable numeric overrides for ``feature_flags`` (per-day caps on
+-- contribution submissions, max batch sizes, dedupe radii, cooldowns).
+-- NULL means "use the default baked into the route handler" — see
+-- ``feature_flags.get_int`` and alembic 0018_feature_flag_value_int.
+ALTER TABLE feature_flags
+ADD COLUMN IF NOT EXISTS value_int INTEGER;
 """
 
 # ---------------------------------------------------------------------------
@@ -3471,17 +3496,43 @@ def reset_stuck_resources_upload_jobs() -> int:
             return cur.rowcount or 0
 
 
-def set_feature_flag(key: str, enabled: bool, updated_by_key: str = "") -> Optional[dict]:
-    """Set a flag's state. Returns the resulting row, or None if the key is unknown."""
-    updated_by_key_id = _resolve_key_id(updated_by_key)
+_UNSET = object()
+
+
+def set_feature_flag(
+    key: str,
+    enabled: bool = _UNSET,  # type: ignore[assignment]
+    updated_by_key: str = "",
+    *,
+    value_int=_UNSET,
+) -> Optional[dict]:
+    """Set a flag's state. Returns the resulting row, or None if the key is unknown.
+
+    Either ``enabled`` (the legacy boolean toggle) or ``value_int`` (the
+    admin-tunable numeric quota, may be ``None`` to clear back to the
+    handler default) may be provided. Unset fields are left untouched.
+    """
+    if enabled is _UNSET and value_int is _UNSET:
+        raise ValueError("set_feature_flag: at least one of enabled / value_int required")
+
+    sets = []
+    params: list = []
+    if enabled is not _UNSET:
+        sets.append("enabled = %s")
+        params.append(bool(enabled))
+    if value_int is not _UNSET:
+        sets.append("value_int = %s")
+        params.append(int(value_int) if value_int is not None else None)
+    sets.append("updated_at = now()")
+    sets.append("updated_by_key_id = %s")
+    params.append(_resolve_key_id(updated_by_key))
+    params.append(key)
+
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """UPDATE feature_flags
-                       SET enabled = %s, updated_at = now(), updated_by_key_id = %s
-                       WHERE key = %s
-                       RETURNING *""",
-                (enabled, updated_by_key_id, key),
+                f"UPDATE feature_flags SET {', '.join(sets)} WHERE key = %s RETURNING *",
+                tuple(params),
             )
             row = cur.fetchone()
             return dict(row) if row else None

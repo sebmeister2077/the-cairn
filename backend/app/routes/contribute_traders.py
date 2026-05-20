@@ -26,9 +26,10 @@ Mirrors [contribute_tls.py] structurally:
   speaks +Z = north — see translocators / landmarks for precedent),
 - audit rows written outside the lock.
 
-Dedupe: trader within ``_DUPLICATE_RADIUS`` blocks (60) of an existing
-trader of any type is **still accepted** but the audit row carries
-``duplicate_flagged=TRUE`` so admins can review.
+Dedupe: trader within the configured radius (default 60 blocks, see
+``traders_dedupe_radius`` flag) of an existing trader of any type is
+**still accepted** but the audit row carries ``duplicate_flagged=TRUE``
+so admins can review.
 """
 
 from __future__ import annotations
@@ -107,15 +108,19 @@ async def traders_write_lock(action: str):
 # Coordinate sanity limits. Same as landmarks / translocators.
 _COORD_LIMIT = 4_000_000
 
-# Per-batch cap. Trader populations on a long-running server stay well
-# under this; anything larger is suspicious.
-_MAX_BATCH = 200
+# Default per-batch cap. Admin-overridable via the ``traders_max_batch``
+# feature flag (numeric value_int) when populations on a long-running
+# server outgrow the baseline.
+_MAX_BATCH_DEFAULT = 200
+_MAX_BATCH_FLAG = "traders_max_batch"
 
-# Server-side dedupe radius (blocks). A trader within this radius of any
-# existing trader (any type) is still inserted but flagged in the audit
-# row for admin review. The Tops Map UI does not surface this to the
-# submitter — they get an accepted count, not a duplicate count.
-_DUPLICATE_RADIUS = 60
+# Default server-side dedupe radius (blocks). A trader within this radius
+# of any existing trader (any type) is still inserted but flagged in the
+# audit row for admin review. The Tops Map UI does not surface this to
+# the submitter — they get an accepted count, not a duplicate count.
+# Admin-overridable via the ``traders_dedupe_radius`` feature flag.
+_DUPLICATE_RADIUS_DEFAULT = 60
+_DUPLICATE_RADIUS_FLAG = "traders_dedupe_radius"
 
 # Label is short user-controlled text. Reuse landmark / translocator caps.
 _LABEL_MAX_LEN = 200
@@ -124,11 +129,15 @@ _VIEWER_FLAG = "traders_viewer"
 _CHATLOG_FLAG = "traders_chatlog_contributions"
 _MANUAL_FLAG = "traders_manual_contributions"
 
-# Per-user daily caps on submissions. Counted directly off ``traders_audit``
-# (action='add', source=X) rather than the generic rate_limiter table so the
-# limit survives container restarts and stays exact.
-_CHATLOG_MAX_PER_DAY = 1
-_MANUAL_MAX_PER_DAY = 15
+# Default per-user daily caps on submissions. Counted directly off
+# ``traders_audit`` (action='add', source=X) rather than the generic
+# rate_limiter table so the limit survives container restarts and stays
+# exact. Admin-overridable via the ``traders_chatlog_daily_cap`` /
+# ``traders_manual_daily_cap`` feature flags.
+_CHATLOG_MAX_PER_DAY_DEFAULT = 1
+_MANUAL_MAX_PER_DAY_DEFAULT = 15
+_CHATLOG_DAILY_CAP_FLAG = "traders_chatlog_daily_cap"
+_MANUAL_DAILY_CAP_FLAG = "traders_manual_daily_cap"
 _DAY_SECONDS = 86400
 
 _TRADER_TYPES = frozenset((
@@ -260,8 +269,12 @@ def _existing_points(data: dict) -> List[tuple]:
 
 
 def _has_duplicate(
-    px: int, pz: int, existing: List[tuple], radius: int = _DUPLICATE_RADIUS
+    px: int, pz: int, existing: List[tuple], radius: Optional[int] = None,
 ) -> bool:
+    if radius is None:
+        radius = feature_flags.get_int(
+            _DUPLICATE_RADIUS_FLAG, _DUPLICATE_RADIUS_DEFAULT
+        )
     r2 = radius * radius
     for ex, ez, _id, _t in existing:
         dx = ex - px
@@ -319,7 +332,8 @@ async def contribute_traders(
 
     Returns ``{accepted, duplicate_flagged_count, batch_id}``. Both chatlog
     and manual rows are always inserted; ``duplicate_flagged_count`` is the
-    number that landed within ``_DUPLICATE_RADIUS`` of an existing trader.
+    number that landed within the admin-configured dedupe radius of an
+    existing trader (see ``traders_dedupe_radius`` flag).
     """
     user = _require_account_user(ctx)
 
@@ -327,11 +341,15 @@ async def contribute_traders(
     if source == "chatlog":
         if not feature_flags.is_feature_enabled_default(_CHATLOG_FLAG, False):
             raise HTTPException(status_code=503, detail=_flag_off_detail("chat-log"))
-        daily_cap = _CHATLOG_MAX_PER_DAY
+        daily_cap = feature_flags.get_int(
+            _CHATLOG_DAILY_CAP_FLAG, _CHATLOG_MAX_PER_DAY_DEFAULT
+        )
     elif source == "manual":
         if not feature_flags.is_feature_enabled_default(_MANUAL_FLAG, False):
             raise HTTPException(status_code=503, detail=_flag_off_detail("manual"))
-        daily_cap = _MANUAL_MAX_PER_DAY
+        daily_cap = feature_flags.get_int(
+            _MANUAL_DAILY_CAP_FLAG, _MANUAL_MAX_PER_DAY_DEFAULT
+        )
     else:
         raise HTTPException(
             status_code=400, detail="source must be 'chatlog' or 'manual'"
@@ -363,10 +381,11 @@ async def contribute_traders(
             )
 
     items = payload.traders
-    if len(items) > _MAX_BATCH:
+    max_batch = feature_flags.get_int(_MAX_BATCH_FLAG, _MAX_BATCH_DEFAULT)
+    if len(items) > max_batch:
         raise HTTPException(
             status_code=400,
-            detail=f"too many traders in one batch (max {_MAX_BATCH})",
+            detail=f"too many traders in one batch (max {max_batch})",
         )
 
     # Validate up front so we never touch R2 on bad input.

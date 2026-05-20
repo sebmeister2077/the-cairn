@@ -108,17 +108,22 @@ async def translocators_write_lock(action: str):
 # Coordinate sanity limits. Same as landmarks.py.
 _COORD_LIMIT = 4_000_000
 
-# Per-batch cap. Even a power-user importing a long-played server should
-# fit easily under this — anything larger is more likely a malformed
-# upload than a real submission.
-_MAX_BATCH = 200
+# Default per-batch cap. Even a power-user importing a long-played server
+# should fit easily under this — anything larger is more likely a
+# malformed upload than a real submission. Admin-overridable via the
+# ``translocators_max_batch`` feature flag.
+_MAX_BATCH_DEFAULT = 200
+_MAX_BATCH_FLAG = "translocators_max_batch"
 
-# Server-side dedupe radius (blocks). A submitted TL whose endpoints both
-# fall within this many blocks of the SAME existing segment (orientation-
-# agnostic) is treated as already present and silently skipped. Matches
-# the frontend's ``EXISTING_MATCH_RADIUS`` so the FE-flagged ``existing``
-# pairs are also caught here as a trust-but-verify safety net.
-_EXISTING_DEDUPE_RADIUS = 200
+# Default server-side dedupe radius (blocks). A submitted TL whose
+# endpoints both fall within this many blocks of the SAME existing
+# segment (orientation-agnostic) is treated as already present and
+# silently skipped. Matches the frontend's ``EXISTING_MATCH_RADIUS`` so
+# the FE-flagged ``existing`` pairs are also caught here as a
+# trust-but-verify safety net. Admin-overridable via the
+# ``translocators_dedupe_radius`` feature flag.
+_EXISTING_DEDUPE_RADIUS_DEFAULT = 200
+_EXISTING_DEDUPE_RADIUS_FLAG = "translocators_dedupe_radius"
 
 # Label is short user-controlled text. Allow newlines (existing seed data has
 # them) and a generous length cap to discourage abuse / griefing.
@@ -127,9 +132,11 @@ _LABEL_MAX_LEN = 200
 _FLAG_KEY = "translocator_contributions"
 
 # Per-user daily cap on chat-log batch submissions. Admins (env-var
-# ``ADMIN_API_KEY`` or DB ``is_admin``) bypass.
+# ``ADMIN_API_KEY`` or DB ``is_admin``) bypass. Default value below;
+# admin-overridable via the ``translocators_chatlog_daily_cap`` flag.
 _BATCH_RATE_SCOPE = "contribute-tls-batch"
-_BATCH_RATE_MAX = 3
+_BATCH_RATE_MAX_DEFAULT = 3
+_BATCH_RATE_MAX_FLAG = "translocators_chatlog_daily_cap"
 _BATCH_RATE_WINDOW = 86400  # 24 hours
 
 _ACCOUNT_REQUIRED_DETAIL = {
@@ -249,10 +256,14 @@ def _existing_segments(data: dict) -> List[tuple]:
 
 
 def _segment_endpoints_overlap(
-    a: tuple, b: tuple, *, radius: int = _EXISTING_DEDUPE_RADIUS
+    a: tuple, b: tuple, *, radius: Optional[int] = None,
 ) -> bool:
     """Orientation-agnostic check: do segment ``a``'s endpoints both fall
     within ``radius`` blocks of segment ``b``'s endpoints?"""
+    if radius is None:
+        radius = feature_flags.get_int(
+            _EXISTING_DEDUPE_RADIUS_FLAG, _EXISTING_DEDUPE_RADIUS_DEFAULT
+        )
     ax1, az1, ax2, az2 = a
     bx1, bz1, bx2, bz2 = b
     r2 = radius * radius
@@ -307,8 +318,9 @@ async def contribute_translocators(
 
     Returns ``{accepted, skipped_existing, batch_id}``. ``skipped_existing``
     counts submitted pairs whose endpoints both overlap an existing
-    segment within ``_EXISTING_DEDUPE_RADIUS`` blocks (these are silently
-    dropped — no geojson change, no audit row).
+    segment within the admin-configured dedupe radius (see
+    ``translocators_dedupe_radius`` flag) — these are silently dropped
+    (no geojson change, no audit row).
     """
     if not feature_flags.is_feature_enabled_default(_FLAG_KEY, False):
         raise HTTPException(status_code=503, detail=_FLAG_OFF_DETAIL)
@@ -324,15 +336,16 @@ async def contribute_translocators(
         check_scoped_rate_limit(
             ctx["key"],
             _BATCH_RATE_SCOPE,
-            _BATCH_RATE_MAX,
+            feature_flags.get_int(_BATCH_RATE_MAX_FLAG, _BATCH_RATE_MAX_DEFAULT),
             _BATCH_RATE_WINDOW,
         )
 
     items = payload.translocators
-    if len(items) > _MAX_BATCH:
+    max_batch = feature_flags.get_int(_MAX_BATCH_FLAG, _MAX_BATCH_DEFAULT)
+    if len(items) > max_batch:
         raise HTTPException(
             status_code=400,
-            detail=f"too many translocators in one batch (max {_MAX_BATCH})",
+            detail=f"too many translocators in one batch (max {max_batch})",
         )
 
     # Validate coords + label up front so we never touch R2 on bad input.

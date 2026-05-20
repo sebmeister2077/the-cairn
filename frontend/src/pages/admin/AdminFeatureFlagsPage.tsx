@@ -43,124 +43,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
-
-type IconType = typeof Wrench;
-
-interface OperationalFlagSpec {
-  key: string;
-  label: string;
-  icon: IconType;
-  /** What turning the switch ON does. */
-  whenOn: string;
-  /** What turning the switch OFF does. */
-  whenOff: string;
-  /** Default value when no row exists in the DB (matches the backend). */
-  defaultEnabled: boolean;
-  /** Tone shown next to the toggle when the flag is in its "alarm" state. */
-  alarmState: "on" | "off";
-  alarmText: string;
-  /**
-   * Visual severity of the alarm state. "danger" (default) draws an amber
-   * border + destructive badge + destructive confirm dialog. "info" uses a
-   * neutral blue accent for flags whose alarm state is merely informational
-   * (e.g. an opt-in optimization being active, not a kill switch tripped).
-   */
-  alarmTone?: "danger" | "info";
-  /** Optional additional caveat — surfaced in a callout. */
-  caveat?: string;
-}
-
-const OPERATIONAL_FLAGS: OperationalFlagSpec[] = [
-  {
-    key: "maintenance_mode",
-    label: "Maintenance mode",
-    icon: Wrench,
-    defaultEnabled: false,
-    whenOn:
-      "All POST/PUT/PATCH/DELETE requests from non-admin users return HTTP 503. " +
-      "Read-only browsing (map viewer, contribution history, public stats) keeps working. " +
-      "Admin endpoints (/api/admin/*) and the env-var admin key remain fully writable so you can disable the flag without locking yourself out.",
-    whenOff: "Normal operation — writes flow through as usual.",
-    alarmState: "on",
-    alarmText: "site is in maintenance mode",
-    caveat:
-      "Use this for short windows (DB migration, R2 maintenance, incident triage). " +
-      "Long-running maintenance should also be communicated on the General page.",
-  },
-  {
-    key: "uploads_enabled",
-    label: "Map contributions",
-    icon: Upload,
-    defaultEnabled: true,
-    whenOn: "Players with the contribute permission can upload .db files via the Contribute page.",
-    whenOff:
-      "POST /api/contribute, /contribute/upload-url, and /contribute/complete return HTTP 503 for non-admin callers. " +
-      "Approving / rejecting / reverting existing pending contributions still works. " +
-      "Admins can still upload (e.g. while backfilling after an incident).",
-    alarmState: "off",
-    alarmText: "uploads disabled",
-    caveat:
-      "Flip OFF during a contribution-driven incident (spam wave, disk near full, R2 quota issue). " +
-      "Existing pending contributions are not affected — only new submissions.",
-  },
-  {
-    key: "registration_enabled",
-    label: "New account registration",
-    icon: UserPlus,
-    defaultEnabled: true,
-    whenOn: "Users with a freshly claimed invite key can complete /api/account/register.",
-    whenOff:
-      "POST /api/account/register returns HTTP 503. Existing accounts continue to work (login, profile edits, contributions). " +
-      "Invite links can still be claimed (a key is issued) but the user cannot create an account row until this is re-enabled.",
-    alarmState: "off",
-    alarmText: "registration disabled",
-    caveat:
-      "Useful when a sibling-account / shared-IP wave needs to be triaged before more accounts join. " +
-      "Pre-existing static API keys (env-var) bypass registration entirely.",
-  },
-  {
-    key: "heavy_compute_enabled",
-    label: "Heavy compute (previews, validation, match score)",
-    icon: Cpu,
-    defaultEnabled: true,
-    whenOn:
-      "Preview rendering, upload validation, and match-score computation run normally for every caller. " +
-      "This is the right setting whenever the server has the RAM/CPU to spare.",
-    whenOff:
-      "Non-admin /contribute/preview and /contribute/preview-region requests return HTTP 503. " +
-      "New uploads are still accepted but the validate_uploads and match-score workers are NOT auto-spawned \u2014 rows pile up in 'pending' until the bulk-run button below is pressed. " +
-      "Already-running workers continue to drain whatever they were processing. Admins (env-var ADMIN_API_KEY) bypass the gate everywhere.",
-    alarmState: "off",
-    alarmText: "heavy compute paused",
-    caveat:
-      "Flip OFF when the production server is too small for the per-request workload (multi-GB DB downloads, OOM during previews) and you want an admin on a beefier machine to drain pending work in batches via the button below.",
-  },
-  {
-    key: "compress_artefacts",
-    label: "Zstd compression of R2 artefacts",
-    icon: Archive,
-    defaultEnabled: false,
-    whenOn:
-      "All NEW writes to weekly backups, archived per-contribution .db files, and undo " +
-      "replaced.db files are stored as .zst (single form, no raw sibling). The combined " +
-      "globalservermap.db is uploaded raw AND a .zst sibling is produced in the background " +
-      "(latest-wins) so cache-miss reads can prefer the smaller .zst when its source-etag " +
-      "matches the live raw ETag. Flipping ON for the first time also kicks an eager " +
-      "migration that converts every still-retained archived/undo .db to .zst (paused when " +
-      "heavy compute is OFF). Readers transparently support both forms forever.",
-    whenOff:
-      "All artefacts are written as raw .db / .bin (current behaviour). Existing .zst " +
-      "artefacts continue to be readable — flipping OFF does NOT rehydrate them. Use this " +
-      "as a kill switch if a compression bug is suspected.",
-    alarmState: "on",
-    alarmText: "compression active",
-    alarmTone: "info",
-    caveat:
-      "Compression level + thread budget are tuned in the panel below (visible only when " +
-      "the flag is ON). Higher levels use more CPU per write but produce smaller files; " +
-      "the eager migration honours the heavy-compute kill switch.",
-  },
-];
+import { QUOTA_FLAGS, QuotaFlagRow } from "@/components/admin/feature-flags/AdminQuotaFlagRow";
+import { MapLockCard } from "@/components/admin/feature-flags/MapLockCard";
+import {
+  OPERATIONAL_FLAGS,
+  OperationalFlagCard,
+} from "@/components/admin/feature-flags/OperationalFlagCard";
+import { HeavyComputeRunner } from "@/components/admin/feature-flags/HeavyComputeRunner";
 
 interface ProductFlagSpec {
   key: string;
@@ -282,7 +171,13 @@ export function AdminFeatureFlagsPage() {
 
   const setFlag = useMutation({
     mutationFn: ({ key, enabled }: { key: string; enabled: boolean }) =>
-      adminSetFeatureFlag(key, enabled),
+      adminSetFeatureFlag(key, { enabled }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
+  });
+
+  const setQuota = useMutation({
+    mutationFn: ({ key, value_int }: { key: string; value_int: number | null }) =>
+      adminSetFeatureFlag(key, { value_int }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-feature-flags"] }),
   });
 
@@ -299,6 +194,7 @@ export function AdminFeatureFlagsPage() {
     const known = new Set<string>();
     OPERATIONAL_FLAGS.forEach((f) => known.add(f.key));
     PRODUCT_FLAG_CATEGORIES.forEach((c) => c.flags.forEach((f) => known.add(f.key)));
+    QUOTA_FLAGS.forEach((f) => known.add(f.key));
     const unknown: ProductFlagSpec[] = (flagsQuery.data?.flags ?? [])
       .filter((f) => !known.has(f.key))
       .map((f) => ({ key: f.key, title: f.key, help: "" }));
@@ -377,6 +273,38 @@ export function AdminFeatureFlagsPage() {
         <MapLockCard />
       </section>
 
+      {/* Per-user quotas & rate limits (numeric) */}
+      <section className="space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Quotas &amp; rate limits
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Numeric caps applied to non-admin contributions. Leave blank (Reset) to use the built-in
+            default. Admins always bypass these caps. Changes propagate within ~30s.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-4 space-y-3">
+            {QUOTA_FLAGS.map((spec) => {
+              const f = flagMap.get(spec.key);
+              const current = f?.value_int ?? null;
+              const isPending = setQuota.isPending && setQuota.variables?.key === spec.key;
+              return (
+                <QuotaFlagRow
+                  key={spec.key}
+                  spec={spec}
+                  current={current}
+                  updatedAt={f?.updated_at}
+                  pending={isPending}
+                  onSave={(value_int) => setQuota.mutate({ key: spec.key, value_int })}
+                />
+              );
+            })}
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Product / experimental flags, grouped by category */}
       {categorizedProductFlags.map((cat) => (
         <section key={cat.id} className="space-y-3">
@@ -431,365 +359,6 @@ export function AdminFeatureFlagsPage() {
           </Card>
         </section>
       ))}
-    </div>
-  );
-}
-
-function MapLockCard() {
-  const queryClient = useQueryClient();
-  const [confirmRelease, setConfirmRelease] = useState(false);
-
-  const lock = useQuery({
-    queryKey: ["admin-map-lock"],
-    queryFn: adminGetMapLock,
-    refetchInterval: 10_000,
-  });
-
-  const releaseLock = useMutation({
-    mutationFn: adminForceReleaseMapLock,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-map-lock"] }),
-  });
-
-  const lockInfo = lock.data?.lock ?? null;
-
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          {lockInfo ? (
-            <Lock className="h-4 w-4 text-amber-600" />
-          ) : (
-            <Unlock className="h-4 w-4 text-emerald-600" />
-          )}
-          Map lock
-          <HelpTip
-            text={
-              "Global mutex around the combined map .db. Held briefly during " +
-              "approve, revert, and backup-restore so two writers can\u2019t merge into " +
-              "stale bytes. Force-release only if you\u2019re sure no worker is mid-write \u2014 " +
-              "doing so during a real merge can corrupt the map."
-            }
-          />
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
-          <div>
-            {lockInfo ? (
-              <span>
-                Held by <strong>{lockInfo.holder_action}</strong>, expires{" "}
-                {new Date(lockInfo.expires_at).toLocaleTimeString()}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">Free — no merge in progress.</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => lock.refetch()}
-              aria-label="Refresh lock status"
-            >
-              <RefreshCw className="h-3 w-3" />
-            </Button>
-            {lockInfo && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={releaseLock.isPending}
-                onClick={() => setConfirmRelease(true)}
-              >
-                Force release
-              </Button>
-            )}
-          </div>
-        </div>
-      </CardContent>
-
-      <ConfirmDialog
-        open={confirmRelease}
-        title="Force-release the map lock?"
-        description="Only do this if you\u2019re sure no approve/revert/restore is in progress. Releasing while a worker is still merging can corrupt the combined map."
-        confirmLabel="Release lock"
-        variant="destructive"
-        onCancel={() => setConfirmRelease(false)}
-        onConfirm={() => {
-          setConfirmRelease(false);
-          releaseLock.mutate();
-        }}
-      />
-    </Card>
-  );
-}
-
-function OperationalFlagCard({
-  spec,
-  flag,
-  pending,
-  onToggle,
-  extra,
-}: {
-  spec: OperationalFlagSpec;
-  flag: FeatureFlag | undefined;
-  pending: boolean;
-  onToggle: (enabled: boolean) => void;
-  extra?: ReactNode;
-}) {
-  const enabled = flag ? flag.enabled : spec.defaultEnabled;
-  const inAlarm = (spec.alarmState === "on" && enabled) || (spec.alarmState === "off" && !enabled);
-  const tone = spec.alarmTone ?? "danger";
-  const Icon = spec.icon;
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingValue, setPendingValue] = useState<boolean | null>(null);
-
-  // Toggling into alarm state (e.g. enabling maintenance, disabling uploads)
-  // is destructive enough that we want a confirmation.
-  function handleToggle(next: boolean) {
-    const willBeAlarm = (spec.alarmState === "on" && next) || (spec.alarmState === "off" && !next);
-    if (willBeAlarm) {
-      setPendingValue(next);
-      setConfirmOpen(true);
-      return;
-    }
-    onToggle(next);
-  }
-
-  const alarmBorderClass = inAlarm
-    ? tone === "info"
-      ? "border-sky-500"
-      : "border-amber-500"
-    : undefined;
-
-  return (
-    <Card className={alarmBorderClass}>
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center justify-between gap-3 text-base">
-          <span className="flex items-center gap-2">
-            <Icon className="h-4 w-4" />
-            {spec.label}
-            <Badge variant="outline" className="font-mono text-[10px]">
-              {spec.key}
-            </Badge>
-          </span>
-          <span className="flex items-center gap-2">
-            {inAlarm ? (
-              tone === "info" ? (
-                <Badge variant="outline" className="gap-1 text-sky-600 border-sky-500/40">
-                  <Info className="h-3 w-3" />
-                  {spec.alarmText}
-                </Badge>
-              ) : (
-                <Badge variant="destructive" className="gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  {spec.alarmText}
-                </Badge>
-              )
-            ) : (
-              <Badge variant="outline" className="gap-1 text-emerald-600 border-emerald-500/40">
-                <CheckCircle2 className="h-3 w-3" />
-                normal
-              </Badge>
-            )}
-            <Switch
-              checked={enabled}
-              disabled={pending}
-              onCheckedChange={(v) => handleToggle(Boolean(v))}
-            />
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm">
-        <div className="grid gap-1 sm:grid-cols-2">
-          <div className="rounded border p-2">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
-              When ON
-            </div>
-            <p className="text-xs">{spec.whenOn}</p>
-          </div>
-          <div className="rounded border p-2">
-            <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
-              When OFF
-            </div>
-            <p className="text-xs">{spec.whenOff}</p>
-          </div>
-        </div>
-        {spec.caveat && (
-          <p className="text-[11px] text-muted-foreground italic flex gap-1">
-            <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0 text-amber-600" />
-            {spec.caveat}
-          </p>
-        )}
-        {flag && (
-          <p className="text-[10px] text-muted-foreground">
-            Last changed {new Date(flag.updated_at).toLocaleString()}
-            {flag.updated_by_suffix ? ` by …${flag.updated_by_suffix}` : ""}
-          </p>
-        )}
-        {!flag && (
-          <p className="text-[10px] text-muted-foreground">
-            Default value (no row in DB yet — first toggle creates one).
-          </p>
-        )}
-        {extra}
-      </CardContent>
-
-      <ConfirmDialog
-        open={confirmOpen}
-        title={`${pendingValue ? "Enable" : "Disable"} ${spec.label}?`}
-        description={
-          spec.alarmState === "on" && pendingValue
-            ? spec.whenOn
-            : spec.alarmState === "off" && !pendingValue
-              ? spec.whenOff
-              : ""
-        }
-        confirmLabel={pendingValue ? "Enable" : "Disable"}
-        variant={tone === "info" ? "default" : "destructive"}
-        onCancel={() => {
-          setConfirmOpen(false);
-          setPendingValue(null);
-        }}
-        onConfirm={() => {
-          if (pendingValue !== null) onToggle(pendingValue);
-          setConfirmOpen(false);
-          setPendingValue(null);
-        }}
-      />
-    </Card>
-  );
-}
-
-// Bulk-runner UI shown inside the heavy_compute_enabled flag card. Lets an
-// admin manually drain the work that piles up while the kill switch is OFF
-// (validation worker, match-score worker, and pre-rendering pending preview
-// PNGs). Polls /admin/heavy-compute/status every 2 s while a run is active.
-function HeavyComputeRunner() {
-  const queryClient = useQueryClient();
-  const [active, setActive] = useState(false);
-
-  const status = useQuery<HeavyComputeStatus>({
-    queryKey: ["admin-heavy-compute-status"],
-    queryFn: adminGetHeavyComputeStatus,
-    refetchInterval: active ? 2_000 : false,
-    refetchOnWindowFocus: false,
-  });
-
-  // Activate polling whenever the backend reports running, deactivate when
-  // it stops (so we still grab the final state).
-  useEffect(() => {
-    if (status.data?.running) setActive(true);
-    else if (active && status.data && !status.data.running) {
-      // One more refetch after stop to settle final counts, then quiet down.
-      const t = setTimeout(() => setActive(false), 2_500);
-      return () => clearTimeout(t);
-    }
-  }, [status.data, active]);
-
-  const runMutation = useMutation({
-    mutationFn: adminRunHeavyComputeNow,
-    onSuccess: () => {
-      setActive(true);
-      queryClient.invalidateQueries({ queryKey: ["admin-heavy-compute-status"] });
-    },
-  });
-
-  const s = status.data;
-  const running = s?.running ?? false;
-  const progress =
-    s && s.previews_total > 0
-      ? Math.round(
-          ((s.previews_rendered + s.previews_already_cached + s.previews_failed) /
-            s.previews_total) *
-            100,
-        )
-      : null;
-
-  return (
-    <div className="rounded border p-2 space-y-2 bg-muted/40">
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="text-xs">
-          <p className="font-medium">Run heavy compute now</p>
-          <p className="text-muted-foreground">
-            Sequentially: revive zombie validations &rarr; spawn validator &rarr; spawn match-score
-            worker &rarr; render every missing preview PNG. Bypasses the kill switch. Safe to call
-            repeatedly.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          onClick={() => runMutation.mutate()}
-          disabled={runMutation.isPending || running}
-        >
-          {(runMutation.isPending || running) && (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          )}
-          {running ? "Running…" : "Run now"}
-        </Button>
-      </div>
-
-      {runMutation.error && (
-        <p className="text-xs text-destructive">{(runMutation.error as Error).message}</p>
-      )}
-
-      {s && (s.started_at || running) && (
-        <div className="text-[11px] space-y-1 text-muted-foreground">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="text-[10px]">
-              validation worker: {s.validation_worker_started ? "spawned" : "not spawned"}
-            </Badge>
-            <Badge variant="outline" className="text-[10px]">
-              {s.match_score_skipped_reason
-                ? `match-score: ${s.match_score_skipped_reason}`
-                : `match-score worker: ${s.match_score_worker_started ? "spawned" : "not spawned"}`}
-            </Badge>
-            {s.validations_revived > 0 && (
-              <Badge variant="outline" className="text-[10px]">
-                revived {s.validations_revived} zombie row(s)
-              </Badge>
-            )}
-          </div>
-          {s.previews_total > 0 && (
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span>
-                  previews: {s.previews_rendered + s.previews_already_cached}/{s.previews_total} (
-                  {s.previews_already_cached} cached, {s.previews_rendered} rendered,{" "}
-                  {s.previews_failed} failed)
-                </span>
-                {progress !== null && <span>{progress}%</span>}
-              </div>
-              <div className="h-1.5 w-full rounded bg-muted overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${progress ?? 0}%` }}
-                />
-              </div>
-              {s.current_preview_id && running && (
-                <p className="font-mono text-[10px]">rendering {s.current_preview_id}…</p>
-              )}
-            </div>
-          )}
-          {s.previews_failures.length > 0 && (
-            <details className="text-[10px]">
-              <summary className="cursor-pointer text-destructive">
-                {s.previews_failures.length} preview failure(s)
-              </summary>
-              <ul className="list-disc pl-4 space-y-0.5 mt-1">
-                {s.previews_failures.slice(0, 10).map((f, i) => (
-                  <li key={i} className="font-mono">
-                    {f}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {s.error && <p className="text-destructive">drain crashed: {s.error}</p>}
-          {s.finished_at && !running && (
-            <p>Finished at {new Date(s.finished_at * 1000).toLocaleTimeString()}.</p>
-          )}
-        </div>
-      )}
     </div>
   );
 }

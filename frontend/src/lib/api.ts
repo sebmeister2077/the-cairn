@@ -2085,8 +2085,14 @@ export async function adminResolveFlag(flagId: number, resolution: "valid" | "ab
 export interface FeatureFlag {
     key: string;
     enabled: boolean;
+    value_int: number | null;
     updated_at: string;
     updated_by_suffix: string | null;
+}
+
+export interface FeatureFlagPatch {
+    enabled?: boolean;
+    value_int?: number | null;
 }
 
 export async function adminListFeatureFlags(): Promise<{ flags: FeatureFlag[] }> {
@@ -2098,12 +2104,12 @@ export async function adminListFeatureFlags(): Promise<{ flags: FeatureFlag[] }>
 
 export async function adminSetFeatureFlag(
     key: string,
-    enabled: boolean,
+    patch: FeatureFlagPatch,
 ): Promise<{ flag: FeatureFlag }> {
     const res = await fetch(`${API_BASE}/admin/feature-flags/${encodeURIComponent(key)}`, {
         method: "PATCH",
         headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ enabled }),
+        body: JSON.stringify(patch),
     });
     return (await handleResponse(res)).json();
 }

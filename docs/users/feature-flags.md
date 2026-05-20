@@ -16,6 +16,7 @@ within `CACHE_TTL_SECONDS` (30 s by default).
 |---|---|---|
 | `key` | TEXT PK | Stable identifier referenced from code |
 | `enabled` | BOOLEAN | Current state |
+| `value_int` | INTEGER, nullable | Optional integer payload for quota-style flags (see [Quotas & rate limits](#quotas--rate-limits)). `NULL` means "use the built-in default". |
 | `updated_at` | TIMESTAMPTZ | Last toggle |
 | `updated_by_key` | TEXT, nullable | Admin api_key that flipped it (audited via `audit_log`) |
 
@@ -181,6 +182,42 @@ default; flipping ON exposes the feature to the relevant audience.
 | `translocator_contributions` | Chat-log `POST /api/contribute-tls` flow. Non-admin callers are additionally rate-limited to **3 submissions per 24 h** (admins bypass). |
 | `translocator_screenshot_contributions` | Screenshot-based translocator contribution path (`POST /api/contribute-tls/screenshots/*`). |
 
+## Quotas & rate limits
+
+Feature-flag rows can also carry an optional integer (`value_int`) used to
+tune per-user contribution caps and dedupe radii without code changes. Each
+row has both `enabled` and `value_int` — for these quota rows `enabled` is
+expected to stay `TRUE` and `value_int` carries the cap. If `value_int` is
+`NULL`, the backend falls back to the built-in default shown below. Admins
+always bypass these caps.
+
+Read in code via `feature_flags.get_int(key, default)`. Changes propagate
+within ~30 s (the same in-process cache as boolean flags).
+
+| Key | Default | Hard max | Unit | What it caps |
+|---|---|---|---|---|
+| `traders_chatlog_daily_cap` | 1 | 50 | per 24 h | Approved trader chat-log submissions per user, sliding 24 h window. |
+| `traders_manual_daily_cap` | 15 | 500 | per 24 h | Approved manual-form trader submissions per user, sliding 24 h window. |
+| `traders_max_batch` | 200 | 2000 | items | Max trader waypoints accepted in one `POST /api/contribute-traders[/manual]`. |
+| `traders_dedupe_radius` | 60 | 1000 | blocks | Distance below which two trader waypoints are treated as duplicates. |
+| `translocators_chatlog_daily_cap` | 3 | 100 | per 24 h | Translocator chat-log submissions per API key, sliding 24 h window (in-memory; resets on restart). |
+| `translocators_max_batch` | 200 | 2000 | items | Max translocator segments accepted in one `POST /api/contribute-tls`. |
+| `translocators_dedupe_radius` | 200 | 2000 | blocks | Distance below which two translocator endpoints are treated as overlapping. |
+| `translocator_screenshots_max_pending` | 90 | 1000 | pending | Per-user max pending translocator screenshot requests awaiting review. |
+| `map_contribution_cooldown_days` | 7 | 365 | days | Cooldown after an approved map contribution before the same user can submit another. |
+
+### Setting via the API
+
+```
+PATCH /api/admin/feature-flags/{key}
+Body: {"value_int": 25}        # set the cap
+Body: {"value_int": null}      # reset to the built-in default
+Body: {"enabled": false}       # disable the flag (boolean caps only)
+```
+
+Both fields can be combined in one request. Validation enforces
+`0 <= value_int <= hard_max` per the table above.
+
 ## Toggling a flag
 
 ### From the UI
@@ -209,7 +246,7 @@ Returns the new row. The cache is invalidated for that key.
 GET /api/admin/feature-flags
 ```
 
-Returns `{"flags": [{key, enabled, updated_at, updated_by_key}, ...]}`.
+Returns `{"flags": [{key, enabled, value_int, updated_at, updated_by_key}, ...]}`.
 
 ## Adding a new flag
 

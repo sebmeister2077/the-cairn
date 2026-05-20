@@ -38,7 +38,8 @@ router = APIRouter(prefix="/contribute-tls/screenshots", tags=["contribute-tls-s
 
 _FLAG_KEY = "translocator_screenshot_contributions"
 _LABEL_MAX_LEN = 200
-_MAX_PENDING_TL_CONTRIBUTIONS_PER_USER = 90
+_MAX_PENDING_DEFAULT = 90
+_MAX_PENDING_FLAG = "translocator_screenshots_max_pending"
 _UPLOAD_URL_TTL_SECONDS = 900
 _MAX_SCREENSHOT_BYTES = 8 * 1024 * 1024  # 8 MiB
 
@@ -182,7 +183,8 @@ async def request_upload_urls(
     pending = await asyncio.to_thread(
         db.count_pending_tl_screenshot_requests_for_user, api_key_id
     )
-    if pending >= _MAX_PENDING_TL_CONTRIBUTIONS_PER_USER:
+    cap = feature_flags.get_int(_MAX_PENDING_FLAG, _MAX_PENDING_DEFAULT)
+    if pending >= cap:
         raise HTTPException(
             status_code=429,
             detail={
@@ -234,7 +236,8 @@ async def complete_upload(
     pending = await asyncio.to_thread(
         db.count_pending_tl_screenshot_requests_for_user, api_key_id
     )
-    if pending >= _MAX_PENDING_TL_CONTRIBUTIONS_PER_USER:
+    cap = feature_flags.get_int(_MAX_PENDING_FLAG, _MAX_PENDING_DEFAULT)
+    if pending >= cap:
         raise HTTPException(
             status_code=429,
             detail={

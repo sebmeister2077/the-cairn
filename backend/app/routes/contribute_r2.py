@@ -79,6 +79,7 @@ from ..core.feature_flags import (
     is_feature_enabled,
     is_feature_enabled_default,
     is_heavy_compute_allowed,
+    get_int as _ff_get_int,
 )
 
 router = APIRouter()
@@ -1002,12 +1003,13 @@ def _get_contribution_status(api_key: str) -> dict:
       pending_contribution_id, next_allowed_at (ISO), cooldown_days.
     Admins always get can_contribute=True with null reason.
     """
+    cooldown_days = _ff_get_int("map_contribution_cooldown_days", CONTRIBUTION_COOLDOWN_DAYS)
     base = {
         "can_contribute": True,
         "cooldown_reason": None,
         "pending_contribution_id": None,
         "next_allowed_at": None,
-        "cooldown_days": CONTRIBUTION_COOLDOWN_DAYS,
+        "cooldown_days": cooldown_days,
     }
     if _is_admin_key(api_key) or not api_key:
         return base
@@ -1024,7 +1026,7 @@ def _get_contribution_status(api_key: str) -> dict:
     last_approval = db.get_user_last_approval(api_key)
     if last_approval and last_approval.get("approved_at"):
         approved_at = last_approval["approved_at"]
-        next_allowed = approved_at + timedelta(days=CONTRIBUTION_COOLDOWN_DAYS)
+        next_allowed = approved_at + timedelta(days=cooldown_days)
         if next_allowed > datetime.now(timezone.utc):
             return {
                 **base,
@@ -1051,11 +1053,12 @@ def _check_contribution_limits(api_key: str):
         )
     if status["cooldown_reason"] == "cooldown":
         next_allowed = status["next_allowed_at"]
+        cooldown_days = _ff_get_int("map_contribution_cooldown_days", CONTRIBUTION_COOLDOWN_DAYS)
         raise HTTPException(
             status_code=429,
             detail=(
                 f"You can contribute again on {next_allowed}. "
-                f"Limit: one approved contribution per {CONTRIBUTION_COOLDOWN_DAYS} days."
+                f"Limit: one approved contribution per {cooldown_days} days."
             ),
         )
 

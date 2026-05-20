@@ -10,7 +10,7 @@ self-refresh within the TTL.
 import os
 import threading
 import time
-from typing import Optional
+from typing import Optional, Tuple
 
 from . import database as db
 
@@ -18,12 +18,17 @@ from . import database as db
 CACHE_TTL_SECONDS = 30
 
 _lock = threading.Lock()
-_cache: dict = {}  # key -> (enabled: bool, fetched_at: float)
+# key -> (enabled: bool, value_int: Optional[int], fetched_at: float)
+_cache: dict = {}
 
 
-def _read_through(key: str) -> bool:
+def _read_through(key: str) -> Tuple[bool, Optional[int]]:
     row = db.get_feature_flag(key)
-    return bool(row and row.get("enabled"))
+    if not row:
+        return False, None
+    raw = row.get("value_int")
+    vi = int(raw) if raw is not None else None
+    return bool(row.get("enabled")), vi
 
 
 def is_feature_enabled(key: str) -> bool:
@@ -31,10 +36,10 @@ def is_feature_enabled(key: str) -> bool:
     now = time.monotonic()
     with _lock:
         cached = _cache.get(key)
-        if cached and (now - cached[1]) < CACHE_TTL_SECONDS:
+        if cached and (now - cached[2]) < CACHE_TTL_SECONDS:
             return cached[0]
     try:
-        enabled = _read_through(key)
+        enabled, value_int = _read_through(key)
     except Exception:
         # On DB hiccup, prefer the last known value rather than flipping a
         # gated feature off mid-flight.
@@ -44,7 +49,7 @@ def is_feature_enabled(key: str) -> bool:
                 return cached[0]
         return False
     with _lock:
-        _cache[key] = (enabled, now)
+        _cache[key] = (enabled, value_int, now)
     return enabled
 
 
@@ -58,7 +63,7 @@ def is_feature_enabled_default(key: str, default: bool) -> bool:
     now = time.monotonic()
     with _lock:
         cached = _cache.get(key)
-        if cached and (now - cached[1]) < CACHE_TTL_SECONDS:
+        if cached and (now - cached[2]) < CACHE_TTL_SECONDS:
             return cached[0]
     try:
         row = db.get_feature_flag(key)
@@ -68,10 +73,49 @@ def is_feature_enabled_default(key: str, default: bool) -> bool:
             if cached:
                 return cached[0]
         return default
-    enabled = bool(row["enabled"]) if row else default
+    if row:
+        enabled = bool(row["enabled"])
+        raw = row.get("value_int")
+        value_int = int(raw) if raw is not None else None
+    else:
+        enabled = default
+        value_int = None
     with _lock:
-        _cache[key] = (enabled, now)
+        _cache[key] = (enabled, value_int, now)
     return enabled
+
+
+def get_int(key: str, default: int) -> int:
+    """Return the admin-set numeric override for ``key``, or ``default`` if
+    no row exists, the override is NULL, the DB is unreachable, or the
+    stored value is negative (treated as "unset").
+
+    Use this for admin-tunable quotas (per-day submission caps, max batch
+    sizes, dedupe radii, cooldowns). The corresponding ``feature_flags``
+    row only needs to exist for the override to take effect — the boolean
+    ``enabled`` column is unused. Same 30 s in-process cache as the
+    boolean readers; updates from the admin page propagate within the TTL.
+    """
+    now = time.monotonic()
+    with _lock:
+        cached = _cache.get(key)
+        if cached and (now - cached[2]) < CACHE_TTL_SECONDS:
+            vi = cached[1]
+            return vi if (vi is not None and vi >= 0) else default
+    try:
+        enabled, value_int = _read_through(key)
+    except Exception:
+        # DB hiccup: prefer the last known cached override; otherwise fall
+        # back to the caller's default rather than 0-ing the quota.
+        with _lock:
+            cached = _cache.get(key)
+            if cached:
+                vi = cached[1]
+                return vi if (vi is not None and vi >= 0) else default
+        return default
+    with _lock:
+        _cache[key] = (enabled, value_int, now)
+    return value_int if (value_int is not None and value_int >= 0) else default
 
 
 def invalidate(key: Optional[str] = None) -> None:
