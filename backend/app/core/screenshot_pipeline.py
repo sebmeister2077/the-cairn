@@ -925,6 +925,19 @@ def build_validation_warnings(
     xa, za = _coord(coords_a, "x"), _coord(coords_a, "z")
     xb, zb = _coord(coords_b, "x"), _coord(coords_b, "z")
 
+    # Spawn area check: Likely wrong OCR readings, which when wrong usually give double digit numbers near the origin. Not a hard rule (some players do submit real TLs near spawn, and some OCR errors are larger), but a common enough pattern to warn about.
+    for slot, x, z in (("A", xa, za), ("B", xb, zb)):
+        if x is not None and z is not None and abs(x) < 100 and abs(z) < 100:
+            warnings.append({
+                "code": "spawn_area",
+                "severity": "warning_high",
+                "message": (
+                    f"Screenshot {slot}: coordinates ({x}, {z}) are very close to the origin. "
+                    f"Verify these are correct and not OCR errors."
+                ),
+            })
+
+
     # Distance check (Euclidean XZ).
     if xa is not None and za is not None and xb is not None and zb is not None:
         dx, dz = xa - xb, za - zb
@@ -932,7 +945,7 @@ def build_validation_warnings(
         if dist < DISTANCE_MIN_BLOCKS:
             warnings.append({
                 "code": "distance_too_short",
-                "severity": "warning",
+                "severity": "warning_high",
                 "message": (
                     f"Distance between TLs is {dist:.0f} blocks "
                     f"(< {DISTANCE_MIN_BLOCKS}). Real TL pairs are usually farther apart."
@@ -941,7 +954,7 @@ def build_validation_warnings(
         elif dist > DISTANCE_MAX_BLOCKS:
             warnings.append({
                 "code": "distance_too_long",
-                "severity": "warning",
+                "severity": "warning_high",
                 "message": (
                     f"Distance between TLs is {dist:.0f} blocks "
                     f"(> {DISTANCE_MAX_BLOCKS}). Real TL pairs are usually closer."

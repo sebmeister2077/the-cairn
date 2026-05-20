@@ -228,7 +228,9 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                           ? "text-destructive"
                           : w.severity === "warning"
                             ? "text-amber-700"
-                            : "text-muted-foreground"
+                            : w.severity === "warning_high"
+                              ? "text-amber-900"
+                              : "text-muted-foreground"
                       }
                     >
                       • [{w.code}] {w.message}

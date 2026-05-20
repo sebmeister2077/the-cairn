@@ -30,7 +30,7 @@ export interface TLScreenshotMinimapMatch {
 
 export interface TLScreenshotValidationWarning {
     code: string;
-    severity: "info" | "warning" | "error";
+    severity: "info" | "warning" | "error" | "warning_high";
     message: string;
 }
 
