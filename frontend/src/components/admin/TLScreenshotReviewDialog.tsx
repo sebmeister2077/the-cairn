@@ -104,7 +104,10 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
   const approve = useMutation({
     mutationFn: async () => {
       if (!requestId) throw new Error("no request id");
-      // Persist any pending edits first so approval uses fresh values.
+      // The approve endpoint does not accept coordinates — they must already
+      // be persisted via PATCH. The button is disabled while edits are
+      // pending, so this should not normally fire, but keep an auto-save
+      // safety net in case of a race.
       if (patch.isPending || hasPendingEdits(detail.data, coordsA, coordsB, label)) {
         await patch.mutateAsync();
       }
@@ -158,6 +161,7 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
     parseInt32(coordsB.z),
   ];
   const coordsValid = parsedCoords.every((v) => v !== null && !Number.isNaN(v));
+  const pendingEdits = hasPendingEdits(r, coordsA, coordsB, label);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -275,11 +279,13 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
                 <Button
                   type="button"
                   onClick={() => approve.mutate()}
-                  disabled={busy || !coordsValid}
+                  disabled={busy || !coordsValid || pendingEdits}
                   title={
-                    coordsValid
-                      ? undefined
-                      : "Set both A and B coordinates (X and Z) before approving."
+                    !coordsValid
+                      ? "Set both A and B coordinates (X and Z) before approving."
+                      : pendingEdits
+                        ? "Save edits before approving so the new coordinates are persisted."
+                        : undefined
                   }
                 >
                   {approve.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
