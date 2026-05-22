@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AddingTranslocatorsWithContributeTLsPost } from "./AddingTranslocatorsWithContributeTLsPost";
 import { ContributingToTopsMapPost } from "./ContributingToTopsMapPost";
+import { ManagingLandmarksPost } from "./ManagingLandmarksPost";
 import { SubmittingTranslocatorScreenshotsPost } from "./SubmittingTranslocatorScreenshotsPost";
 
 export interface BlogPostMeta {
@@ -15,6 +16,16 @@ export interface BlogPostMeta {
 
 // Posts are listed newest-first.
 export const BLOG_POSTS: BlogPostMeta[] = [
+    {
+        slug: "managing-landmarks",
+        title: "Adding and Renaming Landmarks",
+        excerpt:
+            "Add named landmarks to the shared TOPS map, rename your own live, and suggest renames for anyone else's labels — including how pending requests are reviewed by admins.",
+        date: "2026-05-22",
+        readingMinutes: 5,
+        tags: ["guide", "multiplayer", "tops-map", "landmarks"],
+        Component: ManagingLandmarksPost,
+    },
     {
         slug: "submitting-translocator-screenshots",
         title: "Adding Translocators using Screenshots",

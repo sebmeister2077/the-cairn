@@ -151,10 +151,10 @@ export function LandmarkAddDialog({
               />
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          {/* <p className="text-[11px] text-muted-foreground">
             Coordinates are in absolute world block coords (the same numbers shown in{" "}
             <code>/whereami</code> in-game).
-          </p>
+          </p> */}
           {mut.error && <p className="text-xs text-destructive">{(mut.error as Error).message}</p>}
         </div>
         <DialogFooter>
