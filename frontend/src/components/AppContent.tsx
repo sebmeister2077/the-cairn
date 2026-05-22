@@ -363,7 +363,12 @@ export function AppContent() {
           }),
         )
         .catch(() => {
-          if (!signal.aborted) setDefaultInvite(null);
+          // Network / 5xx / CORS — distinct from a real 404 ("no public
+          // invite configured"). We deliberately leave ``defaultInvite``
+          // as ``undefined`` so the "Access not available" fallback
+          // banner does NOT fire just because the backend is unreachable.
+          // The user will see the normal "no key yet" empty state until
+          // the server comes back; a refresh will re-try this fetch.
         });
     },
     [hasApiKey, inviteClaim, authRejected],
