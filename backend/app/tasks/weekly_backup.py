@@ -110,6 +110,36 @@ def _snapshot_combined_to(target_raw_key: str) -> str:
         r2_storage.copy_object(r2_storage.COMBINED_DB_KEY, target_raw_key)
         return target_raw_key
 
+    target_zst_key = target_raw_key + ".zst"
+
+    # Fast path: if the background combined-DB compressor has already
+    # produced ``globalservermap.db.zst`` from the *current* raw bytes
+    # (its ``source-etag`` user-metadata matches the live raw ETag),
+    # snapshot it with a zero-egress server-side copy. This avoids
+    # downloading the multi-GB raw DB onto the small Render persistent
+    # disk just to recompress it — which is what was OOMing the disk
+    # on production.
+    try:
+        raw_etag = r2_storage.get_object_etag(r2_storage.COMBINED_DB_KEY)
+        zst_meta = r2_storage.head_object_metadata(r2_storage.COMBINED_DB_ZSTD_KEY)
+        if raw_etag and (zst_meta.get("source-etag") or "") == raw_etag:
+            r2_storage.copy_object(r2_storage.COMBINED_DB_ZSTD_KEY, target_zst_key)
+            logger.info(
+                "weekly_backup: snapshot via server-side copy of live .zst "
+                "(source-etag match, raw_etag=%s)", raw_etag[:12],
+            )
+            return target_zst_key
+    except FileNotFoundError:
+        # No live .zst sibling yet (background compressor hasn't run, or
+        # raw DB missing — the outer caller already checked the raw key
+        # exists, so this is the .zst case). Fall through to recompress.
+        pass
+    except Exception:
+        logger.exception(
+            "weekly_backup: live-.zst fast path failed — falling back to "
+            "download + recompress"
+        )
+
     from ..core import compression as comp
     from ..routes.admin_settings import get_compression_settings
     from ..routes.contribute_r2 import get_combined_db_cached
@@ -126,7 +156,6 @@ def _snapshot_combined_to(target_raw_key: str) -> str:
     # MUST be treated as read-only (we only read from it for compression).
     fd_out, dst_path = tempfile.mkstemp(suffix=".db.zst")
     os.close(fd_out)
-    target_zst_key = target_raw_key + ".zst"
     try:
         src_path = get_combined_db_cached()
         comp.compress_file(src_path, dst_path, level=level, threads=threads)
