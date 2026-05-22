@@ -537,28 +537,6 @@ def _ensure_combined_db_temp() -> str:
     return path
 
 
-def _recount_combined() -> int:
-    """Download combined DB, count tiles, update Supabase cache."""
-    try:
-        tmp = _download_to_temp(r2_storage.COMBINED_DB_KEY)
-    except FileNotFoundError:
-        db.set_cached_tile_count(0)
-        return 0
-    try:
-        # Tier 1: immutable readonly + mmap. ~3–6× faster than the legacy
-        # default-opener on a multi-GiB combined.db.
-        from ..core.mapdb import _open_mapdb_readonly
-        conn = _open_mapdb_readonly(tmp)
-        try:
-            count = conn.execute(f"SELECT COUNT(*) FROM {MAPPIECE_TABLE}").fetchone()[0]
-        finally:
-            conn.close()
-        db.set_cached_tile_count(count)
-        return count
-    finally:
-        os.unlink(tmp)
-
-
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
@@ -734,6 +712,7 @@ def _merge_into_combined(
     added_writer=None,
     region: Optional[tuple] = None,
     replaced_db_path: Optional[str] = None,
+    previous_total: Optional[int] = None,
 ) -> dict:
     """Merge ``upload_path`` into ``combined_path``.
 
@@ -927,9 +906,23 @@ def _merge_into_combined(
         except sqlite3.OperationalError:
             pass
 
-        after_count = combined_conn.execute(
-            f"SELECT COUNT(*) FROM main.{MAPPIECE_TABLE}"
-        ).fetchone()[0]
+        # Incremental count (May 2026): the previous version finished with
+        # ``SELECT COUNT(*) FROM combined`` which is an O(N) B-tree scan
+        # over the whole merged DB (~900 MB → 1–3 s even with a hot page
+        # cache). For both gap-fill and region-overwrite, the row-count
+        # delta is exactly ``added`` — ``INSERT OR IGNORE`` and
+        # ``INSERT OR REPLACE`` only ever grow the table by
+        # ``added`` (positions not previously present). So trust the
+        # caller-supplied ``previous_total`` and compute incrementally.
+        # Fall back to one COUNT(*) only when no prior count is known
+        # (cold cache, first deploy, post-restore) — same cost as before
+        # in that edge case.
+        if previous_total is None:
+            after_count = combined_conn.execute(
+                f"SELECT COUNT(*) FROM main.{MAPPIECE_TABLE}"
+            ).fetchone()[0]
+        else:
+            after_count = int(previous_total) + int(added)
 
         return {
             "tiles_uploaded": added + skipped + replaced,
@@ -2842,12 +2835,22 @@ def run_approval_merge(contribution_id: str) -> dict:
                 except Exception:
                     affected_bounds = None
 
+            # Pre-merge total from the Supabase-backed cache. The merge
+            # uses this to skip a full COUNT(*) over the merged combined
+            # DB; falls back to a real COUNT(*) when the cache is 0
+            # (uninitialised / post-restore).
+            try:
+                _prev_total = db.get_cached_tile_count() or None
+            except Exception:
+                _prev_total = None
+
             stats = _merge_into_combined(
                 pending_tmp,
                 combined_tmp,
                 added_writer=_added_writer,
                 region=update_region,
                 replaced_db_path=replaced_tmp_path,
+                previous_total=_prev_total,
             )
 
             # Upload updated combined DB back to R2
@@ -2862,11 +2865,32 @@ def run_approval_merge(contribution_id: str) -> dict:
             # stale cache, promote ``combined_tmp`` into the canonical
             # slot, and incrementally refresh the sidecar there. The next
             # reader skips the download AND benefits from cached tiles.
-            invalidate_combined_db_cache()
+            #
+            # May 2026 follow-up: the previous version did
+            # ``invalidate_combined_db_cache()`` (acquires + releases the
+            # lock) and *then* re-acquired the lock to ``os.replace`` the
+            # new DB in. Between those two critical sections a concurrent
+            # reader could find an empty cache slot and start a wasteful
+            # ~900 MB R2 download even though we were a millisecond away
+            # from publishing the freshly-merged file. Do it all in a
+            # single critical section: drop only the stale sidecars
+            # (``.zst`` download buffer and the RGBA ``.cache.db``
+            # sidecar), atomically replace the cache DB, then write the
+            # new etag. Readers either see the old (ETag-stale, will
+            # refresh) or new (ETag-match, instant hit) — never an empty
+            # slot.
             cached_path, etag_file_path = _combined_cache_paths()
             promoted = False
             try:
                 with _combined_cache_lock:
+                    # Stale sidecars first — they're keyed to the old
+                    # combined.db content and would otherwise serve wrong
+                    # data to the next reader.
+                    for _stale in (cached_path + ".zst", cached_path + ".cache.db"):
+                        try:
+                            os.unlink(_stale)
+                        except OSError:
+                            pass
                     # rename works inside a single tempdir; fall back to a
                     # copy if the source/destination live on different
                     # mounts (rare — both come from tempfile.gettempdir()).
