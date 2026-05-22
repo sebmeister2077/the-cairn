@@ -189,7 +189,7 @@ export function ContributeUploadCard({
               "rounded-md border p-3 text-sm space-y-1 " +
               (canContributeFromData
                 ? "bg-muted/30 text-muted-foreground"
-                : "bg-destructive/10 border-destructive/30 text-destructive")
+                : "bg-warning/10 border-warning/30 text-warning")
             }
           >
             <p className="font-medium text-foreground">Contribution limits</p>
@@ -199,12 +199,12 @@ export function ContributeUploadCard({
               <strong>{cooldownDays} days</strong> after a contribution is approved before
               submitting another.
             </p>
-            {!canContributeFromData && reason === "pending" && (
+            {/* {!canContributeFromData && reason === "pending" && (
               <p>
                 You already have a pending contribution awaiting review. Withdraw it below before
                 submitting a new one.
               </p>
-            )}
+            )} */}
             {!canContributeFromData && reason === "cooldown" && nextAllowed && (
               <p>
                 Your last contribution was approved. You can contribute again on{" "}
