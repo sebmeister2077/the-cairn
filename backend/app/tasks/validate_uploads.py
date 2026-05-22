@@ -108,6 +108,7 @@ def _process_one(job: dict) -> None:
     tmp_path: Optional[str] = None
     failure_reason: Optional[str] = None
     tile_count: int = 0
+    validation_persisted = False
     try:
         tmp_path = _download_to_temp(pending_key)
         try:
@@ -122,6 +123,25 @@ def _process_one(job: dict) -> None:
                         "The selected region contains zero tiles from the "
                         "upload."
                     )
+
+            # Validation succeeded — flip status and pre-render the preview
+            # while ``tmp_path`` is still alive. Doing both inside this
+            # block (before the cleanup ``finally``) means the preview
+            # renderer reuses the just-downloaded pending DB instead of
+            # forcing the admin's first ``GET /contribute/preview`` to
+            # re-download it (~30 s on a multi-GB DB) and re-render from
+            # cold (~15\u201360 s wall). The Tier 3.2 sidecar cache on the
+            # combined side keeps the render itself cheap.
+            if failure_reason is None:
+                try:
+                    db.set_validation_valid(cid, tile_count)
+                    validation_persisted = True
+                except Exception:
+                    logger.exception(
+                        "validate_uploads: persisting 'valid' failed for %s", cid
+                    )
+                else:
+                    _maybe_prerender_preview(cid, tmp_path)
     except Exception as exc:
         # Network / SQLite / temp-file errors — surface as a retryable
         # failure rather than poisoning the row.
@@ -146,10 +166,110 @@ def _process_one(job: dict) -> None:
         _drop_contribution(cid, pending_key, failure_reason)
         return
 
+    # ``set_validation_valid`` already ran inside the try-block (see above)
+    # so the preview pre-render can use the still-live tmp file. The
+    # ``validation_persisted`` flag is only False if the flip raised mid-
+    # transaction \u2014 in which case another worker will pick this row up on
+    # the next pass.
+    if not validation_persisted:
+        logger.warning(
+            "validate_uploads: status flip did not persist for %s \u2014 will retry", cid
+        )
+
+
+def _maybe_prerender_preview_disabled() -> bool:
+    """Env opt-out for tests and emergency disablement."""
+    return os.environ.get("PREVIEW_PRERENDER_DISABLE", "") in (
+        "1", "true", "yes", "on",
+    )
+
+
+def _maybe_prerender_preview(cid: str, pending_path: str) -> None:
+    """Best-effort: render the preview PNG and upload it to the R2 cache
+    slot so the admin's first ``GET /contribute/preview/{cid}`` is a hit.
+
+    Reuses the still-on-disk ``pending_path`` left by the validation
+    download \u2014 avoids one multi-GB R2 round-trip vs. the on-demand path.
+
+    Any failure (including unexpected exceptions in the renderer or R2
+    upload) is logged and swallowed. Validation success is never gated on
+    a successful pre-render \u2014 the on-demand handler is the fallback.
+    """
+    if _maybe_prerender_preview_disabled():
+        return
     try:
-        db.set_validation_valid(cid, tile_count)
+        from ..core import r2_storage
+        from ..core.feature_flags import is_heavy_compute_allowed
+        from ..routes.contribute_r2 import (
+            _render_and_cache_preview_sync,
+            get_combined_db_cached,
+        )
     except Exception:
-        logger.exception("validate_uploads: persisting 'valid' failed for %s", cid)
+        logger.exception(
+            "validate_uploads: preview pre-render import failed for %s "
+            "(non-fatal)", cid,
+        )
+        return
+
+    # Honour the same heavy-compute kill switch the on-demand handler does.
+    try:
+        if not is_heavy_compute_allowed():
+            logger.info(
+                "validate_uploads: skipping preview pre-render for %s \u2014 "
+                "heavy_compute_enabled is OFF", cid,
+            )
+            return
+    except Exception:
+        logger.exception(
+            "validate_uploads: heavy-compute check failed for %s "
+            "(skipping pre-render)", cid,
+        )
+        return
+
+    # If an admin already requested the preview (very narrow race), don't
+    # waste work re-rendering. The on-demand handler's per-contribution
+    # asyncio lock dedupes concurrent HTTP-side renders; this is the
+    # cross-process counterpart for the post-validation path.
+    preview_key = r2_storage.pending_preview_key(cid)
+    try:
+        if r2_storage.object_exists(preview_key):
+            logger.info(
+                "validate_uploads: preview for %s already cached \u2014 "
+                "skipping pre-render", cid,
+            )
+            return
+    except Exception:
+        # If the existence check fails, fall through and try the render
+        # anyway \u2014 a redundant re-upload is cheaper than skipping.
+        logger.exception(
+            "validate_uploads: preview-existence check failed for %s "
+            "(continuing with render)", cid,
+        )
+
+    try:
+        combined_path = get_combined_db_cached()
+    except Exception:
+        logger.exception(
+            "validate_uploads: combined-DB cache fetch failed for %s "
+            "(skipping pre-render)", cid,
+        )
+        return
+
+    try:
+        _render_and_cache_preview_sync(cid, pending_path, combined_path)
+        logger.info("validate_uploads: pre-rendered preview for %s", cid)
+    except ValueError as e:
+        # Deterministic renderer failure (e.g. empty bounds). Not retryable;
+        # admin's on-demand request will surface the same error.
+        logger.warning(
+            "validate_uploads: preview pre-render returned error for %s: %s",
+            cid, e,
+        )
+    except Exception:
+        logger.exception(
+            "validate_uploads: preview pre-render failed for %s "
+            "(non-fatal \u2014 on-demand path remains)", cid,
+        )
 
 
 def _drop_contribution(cid: str, pending_key: str, reason: str) -> None:

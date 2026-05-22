@@ -1282,6 +1282,63 @@ def _render_preview(combined_path: str, upload_path: str, max_dimension: int = 2
     img_arr = np.zeros((img_h, img_w, 4), dtype=np.uint8)
 
     def _paint_tiles(db_path: str, highlight_positions: Optional[Set[int]] = None):
+        # Tier 3.2 (May 2026): for the common case (scale <= TILE_SIZE) pull
+        # tiles through the cache-aware iterator so a fresh sidecar at
+        # ``<db>.cache.db`` skips the per-tile varint decode. The combined
+        # side typically dominates preview cost (admin reviewing a small
+        # contribution against a large existing map), and the merge keeps
+        # the sidecar warm via ``incremental_update_cache``. Pending DBs
+        # have no sidecar and transparently fall back to canonical decode.
+        # ``MAPDB_DISABLE_CACHE=1`` disables the sidecar globally.
+        #
+        # The ``scale > TILE_SIZE`` branch (only hit on >65 k-chunk worlds —
+        # roughly 2 M+ blocks wide, very rare) keeps the raw-blob
+        # ``_sample_one_pixel`` path: each tile contributes a single output
+        # pixel there, so paying for a full RGBA decode just to index one
+        # cell would be a regression on those giant maps.
+        if scale <= TILE_SIZE:
+            from ..core.mapdb import _iter_tiles_for_range
+            # 63-bit max covers the full ``position`` space (z<<27 | x);
+            # the iterator filters via ``BETWEEN`` so giving the whole
+            # range is equivalent to "every tile".
+            POS_MAX = (1 << 63) - 1
+            src_conn = _open_mapdb_readonly(db_path)
+            try:
+                for pos_val, tile in _iter_tiles_for_range(
+                    db_path, src_conn, 0, POS_MAX
+                ):
+                    cx, cz = decode_position(pos_val)
+                    is_highlight = (
+                        highlight_positions and pos_val in highlight_positions
+                    )
+
+                    if is_highlight:
+                        tinted = tile.astype(np.float32)
+                        tinted[:, :, 0] = tinted[:, :, 0] * 0.5
+                        tinted[:, :, 1] = np.minimum(tinted[:, :, 1] * 0.5 + 128, 255)
+                        tinted[:, :, 2] = tinted[:, :, 2] * 0.5
+                        tile = tinted.astype(np.uint8)
+
+                    if scale == 1:
+                        bx = (cx - min_x) * TILE_SIZE
+                        bz = (cz - min_z) * TILE_SIZE
+                        img_arr[bz:bz + TILE_SIZE, bx:bx + TILE_SIZE] = tile
+                    else:
+                        sampled = tile[::scale, ::scale]
+                        sh, sw = sampled.shape[:2]
+                        bx = (cx - min_x) * TILE_SIZE // scale
+                        bz = (cz - min_z) * TILE_SIZE // scale
+                        ew = min(sw, img_w - bx)
+                        eh = min(sh, img_h - bz)
+                        if ew > 0 and eh > 0:
+                            img_arr[bz:bz + eh, bx:bx + ew] = sampled[:eh, :ew]
+            finally:
+                src_conn.close()
+            return
+
+        # Per-pixel path (scale > TILE_SIZE). Reads one varint per tile
+        # from the raw blob — cheaper than a full sidecar decode when each
+        # tile maps to a single output pixel.
         conn = _open_mapdb_readonly(db_path)
         try:
             cur = conn.execute(f"SELECT position, data FROM {MAPPIECE_TABLE}")
@@ -1294,45 +1351,18 @@ def _render_preview(combined_path: str, upload_path: str, max_dimension: int = 2
                     cx, cz = decode_position(pos_val)
                     is_highlight = highlight_positions and pos_val in highlight_positions
 
-                    if scale <= TILE_SIZE:
-                        if len(blob) == STANDARD_BLOB_SIZE:
-                            tile = decode_tile_numpy(blob)
+                    bx = (cx - min_x) * TILE_SIZE // scale
+                    bz = (cz - min_z) * TILE_SIZE // scale
+                    if 0 <= bx < img_w and 0 <= bz < img_h:
+                        if len(blob) >= STANDARD_BLOB_SIZE:
+                            r, g, b, a = _sample_one_pixel(blob)
                         else:
-                            tile = decode_tile_fallback(blob)
-
+                            r, g, b, a = 0, 0, 0, 255
                         if is_highlight:
-                            tinted = tile.copy().astype(np.float32)
-                            tinted[:, :, 0] = tinted[:, :, 0] * 0.5
-                            tinted[:, :, 1] = np.minimum(tinted[:, :, 1] * 0.5 + 128, 255)
-                            tinted[:, :, 2] = tinted[:, :, 2] * 0.5
-                            tile = tinted.astype(np.uint8)
-
-                        if scale == 1:
-                            bx = (cx - min_x) * TILE_SIZE
-                            bz = (cz - min_z) * TILE_SIZE
-                            img_arr[bz:bz + TILE_SIZE, bx:bx + TILE_SIZE] = tile
-                        else:
-                            sampled = tile[::scale, ::scale]
-                            sh, sw = sampled.shape[:2]
-                            bx = (cx - min_x) * TILE_SIZE // scale
-                            bz = (cz - min_z) * TILE_SIZE // scale
-                            ew = min(sw, img_w - bx)
-                            eh = min(sh, img_h - bz)
-                            if ew > 0 and eh > 0:
-                                img_arr[bz:bz + eh, bx:bx + ew] = sampled[:eh, :ew]
-                    else:
-                        bx = (cx - min_x) * TILE_SIZE // scale
-                        bz = (cz - min_z) * TILE_SIZE // scale
-                        if 0 <= bx < img_w and 0 <= bz < img_h:
-                            if len(blob) >= STANDARD_BLOB_SIZE:
-                                r, g, b, a = _sample_one_pixel(blob)
-                            else:
-                                r, g, b, a = 0, 0, 0, 255
-                            if is_highlight:
-                                r = int(r * 0.5)
-                                g = min(int(g * 0.5) + 128, 255)
-                                b = int(b * 0.5)
-                            img_arr[bz, bx] = [r, g, b, a]
+                            r = int(r * 0.5)
+                            g = min(int(g * 0.5) + 128, 255)
+                            b = int(b * 0.5)
+                        img_arr[bz, bx] = [r, g, b, a]
         finally:
             conn.close()
 
@@ -2482,7 +2512,8 @@ async def contribute_preview(
     # upload the same PNG.
     async with _PreviewLock(f"preview:{contribution_id}"):
         # Re-check inside the lock — an earlier waiter may have just rendered
-        # and uploaded the PNG.
+        # and uploaded the PNG (or the validate_uploads worker pre-rendered
+        # it as soon as validation finished).
         if await asyncio.to_thread(r2_storage.object_exists, preview_key):
             png_bytes = await asyncio.to_thread(r2_storage.download_bytes, preview_key)
             return Response(
@@ -2500,9 +2531,9 @@ async def contribute_preview(
         combined_tmp = await asyncio.to_thread(get_combined_db_cached)
         pending_tmp = await asyncio.to_thread(_download_to_temp, pending_key)
         try:
-            png_bytes = await asyncio.to_thread(_render_preview, combined_tmp, pending_tmp)
-            await asyncio.to_thread(
-                r2_storage.upload_bytes, preview_key, png_bytes, "image/png"
+            png_bytes = await asyncio.to_thread(
+                _render_and_cache_preview_sync,
+                contribution_id, pending_tmp, combined_tmp,
             )
         except ValueError as e:
             return JSONResponse(status_code=400, content={"detail": str(e)})
@@ -2520,6 +2551,38 @@ async def contribute_preview(
             "X-Preview-Cache": "miss",
         },
     )
+
+
+def _render_and_cache_preview_sync(
+    contribution_id: str,
+    pending_path: str,
+    combined_path: str,
+) -> bytes:
+    """Render the preview PNG and upload it to the R2 cache slot.
+
+    Shared sync helper used by:
+
+    * the on-demand HTTP handler :func:`contribute_preview` on cache miss
+    * the :mod:`backend.app.tasks.validate_uploads` worker, which calls
+      this as soon as a pending DB is validated so the admin's first
+      preview load is an R2 cache hit (~1 s) instead of a full render
+      from a cold cache (~15\u201360 s).
+
+    The PNG bytes are returned even if the R2 upload fails so the caller
+    can still serve the response. Render failures raise ``ValueError``
+    (callers turn that into a 400 / log + swallow).
+    """
+    preview_key = r2_storage.pending_preview_key(contribution_id)
+    png_bytes = _render_preview(combined_path, pending_path)
+    try:
+        r2_storage.upload_bytes(preview_key, png_bytes, "image/png")
+    except Exception:
+        logger.exception(
+            "preview-cache: R2 upload failed for %s "
+            "(non-fatal \u2014 bytes returned to caller)",
+            contribution_id,
+        )
+    return png_bytes
 
 
 @router.get("/contribute/preview-region/{contribution_id}")

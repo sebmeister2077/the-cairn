@@ -264,6 +264,98 @@ loop in the next.
 
 ---
 
+---
+
+## #6 Wire `_render_preview` through the Tier 3.2 sidecar cache
+
+### Current behavior
+
+`_render_preview` in
+[backend/app/routes/contribute_r2.py](../backend/app/routes/contribute_r2.py)
+opens the combined DB with a raw `SELECT position, data FROM mappiece`
+cursor and calls `decode_tile_numpy(blob)` / `decode_tile_fallback(blob)`
+on every tile. That's the canonical varint decode path — exactly the
+work that Tier 3.2 (the sidecar RGBA cache at `<combined>.cache.db`)
+exists to skip.
+
+The cache is already kept warm by the approval merge: see
+`incremental_update_cache(...)` called after every successful merge in
+the same function the May 2026 atomic-promotion edit lives in. Regen,
+tops-map render, and chunk render all route through
+`_iter_tiles_for_range(db_path, src_conn, pos_min, pos_max)` in
+[backend/app/core/mapdb.py](../backend/app/core/mapdb.py) which
+transparently prefers the sidecar when fresh.
+
+`_render_preview` is the only major render path that doesn't.
+
+### Proposed
+
+For the **combined-side** paint pass (which is 99% of the cost on a
+real-world preview — admin reviewing a tiny contribution against a
+30 M-tile combined map), route through `_iter_tiles_for_range` so a
+warm sidecar skips the varint decode.
+
+Pending-side paint pass keeps the canonical decode — pending DBs are
+small (typically <100 k tiles), have no sidecar of their own, and
+building one just for the preview isn't worth the I/O.
+
+### Key implementation points
+
+- Only swap the `scale <= TILE_SIZE` branch. The `scale > TILE_SIZE`
+  per-pixel branch (only hit on >65 k-chunk worlds, very rare) keeps
+  reading 11 raw varint bytes per tile via `_sample_one_pixel` — going
+  through the iterator would force a full RGBA decode per tile just to
+  sample one pixel from it, a regression on those rare giant maps.
+- The iterator yields `(pos_val, rgba_tile)` where `rgba_tile` is
+  already a `(32, 32, 4)` `uint8` numpy array — drop the
+  `decode_tile_numpy`/`decode_tile_fallback` branching.
+- Highlight tint (`R*0.5; G=min(G*0.5+128, 255); B*0.5`) is applied
+  after decode, regardless of source — unchanged.
+- Use the existing `MAPDB_DISABLE_CACHE=1` env switch — already
+  honored by the iterator.
+
+### Feature flag / kill switch
+
+None new. `MAPDB_DISABLE_CACHE=1` already disables the sidecar globally.
+
+### Tests
+
+- Golden: existing preview fixture renders byte-identical with and
+  without a sidecar present (cache fall-through is documented as
+  behaviourally transparent).
+- Smoke: same fixture, with a freshly-built sidecar, asserts wall time
+  at least 30% lower than without (loose floor for CI).
+
+### Expected gain
+
+- Combined-side paint roughly halves in wall time once the cache is
+  warm (the same ~2× the regen / tops-map paths get).
+- On a representative 50 k-tile contribution against a 30 M-tile
+  combined map at `max_dimension=2048`: preview render drops from
+  ~15–25 s to ~8–12 s on cache hit.
+- Pairs naturally with #2 (pre-render after validation): #2 makes the
+  admin almost never hit the slow path, #6 halves the cost when they
+  do.
+
+### Files touched
+
+- [backend/app/routes/contribute_r2.py](../backend/app/routes/contribute_r2.py)
+  — swap `_paint_tiles`'s `scale <= TILE_SIZE` branch to use
+  `_iter_tiles_for_range`.
+- `backend/tests/test_render_preview.py` — golden + smoke.
+
+### Risks
+
+- Sidecar may not exist for a freshly-deployed instance (the post-merge
+  `incremental_update_cache` is the only writer). The iterator already
+  handles that case transparently — render is no slower than today on
+  cache miss.
+- Sidecar can lag the canonical DB by a few hundred ms during the
+  approval merge. The `is_cache_fresh` mtime check in `mapdb_cache`
+  invalidates a stale sidecar so we never serve outdated pixels.
+
+---
+
 ## Out of scope (separate plans)
 
 - Cross-worker preview deduplication via Postgres advisory locks (perf
@@ -279,4 +371,6 @@ loop in the next.
    decode replacement.
 2. Land #2 (pre-render preview) first — it's smaller, lower-risk, and
    gives the most visible win to admins.
-3. Land #4 based on the profile result.
+3. Land #6 (wire preview through Tier 3.2 sidecar) — tiny change,
+   reuses existing infra, halves cold-preview cost.
+4. Land #4 based on the profile result.
