@@ -329,10 +329,16 @@ def prune_db_to_region(
     at ``dst_path`` are discarded.
     """
     rmin_x, rmax_x, rmin_z, rmax_z = region
-    tx_min = rmin_x // TILE_SIZE
-    tx_max = rmax_x // TILE_SIZE
-    tz_min = rmin_z // TILE_SIZE
-    tz_max = rmax_z // TILE_SIZE
+    # ``region`` is in **signed in-game world blocks** (centered on
+    # spawn). Mapdb ``position`` is encoded from VS **absolute** tile
+    # coords (offset by ``DEFAULT_MAP_MIDDLE / TILE_SIZE``). Shift before
+    # deriving the tile-coord filter, otherwise the WHERE clause matches
+    # zero rows and the pruned archive ends up empty. Mirrors the same
+    # conversion applied in ``contribute_r2._merge_into_combined``.
+    tx_min = (rmin_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+    tx_max = (rmax_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+    tz_min = (rmin_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+    tz_max = (rmax_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
 
     src_bytes = os.path.getsize(src_path) if os.path.exists(src_path) else 0
     try:
