@@ -303,6 +303,118 @@ def _iter_tiles_for_range(
             pass
 
 
+def prune_db_to_region(
+    src_path: str,
+    dst_path: str,
+    region: Tuple[int, int, int, int],
+) -> Dict[str, int]:
+    """Copy only the in-region tiles from ``src_path`` into a fresh SQLite
+    at ``dst_path``.
+
+    ``region`` is ``(min_x, max_x, min_z, max_z)`` in **world blocks**
+    (inclusive). The output mirrors the Vintage Story map .db schema —
+    ``mappiece(position INTEGER PRIMARY KEY, data BLOB)`` plus a copy of
+    the ``blockidmapping`` table when present — so it remains a
+    drop-in replacement that the existing decoders can read without
+    branching.
+
+    Used by the post-approval archive flow: when a contribution has a
+    region selection, the archived copy only needs to retain the chunks
+    the contributor actually intended to update. This keeps R2 storage
+    proportional to the change, not to the source file size (a 1 GiB
+    upload pruned to a 30×30-chunk update lands at tens of MiB).
+
+    Returns ``{"kept_tiles": int, "src_bytes": int, "dst_bytes": int}``.
+    The destination file is removed and recreated, so existing contents
+    at ``dst_path`` are discarded.
+    """
+    rmin_x, rmax_x, rmin_z, rmax_z = region
+    tx_min = rmin_x // TILE_SIZE
+    tx_max = rmax_x // TILE_SIZE
+    tz_min = rmin_z // TILE_SIZE
+    tz_max = rmax_z // TILE_SIZE
+
+    src_bytes = os.path.getsize(src_path) if os.path.exists(src_path) else 0
+    try:
+        os.unlink(dst_path)
+    except OSError:
+        pass
+
+    # Use a writable opener so we get WAL + sensible pragmas while we
+    # populate the file; the final VACUUM emits a clean, single-file DB
+    # with no -wal/-shm siblings that callers would need to handle.
+    dst = _open_mapdb_writable(dst_path)
+    try:
+        dst.execute(
+            "CREATE TABLE IF NOT EXISTS mappiece "
+            "(position INTEGER PRIMARY KEY, data BLOB NOT NULL)"
+        )
+        # ``blockidmapping`` is a per-world id→bytes table; the importer
+        # needs it to decode tiles, so always carry it across when present.
+        safe_src = src_path.replace("'", "''")
+        dst.execute(f"ATTACH DATABASE '{safe_src}' AS src")
+        try:
+            has_blockidmap = dst.execute(
+                "SELECT 1 FROM src.sqlite_master "
+                "WHERE type='table' AND name='blockidmapping'"
+            ).fetchone() is not None
+            if has_blockidmap:
+                dst.execute(
+                    "CREATE TABLE IF NOT EXISTS blockidmapping "
+                    "(id INTEGER PRIMARY KEY, data BLOB NOT NULL)"
+                )
+                dst.execute(
+                    "INSERT OR IGNORE INTO main.blockidmapping (id, data) "
+                    "SELECT id, data FROM src.blockidmapping"
+                )
+
+            # Region filter uses the same bit-packed encoding as the merge
+            # path in ``contribute_r2._merge_into_combined``:
+            #   position & POSITION_MASK -> tile x
+            #   position >> POSITION_BITS -> tile z
+            dst.execute(
+                """INSERT OR REPLACE INTO main.mappiece (position, data)
+                   SELECT position, data
+                     FROM src.mappiece
+                    WHERE (position & ?) BETWEEN ? AND ?
+                      AND (position >> ?) BETWEEN ? AND ?""",
+                (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
+            )
+            kept_tiles = dst.execute(
+                "SELECT COUNT(*) FROM main.mappiece"
+            ).fetchone()[0] or 0
+            dst.commit()
+        finally:
+            try:
+                dst.execute("DETACH DATABASE src")
+            except sqlite3.OperationalError:
+                pass
+    finally:
+        try:
+            dst.close()
+        except Exception:
+            pass
+
+    # VACUUM in a fresh connection: it requires no open txns and we want
+    # the resulting file to be as small as possible since the next step
+    # uploads it to R2. Run with synchronous=OFF for speed — we re-verify
+    # the file by opening it again below.
+    vac = sqlite3.connect(dst_path)
+    try:
+        vac.execute("PRAGMA synchronous=OFF")
+        vac.execute("VACUUM")
+        vac.commit()
+    finally:
+        vac.close()
+
+    dst_bytes = os.path.getsize(dst_path) if os.path.exists(dst_path) else 0
+    return {
+        "kept_tiles": int(kept_tiles),
+        "src_bytes": int(src_bytes),
+        "dst_bytes": int(dst_bytes),
+    }
+
+
 def encode_chunk_array_to_png(arr: Optional[np.ndarray]) -> Optional[bytes]:
     """Encode an RGBA chunk buffer to PNG bytes.
 

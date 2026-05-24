@@ -227,10 +227,18 @@ async def restore_backup(body: RestoreBody, api_key: str = Depends(require_admin
     db.set_state(_LAST_RESTORE_KEY, _serialize_last_restore(api_key, body.key, orphaned))
 
     # 5) Kick a full TOPS regen — the restored map may differ everywhere.
-    try:
-        start_map_generation_job(sorted(RESOLUTION_LEVELS.keys()), affected_bounds=None)
-    except Exception:
-        logger.exception("restore: failed to enqueue regen")
+    # Gated on ``auto_regen_after_approval``: when OFF, skip the automatic
+    # regen and let an admin trigger it manually from the TOPS map panel.
+    if ff.is_auto_regen_after_approval_enabled():
+        try:
+            start_map_generation_job(sorted(RESOLUTION_LEVELS.keys()), affected_bounds=None)
+        except Exception:
+            logger.exception("restore: failed to enqueue regen")
+    else:
+        logger.info(
+            "restore: auto_regen_after_approval is OFF — skipping "
+            "automatic TOPS regen after backup restore"
+        )
 
     return {
         "restored_from": body.key,

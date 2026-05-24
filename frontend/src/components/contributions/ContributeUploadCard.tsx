@@ -1,6 +1,10 @@
 import { Upload, ShieldCheck, Loader2, Map } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { ContributionRegionPicker } from "../ContributionRegionPicker";
+import {
+  ContributionRegionField,
+  isRegionSelectionValid,
+  type ContributionMode,
+} from "./ContributionRegionField";
 import { FileUpload } from "../FileUpload";
 import { MapDbFileHelp } from "../MapDbFileHelp";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -81,7 +85,10 @@ export function ContributeUploadCard({
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [contributor, setContributor] = useState("");
 
-  // Phase 2 — region-restricted update state. `null` = legacy gap-fill mode.
+  // Phase 2 / Phase D — region-restricted update state. `mode === "gap_fill"`
+  // is the legacy behaviour (region is forced to null before submit); in
+  // `"overwrite"` mode the contributor must pick a rectangle.
+  const [mode, setMode] = useState<ContributionMode>("gap_fill");
   const [region, setRegion] = useState<ContributionRegion | null>(null);
   const queryClient = useQueryClient();
 
@@ -100,11 +107,12 @@ export function ContributeUploadCard({
         dbFile,
         contributor,
         (pct) => setUploadProgress(pct),
-        region,
+        mode === "overwrite" ? region : null,
       );
       setUploadResult(data.message as string);
       setDbFile(null);
       setFileInputKey((prev) => prev + 1);
+      setMode("gap_fill");
       setRegion(null);
       queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
@@ -256,30 +264,39 @@ export function ContributeUploadCard({
           </div>
 
           {regionPickerEnabled && (
-            <div className="space-y-2 rounded border p-3">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="m-0">
-                  Region overwrite{" "}
-                  <span className="text-xs font-normal text-muted-foreground">
-                    (optional, replaces in-region chunks)
-                  </span>
-                </Label>
-                {isAdmin && <Badge variant="outline">admin / region_overwrite</Badge>}
-              </div>
-              <ContributionRegionPicker
-                availableLevels={availableLevels}
-                value={region}
-                onChange={(r) => setRegion(r)}
-                tileAreaCap={isAdmin ? null : (contributionInfo?.region_tile_cap_non_admin ?? null)}
-                disabled={uploading}
-              />
-            </div>
+            <ContributionRegionField
+              info={contributionInfo}
+              isAdmin={isAdmin}
+              availableLevels={availableLevels}
+              mode={mode}
+              onModeChange={setMode}
+              region={region}
+              onRegionChange={setRegion}
+              disabled={uploading}
+            />
           )}
 
           <Button
             type="submit"
             disabled={
-              !dbFile || uploading || (!isAdmin && contributionInfo?.can_contribute === false)
+              !dbFile ||
+              uploading ||
+              (!isAdmin && contributionInfo?.can_contribute === false) ||
+              !isRegionSelectionValid(
+                mode,
+                region,
+                isAdmin
+                  ? null
+                  : ((
+                      contributionInfo as
+                        | (ContributeInfo & {
+                            region_chunk_area_cap_non_admin?: number;
+                          })
+                        | null
+                    )?.region_chunk_area_cap_non_admin ??
+                      contributionInfo?.region_tile_cap_non_admin ??
+                      null),
+              )
             }
           >
             {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

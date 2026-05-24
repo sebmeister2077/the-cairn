@@ -834,6 +834,34 @@ def get_update_region(cid: str) -> Optional[tuple]:
     )
 
 
+def set_archive_pruned_metadata(
+    cid: str,
+    *,
+    kept_tiles: int,
+    src_bytes: int,
+    dst_bytes: int,
+) -> None:
+    """Record the result of a region-pruned archive for contribution ``cid``.
+
+    Called from the post-approval archive path in ``contribute_r2``.
+    ``archived_is_region_pruned`` is always TRUE here — gap-fill
+    contributions (no update_region) skip this helper and leave the
+    columns NULL, which is how the UI distinguishes the two archive
+    flavours.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET archived_is_region_pruned = TRUE,
+                           archived_kept_tiles = %s,
+                           archived_src_bytes = %s,
+                           archived_dst_bytes = %s
+                     WHERE id = %s""",
+                (int(kept_tiles), int(src_bytes), int(dst_bytes), cid),
+            )
+
+
 def get_contribution(cid: str) -> Optional[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

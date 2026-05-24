@@ -33,6 +33,7 @@ from ..auth import verify_api_key, verify_contribute_permission, verify_permissi
 from ..config import settings
 from ..rate_limiter import check_rate_limit
 from ..core import r2_storage, accounts_db, database as db, api_key_cache
+from .admin_settings import get_region_overwrite_settings
 
 
 def _key_owns_row(api_key: str, row: dict, id_field: str = "submitted_by_key_id") -> bool:
@@ -208,15 +209,8 @@ class ContributeMultipartAbortRequest(BaseModel):
     contribution_id: str
 
 
-class ContributeRegionPreviewRequest(BaseModel):
-    """Body for ``POST /contribute/region-preview`` — returns the in-region
-    tile counts so the picker can show "X of Y tiles in your file are inside
-    the selected region" before the user commits."""
-    contribution_id: str
-    update_region_min_x: int
-    update_region_max_x: int
-    update_region_min_z: int
-    update_region_max_z: int
+# NOTE: ``ContributeRegionPreviewRequest`` and ``AdminRegionEditRequest``
+# (plus their endpoints) live in ``contribute_region.py``.
 
 
 # ---------------------------------------------------------------------------
@@ -781,10 +775,15 @@ def _merge_into_combined(
 
     if region is not None:
         rmin_x, rmax_x, rmin_z, rmax_z = region
-        tx_min = rmin_x // TILE_SIZE
-        tx_max = rmax_x // TILE_SIZE
-        tz_min = rmin_z // TILE_SIZE
-        tz_max = rmax_z // TILE_SIZE
+        # ``region`` is in **signed in-game world blocks** (centered on
+        # spawn). Mapdb ``position`` is encoded from VS **absolute** tile
+        # coords (origin offset by ``DEFAULT_MAP_MIDDLE / TILE_SIZE``).
+        # Convert before computing the SQL filter bounds, otherwise the
+        # WHERE clause matches no rows and the merge becomes a no-op.
+        tx_min = (rmin_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tx_max = (rmax_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tz_min = (rmin_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tz_max = (rmax_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
 
         def _rclause(prefix: str) -> str:
             return (
@@ -1120,7 +1119,11 @@ def _normalise_region(
 
 
 def _region_tile_count(region: tuple) -> int:
-    """Tile-count area of a region (used for the non-admin size cap)."""
+    """Tile-count area of a region (used for the non-admin size cap).
+
+    1 tile == 1 chunk == ``TILE_SIZE`` (32) blocks per side, so this number
+    is also the region's chunk² area.
+    """
     rmin_x, rmax_x, rmin_z, rmax_z = region
     tx_min = rmin_x // TILE_SIZE
     tx_max = rmax_x // TILE_SIZE
@@ -1134,10 +1137,24 @@ def _check_region_eligibility(api_key: str, region: tuple) -> None:
 
     1. Feature flag must be on (otherwise the route is invisible — 404).
     2. Caller must be admin OR carry the ``region_overwrite`` permission.
-    3. Non-admin callers are capped at ``MAX_REGION_TILES_NON_ADMIN`` tiles.
+    3. Region side length must be ≥ 1 chunk (``TILE_SIZE`` blocks).
+    4. Non-admin callers are capped at the admin-tunable
+       ``region_overwrite_settings.max_chunks_area_non_admin`` (chunks²).
     """
     if not is_feature_enabled("region_overwrite"):
         raise HTTPException(status_code=404, detail="Not Found")
+    # Enforce a minimum side length for both admins and non-admins: a
+    # 1-block-wide rectangle is almost certainly a UI mishap and the merge
+    # would produce a single-pixel sliver, so reject it up front.
+    rmin_x, rmax_x, rmin_z, rmax_z = region
+    if (rmax_x - rmin_x + 1) < TILE_SIZE or (rmax_z - rmin_z + 1) < TILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Region too small: each side must be at least {TILE_SIZE} "
+                "blocks (1 chunk)."
+            ),
+        )
     if _is_admin_key(api_key):
         return
     if not verify_permission(api_key, "region_overwrite"):
@@ -1145,13 +1162,16 @@ def _check_region_eligibility(api_key: str, region: tuple) -> None:
             status_code=403,
             detail="This API key lacks the 'region_overwrite' permission",
         )
+    cap_chunks_area = int(
+        get_region_overwrite_settings()["max_chunks_area_non_admin"]
+    )
     tiles = _region_tile_count(region)
-    if tiles > settings.MAX_REGION_TILES_NON_ADMIN:
+    if tiles > cap_chunks_area:
         raise HTTPException(
             status_code=400,
             detail=(
-                f"Region too large: {tiles} tiles exceeds the non-admin cap of "
-                f"{settings.MAX_REGION_TILES_NON_ADMIN} tiles."
+                f"Region too large: {tiles} chunks² exceeds the non-admin cap "
+                f"of {cap_chunks_area} chunks²."
             ),
         )
 
@@ -1169,10 +1189,12 @@ def _count_pending_tiles(pending_db_path: str, region: Optional[tuple] = None) -
         if region is None:
             return int(total), int(total)
         rmin_x, rmax_x, rmin_z, rmax_z = region
-        tx_min = rmin_x // TILE_SIZE
-        tx_max = rmax_x // TILE_SIZE
-        tz_min = rmin_z // TILE_SIZE
-        tz_max = rmax_z // TILE_SIZE
+        # See ``_merge_into_combined``: region is signed in-game blocks;
+        # mapdb positions are absolute. Shift before deriving tile bounds.
+        tx_min = (rmin_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tx_max = (rmax_x + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tz_min = (rmin_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
+        tz_max = (rmax_z + DEFAULT_MAP_MIDDLE) // TILE_SIZE
         in_region = conn.execute(
             f"""SELECT COUNT(*) FROM {MAPPIECE_TABLE}
                 WHERE (position & ?) BETWEEN ? AND ?
@@ -1396,6 +1418,7 @@ def _render_region_before_after(
     region: tuple,
     *,
     max_dimension: int = 2048,
+    padding_chunks: int = 0,
 ) -> tuple:
     """Render a pair of PNGs cropped to the contribution's region.
 
@@ -1405,6 +1428,13 @@ def _render_region_before_after(
       merged. Tiles newly added in-region tint **green**; tiles that
       overwrite an existing combined tile tint **orange**. Tiles outside
       the region are simply not in the crop.
+
+    ``padding_chunks`` (Phase B admin context view): expands the crop by
+    ``N`` chunks on each side. The padded area renders as un-tinted
+    context — only tiles **inside the original region** receive the
+    green/orange overlay. Stats remain in-region-only (so the admin sees
+    "added/replaced" relative to the bounds the contributor selected,
+    not the padded view).
 
     Returns ``(before_png_bytes, after_png_bytes, stats)`` where ``stats``
     is ``{"in_region_tiles": int, "added_tiles": int, "replaced_tiles": int}``.
@@ -1422,10 +1452,30 @@ def _render_region_before_after(
     import io
 
     rmin_x, rmax_x, rmin_z, rmax_z = region
-    tx_min = rmin_x // _TS
-    tx_max = rmax_x // _TS
-    tz_min = rmin_z // _TS
-    tz_max = rmax_z // _TS
+    # ``region`` is stored in **signed in-game world blocks** (centered on
+    # spawn — same convention as ``MapStats.start_x = min_x * TILE_SIZE -
+    # DEFAULT_MAP_MIDDLE``). Both ``combined.db`` and the upload's
+    # ``pending/<id>.db`` store ``position`` using VS's **absolute** tile
+    # coordinates (origin offset by ``DEFAULT_MAP_MIDDLE / TILE_SIZE``).
+    # Add the world-middle back before deriving tile bounds for the SQL
+    # filter, otherwise the SELECT matches zero rows and we render a
+    # fully-transparent PNG. (See ``resources.py`` for the same pattern.)
+    abs_rmin_x = rmin_x + DEFAULT_MAP_MIDDLE
+    abs_rmax_x = rmax_x + DEFAULT_MAP_MIDDLE
+    abs_rmin_z = rmin_z + DEFAULT_MAP_MIDDLE
+    abs_rmax_z = rmax_z + DEFAULT_MAP_MIDDLE
+    # Original (un-padded) region bounds in tile coordinates — used to
+    # decide which tiles receive the tint overlay.
+    orig_tx_min = abs_rmin_x // _TS
+    orig_tx_max = abs_rmax_x // _TS
+    orig_tz_min = abs_rmin_z // _TS
+    orig_tz_max = abs_rmax_z // _TS
+
+    pad = max(0, int(padding_chunks))
+    tx_min = orig_tx_min - pad
+    tx_max = orig_tx_max + pad
+    tz_min = orig_tz_min - pad
+    tz_max = orig_tz_max + pad
 
     w_chunks = max(1, tx_max - tx_min + 1)
     h_chunks = max(1, tz_max - tz_min + 1)
@@ -1514,8 +1564,19 @@ def _render_region_before_after(
             (POSITION_MASK, tx_min, tx_max, POSITION_BITS, tz_min, tz_max),
         )
         for pos, blob in cur:
-            in_region_tiles += 1
             cx, cz = decode_position(pos)
+            # Tiles in the padded ring are upload tiles we'd never actually
+            # merge (they're outside the contributor's region selection),
+            # so they shouldn't tint or contribute to stats. They also
+            # shouldn't overwrite the existing combined tile in the "after"
+            # preview — the merge wouldn't touch them.
+            in_original = (
+                orig_tx_min <= cx <= orig_tx_max
+                and orig_tz_min <= cz <= orig_tz_max
+            )
+            if not in_original:
+                continue
+            in_region_tiles += 1
             if pos in combined_in_region:
                 replaced_tiles += 1
                 # Orange = replacement (existing tile overwritten).
@@ -1633,10 +1694,13 @@ def _compute_match_score(
 
         for pos, combined_blob, pending_blob in cur:
             if region is not None:
-                # Filter by region — convert tile position → world block bounds
+                # Filter by region — convert tile position → world block bounds.
+                # ``decode_position`` returns absolute tile coords; ``region``
+                # is signed in-game world blocks, so shift the tile's bounds
+                # down by ``DEFAULT_MAP_MIDDLE`` before comparing.
                 tx, ty = decode_position(pos)
-                tile_min_x = tx * TILE_SIZE
-                tile_min_z = ty * TILE_SIZE
+                tile_min_x = tx * TILE_SIZE - DEFAULT_MAP_MIDDLE
+                tile_min_z = ty * TILE_SIZE - DEFAULT_MAP_MIDDLE
                 tile_max_x = tile_min_x + TILE_SIZE - 1
                 tile_max_z = tile_min_z + TILE_SIZE - 1
                 rmin_x, rmax_x, rmin_z, rmax_z = region
@@ -1966,7 +2030,20 @@ async def contribute_info(request: Request, api_key: str = Depends(verify_api_ke
             region_overwrite_on
             and (is_admin_caller or verify_permission(api_key, "region_overwrite"))
         ),
-        "region_tile_cap_non_admin": settings.MAX_REGION_TILES_NON_ADMIN,
+        # Region cap and admin expansion limit, both expressed in CHUNKS
+        # (1 chunk == 32 blocks per side). Admin-tunable via
+        # ``PATCH /api/admin/settings/region-overwrite``. The legacy
+        # ``region_tile_cap_non_admin`` alias is kept for one release of
+        # back-compat with older frontend builds.
+        "region_chunk_area_cap_non_admin": int(
+            get_region_overwrite_settings()["max_chunks_area_non_admin"]
+        ),
+        "region_admin_expand_chunks_max": int(
+            get_region_overwrite_settings()["admin_expand_chunks_max"]
+        ),
+        "region_tile_cap_non_admin": int(
+            get_region_overwrite_settings()["max_chunks_area_non_admin"]
+        ),
         **_withdraw_status(api_key),
         **contribution_status,
     }
@@ -2338,70 +2415,8 @@ async def contribute_multipart_abort(
     return {"aborted": True}
 
 
-@router.post("/contribute/region-preview")
-async def contribute_region_preview(
-    payload: ContributeRegionPreviewRequest,
-    api_key: str = Depends(verify_contribute_permission),
-):
-    """Return ``{tiles_in_region, tiles_total, region_tile_area}`` for a
-    candidate region against an already-uploaded pending file.
-
-    Used by the picker UI to show "1 234 of 56 789 tiles in your file fall
-    inside this region" before the user commits. Hidden behind the
-    ``region_overwrite`` feature flag.
-    """
-    check_rate_limit(api_key)
-
-    try:
-        region = _normalise_region(
-            payload.update_region_min_x,
-            payload.update_region_max_x,
-            payload.update_region_min_z,
-            payload.update_region_max_z,
-        )
-    except ValueError as e:
-        return JSONResponse(status_code=400, content={"detail": str(e)})
-    if region is None:
-        return JSONResponse(status_code=400, content={"detail": "Region required"})
-
-    try:
-        _check_region_eligibility(api_key, region)
-    except HTTPException as e:
-        return JSONResponse(status_code=e.status_code, content={"detail": e.detail})
-
-    cid = payload.contribution_id.strip()
-    if not cid:
-        return JSONResponse(status_code=400, content={"detail": "Missing contribution ID"})
-
-    meta = db.get_contribution(cid)
-    if not meta or meta.get("status") != "pending":
-        return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
-    # Owner-only: don't let another contributor probe somebody else's pending
-    # upload. Admins are exempt.
-    if not _is_admin_key(api_key) and not _key_owns_row(api_key, meta):
-        return JSONResponse(status_code=403, content={"detail": "Not your contribution"})
-
-    pending_key = r2_storage.pending_db_key(cid)
-    if not r2_storage.object_exists(pending_key):
-        return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
-
-    tmp = _download_to_temp(pending_key)
-    try:
-        in_region, total = _count_pending_tiles(tmp, region)
-    finally:
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-
-    return {
-        "tiles_in_region": in_region,
-        "tiles_total": total,
-        "region_tile_area": _region_tile_count(region),
-        "region_tile_cap": (
-            None if _is_admin_key(api_key) else settings.MAX_REGION_TILES_NON_ADMIN
-        ),
-    }
+# NOTE: POST /contribute/region-preview and PATCH /contribute/{id}/region
+# now live in contribute_region.py.
 
 
 @router.post("/contribute")
@@ -2585,130 +2600,8 @@ def _render_and_cache_preview_sync(
     return png_bytes
 
 
-@router.get("/contribute/preview-region/{contribution_id}")
-async def contribute_preview_region(
-    contribution_id: str,
-    side: str = Query("before", description="'before' or 'after'"),
-    api_key: str = Depends(verify_api_key),
-):
-    """Phase 2 — render the side-by-side region overwrite preview.
-
-    Two PNGs are produced and cached in R2 next to the contribution:
-    ``pending/<id>.before.png`` and ``pending/<id>.after.png``. Both are
-    cropped to the contribution's region. Newly-added tiles tint green and
-    overwritten tiles tint orange on the "after" image.
-
-    404 when the contribution has no Phase-2 region attached, or when the
-    feature flag is off (so non-admins can't probe the route).
-    """
-    check_rate_limit(api_key)
-
-    if side not in ("before", "after"):
-        return JSONResponse(status_code=400, content={"detail": "side must be 'before' or 'after'"})
-
-    if not is_feature_enabled("region_overwrite"):
-        return JSONResponse(status_code=404, content={"detail": "Not Found"})
-
-    meta = db.get_contribution(contribution_id)
-    if not meta or meta.get("status") != "pending":
-        return JSONResponse(status_code=404, content={"detail": "Contribution not found"})
-
-    region = db.get_update_region(contribution_id)
-    if region is None:
-        return JSONResponse(
-            status_code=404,
-            content={"detail": "Contribution has no region attached"},
-        )
-
-    # Privacy: pending region preview is admin-only (region bounds may be
-    # exploration-sensitive). Owner-of-the-contribution also gets to see it
-    # so they can verify their own selection.
-    if not _is_admin_key(api_key) and not _key_owns_row(api_key, meta):
-        return JSONResponse(status_code=403, content={"detail": "Forbidden"})
-
-    before_key = r2_storage.region_before_preview_key(contribution_id)
-    after_key = r2_storage.region_after_preview_key(contribution_id)
-    target_key = before_key if side == "before" else after_key
-
-    # Push blocking R2 / PIL work to a worker thread — see
-    # contribute_preview above for the event-loop-blocking discussion.
-    if await asyncio.to_thread(r2_storage.object_exists, target_key):
-        png_bytes = await asyncio.to_thread(r2_storage.download_bytes, target_key)
-        return Response(
-            content=png_bytes,
-            media_type="image/png",
-            headers={
-                "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
-                "X-Preview-Cache": "hit",
-            },
-        )
-
-    # Heavy-compute kill switch (see contribute_preview above for rationale).
-    if not _is_admin_key(api_key) and not is_heavy_compute_allowed():
-        return JSONResponse(
-            status_code=503,
-            content={
-                "detail": {
-                    "code": "heavy_compute_disabled",
-                    "message": (
-                        "Region preview generation is paused while the server "
-                        "is at reduced capacity. An admin will render "
-                        "previews shortly."
-                    ),
-                }
-            },
-            headers={"Retry-After": "600"},
-        )
-
-    pending_key = r2_storage.pending_db_key(contribution_id)
-    if not await asyncio.to_thread(r2_storage.object_exists, pending_key):
-        return JSONResponse(status_code=404, content={"detail": "Pending DB missing"})
-
-    # Dedupe concurrent renders. The lock is shared across both sides
-    # because a single render produces both the before and after PNGs.
-    async with _PreviewLock(f"preview-region:{contribution_id}"):
-        # Re-check inside the lock — an earlier waiter may have just rendered.
-        if await asyncio.to_thread(r2_storage.object_exists, target_key):
-            png_bytes = await asyncio.to_thread(r2_storage.download_bytes, target_key)
-            return Response(
-                content=png_bytes,
-                media_type="image/png",
-                headers={
-                    "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
-                    "X-Preview-Cache": "hit",
-                },
-            )
-
-        combined_tmp = await asyncio.to_thread(get_combined_db_cached)
-        pending_tmp = await asyncio.to_thread(_download_to_temp, pending_key)
-        try:
-            before_bytes, after_bytes, _stats = await asyncio.to_thread(
-                _render_region_before_after, combined_tmp, pending_tmp, region
-            )
-            # Cache both halves so the second request (for the other side) is a hit.
-            await asyncio.to_thread(
-                r2_storage.upload_bytes, before_key, before_bytes, "image/png"
-            )
-            await asyncio.to_thread(
-                r2_storage.upload_bytes, after_key, after_bytes, "image/png"
-            )
-        except ValueError as e:
-            return JSONResponse(status_code=400, content={"detail": str(e)})
-        finally:
-            try:
-                os.unlink(pending_tmp)
-            except OSError:
-                pass
-
-    payload = before_bytes if side == "before" else after_bytes
-    return Response(
-        content=payload,
-        media_type="image/png",
-        headers={
-            "Content-Disposition": f"inline; filename={contribution_id}.{side}.png",
-            "X-Preview-Cache": "miss",
-        },
-    )
+# NOTE: GET /contribute/preview-region/{contribution_id} now lives in
+# contribute_region.py.
 
 
 @router.post("/contribute/{contribution_id}/approve")
@@ -3190,6 +3083,72 @@ def run_approval_merge(contribution_id: str) -> dict:
         _compress_on = _ff_is_enabled("compress_artefacts")
     except Exception:
         _compress_on = False
+
+    # Phase 3 — region-pruned archive. When the contribution has a region
+    # selection, we replace the pending object with an in-region-only
+    # SQLite *before* the existing compress/move branch runs. Both
+    # branches then operate on the pruned file and produce a much smaller
+    # archived blob (a 1 GiB upload with a 30×30-chunk region typically
+    # lands in the tens of MiB). Gap-fill contributions (no region) are
+    # left untouched and keep the existing full-DB archive behaviour.
+    if update_region is not None:
+        prune_tmp_in_fd, prune_tmp_in = tempfile.mkstemp(suffix=".db")
+        os.close(prune_tmp_in_fd)
+        prune_tmp_out_fd, prune_tmp_out = tempfile.mkstemp(suffix=".regiononly.db")
+        os.close(prune_tmp_out_fd)
+        try:
+            r2_storage.download_to_path(pending_key, prune_tmp_in)
+            from ..core.mapdb import prune_db_to_region
+            stats_prune = prune_db_to_region(
+                prune_tmp_in, prune_tmp_out, update_region,
+            )
+            # Replace the pending object with the pruned version so the
+            # existing compress/move branch transparently archives the
+            # smaller file. ``upload_file`` overwrites in place.
+            r2_storage.upload_file(prune_tmp_out, pending_key)
+            try:
+                db.set_archive_pruned_metadata(
+                    contribution_id,
+                    kept_tiles=int(stats_prune["kept_tiles"]),
+                    src_bytes=int(stats_prune["src_bytes"]),
+                    dst_bytes=int(stats_prune["dst_bytes"]),
+                )
+            except Exception:
+                logger.exception(
+                    "archive prune: metadata persist failed for %s",
+                    contribution_id,
+                )
+            try:
+                actor_key_id = meta.get("approval_requested_by_key_id")
+                accounts_db.audit_log(
+                    "",
+                    "contribution.region_pruned_archive",
+                    target=contribution_id,
+                    metadata={
+                        "kept_tiles": int(stats_prune["kept_tiles"]),
+                        "src_bytes": int(stats_prune["src_bytes"]),
+                        "dst_bytes": int(stats_prune["dst_bytes"]),
+                        "update_region": list(update_region),
+                    },
+                    admin_key_id=str(actor_key_id) if actor_key_id else None,
+                )
+            except Exception:
+                pass
+        except Exception:
+            # If pruning fails for any reason fall back to archiving the
+            # full upload — we never want to block approval on this
+            # optimisation. The audit log will silently record the
+            # absence of pruning (archived_is_region_pruned remains NULL).
+            logger.exception(
+                "archive prune failed for %s, falling back to full archive",
+                contribution_id,
+            )
+        finally:
+            for _p in (prune_tmp_in, prune_tmp_out):
+                try:
+                    os.unlink(_p)
+                except OSError:
+                    pass
 
     if _compress_on:
         try:

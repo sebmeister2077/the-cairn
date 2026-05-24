@@ -653,6 +653,55 @@ def region_after_preview_key(contribution_id: str) -> str:
     return f"pending/{contribution_id}.after.png"
 
 
+def region_before_preview_key_padded(contribution_id: str, padding_chunks: int) -> str:
+    """Padded variant of :func:`region_before_preview_key` for the admin
+    context view. ``padding_chunks=0`` collapses to the unpadded key so
+    callers don't double-cache the same image."""
+    p = max(0, int(padding_chunks))
+    if p == 0:
+        return region_before_preview_key(contribution_id)
+    return f"pending/{contribution_id}.pad{p}.before.png"
+
+
+def region_after_preview_key_padded(contribution_id: str, padding_chunks: int) -> str:
+    """Padded variant of :func:`region_after_preview_key`. See
+    :func:`region_before_preview_key_padded`."""
+    p = max(0, int(padding_chunks))
+    if p == 0:
+        return region_after_preview_key(contribution_id)
+    return f"pending/{contribution_id}.pad{p}.after.png"
+
+
+def invalidate_region_previews(contribution_id: str) -> None:
+    """Delete every cached region before/after PNG for ``contribution_id``,
+    including all padded variants. Called after the admin edits the region
+    bounds so the next preview request renders fresh against the new
+    bounds — and after approval/rejection to keep R2 tidy.
+
+    Uses ``list_keys_with_prefix`` so we pick up arbitrary padding values
+    without the caller having to enumerate them. Listing returns prefix
+    matches so we filter to the two PNG suffixes to avoid touching the
+    pending .db or other artefacts that live under ``pending/<id>.``.
+    """
+    prefix = f"pending/{contribution_id}."
+    try:
+        keys = list_keys_with_prefix(prefix)
+    except Exception:
+        # If the listing fails, fall back to the two known unpadded keys so
+        # we at least invalidate the common case.
+        keys = [region_before_preview_key(contribution_id),
+                region_after_preview_key(contribution_id)]
+    for k in keys:
+        if not (k.endswith(".before.png") or k.endswith(".after.png")):
+            continue
+        try:
+            delete_object(k)
+        except Exception:
+            # Best-effort: a stale cache is recoverable (next render
+            # overwrites it), a 500 on PATCH region is not.
+            pass
+
+
 # ---------------------------------------------------------------------------
 # Phase 4b — per-contribution revert undo data
 # ---------------------------------------------------------------------------

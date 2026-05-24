@@ -22,12 +22,15 @@ export type PendingContribution = {
     // Phase 2 — region-restricted update bounds (admin-or-owner only) and mode
     // ("overwrite" | "gap_fill"). The mode is always present; bounds are
     // redacted from non-admin/non-owner viewers.
-    update_region?: {
-        min_x: number;
-        max_x: number;
-        min_z: number;
-        max_z: number;
-    } | null;
+    //
+    // Wire format is a 4-tuple `[min_x, max_x, min_z, max_z]` (see
+    // backend/app/routes/contribute_r2.py); the object form is accepted
+    // for forward-compat. Use ``normalizeContributionRegion`` before
+    // reading individual fields.
+    update_region?:
+    | { min_x: number; max_x: number; min_z: number; max_z: number }
+    | [number, number, number, number]
+    | null;
     update_region_mode?: "overwrite" | "gap_fill";
     // Async validation lifecycle (see backend/app/tasks/validate_uploads.py).
     // ``'pending'`` = worker hasn't validated the .db yet (tile_count=0).
@@ -116,5 +119,10 @@ export type ContributeInfo = {
     // Phase 2 — region-restricted update gating
     region_overwrite_enabled?: boolean;
     can_use_region_overwrite?: boolean;
+    /** Legacy alias for ``region_chunk_area_cap_non_admin`` (kept for one release). */
     region_tile_cap_non_admin?: number;
+    /** Max chunk² area a non-admin contributor may overwrite per upload. */
+    region_chunk_area_cap_non_admin?: number;
+    /** Per-edge chunk count the admin reviewer may expand the bounds by. */
+    region_admin_expand_chunks_max?: number;
 };

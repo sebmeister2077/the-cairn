@@ -75,6 +75,76 @@ def _invalidate_compression_settings() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Region-overwrite settings (Phase 2 → 3)
+#
+# Two admin-tunable knobs that govern the region-restricted contribution
+# flow. Stored under the ``region_overwrite_settings`` app_settings key as
+# ``{"max_chunks_area_non_admin": int, "admin_expand_chunks_max": int}``.
+# Read by ``contribute_r2._check_region_eligibility`` and the admin
+# ``PATCH /contribute/{id}/region`` endpoint on the hot path; we therefore
+# cache the value for 30 s like the compression knob.
+#
+# Defaults are picked so the existing on-disk behaviour stays the same
+# until an admin actively narrows the cap (the *effective* non-admin tile
+# cap was 65 536 before this; the new default is 900 chunks² = 30×30,
+# matching the UX intent).
+# ---------------------------------------------------------------------------
+
+REGION_OVERWRITE_DEFAULTS = {
+    "max_chunks_area_non_admin": 900,  # 30 × 30 chunks
+    "admin_expand_chunks_max": 10,     # ± chunks per edge at approval
+}
+
+
+def _normalise_region_overwrite_settings(raw) -> dict:
+    """Coerce a possibly-malformed app_settings payload into the canonical
+    shape. Falls back to ``REGION_OVERWRITE_DEFAULTS`` per key."""
+    out = dict(REGION_OVERWRITE_DEFAULTS)
+    if isinstance(raw, dict):
+        for k in out:
+            v = raw.get(k)
+            try:
+                iv = int(v)
+                if iv > 0:
+                    out[k] = iv
+            except (TypeError, ValueError):
+                pass
+    # Sanity clamps — keep within reason so a typo in the admin UI can't
+    # accidentally allow an 800k-chunk² overwrite or a 10 000-chunk expand.
+    out["max_chunks_area_non_admin"] = max(1, min(out["max_chunks_area_non_admin"], 1_000_000))
+    out["admin_expand_chunks_max"] = max(0, min(out["admin_expand_chunks_max"], 256))
+    return out
+
+
+def get_region_overwrite_settings() -> dict:
+    """Return the validated region-overwrite settings dict, with a 30-second
+    in-process cache. Imported by ``contribute_r2`` on the request hot path."""
+    now = time.monotonic()
+    with _settings_lock:
+        cached = _settings_cache.get("region_overwrite_settings")
+        if cached and (now - cached[1]) < _SETTINGS_CACHE_TTL:
+            return dict(cached[0])
+    raw_row = None
+    try:
+        raw_row = db.get_app_setting("region_overwrite_settings")
+    except Exception:
+        with _settings_lock:
+            cached = _settings_cache.get("region_overwrite_settings")
+            if cached:
+                return dict(cached[0])
+    raw_value = raw_row["value"] if raw_row else None
+    value = _normalise_region_overwrite_settings(raw_value)
+    with _settings_lock:
+        _settings_cache["region_overwrite_settings"] = (value, now)
+    return dict(value)
+
+
+def _invalidate_region_overwrite_settings() -> None:
+    with _settings_lock:
+        _settings_cache.pop("region_overwrite_settings", None)
+
+
+# ---------------------------------------------------------------------------
 # Background-job status snapshot
 #
 # Populated by ``compress_workers`` (combined DB job) and the migration
@@ -142,6 +212,13 @@ class EstimateRequest(BaseModel):
     # Optional override for the input size; defaults to the live combined-DB
     # size so the UI's "live preview" reflects production reality.
     input_bytes: Optional[int] = Field(default=None, ge=0)
+
+
+class RegionOverwriteSettingsPatch(BaseModel):
+    # Max selectable area in chunks² (1 chunk = 32 blocks). 30×30 = 900.
+    max_chunks_area_non_admin: int = Field(..., ge=1, le=1_000_000)
+    # How many chunks the admin may expand the bounds per edge at approval.
+    admin_expand_chunks_max: int = Field(..., ge=0, le=256)
 
 
 # ---------------------------------------------------------------------------
@@ -226,3 +303,32 @@ async def compression_status(_: str = Depends(require_admin)):
 @router.get("/settings/compression/migration-status")
 async def compression_migration_status(_: str = Depends(require_admin)):
     return get_migration_status()
+
+
+# ---------------------------------------------------------------------------
+# Region-overwrite settings endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/settings/region-overwrite")
+async def get_region_overwrite(_: str = Depends(require_admin)):
+    return get_region_overwrite_settings()
+
+
+@router.patch("/settings/region-overwrite")
+async def patch_region_overwrite(
+    body: RegionOverwriteSettingsPatch,
+    admin_key: str = Depends(require_admin),
+):
+    value = _normalise_region_overwrite_settings({
+        "max_chunks_area_non_admin": body.max_chunks_area_non_admin,
+        "admin_expand_chunks_max": body.admin_expand_chunks_max,
+    })
+    db.set_app_setting("region_overwrite_settings", value, updated_by_key=admin_key)
+    _invalidate_region_overwrite_settings()
+    accounts_db.audit_log(
+        admin_key,
+        "settings.region_overwrite.set",
+        target="region_overwrite_settings",
+        metadata=value,
+    )
+    return value

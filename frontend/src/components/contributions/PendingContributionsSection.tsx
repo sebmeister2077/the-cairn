@@ -4,7 +4,9 @@ import { Button } from "../ui/button";
 import { Check, Eye, Loader2, Undo2, XIcon } from "lucide-react";
 import { MapViewer } from "../MapViewer";
 import { ContributionBeforeAfter } from "../ContributionBeforeAfter";
+import { AdminRegionReviewPanel } from "../admin/AdminRegionReviewPanel";
 import { MatchScoreBadge } from "./MatchScoreBadge";
+import { normalizeContributionRegion } from "@/lib/api";
 
 export function PendingContributionsSection({
   contribution,
@@ -174,25 +176,39 @@ export function PendingContributionsSection({
                     The endpoint is gated server-side by feature flag and
                     owner/admin checks, so we only need to gate the UI on
                     the presence of `update_region` (which the backend
-                    redacts for non-admin/non-owner viewers anyway). */}
+                    redacts for non-admin/non-owner viewers anyway).
+                    For admins we render the full review panel instead
+                    of the bare before/after pair. */}
       {previewId === contribution.id &&
         contribution.update_region_mode === "overwrite" &&
-        contribution.update_region && <ContributionBeforeAfter contributionId={contribution.id} />}
+        contribution.update_region &&
+        (isAdmin ? (
+          <AdminRegionReviewPanel contribution={contribution} contributeInfo={contributeInfo} />
+        ) : (
+          <ContributionBeforeAfter
+            contributionId={contribution.id}
+            region={normalizeContributionRegion(contribution.update_region)}
+          />
+        ))}
 
       {/* Region badge — visible whenever the upload was a
                     region-overwrite, even if bounds are redacted. */}
-      {contribution.update_region_mode === "overwrite" && (
-        <div className="text-xs text-muted-foreground">
-          Region overwrite
-          {contribution.update_region && (
-            <>
-              {" "}
-              — x [{contribution.update_region.min_x}, {contribution.update_region.max_x}], z [
-              {contribution.update_region.min_z}, {contribution.update_region.max_z}]
-            </>
-          )}
-        </div>
-      )}
+      {contribution.update_region_mode === "overwrite" &&
+        (() => {
+          const regionForBadge = normalizeContributionRegion(contribution.update_region);
+          return (
+            <div className="text-xs text-muted-foreground">
+              Region overwrite
+              {regionForBadge && (
+                <>
+                  {" "}
+                  — x [{regionForBadge.min_x}, {regionForBadge.max_x}], z [{regionForBadge.min_z},{" "}
+                  {regionForBadge.max_z}]
+                </>
+              )}
+            </div>
+          );
+        })()}
     </div>
   );
 }

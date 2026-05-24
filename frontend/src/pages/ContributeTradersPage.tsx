@@ -547,7 +547,7 @@ function ManualTraderEntryFlow() {
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Enter the in-game world coordinates (x, z) and choose the trader's type. Limit:{" "}
-          <b>15 submissions per day</b>. Each Submit button press counts as one submission,
+          <b>40 submissions per day</b>. Each Submit button press counts as one submission,
           regardless of how many traders are in the batch.
         </p>
         <div className="space-y-1">

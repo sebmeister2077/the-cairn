@@ -224,6 +224,13 @@ interface MapViewerProps {
     centerWorldZ: number;
     pixelsPerBlock: number;
   };
+  /**
+   * Optional world-block point used by the toolbar "center" button. When
+   * omitted, the button centers on the world origin (0, 0). When provided,
+   * the button recenters on this point instead — useful for previews that
+   * focus on a region not anchored at the spawn origin.
+   */
+  centerTarget?: { x: number; z: number } | null;
 }
 
 export function MapViewer({
@@ -249,6 +256,7 @@ export function MapViewer({
   focusZoom = 4,
   onViewportChange,
   initialView,
+  centerTarget = null,
   overlay,
   overlayRender,
   interactionsLocked = false,
@@ -1032,9 +1040,21 @@ export function MapViewer({
   const centerOnOrigin = useCallback(
     (currentZoom?: number) => {
       if (!stats || imgNatural.w === 0) return;
+      // When a custom centerTarget is supplied, recenter on that world-block
+      // point instead of (0, 0).
+      if (centerTarget && Number.isFinite(centerTarget.x) && Number.isFinite(centerTarget.z)) {
+        const el = containerRef.current;
+        if (!el) return;
+        const z = currentZoom ?? zoomRef.current;
+        const rect = el.getBoundingClientRect();
+        const imgX = ((centerTarget.x - stats.start_x) / stats.width_blocks) * imgNatural.w;
+        const imgY = ((centerTarget.z - stats.start_z) / stats.height_blocks) * imgNatural.h;
+        setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
+        return;
+      }
       centerView(imgNatural.w, imgNatural.h, currentZoom);
     },
-    [centerView, stats, imgNatural],
+    [centerView, stats, imgNatural, centerTarget],
   );
 
   // Tile-mode initial centering — runs once per tileSet id, after the
@@ -1276,7 +1296,9 @@ export function MapViewer({
             variant="outline"
             size="sm"
             onClick={() => centerOnOrigin()}
-            title="Center on 0, 0"
+            title={
+              centerTarget ? `Center on (${centerTarget.x}, ${centerTarget.z})` : "Center on 0, 0"
+            }
           >
             <Crosshair className="size-4" />
           </Button>

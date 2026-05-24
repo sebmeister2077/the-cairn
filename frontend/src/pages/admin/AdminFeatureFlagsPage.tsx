@@ -37,6 +37,7 @@ import {
   type HeavyComputeStatus,
 } from "@/lib/api";
 import { CompressionSettingsPanel } from "@/components/admin/CompressionSettingsPanel";
+import { RegionOverwriteSettingsPanel } from "@/components/admin/RegionOverwriteSettingsPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -322,36 +323,44 @@ export function AdminFeatureFlagsPage() {
                 return (
                   <div
                     key={spec.key}
-                    className="flex items-start justify-between gap-3 border-b last:border-0 pb-2 last:pb-0"
+                    className="flex flex-col gap-3 border-b last:border-0 pb-2 last:pb-0"
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{spec.title}</span>
-                        <Badge variant="outline" className="font-mono text-[10px]">
-                          {spec.key}
-                        </Badge>
-                        {f.enabled ? (
-                          <Badge className="text-[10px]">on</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-[10px]">
-                            off
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm">{spec.title}</span>
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            {spec.key}
                           </Badge>
+                          {f.enabled ? (
+                            <Badge className="text-[10px]">on</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px]">
+                              off
+                            </Badge>
+                          )}
+                        </div>
+                        {spec.help && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{spec.help}</p>
                         )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Updated {new Date(f.updated_at).toLocaleString()}
+                        </p>
                       </div>
-                      {spec.help && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{spec.help}</p>
-                      )}
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Updated {new Date(f.updated_at).toLocaleString()}
-                      </p>
+                      <Switch
+                        checked={f.enabled}
+                        disabled={setFlag.isPending && setFlag.variables?.key === spec.key}
+                        onCheckedChange={(v) =>
+                          setFlag.mutate({ key: spec.key, enabled: Boolean(v) })
+                        }
+                      />
                     </div>
-                    <Switch
-                      checked={f.enabled}
-                      disabled={setFlag.isPending && setFlag.variables?.key === spec.key}
-                      onCheckedChange={(v) =>
-                        setFlag.mutate({ key: spec.key, enabled: Boolean(v) })
-                      }
-                    />
+                    {/* Inline settings panel for flags that have one. Only
+                        shown while the flag is ON to avoid surfacing knobs
+                        for a disabled feature. */}
+                    {spec.key === "region_overwrite" && f.enabled && (
+                      <RegionOverwriteSettingsPanel />
+                    )}
                   </div>
                 );
               })}

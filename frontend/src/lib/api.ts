@@ -1084,6 +1084,26 @@ export interface ContributionRegion {
     max_z: number;
 }
 
+/** Wire form the backend uses for ``update_region`` on contribution
+ *  responses: a 4-tuple in [min_x, max_x, min_z, max_z] order. */
+export type ContributionRegionTuple = [number, number, number, number];
+
+/**
+ * Accepts either the object or 4-tuple shape and returns an object (or
+ * null). Centralised here so every UI surface treats the wire format
+ * identically — the backend currently emits the tuple form.
+ */
+export function normalizeContributionRegion(
+    r: ContributionRegion | ContributionRegionTuple | null | undefined,
+): ContributionRegion | null {
+    if (!r) return null;
+    if (Array.isArray(r)) {
+        const [min_x, max_x, min_z, max_z] = r;
+        return { min_x, max_x, min_z, max_z };
+    }
+    return r;
+}
+
 /**
  * Error thrown by the upload helpers when the failure looks transient and
  * the caller should retry (network reset, 5xx, 408, 429, expired URL).
@@ -1569,19 +1589,52 @@ export async function previewRegionContribution(
     return (await handleResponse(res)).json();
 }
 
-// Phase 2 � fetch the cached side-by-side region preview PNG. ``side`` is
-// "before" (combined map cropped to region) or "after" (combined merged
-// with upload, with green/orange tints on the changed tiles).
+// Phase 2 / Phase C — fetch the cached side-by-side region preview PNG.
+// ``side`` is "before" (combined map cropped to region) or "after"
+// (combined merged with upload, with green/orange tints on the changed
+// tiles). When ``paddingChunks > 0`` the backend renders an admin-only
+// padded variant (cached at a distinct R2 key).
 export async function getRegionPreviewImage(
     contributionId: string,
     side: "before" | "after",
+    paddingChunks: number = 0,
 ): Promise<Blob> {
+    const pad =
+        paddingChunks > 0 ? `&padding_chunks=${Math.floor(paddingChunks)}` : "";
     const res = await fetch(
-        `${API_BASE}/contribute/preview-region/${contributionId}?side=${side}`,
+        `${API_BASE}/contribute/preview-region/${contributionId}?side=${side}${pad}`,
         { headers: authHeaders() },
     );
     await handleResponse(res);
     return res.blob();
+}
+
+// Phase B / Phase C — admin-only PATCH that edits the recorded region
+// bounds for a pending contribution. The backend enforces a per-edge
+// expansion cap and invalidates any cached region previews on success.
+export interface AdminRegionEditResult {
+    contribution_id: string;
+    old_region: ContributionRegion;
+    new_region: ContributionRegion;
+    in_region_upload_tiles: number;
+    region_chunk_area: number;
+}
+
+export async function adminEditContributionRegion(
+    contributionId: string,
+    region: ContributionRegion,
+): Promise<AdminRegionEditResult> {
+    const res = await fetch(`${API_BASE}/contribute/${contributionId}/region`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({
+            update_region_min_x: region.min_x,
+            update_region_max_x: region.max_x,
+            update_region_min_z: region.min_z,
+            update_region_max_z: region.max_z,
+        }),
+    });
+    return (await handleResponse(res)).json();
 }
 
 // ---------------------------------------------------------------------------
@@ -2213,6 +2266,29 @@ export async function adminGetCompressionMigrationStatus(): Promise<CompressionM
 export async function adminGetSystemCpuInfo(): Promise<SystemCpuInfo> {
     const res = await fetch(`${API_BASE}/admin/system/cpu-info`, {
         headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface RegionOverwriteSettings {
+    max_chunks_area_non_admin: number;
+    admin_expand_chunks_max: number;
+}
+
+export async function adminGetRegionOverwriteSettings(): Promise<RegionOverwriteSettings> {
+    const res = await fetch(`${API_BASE}/admin/settings/region-overwrite`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminSetRegionOverwriteSettings(
+    body: RegionOverwriteSettings,
+): Promise<RegionOverwriteSettings> {
+    const res = await fetch(`${API_BASE}/admin/settings/region-overwrite`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
     });
     return (await handleResponse(res)).json();
 }

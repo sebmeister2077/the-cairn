@@ -231,6 +231,8 @@ The row stays visible in `withdrawn` so the dashboard makes it clear what happen
 
 ## Region-restricted updates (Phase 2)
 
+> **See also:** [region-updates.md](region-updates.md) covers the operator-facing pieces — feature flag, contributor UX, admin review panel, settings UI, region-pruned archive, audit-log entries, and revert interaction. This section documents the wire format and pipeline.
+
 The legacy contribution flow is **gap-fill only**: an upload can add new tiles to the combined map, but it can never overwrite an existing tile. Phase 2 adds an opt-in **region overwrite** mode where a contributor draws a rectangle on the map and approval replaces every in-region tile with the upload's version (in-region positions outside the upload are *not* deleted — they are simply left unchanged). Out-of-region tiles in the upload are dropped.
 
 ### Trust model
