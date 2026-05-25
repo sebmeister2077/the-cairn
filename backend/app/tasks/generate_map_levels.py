@@ -34,6 +34,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import queue
 import shutil
 import tempfile
 import threading
@@ -151,6 +152,36 @@ PARALLEL_REGEN_WORKERS = max(
         16,
     ),
 )
+
+# Tier 7 (May 2026) — multi-band producers.
+#
+# Previously a single thread ran ``render_level_streaming`` and fed the
+# encode/upload pool. With 11 workers the pool was starved (CPU ~18%):
+# the producer's per-tile paste loop is Python-bound (holds the GIL) and
+# its SQLite reads stall on disk during sidecar-cache misses, so the
+# encode/upload threads spent most of their time waiting.
+#
+# We now split the chunk-row range into ``PARALLEL_REGEN_BANDS`` disjoint
+# horizontal bands and run one producer thread per band. Each producer
+# opens its own read-only SQLite connection (``mode=ro&immutable=1``,
+# lock-free, mmap-backed — see ``_open_mapdb_readonly``) and pushes
+# ``(cx, cy, arr)`` tuples into a bounded queue. The main thread drains
+# the queue and submits to the existing encode/upload executor.
+#
+# Threads can't escape the GIL during the Python-level paste loop, so
+# ideal scaling is sub-linear; in practice 3-4 bands fully feeds an
+# 8-16 worker pool. Set ``TOPS_MAP_PARALLEL_REGEN_BANDS=1`` to revert to
+# the single-producer behaviour while debugging.
+PARALLEL_REGEN_BANDS = max(
+    1,
+    min(
+        int(os.environ.get("TOPS_MAP_PARALLEL_REGEN_BANDS", "0") or 0)
+        or min(4, max(1, (os.cpu_count() or 2) // 2)),
+        16,
+    ),
+)
+
+print(f"TOPS map regen: parallel={PARALLEL_REGEN} workers={PARALLEL_REGEN_WORKERS} bands={PARALLEL_REGEN_BANDS}")
 
 # Single in-process job lock so concurrent admin clicks don't double-launch.
 _job_lock = threading.Lock()
@@ -496,20 +527,45 @@ def _render_level_parallel(
     """Parallel render path: streams chunk RGBA buffers from one SQLite scan
     per chunk-row and fans encode+upload out to a thread pool.
 
+    Tier 7 (May 2026): the producer side is now multi-banded. The chunk-row
+    range is split into ``PARALLEL_REGEN_BANDS`` horizontal bands; one
+    producer thread per band runs :func:`render_level_streaming` and pushes
+    ``(cx, cy, arr)`` tuples into a bounded queue. The main thread drains
+    the queue and submits to the encode/upload executor. Each producer
+    opens its own read-only SQLite connection (mmap-backed, lock-free) so
+    scans run truly concurrently and the encode pool stays fed.
+
     Returns ``(bytes_written, completed)``. Honours :func:`is_stop_requested`
     between submissions and raises :class:`_StopRequested` if signaled.
     """
     grid = geometry["chunk_grid"]
     if only_bounds is None:
-        bounds_for_streaming: Optional[Tuple[int, int, int, int]] = None
+        full_bounds: Tuple[int, int, int, int] = (0, 0, grid - 1, grid - 1)
     else:
-        bounds_for_streaming = only_bounds
+        full_bounds = only_bounds
+    cx_min, cy_min, cx_max, cy_max = full_bounds
 
     bytes_written = 0
     completed = initial_completed
     workers = PARALLEL_REGEN_WORKERS
-    # Cap in-flight encode/upload tasks so a slow R2 doesn't let the
-    # generator outrun the pool and balloon memory with queued PNG buffers.
+
+    # Split cy range into bands. Cap band count at the number of available
+    # rows so we don't spawn empty producers.
+    total_rows = max(0, cy_max - cy_min + 1)
+    if total_rows == 0:
+        return 0, initial_completed
+    band_count = max(1, min(PARALLEL_REGEN_BANDS, total_rows))
+    band_size = (total_rows + band_count - 1) // band_count  # ceil
+    band_ranges: List[Tuple[int, int, int, int]] = []
+    for i in range(band_count):
+        b_lo = cy_min + i * band_size
+        if b_lo > cy_max:
+            break
+        b_hi = min(cy_max, b_lo + band_size - 1)
+        band_ranges.append((cx_min, b_lo, cx_max, b_hi))
+
+    # Cap in-flight encode/upload tasks so a slow R2 doesn't let producers
+    # outrun the pool and balloon memory with queued PNG buffers.
     max_in_flight = max(workers * 2, 4)
     in_flight: List[Tuple[int, int, "Future[int]"]] = []
 
@@ -535,39 +591,140 @@ def _render_level_parallel(
                 level, completed, current_chunk=last_logged_chunk["key"]
             )
 
+    # Bounded producer→consumer queue. Sized to keep the encode pool fed
+    # without holding too many RGBA buffers in memory: each producer can
+    # have ~2 chunks queued, plus enough slack for the main thread to keep
+    # the executor topped up.
+    chunk_queue: "queue.Queue[Optional[Tuple[int, int, Optional[object]]]]" = (
+        queue.Queue(maxsize=max(workers * 2, len(band_ranges) * 2))
+    )
+
+    # Signal producers to bail out (e.g. on stop request or encode failure).
+    abort_event = threading.Event()
+    producer_errors: List[BaseException] = []
+    producer_errors_lock = threading.Lock()
+
+    def _producer(band_bounds: Tuple[int, int, int, int]) -> None:
+        try:
+            for cx, cy, arr in render_level_streaming(
+                db_path, level, geometry, band_bounds,
+            ):
+                if abort_event.is_set() or is_stop_requested():
+                    return
+                # ``put`` blocks on backpressure — this is what naturally
+                # rate-limits producers to whatever the encode pool drains.
+                while True:
+                    try:
+                        chunk_queue.put((cx, cy, arr), timeout=0.5)
+                        break
+                    except queue.Full:
+                        if abort_event.is_set() or is_stop_requested():
+                            return
+        except BaseException as e:  # noqa: BLE001 — re-raised on main thread
+            with producer_errors_lock:
+                producer_errors.append(e)
+            abort_event.set()
+
+    producer_threads = [
+        threading.Thread(
+            target=_producer,
+            args=(bb,),
+            name=f"tops-map-l{level}-prod{i}",
+            daemon=True,
+        )
+        for i, bb in enumerate(band_ranges)
+    ]
+
+    # Watcher: when every producer exits, push a sentinel so the consumer
+    # loop unblocks on the final ``get``.
+    def _watch_producers() -> None:
+        for t in producer_threads:
+            t.join()
+        try:
+            chunk_queue.put(None, timeout=1.0)
+        except queue.Full:
+            # Consumer already aborted; nothing to wake up.
+            pass
+
+    watcher = threading.Thread(
+        target=_watch_producers,
+        name=f"tops-map-l{level}-watch",
+        daemon=True,
+    )
+
     logger.info(
-        "Level %s: parallel regen path enabled (workers=%s, row-stripe scan)",
-        level, workers,
+        "Level %s: parallel regen path enabled "
+        "(workers=%s, bands=%s, row-stripe scan per band)",
+        level, workers, len(band_ranges),
     )
 
     with ThreadPoolExecutor(
         max_workers=workers,
         thread_name_prefix=f"tops-map-l{level}",
     ) as executor:
+        for t in producer_threads:
+            t.start()
+        watcher.start()
         try:
-            for cx, cy, arr in render_level_streaming(
-                db_path, level, geometry, bounds_for_streaming,
-            ):
-                if is_stop_requested():
-                    raise _StopRequested(
-                        f"stopped at level {level} after "
-                        f"{completed}/{total_grid} chunks"
+            try:
+                while True:
+                    item = chunk_queue.get()
+                    if item is None:
+                        break
+                    cx, cy, arr = item
+                    if is_stop_requested():
+                        abort_event.set()
+                        raise _StopRequested(
+                            f"stopped at level {level} after "
+                            f"{completed}/{total_grid} chunks"
+                        )
+                    fut = executor.submit(
+                        _encode_and_upload_chunk, level, cx, cy, arr,
                     )
-                fut = executor.submit(
-                    _encode_and_upload_chunk, level, cx, cy, arr,
-                )
-                in_flight.append((cx, cy, fut))
-                # Backpressure: keep the in-flight queue bounded.
-                while len(in_flight) >= max_in_flight:
-                    _drain_one()
-        except _StopRequested:
-            # Don't wait on outstanding uploads — let executor cancel/exit
-            # via __exit__ (it will still wait for currently running tasks
-            # to finish, which is what we want for write consistency).
-            raise
-        # Drain remaining work.
-        while in_flight:
-            _drain_one()
+                    in_flight.append((cx, cy, fut))
+                    # Backpressure: keep the in-flight queue bounded.
+                    while len(in_flight) >= max_in_flight:
+                        _drain_one()
+            except _StopRequested:
+                # Don't wait on outstanding uploads — let executor cancel/exit
+                # via __exit__ (it will still wait for currently running tasks
+                # to finish, which is what we want for write consistency).
+                raise
+            except BaseException:
+                abort_event.set()
+                raise
+            # Drain remaining work.
+            while in_flight:
+                _drain_one()
+        finally:
+            # Tier 7 hotfix: producers and watcher MUST be joined before we
+            # leave this function. They hold per-band read-only SQLite
+            # connections on ``db_path``; on Windows an open handle blocks
+            # the caller's ``os.unlink(db_path)`` cleanup with WinError 32.
+            # ``abort_event`` makes mid-scan producers exit promptly; we
+            # also drain the queue so any producer blocked on ``put`` can
+            # observe the abort flag on its next retry.
+            abort_event.set()
+            while True:
+                try:
+                    chunk_queue.get_nowait()
+                except queue.Empty:
+                    break
+            for t in producer_threads:
+                t.join(timeout=10.0)
+                if t.is_alive():
+                    logger.warning(
+                        "Level %s producer %s did not exit within 10s; "
+                        "snapshot DB may not be deletable on Windows.",
+                        level, t.name,
+                    )
+            watcher.join(timeout=5.0)
+
+    # Surface any producer-side error that didn't already abort us via the
+    # queue path (e.g. an exception raised after the sentinel was queued).
+    with producer_errors_lock:
+        if producer_errors:
+            raise producer_errors[0]
 
     return bytes_written, completed
 
