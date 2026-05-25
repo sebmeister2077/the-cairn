@@ -14,7 +14,7 @@
  * viewer to function.
  */
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,19 +163,15 @@ function TraderEditorRow({
         ))}
       {showCoords && (
         <>
-          <Input
-            className="h-8 w-24"
-            type="number"
+          <CoordInput
+            value={candidate.x}
             placeholder="x"
-            value={Number.isFinite(candidate.x) ? candidate.x : ""}
-            onChange={(e) => onChange({ ...candidate, x: Number(e.target.value) })}
+            onChange={(n) => onChange({ ...candidate, x: n })}
           />
-          <Input
-            className="h-8 w-24"
-            type="number"
+          <CoordInput
+            value={candidate.z}
             placeholder="z"
-            value={Number.isFinite(candidate.z) ? candidate.z : ""}
-            onChange={(e) => onChange({ ...candidate, z: Number(e.target.value) })}
+            onChange={(n) => onChange({ ...candidate, z: n })}
           />
         </>
       )}
@@ -211,6 +207,64 @@ function TraderEditorRow({
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
+  );
+}
+
+/**
+ * Signed-integer coordinate input that keeps a local text buffer so the
+ * user can delete the field down to empty (or just "-") before typing
+ * the next character. A plain `<Input type="number" value={n}>` snaps
+ * back to the parent's numeric state on every keystroke, which makes
+ * "select the 0, type minus" impossible — the `-` is silently rejected
+ * because `Number("-")` is `NaN`. We propagate parsed numbers when the
+ * buffer parses cleanly and fall back to `NaN` for empty / intermediate
+ * states so `readyForSubmit` keeps filtering them out.
+ */
+function CoordInput({
+  value,
+  placeholder,
+  onChange,
+}: {
+  value: number;
+  placeholder: string;
+  onChange: (n: number) => void;
+}) {
+  const [text, setText] = useState(() => (Number.isFinite(value) ? String(value) : ""));
+
+  // Re-sync from props when the parent assigns a new numeric value
+  // (e.g. row added with default 0). We only overwrite when the
+  // currently-displayed text doesn't already parse to the same number,
+  // so typing isn't clobbered mid-edit.
+  useEffect(() => {
+    const parsed = text === "" || text === "-" ? NaN : Number(text);
+    if (parsed === value) return;
+    if (Number.isNaN(parsed) && !Number.isFinite(value)) return;
+    setText(Number.isFinite(value) ? String(value) : "");
+  }, [value, text]);
+
+  return (
+    <Input
+      className="h-8 w-24"
+      type="text"
+      inputMode="numeric"
+      pattern="-?[0-9]*"
+      placeholder={placeholder}
+      value={text}
+      onChange={(e) => {
+        const raw = e.target.value;
+        // Allow empty / lone "-" as intermediate states. Anything else
+        // must look like a signed integer; reject stray characters
+        // outright so the field can't drift into garbage.
+        if (raw === "" || raw === "-") {
+          setText(raw);
+          onChange(NaN);
+          return;
+        }
+        if (!/^-?\d+$/.test(raw)) return;
+        setText(raw);
+        onChange(Number(raw));
+      }}
+    />
   );
 }
 
