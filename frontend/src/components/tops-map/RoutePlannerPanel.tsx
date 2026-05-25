@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeftRight,
+  BookmarkPlus,
+  Check,
   Footprints,
   Info,
   Loader2,
@@ -15,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -68,6 +71,13 @@ export function RoutePlannerPanel() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Track the most recently-saved draft grouping so we can show a brief
+  // confirmation row beneath the route. Reset whenever the underlying
+  // route changes so the success state never goes stale and lies about
+  // what the button would currently save.
+  const { createGrouping } = useTLGroupings();
+  const [savedDraft, setSavedDraft] = useState<{ id: string; name: string } | null>(null);
+
   // Stable "primary route exists" flag used in many sub-conditions below.
   const hasRoutes = routes.length > 0;
   const primary: RouteResult | null = hasRoutes ? (routes[selectedIndex] ?? routes[0]) : null;
@@ -80,6 +90,29 @@ export function RoutePlannerPanel() {
     const best = routes[0].totalSeconds;
     return routes.map((r) => r.totalSeconds - best);
   }, [routes]);
+
+  // Clear the "saved" confirmation whenever the displayed route changes —
+  // either a different alternate was picked or the planner recomputed. We
+  // key on the route reference (and selectedIndex) rather than on a
+  // timer so the confirmation stays visible until the user actually moves
+  // on.
+  useEffect(() => {
+    setSavedDraft(null);
+  }, [routes, selectedIndex]);
+
+  function handleSaveAsDraft() {
+    if (!primary) return;
+    const tlIds = primary.legs
+      .filter((l): l is Extract<RouteLeg, { kind: "tl" }> => l.kind === "tl")
+      // Use `tlIdFor(segment)` — NOT the route leg's pre-normalised `tlId`
+      // — because groupings match against the map's raw segment
+      // orientation. Mixing the two would silently break the highlight.
+      .map((l) => tlIdFor(l.segment));
+    const destLabel = to ? `(${to.point.x}, ${to.point.z})` : "destination";
+    const name = `Route to ${destLabel}`;
+    const grouping = createGrouping(name, { tlIds });
+    setSavedDraft({ id: grouping.id, name: grouping.name });
+  }
 
   if (!isOpen) return null;
 
@@ -238,6 +271,37 @@ export function RoutePlannerPanel() {
               )}
 
               {primary && <RouteSummary route={primary} />}
+
+              {/* Save-as-draft action: turns the current route's TLs into
+                  a fresh TL grouping the user can rename / tweak in the
+                  Groupings drawer. Disabled for walk-only routes since a
+                  grouping with zero TLs would be meaningless. */}
+              {primary && (
+                <div className="space-y-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full gap-1.5"
+                    onClick={handleSaveAsDraft}
+                    disabled={primary.tlHops === 0}
+                    title={
+                      primary.tlHops === 0
+                        ? "This route has no translocators to save"
+                        : "Create a new draft grouping containing this route's TLs"
+                    }
+                  >
+                    <BookmarkPlus className="h-3.5 w-3.5" />
+                    Save as draft grouping
+                  </Button>
+                  {savedDraft && (
+                    <p className="flex items-center gap-1 px-1 text-[11px] text-emerald-700 dark:text-emerald-400">
+                      <Check className="h-3 w-3" />
+                      Saved as <span className="font-medium">{savedDraft.name}</span>. Open the
+                      Groupings drawer to edit.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* "Why only a few green TLs?" — explain that the highlight
                   intentionally shows ONLY the TLs on the chosen route.
