@@ -179,7 +179,7 @@ export function RoutePlannerPanel() {
 
   return (
     <aside
-      className="fixed right-3 top-3 bottom-3 z-40 flex w-[min(380px,calc(100vw-1.5rem))] flex-col gap-0 rounded-lg border bg-popover text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/10"
+      className="fixed right-3 top-3 bottom-3 z-40 flex w-[min(420px,calc(100vw-1.5rem))] flex-col gap-0 rounded-lg border bg-popover text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/10"
       role="dialog"
       aria-label="Route planner"
     >

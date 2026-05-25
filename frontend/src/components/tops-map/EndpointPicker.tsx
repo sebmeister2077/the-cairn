@@ -194,7 +194,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
         <Button
           size="sm"
           variant={isPicking ? "default" : "outline"}
-          className="h-7 flex-1 gap-1 px-2 text-xs"
+          className="h-7 flex-1 gap-1 px-2 text-xs flex-1"
           onClick={togglePickMode}
         >
           <Crosshair className="h-3 w-3" />
@@ -203,7 +203,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
         <Button
           size="sm"
           variant="outline"
-          className="h-7 gap-1 px-2 text-xs"
+          className="h-7 gap-1 px-2 text-xs flex-1"
           onClick={() => setLandmarkOpen((v) => !v)}
         >
           <MapPin className="h-3 w-3" /> Landmark
@@ -211,7 +211,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
         <Button
           size="sm"
           variant="outline"
-          className="h-7 px-2 text-xs"
+          className="h-7 px-2 text-xs flex-1"
           onClick={() => setPasteOpen((v) => !v)}
         >
           Paste
@@ -219,7 +219,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
         <Button
           size="sm"
           variant="outline"
-          className="h-7 gap-1 px-2 text-xs"
+          className="h-7 gap-1 px-2 text-xs flex-1"
           disabled={!favorite}
           onClick={handleUseFavorite}
           title={favorite ? "Use favorite home" : "No favorite home set"}
