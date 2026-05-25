@@ -94,7 +94,11 @@ interface RowProps {
 function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
   const a = request.coords_a;
   const b = request.coords_b;
-  const { copied, copy } = useCopy();
+  // Persist the "Copied" indicator until the row unmounts: the user is
+  // expected to alt-tab into the game to paste the command, and a
+  // disappearing checkmark makes it impossible to remember whether they
+  // grabbed command A or B when they look back.
+  const { copied, copy } = useCopy(null);
   const cmdA = buildWaypointCommand(a, b);
   const cmdB = buildWaypointCommand(b, a);
   return (

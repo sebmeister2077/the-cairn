@@ -3,10 +3,12 @@ import {
   ArrowLeftRight,
   BookmarkPlus,
   Check,
+  Copy,
   Crosshair,
   Footprints,
   Info,
   Loader2,
+  MapPin,
   Send,
   Settings2,
   Sparkles,
@@ -15,7 +17,15 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,6 +55,137 @@ function describeLeg(leg: RouteLeg, index: number): string {
   return `${index + 1}. TL → (${leg.to.x}, ${leg.to.z}) — ${formatDuration(leg.seconds)}`;
 }
 
+// Y coordinate baked into generated /waypoint commands. Tops-map endpoints
+// are 2D, so we pin Y to a reasonable surface value — players can drag the
+// waypoint in-game if it lands inside a hill.
+const WAYPOINT_Y = 110;
+
+// Curated palette of CSS colour names that VS's /waypoint command renders
+// nicely on the in-game map. Hex inputs also work in-game, but a fixed
+// list keeps the picker honest and avoids "why is my pink invisible?".
+const WAYPOINT_COLORS = [
+  "purple",
+  "red",
+  "orange",
+  "yellow",
+  "lime",
+  "green",
+  "cyan",
+  "blue",
+  "magenta",
+  "pink",
+  "brown",
+  "white",
+  "gray",
+  "black",
+] as const;
+
+const LS_COLOR_KEY = "routePlanner.waypointColor";
+const LS_TEMPLATE_KEY = "routePlanner.waypointLabelTemplate";
+const DEFAULT_LABEL_TEMPLATE = "Route {i}/{n} ({x},{z})";
+
+/** Per-waypoint context exposed to label templates. */
+interface WaypointContext {
+  i: number;
+  n: number;
+  x: number;
+  y: number;
+  z: number;
+  next_x: number | "";
+  next_z: number | "";
+  prev_x: number | "";
+  prev_z: number | "";
+  dest_x: number;
+  dest_z: number;
+  start_x: number;
+  start_z: number;
+}
+
+/** Substitute `{placeholder}` tokens in a template, leaving unknown tokens
+ *  in place so the user gets a visible hint that they mistyped. */
+function renderTemplate(template: string, ctx: WaypointContext): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    if (key in ctx) {
+      const v = (ctx as unknown as Record<string, number | string>)[key];
+      return String(v);
+    }
+    return match;
+  });
+}
+
+/** Collapse a route into the chain of unique waypoints worth dropping in
+ *  the world: only TL endpoints (entry + exit of each TL hop). Route
+ *  start and finish are intentionally excluded — the player already
+ *  knows where they're standing and where they're going; what they need
+ *  marked on the map are the translocators they have to find. Consecutive
+ *  duplicates are dropped so a TL exit immediately followed by another
+ *  TL entry at the same coords only produces one waypoint. */
+function routeWaypointChain(route: RouteResult): Array<{ x: number; z: number }> {
+  const chain: Array<{ x: number; z: number }> = [];
+  for (const leg of route.legs) {
+    if (leg.kind !== "tl") continue;
+    const entry = { x: leg.from.x, z: leg.from.z };
+    const last = chain[chain.length - 1];
+    if (!last || last.x !== entry.x || last.z !== entry.z) {
+      chain.push(entry);
+    }
+    const exit = { x: leg.to.x, z: leg.to.z };
+    const prev = chain[chain.length - 1];
+    if (prev.x !== exit.x || prev.z !== exit.z) {
+      chain.push(exit);
+    }
+  }
+  return chain;
+}
+
+/** Build the multi-line `/waypoint addati` payload the user copies. */
+function buildRouteWaypointCommands(route: RouteResult, color: string, template: string): string {
+  const chain = routeWaypointChain(route);
+  if (chain.length === 0) return "";
+  const dest = chain[chain.length - 1];
+  const start = chain[0];
+  const lines: string[] = [];
+  for (let i = 0; i < chain.length; i++) {
+    const p = chain[i];
+    const prev = i > 0 ? chain[i - 1] : null;
+    const next = i < chain.length - 1 ? chain[i + 1] : null;
+    const label =
+      renderTemplate(template, {
+        i: i + 1,
+        n: chain.length,
+        x: p.x,
+        y: WAYPOINT_Y,
+        z: p.z,
+        next_x: next ? next.x : "",
+        next_z: next ? next.z : "",
+        prev_x: prev ? prev.x : "",
+        prev_z: prev ? prev.z : "",
+        dest_x: dest.x,
+        dest_z: dest.z,
+        start_x: start.x,
+        start_z: start.z,
+      }).trim() || `Route ${i + 1}/${chain.length}`;
+    lines.push(`/waypoint addati spiral ${p.x} ${WAYPOINT_Y} ${p.z} false ${color} ${label}`);
+  }
+  return lines.join("\n");
+}
+
+async function copyTextToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  // Fallback for non-secure contexts / older browsers.
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+}
+
 /**
  * Right-anchored floating panel that hosts the full route-planner UX.
  *
@@ -67,6 +208,36 @@ export function RoutePlannerPanel() {
   const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Waypoint-command preferences are stored in localStorage so the user's
+  // chosen colour and label format persist across reloads. Reading inside
+  // the initializer keeps it a one-shot — no SSR concerns in this app.
+  const [waypointColor, setWaypointColor] = useState<string>(() => {
+    if (typeof window === "undefined") return "purple";
+    return window.localStorage.getItem(LS_COLOR_KEY) ?? "purple";
+  });
+  const [labelTemplate, setLabelTemplate] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_LABEL_TEMPLATE;
+    return window.localStorage.getItem(LS_TEMPLATE_KEY) ?? DEFAULT_LABEL_TEMPLATE;
+  });
+  const [waypointCopied, setWaypointCopied] = useState(false);
+  const [waypointHelpOpen, setWaypointHelpOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LS_COLOR_KEY, waypointColor);
+    } catch {
+      /* quota / disabled storage — non-fatal */
+    }
+  }, [waypointColor]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LS_TEMPLATE_KEY, labelTemplate);
+    } catch {
+      /* quota / disabled storage — non-fatal */
+    }
+  }, [labelTemplate]);
 
   // Track the most recently-saved draft grouping so we can show a brief
   // confirmation row beneath the route. Reset whenever the underlying
@@ -102,6 +273,12 @@ export function RoutePlannerPanel() {
   // key on the route reference (and selectedIndex) rather than on a
   // timer so the confirmation stays visible until the user actually moves
   // on.
+  //
+  // The waypoint-copy indicator is INTENTIONALLY not reset here: the
+  // user typically alt-tabs into the game to paste the command, and a
+  // disappearing checkmark makes it impossible to remember whether the
+  // copy already happened. The indicator persists until the panel
+  // unmounts (closing the planner, page reload, etc.).
   useEffect(() => {
     setSavedDraft(null);
     setAnalyticsState("idle");
@@ -129,6 +306,46 @@ export function RoutePlannerPanel() {
     const name = `Route to ${destLabel}`;
     const grouping = createGrouping(name, { tlIds });
     setSavedDraft({ id: grouping.id, name: grouping.name });
+  }
+
+  // Preview the rendered first label so the user can sanity-check their
+  // template without having to copy + paste into the game.
+  const labelPreview = useMemo(() => {
+    if (!primary) return null;
+    const chain = routeWaypointChain(primary);
+    if (chain.length === 0) return null;
+    const first = chain[0];
+    const next = chain[1] ?? null;
+    const dest = chain[chain.length - 1];
+    return renderTemplate(labelTemplate, {
+      i: 1,
+      n: chain.length,
+      x: first.x,
+      y: WAYPOINT_Y,
+      z: first.z,
+      next_x: next ? next.x : "",
+      next_z: next ? next.z : "",
+      prev_x: "",
+      prev_z: "",
+      dest_x: dest.x,
+      dest_z: dest.z,
+      start_x: first.x,
+      start_z: first.z,
+    });
+  }, [primary, labelTemplate]);
+
+  const waypointCount = primary ? routeWaypointChain(primary).length : 0;
+
+  async function handleCopyWaypointCommands() {
+    if (!primary) return;
+    const text = buildRouteWaypointCommands(primary, waypointColor, labelTemplate);
+    if (!text) return;
+    try {
+      await copyTextToClipboard(text);
+      setWaypointCopied(true);
+    } catch {
+      /* clipboard blocked — silently ignore, matches sibling components */
+    }
   }
 
   async function handleSaveForRoadWorkers() {
@@ -367,6 +584,139 @@ export function RoutePlannerPanel() {
                 </div>
               )}
 
+              {/* Waypoint-command builder: generate the `/waypoint addati`
+                  commands a player can paste into chat to drop one
+                  waypoint per step in this route. Colour + label format
+                  persist in localStorage (see effects above). */}
+              {primary && waypointCount > 0 && (
+                <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 text-xs font-medium">
+                      <MapPin className="h-3.5 w-3.5 text-purple-500" />
+                      Copy /waypoint commands
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {waypointCount} waypoint{waypointCount === 1 ? "" : "s"}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
+                    <Label htmlFor="wp-color" className="text-[11px]">
+                      Color
+                    </Label>
+                    <Select value={waypointColor} onValueChange={(v) => v && setWaypointColor(v)}>
+                      <SelectTrigger id="wp-color" className="h-7 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {WAYPOINT_COLORS.map((c) => (
+                          <SelectItem key={c} value={c} className="text-xs">
+                            <span className="flex items-center gap-2">
+                              <span
+                                className="inline-block h-3 w-3 rounded-full border border-foreground/20"
+                                style={{ backgroundColor: c }}
+                              />
+                              {c}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Label htmlFor="wp-template" className="text-[11px]">
+                      Label
+                    </Label>
+                    <Input
+                      id="wp-template"
+                      value={labelTemplate}
+                      onChange={(e) => setLabelTemplate(e.target.value)}
+                      placeholder={DEFAULT_LABEL_TEMPLATE}
+                      className="h-7 text-xs font-mono"
+                      spellCheck={false}
+                    />
+                  </div>
+
+                  {labelPreview && (
+                    <p className="truncate px-1 text-[10px] text-muted-foreground">
+                      Preview: <span className="font-mono text-foreground">{labelPreview}</span>
+                    </p>
+                  )}
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1 gap-1.5"
+                      onClick={handleCopyWaypointCommands}
+                    >
+                      {waypointCopied ? (
+                        <>
+                          <Check className="h-3.5 w-3.5" />
+                          Copied {waypointCount} command{waypointCount === 1 ? "" : "s"}
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy {waypointCount} /waypoint command{waypointCount === 1 ? "" : "s"}
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      title="Show available label placeholders"
+                      aria-label="Show available label placeholders"
+                      onClick={() => setWaypointHelpOpen((v) => !v)}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+
+                  {waypointHelpOpen && (
+                    <div className="space-y-1 rounded border bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground">
+                      <p>
+                        Use any of these placeholders in the label — unknown ones are left untouched
+                        so typos are easy to spot:
+                      </p>
+                      <ul className="grid grid-cols-2 gap-x-2 font-mono text-foreground">
+                        <li>{"{i}"} step #</li>
+                        <li>{"{n}"} total steps</li>
+                        <li>{"{x}"} this X</li>
+                        <li>{"{z}"} this Z</li>
+                        <li>
+                          {"{y}"} fixed {WAYPOINT_Y}
+                        </li>
+                        <li>{"{next_x}"} next X</li>
+                        <li>{"{next_z}"} next Z</li>
+                        <li>{"{prev_x}"} prev X</li>
+                        <li>{"{prev_z}"} prev Z</li>
+                        <li>{"{dest_x}"} dest X</li>
+                        <li>{"{dest_z}"} dest Z</li>
+                        <li>{"{start_x}"} start X</li>
+                        <li>{"{start_z}"} start Z</li>
+                      </ul>
+                      <p>
+                        Y is fixed at {WAYPOINT_Y} since the tops map is 2D. The first and last
+                        waypoints leave <span className="font-mono">{"{prev_*}"}</span> /{" "}
+                        <span className="font-mono">{"{next_*}"}</span> empty respectively.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* "Why only a few green TLs?" — explain that the highlight
+                  intentionally shows ONLY the TLs on the chosen route.
+                  Surfaces the most common point of confusion right where
+                  the user sees the result. */}
+              <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+                <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                <span>
+                  Only the translocators used by this route are highlighted in green. All other TLs
+                  stay in their normal colours.
+                </span>
+              </div>
+
               {/* "Save this route for road workers" — anonymous analytics
                   ping that helps the map's road maintainers prioritise
                   tunnel work, signage, and shortcuts. No personal data
@@ -406,18 +756,6 @@ export function RoutePlannerPanel() {
                   )}
                 </div>
               )}
-
-              {/* "Why only a few green TLs?" — explain that the highlight
-                  intentionally shows ONLY the TLs on the chosen route.
-                  Surfaces the most common point of confusion right where
-                  the user sees the result. */}
-              <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-                <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                <span>
-                  Only the translocators used by this route are highlighted in green. All other TLs
-                  stay in their normal colours.
-                </span>
-              </div>
             </>
           )}
         </div>
