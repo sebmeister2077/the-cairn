@@ -21,6 +21,7 @@ contributions, which skip pruning) keep working without backfill.
 from __future__ import annotations
 
 from typing import Sequence, Union
+import sqlalchemy as sa
 
 from alembic import op
 
@@ -34,19 +35,19 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     op.add_column(
         "contributions",
-        op.Column("archived_is_region_pruned", op.Boolean(), nullable=True),
+        sa.Column("archived_is_region_pruned", sa.Boolean(), nullable=True),
     )
     op.add_column(
         "contributions",
-        op.Column("archived_kept_tiles", op.Integer(), nullable=True),
+        sa.Column("archived_kept_tiles", sa.Integer(), nullable=True),
     )
     op.add_column(
         "contributions",
-        op.Column("archived_src_bytes", op.BigInteger(), nullable=True),
+        sa.Column("archived_src_bytes", sa.BigInteger(), nullable=True),
     )
     op.add_column(
         "contributions",
-        op.Column("archived_dst_bytes", op.BigInteger(), nullable=True),
+        sa.Column("archived_dst_bytes", sa.BigInteger(), nullable=True),
     )
 
 
