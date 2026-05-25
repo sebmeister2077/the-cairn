@@ -52,6 +52,7 @@ _CATEGORY_BY_PREFIX = {
     "download": "download",
     "auth": "auth",
     "page": "page",
+    "route": "route",
 }
 
 

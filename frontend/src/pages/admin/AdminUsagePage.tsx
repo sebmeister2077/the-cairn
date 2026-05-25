@@ -22,6 +22,7 @@ import {
   type PagesSortKey,
 } from "@/store/slices/adminUsageFilters";
 import { Input } from "@/components/ui/input";
+import { SavedRoutesSection } from "@/components/admin/usage/SavedRoutesSection";
 
 /**
  * Admin "Usage" dashboard.
@@ -34,6 +35,7 @@ type SectionKey =
   | "overview"
   | "contributions"
   | "pages"
+  | "saved_routes"
   | "admin"
   | "queues"
   | "downloads"
@@ -45,6 +47,7 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "contributions", label: "Contributions" },
   { key: "pages", label: "Pages" },
+  { key: "saved_routes", label: "Saved Routes" },
   { key: "admin", label: "Admin Activity" },
   { key: "queues", label: "Queue Velocity" },
   { key: "downloads", label: "Downloads" },
@@ -97,6 +100,9 @@ export function AdminUsagePage() {
       )}
       {section === "pages" && (
         <PagesSection from={range.from} to={range.to} granularity={granularity} />
+      )}
+      {section === "saved_routes" && (
+        <SavedRoutesSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "admin" && (
         <AdminActivitySection from={range.from} to={range.to} granularity={granularity} />

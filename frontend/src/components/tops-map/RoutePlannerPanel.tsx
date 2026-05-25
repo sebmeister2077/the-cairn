@@ -7,6 +7,7 @@ import {
   Footprints,
   Info,
   Loader2,
+  Send,
   Settings2,
   Sparkles,
   Trash2,
@@ -18,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { routeAnalytics, type SavedRouteLeg } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -62,6 +64,7 @@ export function RoutePlannerPanel() {
   const error = useAppSelector((s) => s.routePlanner.error);
   const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
   const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
+  const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -71,6 +74,15 @@ export function RoutePlannerPanel() {
   // what the button would currently save.
   const { createGrouping } = useTLGroupings();
   const [savedDraft, setSavedDraft] = useState<{ id: string; name: string } | null>(null);
+
+  // "Save this route for road workers" — sends just the displayed route
+  // (endpoints + TL chain + cost numbers) to the analytics endpoint so
+  // the map's road maintainers can prioritise tunnel work / signage.
+  // No personal data is sent.
+  const [analyticsState, setAnalyticsState] = useState<"idle" | "sending" | "sent" | "error">(
+    "idle",
+  );
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
 
   // Stable "primary route exists" flag used in many sub-conditions below.
   const hasRoutes = routes.length > 0;
@@ -92,7 +104,18 @@ export function RoutePlannerPanel() {
   // on.
   useEffect(() => {
     setSavedDraft(null);
+    setAnalyticsState("idle");
+    setAnalyticsError(null);
   }, [routes, selectedIndex]);
+
+  // Reset the "Sent — thanks!" confirmation after a short cooldown so
+  // the row stops shouting at the user but the button itself stays
+  // disabled to prevent a double-tap re-send.
+  useEffect(() => {
+    if (analyticsState !== "sent") return;
+    const t = window.setTimeout(() => setAnalyticsState("idle"), 4000);
+    return () => window.clearTimeout(t);
+  }, [analyticsState]);
 
   function handleSaveAsDraft() {
     if (!primary) return;
@@ -106,6 +129,50 @@ export function RoutePlannerPanel() {
     const name = `Route to ${destLabel}`;
     const grouping = createGrouping(name, { tlIds });
     setSavedDraft({ id: grouping.id, name: grouping.name });
+  }
+
+  async function handleSaveForRoadWorkers() {
+    if (!primary || !from || !to) return;
+    setAnalyticsState("sending");
+    setAnalyticsError(null);
+    try {
+      const legs: SavedRouteLeg[] = primary.legs.map((leg) =>
+        leg.kind === "walk"
+          ? {
+              kind: "walk",
+              from: { x: leg.from.x, z: leg.from.z },
+              to: { x: leg.to.x, z: leg.to.z },
+              seconds: leg.seconds,
+              blocks: leg.blocks,
+            }
+          : {
+              kind: "tl",
+              from: { x: leg.from.x, z: leg.from.z },
+              to: { x: leg.to.x, z: leg.to.z },
+              seconds: leg.seconds,
+              tlId: leg.tlId,
+            },
+      );
+      await routeAnalytics.save({
+        from: { x: from.point.x, z: from.point.z },
+        to: { x: to.point.x, z: to.point.z },
+        from_label: from.label ?? null,
+        to_label: to.label ?? null,
+        legs,
+        total_seconds: primary.totalSeconds,
+        walk_blocks: primary.walkBlocks,
+        tl_hops: primary.tlHops,
+        walk_speed: walkSpeed,
+        tl_penalty_seconds: tlPenaltySeconds,
+        k_neighbors: kNeighbors,
+      });
+      setAnalyticsState("sent");
+    } catch (err) {
+      setAnalyticsState("error");
+      setAnalyticsError(
+        err instanceof Error ? err.message : "Could not send route. Please try again.",
+      );
+    }
   }
 
   if (!isOpen) return null;
@@ -295,6 +362,46 @@ export function RoutePlannerPanel() {
                       <Check className="h-3 w-3" />
                       Saved as <span className="font-medium">{savedDraft.name}</span>. Open the
                       Groupings drawer to edit.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* "Save this route for road workers" — anonymous analytics
+                  ping that helps the map's road maintainers prioritise
+                  tunnel work, signage, and shortcuts. No personal data
+                  is sent (only the endpoints, the TL chain, and the
+                  travel time of this single route). */}
+              {primary && (
+                <div className="space-y-1 rounded-md border border-sky-200 bg-sky-50 p-2 dark:border-sky-900/50 dark:bg-sky-950/40">
+                  <p className="text-[11px] leading-snug text-sky-900 dark:text-sky-100">
+                    Saving sends just this route (endpoints, TL hops, travel time) to the map's road
+                    maintainers so they can prioritise tunnel work, signage, and shortcuts. No
+                    personal data is sent.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="w-full gap-1.5"
+                    onClick={handleSaveForRoadWorkers}
+                    disabled={analyticsState === "sending" || analyticsState === "sent"}
+                  >
+                    {analyticsState === "sending" ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : analyticsState === "sent" ? (
+                      <Check className="h-3.5 w-3.5" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    {analyticsState === "sending"
+                      ? "Sending…"
+                      : analyticsState === "sent"
+                        ? "Sent — thanks!"
+                        : "Save this route for road workers"}
+                  </Button>
+                  {analyticsState === "error" && analyticsError && (
+                    <p className="px-1 text-[11px] text-red-600 dark:text-red-400">
+                      {analyticsError}
                     </p>
                   )}
                 </div>

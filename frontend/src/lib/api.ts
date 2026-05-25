@@ -3283,5 +3283,157 @@ export const adminUsage = {
         _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
     pages: (p: UsageGranularityParams & { limit?: number; path?: string }, signal?: AbortSignal) =>
         _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
+    savedRoutes: (
+        p: UsageGranularityParams & {
+            top_limit?: number;
+            recent_limit?: number;
+            recent_offset?: number;
+            heatmap_cell?: number;
+        },
+        signal?: AbortSignal,
+    ) =>
+        _usageGet<SavedRoutesBundle>("saved-routes", {
+            from: p.from,
+            to: p.to,
+            granularity: p.granularity,
+            top_limit: p.top_limit,
+            recent_limit: p.recent_limit,
+            recent_offset: p.recent_offset,
+            heatmap_cell: p.heatmap_cell,
+        }, signal),
+};
+
+
+// --- Saved route analytics (route planner) ---------------------------------
+
+export interface SavedRouteLeg {
+    kind: "walk" | "tl";
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    seconds: number;
+    blocks?: number;
+    tlId?: string;
+}
+
+export interface RouteAnalyticsSavePayload {
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    from_label?: string | null;
+    to_label?: string | null;
+    legs: SavedRouteLeg[];
+    total_seconds: number;
+    walk_blocks: number;
+    tl_hops: number;
+    walk_speed?: number | null;
+    tl_penalty_seconds?: number | null;
+    k_neighbors?: number | null;
+}
+
+export interface RouteAnalyticsSaveResponse {
+    status: "inserted" | "merged";
+    save_count: number;
+}
+
+export const routeAnalytics = {
+    async save(payload: RouteAnalyticsSavePayload, signal?: AbortSignal): Promise<RouteAnalyticsSaveResponse> {
+        const res = await fetch(`${API_BASE}/route-analytics/save`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+};
+
+
+// --- Saved Routes admin bundle + public road-workers page ------------------
+
+export interface SavedRoutesSummary {
+    total_saves: number;
+    distinct_routes: number;
+    distinct_identities: number;
+    avg_detour_ratio: number | null;
+}
+
+export interface SavedRoutesTimelineBucket {
+    bucket: string;
+    saves: number;
+    distinct_routes: number;
+}
+
+export interface SavedRouteTopRow {
+    saves: number;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    from_label: string | null;
+    to_label: string | null;
+    total_seconds: number;
+    walk_blocks: number;
+    tl_hops: number;
+    straight_line_blocks: number;
+    detour_ratio: number | null;
+}
+
+export interface SavedRouteEdgeRow {
+    edge: string;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    saves: number;
+}
+
+export interface SavedRouteHeatmap {
+    cell_blocks: number;
+    from: Array<{ x: number; z: number; saves: number }>;
+    to: Array<{ x: number; z: number; saves: number }>;
+}
+
+export interface SavedRouteRecentRow {
+    id: number;
+    created_at: string;
+    last_saved_at: string;
+    save_count: number;
+    actor_api_key_id: string | null;
+    ip_hash_short: string | null;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    from_label: string | null;
+    to_label: string | null;
+    total_seconds: number;
+    walk_blocks: number;
+    tl_hops: number;
+    straight_line_blocks: number;
+    detour_ratio: number | null;
+}
+
+export interface SavedRoutesBundle extends UsageWindow {
+    granularity: UsageGranularity;
+    summary: SavedRoutesSummary;
+    timeline: SavedRoutesTimelineBucket[];
+    top_routes: SavedRouteTopRow[];
+    top_tl_edges: SavedRouteEdgeRow[];
+    top_start_hops: SavedRouteEdgeRow[];
+    endpoint_heatmap: SavedRouteHeatmap;
+    recent: SavedRouteRecentRow[];
+}
+
+export interface PublicRoadWorkersBundle extends UsageWindow {
+    window_days: number;
+    summary: SavedRoutesSummary;
+    timeline: SavedRoutesTimelineBucket[];
+    top_routes: SavedRouteTopRow[];
+    top_tl_edges: SavedRouteEdgeRow[];
+    top_start_hops: SavedRouteEdgeRow[];
+    endpoint_heatmap: SavedRouteHeatmap;
+}
+
+export const publicRoadWorkers = {
+    async get(days?: number, signal?: AbortSignal): Promise<PublicRoadWorkersBundle> {
+        const qs = days != null ? `?days=${encodeURIComponent(days)}` : "";
+        const res = await fetch(`${API_BASE}/public/road-workers${qs}`, {
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
 };
 

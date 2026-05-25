@@ -953,3 +953,63 @@ async def usage_pages(
     return payload
 
 
+# ---------------------------------------------------------------------------
+# /saved-routes — Route planner "save for road workers" analytics.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/saved-routes")
+async def usage_saved_routes(
+    _: str = Depends(require_admin),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    granularity: str = Query("day"),
+    top_limit: int = Query(20, ge=1, le=100),
+    recent_limit: int = Query(50, ge=1, le=500),
+    recent_offset: int = Query(0, ge=0),
+    heatmap_cell: int = Query(128, ge=16, le=1024),
+) -> dict:
+    """Bundle of aggregations powering the admin "Saved Routes" tab.
+
+    Returns ``summary``, ``timeline``, ``top_routes``, ``top_tl_edges``,
+    ``top_start_hops``, ``endpoint_heatmap``, and ``recent`` in one
+    call to minimise round-trips. The public road-worker endpoint reuses
+    the same helpers but drops ``recent`` and the actor-bearing fields.
+    """
+    from ..core import saved_routes_db
+
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    gran = _resolve_granularity(granularity)
+    cache_key = (
+        "saved_routes",
+        _iso(start),
+        _iso(end),
+        gran,
+        top_limit,
+        recent_limit,
+        recent_offset,
+        heatmap_cell,
+    )
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    payload = {
+        "from": _iso(start),
+        "to": _iso(end),
+        "granularity": gran,
+        "summary": saved_routes_db.summary(start, end),
+        "timeline": saved_routes_db.timeline(start, end, gran),
+        "top_routes": saved_routes_db.top_routes(start, end, top_limit),
+        "top_tl_edges": saved_routes_db.top_tl_edges(start, end, top_limit),
+        "top_start_hops": saved_routes_db.top_start_hops(start, end, top_limit),
+        "endpoint_heatmap": saved_routes_db.endpoint_heatmap(start, end, heatmap_cell),
+        "recent": saved_routes_db.list_recent(
+            start, end, limit=recent_limit, offset=recent_offset
+        ),
+    }
+    _cache_put(cache_key, payload)
+    return payload
+
+

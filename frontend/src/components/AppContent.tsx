@@ -30,6 +30,7 @@ import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
+import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -789,6 +790,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Usage failed" resetKeys={[location.pathname]}>
                 <AdminUsagePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/public/road-workers"
+            element={
+              <ErrorBoundary title="Road workers page failed" resetKeys={[location.pathname]}>
+                <PublicRoadWorkersPage />
               </ErrorBoundary>
             }
           />

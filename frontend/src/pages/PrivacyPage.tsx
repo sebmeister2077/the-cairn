@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const LAST_UPDATED = "May 20, 2026";
+const LAST_UPDATED = "May 25, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
@@ -220,6 +220,39 @@ export function PrivacyPage() {
         </section>
 
         <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">
+            4d. &ldquo;Save this route for road workers&rdquo; submissions
+          </h2>
+          <p>
+            The route planner has an optional{" "}
+            <strong>&ldquo;Save this route for road workers&rdquo;</strong> button. It is only sent
+            when you click it. Each submission stores:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              The route itself: start and end coordinates, optional endpoint labels you typed, the
+              translocator hop chain, walk distance, travel time, and the cost-model parameters used
+              to compute it.
+            </li>
+            <li>
+              The opaque identifier of your API key if you are signed in, <strong>or</strong> the
+              same one-way <strong>HMAC-SHA256 hash</strong> of your IP described in section 4 if
+              you are anonymous. These are used only for 24-hour soft-deduplication (so repeatedly
+              clicking the button bumps a counter instead of creating duplicates) and for
+              rate-limiting.
+            </li>
+            <li>A timestamp (UTC).</li>
+          </ul>
+          <p>
+            The purpose is to help map maintainers prioritise tunnels, signage, and shortcuts.
+            Aggregated, anonymised totals (popular routes, popular translocator connections, an
+            endpoint heatmap) are published on the always-public page at{" "}
+            <code className="rounded bg-muted px-1 text-xs">/public/road-workers</code>; that public
+            page does <strong>not</strong> expose API key ids or IP hashes.
+          </p>
+        </section>
+
+        <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">5. Server-side records</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
@@ -301,6 +334,12 @@ export function PrivacyPage() {
             <li>
               Internal usage events (section 4c): retained indefinitely; soft-deleted accounts are
               anonymised but their past events remain in aggregate counts.
+            </li>
+            <li>
+              Saved routes (section 4d): retained indefinitely so trends over time remain
+              comparable. The actor reference (API key id or IP hash) is kept for the same reason as
+              the rest of the usage log; on account deletion it becomes anonymous in the same way as
+              section 4c events.
             </li>
             <li>Backend access logs: retained per the hosting provider's default policy.</li>
           </ul>

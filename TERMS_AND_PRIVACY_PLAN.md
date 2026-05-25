@@ -63,6 +63,15 @@ tracking cookies, no advertising, no analytics.**
   status, IP, user-agent, timestamp). Retention follows Render defaults.
 - **API key in `X-API-Key` header** — used for auth; may appear in error logs
   if logging level is verbose.
+- **Explicit "Save this route for road workers" submissions** — when a user
+  clicks the matching button in the route planner, the chosen route
+  (endpoints, optional endpoint labels, TL hop chain, walk distance,
+  travel time, cost-model parameters) is sent to the backend and stored
+  in `saved_routes` so map maintainers can prioritise tunnels, signage,
+  and shortcuts. The actor's API key id (if signed in) and an HMAC-hashed
+  IP (anonymous saves) are recorded for 24h soft-dedup and rate-limiting
+  only. Aggregated, anonymised totals are published on the always-public
+  page at `/public/road-workers`.
 
 ### 2.4 Data persisted server-side
 
