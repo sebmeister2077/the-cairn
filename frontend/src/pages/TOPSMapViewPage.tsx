@@ -264,6 +264,16 @@ export function TOPSMapViewPage() {
     { x: number; z: number } | undefined
   >(undefined);
 
+  // The route planner publishes a "fly here" request via Redux whenever the
+  // user clicks the locate icon on a leg row. We mirror it into the shared
+  // `landmarkFocusPoint` state so the MapViewer's existing focus-on-change
+  // animation fires — no extra prop wiring needed.
+  const routeFocusRequest = useAppSelector((s) => s.routePlanner.focusRequest);
+  useEffect(() => {
+    if (!routeFocusRequest) return;
+    setLandmarkFocusPoint({ x: routeFocusRequest.x, z: routeFocusRequest.z });
+  }, [routeFocusRequest]);
+
   // Persisted, etag-aware overlay loaders. React Query handles dedupe,
   // persistence (via the global persister), and re-fetch when the URL
   // endpoint reports either a new etag or an expired window.

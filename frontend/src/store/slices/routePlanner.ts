@@ -36,6 +36,13 @@ export interface RoutePlannerState {
     walkSpeed: number;
     tlPenaltySeconds: number;
     kNeighbors: number;
+    /**
+     * One-shot "fly the map here" request. The map subscribes and pans/zooms
+     * whenever this object reference changes (each dispatch creates a fresh
+     * object even for the same coordinates, so clicking the same leg twice
+     * re-triggers the navigation).
+     */
+    focusRequest: WorldPoint | null;
 }
 
 export const initialRoutePlannerState: RoutePlannerState = {
@@ -50,6 +57,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    focusRequest: null,
 };
 
 export const routePlannerSlice = createSlice({
@@ -121,6 +129,13 @@ export const routePlannerSlice = createSlice({
             state.tlPenaltySeconds = Math.max(0, Math.min(600, action.payload));
             state.routes = [];
         },
+        setFocusRequest(state, action: PayloadAction<WorldPoint | null>) {
+            // Always re-wrap so consecutive dispatches with the same
+            // coordinates still produce a fresh object identity.
+            state.focusRequest = action.payload
+                ? { x: action.payload.x, z: action.payload.z }
+                : null;
+        },
     },
 });
 
@@ -137,4 +152,5 @@ export const {
     setError: setRoutePlannerError,
     setWalkSpeed: setRouteWalkSpeed,
     setTLPenalty: setRouteTLPenalty,
+    setFocusRequest: setRouteFocusRequest,
 } = routePlannerSlice.actions;

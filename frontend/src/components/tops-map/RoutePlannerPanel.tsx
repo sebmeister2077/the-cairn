@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   BookmarkPlus,
   Check,
+  Crosshair,
   Footprints,
   Info,
   Loader2,
@@ -22,6 +23,7 @@ import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   clearRoutePlanner,
+  setRouteFocusRequest,
   setRoutePlannerOpen,
   setRouteSelectedIndex,
   setRouteTLPenalty,
@@ -206,7 +208,8 @@ export function RoutePlannerPanel() {
                 onValueChange={(v) => dispatch(setRouteWalkSpeed(v))}
               />
               <p className="text-[10px] text-muted-foreground">
-                Default 6 (sprint). Lower if you usually walk loaded.
+                Default 7 (sprint on road). Change based on your needs (elk or no path heavy armor
+                journey).
               </p>
             </div>
             <div className="space-y-1">
@@ -222,7 +225,7 @@ export function RoutePlannerPanel() {
                 onValueChange={(v) => dispatch(setRouteTLPenalty(v))}
               />
               <p className="text-[10px] text-muted-foreground">
-                Fixed time cost per hop (charge-up, render, fall-in).
+                Fixed time cost per hop (charge-up, possible ladder climbing).
               </p>
             </div>
           </div>
@@ -270,7 +273,9 @@ export function RoutePlannerPanel() {
                 </Tabs>
               )}
 
-              {primary && <RouteSummary route={primary} />}
+              {primary && (
+                <RouteSummary route={primary} onLocate={(p) => dispatch(setRouteFocusRequest(p))} />
+              )}
 
               {/* Save-as-draft action: turns the current route's TLs into
                   a fresh TL grouping the user can rename / tweak in the
@@ -323,7 +328,15 @@ export function RoutePlannerPanel() {
 }
 
 /** Summary card for a single `RouteResult`: totals + per-leg list. */
-function RouteSummary({ route }: { route: RouteResult }) {
+function RouteSummary({
+  route,
+  onLocate,
+}: {
+  route: RouteResult;
+  /** Called when the user clicks a leg's locate button. Receives the
+   *  world-space point the map should fly to. */
+  onLocate: (point: { x: number; z: number }) => void;
+}) {
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
       {/* Hero ETA — the headline answer to "how long will this take?".
@@ -350,18 +363,42 @@ function RouteSummary({ route }: { route: RouteResult }) {
         </div>
       </div>
       <ol className="space-y-0.5 text-xs">
-        {route.legs.map((leg, i) => (
-          <li
-            key={i}
-            className={
-              leg.kind === "tl"
-                ? "rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
-                : "px-2 py-1 text-muted-foreground"
-            }
-          >
-            {describeLeg(leg, i)}
-          </li>
-        ))}
+        {route.legs.map((leg, i) => {
+          // Aim the camera at the leg's midpoint so both endpoints (TL
+          // entry/exit, or walk start/end) tend to be in frame at the
+          // default focus zoom. For TL pairs spanning huge distances
+          // this still won't fit both sides; the user can then zoom out
+          // manually — the locate button is meant as a "take me there"
+          // shortcut, not a fit-to-bounds.
+          const midX = Math.round((leg.from.x + leg.to.x) / 2);
+          const midZ = Math.round((leg.from.z + leg.to.z) / 2);
+          return (
+            <li
+              key={i}
+              className={
+                leg.kind === "tl"
+                  ? "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+                  : "flex items-center gap-1 px-2 py-1 text-muted-foreground"
+              }
+            >
+              <span className="flex-1 truncate">{describeLeg(leg, i)}</span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="h-6 w-6 shrink-0 text-current opacity-70 hover:opacity-100"
+                onClick={() => onLocate({ x: midX, z: midZ })}
+                title={
+                  leg.kind === "tl"
+                    ? `Show this TL pair on the map`
+                    : `Show this walk segment on the map`
+                }
+                aria-label="Show on map"
+              >
+                <Crosshair className="h-3 w-3" />
+              </Button>
+            </li>
+          );
+        })}
       </ol>
     </div>
   );

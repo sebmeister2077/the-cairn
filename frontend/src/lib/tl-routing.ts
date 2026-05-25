@@ -767,6 +767,33 @@ export function findRoutes(
         A.push(B.shift()!);
     }
 
+    // Yen tends to enumerate walk-routing variants of the same TL chain,
+    // especially when `tlPenaltySeconds` is high (any chain that swaps a
+    // TL for another loses by a big delta and falls outside Yen's RAW_K
+    // window). After the post-filter dedupes by TL sequence, that often
+    // collapses the alternatives down to a single route. To surface
+    // genuinely-different TL chains, we run an extra pass: for each TL
+    // used by the best route, forbid both directions of that TL's edges
+    // and re-run plain dijkstra. Each successful result is appended to
+    // `A` and goes through the same dedupe below, so duplicates and the
+    // original best are filtered out naturally.
+    const firstTLIndices = new Set<number>();
+    for (const e of A[0].edges) {
+        if (e.kind === "tl" && e.tlIndex !== undefined) firstTLIndices.add(e.tlIndex);
+    }
+    for (const tlIdx of firstTLIndices) {
+        const forbidden = new Set<string>([
+            `${tlIdx * 2}|${tlIdx * 2 + 1}|tl|${tlIdx}`,
+            `${tlIdx * 2 + 1}|${tlIdx * 2}|tl|${tlIdx}`,
+        ]);
+        const altAug = augmentForQuery(graph, start, dest, forbidden) as AugmentedGraph & {
+            outgoing: (from: number) => Edge[];
+        };
+        const alt = dijkstraPath(altAug);
+        if (alt) A.push(alt);
+    }
+    A.sort((a, b) => a.cost - b.cost);
+
     // Materialise leg lists, then dedupe so the alternatives feel
     // meaningfully different. We key on the ORDERED TL-id sequence (not
     // the sorted set), so two routes traversing the same TLs in a
