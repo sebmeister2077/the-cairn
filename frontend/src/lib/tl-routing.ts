@@ -44,7 +44,7 @@ export interface RouteOptions {
 }
 
 export const DEFAULT_WALK_SPEED = 7;
-export const DEFAULT_TL_PENALTY_S = 10;
+export const DEFAULT_TL_PENALTY_S = 15;
 export const DEFAULT_K_NEIGHBORS = 8;
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
