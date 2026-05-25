@@ -18,6 +18,7 @@ import {
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
+import { formatDuration } from "@/lib/format-duration";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
@@ -117,6 +118,13 @@ export function FullscreenControlsOverlay({
   // Route planner state — the open button mirrors the non-fullscreen one
   // so users can summon the planner sheet without leaving fullscreen.
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
+  // Active-route signals so the fullscreen Route button can advertise an
+  // active route the same way the non-fullscreen toolbar button does.
+  const routes = useAppSelector((s) => s.routePlanner.routes);
+  const routeSelectedIndex = useAppSelector((s) => s.routePlanner.selectedIndex);
+  const routeFrom = useAppSelector((s) => s.routePlanner.from);
+  const routeTo = useAppSelector((s) => s.routePlanner.to);
+  const activeRoute = routes.length > 0 ? (routes[routeSelectedIndex] ?? routes[0]) : null;
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
@@ -284,13 +292,39 @@ export function FullscreenControlsOverlay({
         </Button>
         <Button
           type="button"
-          variant={routePlannerOpen ? "default" : "secondary"}
+          variant={activeRoute || routePlannerOpen ? "default" : "secondary"}
           size="sm"
           onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
-          className="shadow-md"
+          className={cn(
+            "shadow-md",
+            activeRoute &&
+              "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+          )}
+          aria-label={
+            activeRoute
+              ? `Route active, estimated ${formatDuration(activeRoute.totalSeconds)}. Click to ${routePlannerOpen ? "hide" : "show"} the planner.`
+              : routePlannerOpen
+                ? "Hide route planner"
+                : "Show route planner"
+          }
+          title={
+            activeRoute
+              ? `Active route — ${formatDuration(activeRoute.totalSeconds)} (${activeRoute.tlHops} TL${activeRoute.tlHops === 1 ? "" : "s"})`
+              : undefined
+          }
         >
           <Waypoints className="size-4 mr-1" />
           Route
+          {activeRoute ? (
+            <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+              {formatDuration(activeRoute.totalSeconds)}
+            </span>
+          ) : routeFrom || routeTo ? (
+            <span
+              className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+              aria-hidden="true"
+            />
+          ) : null}
         </Button>
       </div>
 

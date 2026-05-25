@@ -31,17 +31,9 @@ import {
   swapRouteEndpoints,
 } from "@/store/slices/routePlanner";
 
-import { EndpointPicker } from "./EndpointPicker";
+import { formatDuration } from "@/lib/format-duration";
 
-/** Format seconds as a compact "Xm Ys" string (mins dropped when 0). */
-function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds)) return "—";
-  const total = Math.max(0, Math.round(seconds));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m === 0) return `${s}s`;
-  return `${m}m ${s}s`;
-}
+import { EndpointPicker } from "./EndpointPicker";
 
 /** Format a leg row as a single readable line. */
 function describeLeg(leg: RouteLeg, index: number): string {
