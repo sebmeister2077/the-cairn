@@ -72,7 +72,6 @@ import {
   TLGroupingsDrawer,
   type TLGroupingsViewMode,
 } from "@/components/tops-map/TLGroupingsDrawer";
-import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 import { useTLRoute } from "@/hooks/useTLRoute";
 import { formatDuration } from "@/lib/format-duration";
 import {
@@ -107,6 +106,7 @@ import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelec
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { cn } from "@/lib/utils";
+import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -1018,7 +1018,11 @@ export function TOPSMapViewPage() {
     if (t) {
       dispatch(setRouteTo({ point: t, label: `${t.x}, ${t.z}`, source: "url" }));
     }
-    if (f || t) dispatch(setRoutePlannerOpen(true));
+    // Intentionally do NOT auto-open the planner panel when hydrating from
+    // the URL. The active route is already advertised by the emerald Route
+    // button (with ETA pill) and the on-map overlay, and forcing the panel
+    // open on every reload would steal screen real estate from users who
+    // explicitly closed it.
     // searchParams intentionally omitted — we want a true once-on-mount hydrate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
