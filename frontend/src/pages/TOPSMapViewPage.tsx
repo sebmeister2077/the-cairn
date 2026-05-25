@@ -1455,38 +1455,6 @@ export function TOPSMapViewPage() {
             onWorldClick={handleRouteWorldClick}
             routeOverlay={routeOverlay}
           />
-          {/*
-            Floating "Route active" status pill. Surfaces the active route
-            outside the panel UI so users still know one exists when the
-            planner is collapsed, without having to interpret the recoloured
-            TL graph on the map. Clicking it reopens the planner.
-            Hidden when the panel is already open (would be redundant) and
-            when in fullscreen — the FullscreenControlsOverlay's own Route
-            button shows the same emerald + ETA treatment there, and an
-            extra top-left pill would collide with the fullscreen exit
-            and home controls.
-          */}
-          {routes.length > 0 && !routePlannerOpen && !isFullscreen && (
-            <button
-              type="button"
-              onClick={() => dispatch(setRoutePlannerOpen(true))}
-              className="absolute left-3 top-3 z-30 flex items-center gap-2 rounded-full border border-emerald-500/60 bg-emerald-600/95 px-3 py-1.5 text-xs font-medium text-white shadow-lg ring-1 ring-emerald-500/40 backdrop-blur-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
-              title="Open route planner"
-              aria-label={`Route active, estimated ${formatDuration(
-                (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-              )}. Click to open the planner.`}
-            >
-              <span
-                className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white"
-                aria-hidden="true"
-              />
-              <Waypoints className="size-3.5" aria-hidden="true" />
-              <span>Route active</span>
-              <span className="rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
-                {formatDuration((routes[routeSelectedIndex] ?? routes[0]).totalSeconds)}
-              </span>
-            </button>
-          )}
           {showTranslocators && selectedTranslocator && (
             <SelectedTranslocatorHeader
               selectedTranslocator={selectedTranslocator}
