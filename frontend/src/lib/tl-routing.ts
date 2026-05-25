@@ -612,8 +612,15 @@ function heuristicEstimate(
 
 function dijkstraPath(
     aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
+    fromOverride?: number,
+    toOverride?: number,
 ): { nodes: number[]; edges: Edge[]; cost: number } | null {
-    const { startIdx, destIdx } = aug;
+    // Yen's spur computation needs to run dijkstra from a node OTHER than
+    // the virtual start. Allow callers to override the source / sink while
+    // keeping the rest of the augmented graph (extras, forbidden filters)
+    // intact so node indices remain consistent with the parent path.
+    const startIdx = fromOverride ?? aug.startIdx;
+    const destIdx = toOverride ?? aug.destIdx;
     const gScore = new Map<number, number>();
     const cameFromNode = new Map<number, number>();
     const cameFromEdge = new Map<number, Edge>();
@@ -701,7 +708,8 @@ export function findRoutes(
     const B: Array<{ nodes: number[]; edges: Edge[]; cost: number }> = [];
 
     // Cap raw Yen iterations to avoid degenerate cost on pathological graphs.
-    const RAW_K = Math.max(k * 3, 6);
+    // Generous multiplier so we still have material after dedup filtering.
+    const RAW_K = Math.max(k * 5, 12);
 
     const edgeKey = (from: number, e: Edge) =>
         `${from}|${e.to}|${e.kind}|${e.tlIndex ?? ""}`;
@@ -726,30 +734,28 @@ export function findRoutes(
             const forbiddenNodes = new Set<number>(rootNodes.slice(0, -1));
 
             // Compute the spur path from spurNode → destIdx with restrictions.
+            // Reuse the original start/dest (same node-index space as aug0)
+            // so the resulting path indices can be safely concatenated and
+            // later reconstructed against aug0 without translation.
             const spurAug = augmentForQuery(
                 graph,
-                aug0.coord(spurNode),
+                start,
                 dest,
                 forbiddenEdges,
                 forbiddenNodes,
             ) as AugmentedGraph & { outgoing: (from: number) => Edge[] };
-            const spur = dijkstraPath(spurAug);
+            const spur = dijkstraPath(spurAug, spurNode, spurAug.destIdx);
             if (!spur) continue;
 
-            // Stitch root + spur. The spur uses its own virtual start indexing,
-            // so we translate by walking edges only (the spur returns edges
-            // whose `to` references spur-internal node ids, but each edge is
-            // structurally usable — we only need to recover the leg list at
-            // the end via `reconstructLegs` against the original aug0).
-            //
-            // To keep the model simple, we just compute leg lists from each
-            // half independently and concatenate them.
-            const rootResult = legsFromPath(aug0, rootNodes, rootEdges);
-            const spurResult = legsFromPath(spurAug, spur.nodes, spur.edges);
-            const totalSeconds = rootResult.totalSeconds + spurResult.totalSeconds;
+            // Stitch: rootNodes already ends at spurNode, spur.nodes starts
+            // at spurNode — drop the duplicate when concatenating.
+            const candidateNodes = rootNodes.concat(spur.nodes.slice(1));
+            const candidateEdges = rootEdges.concat(spur.edges);
+            let totalSeconds = 0;
+            for (const e of candidateEdges) totalSeconds += e.seconds;
             const candidate = {
-                nodes: prev.nodes.slice(0, i + 1).concat(spur.nodes.slice(1)),
-                edges: prev.edges.slice(0, i).concat(spur.edges),
+                nodes: candidateNodes,
+                edges: candidateEdges,
                 cost: totalSeconds,
             };
             if (!B.some((b) => b.cost === candidate.cost && arraysEqual(b.nodes, candidate.nodes))) {
@@ -761,20 +767,30 @@ export function findRoutes(
         A.push(B.shift()!);
     }
 
-    // Materialise leg lists, then filter for TL-set distinctness so the
-    // alternatives feel meaningfully different.
+    // Materialise leg lists, then dedupe so the alternatives feel
+    // meaningfully different. We key on the ORDERED TL-id sequence (not
+    // the sorted set), so two routes traversing the same TLs in a
+    // different order still count as separate alternatives. Routes that
+    // share the same TL chain and only differ in walk-leg micro-routing
+    // (Yen often returns several of these) collapse into one — surfacing
+    // them as "+1s" / "+2s" alternates would be misleading because the
+    // user cannot meaningfully choose between them in game. A pure-walk
+    // route (no TLs) gets a stable sentinel key so it surfaces at most
+    // once.
     const built = A.map((p) => legsFromPath(aug0, p.nodes, p.edges));
     const out: RouteResult[] = [];
-    const seenTLSets: string[] = [];
-    for (const r of built) {
-        const tlSet = r.legs
+    const seenKeys = new Set<string>();
+    const tlKey = (r: RouteResult): string => {
+        const ids = r.legs
             .filter((l): l is Extract<RouteLeg, { kind: "tl" }> => l.kind === "tl")
-            .map((l) => l.tlId)
-            .sort()
-            .join("|");
-        if (seenTLSets.some((s) => s === tlSet)) continue;
+            .map((l) => l.tlId);
+        return ids.length === 0 ? "__walk_only__" : ids.join(">");
+    };
+    for (const r of built) {
+        const key = tlKey(r);
+        if (seenKeys.has(key)) continue;
         out.push(r);
-        seenTLSets.push(tlSet);
+        seenKeys.add(key);
         if (out.length >= k) break;
     }
     return out;

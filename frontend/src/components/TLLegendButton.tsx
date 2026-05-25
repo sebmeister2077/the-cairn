@@ -32,6 +32,11 @@ interface LegendEntry {
 const SERVER_COLOR = "rgb(139, 92, 246)"; // violet-500
 const USER_COLOR = "rgb(37, 99, 235)"; // blue-600
 const NEW_COLOR = "rgb(14, 165, 233)"; // sky-500
+// Mirrors `hoverLineColor` in MapViewer.tsx — used to outline emphasised
+// segments (favourite groupings, recently-added emphasis).
+const HIGHLIGHT_COLOR = "rgb(243, 232, 255)"; // violet-100
+// Mirrors the emerald route stroke in MapViewer.tsx route overlay.
+const ROUTE_COLOR = "rgb(16, 185, 129)"; // emerald-500
 
 const BASE_ENTRIES: LegendEntry[] = [
   {
@@ -43,6 +48,18 @@ const BASE_ENTRIES: LegendEntry[] = [
     color: USER_COLOR,
     title: "Player-contributed",
     description: "Added by another player and accepted into the database.",
+  },
+  {
+    color: HIGHLIGHT_COLOR,
+    title: "Emphasised",
+    description:
+      "Bright outline drawn over a TL\u2019s normal colour when it matches an active filter \u2014 favourite groupings, or the \u201cEmphasise recently added TLs\u201d toggle.",
+  },
+  {
+    color: ROUTE_COLOR,
+    title: "Current route",
+    description:
+      "Translocators that make up the route currently shown in the Route planner. Only the TLs used by the active route are recoloured; everything else keeps its normal colour.",
   },
 ];
 
