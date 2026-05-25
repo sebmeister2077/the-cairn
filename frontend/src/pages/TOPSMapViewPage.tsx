@@ -27,6 +27,7 @@ import {
   MapViewer,
   type MapStats,
   type MapTileSet,
+  type RouteOverlay,
   type WorldLineSegment,
   type WorldPointMarker,
 } from "@/components/MapViewer";
@@ -56,6 +57,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Waypoints,
   X,
 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
@@ -70,6 +72,14 @@ import {
   TLGroupingsDrawer,
   type TLGroupingsViewMode,
 } from "@/components/tops-map/TLGroupingsDrawer";
+import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
+import { useTLRoute } from "@/hooks/useTLRoute";
+import {
+  setRouteFrom,
+  setRoutePickMode,
+  setRoutePlannerOpen,
+  setRouteTo,
+} from "@/store/slices/routePlanner";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
@@ -903,6 +913,110 @@ export function TOPSMapViewPage() {
     visibleTranslocatorSegments != null &&
     visibleTranslocatorSegments.length !== translocatorSegments.length;
 
+  // ---------------------------------------------------------------------
+  // Route planner integration
+  // ---------------------------------------------------------------------
+  // Drive route compute from the slice + segment list. The hook handles
+  // debouncing, idle-callback scheduling, and graph caching internally;
+  // it sources translocators directly from the overlay query so no arg
+  // is needed here — mounting the hook is what activates it.
+  useTLRoute();
+
+  const routePickMode = useAppSelector((s) => s.routePlanner.pickMode);
+  const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
+  const routeFrom = useAppSelector((s) => s.routePlanner.from);
+  const routeTo = useAppSelector((s) => s.routePlanner.to);
+  const routes = useAppSelector((s) => s.routePlanner.routes);
+  const routeSelectedIndex = useAppSelector((s) => s.routePlanner.selectedIndex);
+
+  // Build the visual overlay handed to MapViewer from the currently
+  // selected route. Recomputes only when the underlying route or picks
+  // change so the canvas effect doesn't churn on unrelated state.
+  const routeOverlay: RouteOverlay | null = useMemo(() => {
+    const selected = routes[routeSelectedIndex] ?? routes[0] ?? null;
+    if (!selected && !routeFrom && !routeTo) return null;
+    const tlSegments: WorldLineSegment[] = [];
+    const walkLegs: RouteOverlay["walkLegs"] = [];
+    if (selected) {
+      for (const leg of selected.legs) {
+        if (leg.kind === "tl") tlSegments.push(leg.segment);
+        else walkLegs.push({ from: leg.from, to: leg.to });
+      }
+    }
+    return {
+      tlSegments,
+      walkLegs,
+      from: routeFrom?.point ?? null,
+      to: routeTo?.point ?? null,
+    };
+  }, [routes, routeSelectedIndex, routeFrom, routeTo]);
+
+  // Click-on-map endpoint capture. Writes to the slot indicated by
+  // `pickMode`, then clears pick mode so a single click ends the gesture.
+  const handleRouteWorldClick = useCallback(
+    (x: number, z: number) => {
+      if (routePickMode === "from") {
+        dispatch(setRouteFrom({ point: { x, z }, label: `${x}, ${z}`, source: "map-click" }));
+      } else if (routePickMode === "to") {
+        dispatch(setRouteTo({ point: { x, z }, label: `${x}, ${z}`, source: "map-click" }));
+      }
+      dispatch(setRoutePickMode(null));
+    },
+    [dispatch, routePickMode],
+  );
+
+  // ESC cancels pick mode without closing the panel — matches typical
+  // map-editor expectations.
+  useEffect(() => {
+    if (!routePickMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") dispatch(setRoutePickMode(null));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [routePickMode, dispatch]);
+
+  // URL state for shareable routes — `?rfrom=x,z&rto=x,z`. We use the
+  // `r`-prefix to avoid colliding with any future `?from=` page params.
+  // Hydration runs once on mount; the writeback effect mirrors the slice.
+  const routeUrlHydratedRef = useRef(false);
+  useEffect(() => {
+    if (routeUrlHydratedRef.current) return;
+    routeUrlHydratedRef.current = true;
+    const parseParam = (raw: string | null): { x: number; z: number } | null => {
+      if (!raw) return null;
+      const m = raw.match(/^(-?\d+)\s*,\s*(-?\d+)$/);
+      if (!m) return null;
+      return { x: parseInt(m[1], 10), z: parseInt(m[2], 10) };
+    };
+    const f = parseParam(searchParams.get("rfrom"));
+    const t = parseParam(searchParams.get("rto"));
+    if (f) {
+      dispatch(setRouteFrom({ point: f, label: `${f.x}, ${f.z}`, source: "url" }));
+    }
+    if (t) {
+      dispatch(setRouteTo({ point: t, label: `${t.x}, ${t.z}`, source: "url" }));
+    }
+    if (f || t) dispatch(setRoutePlannerOpen(true));
+    // searchParams intentionally omitted — we want a true once-on-mount hydrate.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!routeUrlHydratedRef.current) return;
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (routeFrom) next.set("rfrom", `${routeFrom.point.x},${routeFrom.point.z}`);
+        else next.delete("rfrom");
+        if (routeTo) next.set("rto", `${routeTo.point.x},${routeTo.point.z}`);
+        else next.delete("rto");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [routeFrom, routeTo, setSearchParams]);
+
   return (
     <Card
       className={
@@ -1055,6 +1169,15 @@ export function TOPSMapViewPage() {
                     {activeGroupingIds.size}
                   </span>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant={routePlannerOpen ? "default" : "outline"}
+                size="sm"
+                onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
+              >
+                <Waypoints className="size-4 mr-1" />
+                Route
               </Button>
             </div>
             <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
@@ -1256,6 +1379,9 @@ export function TOPSMapViewPage() {
                 />
               ) : null
             }
+            cursorMode={routePickMode ? "pick" : "default"}
+            onWorldClick={handleRouteWorldClick}
+            routeOverlay={routeOverlay}
           />
           {showTranslocators && selectedTranslocator && (
             <SelectedTranslocatorHeader
@@ -1306,6 +1432,7 @@ export function TOPSMapViewPage() {
           }}
           onStopEditing={() => setEditingGroupingId(null)}
         />
+        <RoutePlannerPanel />
         {/* {isAdmin && (
           <ResourcesDrawer
             open={resourcesDrawerOpen}

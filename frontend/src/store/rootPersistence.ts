@@ -40,6 +40,10 @@ export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
     // The contribute-TLs page is a one-shot upload flow and stores parsed
     // chat-log data plus transient UI state — both should reset on reload.
     "contributeTLs",
+    // Route planner is ephemeral: From/To are rehydrated from URL params on
+    // mount; computed routes are cheap to recompute and shouldn't survive
+    // page reloads as stale data.
+    "routePlanner",
 ];
 
 /**

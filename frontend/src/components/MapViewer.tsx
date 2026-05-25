@@ -39,6 +39,18 @@ export interface WorldLineSegment {
   };
 }
 
+/** Route-preview overlay shown by features like the route planner. */
+export interface RouteOverlay {
+  /** TL segments to recolour as "part of the route". */
+  tlSegments: WorldLineSegment[];
+  /** Walk legs as world-space `[from, to]` pairs, drawn dashed. */
+  walkLegs: Array<{ from: { x: number; z: number }; to: { x: number; z: number } }>;
+  /** Origin pin (green). */
+  from?: { x: number; z: number } | null;
+  /** Destination pin (red). */
+  to?: { x: number; z: number } | null;
+}
+
 export interface WorldPointMarker {
   x: number;
   z: number;
@@ -197,6 +209,25 @@ interface MapViewerProps {
    */
   interactionsLocked?: boolean;
   /**
+   * Pointer behaviour mode.
+   *   - `"default"` (or undefined): drag-to-pan / click-to-select-segment.
+   *   - `"pick"`: a single click anywhere reports the world coord via
+   *     `onWorldClick` and DOES NOT pan/select. Used by the route planner
+   *     to capture a From/To endpoint.
+   */
+  cursorMode?: "default" | "pick";
+  /** Fires on a single click when `cursorMode === "pick"`. */
+  onWorldClick?: (x: number, z: number) => void;
+  /**
+   * Optional route overlay drawn on top of all other overlay layers.
+   * `tlSegments` are recoloured emerald to indicate "used by the active
+   * route"; `walkLegs` become dashed polylines between hops; `from` / `to`
+   * render as pinned markers (green = origin, red = destination). All
+   * coordinates are in world-space (the same +Z=north convention used by
+   * the rest of the viewer).
+   */
+  routeOverlay?: RouteOverlay | null;
+  /**
    * When true, render a small "color palette" button in the toolbar that
    * opens a popover explaining what each translocator overlay color means.
    * Off by default — enable on pages that show the TL overlay.
@@ -264,6 +295,9 @@ export function MapViewer({
   tlLegendShowContributeColors = false,
   showFullscreenControl = false,
   starfield = false,
+  cursorMode = "default",
+  onWorldClick,
+  routeOverlay = null,
 }: MapViewerProps) {
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -291,6 +325,7 @@ export function MapViewer({
   const prevFocusPointRef = useRef<{ x: number; z: number } | undefined>(undefined);
   const panRef = useRef(pan);
   const interactionsLockedRef = useRef(interactionsLocked);
+  const cursorModeRef = useRef(cursorMode);
 
   const dispatch = useAppDispatch();
   const isFullscreen = useReduxState("mapView.isFullscreen");
@@ -302,6 +337,9 @@ export function MapViewer({
   useEffect(() => {
     interactionsLockedRef.current = interactionsLocked;
   }, [interactionsLocked]);
+  useEffect(() => {
+    cursorModeRef.current = cursorMode;
+  }, [cursorMode]);
   const enhanceAbortRef = useRef<AbortController | null>(null);
 
   const activeUrl = enhancedUrl ?? imageUrl ?? null;
@@ -387,6 +425,72 @@ export function MapViewer({
     }
     return out;
   }, [highlightedSegment, highlightedSegments, overlaySegments]);
+
+  // Project the route overlay (used TLs, walk legs, pins) into image-space
+  // pixels using the same map-stats math as the segments / points layers.
+  // Computed here (not inside the canvas effect) so it can be memoised and
+  // shared if we ever add a non-canvas renderer.
+  const projectedRouteOverlay = useMemo(() => {
+    if (!stats || !routeOverlay || imgNatural.w <= 0 || imgNatural.h <= 0) {
+      return null;
+    }
+    const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
+    const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
+    const tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const s of routeOverlay.tlSegments) {
+      const x1 = toImgX(s.x1);
+      const y1 = toImgY(s.z1);
+      const x2 = toImgX(s.x2);
+      const y2 = toImgY(s.z2);
+      if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
+      tlSegs.push({ x1, y1, x2, y2 });
+    }
+    const walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const leg of routeOverlay.walkLegs) {
+      const x1 = toImgX(leg.from.x);
+      const y1 = toImgY(leg.from.z);
+      const x2 = toImgX(leg.to.x);
+      const y2 = toImgY(leg.to.z);
+      if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
+      walkLegs.push({ x1, y1, x2, y2 });
+    }
+    const projectPin = (p: { x: number; z: number } | null | undefined) => {
+      if (!p) return null;
+      const x = toImgX(p.x);
+      const y = toImgY(p.z);
+      if (![x, y].every(Number.isFinite)) return null;
+      return { x, y };
+    };
+    // Identifier set used by the canvas pass to suppress the default
+    // purple/blue stroke on route TLs (we redraw them in emerald instead).
+    const tlIdSet = new Set<string>();
+    for (const s of routeOverlay.tlSegments) {
+      tlIdSet.add(`${s.x1},${s.z1},${s.x2},${s.z2}`);
+      tlIdSet.add(`${s.x2},${s.z2},${s.x1},${s.z1}`);
+    }
+    return {
+      tlSegs,
+      walkLegs,
+      from: projectPin(routeOverlay.from),
+      to: projectPin(routeOverlay.to),
+      tlIdSet,
+    };
+  }, [imgNatural.h, imgNatural.w, routeOverlay, stats]);
+
+  // Set of segment indices to skip in the default-colour pass because the
+  // route overlay will redraw them in emerald — keeps the route highlight
+  // visually unambiguous instead of layering colours.
+  const routeTLBaseSkipIndices = useMemo(() => {
+    if (!overlaySegments || !projectedRouteOverlay) return new Set<number>();
+    const out = new Set<number>();
+    for (let i = 0; i < overlaySegments.length; i++) {
+      const s = overlaySegments[i];
+      if (projectedRouteOverlay.tlIdSet.has(`${s.x1},${s.z1},${s.x2},${s.z2}`)) {
+        out.add(i);
+      }
+    }
+    return out;
+  }, [overlaySegments, projectedRouteOverlay]);
 
   const projectedOverlayPoints = useMemo(() => {
     if (
@@ -702,7 +806,12 @@ export function MapViewer({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (projectedOverlaySegments.length === 0 && projectedOverlayPoints.length === 0) return;
+    if (
+      projectedOverlaySegments.length === 0 &&
+      projectedOverlayPoints.length === 0 &&
+      !projectedRouteOverlay
+    )
+      return;
 
     // Apply the viewer's pan/zoom so subsequent draw calls can stay in
     // image-space coordinates. (Strokes scale with zoom; widths/radii below
@@ -731,10 +840,14 @@ export function MapViewer({
     if (projectedOverlaySegments.length > 0) {
       // Split into default vs user-contributed so each kind gets its own
       // colour pass. The single-batch draw is preserved per-kind to keep
-      // stroke calls minimal.
+      // stroke calls minimal. Indices flagged by `routeTLBaseSkipIndices`
+      // are skipped here because the route overlay redraws them in emerald
+      // below — layering both colours would obscure the route highlight.
       const defaultSegs: typeof projectedOverlaySegments = [];
       const userSegs: typeof projectedOverlaySegments = [];
-      for (const seg of projectedOverlaySegments) {
+      for (let i = 0; i < projectedOverlaySegments.length; i++) {
+        if (routeTLBaseSkipIndices.has(i)) continue;
+        const seg = projectedOverlaySegments[i];
         if (seg.kind === "user") userSegs.push(seg);
         else defaultSegs.push(seg);
       }
@@ -912,6 +1025,117 @@ export function MapViewer({
         ctx.fillRect(pt.x - doorW / 2, pt.y + homeSize - doorH, doorW, doorH);
       }
     }
+
+    // ----- Route overlay (drawn last so it sits on top of every other layer).
+    if (projectedRouteOverlay) {
+      // 1. Walk legs: dashed slate-200 line with a thin dark outline so they
+      //    stay legible against any biome tile. We draw the outline first
+      //    (slightly wider, solid black) then the dashed bright line on top.
+      if (projectedRouteOverlay.walkLegs.length > 0) {
+        const dashUnit = Math.max(4, 8 / Math.max(zoom, 0.1));
+        const walkLineWidth = Math.max(0.9, 2.0 / Math.max(zoom, 0.1));
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.7)";
+        ctx.lineWidth = walkLineWidth * 2.2;
+        ctx.beginPath();
+        for (const leg of projectedRouteOverlay.walkLegs) {
+          ctx.moveTo(leg.x1, leg.y1);
+          ctx.lineTo(leg.x2, leg.y2);
+        }
+        ctx.stroke();
+
+        ctx.setLineDash([dashUnit, dashUnit * 0.75]);
+        ctx.strokeStyle = "rgba(226, 232, 240, 0.98)";
+        ctx.lineWidth = walkLineWidth;
+        ctx.beginPath();
+        for (const leg of projectedRouteOverlay.walkLegs) {
+          ctx.moveTo(leg.x1, leg.y1);
+          ctx.lineTo(leg.x2, leg.y2);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // 2. Route TL segments: emerald with subtle glow + bright portal dots.
+      if (projectedRouteOverlay.tlSegs.length > 0) {
+        const routeBase = Math.max(1.1, 2.8 / Math.max(zoom, 0.1));
+        const routeGlow = routeBase * 2.4;
+        ctx.strokeStyle = "rgba(6, 78, 59, 0.6)";
+        ctx.lineWidth = routeGlow;
+        ctx.beginPath();
+        for (const seg of projectedRouteOverlay.tlSegs) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(16, 185, 129, 0.98)";
+        ctx.lineWidth = routeBase;
+        ctx.beginPath();
+        for (const seg of projectedRouteOverlay.tlSegs) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+
+        const dotOuter = Math.max(2.0, 3.4 / Math.max(zoom, 0.1));
+        const dotInner = Math.max(0.9, dotOuter * 0.5);
+        ctx.fillStyle = "rgba(16, 185, 129, 0.98)";
+        for (const seg of projectedRouteOverlay.tlSegs) {
+          ctx.beginPath();
+          ctx.arc(seg.x1, seg.y1, dotOuter, 0, Math.PI * 2);
+          ctx.arc(seg.x2, seg.y2, dotOuter, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = "rgba(236, 253, 245, 0.98)";
+        for (const seg of projectedRouteOverlay.tlSegs) {
+          ctx.beginPath();
+          ctx.arc(seg.x1, seg.y1, dotInner, 0, Math.PI * 2);
+          ctx.arc(seg.x2, seg.y2, dotInner, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      // 3. From / To pins. Inverted teardrop with letter ("A" / "B"). Sized
+      //    in screen pixels by dividing by zoom so they read the same at
+      //    every zoom level.
+      const pinRadius = Math.max(4.5, 7.5 / Math.max(zoom, 0.1));
+      const pinStroke = Math.max(0.5, 1.0 / Math.max(zoom, 0.1));
+      const drawPin = (cx: number, cy: number, fill: string, label: string) => {
+        ctx.beginPath();
+        ctx.arc(cx, cy - pinRadius, pinRadius, Math.PI * 0.2, Math.PI * 0.8, true);
+        ctx.lineTo(cx, cy);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.lineWidth = pinStroke;
+        ctx.stroke();
+        // Inner letter.
+        ctx.fillStyle = "rgba(248, 250, 252, 0.98)";
+        const fontSize = Math.max(3.5, pinRadius * 1.1);
+        ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, cx, cy - pinRadius);
+      };
+      if (projectedRouteOverlay.from) {
+        drawPin(
+          projectedRouteOverlay.from.x,
+          projectedRouteOverlay.from.y,
+          "rgba(34, 197, 94, 0.98)",
+          "A",
+        );
+      }
+      if (projectedRouteOverlay.to) {
+        drawPin(
+          projectedRouteOverlay.to.x,
+          projectedRouteOverlay.to.y,
+          "rgba(239, 68, 68, 0.98)",
+          "B",
+        );
+      }
+    }
   }, [
     containerSize.h,
     containerSize.w,
@@ -923,6 +1147,8 @@ export function MapViewer({
     pan.y,
     projectedOverlayPoints,
     projectedOverlaySegments,
+    projectedRouteOverlay,
+    routeTLBaseSkipIndices,
     zoom,
   ]);
 
@@ -1164,6 +1390,10 @@ export function MapViewer({
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
     if (interactionsLockedRef.current) return;
+    // In pick mode we never start a pan — the click is reserved for
+    // selecting a world-space endpoint (route planner etc.). The actual
+    // selection happens in `handleOverlayClick` below.
+    if (cursorModeRef.current === "pick") return;
     setDragging(true);
     setDragStart({ x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y });
   }, []);
@@ -1230,14 +1460,39 @@ export function MapViewer({
     setHoveredOverlayIndex(null);
   }, []);
 
-  const handleOverlayClick = useCallback(() => {
-    if (!onOverlaySegmentClick || !overlaySegments || overlaySegments.length === 0) return;
-    if (hoveredOverlayIndex === null) {
-      onOverlaySegmentClick(null);
-      return;
-    }
-    onOverlaySegmentClick(overlaySegments[hoveredOverlayIndex] ?? null);
-  }, [hoveredOverlayIndex, onOverlaySegmentClick, overlaySegments]);
+  const handleOverlayClick = useCallback(
+    (e: React.MouseEvent) => {
+      // Pick mode: convert the click position into world-block coordinates
+      // (mirroring the pan/zoom math in `handleMouseMove`) and report via
+      // `onWorldClick`. We intentionally do NOT also fire the segment-click
+      // callback so route-planner picks don't side-effect TL selection.
+      if (cursorModeRef.current === "pick" && onWorldClick && containerRef.current && stats) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const imgX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
+        const imgY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
+        if (imgX < 0 || imgX >= imgNatural.w || imgY < 0 || imgY >= imgNatural.h) return;
+        const worldX = Math.floor((imgX / imgNatural.w) * stats.width_blocks + stats.start_x);
+        const worldZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks + stats.start_z);
+        onWorldClick(worldX, worldZ);
+        return;
+      }
+      if (!onOverlaySegmentClick || !overlaySegments || overlaySegments.length === 0) return;
+      if (hoveredOverlayIndex === null) {
+        onOverlaySegmentClick(null);
+        return;
+      }
+      onOverlaySegmentClick(overlaySegments[hoveredOverlayIndex] ?? null);
+    },
+    [
+      hoveredOverlayIndex,
+      imgNatural.h,
+      imgNatural.w,
+      onOverlaySegmentClick,
+      onWorldClick,
+      overlaySegments,
+      stats,
+    ],
+  );
 
   // Right-click handler: fires onOverlaySegmentRightClick when a segment is
   // hovered (used by the parent to "pin" a translocator selection). Always
@@ -1341,7 +1596,14 @@ export function MapViewer({
         className={canvasClass}
         style={{
           height,
-          cursor: dragging ? "grabbing" : hoveredOverlayIndex !== null ? "pointer" : "grab",
+          cursor:
+            cursorMode === "pick"
+              ? "crosshair"
+              : dragging
+                ? "grabbing"
+                : hoveredOverlayIndex !== null
+                  ? "pointer"
+                  : "grab",
           touchAction: "none",
         }}
         onMouseDown={handleMouseDown}

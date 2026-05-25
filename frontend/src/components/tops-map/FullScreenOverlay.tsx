@@ -1,4 +1,4 @@
-import { Layers, Minimize2, Search } from "lucide-react";
+import { Layers, Minimize2, Search, Waypoints } from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
@@ -17,6 +17,7 @@ import {
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
 } from "@/store/slices/mapView";
+import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
@@ -113,6 +114,9 @@ export function FullscreenControlsOverlay({
     (next?: boolean) => dispatch(toggleShowRecentlyAddedAction(next)),
     [dispatch],
   );
+  // Route planner state — the open button mirrors the non-fullscreen one
+  // so users can summon the planner sheet without leaving fullscreen.
+  const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
@@ -277,6 +281,16 @@ export function FullscreenControlsOverlay({
               {activeGroupingCount}
             </span>
           )}
+        </Button>
+        <Button
+          type="button"
+          variant={routePlannerOpen ? "default" : "secondary"}
+          size="sm"
+          onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
+          className="shadow-md"
+        >
+          <Waypoints className="size-4 mr-1" />
+          Route
         </Button>
       </div>
 
