@@ -69,7 +69,7 @@ export function LandmarkManagementCard({ onLandmarksChanged }: Props) {
   if (accountQuery.isLoading) {
     return (
       <Card>
-        <CardContent className="py-4 flex justify-center">
+        <CardContent className="py-1.5 flex justify-center">
           <Loader2 className="size-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
