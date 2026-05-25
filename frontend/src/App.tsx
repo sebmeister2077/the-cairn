@@ -5,6 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppContent } from "@/components/AppContent";
+import { PageViewTracker } from "@/components/PageViewTracker";
 import {
   getStoredApiKey,
   clearPersistedQueryCache,
@@ -137,6 +138,7 @@ export default function App() {
     >
       <BrowserRouter>
         <ScrollToTop />
+        <PageViewTracker />
         <AppContent />
       </BrowserRouter>
       {import.meta.env.DEV && (

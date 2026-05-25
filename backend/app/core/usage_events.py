@@ -51,6 +51,7 @@ _CATEGORY_BY_PREFIX = {
     "backup": "download",
     "download": "download",
     "auth": "auth",
+    "page": "page",
 }
 
 

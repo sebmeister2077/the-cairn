@@ -858,3 +858,98 @@ async def usage_top_actors(
     }
     _cache_put(cache_key, payload)
     return payload
+
+
+# ---------------------------------------------------------------------------
+# /pages — most-visited route templates and per-path timeline.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/pages")
+async def usage_pages(
+    _: str = Depends(require_admin),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    granularity: str = Query("day"),
+    limit: int = Query(20, ge=1, le=_TOP_N_CAP),
+    path: Optional[str] = Query(None, max_length=128),
+) -> dict:
+    """Return top routes by ``page.view`` event count plus a bucketed
+    timeline. When ``path`` is given the timeline is filtered to that
+    single route; otherwise it stacks the top-5 routes.
+    """
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    gran = _resolve_granularity(granularity)
+    cache_key = ("pages", _iso(start), _iso(end), gran, int(limit), path or "")
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT metadata->>'path' AS path,
+                          COUNT(*)::int AS views,
+                          COUNT(DISTINCT actor_api_key_id)::int AS distinct_actors,
+                          COUNT(DISTINCT ip_hash)::int AS distinct_ips
+                       FROM usage_events
+                      WHERE event_type = 'page.view'
+                        AND created_at >= %s AND created_at < %s
+                        AND metadata ? 'path'
+                   GROUP BY metadata->>'path'
+                   ORDER BY views DESC
+                      LIMIT %s""",
+                (start, end, int(limit)),
+            )
+            top_rows = [
+                {
+                    "path": r["path"],
+                    "views": int(r["views"]),
+                    "distinct_actors": int(r["distinct_actors"] or 0),
+                    "distinct_ips": int(r["distinct_ips"] or 0),
+                }
+                for r in cur.fetchall()
+            ]
+
+            timeline_paths: List[str]
+            if path:
+                timeline_paths = [path]
+            else:
+                timeline_paths = [r["path"] for r in top_rows[:5] if r["path"]]
+
+            buckets: List[Dict[str, Any]] = []
+            if timeline_paths:
+                cur.execute(
+                    """SELECT date_trunc(%s, created_at) AS bucket,
+                              metadata->>'path' AS path,
+                              COUNT(*)::int AS count
+                           FROM usage_events
+                          WHERE event_type = 'page.view'
+                            AND created_at >= %s AND created_at < %s
+                            AND metadata->>'path' = ANY(%s)
+                       GROUP BY bucket, path
+                       ORDER BY bucket, path""",
+                    (gran, start, end, timeline_paths),
+                )
+                buckets = [
+                    {
+                        "bucket": _iso(r["bucket"]),
+                        "path": r["path"],
+                        "count": int(r["count"]),
+                    }
+                    for r in cur.fetchall()
+                ]
+
+    payload = {
+        "from": _iso(start),
+        "to": _iso(end),
+        "granularity": gran,
+        "selected_path": path,
+        "top": top_rows,
+        "timeline": buckets,
+    }
+    _cache_put(cache_key, payload)
+    return payload
+
+

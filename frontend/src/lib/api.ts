@@ -3221,6 +3221,18 @@ export interface UsageTopActors extends UsageWindow {
     }>;
 }
 
+export interface UsagePages extends UsageWindow {
+    granularity: UsageGranularity;
+    selected_path: string | null;
+    top: Array<{
+        path: string;
+        views: number;
+        distinct_actors: number;
+        distinct_ips: number;
+    }>;
+    timeline: Array<{ bucket: string; path: string; count: number }>;
+}
+
 export interface UsageWindowParams {
     from?: string;
     to?: string;
@@ -3269,5 +3281,7 @@ export const adminUsage = {
         _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity }, signal),
     topActors: (p: UsageWindowParams & { category?: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
+    pages: (p: UsageGranularityParams & { limit?: number; path?: string }, signal?: AbortSignal) =>
+        _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
 };
 

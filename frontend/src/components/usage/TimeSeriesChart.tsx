@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import {
   ResponsiveContainer,
-  BarChart,
+  ComposedChart,
   Bar,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -31,6 +32,10 @@ interface TimeSeriesChartProps {
   stacked?: boolean;
   granularity?: UsageGranularity;
   height?: number;
+  /** When true, overlay a centered moving-average line of the bucket totals. */
+  showTrend?: boolean;
+  /** Window size (in buckets) for the moving average. Default 7. */
+  trendWindow?: number;
 }
 
 // Reasonably color-blind-friendly categorical palette.
@@ -55,6 +60,8 @@ export function TimeSeriesChart({
   stacked = false,
   granularity = "day",
   height = 280,
+  showTrend = false,
+  trendWindow = 7,
 }: TimeSeriesChartProps) {
   const { wide, series } = useMemo(() => {
     const seriesSet = new Set<string>();
@@ -75,8 +82,20 @@ export function TimeSeriesChart({
     const wide = Array.from(byBucket.values()).sort((a, b) =>
       String(a.__bucket).localeCompare(String(b.__bucket)),
     );
-    return { wide, series: Array.from(seriesSet).sort() };
-  }, [data, xKey, yKey, seriesKey]);
+    const seriesList = Array.from(seriesSet).sort();
+    // Compute per-bucket total + centered moving average for the trend line.
+    const totals = wide.map((row) => seriesList.reduce((acc, s) => acc + Number(row[s] ?? 0), 0));
+    const half = Math.floor(Math.max(1, trendWindow) / 2);
+    for (let i = 0; i < wide.length; i++) {
+      const lo = Math.max(0, i - half);
+      const hi = Math.min(totals.length, i + half + 1);
+      let sum = 0;
+      for (let j = lo; j < hi; j++) sum += totals[j];
+      wide[i].__trend = sum / (hi - lo);
+      wide[i].__total = totals[i];
+    }
+    return { wide, series: seriesList };
+  }, [data, xKey, yKey, seriesKey, trendWindow]);
 
   if (wide.length === 0) {
     return (
@@ -84,9 +103,11 @@ export function TimeSeriesChart({
     );
   }
 
+  const trendVisible = showTrend && wide.length >= Math.max(2, trendWindow);
+
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <BarChart data={wide} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+      <ComposedChart data={wide} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
         <CartesianGrid stroke="#e5e7eb" vertical={false} />
         <XAxis
           dataKey="__bucket"
@@ -97,8 +118,17 @@ export function TimeSeriesChart({
         <Tooltip
           labelFormatter={(v) => formatBucket(String(v), granularity)}
           contentStyle={{ fontSize: 12 }}
+          formatter={(value, name) => {
+            if (name === "__trend") {
+              return [Number(value).toFixed(1), `trend (${trendWindow}-bucket avg)`];
+            }
+            return [value, name];
+          }}
         />
-        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Legend
+          wrapperStyle={{ fontSize: 12 }}
+          formatter={(value) => (value === "__trend" ? `Trend (${trendWindow}-bucket avg)` : value)}
+        />
         {series.map((s, i) => (
           <Bar
             key={s}
@@ -107,7 +137,19 @@ export function TimeSeriesChart({
             fill={PALETTE[i % PALETTE.length]}
           />
         ))}
-      </BarChart>
+        {trendVisible ? (
+          <Line
+            type="monotone"
+            dataKey="__trend"
+            stroke="#111827"
+            strokeWidth={2}
+            strokeDasharray="4 4"
+            dot={false}
+            activeDot={false}
+            isAnimationActive={false}
+          />
+        ) : null}
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

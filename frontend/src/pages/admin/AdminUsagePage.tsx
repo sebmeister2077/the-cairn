@@ -3,6 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { adminUsage, type UsageGranularity } from "@/lib/api";
 import { Loader2 } from "lucide-react";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
@@ -21,6 +23,7 @@ import { GranularityToggle } from "@/components/usage/GranularityToggle";
 type SectionKey =
   | "overview"
   | "contributions"
+  | "pages"
   | "admin"
   | "queues"
   | "downloads"
@@ -31,6 +34,7 @@ type SectionKey =
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "overview", label: "Overview" },
   { key: "contributions", label: "Contributions" },
+  { key: "pages", label: "Pages" },
   { key: "admin", label: "Admin Activity" },
   { key: "queues", label: "Queue Velocity" },
   { key: "downloads", label: "Downloads" },
@@ -81,6 +85,9 @@ export function AdminUsagePage() {
       {section === "contributions" && (
         <ContributionsSection from={range.from} to={range.to} granularity={granularity} />
       )}
+      {section === "pages" && (
+        <PagesSection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "admin" && (
         <AdminActivitySection from={range.from} to={range.to} granularity={granularity} />
       )}
@@ -104,6 +111,7 @@ export function AdminUsagePage() {
 // ---------------------------------------------------------------------------
 
 function OverviewSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const [showTrend, setShowTrend] = useState(true);
   const summary = useQuery({
     queryKey: ["usage", "summary", props.from, props.to],
     queryFn: ({ signal }) => adminUsage.summary({ from: props.from, to: props.to }, signal),
@@ -137,8 +145,9 @@ function OverviewSection(props: { from: string; to: string; granularity: UsageGr
       </div>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <CardTitle>Events by category over time</CardTitle>
+          <TrendToggle checked={showTrend} onChange={setShowTrend} id="overview-trend" />
         </CardHeader>
         <CardContent>
           {timeline.data ? (
@@ -149,6 +158,7 @@ function OverviewSection(props: { from: string; to: string; granularity: UsageGr
               seriesKey="series"
               stacked
               granularity={props.granularity}
+              showTrend={showTrend}
             />
           ) : null}
         </CardContent>
@@ -192,6 +202,7 @@ function OverviewSection(props: { from: string; to: string; granularity: UsageGr
 // ---------------------------------------------------------------------------
 
 function ContributionsSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const [showTrend, setShowTrend] = useState(true);
   const q = useQuery({
     queryKey: ["usage", "contributions", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>
@@ -206,11 +217,14 @@ function ContributionsSection(props: { from: string; to: string; granularity: Us
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Contribution activity</CardTitle>
-        <CardDescription>
-          User submissions vs. admin approvals/rejections per {props.granularity}.
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div className="space-y-1">
+          <CardTitle>Contribution activity</CardTitle>
+          <CardDescription>
+            User submissions vs. admin approvals/rejections per {props.granularity}.
+          </CardDescription>
+        </div>
+        <TrendToggle checked={showTrend} onChange={setShowTrend} id="contrib-trend" />
       </CardHeader>
       <CardContent>
         <TimeSeriesChart
@@ -220,9 +234,140 @@ function ContributionsSection(props: { from: string; to: string; granularity: Us
           seriesKey="event_type"
           stacked
           granularity={props.granularity}
+          showTrend={showTrend}
         />
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section: Pages — most-visited routes table + per-path trendline.
+// ---------------------------------------------------------------------------
+
+function PagesSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [showTrend, setShowTrend] = useState(true);
+  const q = useQuery({
+    queryKey: ["usage", "pages", props.from, props.to, props.granularity, selectedPath ?? ""],
+    queryFn: ({ signal }) =>
+      adminUsage.pages(
+        {
+          from: props.from,
+          to: props.to,
+          granularity: props.granularity,
+          limit: 20,
+          path: selectedPath ?? undefined,
+        },
+        signal,
+      ),
+  });
+
+  if (q.isLoading) return <Loading />;
+  if (q.isError || !q.data) return <ErrorMsg msg="Failed to load page analytics." />;
+
+  const maxViews = q.data.top.reduce((m, r) => Math.max(m, r.views), 0) || 1;
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="space-y-1">
+            <CardTitle>
+              {selectedPath ? `Views: ${selectedPath}` : "Top 5 routes over time"}
+            </CardTitle>
+            <CardDescription>
+              {selectedPath
+                ? "Showing traffic for the selected route only."
+                : `Stacked traffic for the top 5 routes per ${props.granularity}.`}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-3">
+            {selectedPath ? (
+              <Button size="sm" variant="outline" onClick={() => setSelectedPath(null)}>
+                Clear filter
+              </Button>
+            ) : null}
+            <TrendToggle checked={showTrend} onChange={setShowTrend} id="pages-trend" />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <TimeSeriesChart
+            data={q.data.timeline}
+            xKey="bucket"
+            yKey="count"
+            seriesKey="path"
+            stacked
+            granularity={props.granularity}
+            showTrend={showTrend}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Most visited pages</CardTitle>
+          <CardDescription>
+            Click a row to drill into a single route. Distinct actors = signed-in API keys; distinct
+            IPs = unique hashed visitor IPs.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {q.data.top.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No page-view events recorded in this window.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground border-b">
+                    <th className="py-2 pr-4 font-medium">Path</th>
+                    <th className="py-2 pr-4 font-medium tabular-nums text-right">Views</th>
+                    <th className="py-2 pr-4 font-medium tabular-nums text-right">Actors</th>
+                    <th className="py-2 pr-4 font-medium tabular-nums text-right">IPs</th>
+                    <th className="py-2 font-medium w-1/3">Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {q.data.top.map((row) => {
+                    const isActive = row.path === selectedPath;
+                    return (
+                      <tr
+                        key={row.path}
+                        onClick={() => setSelectedPath(isActive ? null : row.path)}
+                        className={`border-b cursor-pointer hover:bg-accent/40 ${
+                          isActive ? "bg-accent/60" : ""
+                        }`}
+                      >
+                        <td className="py-2 pr-4 font-mono text-xs">{row.path}</td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {row.views.toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {row.distinct_actors.toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-4 text-right tabular-nums">
+                          {row.distinct_ips.toLocaleString()}
+                        </td>
+                        <td className="py-2">
+                          <div className="h-2 bg-muted rounded">
+                            <div
+                              className="h-2 bg-primary rounded"
+                              style={{ width: `${(row.views / maxViews) * 100}%` }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -607,6 +752,25 @@ function Loading() {
 
 function ErrorMsg({ msg }: { msg: string }) {
   return <div className="text-sm text-red-600 py-6 text-center">{msg}</div>;
+}
+
+function TrendToggle({
+  checked,
+  onChange,
+  id,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  id: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <Switch id={id} checked={checked} onCheckedChange={onChange} size="sm" />
+      <Label htmlFor={id} className="text-xs text-muted-foreground cursor-pointer">
+        Trend line
+      </Label>
+    </div>
+  );
 }
 
 function daysBetween(fromIso: string, toIso: string): number {
