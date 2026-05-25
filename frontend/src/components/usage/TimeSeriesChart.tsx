@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -63,7 +63,7 @@ export function TimeSeriesChart({
   showTrend = false,
   trendWindow = 7,
 }: TimeSeriesChartProps) {
-  const { wide, series } = useMemo(() => {
+  const { wide, series, effectiveWindow } = useMemo(() => {
     const seriesSet = new Set<string>();
     const byBucket = new Map<string, Record<string, number | string>>();
     for (const r of data) {
@@ -83,9 +83,13 @@ export function TimeSeriesChart({
       String(a.__bucket).localeCompare(String(b.__bucket)),
     );
     const seriesList = Array.from(seriesSet).sort();
+    // Shrink the requested window to whatever's actually available so the
+    // trend line renders even on short ranges (e.g. 24h / 1 bucket would
+    // otherwise be hidden by a fixed 7-bucket gate).
+    const effectiveWindow = Math.max(1, Math.min(trendWindow, wide.length));
     // Compute per-bucket total + centered moving average for the trend line.
     const totals = wide.map((row) => seriesList.reduce((acc, s) => acc + Number(row[s] ?? 0), 0));
-    const half = Math.floor(Math.max(1, trendWindow) / 2);
+    const half = Math.floor(effectiveWindow / 2);
     for (let i = 0; i < wide.length; i++) {
       const lo = Math.max(0, i - half);
       const hi = Math.min(totals.length, i + half + 1);
@@ -94,7 +98,7 @@ export function TimeSeriesChart({
       wide[i].__trend = sum / (hi - lo);
       wide[i].__total = totals[i];
     }
-    return { wide, series: seriesList };
+    return { wide, series: seriesList, effectiveWindow };
   }, [data, xKey, yKey, seriesKey, trendWindow]);
 
   if (wide.length === 0) {
@@ -103,12 +107,30 @@ export function TimeSeriesChart({
     );
   }
 
-  const trendVisible = showTrend && wide.length >= Math.max(2, trendWindow);
+  const trendVisible = showTrend && wide.length >= 2;
+  const trendLabel = `Trend (${effectiveWindow}-bucket avg)`;
+  const isDark = useIsDarkTheme();
+  // SVG stroke attributes don't resolve CSS ``var(--…)`` references, so
+  // we have to pick a concrete hex per theme. Slate-900 / slate-100 work
+  // well on the default shadcn palettes.
+  const trendStroke = isDark ? "#f1f5f9" : "#0f172a";
+  const gridStroke = isDark ? "#1f2937" : "#e5e7eb";
+  // Tooltip card uses inline CSS, where ``var()`` *does* work — so we
+  // can defer to the theme tokens directly.
+  const tooltipStyle = {
+    fontSize: 12,
+    background: "hsl(var(--popover))",
+    color: "hsl(var(--popover-foreground))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: 6,
+  } as const;
+  const tooltipLabelStyle = { color: "hsl(var(--popover-foreground))" } as const;
+  const tooltipItemStyle = { color: "hsl(var(--popover-foreground))" } as const;
 
   return (
     <ResponsiveContainer width="100%" height={height}>
       <ComposedChart data={wide} margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-        <CartesianGrid stroke="#e5e7eb" vertical={false} />
+        <CartesianGrid stroke={gridStroke} vertical={false} />
         <XAxis
           dataKey="__bucket"
           tickFormatter={(v) => formatBucket(String(v), granularity)}
@@ -117,17 +139,20 @@ export function TimeSeriesChart({
         <YAxis fontSize={11} allowDecimals={false} />
         <Tooltip
           labelFormatter={(v) => formatBucket(String(v), granularity)}
-          contentStyle={{ fontSize: 12 }}
+          contentStyle={tooltipStyle}
+          labelStyle={tooltipLabelStyle}
+          itemStyle={tooltipItemStyle}
+          cursor={{ fill: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)" }}
           formatter={(value, name) => {
             if (name === "__trend") {
-              return [Number(value).toFixed(1), `trend (${trendWindow}-bucket avg)`];
+              return [Number(value).toFixed(1), trendLabel.toLowerCase()];
             }
             return [value, name];
           }}
         />
         <Legend
           wrapperStyle={{ fontSize: 12 }}
-          formatter={(value) => (value === "__trend" ? `Trend (${trendWindow}-bucket avg)` : value)}
+          formatter={(value) => (value === "__trend" ? trendLabel : value)}
         />
         {series.map((s, i) => (
           <Bar
@@ -141,7 +166,8 @@ export function TimeSeriesChart({
           <Line
             type="monotone"
             dataKey="__trend"
-            stroke="#111827"
+            stroke={trendStroke}
+            strokeOpacity={0.9}
             strokeWidth={2}
             strokeDasharray="4 4"
             dot={false}
@@ -163,4 +189,24 @@ function formatBucket(iso: string, gran: UsageGranularity): string {
     return d.toISOString().slice(0, 10);
   }
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Track whether the document is currently in dark mode (shadcn convention:
+ * a ``dark`` class on ``<html>``). Re-renders when the class flips.
+ */
+function useIsDarkTheme(): boolean {
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== "undefined" ? document.documentElement.classList.contains("dark") : false,
+  );
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    const update = () => setIsDark(root.classList.contains("dark"));
+    update();
+    const obs = new MutationObserver(update);
+    obs.observe(root, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+  return isDark;
 }

@@ -30,6 +30,7 @@ import {
     loadPersistedRoot,
 } from "./rootPersistence";
 import { adminApiKeysFiltersSlice } from "./slices/adminApiKeysFilters";
+import { adminUsageFiltersSlice } from "./slices/adminUsageFilters";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -44,6 +45,7 @@ const rootReducer = combineReducers({
     resourcesOverlay: resourcesOverlaySlice.reducer,
     adminUsersFilters: adminUsersFiltersSlice.reducer,
     adminApiKeysFilters: adminApiKeysFiltersSlice.reducer,
+    adminUsageFilters: adminUsageFiltersSlice.reducer,
     tlGroupings: tlGroupingsSlice.reducer,
     contributeTLs: contributeTLsSlice.reducer,
 });

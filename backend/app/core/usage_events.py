@@ -108,3 +108,53 @@ def record(
                 )
     except Exception as exc:  # pragma: no cover — recorder must not block
         logger.warning("usage_events.record(%s) failed: %s", event_type, exc)
+
+
+def record_batch(events: list) -> int:
+    """Insert many rows in a single statement. Best-effort: never raises.
+
+    ``events`` is a list of dicts with the same keys as :func:`record`
+    (``event_type`` required; ``actor_api_key_id``, ``category``,
+    ``metadata``, ``ip_hash`` optional). Returns the number of rows that
+    were actually inserted (zero on any failure).
+    """
+    if not events:
+        return 0
+    try:
+        if not db.is_available():
+            return 0
+        import psycopg2.extras  # local import keeps cold-start cheap
+
+        rows = []
+        for ev in events:
+            et = ev.get("event_type") if isinstance(ev, dict) else None
+            if not et:
+                continue
+            cat = ev.get("category") or _infer_category(et)
+            actor = ev.get("actor_api_key_id")
+            actor_str = str(actor) if actor else None
+            meta = ev.get("metadata")
+            rows.append(
+                (
+                    et,
+                    cat,
+                    actor_str,
+                    json.dumps(meta) if meta else None,
+                    ev.get("ip_hash"),
+                )
+            )
+        if not rows:
+            return 0
+        with db.get_conn() as conn:
+            with conn.cursor() as cur:
+                psycopg2.extras.execute_values(
+                    cur,
+                    """INSERT INTO usage_events
+                            (event_type, category, actor_api_key_id, metadata, ip_hash)
+                       VALUES %s""",
+                    rows,
+                )
+        return len(rows)
+    except Exception as exc:  # pragma: no cover — recorder must not block
+        logger.warning("usage_events.record_batch(n=%d) failed: %s", len(events), exc)
+        return 0

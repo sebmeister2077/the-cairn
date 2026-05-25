@@ -22,6 +22,7 @@ import { lsRead, lsRemove, lsWrite } from "./persistence";
 import { hydrateRoot } from "./rootActions";
 import type { RootState } from "./index";
 import { loadInitialMapViewState } from "./slices/mapView";
+import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -84,6 +85,14 @@ const NORMALIZE_ON_READ: {
     // this, `preloadedState` replaces the slice's `initialState` verbatim
     // and missing fields end up `undefined` at runtime.
     mapView: (s) => ({ ...loadInitialMapViewState(), ...s }),
+    // Same defensive merge for the admin Usage filters slice: the `pages`
+    // sub-object was added after the first release, so older envelopes
+    // are missing it and would otherwise destructure to `undefined`.
+    adminUsageFilters: (s) => ({
+        ...DEFAULT_ADMIN_USAGE_FILTERS,
+        ...s,
+        pages: { ...DEFAULT_PAGES_FILTERS, ...(s?.pages ?? {}) },
+    }),
 };
 
 interface Envelope {

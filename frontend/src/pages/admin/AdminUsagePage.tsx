@@ -12,6 +12,16 @@ import { HeatmapGrid } from "@/components/usage/HeatmapGrid";
 import { StatCard } from "@/components/usage/StatCard";
 import { DateRangeBar } from "@/components/usage/DateRangeBar";
 import { GranularityToggle } from "@/components/usage/GranularityToggle";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  clearOverviewCategories,
+  patchPagesFilters,
+  resetPagesFilters,
+  setPagesSelectedPath,
+  toggleOverviewCategory,
+  type PagesSortKey,
+} from "@/store/slices/adminUsageFilters";
+import { Input } from "@/components/ui/input";
 
 /**
  * Admin "Usage" dashboard.
@@ -112,6 +122,8 @@ export function AdminUsagePage() {
 
 function OverviewSection(props: { from: string; to: string; granularity: UsageGranularity }) {
   const [showTrend, setShowTrend] = useState(true);
+  const dispatch = useAppDispatch();
+  const selectedCategories = useAppSelector((s) => s.adminUsageFilters.overviewCategories);
   const summary = useQuery({
     queryKey: ["usage", "summary", props.from, props.to],
     queryFn: ({ signal }) => adminUsage.summary({ from: props.from, to: props.to }, signal),
@@ -129,6 +141,28 @@ function OverviewSection(props: { from: string; to: string; granularity: UsageGr
     queryFn: ({ signal }) => adminUsage.heatmap({ from: props.from, to: props.to }, signal),
   });
 
+  // All categories ever seen in the current window. Derived from the
+  // timeline so the chip set tracks the data; fall back to the summary's
+  // per-category list before the timeline resolves.
+  const availableCategories = useMemo(() => {
+    const set = new Set<string>();
+    for (const b of timeline.data?.buckets ?? []) {
+      if (b.series) set.add(String(b.series));
+    }
+    if (set.size === 0) {
+      for (const c of summary.data?.per_category ?? []) set.add(c.category);
+    }
+    return Array.from(set).sort();
+  }, [timeline.data, summary.data]);
+
+  // Apply the Redux-backed filter. Empty selection = show everything.
+  const filteredBuckets = useMemo(() => {
+    if (!timeline.data) return [];
+    if (selectedCategories.length === 0) return timeline.data.buckets;
+    const allow = new Set(selectedCategories);
+    return timeline.data.buckets.filter((b) => allow.has(String(b.series)));
+  }, [timeline.data, selectedCategories]);
+
   if (summary.isLoading || timeline.isLoading || heatmap.isLoading) return <Loading />;
   if (summary.isError || !summary.data) return <ErrorMsg msg="Failed to load summary." />;
 
@@ -145,22 +179,57 @@ function OverviewSection(props: { from: string; to: string; granularity: UsageGr
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <CardTitle>Events by category over time</CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-4">
+          <div className="space-y-1">
+            <CardTitle>Events by category over time</CardTitle>
+            <CardDescription>
+              {selectedCategories.length === 0
+                ? "Showing all categories. Click a chip to filter."
+                : `Filtered: ${selectedCategories.join(", ")}`}
+            </CardDescription>
+          </div>
           <TrendToggle checked={showTrend} onChange={setShowTrend} id="overview-trend" />
         </CardHeader>
-        <CardContent>
-          {timeline.data ? (
-            <TimeSeriesChart
-              data={timeline.data.buckets}
-              xKey="bucket"
-              yKey="count"
-              seriesKey="series"
-              stacked
-              granularity={props.granularity}
-              showTrend={showTrend}
-            />
+        <CardContent className="space-y-3">
+          {availableCategories.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {availableCategories.map((cat) => {
+                const active = selectedCategories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => dispatch(toggleOverviewCategory(cat))}
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                      active
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-foreground border-border hover:bg-accent"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+              {selectedCategories.length > 0 ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => dispatch(clearOverviewCategories())}
+                >
+                  Clear
+                </Button>
+              ) : null}
+            </div>
           ) : null}
+          <TimeSeriesChart
+            data={filteredBuckets}
+            xKey="bucket"
+            yKey="count"
+            seriesKey="series"
+            stacked
+            granularity={props.granularity}
+            showTrend={showTrend}
+          />
         </CardContent>
       </Card>
 
@@ -246,8 +315,11 @@ function ContributionsSection(props: { from: string; to: string; granularity: Us
 // ---------------------------------------------------------------------------
 
 function PagesSection(props: { from: string; to: string; granularity: UsageGranularity }) {
-  const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [showTrend, setShowTrend] = useState(true);
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((s) => s.adminUsageFilters.pages);
+  const { query, minViews, sortKey, sortOrder, selectedPath } = filters;
+
   const q = useQuery({
     queryKey: ["usage", "pages", props.from, props.to, props.granularity, selectedPath ?? ""],
     queryFn: ({ signal }) =>
@@ -263,15 +335,36 @@ function PagesSection(props: { from: string; to: string; granularity: UsageGranu
       ),
   });
 
+  // Client-side filter + sort over the top-N response. Cheap (≤20 rows)
+  // and keeps the backend cache hot since the request shape doesn't
+  // depend on these knobs.
+  const visibleRows = useMemo(() => {
+    const top = q.data?.top ?? [];
+    const needle = query.trim().toLowerCase();
+    const rows = top.filter((r) => {
+      if (r.views < minViews) return false;
+      if (needle && !r.path.toLowerCase().includes(needle)) return false;
+      return true;
+    });
+    rows.sort((a, b) => {
+      const dir = sortOrder === "asc" ? 1 : -1;
+      if (sortKey === "path") return a.path.localeCompare(b.path) * dir;
+      return (a[sortKey] - b[sortKey]) * dir;
+    });
+    return rows;
+  }, [q.data, query, minViews, sortKey, sortOrder]);
+
   if (q.isLoading) return <Loading />;
   if (q.isError || !q.data) return <ErrorMsg msg="Failed to load page analytics." />;
 
-  const maxViews = q.data.top.reduce((m, r) => Math.max(m, r.views), 0) || 1;
+  const maxViews = visibleRows.reduce((m, r) => Math.max(m, r.views), 0) || 1;
+  const hasActiveFilter =
+    query.trim() !== "" || minViews > 0 || sortKey !== "views" || sortOrder !== "desc";
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-4">
           <div className="space-y-1">
             <CardTitle>
               {selectedPath ? `Views: ${selectedPath}` : "Top 5 routes over time"}
@@ -284,8 +377,12 @@ function PagesSection(props: { from: string; to: string; granularity: UsageGranu
           </div>
           <div className="flex items-center gap-3">
             {selectedPath ? (
-              <Button size="sm" variant="outline" onClick={() => setSelectedPath(null)}>
-                Clear filter
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => dispatch(setPagesSelectedPath(null))}
+              >
+                Clear drill-down
               </Button>
             ) : null}
             <TrendToggle checked={showTrend} onChange={setShowTrend} id="pages-trend" />
@@ -312,10 +409,77 @@ function PagesSection(props: { from: string; to: string; granularity: UsageGranu
             IPs = unique hashed visitor IPs.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {q.data.top.length === 0 ? (
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex flex-col gap-1 min-w-55 flex-1">
+              <Label htmlFor="pages-search" className="text-xs text-muted-foreground">
+                Search path
+              </Label>
+              <Input
+                id="pages-search"
+                value={query}
+                placeholder="/blog, /multiplayer/…"
+                onChange={(e) => dispatch(patchPagesFilters({ query: e.target.value }))}
+              />
+            </div>
+            <div className="flex flex-col gap-1 w-28">
+              <Label htmlFor="pages-min-views" className="text-xs text-muted-foreground">
+                Min views
+              </Label>
+              <Input
+                id="pages-min-views"
+                type="number"
+                min={0}
+                value={minViews || ""}
+                placeholder="0"
+                onChange={(e) =>
+                  dispatch(
+                    patchPagesFilters({
+                      minViews: Math.max(0, Number(e.target.value) || 0),
+                    }),
+                  )
+                }
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <Label htmlFor="pages-sort" className="text-xs text-muted-foreground">
+                Sort by
+              </Label>
+              <select
+                id="pages-sort"
+                value={sortKey}
+                onChange={(e) =>
+                  dispatch(patchPagesFilters({ sortKey: e.target.value as PagesSortKey }))
+                }
+                className="h-9 rounded-md border bg-background px-2 text-sm"
+              >
+                <option value="views">Views</option>
+                <option value="distinct_actors">Distinct actors</option>
+                <option value="distinct_ips">Distinct IPs</option>
+                <option value="path">Path (A→Z)</option>
+              </select>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                dispatch(patchPagesFilters({ sortOrder: sortOrder === "asc" ? "desc" : "asc" }))
+              }
+            >
+              {sortOrder === "asc" ? "Ascending ↑" : "Descending ↓"}
+            </Button>
+            {hasActiveFilter ? (
+              <Button size="sm" variant="ghost" onClick={() => dispatch(resetPagesFilters())}>
+                Reset filters
+              </Button>
+            ) : null}
+          </div>
+
+          {visibleRows.length === 0 ? (
             <div className="text-sm text-muted-foreground py-6 text-center">
-              No page-view events recorded in this window.
+              {q.data.top.length === 0
+                ? "No page-view events recorded in this window."
+                : "No rows match the current filters."}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -330,12 +494,12 @@ function PagesSection(props: { from: string; to: string; granularity: UsageGranu
                   </tr>
                 </thead>
                 <tbody>
-                  {q.data.top.map((row) => {
+                  {visibleRows.map((row) => {
                     const isActive = row.path === selectedPath;
                     return (
                       <tr
                         key={row.path}
-                        onClick={() => setSelectedPath(isActive ? null : row.path)}
+                        onClick={() => dispatch(setPagesSelectedPath(isActive ? null : row.path))}
                         className={`border-b cursor-pointer hover:bg-accent/40 ${
                           isActive ? "bg-accent/60" : ""
                         }`}
