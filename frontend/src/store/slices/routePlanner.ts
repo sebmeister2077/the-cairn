@@ -1,9 +1,12 @@
 // Route planner UI state for the TOPS map viewer.
 //
 // Holds the From/To endpoints, computed routes, selected alternative, and
-// configurable cost-model knobs (walk speed, TL penalty). Intentionally NOT
-// persisted (added to `PERSIST_BLACKLIST`) — the planner is an ephemeral
-// "what-if" surface; on reload we re-hydrate ONLY from URL params.
+// configurable cost-model knobs (walk speed, TL penalty). Only the
+// cost-model preferences (`walkSpeed`, `tlPenaltySeconds`, `kNeighbors`)
+// are persisted across reloads — see `STRIP_BEFORE_WRITE.routePlanner`
+// in `rootPersistence.ts`. Everything else (endpoints, computed routes,
+// pickMode, focusRequest, isOpen) is ephemeral; on reload From/To are
+// re-hydrated only from URL params.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RouteResult, WorldPoint } from "@/lib/tl-routing";

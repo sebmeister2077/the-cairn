@@ -23,6 +23,7 @@ import { hydrateRoot } from "./rootActions";
 import type { RootState } from "./index";
 import { loadInitialMapViewState } from "./slices/mapView";
 import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
+import { initialRoutePlannerState } from "./slices/routePlanner";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -40,10 +41,11 @@ export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
     // The contribute-TLs page is a one-shot upload flow and stores parsed
     // chat-log data plus transient UI state — both should reset on reload.
     "contributeTLs",
-    // Route planner is ephemeral: From/To are rehydrated from URL params on
-    // mount; computed routes are cheap to recompute and shouldn't survive
-    // page reloads as stale data.
-    "routePlanner",
+    // NOTE: `routePlanner` is intentionally NOT blacklisted — we want to
+    // persist the user's cost-model preferences (walk speed, TL penalty,
+    // kNeighbors) across reloads. Transient fields (endpoints, computed
+    // routes, pickMode, focusRequest, isOpen) are stripped on write by
+    // `STRIP_BEFORE_WRITE.routePlanner` so only the prefs hit disk.
 ];
 
 /**
@@ -56,6 +58,15 @@ const STRIP_BEFORE_WRITE: {
 } = {
     // `rejectedApiKey` is an in-memory back-pressure marker, not user data.
     auth: (s) => ({ ...s, rejectedApiKey: null }),
+    // Only persist the user's cost-model preferences. Endpoints,
+    // computed routes, and other transient UI state should reset on
+    // reload (From/To are re-hydrated from URL params if present).
+    routePlanner: (s) => ({
+        ...initialRoutePlannerState,
+        walkSpeed: s.walkSpeed,
+        tlPenaltySeconds: s.tlPenaltySeconds,
+        kNeighbors: s.kNeighbors,
+    }),
 };
 
 /**
@@ -97,6 +108,10 @@ const NORMALIZE_ON_READ: {
         ...s,
         pages: { ...DEFAULT_PAGES_FILTERS, ...(s?.pages ?? {}) },
     }),
+    // Merge stored prefs over the fresh initial state so transient
+    // fields (routes, focusRequest, pickMode, isOpen, endpoints) always
+    // reset on reload even if an older envelope happened to persist them.
+    routePlanner: (s) => ({ ...initialRoutePlannerState, ...s }),
 };
 
 interface Envelope {
