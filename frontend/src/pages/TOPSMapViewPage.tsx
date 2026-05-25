@@ -696,7 +696,13 @@ export function TOPSMapViewPage() {
         ) {
           continue;
         }
-        base.push(t);
+        base.push({
+          x: t.x,
+          z: t.z,
+          kind: "Trader",
+          // label: t.label,
+          color: t.color,
+        });
       }
     }
     // Always-on house glyph for the user's saved favorite position. Drawn
