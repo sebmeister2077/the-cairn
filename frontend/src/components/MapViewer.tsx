@@ -162,6 +162,16 @@ interface MapViewerProps {
   /** Zoom level to use when flying to a focusPoint. Default 4. */
   focusZoom?: number;
   /**
+   * Optional world-space diameter (in blocks) the viewer should try to
+   * fit around `focusPoint` when flying to it. When provided, overrides
+   * `focusZoom` and the "never zoom out below current" clamp — the
+   * viewer picks a zoom that keeps a region of this diameter in view,
+   * which is what e.g. the route planner uses to ensure both endpoints
+   * of a long TL pair stay on screen instead of fully zooming into the
+   * midpoint.
+   */
+  focusSpanBlocks?: number;
+  /**
    * Reported (debounced) whenever the user pans or zooms. `centerWorldX` /
    * `centerWorldZ` are the world-block coordinates currently under the
    * viewport center; `pixelsPerBlock` is the on-screen scale (independent of
@@ -285,6 +295,7 @@ export function MapViewer({
   highlightedSegments,
   focusPoint,
   focusZoom = 4,
+  focusSpanBlocks,
   onViewportChange,
   initialView,
   centerTarget = null,
@@ -769,14 +780,31 @@ export function MapViewer({
     const el = containerRef.current;
     if (!el) return;
 
-    const targetZoom = Math.max(focusZoom, zoomRef.current);
+    const rect = el.getBoundingClientRect();
+
+    // When the caller supplies a desired span (route planner does this so
+    // long TL pairs don't blow past the viewport), fit-to-span: pick the
+    // zoom that lets the requested diameter occupy ~85% of the smaller
+    // viewport dimension, clamped to the viewer's overall zoom range.
+    // This branch deliberately bypasses the `Math.max(focusZoom, current)`
+    // logic below so the camera CAN zoom out when needed.
+    let targetZoom: number;
+    if (focusSpanBlocks && focusSpanBlocks > 0 && rect.width > 0 && rect.height > 0) {
+      const blocksPerImgPx = stats.width_blocks / imgNatural.w;
+      const minViewportPx = Math.min(rect.width, rect.height);
+      const spanImgPx = focusSpanBlocks / blocksPerImgPx;
+      const fitZoom = (minViewportPx * 0.85) / Math.max(1, spanImgPx);
+      targetZoom = Math.min(20, Math.max(0.1, fitZoom));
+    } else {
+      targetZoom = Math.max(focusZoom, zoomRef.current);
+    }
+
     const imgX = ((focusPoint.x - stats.start_x) / stats.width_blocks) * imgNatural.w;
     const imgY = ((focusPoint.z - stats.start_z) / stats.height_blocks) * imgNatural.h;
-    const rect = el.getBoundingClientRect();
 
     setPan({ x: rect.width / 2 - imgX * targetZoom, y: rect.height / 2 - imgY * targetZoom });
     setZoom(targetZoom);
-  }, [focusPoint, focusZoom, imgNatural, stats]);
+  }, [focusPoint, focusZoom, focusSpanBlocks, imgNatural, stats]);
 
   useEffect(() => {
     const canvas = overlayCanvasRef.current;

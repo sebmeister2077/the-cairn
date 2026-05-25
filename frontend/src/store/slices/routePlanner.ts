@@ -41,8 +41,13 @@ export interface RoutePlannerState {
      * whenever this object reference changes (each dispatch creates a fresh
      * object even for the same coordinates, so clicking the same leg twice
      * re-triggers the navigation).
+     *
+     * `spanBlocks` is the world-space diameter the viewport should fit around
+     * the focus point — used by the route planner so long TL pairs zoom out
+     * enough that both endpoints stay in frame, rather than fully zooming in
+     * on the midpoint. Omitted = use the viewer's default focus zoom.
      */
-    focusRequest: WorldPoint | null;
+    focusRequest: (WorldPoint & { spanBlocks?: number }) | null;
 }
 
 export const initialRoutePlannerState: RoutePlannerState = {
@@ -129,11 +134,18 @@ export const routePlannerSlice = createSlice({
             state.tlPenaltySeconds = Math.max(0, Math.min(600, action.payload));
             state.routes = [];
         },
-        setFocusRequest(state, action: PayloadAction<WorldPoint | null>) {
+        setFocusRequest(
+            state,
+            action: PayloadAction<(WorldPoint & { spanBlocks?: number }) | null>,
+        ) {
             // Always re-wrap so consecutive dispatches with the same
             // coordinates still produce a fresh object identity.
             state.focusRequest = action.payload
-                ? { x: action.payload.x, z: action.payload.z }
+                ? {
+                    x: action.payload.x,
+                    z: action.payload.z,
+                    spanBlocks: action.payload.spanBlocks,
+                }
                 : null;
         },
     },

@@ -334,8 +334,10 @@ function RouteSummary({
 }: {
   route: RouteResult;
   /** Called when the user clicks a leg's locate button. Receives the
-   *  world-space point the map should fly to. */
-  onLocate: (point: { x: number; z: number }) => void;
+   *  world-space point the map should fly to, plus an optional
+   *  `spanBlocks` so the viewer can pick a zoom that keeps both leg
+   *  endpoints in frame for long TL hops / walks. */
+  onLocate: (point: { x: number; z: number; spanBlocks?: number }) => void;
 }) {
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
@@ -364,14 +366,17 @@ function RouteSummary({
       </div>
       <ol className="space-y-0.5 text-xs">
         {route.legs.map((leg, i) => {
-          // Aim the camera at the leg's midpoint so both endpoints (TL
-          // entry/exit, or walk start/end) tend to be in frame at the
-          // default focus zoom. For TL pairs spanning huge distances
-          // this still won't fit both sides; the user can then zoom out
-          // manually — the locate button is meant as a "take me there"
-          // shortcut, not a fit-to-bounds.
+          // Aim the camera at the leg's midpoint and report a span the
+          // viewer can use to fit both endpoints in view. We pad the raw
+          // endpoint distance by ~40% so the leg doesn't kiss the edges,
+          // and floor at a small value so trivially-short walks/TLs still
+          // get a reasonably close-in zoom rather than over-shooting it.
           const midX = Math.round((leg.from.x + leg.to.x) / 2);
           const midZ = Math.round((leg.from.z + leg.to.z) / 2);
+          const dx = leg.to.x - leg.from.x;
+          const dz = leg.to.z - leg.from.z;
+          const legDistance = Math.hypot(dx, dz);
+          const spanBlocks = Math.max(80, legDistance * 1.4);
           return (
             <li
               key={i}
@@ -386,7 +391,7 @@ function RouteSummary({
                 size="icon-sm"
                 variant="ghost"
                 className="h-6 w-6 shrink-0 text-current opacity-70 hover:opacity-100"
-                onClick={() => onLocate({ x: midX, z: midZ })}
+                onClick={() => onLocate({ x: midX, z: midZ, spanBlocks })}
                 title={
                   leg.kind === "tl"
                     ? `Show this TL pair on the map`

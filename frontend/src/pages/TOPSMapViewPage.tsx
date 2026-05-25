@@ -263,6 +263,13 @@ export function TOPSMapViewPage() {
   const [landmarkFocusPoint, setLandmarkFocusPoint] = useState<
     { x: number; z: number } | undefined
   >(undefined);
+  // Optional world-space span the viewer should fit when flying to the
+  // current focus point. Set by the route planner so long TL pairs zoom
+  // out enough to keep both endpoints in frame; landmark search and
+  // "jump home" leave this `undefined` to use the viewer's default zoom.
+  const [landmarkFocusSpanBlocks, setLandmarkFocusSpanBlocks] = useState<number | undefined>(
+    undefined,
+  );
 
   // The route planner publishes a "fly here" request via Redux whenever the
   // user clicks the locate icon on a leg row. We mirror it into the shared
@@ -271,6 +278,7 @@ export function TOPSMapViewPage() {
   const routeFocusRequest = useAppSelector((s) => s.routePlanner.focusRequest);
   useEffect(() => {
     if (!routeFocusRequest) return;
+    setLandmarkFocusSpanBlocks(routeFocusRequest.spanBlocks);
     setLandmarkFocusPoint({ x: routeFocusRequest.x, z: routeFocusRequest.z });
   }, [routeFocusRequest]);
 
@@ -729,6 +737,7 @@ export function TOPSMapViewPage() {
       (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
     );
     if (match) {
+      setLandmarkFocusSpanBlocks(undefined);
       setLandmarkFocusPoint({ x: match.x, z: match.z });
       setShowLandmarks(true);
     }
@@ -741,6 +750,7 @@ export function TOPSMapViewPage() {
    */
   const handleJumpHome = useCallback(() => {
     const pos = favoriteStartingPosition ?? { x: 0, z: 0 };
+    setLandmarkFocusSpanBlocks(undefined);
     setLandmarkFocusPoint({ x: pos.x, z: pos.z });
   }, [favoriteStartingPosition]);
 
@@ -1366,6 +1376,7 @@ export function TOPSMapViewPage() {
             }
             highlightedSegments={highlightedTranslocatorSegments}
             focusPoint={landmarkFocusPoint}
+            focusSpanBlocks={landmarkFocusSpanBlocks}
             enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
             initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
             onViewportChange={handleViewportChange}
