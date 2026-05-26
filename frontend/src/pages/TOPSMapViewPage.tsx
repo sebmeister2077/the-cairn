@@ -1135,7 +1135,7 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
         {!isFullscreen && (
           <>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
               {loading && (
                 <Button disabled>
                   <Loader2 className="size-4 mr-1 animate-spin" />
@@ -1144,45 +1144,62 @@ export function TOPSMapViewPage() {
               )}
               {!loading && hasMap && (
                 <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleDownload}
-                    disabled={downloading}
-                  >
-                    {downloading ? (
-                      <Loader2 className="size-4 mr-1 animate-spin" />
-                    ) : (
-                      <Download className="size-4 mr-1" />
-                    )}
-                    {downloading ? "Building PNG…" : "Download PNG"}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleReload}
-                    disabled={isReloading}
-                    title={isReloading ? "Refreshing map data…" : "Refresh map data"}
-                    aria-busy={isReloading}
-                  >
-                    <RefreshCw
-                      className={`size-4 mr-1 transition-transform animate-spin ${
-                        isReloading ? "running" : "paused"
-                      }`}
+                  {/* Group 1 — Map data actions */}
+                  <div className="inline-flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDownload}
+                      disabled={downloading}
+                    >
+                      {downloading ? (
+                        <Loader2 className="size-4 mr-1 animate-spin" />
+                      ) : (
+                        <Download className="size-4 mr-1" />
+                      )}
+                      {downloading ? "Building PNG…" : "Download PNG"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleReload}
+                      disabled={isReloading}
+                      title={isReloading ? "Refreshing map data…" : "Refresh map data"}
+                      aria-busy={isReloading}
+                    >
+                      <RefreshCw
+                        className={`size-4 mr-1 transition-transform animate-spin ${
+                          isReloading ? "running" : "paused"
+                        }`}
+                      />
+                      Reload
+                    </Button>
+                  </div>
+
+                  <div aria-hidden="true" className="hidden sm:block h-6 w-px bg-border" />
+
+                  {/* Group 2 — Navigation */}
+                  <div className="inline-flex items-center gap-1">
+                    <HomePositionControls
+                      favorite={favoriteStartingPosition}
+                      canSaveCurrent={lastViewportRef.current != null}
+                      onJumpHome={handleJumpHome}
+                      onSaveCurrent={handleSetCurrentAsHome}
+                      onClear={clearFavoriteStartingPosition}
                     />
-                    Reload
-                  </Button>
-                  <HomePositionControls
-                    favorite={favoriteStartingPosition}
-                    canSaveCurrent={lastViewportRef.current != null}
-                    onJumpHome={handleJumpHome}
-                    onSaveCurrent={handleSetCurrentAsHome}
-                    onClear={clearFavoriteStartingPosition}
-                  />
-                  <Button type="button" variant="outline" onClick={handleOpenGoToDialog}>
-                    <Search className="size-4 mr-1" />
-                    Go to coordinate
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleOpenGoToDialog}
+                      title="Jump to coordinate (Ctrl+G)"
+                    >
+                      <Search className="size-4 mr-1" />
+                      Go to coordinate
+                    </Button>
+                  </div>
                 </>
               )}
               {!loading && !hasMap && error && (
@@ -1193,51 +1210,56 @@ export function TOPSMapViewPage() {
 
               {/* Resolution selector — visible whenever multiple completed levels exist. */}
               {completedLevels.length > 1 && (
-                <ResolutionSelector
-                  selectedLevel={selectedLevel}
-                  setSelectedLevel={setSelectedLevel}
-                  resolutionLevels={statsQuery.data?.resolutions}
-                />
-              )}
-
-              {isAdmin && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setResourcesDrawerOpen(true)}
-                  title="Worldgen resources overlay"
-                >
-                  <Sparkles className="size-4 mr-1" />
-                  Resources
-                  {resourcesOverlay.depositsLoading && (
-                    <Loader2 className="size-3 ml-1 animate-spin" />
-                  )}
-                </Button>
-              )}
-
-              {isAdmin && (
-                <Dialog>
-                  <DialogTrigger
-                    render={
-                      <Button type="button" variant="outline" size="sm">
-                        <Settings className="size-4 mr-1" />
-                        Map cache
-                      </Button>
-                    }
+                <>
+                  <div aria-hidden="true" className="hidden sm:block h-6 w-px bg-border" />
+                  <ResolutionSelector
+                    selectedLevel={selectedLevel}
+                    setSelectedLevel={setSelectedLevel}
+                    resolutionLevels={statsQuery.data?.resolutions}
                   />
-                  <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
-                    <DialogHeader>
-                      <DialogTitle>TOPS map resolution cache</DialogTitle>
-                    </DialogHeader>
-                    <AdminResolutionPanel
-                      onLevelComplete={() => {
-                        queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
-                        queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
-                      }}
+                </>
+              )}
+
+              {isAdmin && (
+                <div className="ml-auto inline-flex items-center gap-1 rounded-md border border-dashed bg-background/60 px-1.5 py-1">
+                  <span className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Admin
+                  </span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setResourcesDrawerOpen(true)}
+                    title="Worldgen resources overlay"
+                  >
+                    <Sparkles className="size-4 mr-1" />
+                    Resources
+                    {resourcesOverlay.depositsLoading && (
+                      <Loader2 className="size-3 ml-1 animate-spin" />
+                    )}
+                  </Button>
+                  <Dialog>
+                    <DialogTrigger
+                      render={
+                        <Button type="button" variant="outline" size="sm">
+                          <Settings className="size-4 mr-1" />
+                          Map cache
+                        </Button>
+                      }
                     />
-                  </DialogContent>
-                </Dialog>
+                    <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
+                      <DialogHeader>
+                        <DialogTitle>TOPS map resolution cache</DialogTitle>
+                      </DialogHeader>
+                      <AdminResolutionPanel
+                        onLevelComplete={() => {
+                          queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+                          queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
+                        }}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
