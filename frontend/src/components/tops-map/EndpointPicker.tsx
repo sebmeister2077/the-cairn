@@ -86,6 +86,13 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
 
   const [landmarkOpen, setLandmarkOpen] = useState(false);
   const [landmarkQuery, setLandmarkQuery] = useState("");
+  // Terminus entries swamp the landmark list (lots of them, mostly identical
+  // labels), so default the picker to "landmarks" (everything *except*
+  // Terminus). Users who actually want to route to/from a Terminus can flip
+  // the filter, and "all" remains available for completeness.
+  const [landmarkFilter, setLandmarkFilter] = useState<"landmarks" | "terminus" | "all">(
+    "landmarks",
+  );
 
   const isPicking = pickMode === slot;
 
@@ -95,16 +102,25 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
 
   // Build a "Label (x, z)" string for each landmark so the Combobox (which
   // works on plain strings) can both display and uniquely identify entries.
-  // Unnamed landmarks fall back to "<Kind> @ x,z".
+  // Unnamed landmarks fall back to "<Kind> @ x,z". When the user is browsing
+  // "all", Terminus rows are prefixed with `[Terminus] ` so they're easy to
+  // tell apart from regular landmarks that happen to share the same name.
   const landmarkSuggestions = useMemo(() => {
     const data = landmarks.data?.data ?? [];
-    return data
+    const filtered = data.filter((lm) => {
+      const isTerminus = lm.kind === "Terminus";
+      if (landmarkFilter === "landmarks") return !isTerminus;
+      if (landmarkFilter === "terminus") return isTerminus;
+      return true;
+    });
+    return filtered
       .map((lm) => {
         const name = lm.label?.trim() || `${lm.kind ?? "Point"} @ ${lm.x},${lm.z}`;
-        return `${name} (${lm.x}, ${lm.z})`;
+        const prefix = landmarkFilter === "all" && lm.kind === "Terminus" ? "[Terminus] " : "";
+        return `${prefix}${name} (${lm.x}, ${lm.z})`;
       })
       .sort((a, b) => a.localeCompare(b));
-  }, [landmarks.data]);
+  }, [landmarks.data, landmarkFilter]);
 
   const handleLandmarkSelect = (entry: string) => {
     // Extract trailing "(x, z)" — robust against names that contain
@@ -113,7 +129,10 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
     if (!m) return;
     const x = parseInt(m[1], 10);
     const z = parseInt(m[2], 10);
-    const name = entry.slice(0, entry.lastIndexOf("(")).trim();
+    // Strip the optional "[Terminus] " visual prefix before storing the label
+    // so saved/shared endpoints don't carry UI decoration into the chip.
+    const rawName = entry.slice(0, entry.lastIndexOf("(")).trim();
+    const name = rawName.replace(/^\[Terminus\]\s*/, "");
     setSlot({ point: { x, z }, label: name, source: "landmark" });
     setLandmarkOpen(false);
     setLandmarkQuery("");
@@ -229,13 +248,43 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
       </div>
 
       {landmarkOpen && (
-        <div className="rounded-md border bg-background p-2">
+        <div className="space-y-1.5 rounded-md border bg-background p-2">
+          {/* Tiny segmented filter — Terminus markers tend to share labels
+              and outnumber regular landmarks, so let the user narrow the
+              search before the Combobox starts matching. */}
+          <div className="flex gap-1" role="group" aria-label="Filter landmark suggestions">
+            {(
+              [
+                { key: "landmarks", label: "Landmarks" },
+                { key: "terminus", label: "Terminuses" },
+                { key: "all", label: "All" },
+              ] as const
+            ).map((opt) => (
+              <Button
+                key={opt.key}
+                type="button"
+                size="sm"
+                variant={landmarkFilter === opt.key ? "default" : "outline"}
+                className="h-6 flex-1 px-2 text-[11px]"
+                onClick={() => setLandmarkFilter(opt.key)}
+                aria-pressed={landmarkFilter === opt.key}
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
           <Combobox
             value={landmarkQuery}
             onChange={setLandmarkQuery}
             onSelect={handleLandmarkSelect}
             suggestions={landmarkSuggestions}
-            placeholder={landmarks.isLoading ? "Loading landmarks…" : "Search landmarks…"}
+            placeholder={
+              landmarks.isLoading
+                ? "Loading landmarks…"
+                : landmarkFilter === "terminus"
+                  ? "Search terminuses…"
+                  : "Search landmarks…"
+            }
           />
         </div>
       )}
