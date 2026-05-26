@@ -40,6 +40,62 @@ export type TerminusStyle =
     | "cross"
     | "rift";
 
+/** Default selections used for new users (and as fallbacks). */
+export const DEFAULT_TRADER_STYLE: TraderStyle = "gear-stack";
+export const DEFAULT_TL_STYLE: TLStyle = "spiral";
+export const DEFAULT_TERMINUS_STYLE: TerminusStyle = "tombstone";
+
+/** Option lists for the Account-tab picker UI. */
+export const TRADER_STYLE_OPTIONS: ReadonlyArray<{
+    id: TraderStyle;
+    label: string;
+    hint: string;
+}> = [
+        { id: "gear-stack", label: "Gear Stack", hint: "Two overlapping rusty gears (default)." },
+        { id: "rusty-gear", label: "Rusty Gear", hint: "Single gear with rust-tinted hub." },
+        { id: "gear", label: "Gear", hint: "Plain single gear." },
+        { id: "coin", label: "Coin", hint: "Currency disc with a +." },
+        { id: "bag", label: "Bag", hint: "Coin-sack silhouette." },
+        { id: "dot", label: "Dot", hint: "Simple colored disc." },
+    ];
+
+export const TL_STYLE_OPTIONS: ReadonlyArray<{
+    id: TLStyle;
+    label: string;
+    hint: string;
+}> = [
+        { id: "spiral", label: "Spiral", hint: "Single inward spiral (default)." },
+        { id: "dual-spiral", label: "Dual Spiral", hint: "Two interlocking spirals." },
+        { id: "vortex", label: "Vortex", hint: "Concentric swirl arcs." },
+        { id: "portal", label: "Portal", hint: "Ringed dot endpoint (legacy)." },
+        { id: "diamond", label: "Diamond", hint: "Diamond frame with double-arrow." },
+        { id: "hex", label: "Hex", hint: "Hexagon frame with chevrons." },
+    ];
+
+export const TERMINUS_STYLE_OPTIONS: ReadonlyArray<{
+    id: TerminusStyle;
+    label: string;
+    hint: string;
+}> = [
+        { id: "tombstone", label: "Tombstone", hint: "Gravestone with a cross (default)." },
+        { id: "cross", label: "Cross", hint: "Grave-cross on a red disc." },
+        { id: "skull", label: "Skull", hint: "Hex frame with tiny skull." },
+        { id: "down-arrow", label: "Down-Arrow", hint: "Hex frame with single ↓ arrow." },
+        { id: "spiral", label: "Spiral", hint: "Red disc with inward spiral." },
+        { id: "rift", label: "Rift", hint: "Vertical jagged crack." },
+    ];
+
+/** Narrowing helpers for persisted/untrusted input. */
+export function isTraderStyle(v: unknown): v is TraderStyle {
+    return TRADER_STYLE_OPTIONS.some((o) => o.id === v);
+}
+export function isTLStyle(v: unknown): v is TLStyle {
+    return TL_STYLE_OPTIONS.some((o) => o.id === v);
+}
+export function isTerminusStyle(v: unknown): v is TerminusStyle {
+    return TERMINUS_STYLE_OPTIONS.some((o) => o.id === v);
+}
+
 // ---------------------------------------------------------------------------
 // Canvas draw helpers
 // ---------------------------------------------------------------------------

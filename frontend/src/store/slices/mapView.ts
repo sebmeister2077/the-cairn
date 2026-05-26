@@ -3,6 +3,14 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { lsRead, lsReadJson, lsWrite, lsWriteJson } from "../persistence";
 import { hydrateRoot } from "../rootActions";
+import {
+    DEFAULT_TERMINUS_STYLE,
+    DEFAULT_TL_STYLE,
+    DEFAULT_TRADER_STYLE,
+    type TerminusStyle,
+    type TLStyle,
+    type TraderStyle,
+} from "@/lib/markerStyles";
 
 const SELECTED_LEVEL_LS = "tops-map-selected-level";
 const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
@@ -37,6 +45,14 @@ export interface MapViewState {
      * envelope so it survives reloads + cross-tab.
      */
     favoriteStartingPosition: { x: number; z: number; zoom?: number } | null;
+    /**
+     * User-picked icon styles for the three special marker kinds on the
+     * map. Picked from the Account → Appearance panel. Persisted via the
+     * root envelope so they survive reloads + cross-tab sync.
+     */
+    traderStyle: TraderStyle;
+    tlStyle: TLStyle;
+    terminusStyle: TerminusStyle;
 }
 
 function readSelectedLevel(): number | null {
@@ -71,6 +87,9 @@ export function loadInitialMapViewState(): MapViewState {
         isFullscreen: false,
         starfieldEnabled: true,
         favoriteStartingPosition: null,
+        traderStyle: DEFAULT_TRADER_STYLE,
+        tlStyle: DEFAULT_TL_STYLE,
+        terminusStyle: DEFAULT_TERMINUS_STYLE,
     };
 }
 
@@ -138,6 +157,15 @@ export const mapViewSlice = createSlice({
         clearFavoriteStartingPosition(state) {
             state.favoriteStartingPosition = null;
         },
+        setTraderStyle(state, action: PayloadAction<TraderStyle>) {
+            state.traderStyle = action.payload;
+        },
+        setTLStyle(state, action: PayloadAction<TLStyle>) {
+            state.tlStyle = action.payload;
+        },
+        setTerminusStyle(state, action: PayloadAction<TerminusStyle>) {
+            state.terminusStyle = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -168,6 +196,9 @@ export const {
     setStarfieldEnabled,
     setFavoriteStartingPosition,
     clearFavoriteStartingPosition,
+    setTraderStyle,
+    setTLStyle,
+    setTerminusStyle,
 } = mapViewSlice.actions;
 
 export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {

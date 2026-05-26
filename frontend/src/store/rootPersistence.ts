@@ -24,6 +24,14 @@ import type { RootState } from "./index";
 import { loadInitialMapViewState } from "./slices/mapView";
 import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
 import { initialRoutePlannerState } from "./slices/routePlanner";
+import {
+    DEFAULT_TERMINUS_STYLE,
+    DEFAULT_TL_STYLE,
+    DEFAULT_TRADER_STYLE,
+    isTerminusStyle,
+    isTLStyle,
+    isTraderStyle,
+} from "@/lib/markerStyles";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -99,7 +107,21 @@ const NORMALIZE_ON_READ: {
     // for users whose envelope was written before the field existed. Without
     // this, `preloadedState` replaces the slice's `initialState` verbatim
     // and missing fields end up `undefined` at runtime.
-    mapView: (s) => ({ ...loadInitialMapViewState(), ...s }),
+    mapView: (s) => {
+        const merged = { ...loadInitialMapViewState(), ...s };
+        // Defensively snap any unrecognised persisted style to the default
+        // so a typo or rolled-back schema can't crash the canvas draw.
+        return {
+            ...merged,
+            traderStyle: isTraderStyle(merged.traderStyle)
+                ? merged.traderStyle
+                : DEFAULT_TRADER_STYLE,
+            tlStyle: isTLStyle(merged.tlStyle) ? merged.tlStyle : DEFAULT_TL_STYLE,
+            terminusStyle: isTerminusStyle(merged.terminusStyle)
+                ? merged.terminusStyle
+                : DEFAULT_TERMINUS_STYLE,
+        };
+    },
     // Same defensive merge for the admin Usage filters slice: the `pages`
     // sub-object was added after the first release, so older envelopes
     // are missing it and would otherwise destructure to `undefined`.

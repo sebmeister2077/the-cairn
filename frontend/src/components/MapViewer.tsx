@@ -6,13 +6,9 @@ import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
 
-// Active icon styles for the three special marker kinds. These were picked
-// after a side-by-side dev-panel comparison; if you want to change them,
-// either flip the constants here or re-introduce the panel (see git history
-// for `MarkerStyleDevPanel`).
-const TRADER_ICON_STYLE = "gear-stack" as const;
-const TL_ENDPOINT_ICON_STYLE = "spiral" as const;
-const TERMINUS_ICON_STYLE = "tombstone" as const;
+// Marker icon styles are user-selectable from the Account → Appearance panel
+// and live on the `mapView` redux slice (persisted via the root envelope).
+// Defaults are gear-stack / spiral / tombstone — see `DEFAULT_*_STYLE`.
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -411,6 +407,9 @@ export function MapViewer({
 
   const dispatch = useAppDispatch();
   const isFullscreen = useReduxState("mapView.isFullscreen");
+  const traderStyle = useReduxState("mapView.traderStyle");
+  const tlStyle = useReduxState("mapView.tlStyle");
+  const terminusStyle = useReduxState("mapView.terminusStyle");
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
@@ -1014,8 +1013,8 @@ export function MapViewer({
       const innerRadius = Math.max(0.8, outerRadius * 0.5);
       const drawPortalDots = (segs: typeof projectedOverlaySegments, outer: string) => {
         for (const seg of segs) {
-          drawTLEndpoint(ctx, seg.x1, seg.y1, zoom, TL_ENDPOINT_ICON_STYLE, outer);
-          drawTLEndpoint(ctx, seg.x2, seg.y2, zoom, TL_ENDPOINT_ICON_STYLE, outer);
+          drawTLEndpoint(ctx, seg.x1, seg.y1, zoom, tlStyle, outer);
+          drawTLEndpoint(ctx, seg.x2, seg.y2, zoom, tlStyle, outer);
         }
       };
       // Silence unused-var warnings while keeping the values around for the
@@ -1063,7 +1062,7 @@ export function MapViewer({
       for (const pt of projectedOverlayPoints) {
         if (pt.kind !== "Trader") continue;
         const color = pt.color ?? "rgba(34, 211, 238, 0.92)";
-        drawTraderMarker(ctx, pt.x, pt.y, zoom, TRADER_ICON_STYLE, color);
+        drawTraderMarker(ctx, pt.x, pt.y, zoom, traderStyle, color);
       }
 
       // Spawn (Server) markers — larger gold five-point star with dark outline.
@@ -1135,7 +1134,7 @@ export function MapViewer({
       // as a tombstone silhouette.
       for (const pt of projectedOverlayPoints) {
         if (pt.kind !== "Terminus") continue;
-        drawTerminusMarker(ctx, pt.x, pt.y, zoom, TERMINUS_ICON_STYLE);
+        drawTerminusMarker(ctx, pt.x, pt.y, zoom, terminusStyle);
       }
     }
 
@@ -1263,6 +1262,9 @@ export function MapViewer({
     projectedRouteOverlay,
     routeTLBaseSkipIndices,
     zoom,
+    traderStyle,
+    tlStyle,
+    terminusStyle,
   ]);
 
   // Screen-space labels canvas — drawn at container resolution so text is always crisp.

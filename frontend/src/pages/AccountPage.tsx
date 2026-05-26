@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
+import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setStarfieldEnabled } from "@/store/slices/mapView";
@@ -334,6 +335,17 @@ export function AccountPage() {
               checked={starfieldEnabled}
               onCheckedChange={(v) => dispatch(setStarfieldEnabled(v))}
             />
+          </div>
+          <Separator className="my-3" />
+          <div className="space-y-2">
+            <div className="space-y-0.5">
+              <Label>Map marker icons</Label>
+              <p className="text-xs text-muted-foreground">
+                Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the
+                map. Changes apply immediately and are saved to your browser.
+              </p>
+            </div>
+            <MarkerStylePicker />
           </div>
         </CardContent>
       </Card>
