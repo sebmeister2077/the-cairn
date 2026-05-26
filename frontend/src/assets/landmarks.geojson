@@ -12,23 +12,55 @@
       "properties": {
         "type": "Base",
         "label": "Pepevog\n— In Distant Lands — \n               <3",
-        "z": 113
+        "z": 113,
+        "id": "5f820a03-aa11-4202-af56-801b607f68b4",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [-511996, 511999] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Zadak Springs", "z": 137 },
+      "properties": {
+        "type": "Base",
+        "label": "Zadak Springs",
+        "z": 137,
+        "id": "fc9ffb05-5e9e-41d6-9b01-7f53927db5e2",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1249, 9280] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Frost Peak\nTIE, Lil, Tab", "z": 118 },
+      "properties": {
+        "type": "Base",
+        "label": "Frost Peak\nTIE, Lil, Tab",
+        "z": 118,
+        "id": "75001a03-0f32-41a5-b046-09255fab0b2c",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [210, 7885] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "The Tab Cave", "z": 123 },
+      "properties": {
+        "type": "Misc",
+        "label": "The Tab Cave",
+        "z": 123,
+        "id": "c5f1bbb5-64a3-4f6e-8ebc-49db254c58e7",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [380, 7860] }
     },
     {
@@ -36,7 +68,12 @@
       "properties": {
         "type": "Base",
         "label": "- Княжество Берло -\n- Bearlo Princedom -",
-        "z": 111
+        "z": 111,
+        "id": "be40d8de-5cab-4b33-9409-99545b6bf72f",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [2866, 6510] }
     },
@@ -45,163 +82,447 @@
       "properties": {
         "type": "Base",
         "label": "DREVLIAN VILLAGE\n(MihaPrikol,\nnerle & Bobot's base)",
-        "z": 107
+        "z": 107,
+        "id": "84130bb3-3033-481e-b171-1ffdbc10f32b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [-260, 5455] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Rooster Island", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Rooster Island",
+        "z": 110,
+        "id": "9ca08de2-6afc-4859-a2a9-771a0d910d43",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1121, 3814] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Saricane", "z": 114 },
+      "properties": {
+        "type": "Base",
+        "label": "Saricane",
+        "z": 114,
+        "id": "539a9198-8a1d-47b6-b690-3d9f9d36938d",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [2024, 3267] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Mouchi's\nSpawn\nOutpost", "z": 138 },
+      "properties": {
+        "type": "Base",
+        "label": "Mouchi's\nSpawn\nOutpost",
+        "z": 138,
+        "id": "855df08d-ccb2-4119-a5b6-0d5c7d923885",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [2166, 3126] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Sandwich", "z": 114 },
+      "properties": {
+        "type": "Base",
+        "label": "Sandwich",
+        "z": 114,
+        "id": "eab51c21-df91-4ca3-afa8-3e35b93d62bc",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1746, 1030] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Irongrave", "z": 122 },
+      "properties": {
+        "type": "Base",
+        "label": "Irongrave",
+        "z": 122,
+        "id": "c47551c2-d01c-499a-8395-def781cfcff4",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-416, 1115] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Morwynstead", "z": 108 },
+      "properties": {
+        "type": "Base",
+        "label": "Morwynstead",
+        "z": 108,
+        "id": "dd18dcf5-7882-41fa-846f-3cc2254f778e",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-19196, 1256] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "White Harbor", "z": 111 },
+      "properties": {
+        "type": "Base",
+        "label": "White Harbor",
+        "z": 111,
+        "id": "b86d2447-6bf0-4950-b705-efd0b3c858bd",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-17859, -25] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Blackwing trading\nterminal", "z": 109 },
+      "properties": {
+        "type": "Misc",
+        "label": "Blackwing trading\nterminal",
+        "z": 109,
+        "id": "f42b7b2b-2f34-49f3-b6b5-5ca70936072b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [13700, -135] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Hot Spring\nPeninsula", "z": 113 },
+      "properties": {
+        "type": "Base",
+        "label": "Hot Spring\nPeninsula",
+        "z": 113,
+        "id": "b0f28171-f2b1-42d1-8ff3-13d71de5f2f9",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-18688, 736] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Cerrion", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Cerrion",
+        "z": 110,
+        "id": "35fdc614-1c1a-4b0d-80c2-a6f4bacaf561",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1724, 21] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Bilborf's Bargain\nBasement", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Bilborf's Bargain\nBasement",
+        "z": 110,
+        "id": "2e86908a-897f-407b-98f2-3859c347424b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-351, -556] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "JurekKiller", "z": 153 },
+      "properties": {
+        "type": "Base",
+        "label": "JurekKiller",
+        "z": 153,
+        "id": "0d7e0ccc-08f9-4446-acb8-e132ac36abc3",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1348, 94] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Springwatch Tower", "z": 224 },
+      "properties": {
+        "type": "Misc",
+        "label": "Springwatch Tower",
+        "z": 224,
+        "id": "c9ae1f41-f553-4b29-9079-19e74b497443",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1418, 84] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Arcadia", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Arcadia",
+        "z": 110,
+        "id": "66a134d7-b6e5-4e72-9751-f7bb1d62f1ad",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [9550, 49550] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Barony of Westwald", "z": 112 },
+      "properties": {
+        "type": "Base",
+        "label": "Barony of Westwald",
+        "z": 112,
+        "id": "462569ee-a017-43a0-a363-78dbb39baa3f",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-5240, -211] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Autobahn AG \n(West Infrastructure HQ)", "z": 161 },
+      "properties": {
+        "type": "Base",
+        "label": "Autobahn AG \n(West Infrastructure HQ)",
+        "z": 161,
+        "id": "fd8586ee-5f47-4664-87a3-b673f0c40d67",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-4996, 0] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "~Perch Point~", "z": 109 },
+      "properties": {
+        "type": "Base",
+        "label": "~Perch Point~",
+        "z": 109,
+        "id": "34d5bc2a-fd74-4a5b-8786-f3498ad65f69",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1067, -19] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Server", "label": "Spawn", "z": 119 },
+      "properties": {
+        "type": "Server",
+        "label": "Spawn",
+        "z": 119,
+        "id": "c9cfd14b-4751-4300-b681-41e01170f69d",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [0, 0] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "vak's store", "z": 125 },
+      "properties": {
+        "type": "Base",
+        "label": "vak's store",
+        "z": 125,
+        "id": "875ae9aa-a7bd-4256-ae26-6442b280d2f1",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [25, -1078] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Honorguard Castle", "z": 122 },
+      "properties": {
+        "type": "Base",
+        "label": "Honorguard Castle",
+        "z": 122,
+        "id": "2c64b9b4-3519-4f96-84cf-da2096dd25dc",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [162, -1376] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Port Emerald", "z": 120 },
+      "properties": {
+        "type": "Base",
+        "label": "Port Emerald",
+        "z": 120,
+        "id": "0502dec0-0259-454f-a7b6-d82511e82363",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-22240, -882] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "The \nTrashy \nCove", "z": 113 },
+      "properties": {
+        "type": "Base",
+        "label": "The \nTrashy \nCove",
+        "z": 113,
+        "id": "c7ab37ae-3c5b-49a5-9eb1-a0544035f6df",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-17725, -1052] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Fig Valley Ranch", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Fig Valley Ranch",
+        "z": 110,
+        "id": "1e2af778-18cd-47dc-86de-0352fc313dff",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-508, -511] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Dwarfshire", "z": 122 },
+      "properties": {
+        "type": "Base",
+        "label": "Dwarfshire",
+        "z": 122,
+        "id": "309b4974-e136-4a4c-991d-9da53ce2ff48",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-17046, -1787] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Did you poop?", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Did you poop?",
+        "z": 110,
+        "id": "92a2e659-0a4b-4b2d-ac37-693052fa846c",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [16041, -2095] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Slutbot", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Slutbot",
+        "z": 110,
+        "id": "a0f7a87b-5507-42ac-9865-ea899599caf6",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [16035, -2154] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Laimfo", "z": 109 },
+      "properties": {
+        "type": "Base",
+        "label": "Laimfo",
+        "z": 109,
+        "id": "784f471e-9f4d-4672-94b2-32d8c02c519b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [16036, -2184] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Dictator", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Dictator",
+        "z": 110,
+        "id": "9a4e84f1-00d9-4b25-8ab5-a0fe02a290f7",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [16143, -2138] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "GieSarang", "z": 109 },
+      "properties": {
+        "type": "Base",
+        "label": "GieSarang",
+        "z": 109,
+        "id": "66fbbcd3-f85d-43ad-8360-47a9d8a7506f",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1390, -2044] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "B_Wanderts Sommerresidenz", "z": 111 },
+      "properties": {
+        "type": "Base",
+        "label": "B_Wanderts Sommerresidenz",
+        "z": 111,
+        "id": "cd6d4e02-1419-4520-a0ab-7cdc9eeec8cc",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-2538, -2051] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Pine Peak Retreat", "z": 132 },
+      "properties": {
+        "type": "Base",
+        "label": "Pine Peak Retreat",
+        "z": 132,
+        "id": "081d26ca-256d-4d17-bcca-09b539eca1d2",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-945, -2055] }
     },
     {
@@ -209,68 +530,181 @@
       "properties": {
         "type": "Base",
         "label": "Camp Jubjub\nBase camp for the\nToves of Brillig",
-        "z": 107
+        "z": 107,
+        "id": "e00ab0a2-831d-41bc-8896-f6a113350fff",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [-149, -3564] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Twonutsheim", "z": 123 },
+      "properties": {
+        "type": "Base",
+        "label": "Twonutsheim",
+        "z": 123,
+        "id": "5f6e9027-f42e-400b-a02e-48fe0bc5fa1b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-19365, -3691] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Travelers Rest", "z": 107 },
+      "properties": {
+        "type": "Base",
+        "label": "Travelers Rest",
+        "z": 107,
+        "id": "7572ac49-aca4-48f2-a206-3a7f0b0558f9",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-460, -4528] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Jinsue Archives Outpost", "z": 111 },
+      "properties": {
+        "type": "Base",
+        "label": "Jinsue Archives Outpost",
+        "z": 111,
+        "id": "adebf20c-397a-4267-b5b6-940a8c92ab39",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [143, -4224] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "RiverTheSheep", "z": 121 },
+      "properties": {
+        "type": "Base",
+        "label": "RiverTheSheep",
+        "z": 121,
+        "id": "d9283bda-f860-412e-a45d-6e872ed5ad76",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [4877, -6154] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Elio Kast's Goat Ranch", "z": 198 },
+      "properties": {
+        "type": "Base",
+        "label": "Elio Kast's Goat Ranch",
+        "z": 198,
+        "id": "5f05d698-b336-4b5e-bbec-67678f5bf6a9",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [20454, -5959] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Rusty's Home", "z": 127 },
+      "properties": {
+        "type": "Base",
+        "label": "Rusty's Home",
+        "z": 127,
+        "id": "f664fd16-8f59-4b3c-b736-c34874bf3a3a",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1608, -7293] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Katk's \nHouse", "z": 116 },
+      "properties": {
+        "type": "Base",
+        "label": "Katk's \nHouse",
+        "z": 116,
+        "id": "e9287e97-814c-413d-87d1-3aef963da236",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [20796, -8785] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Zaharit`s\nTemporal\nHomestead", "z": 113 },
+      "properties": {
+        "type": "Base",
+        "label": "Zaharit`s\nTemporal\nHomestead",
+        "z": 113,
+        "id": "b84c8849-6f7c-46cf-bf0d-797aa3195e9d",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1836, -10137] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Mackaby", "z": 112 },
+      "properties": {
+        "type": "Base",
+        "label": "Mackaby",
+        "z": 112,
+        "id": "4d34bf94-2c2e-4c18-8baf-92869964a046",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-8, -10197] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Mikie420\n\nBase 1", "z": 111 },
+      "properties": {
+        "type": "Base",
+        "label": "Mikie420\n\nBase 1",
+        "z": 111,
+        "id": "e68604ce-3119-48a4-a0dd-b95f7279be8a",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-12, -10461] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "CJDusty's Farm", "z": 121 },
+      "properties": {
+        "type": "Base",
+        "label": "CJDusty's Farm",
+        "z": 121,
+        "id": "20636ca9-bfc3-4c79-a0f4-9a327d8c83b6",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [694, -11049] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Mustardhölme", "z": 123 },
+      "properties": {
+        "type": "Base",
+        "label": "Mustardhölme",
+        "z": 123,
+        "id": "ae988ca6-8ded-452b-a148-f1531982f287",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1779, -11797] }
     },
     {
@@ -278,7 +712,12 @@
       "properties": {
         "type": "Base",
         "label": "ZombieHead's\nTool-Shack and Chest-Monster inc.",
-        "z": 108
+        "z": 108,
+        "id": "c1c3cea3-5c4d-46c6-bb3a-ec4efce05c92",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [-184, -12110] }
     },
@@ -287,82 +726,195 @@
       "properties": {
         "type": "Misc",
         "label": "Limestone Area\nHigh Hematite\nHigh Ilmenite",
-        "z": 119
+        "z": 119,
+        "id": "3c4de6f9-6254-41ec-869c-a3158c6f1bdd",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [3062, -12482] }
     },
     {
       "type": "Feature",
       "properties": {
-        "type": "MiscTerminus",
-        "label": "Public Terminus",
-        "z": 107
+        "type": "Base",
+        "label": "XDead_MasterX's First Base",
+        "z": 118,
+        "id": "40bddb1d-276b-470f-a1f1-49637dc50725",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
-      "geometry": { "type": "Point", "coordinates": [65, -28500] }
-    },
-    {
-      "type": "Feature",
-      "properties": { "type": "Base", "label": "XDead_MasterX's First Base", "z": 118 },
       "geometry": { "type": "Point", "coordinates": [2266, -12548] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Hearthholm", "z": 114 },
+      "properties": {
+        "type": "Base",
+        "label": "Hearthholm",
+        "z": 114,
+        "id": "65f22c10-d0f7-47b7-9931-5366cdf7ec87",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-27574, -14422] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Urshee's Base", "z": 117 },
+      "properties": {
+        "type": "Base",
+        "label": "Urshee's Base",
+        "z": 117,
+        "id": "94fb0d46-dfa4-4671-8a57-94138f120b5b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [22387, -16453] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Villa Catellus", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Villa Catellus",
+        "z": 110,
+        "id": "405f3a97-45c7-4b49-8739-aa502a77840a",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [801, -18208] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "The Throughway", "z": 113 },
+      "properties": {
+        "type": "Base",
+        "label": "The Throughway",
+        "z": 113,
+        "id": "23e658c3-e0ce-42ad-9e06-4db7206ac9d3",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [0, -18770] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Niva-Meadowia\nBenCampbell", "z": 118 },
+      "properties": {
+        "type": "Base",
+        "label": "Niva-Meadowia\nBenCampbell",
+        "z": 118,
+        "id": "f14dd467-f082-4551-8939-2aca3b1a46b6",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-10526, -19951] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Jebi's Base", "z": 116 },
+      "properties": {
+        "type": "Base",
+        "label": "Jebi's Base",
+        "z": 116,
+        "id": "f16acea1-14bd-4173-840f-851259879bb5",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [1484, -20629] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "MrKROT base", "z": 108 },
+      "properties": {
+        "type": "Base",
+        "label": "MrKROT base",
+        "z": 108,
+        "id": "8bba756f-a909-4934-bbff-bb996c2e994b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-3068, -24176] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "UWotMateyz", "z": 133 },
+      "properties": {
+        "type": "Base",
+        "label": "UWotMateyz",
+        "z": 133,
+        "id": "df78a3ca-9781-4dde-8a75-cd19bdd36ca5",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [8718, -26534] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Hermit's Hill", "z": 130 },
+      "properties": {
+        "type": "Base",
+        "label": "Hermit's Hill",
+        "z": 130,
+        "id": "15b853ee-3b65-48c8-bd0c-b076d4290f77",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1349, -27247] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "TheFool \nIsland", "z": 153 },
+      "properties": {
+        "type": "Misc",
+        "label": "TheFool \nIsland",
+        "z": 153,
+        "id": "07927e17-8e9e-4397-aa07-b6b09f0eb391",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41154, -28285] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Pongle", "z": 112 },
+      "properties": {
+        "type": "Base",
+        "label": "Pongle",
+        "z": 112,
+        "id": "492cd52c-c777-48cc-ba39-508dd9f60b71",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [-1011, -28544] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Zere", "z": 129 },
+      "properties": {
+        "type": "Base",
+        "label": "Zere",
+        "z": 129,
+        "id": "634da855-d170-429b-8a0f-8a811ed7382d",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [0, -28500] }
     },
     {
@@ -370,124 +922,506 @@
       "properties": {
         "type": "Base",
         "label": "The Throughway southern base\n(also RaidenFumo's house)",
-        "z": 111
+        "z": 111,
+        "id": "974eeb59-ebbe-498f-aacc-8ba98f50f566",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
       },
       "geometry": { "type": "Point", "coordinates": [97, -28951] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Bamboo \nIsland", "z": 153 },
+      "properties": {
+        "type": "Misc",
+        "label": "Bamboo \nIsland",
+        "z": 153,
+        "id": "ec442f28-6fce-4261-b701-7dd4c9128053",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41854, -29194] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Here a rapid", "z": 144 },
+      "properties": {
+        "type": "Misc",
+        "label": "Here a rapid",
+        "z": 144,
+        "id": "192d4861-39e3-49f6-9f3c-6bbf25895245",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41913, -29194] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "HERE A RAPID", "z": 111 },
+      "properties": {
+        "type": "Misc",
+        "label": "HERE A RAPID",
+        "z": 111,
+        "id": "49721137-8f47-4b82-9660-f01f4f99bd47",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41906, -29254] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "LoneBird\nIsland", "z": 122 },
+      "properties": {
+        "type": "Misc",
+        "label": "LoneBird\nIsland",
+        "z": 122,
+        "id": "b290f1d9-d517-4a80-8c39-2cf27894c8bf",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41565, -30588] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Future Bikini Bottom", "z": 110 },
+      "properties": {
+        "type": "Base",
+        "label": "Future Bikini Bottom",
+        "z": 110,
+        "id": "f7f95dcb-c36d-4fd0-9248-c4675033e563",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [8696, -31605] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "The Candy Cane", "z": 132 },
+      "properties": {
+        "type": "Misc",
+        "label": "The Candy Cane",
+        "z": 132,
+        "id": "3989bc55-f594-4cc8-aa81-07321677a3ec",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [7396, -32672] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "TheTriplet \nIslands", "z": 113 },
+      "properties": {
+        "type": "Misc",
+        "label": "TheTriplet \nIslands",
+        "z": 113,
+        "id": "137d429a-17e5-4ed6-9c09-fda397281a37",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [40869, -31502] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "LaserGun \nIsland", "z": 125 },
+      "properties": {
+        "type": "Misc",
+        "label": "LaserGun \nIsland",
+        "z": 125,
+        "id": "4fcf860b-5639-4267-bf7d-9857cdf9aa2c",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [40561, -32668] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "BRILLIG", "z": 113 },
+      "properties": {
+        "type": "Base",
+        "label": "BRILLIG",
+        "z": 113,
+        "id": "70fdbbdb-f58c-4acb-97e6-d65cfa78523b",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [7386, -32833] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Greenhill Island", "z": 164 },
+      "properties": {
+        "type": "Misc",
+        "label": "Greenhill Island",
+        "z": 164,
+        "id": "6b343c9d-e5ef-4e23-b348-65756cd45c01",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41758, -37991] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Little Rabbit Island", "z": 129 },
+      "properties": {
+        "type": "Misc",
+        "label": "Little Rabbit Island",
+        "z": 129,
+        "id": "341d14fb-ca45-40e4-9606-9b09f5a1e5ae",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43029, -39811] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "Yikesberg", "z": 123 },
+      "properties": {
+        "type": "Base",
+        "label": "Yikesberg",
+        "z": 123,
+        "id": "02497276-8e85-47a6-b5aa-fd190eb8b91c",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [29, -38219] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "LittleLake Island", "z": 111 },
+      "properties": {
+        "type": "Misc",
+        "label": "LittleLake Island",
+        "z": 111,
+        "id": "db3cbfe8-c20f-4ffd-8415-fd9890240d1a",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43746, -38597] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Dry Island", "z": 137 },
+      "properties": {
+        "type": "Misc",
+        "label": "Dry Island",
+        "z": 137,
+        "id": "9d4c067f-efb8-4390-a1a4-4c21dbace9ec",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43725, -40148] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "The Rabbit Ocean", "z": 107 },
+      "properties": {
+        "type": "Misc",
+        "label": "The Rabbit Ocean",
+        "z": 107,
+        "id": "111e61b2-74b2-45dc-af49-211dc7570b4d",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41944, -41129] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "ALPHA island", "z": 166 },
+      "properties": {
+        "type": "Misc",
+        "label": "ALPHA island",
+        "z": 166,
+        "id": "28b01116-e533-409b-a8fd-509a86566061",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43104, -39504] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Here a rapid", "z": 112 },
+      "properties": {
+        "type": "Misc",
+        "label": "Here a rapid",
+        "z": 112,
+        "id": "0d4f5585-e0f5-4c52-b0b0-0019501e63ec",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43037, -39607] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Rabbit Island", "z": 148 },
+      "properties": {
+        "type": "Misc",
+        "label": "Rabbit Island",
+        "z": 148,
+        "id": "e02711a4-29b4-40a1-bb2b-55f4765afdb7",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43667, -39433] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Artisant Island", "z": 116 },
+      "properties": {
+        "type": "Misc",
+        "label": "Artisant Island",
+        "z": 116,
+        "id": "fbc8952e-2aea-4cc1-9f1c-93ce06511ea8",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41002, -42004] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "Ocarina Island", "z": 122 },
+      "properties": {
+        "type": "Misc",
+        "label": "Ocarina Island",
+        "z": 122,
+        "id": "892fd8c8-80c0-4e99-b535-7e193ba7d667",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [43697, -40647] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "ChickenNugget\nIsland", "z": 110 },
+      "properties": {
+        "type": "Misc",
+        "label": "ChickenNugget\nIsland",
+        "z": 110,
+        "id": "98252563-29c7-4a9b-ba08-92116ee505c4",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [40882, -42424] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Misc", "label": "BigHead Island", "z": 160 },
+      "properties": {
+        "type": "Misc",
+        "label": "BigHead Island",
+        "z": 160,
+        "id": "7ceaab11-a786-459f-b0c9-05284da4e340",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [41601, -43320] }
     },
     {
       "type": "Feature",
-      "properties": { "type": "Base", "label": "trops\nlost & found", "z": 112 },
+      "properties": {
+        "type": "Base",
+        "label": "trops\nlost & found",
+        "z": 112,
+        "id": "2889b58b-121d-48fa-bd2d-28211f9115ac",
+        "origin": "seed",
+        "added_by": null,
+        "added_by_user_id": null,
+        "added_at": "2026-05-06T17:35:50.960494+00:00"
+      },
       "geometry": { "type": "Point", "coordinates": [3029, -78336] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "206a22b2-ee0b-4010-8039-d5c76880e54c",
+        "type": "Server",
+        "label": "Resonance Archives Entrance",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-06T17:55:04.305816+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [377, -4133] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4fd0cc7a-6f7d-4169-a956-73096ac7c7ec",
+        "type": "Server",
+        "label": "Devastation",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-06T17:56:27.552147+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [15670, 7373] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "f00511e2-b1aa-40ee-ba47-293e8a54c530",
+        "type": "Base",
+        "label": "Itäkylä",
+        "origin": "user",
+        "added_by": "Green-Helm-7944",
+        "added_by_user_id": "15d724c1-fe84-4d47-92ef-6d22553e0085",
+        "added_at": "2026-05-06T18:42:47.400217+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [-7676, -18906] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "3640935a-8488-49c3-922c-3d9379efc67f",
+        "type": "Base",
+        "label": "New Constantinople",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-06T19:35:43.837617+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [-8708, 1982] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4b2e3f54-3aa4-41e8-9841-548d91bb5f2a",
+        "type": "Server",
+        "label": "Nadiya",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-08T10:22:08.743075+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [13846, -210] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "4540d864-18b1-4f04-8db7-93791e741e59",
+        "type": "Server",
+        "label": "Lazaret",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-13T11:24:04.207019+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [7816, -1466] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "02af7086-9c6b-4f01-a7b8-00ce81a307ad",
+        "type": "Base",
+        "label": "Beartown",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-18T17:17:42.262512+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [12600, -27000] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "cbc3a8c7-4bab-41fc-b26e-c3d6c13727fe",
+        "type": "Base",
+        "label": "HoW Town",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-21T22:32:40.165330+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [1400, -21000] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "29aad232-43a4-4101-85ec-ff4170be0ace",
+        "type": "Base",
+        "label": "Arkholl",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-22T11:47:40.936880+00:00",
+        "z": 115
+      },
+      "geometry": { "type": "Point", "coordinates": [16084, -2175] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "9aed45c5-5536-4db6-a70d-ae8c37aa7f2a",
+        "type": "Server",
+        "label": "Tobias's Cave",
+        "origin": "user",
+        "added_by": "__admin__",
+        "added_by_user_id": "01f64fed-8456-4e95-85d8-8d2cdb0c4532",
+        "added_at": "2026-05-22T14:37:47.363060+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [16766, -1850] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "73fd52e2-43d0-4a1c-9269-2712382c46a5",
+        "type": "Base",
+        "label": "Azure Bay",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-22T23:54:37.768834+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [9183, -26754] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "db01c952-adcc-4c4b-8d66-731dd38e4a94",
+        "type": "Base",
+        "label": "Jinsue Empire",
+        "origin": "user",
+        "added_by": "Ancient-Nomad-2276",
+        "added_by_user_id": "0365661d-97f8-4483-a381-ed7ec24f6cea",
+        "added_at": "2026-05-22T23:56:09.775010+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [9000, -35000] }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "e3dbeb07-ed22-406a-bf17-dcffe3f4da25",
+        "type": "Base",
+        "label": "Natural History Museum",
+        "origin": "user",
+        "added_by": "RockOsh",
+        "added_by_user_id": "9b006cc0-dfcd-427d-b458-187fff68d0a8",
+        "added_at": "2026-05-26T18:54:25.177343+00:00"
+      },
+      "geometry": { "type": "Point", "coordinates": [90, -880] }
     }
   ]
 }
