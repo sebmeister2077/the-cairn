@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  activateAllPendingMapLevels,
+  activateMapLevel,
   deleteMapLevel,
   getMapGenerationStatus,
   markMapLevelStatus,
   refreshMapMetadata,
   requestMapGeneration,
+  rollbackMapLevel,
   stopMapGeneration,
   type MapGenerationStatus,
   type MapGenerationLevelStatus,
@@ -21,6 +24,9 @@ import {
   Circle,
   OctagonX,
   FileCog,
+  Rocket,
+  Undo2,
+  Clock,
 } from "lucide-react";
 
 const STATUS_QUERY_KEY = ["admin-tops-map-generation-status"];
@@ -101,6 +107,13 @@ function StatusBadge({ status }: { status: MapGenerationLevelStatus["status"] })
       </span>
     );
   }
+  if (status === "pending_activation") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-400">
+        <Clock className="size-3" /> Pending activation
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
       <Circle className="size-3" /> Not generated
@@ -159,10 +172,38 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     },
   });
 
-  // Pending confirmation state for the three destructive/manual actions.
+  const activateMutation = useMutation({
+    mutationFn: (level: number) => activateMapLevel(level),
+    onSuccess: (data) => {
+      queryClient.setQueryData(STATUS_QUERY_KEY, data);
+      queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      onLevelComplete?.();
+    },
+  });
+
+  const activateAllMutation = useMutation({
+    mutationFn: () => activateAllPendingMapLevels(),
+    onSuccess: (data) => {
+      queryClient.setQueryData(STATUS_QUERY_KEY, data);
+      queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      onLevelComplete?.();
+    },
+  });
+
+  const rollbackMutation = useMutation({
+    mutationFn: (level: number) => rollbackMapLevel(level),
+    onSuccess: (data) => {
+      queryClient.setQueryData(STATUS_QUERY_KEY, data);
+      queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      onLevelComplete?.();
+    },
+  });
+
+  // Pending confirmation state for the destructive/manual actions.
   type PendingAction =
     | { kind: "delete"; level: number }
-    | { kind: "mark"; level: number; status: "complete" | "failed" };
+    | { kind: "mark"; level: number; status: "complete" | "failed" }
+    | { kind: "rollback"; level: number };
   const [pending, setPending] = useState<PendingAction | null>(null);
 
   const closeConfirm = () => setPending(null);
@@ -170,6 +211,8 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     if (!pending) return;
     if (pending.kind === "delete") {
       deleteMutation.mutate(pending.level, { onSettled: closeConfirm });
+    } else if (pending.kind === "rollback") {
+      rollbackMutation.mutate(pending.level, { onSettled: closeConfirm });
     } else {
       markMutation.mutate(
         { level: pending.level, status: pending.status },
@@ -218,9 +261,19 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
             ? markMutation.error.message
             : refreshMetadataMutation.error instanceof Error
               ? refreshMetadataMutation.error.message
-              : null;
+              : activateMutation.error instanceof Error
+                ? activateMutation.error.message
+                : activateAllMutation.error instanceof Error
+                  ? activateAllMutation.error.message
+                  : rollbackMutation.error instanceof Error
+                    ? rollbackMutation.error.message
+                    : null;
 
   const refreshMetadataSuccess = refreshMetadataMutation.data?.refreshed ?? null;
+
+  const pendingCount = rows.filter((r) => Boolean(r.entry?.pending_version)).length;
+  const anyMutationPending =
+    activateMutation.isPending || activateAllMutation.isPending || rollbackMutation.isPending;
 
   return (
     <div className="grid gap-3">
@@ -299,6 +352,29 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
               "Generate all levels"
             )}
           </Button>
+          {pendingCount > 0 && (
+            <Button
+              type="button"
+              size="sm"
+              variant="default"
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => activateAllMutation.mutate()}
+              disabled={isRunning || anyMutationPending}
+              title={`Activate ${pendingCount} staged level${pendingCount === 1 ? "" : "s"}: flip the live pointer so users see the freshly generated map.`}
+            >
+              {activateAllMutation.isPending ? (
+                <>
+                  <Loader2 className="size-3 mr-1 animate-spin" />
+                  Activating…
+                </>
+              ) : (
+                <>
+                  <Rocket className="size-3 mr-1" />
+                  Activate all pending ({pendingCount})
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -343,6 +419,22 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                     {status === "failed" && entry?.error && (
                       <p className="mt-1 text-xs text-red-600 dark:text-red-400">{entry.error}</p>
                     )}
+                    {entry?.pending_version && (
+                      <p
+                        className="mt-1 text-[10px] text-amber-700 dark:text-amber-400 truncate max-w-[18ch]"
+                        title={`Staged bundle ${entry.pending_version} (${formatBytes(entry.pending_size_bytes)}) generated ${formatTimestamp(entry.pending_generated_at)}. Awaiting activation.`}
+                      >
+                        pending: {entry.pending_version}
+                      </p>
+                    )}
+                    {entry?.previous_version && (
+                      <p
+                        className="mt-1 text-[10px] text-muted-foreground truncate max-w-[18ch]"
+                        title={`Previous live bundle ${entry.previous_version} \u2014 available for one-step rollback.`}
+                      >
+                        prev: {entry.previous_version}
+                      </p>
+                    )}
                   </td>
                   <td className="px-3 py-2">
                     {status === "generating" ? (
@@ -380,6 +472,37 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="inline-flex flex-wrap justify-end gap-1">
+                      {entry?.pending_version && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="bg-amber-600 hover:bg-amber-700 text-white"
+                          onClick={() => activateMutation.mutate(level)}
+                          disabled={isRunning || anyMutationPending}
+                          title={`Promote staged version ${entry.pending_version} to live.`}
+                        >
+                          {activateMutation.isPending && activateMutation.variables === level ? (
+                            <Loader2 className="size-3 animate-spin" />
+                          ) : (
+                            <>
+                              <Rocket className="size-3 mr-1" />
+                              Activate
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {entry?.previous_version && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setPending({ kind: "rollback", level })}
+                          disabled={isRunning || anyMutationPending}
+                          title={`Roll back to previous version ${entry.previous_version}.`}
+                        >
+                          <Undo2 className="size-3" />
+                        </Button>
+                      )}
                       <Button
                         type="button"
                         size="sm"
@@ -387,7 +510,9 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                         onClick={() => generateMutation.mutate([level])}
                         disabled={isRunning || generateMutation.isPending}
                       >
-                        {status === "complete" ? "Regenerate" : "Generate"}
+                        {status === "complete" || status === "pending_activation"
+                          ? "Regenerate"
+                          : "Generate"}
                       </Button>
                       {status !== "complete" && (
                         <Button
@@ -477,6 +602,17 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
         confirmLabel="Mark failed"
         variant="destructive"
         loading={markMutation.isPending}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
+
+      <ConfirmDialog
+        open={pending?.kind === "rollback"}
+        title={pending?.kind === "rollback" ? `Roll back level ${pending.level}?` : ""}
+        description="Restore the previous live version of this level. The bundle that is currently live will be retained as the new previous, so you can re-roll back if needed. Any staged pending version is left untouched."
+        confirmLabel="Roll back"
+        variant="destructive"
+        loading={rollbackMutation.isPending}
         onConfirm={runConfirm}
         onCancel={closeConfirm}
       />

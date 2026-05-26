@@ -963,7 +963,7 @@ export interface TopsMapLevelChunks {
 // ---------------------------------------------------------------------------
 
 export interface MapGenerationLevelStatus {
-    status: "complete" | "generating" | "not_generated" | "failed";
+    status: "complete" | "generating" | "not_generated" | "failed" | "pending_activation";
     generated_at: string | null;
     started_at: string | null;
     progress: number;
@@ -972,6 +972,16 @@ export interface MapGenerationLevelStatus {
     completed_chunks: number;
     size_bytes: number | null;
     error: string | null;
+    /** Version subprefix currently served (null = legacy unprefixed layout). */
+    live_version?: string | null;
+    /** Version retained for one-step rollback (null when none). */
+    previous_version?: string | null;
+    /** Staged version waiting for admin activation (null when none). */
+    pending_version?: string | null;
+    /** Size on disk of the staged bundle in bytes. */
+    pending_size_bytes?: number | null;
+    /** ISO timestamp the staged bundle finished uploading. */
+    pending_generated_at?: string | null;
 }
 
 export interface MapGenerationStatus {
@@ -1030,6 +1040,35 @@ export async function markMapLevelStatus(
  *  current chunk and discard any queued requests. */
 export async function stopMapGeneration(): Promise<MapGenerationStatus> {
     const res = await fetch(`${API_BASE}/admin/tops-map/stop`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Promote a single level's staged ``pending_version`` to live and retain
+ *  the previous live bundle for one-step rollback. Refused while a
+ *  generation job is running. */
+export async function activateMapLevel(level: number): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/level/${level}/activate`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Activate every level that currently has a staged ``pending_version``. */
+export async function activateAllPendingMapLevels(): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/activate-all`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Restore a level's ``previous_version`` (one-step undo of an activate). */
+export async function rollbackMapLevel(level: number): Promise<MapGenerationStatus> {
+    const res = await fetch(`${API_BASE}/admin/tops-map/level/${level}/rollback`, {
         method: "POST",
         headers: authHeaders(),
     });

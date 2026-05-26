@@ -40,6 +40,7 @@ import tempfile
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from ..core import r2_storage
@@ -346,6 +347,144 @@ def _snapshot_combined_db() -> str:
     return snap_path
 
 
+def write_level_pointer(level: int, *, live: Optional[str], previous: Optional[str]) -> None:
+    """Write ``cache/tops-map-level{level}/CURRENT.json`` describing which
+    versioned subprefix is currently live (and which one is kept around for
+    rollback). Pass ``None`` for the legacy unprefixed layout.
+    """
+    payload = {"live": live, "previous": previous}
+    r2_storage.upload_bytes(
+        r2_storage.tops_map_level_pointer_key(level),
+        json.dumps(payload).encode("utf-8"),
+        content_type="application/json",
+    )
+
+
+def delete_version_objects(level: int, version: Optional[str]) -> int:
+    """Best-effort delete of every R2 object under a given staged version
+    subprefix. Returns the number of keys deleted. ``None`` and the legacy
+    sentinel are ignored to avoid wiping the legacy bundle by accident.
+    """
+    if not version or version == r2_storage.TOPS_MAP_LEGACY_VERSION:
+        return 0
+    prefix = (
+        f"cache/tops-map-level{level}/"
+        f"{r2_storage._tops_map_version_subpath(version)}"
+    )
+    try:
+        keys = r2_storage.list_keys_with_prefix(prefix)
+    except Exception:
+        logger.exception("delete_version_objects: list failed for %s", prefix)
+        return 0
+    if not keys:
+        return 0
+    try:
+        r2_storage.delete_keys(keys)
+    except Exception:
+        logger.exception(
+            "delete_version_objects: bulk delete failed for %s (%d keys)",
+            prefix, len(keys),
+        )
+        return 0
+    return len(keys)
+
+
+def activate_pending_version(level: int) -> dict:
+    """Promote a level's pending staged version to live. The previous live
+    version is retained as the new ``previous`` so an admin can roll back.
+    Any version that was previously sitting in the ``previous`` slot is
+    deleted from R2 (we keep at most one rollback target per level).
+
+    Raises ``RuntimeError`` if no pending version exists. Caller is
+    responsible for refusing the call while ``is_job_running()``.
+
+    Returns ``{\"live\": ..., \"previous\": ..., \"discarded\": ...}``.
+    """
+    if level not in RESOLUTION_LEVELS:
+        raise RuntimeError(f"Unknown level: {level}")
+    pending = tracker.get_pending_version(level)
+    if not pending:
+        raise RuntimeError(f"Level {level} has no pending version to activate")
+    old_live = tracker.get_live_version(level)
+    old_previous = tracker.get_previous_version(level)
+
+    # Flip the pointer first \u2014 if this fails the tracker stays in
+    # ``pending_activation`` and the admin can retry.
+    write_level_pointer(level, live=pending, previous=old_live)
+    tracker.activate_pending(level)
+
+    # Invalidate caches so the next request sees the new pointer + metadata.
+    try:
+        from ..routes import tops_map_r2 as _tops_map_r2
+        _tops_map_r2.invalidate_level_pointer_cache(level)
+    except Exception:
+        pass
+    try:
+        db.delete_chunk_urls_for_level(level)
+    except Exception:
+        logger.exception(
+            "activate_pending_version: failed to flush chunk URL cache for level %s",
+            level,
+        )
+
+    # Garbage-collect the version that just fell off the rollback slot.
+    # We only keep ONE previous bundle per level.
+    discarded = None
+    if old_previous and old_previous != old_live and old_previous != pending:
+        deleted = delete_version_objects(level, old_previous)
+        if deleted:
+            discarded = {"version": old_previous, "deleted_keys": deleted}
+
+    # Note: Tier 6 level-skip dedup is NOT recorded here. It was skipped
+    # at end-of-render for staged regens because we didn't yet know if/when
+    # the bundle would go live. Re-recording would require trusting that
+    # the source combined.db hasn't changed since staging, which we cannot
+    # verify at activation time. The next full regen against the same
+    # canonical mtime will simply do the work again \u2014 acceptable cost
+    # for guaranteed correctness.
+
+    return {
+        "live": pending,
+        "previous": old_live,
+        "discarded": discarded,
+    }
+
+
+def rollback_to_previous_version(level: int) -> dict:
+    """Restore the previous live version of a level. The bundle that was
+    live becomes the new ``previous`` (so the rollback itself can be
+    rolled back). Any pending staged version is left in place \u2014 admins
+    must explicitly discard it via the delete-level endpoint if they
+    want it gone.
+
+    Raises ``RuntimeError`` if no previous version exists.
+    """
+    if level not in RESOLUTION_LEVELS:
+        raise RuntimeError(f"Unknown level: {level}")
+    previous = tracker.get_previous_version(level)
+    if not previous:
+        raise RuntimeError(f"Level {level} has no previous version to roll back to")
+    old_live = tracker.get_live_version(level)
+
+    write_level_pointer(level, live=previous, previous=old_live)
+    tracker.rollback_to_previous(level)
+
+    try:
+        from ..routes import tops_map_r2 as _tops_map_r2
+        _tops_map_r2.invalidate_level_pointer_cache(level)
+    except Exception:
+        pass
+    try:
+        db.delete_chunk_urls_for_level(level)
+    except Exception:
+        logger.exception(
+            "rollback_to_previous_version: failed to flush chunk URL cache for level %s",
+            level,
+        )
+
+    return {"live": previous, "previous": old_live}
+
+
 def refresh_level_metadata(levels: Optional[List[int]] = None) -> Dict[int, dict]:
     """Recompute and re-upload ``metadata.json`` for the given levels without
     re-rendering any chunks.
@@ -405,9 +544,10 @@ def refresh_level_metadata(levels: Optional[List[int]] = None) -> Dict[int, dict
 
             # Preserve size_bytes from previous metadata when present so the
             # admin UI doesn't flip to 0 after a metadata-only refresh.
+            live_version = tracker.get_live_version(level)
             try:
                 prev_raw = r2_storage.download_bytes(
-                    r2_storage.tops_map_level_metadata_key(level)
+                    r2_storage.tops_map_level_metadata_key(level, version=live_version)
                 )
                 prev_meta = json.loads(prev_raw.decode("utf-8"))
                 if "size_bytes" in prev_meta:
@@ -422,7 +562,7 @@ def refresh_level_metadata(levels: Optional[List[int]] = None) -> Dict[int, dict
 
             try:
                 r2_storage.upload_bytes(
-                    r2_storage.tops_map_level_metadata_key(level),
+                    r2_storage.tops_map_level_metadata_key(level, version=live_version),
                     json.dumps(metadata).encode("utf-8"),
                     content_type="application/json",
                 )
@@ -469,17 +609,30 @@ def _encode_and_upload_chunk(
     cx: int,
     cy: int,
     arr,  # Optional[np.ndarray]
+    *,
+    version: Optional[str] = None,
+    invalidate_url_cache: bool = True,
 ) -> int:
     """Worker-thread task: PNG-encode one chunk's RGBA buffer and upload it
     to R2. For empty/transparent chunks, deletes any pre-existing object so
     the cache reflects the new state. Returns the number of bytes written
     (0 for empty chunks).
 
+    ``version`` selects which bundle this upload belongs to. ``None`` /
+    :data:`r2_storage.TOPS_MAP_LEGACY_VERSION` writes to the legacy bare
+    prefix; any other value writes under the corresponding subdirectory
+    so a staged full regen never disturbs the live keys.
+
+    ``invalidate_url_cache`` should be left ``True`` only when the upload
+    target IS the currently live version (so cached presigned URLs are
+    stale). Staged uploads pass ``False`` because the URL table only ever
+    holds URLs for the live bundle.
+
     Both Pillow's PNG encoder and boto3's HTTPS upload release the GIL for
     the bulk of their work, so calling this from many threads in parallel
     yields real speedup.
     """
-    chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+    chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy, version=version)
     png = encode_chunk_array_to_png(arr)
 
     # Tier 5 (May 2026) — content-hash dedup. If the chunk's PNG bytes
@@ -487,8 +640,16 @@ def _encode_and_upload_chunk(
     # skip the PUT/DELETE entirely. ``new_hash=None`` means "this chunk
     # is empty"; we record that as a NULL row so a subsequent regen that
     # produces another empty chunk skips the DELETE too.
-    new_hash = upload_dedup.hash_png(png)
-    if upload_dedup.should_skip_upload(
+    #
+    # Staged-swap caveat: the dedup table is keyed by (level, cx, cy) and
+    # therefore implicitly tracks ONE bundle per level. Skipping a PUT to
+    # a staging version because the live version already has matching
+    # content would leave the staging prefix incomplete and produce a
+    # corrupted bundle on activation. Disable dedup whenever the target
+    # is not the live version.
+    use_dedup = version is None or version == r2_storage.TOPS_MAP_LEGACY_VERSION
+    new_hash = upload_dedup.hash_png(png) if use_dedup else None
+    if use_dedup and upload_dedup.should_skip_upload(
         _dedup_conn, _dedup_lock, level, cx, cy, new_hash,
     ):
         # R2 already has this exact content (or the known-empty marker).
@@ -501,18 +662,22 @@ def _encode_and_upload_chunk(
             r2_storage.delete_object(chunk_key)
         except Exception:
             pass
+        if invalidate_url_cache:
+            try:
+                db.delete_chunk_url(level, cx, cy)
+            except Exception:
+                pass
+        if use_dedup:
+            upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, None)
+        return 0
+    r2_storage.upload_bytes(chunk_key, png, content_type="image/png")
+    if invalidate_url_cache:
         try:
             db.delete_chunk_url(level, cx, cy)
         except Exception:
             pass
-        upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, None)
-        return 0
-    r2_storage.upload_bytes(chunk_key, png, content_type="image/png")
-    try:
-        db.delete_chunk_url(level, cx, cy)
-    except Exception:
-        pass
-    upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, new_hash)
+    if use_dedup:
+        upload_dedup.record(_dedup_conn, _dedup_lock, level, cx, cy, new_hash)
     return len(png)
 
 
@@ -523,6 +688,9 @@ def _render_level_parallel(
     only_bounds: Optional[Tuple[int, int, int, int]],
     initial_completed: int,
     total_grid: int,
+    *,
+    target_version: Optional[str] = None,
+    invalidate_url_cache: bool = True,
 ) -> Tuple[int, int]:
     """Parallel render path: streams chunk RGBA buffers from one SQLite scan
     per chunk-row and fans encode+upload out to a thread pool.
@@ -680,6 +848,8 @@ def _render_level_parallel(
                         )
                     fut = executor.submit(
                         _encode_and_upload_chunk, level, cx, cy, arr,
+                        version=target_version,
+                        invalidate_url_cache=invalidate_url_cache,
                     )
                     in_flight.append((cx, cy, fut))
                     # Backpressure: keep the in-flight queue bounded.
@@ -739,9 +909,52 @@ def _generate_level(
     affected_bounds: optional world-block (min_x, max_x, min_z, max_z). When
     provided, only chunks intersecting that area are re-rendered; existing
     chunks outside the area are reused.
+
+    Staged-swap policy (May 2026)
+    -----------------------------
+    * **Full regen** (``affected_bounds is None``) writes every chunk and
+      ``metadata.json`` under a brand-new version subprefix
+      (``cache/tops-map-level{N}/v-<ts>/``). The level's live R2 keys are
+      untouched so users keep seeing the previous bundle while the staged
+      version uploads. After completion the tracker records
+      ``pending_version`` instead of marking ``complete`` so an admin
+      must click "Activate" before the new bundle goes live.
+    * **Partial regen** (bbox supplied) keeps the legacy in-place behaviour:
+      it overwrites chunks inside ``affected_bounds`` on the LIVE version
+      so contribution edits become visible immediately. Anything outside
+      the bbox is reused from the existing live bundle.
     """
     geometry = compute_level_geometry(db_path, level)
     grid = geometry["chunk_grid"]
+
+    is_full_regen = affected_bounds is None
+    live_version = tracker.get_live_version(level)  # None / "__legacy__" / "v-..."
+    if is_full_regen:
+        # Stamp this regen with a fresh version id so it's addressable
+        # independently from whatever's currently live. Seconds precision
+        # plus the pid is enough to disambiguate same-second restarts
+        # without dragging in uuid.
+        target_version = "v-" + datetime.now(timezone.utc).strftime(
+            "%Y%m%d-%H%M%S"
+        ) + f"-{os.getpid()}"
+        invalidate_url_cache = False  # staged uploads never touch live URLs
+        logger.info(
+            "Level %s: full regen — staging to version %s (live=%s, won't "
+            "be served until admin activates)",
+            level, target_version, live_version or "__legacy__",
+        )
+    else:
+        target_version = live_version  # write in-place to live bundle
+        invalidate_url_cache = True
+        pending = tracker.get_pending_version(level)
+        if pending:
+            logger.warning(
+                "Level %s: partial regen applied to LIVE bundle, but a "
+                "pending staged version %s is waiting for activation. "
+                "Activating that pending version will overwrite the partial "
+                "changes you're about to make.",
+                level, pending,
+            )
 
     # Tier 6 (May 2026) \u2014 whole-level skip.
     #
@@ -764,6 +977,16 @@ def _generate_level(
             cached_size = None
         if cached_size is not None:
             total_grid = grid * grid
+            # Don't accidentally clobber a pending staged version by
+            # flipping the tracker back to ``complete`` — the pending
+            # bundle is still waiting for an admin click and the live
+            # bundle is unchanged (source mtime hasn't moved).
+            if tracker.get_pending_version(level):
+                logger.info(
+                    "Level %s: SKIPPED full regen (combined.db mtime unchanged); "
+                    "keeping pending staged version untouched.", level,
+                )
+                return
             logger.info(
                 "Level %s: SKIPPED entire level (combined.db mtime unchanged "
                 "since last successful regen; reusing %d bytes across %d chunks)",
@@ -800,7 +1023,7 @@ def _generate_level(
     if affected_bounds is not None:
         try:
             prev_meta_raw = r2_storage.download_bytes(
-                r2_storage.tops_map_level_metadata_key(level)
+                r2_storage.tops_map_level_metadata_key(level, version=live_version)
             )
             prev_meta = json.loads(prev_meta_raw.decode("utf-8"))
         except FileNotFoundError:
@@ -849,15 +1072,24 @@ def _generate_level(
     else:
         logger.info("Level %s: full regeneration of all %s chunks",
                     level, grid * grid)
-        # Wipe orphaned chunks left over from a previous grid configuration.
-        # If the grid shrank or grew, old objects at coords outside the new
-        # grid would otherwise stay in R2 and (under a smaller new grid)
-        # leak through the level prefix listing. Best-effort — a failure
-        # here is logged but doesn't abort the regen.
+        # Wipe orphaned chunks left over from a previous grid configuration
+        # of THIS version's prefix. Since ``target_version`` is brand-new
+        # for a staged full regen this prefix should be empty (so the loop
+        # is a no-op); the cleanup still matters for the very first regen
+        # under the legacy unprefixed layout (or if an aborted prior staged
+        # run left partial files behind under the same version id, which
+        # only happens within a single second of pid reuse).
         try:
-            prefix = f"cache/tops-map-level{level}/"
+            prefix = (
+                f"cache/tops-map-level{level}/"
+                f"{r2_storage._tops_map_version_subpath(target_version)}"
+            )
             for key in r2_storage.list_keys_with_prefix(prefix):
                 name = key[len(prefix):]
+                # Skip subdirectory entries (other versions live in sibling
+                # subprefixes that share the level prefix).
+                if "/" in name:
+                    continue
                 if not name.startswith("chunk-") or not name.endswith(".png"):
                     continue
                 try:
@@ -868,7 +1100,8 @@ def _generate_level(
                 if ocx >= grid or ocy >= grid:
                     try:
                         r2_storage.delete_object(key)
-                        db.delete_chunk_url(level, ocx, ocy)
+                        if invalidate_url_cache:
+                            db.delete_chunk_url(level, ocx, ocy)
                     except Exception:
                         logger.exception(
                             "Failed to delete orphan chunk %s", key,
@@ -892,6 +1125,8 @@ def _generate_level(
             db_path, level, geometry, only_bounds,
             initial_completed=completed,
             total_grid=total_grid,
+            target_version=target_version,
+            invalidate_url_cache=invalidate_url_cache,
         )
     else:
         for cx, cy in chunks_to_render:
@@ -901,7 +1136,9 @@ def _generate_level(
                 )
             try:
                 chunk_png = render_chunk_png(db_path, level, cx, cy, geometry=geometry)
-                chunk_key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+                chunk_key = r2_storage.tops_map_level_chunk_key(
+                    level, cx, cy, version=target_version,
+                )
                 if chunk_png is None:
                     # Fully transparent — don't store it. Drop any pre-existing
                     # object + cached presigned URL so a re-generation can erase
@@ -910,10 +1147,11 @@ def _generate_level(
                         r2_storage.delete_object(chunk_key)
                     except Exception:
                         pass
-                    try:
-                        db.delete_chunk_url(level, cx, cy)
-                    except Exception:
-                        pass
+                    if invalidate_url_cache:
+                        try:
+                            db.delete_chunk_url(level, cx, cy)
+                        except Exception:
+                            pass
                 else:
                     r2_storage.upload_bytes(
                         chunk_key,
@@ -921,12 +1159,13 @@ def _generate_level(
                         content_type="image/png",
                     )
                     bytes_written += len(chunk_png)
-                    # Invalidate any stale presigned URL pointing at the previous
-                    # version of this chunk.
-                    try:
-                        db.delete_chunk_url(level, cx, cy)
-                    except Exception:
-                        pass
+                    if invalidate_url_cache:
+                        # Invalidate any stale presigned URL pointing at the previous
+                        # version of this chunk.
+                        try:
+                            db.delete_chunk_url(level, cx, cy)
+                        except Exception:
+                            pass
             except Exception as exc:
                 logger.exception("Level %s chunk (%s,%s) failed: %s", level, cx, cy, exc)
                 raise
@@ -934,29 +1173,51 @@ def _generate_level(
             tracker.update_progress(level, completed, current_chunk=f"{cx}-{cy}")
 
     # Best-effort: clean up any legacy assembled PNG so it can't be served stale.
-    try:
-        r2_storage.delete_object(r2_storage.tops_map_level_assembled_key(level))
-    except Exception:
-        pass
+    # Only do this when the upload targeted the LIVE bundle — for a staged
+    # full regen the live bundle (and its legacy assembled PNG sibling, if
+    # any) must remain untouched until the admin activates.
+    if invalidate_url_cache:
+        try:
+            r2_storage.delete_object(r2_storage.tops_map_level_assembled_key(level))
+        except Exception:
+            pass
 
     metadata["size_bytes"] = bytes_written
     r2_storage.upload_bytes(
-        r2_storage.tops_map_level_metadata_key(level),
+        r2_storage.tops_map_level_metadata_key(level, version=target_version),
         json.dumps(metadata).encode("utf-8"),
         content_type="application/json",
     )
 
-    # Drop the in-process metadata cache so the API serves the new geometry
-    # immediately instead of the stale cached copy.
+    # Drop the in-process metadata/pointer caches so the API serves the new
+    # geometry immediately instead of the stale cached copy. Only the live
+    # bundle's metadata is served, so a staged regen doesn't need this — but
+    # the cache key is per-level so an extra invalidation is harmless.
     try:
         from ..routes import tops_map_r2 as _tops_map_r2
         _tops_map_r2.invalidate_level_metadata_cache(level)
     except Exception:
         pass
 
-    tracker.mark_complete(level, size_bytes=bytes_written)
-    logger.info("Level %s complete: %s bytes across %s chunks",
-                level, bytes_written, total_grid)
+    if is_full_regen and target_version and target_version != live_version:
+        # Staged regen: tracker holds the bundle aside until admin clicks
+        # Activate. The live bundle and its presigned-URL cache are
+        # untouched, so users keep seeing the previous map without any
+        # half-uploaded chunks bleeding through.
+        tracker.mark_pending_activation(
+            level, target_version, size_bytes=bytes_written,
+        )
+        logger.info(
+            "Level %s staged: %s bytes across %s chunks under version %s "
+            "(awaiting admin activation)",
+            level, bytes_written, total_grid, target_version,
+        )
+    else:
+        tracker.mark_complete(level, size_bytes=bytes_written)
+        logger.info(
+            "Level %s complete: %s bytes across %s chunks (version=%s)",
+            level, bytes_written, total_grid, target_version or "__legacy__",
+        )
 
     # Tier 6 (May 2026) — record successful full-level regen so the next
     # pass against the same canonical combined.db can skip wholesale.

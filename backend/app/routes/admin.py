@@ -23,11 +23,15 @@ from ..core import database as db
 from ..core import generation_tracker, r2_storage
 from ..core.mapdb import RESOLUTION_LEVELS
 from ..tasks.generate_map_levels import (
+    activate_pending_version,
+    delete_version_objects,
     is_job_running,
     is_stop_requested,
     refresh_level_metadata,
     request_stop,
+    rollback_to_previous_version,
     start_job,
+    write_level_pointer,
 )
 
 router = APIRouter()
@@ -435,12 +439,94 @@ async def delete_map_level(level: int, _: str = Depends(require_admin)):
     prefix = f"cache/tops-map-level{level}/"
     keys = r2_storage.list_keys_with_prefix(prefix)
     keys.append(r2_storage.tops_map_level_assembled_key(level))
+    keys.append(r2_storage.tops_map_level_pointer_key(level))
     r2_storage.delete_keys(keys)
     db.delete_chunk_urls_for_level(level)
     from . import tops_map_r2 as _tops_map_r2
-    _tops_map_r2.invalidate_level_metadata_cache(level)
+    _tops_map_r2.invalidate_level_pointer_cache(level)
     generation_tracker.reset_level(level)
     return JSONResponse(status_code=204, content=None)
+
+
+@router.post("/admin/tops-map/level/{level}/activate", status_code=200)
+async def activate_map_level(level: int, _: str = Depends(require_admin)):
+    """Promote a level's pending staged version to live.
+
+    Refuses while a generation job is running so the pointer flip can't
+    race with an in-flight upload. The previous live version is retained
+    as ``previous_version`` so a single-step rollback is possible.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    if level not in RESOLUTION_LEVELS:
+        raise HTTPException(status_code=400, detail="Unknown level")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot activate while generation is running",
+        )
+    try:
+        result = activate_pending_version(level)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    payload = _generation_status_payload()
+    payload["activation"] = {"level": level, **result}
+    return payload
+
+
+@router.post("/admin/tops-map/activate-all", status_code=200)
+async def activate_all_pending_map_levels(_: str = Depends(require_admin)):
+    """Activate every level that currently has a pending staged version.
+
+    Levels without a pending version are silently skipped. Refuses while
+    a generation job is running.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot activate while generation is running",
+        )
+    activated = []
+    errors = []
+    for level in sorted(RESOLUTION_LEVELS):
+        if not generation_tracker.get_pending_version(level):
+            continue
+        try:
+            result = activate_pending_version(level)
+        except RuntimeError as exc:
+            errors.append({"level": level, "error": str(exc)})
+            continue
+        activated.append({"level": level, **result})
+    payload = _generation_status_payload()
+    payload["activations"] = activated
+    payload["activation_errors"] = errors
+    return payload
+
+
+@router.post("/admin/tops-map/level/{level}/rollback", status_code=200)
+async def rollback_map_level(level: int, _: str = Depends(require_admin)):
+    """Restore a level's previous live version (one-step undo of an activate).
+
+    Refuses while a generation job is running.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    if level not in RESOLUTION_LEVELS:
+        raise HTTPException(status_code=400, detail="Unknown level")
+    if is_job_running():
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot rollback while generation is running",
+        )
+    try:
+        result = rollback_to_previous_version(level)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    payload = _generation_status_payload()
+    payload["rollback"] = {"level": level, **result}
+    return payload
 
 
 @router.post("/admin/tops-map/level/{level}/mark", status_code=200)

@@ -3,6 +3,7 @@
 import json
 import threading
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, Response
@@ -45,6 +46,16 @@ _metadata_cache: dict = {}
 _metadata_lock = threading.Lock()
 _METADATA_REVALIDATE_AFTER_SECONDS = 60
 
+# Per-level pointer cache: maps ``level -> {"live": str | None,
+# "previous": str | None, "etag": str, "checked_at": datetime}``. The
+# pointer file (``cache/tops-map-level{N}/CURRENT.json``) names the live
+# bundle subprefix. Same revalidation strategy as the metadata cache so a
+# pointer flip done by another process is picked up within ~60s without
+# the request path paying the HEAD cost more than once per window.
+_pointer_cache: dict = {}
+_pointer_lock = threading.Lock()
+_POINTER_REVALIDATE_AFTER_SECONDS = 30
+
 # Throttle for the opportunistic expired-URL cleanup. Running a DELETE on every
 # request added a Supabase round-trip to the hot path for no reason — once per
 # hour from any request is plenty.
@@ -57,6 +68,93 @@ def invalidate_level_metadata_cache(level: int) -> None:
     """Drop the cached metadata for ``level``. Call when the level is regenerated."""
     with _metadata_lock:
         _metadata_cache.pop(level, None)
+
+
+def invalidate_level_pointer_cache(level: Optional[int] = None) -> None:
+    """Drop the cached pointer file for ``level`` (or every level when ``None``).
+    Call after activate / rollback so the next request reads the fresh pointer.
+    Also drops the metadata cache because a pointer flip means the level's
+    metadata key has moved to a different subprefix.
+    """
+    with _pointer_lock:
+        if level is None:
+            _pointer_cache.clear()
+        else:
+            _pointer_cache.pop(level, None)
+    if level is None:
+        with _metadata_lock:
+            _metadata_cache.clear()
+    else:
+        invalidate_level_metadata_cache(level)
+
+
+def _read_level_pointer(level: int) -> dict:
+    """Return ``{"live": str | None, "previous": str | None}`` from R2.
+    Missing pointer is treated as ``{"live": None, "previous": None}`` so
+    existing deployments keep serving the legacy unprefixed layout.
+    Cached for ``_POINTER_REVALIDATE_AFTER_SECONDS`` with ETag revalidation
+    so a flip done in another process is observed promptly.
+    """
+    key = r2_storage.tops_map_level_pointer_key(level)
+    now = datetime.now(timezone.utc)
+    cached = _pointer_cache.get(level)
+    if cached is not None:
+        if (now - cached["checked_at"]).total_seconds() < _POINTER_REVALIDATE_AFTER_SECONDS:
+            return cached["parsed"]
+        try:
+            current_etag = r2_storage.get_object_etag(key)
+        except FileNotFoundError:
+            # Pointer was deleted — fall back to legacy.
+            parsed = {"live": None, "previous": None}
+            with _pointer_lock:
+                _pointer_cache[level] = {
+                    "parsed": parsed, "etag": "", "checked_at": now,
+                }
+            return parsed
+        except Exception:
+            return cached["parsed"]
+        if current_etag and current_etag == cached.get("etag"):
+            with _pointer_lock:
+                entry = _pointer_cache.get(level)
+                if entry is not None:
+                    entry["checked_at"] = now
+            return cached["parsed"]
+        # ETag changed — also drop the cached metadata since the version
+        # subprefix has moved.
+        invalidate_level_metadata_cache(level)
+    try:
+        raw = r2_storage.download_bytes(key)
+    except FileNotFoundError:
+        parsed = {"live": None, "previous": None}
+        etag = ""
+    else:
+        try:
+            parsed = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            parsed = {"live": None, "previous": None}
+        try:
+            etag = r2_storage.get_object_etag(key)
+        except Exception:
+            etag = ""
+    parsed = {
+        "live": parsed.get("live") if isinstance(parsed, dict) else None,
+        "previous": parsed.get("previous") if isinstance(parsed, dict) else None,
+    }
+    with _pointer_lock:
+        _pointer_cache[level] = {
+            "parsed": parsed, "etag": etag, "checked_at": now,
+        }
+    return parsed
+
+
+def _live_version(level: int):
+    """Resolve the version subprefix to serve for ``level``. ``None`` means
+    the legacy unprefixed layout."""
+    ptr = _read_level_pointer(level)
+    live = ptr.get("live")
+    if not live or live == r2_storage.TOPS_MAP_LEGACY_VERSION:
+        return None
+    return live
 
 
 def _read_db() -> bytes:
@@ -74,7 +172,8 @@ def _level_metadata(level: int) -> dict:
     Call ``invalidate_level_metadata_cache(level)`` for immediate eviction
     inside this process.
     """
-    key = r2_storage.tops_map_level_metadata_key(level)
+    version = _live_version(level)
+    key = r2_storage.tops_map_level_metadata_key(level, version=version)
     now = datetime.now(timezone.utc)
     cached = _metadata_cache.get(level)
     if cached is not None:
@@ -145,6 +244,7 @@ def _build_chunk_urls(level: int) -> tuple:
     cached = db.get_cached_chunk_urls(level, min_expires_at=refresh_threshold)
 
     grid = get_chunk_grid_size(level)
+    version = _live_version(level)
 
     out = []
     new_rows = []
@@ -161,7 +261,10 @@ def _build_chunk_urls(level: int) -> tuple:
     ]
     existing_keys: set = set()
     if missing_coords:
-        prefix = f"cache/tops-map-level{level}/"
+        prefix = (
+            f"cache/tops-map-level{level}/"
+            f"{r2_storage._tops_map_version_subpath(version)}"
+        )
         try:
             existing_keys = set(r2_storage.list_keys_with_prefix(prefix))
         except Exception:
@@ -175,7 +278,9 @@ def _build_chunk_urls(level: int) -> tuple:
                 url = entry["url"]
                 expires_at = entry["expires_at"]
             else:
-                key = r2_storage.tops_map_level_chunk_key(level, cx, cy)
+                key = r2_storage.tops_map_level_chunk_key(
+                    level, cx, cy, version=version,
+                )
                 if existing_keys is not None and key not in existing_keys:
                     continue
                 url = r2_storage.generate_presigned_download_url(

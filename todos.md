@@ -21,7 +21,7 @@
 -[x] Allow users to set up their own default page (e.g., they can choose to land on the map page, the stats page, or the settings page when they load the site at the domain root). Saved only client side in local storage, so it doesn't require user accounts or server-side storage.
 -[x] Refactor the Contribute_r2.py file
 
--[] Add Guide for landmarks (what they are, how to use them, etc.)
+-[x] Add Guide for landmarks (what they are, how to use them, etc.)
 
 
 # Ways to monetize

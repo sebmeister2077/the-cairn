@@ -899,14 +899,64 @@ def tops_map_level_assembled_key(level: int) -> str:
     return f"cache/tops-map-level{level}.png"
 
 
-def tops_map_level_chunk_key(level: int, cx: int, cy: int) -> str:
-    """Per-chunk PNG within a resolution level (16×16 grid)."""
-    return f"cache/tops-map-level{level}/chunk-{cx}-{cy}.png"
+# Sentinel "version" id meaning "the legacy unprefixed layout" — chunks
+# and metadata live directly under ``cache/tops-map-level{N}/`` with no
+# subdirectory. Used as the implicit live version when no ``CURRENT.json``
+# pointer exists yet (existing deployments before the staged-swap feature
+# was introduced). ``v-*`` ids written by the new generator always sit in
+# their own subprefix so they can be activated atomically.
+TOPS_MAP_LEGACY_VERSION = "__legacy__"
 
 
-def tops_map_level_metadata_key(level: int) -> str:
-    """JSON metadata describing a generated level (geometry, timestamps)."""
-    return f"cache/tops-map-level{level}/metadata.json"
+def _tops_map_version_subpath(version: Optional[str]) -> str:
+    """Return ``""`` for the legacy unprefixed layout or ``f"{version}/"``
+    for a versioned subprefix. Centralised so the layout convention has
+    exactly one definition."""
+    if version is None or version == TOPS_MAP_LEGACY_VERSION:
+        return ""
+    return f"{version}/"
+
+
+def tops_map_level_chunk_key(
+    level: int, cx: int, cy: int, *, version: Optional[str] = None,
+) -> str:
+    """Per-chunk PNG within a resolution level (16×16 grid).
+
+    When ``version`` is ``None`` or :data:`TOPS_MAP_LEGACY_VERSION` the key
+    sits in the legacy unprefixed layout. Any other value places the chunk
+    under ``cache/tops-map-level{N}/{version}/chunk-X-Y.png`` so multiple
+    full-regen bundles can coexist behind a pointer flip.
+    """
+    return (
+        f"cache/tops-map-level{level}/"
+        f"{_tops_map_version_subpath(version)}chunk-{cx}-{cy}.png"
+    )
+
+
+def tops_map_level_metadata_key(level: int, *, version: Optional[str] = None) -> str:
+    """JSON metadata describing a generated level (geometry, timestamps).
+
+    See :func:`tops_map_level_chunk_key` for the ``version`` convention.
+    """
+    return (
+        f"cache/tops-map-level{level}/"
+        f"{_tops_map_version_subpath(version)}metadata.json"
+    )
+
+
+def tops_map_level_pointer_key(level: int) -> str:
+    """JSON pointer that names the active (and previous-for-rollback) version
+    for a level. Atomic single-key write is what makes the "switch live to
+    the just-generated bundle" operation visible all-at-once to readers.
+
+    Shape::
+
+        {"live": "v-20260526-094500", "previous": "v-20260525-031200" | null}
+
+    Absence of this key means the level is still using the legacy unprefixed
+    layout; readers treat it as ``{"live": "__legacy__", "previous": null}``.
+    """
+    return f"cache/tops-map-level{level}/CURRENT.json"
 
 
 # ---------------------------------------------------------------------------
