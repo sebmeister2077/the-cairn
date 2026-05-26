@@ -329,6 +329,11 @@ async def add_landmark(
     api_key_id = _ctx_api_key_id(ctx)
 
     payload_type = payload.type if is_admin else "Base"
+    # Non-admins may additionally pick "Terminus" (one-way death-return
+    # teleporter) so the community can map those spots without admin
+    # involvement. "Server" / "Misc" stay admin-only.
+    if not is_admin and payload.type == "Terminus":
+        payload_type = "Terminus"
 
     properties: dict = {
         "id": landmark_id,

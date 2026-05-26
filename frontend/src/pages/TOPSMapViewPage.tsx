@@ -14,6 +14,7 @@ import {
   setActiveGroupingIds as setActiveGroupingIdsAction,
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
+  setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
@@ -240,6 +241,11 @@ export function TOPSMapViewPage() {
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
     [dispatch],
   );
+  const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
+  const setShowTerminus = useCallback(
+    (next: boolean) => dispatch(setShowTerminusAction(next)),
+    [dispatch],
+  );
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
@@ -299,7 +305,16 @@ export function TOPSMapViewPage() {
   const allLandmarks = landmarksQuery.data?.data;
   const allTranslocators = translocatorsQuery.data?.data;
   const allTraders = tradersQuery.data?.data;
-  const landmarkCount = allLandmarks?.length ?? 0;
+  // "Landmarks found" excludes Terminus — Terminus is surfaced via its own
+  // toggle/count below.
+  const landmarkCount = useMemo(
+    () => (allLandmarks ?? []).filter((p) => p.kind !== "Terminus").length,
+    [allLandmarks],
+  );
+  const terminusCount = useMemo(
+    () => (allLandmarks ?? []).filter((p) => p.kind === "Terminus").length,
+    [allLandmarks],
+  );
   const translocatorCount = allTranslocators?.length ?? 0;
   const traderCount = allTraders?.length ?? 0;
   const showTraders = useAppSelector((s) => s.mapView.showTraders);
@@ -695,14 +710,20 @@ export function TOPSMapViewPage() {
     setTranslocatorPinned(false);
   }, []);
 
-  // Landmark points fed to the viewer. When the overlay is off we still
-  // surface "Server"-kind landmarks (always-on POIs) but hide everything
-  // else; toggling on swaps in the full set.
+  // Landmark points fed to the viewer. The Landmarks toggle controls
+  // every kind *except* Terminus (which has its own independent toggle).
+  // When the Landmarks toggle is off we still surface "Server"-kind
+  // landmarks (always-on POIs).
   const landmarkPoints = useMemo<WorldPointMarker[]>(() => {
     const base: WorldPointMarker[] = [];
     if (allLandmarks) {
-      const ls = showLandmarks ? allLandmarks : allLandmarks.filter((p) => p.kind === "Server");
-      base.push(...ls);
+      for (const p of allLandmarks) {
+        if (p.kind === "Terminus") {
+          if (showTerminus) base.push(p);
+          continue;
+        }
+        if (showLandmarks || p.kind === "Server") base.push(p);
+      }
     }
     if (showTraders && allTraders) {
       for (const t of allTraders) {
@@ -736,6 +757,7 @@ export function TOPSMapViewPage() {
   }, [
     allLandmarks,
     showLandmarks,
+    showTerminus,
     showTraders,
     allTraders,
     traderTypeFilterSet,
@@ -1377,6 +1399,20 @@ export function TOPSMapViewPage() {
                 </span>
               </span>
             </div>
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={showTerminus}
+                onCheckedChange={setShowTerminus}
+                aria-label="Show Terminus teleporters overlay"
+              />
+              <Label>Show Terminus teleporters</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                Terminus mapped:{" "}
+                <span className="font-medium text-foreground">
+                  {terminusCount.toLocaleString()}
+                </span>
+              </span>
+            </div>
             {tradersQuery.data && (
               <div className={cn("flex flex-col rounded-md border px-3 py-2 text-sm")}>
                 <div className="flex items-center gap-2">
@@ -1583,6 +1619,7 @@ export function TOPSMapViewPage() {
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
               filteringActive={filteringActive}
               landmarkCount={landmarkCount}
+              terminusCount={terminusCount}
               traderCount={traderCount}
               recentTLCount={recentTLIdSet.size}
               activeGroupingCount={activeGroupingIds.size}

@@ -26,6 +26,13 @@ export interface MapViewState {
     groupingsViewMode: TLGroupingsViewMode;
     activeGroupingIds: string[];
     showLandmarks: boolean;
+    /**
+     * Independent toggle for Terminus (one-way death-return teleporter)
+     * markers. Decoupled from `showLandmarks` so users can surface
+     * Terminus points without the rest of the landmark overlay (and vice
+     * versa). Persisted via the root envelope.
+     */
+    showTerminus: boolean;
     showTranslocators: boolean;
     showTraders: boolean;
     /** When non-empty, restrict trader markers to these trader_type values. */
@@ -80,6 +87,7 @@ export function loadInitialMapViewState(): MapViewState {
         groupingsViewMode: readViewMode(),
         activeGroupingIds: readActive(),
         showLandmarks: true,
+        showTerminus: false,
         showTranslocators: false,
         showTraders: false,
         traderTypeFilter: [],
@@ -116,6 +124,9 @@ export const mapViewSlice = createSlice({
         },
         setShowLandmarks(state, action: PayloadAction<boolean>) {
             state.showLandmarks = action.payload;
+        },
+        setShowTerminus(state, action: PayloadAction<boolean>) {
+            state.showTerminus = action.payload;
         },
         setShowTranslocators(state, action: PayloadAction<boolean>) {
             state.showTranslocators = action.payload;
@@ -187,6 +198,7 @@ export const {
     setActiveGroupingIds,
     toggleActiveGrouping,
     setShowLandmarks,
+    setShowTerminus,
     setShowTranslocators,
     setShowTraders,
     setTraderTypeFilter,

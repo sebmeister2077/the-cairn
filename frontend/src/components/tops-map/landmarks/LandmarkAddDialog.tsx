@@ -113,6 +113,25 @@ export function LandmarkAddDialog({
               </Select>
             </div>
           )}
+          {!isAdmin && (
+            <div>
+              <Label htmlFor="lm-type" className="mb-1">
+                Type
+              </Label>
+              <Select
+                value={kind === "Terminus" ? "Terminus" : "Base"}
+                onValueChange={(v) => setKind(v as typeof kind)}
+              >
+                <SelectTrigger id="lm-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Base">Base</SelectItem>
+                  <SelectItem value="Terminus">Terminus (one-way teleporter)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <Label htmlFor="lm-x" className="mb-1">

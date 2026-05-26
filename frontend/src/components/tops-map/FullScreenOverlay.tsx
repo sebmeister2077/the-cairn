@@ -11,6 +11,7 @@ import {
   setActiveGroupingIds as setActiveGroupingIdsAction,
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
+  setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
@@ -33,6 +34,7 @@ type FullscreenControlsOverlayProps = {
   visibleTranslocatorCount: number;
   filteringActive: boolean;
   landmarkCount: number;
+  terminusCount: number;
   traderCount: number;
   recentTLCount: number;
   activeGroupingCount: number;
@@ -61,6 +63,7 @@ export function FullscreenControlsOverlay({
   visibleTranslocatorCount,
   filteringActive,
   landmarkCount,
+  terminusCount,
   traderCount,
   recentTLCount,
   activeGroupingCount,
@@ -84,6 +87,11 @@ export function FullscreenControlsOverlay({
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
   const setShowLandmarks = useCallback(
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
+    [dispatch],
+  );
+  const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
+  const setShowTerminus = useCallback(
+    (next: boolean) => dispatch(setShowTerminusAction(next)),
     [dispatch],
   );
   const showTraders = useAppSelector((s) => s.mapView.showTraders);
@@ -199,6 +207,16 @@ export function FullscreenControlsOverlay({
           <Label className="cursor-pointer">Landmarks</Label>
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {landmarkCount.toLocaleString()}
+          </span>
+        </div>
+        <div
+          onClick={() => setShowTerminus(!showTerminus)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch checked={showTerminus} aria-label="Show Terminus teleporters overlay" />
+          <Label className="cursor-pointer">Terminus teleporters</Label>
+          <span className="ml-auto text-xs text-muted-foreground select-none">
+            {terminusCount.toLocaleString()}
           </span>
         </div>
         <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
