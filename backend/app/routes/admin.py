@@ -452,18 +452,23 @@ async def delete_map_level(level: int, _: str = Depends(require_admin)):
 async def activate_map_level(level: int, _: str = Depends(require_admin)):
     """Promote a level's pending staged version to live.
 
-    Refuses while a generation job is running so the pointer flip can't
-    race with an in-flight upload. The previous live version is retained
-    as ``previous_version`` so a single-step rollback is possible.
+    Activation is allowed even while a generation job is running for
+    *other* levels — each level stages to its own version subprefix so
+    pointer flips on level X cannot race with uploads to level Y. The
+    only refusal is when the level being activated is itself currently
+    being regenerated (its pending bundle could be the previous one,
+    which is still safe to activate, but the tracker would immediately
+    overwrite the status the activation just wrote).
     """
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
     if level not in RESOLUTION_LEVELS:
         raise HTTPException(status_code=400, detail="Unknown level")
-    if is_job_running():
+    level_status = generation_tracker.get_level_status(level).get("status")
+    if level_status == "generating":
         raise HTTPException(
             status_code=409,
-            detail="Cannot activate while generation is running",
+            detail=f"Cannot activate level {level} while it is being regenerated",
         )
     try:
         result = activate_pending_version(level)
@@ -478,20 +483,21 @@ async def activate_map_level(level: int, _: str = Depends(require_admin)):
 async def activate_all_pending_map_levels(_: str = Depends(require_admin)):
     """Activate every level that currently has a pending staged version.
 
-    Levels without a pending version are silently skipped. Refuses while
-    a generation job is running.
+    Levels without a pending version are silently skipped. Levels that
+    are themselves currently being regenerated are also skipped (and
+    reported in ``skipped``) so the bulk activate doesn't fail outright
+    just because one level is mid-render.
     """
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
-    if is_job_running():
-        raise HTTPException(
-            status_code=409,
-            detail="Cannot activate while generation is running",
-        )
     activated = []
+    skipped = []
     errors = []
     for level in sorted(RESOLUTION_LEVELS):
         if not generation_tracker.get_pending_version(level):
+            continue
+        if generation_tracker.get_level_status(level).get("status") == "generating":
+            skipped.append({"level": level, "reason": "currently regenerating"})
             continue
         try:
             result = activate_pending_version(level)
@@ -501,6 +507,7 @@ async def activate_all_pending_map_levels(_: str = Depends(require_admin)):
         activated.append({"level": level, **result})
     payload = _generation_status_payload()
     payload["activations"] = activated
+    payload["activation_skipped"] = skipped
     payload["activation_errors"] = errors
     return payload
 
@@ -509,16 +516,17 @@ async def activate_all_pending_map_levels(_: str = Depends(require_admin)):
 async def rollback_map_level(level: int, _: str = Depends(require_admin)):
     """Restore a level's previous live version (one-step undo of an activate).
 
-    Refuses while a generation job is running.
+    Allowed while other levels are being regenerated; refused only if
+    this specific level is currently being regenerated.
     """
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
     if level not in RESOLUTION_LEVELS:
         raise HTTPException(status_code=400, detail="Unknown level")
-    if is_job_running():
+    if generation_tracker.get_level_status(level).get("status") == "generating":
         raise HTTPException(
             status_code=409,
-            detail="Cannot rollback while generation is running",
+            detail=f"Cannot rollback level {level} while it is being regenerated",
         )
     try:
         result = rollback_to_previous_version(level)

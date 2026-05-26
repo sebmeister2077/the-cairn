@@ -359,8 +359,8 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
               variant="default"
               className="bg-amber-600 hover:bg-amber-700 text-white"
               onClick={() => activateAllMutation.mutate()}
-              disabled={isRunning || anyMutationPending}
-              title={`Activate ${pendingCount} staged level${pendingCount === 1 ? "" : "s"}: flip the live pointer so users see the freshly generated map.`}
+              disabled={anyMutationPending}
+              title={`Activate ${pendingCount} staged level${pendingCount === 1 ? "" : "s"}: flip the live pointer so users see the freshly generated map. Levels currently being regenerated are skipped.`}
             >
               {activateAllMutation.isPending ? (
                 <>
@@ -478,7 +478,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                           size="sm"
                           className="bg-amber-600 hover:bg-amber-700 text-white"
                           onClick={() => activateMutation.mutate(level)}
-                          disabled={isRunning || anyMutationPending}
+                          disabled={status === "generating" || anyMutationPending}
                           title={`Promote staged version ${entry.pending_version} to live.`}
                         >
                           {activateMutation.isPending && activateMutation.variables === level ? (
@@ -497,7 +497,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                           size="sm"
                           variant="outline"
                           onClick={() => setPending({ kind: "rollback", level })}
-                          disabled={isRunning || anyMutationPending}
+                          disabled={status === "generating" || anyMutationPending}
                           title={`Roll back to previous version ${entry.previous_version}.`}
                         >
                           <Undo2 className="size-3" />
