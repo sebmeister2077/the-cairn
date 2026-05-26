@@ -20,7 +20,7 @@ export function LandmarkRow({
       <div className="min-w-0 space-y-0.5">
         <div className="font-medium truncate">{label}</div>
         <div className="text-muted-foreground font-mono text-[11px]">
-          ({x}, {z}
+          ({x}, {-z}
           {y != null ? `, y=${y}` : ""}) · {feature.properties.type}
           {!ownedByMe && (
             <Badge variant="outline" className="ml-1">
