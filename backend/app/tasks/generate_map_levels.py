@@ -36,6 +36,7 @@ import logging
 import os
 import queue
 import shutil
+import sqlite3
 import tempfile
 import threading
 import time
@@ -924,6 +925,37 @@ def _generate_level(
       so contribution edits become visible immediately. Anything outside
       the bbox is reused from the existing live bundle.
     """
+    # WAL-checkpoint guard. Every read connection opened by the regen
+    # path uses ``mode=ro&immutable=1`` (see ``_open_mapdb_readonly``),
+    # which makes SQLite skip the ``-wal`` file entirely and read only
+    # pages out of the main DB file. If a contribution merge (or any
+    # other writer) left pages uncheckpointed in ``combined.db-wal``,
+    # those tile rows are INVISIBLE to immutable readers — the SELECT
+    # silently returns nothing for those positions and the renderer
+    # leaves the destination pixels transparent. At scale > 1 the
+    # missing tiles get subsampled away into surrounding ones and the
+    # corruption is easy to overlook; at scale=1 (level 5) every
+    # missing tile is a visible 32×32 px hole, which is exactly the
+    # "stale chunks at the boundary" symptom reported in May 2026.
+    #
+    # Force a full WAL→main checkpoint here so every subsequent
+    # immutable read sees a complete snapshot. TRUNCATE leaves the WAL
+    # file zero-sized, which is also cheaper for the immutable opener.
+    # If the DB isn't in WAL mode (e.g. a writer never ran) the pragma
+    # is a no-op.
+    try:
+        ckpt_conn = sqlite3.connect(db_path, timeout=30.0)
+        try:
+            ckpt_conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            ckpt_conn.close()
+    except Exception:
+        logger.exception(
+            "Level %s: WAL checkpoint before regen failed (continuing; "
+            "may render stale tiles if combined.db-wal has uncheckpointed "
+            "pages)", level,
+        )
+
     geometry = compute_level_geometry(db_path, level)
     grid = geometry["chunk_grid"]
 

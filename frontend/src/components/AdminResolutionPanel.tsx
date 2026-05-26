@@ -172,11 +172,25 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     },
   });
 
+  // Flipping the pointer changes which R2 prefix the public chunk-URL
+  // endpoints resolve to, so the cached presigned URLs on the map view
+  // (queryKey: ["tops-map-level", n]) and the aggregate stats query
+  // (["tops-map-stats"]) MUST be invalidated alongside the admin status —
+  // otherwise the viewer keeps loading stale chunks from the previously
+  // live bundle (e.g. the legacy bare prefix) until React Query's
+  // staleTime expires, which manifests as PNG-tile-aligned "stale chunk"
+  // bands on the map immediately after activation.
+  const invalidatePublicMapCaches = () => {
+    queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
+    queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
+  };
+
   const activateMutation = useMutation({
     mutationFn: (level: number) => activateMapLevel(level),
     onSuccess: (data) => {
       queryClient.setQueryData(STATUS_QUERY_KEY, data);
       queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      invalidatePublicMapCaches();
       onLevelComplete?.();
     },
   });
@@ -186,6 +200,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     onSuccess: (data) => {
       queryClient.setQueryData(STATUS_QUERY_KEY, data);
       queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      invalidatePublicMapCaches();
       onLevelComplete?.();
     },
   });
@@ -195,6 +210,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
     onSuccess: (data) => {
       queryClient.setQueryData(STATUS_QUERY_KEY, data);
       queryClient.invalidateQueries({ queryKey: STATUS_QUERY_KEY });
+      invalidatePublicMapCaches();
       onLevelComplete?.();
     },
   });
