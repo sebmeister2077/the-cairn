@@ -106,7 +106,7 @@ async def landmarks_write_lock(action: str):
 # Allowed type values must mirror the frontend's ``LandmarkProperty.type`` union
 # in [frontend/src/components/MapViewer.tsx]. Misc landmarks are filtered out
 # from rendering but are valid storage values (kept for future visibility).
-_ALLOWED_TYPES = {"Base", "Server", "Misc"}
+_ALLOWED_TYPES = {"Base", "Server", "Misc","Terminus"}
 
 # Coordinate sanity limits. The world is theoretically unbounded but a
 # 4-million-block half-edge gives a generous safety net while still rejecting

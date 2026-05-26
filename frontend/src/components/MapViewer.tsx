@@ -4,6 +4,15 @@ import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2, Maximize2 } from "lucid
 import { TLLegendButton } from "@/components/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
+import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
+
+// Active icon styles for the three special marker kinds. These were picked
+// after a side-by-side dev-panel comparison; if you want to change them,
+// either flip the constants here or re-introduce the panel (see git history
+// for `MarkerStyleDevPanel`).
+const TRADER_ICON_STYLE = "gear-stack" as const;
+const TL_ENDPOINT_ICON_STYLE = "spiral" as const;
+const TERMINUS_ICON_STYLE = "tombstone" as const;
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -57,10 +66,11 @@ export interface WorldPointMarker {
   label?: string;
   /** Visual classification. `"Trader"` markers are drawn as colored dots
    *  using `color` (defaulting to cyan if absent); `"Home"` is drawn as a
-   *  house glyph (used for the user's saved favorite position); other kinds
+   *  house glyph (used for the user's saved favorite position); `"Terminus"`
+   *  is drawn using the currently selected Terminus icon style; other kinds
    *  use the built-in landmark palette (cyan dot for Base/Misc, gold star
    *  for Server). */
-  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home";
+  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
 }
@@ -1004,19 +1014,14 @@ export function MapViewer({
       const innerRadius = Math.max(0.8, outerRadius * 0.5);
       const drawPortalDots = (segs: typeof projectedOverlaySegments, outer: string) => {
         for (const seg of segs) {
-          ctx.fillStyle = outer;
-          ctx.beginPath();
-          ctx.arc(seg.x1, seg.y1, outerRadius, 0, Math.PI * 2);
-          ctx.arc(seg.x2, seg.y2, outerRadius, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.fillStyle = portalInner;
-          ctx.beginPath();
-          ctx.arc(seg.x1, seg.y1, innerRadius, 0, Math.PI * 2);
-          ctx.arc(seg.x2, seg.y2, innerRadius, 0, Math.PI * 2);
-          ctx.fill();
+          drawTLEndpoint(ctx, seg.x1, seg.y1, zoom, TL_ENDPOINT_ICON_STYLE, outer);
+          drawTLEndpoint(ctx, seg.x2, seg.y2, zoom, TL_ENDPOINT_ICON_STYLE, outer);
         }
       };
+      // Silence unused-var warnings while keeping the values around for the
+      // legacy `portal` style (which reads sizes directly inside the helper).
+      void outerRadius;
+      void innerRadius;
       drawPortalDots(defaultSegs, portalOuter);
       drawPortalDots(userSegs, userPortalOuter);
     }
@@ -1028,7 +1033,13 @@ export function MapViewer({
       // Regular (Base etc.) points — cyan dot with white core.
       ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server" || pt.kind === "Trader" || pt.kind === "Home") continue;
+        if (
+          pt.kind === "Server" ||
+          pt.kind === "Trader" ||
+          pt.kind === "Home" ||
+          pt.kind === "Terminus"
+        )
+          continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointOuter, 0, Math.PI * 2);
         ctx.fill();
@@ -1036,25 +1047,23 @@ export function MapViewer({
 
       ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
       for (const pt of projectedOverlayPoints) {
-        if (pt.kind === "Server" || pt.kind === "Trader" || pt.kind === "Home") continue;
+        if (
+          pt.kind === "Server" ||
+          pt.kind === "Trader" ||
+          pt.kind === "Home" ||
+          pt.kind === "Terminus"
+        )
+          continue;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, pointInner, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Trader markers — per-type colored dot with thin dark outline so the
-      // color reads cleanly against any biome tile.
-      const traderOuter = Math.max(2.4, 4.0 / Math.max(zoom, 0.1));
-      const traderStroke = Math.max(0.4, 0.8 / Math.max(zoom, 0.1));
-      ctx.lineWidth = traderStroke;
-      ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
+      // Trader markers — gear-stack icon (rusty gears = VS in-game currency).
       for (const pt of projectedOverlayPoints) {
         if (pt.kind !== "Trader") continue;
-        ctx.fillStyle = pt.color ?? "rgba(34, 211, 238, 0.92)";
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, traderOuter, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        const color = pt.color ?? "rgba(34, 211, 238, 0.92)";
+        drawTraderMarker(ctx, pt.x, pt.y, zoom, TRADER_ICON_STYLE, color);
       }
 
       // Spawn (Server) markers — larger gold five-point star with dark outline.
@@ -1120,6 +1129,13 @@ export function MapViewer({
         const doorH = homeSize * 0.55;
         ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
         ctx.fillRect(pt.x - doorW / 2, pt.y + homeSize - doorH, doorW, doorH);
+      }
+
+      // Terminus markers — special one-way teleporter (death-return). Drawn
+      // as a tombstone silhouette.
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "Terminus") continue;
+        drawTerminusMarker(ctx, pt.x, pt.y, zoom, TERMINUS_ICON_STYLE);
       }
     }
 
@@ -1282,6 +1298,10 @@ export function MapViewer({
       if (!raw) continue;
       // Home markers are icon-only; never render their label badge.
       if (pt.kind === "Home") continue;
+      // Terminus markers are also icon-only — the icon itself is a unique
+      // skull/cross/rift, so the literal "Terminus" label would just add
+      // visual noise.
+      if (pt.kind === "Terminus") continue;
 
       // Convert image-space point to screen space.
       const sx = pt.x * zoom + pan.x;
