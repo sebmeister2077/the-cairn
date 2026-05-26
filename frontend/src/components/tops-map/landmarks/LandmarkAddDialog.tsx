@@ -127,7 +127,7 @@ export function LandmarkAddDialog({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Base">Base</SelectItem>
-                  <SelectItem value="Terminus">Terminus (one-way teleporter)</SelectItem>
+                  <SelectItem value="Terminus">Terminus</SelectItem>
                 </SelectContent>
               </Select>
             </div>
