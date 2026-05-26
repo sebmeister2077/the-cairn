@@ -484,8 +484,8 @@ export function RoutePlannerPanel() {
                 onValueChange={(v) => dispatch(setRouteWalkSpeed(v))}
               />
               <p className="text-[10px] text-muted-foreground">
-                Default 7 (sprint on road). Change based on your needs (elk or no path heavy armor
-                journey).
+                Default 7 (sprint on road). 11 for elk on road. Change based on your needs (elk or
+                no path, heavy armor journey,etc).
               </p>
             </div>
             <div className="space-y-1">
