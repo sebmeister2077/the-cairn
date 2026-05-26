@@ -337,6 +337,67 @@ export function MapViewer({
   const panRef = useRef(pan);
   const interactionsLockedRef = useRef(interactionsLocked);
   const cursorModeRef = useRef(cursorMode);
+  // Tracks an in-flight focusPoint fly animation so user input (drag/wheel)
+  // can cancel it cleanly without racing the rAF callback.
+  const flyAnimRef = useRef<number | null>(null);
+  const cancelFlyAnim = useCallback(() => {
+    if (flyAnimRef.current != null) {
+      cancelAnimationFrame(flyAnimRef.current);
+      flyAnimRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Smoothly interpolate (pan, zoom) toward a target using an eased rAF
+   * loop. Reused by the focusPoint effect, the Reset and Center buttons,
+   * etc. Skips animation when the delta is negligible or the OS prefers
+   * reduced motion; in those cases it snaps and resolves immediately.
+   *
+   * Returns a function that cancels the animation early (in addition to
+   * `cancelFlyAnim`, which the user-input handlers already call).
+   */
+  const animatePanZoomTo = useCallback(
+    (targetPan: { x: number; y: number }, targetZoom: number) => {
+      cancelFlyAnim();
+
+      const startPan = { ...panRef.current };
+      const startZoom = zoomRef.current;
+      const dx = targetPan.x - startPan.x;
+      const dy = targetPan.y - startPan.y;
+      const dz = targetZoom - startZoom;
+
+      const prefersReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const negligible = Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5 && Math.abs(dz) < 0.001;
+      if (prefersReducedMotion || negligible) {
+        setPan(targetPan);
+        setZoom(targetZoom);
+        return;
+      }
+
+      const screenDist = Math.hypot(dx, dy);
+      const duration = Math.min(550, Math.max(220, screenDist * 0.6));
+      const easeInOutCubic = (t: number) =>
+        t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const startTs = performance.now();
+      const step = (now: number) => {
+        const elapsed = now - startTs;
+        const t = Math.min(1, elapsed / duration);
+        const k = easeInOutCubic(t);
+        setPan({ x: startPan.x + dx * k, y: startPan.y + dy * k });
+        setZoom(startZoom + dz * k);
+        if (t < 1) {
+          flyAnimRef.current = requestAnimationFrame(step);
+        } else {
+          flyAnimRef.current = null;
+        }
+      };
+      flyAnimRef.current = requestAnimationFrame(step);
+    },
+    [cancelFlyAnim],
+  );
 
   const dispatch = useAppDispatch();
   const isFullscreen = useReduxState("mapView.isFullscreen");
@@ -802,9 +863,17 @@ export function MapViewer({
     const imgX = ((focusPoint.x - stats.start_x) / stats.width_blocks) * imgNatural.w;
     const imgY = ((focusPoint.z - stats.start_z) / stats.height_blocks) * imgNatural.h;
 
-    setPan({ x: rect.width / 2 - imgX * targetZoom, y: rect.height / 2 - imgY * targetZoom });
-    setZoom(targetZoom);
-  }, [focusPoint, focusZoom, focusSpanBlocks, imgNatural, stats]);
+    animatePanZoomTo(
+      {
+        x: rect.width / 2 - imgX * targetZoom,
+        y: rect.height / 2 - imgY * targetZoom,
+      },
+      targetZoom,
+    );
+  }, [focusPoint, focusZoom, focusSpanBlocks, imgNatural, stats, animatePanZoomTo]);
+
+  // Cleanup any leftover animation frame on unmount.
+  useEffect(() => () => cancelFlyAnim(), [cancelFlyAnim]);
 
   useEffect(() => {
     const canvas = overlayCanvasRef.current;
@@ -1259,6 +1328,11 @@ export function MapViewer({
       // while dragging endpoint handles or otherwise interacting with the
       // overlay.
       e.preventDefault();
+      // Cancel any in-flight fly so the user's wheel input wins.
+      if (flyAnimRef.current != null) {
+        cancelAnimationFrame(flyAnimRef.current);
+        flyAnimRef.current = null;
+      }
       const rect = el.getBoundingClientRect();
       const factor = e.deltaY < 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR;
       zoomToward(e.clientX - rect.left, e.clientY - rect.top, zoomRef.current * factor);
@@ -1294,21 +1368,21 @@ export function MapViewer({
   const centerOnOrigin = useCallback(
     (currentZoom?: number) => {
       if (!stats || imgNatural.w === 0) return;
+      const el = containerRef.current;
+      if (!el) return;
+      const z = currentZoom ?? zoomRef.current;
+      const rect = el.getBoundingClientRect();
       // When a custom centerTarget is supplied, recenter on that world-block
       // point instead of (0, 0).
-      if (centerTarget && Number.isFinite(centerTarget.x) && Number.isFinite(centerTarget.z)) {
-        const el = containerRef.current;
-        if (!el) return;
-        const z = currentZoom ?? zoomRef.current;
-        const rect = el.getBoundingClientRect();
-        const imgX = ((centerTarget.x - stats.start_x) / stats.width_blocks) * imgNatural.w;
-        const imgY = ((centerTarget.z - stats.start_z) / stats.height_blocks) * imgNatural.h;
-        setPan({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z });
-        return;
-      }
-      centerView(imgNatural.w, imgNatural.h, currentZoom);
+      const target =
+        centerTarget && Number.isFinite(centerTarget.x) && Number.isFinite(centerTarget.z)
+          ? centerTarget
+          : { x: 0, z: 0 };
+      const imgX = ((target.x - stats.start_x) / stats.width_blocks) * imgNatural.w;
+      const imgY = ((target.z - stats.start_z) / stats.height_blocks) * imgNatural.h;
+      animatePanZoomTo({ x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z }, z);
     },
-    [centerView, stats, imgNatural, centerTarget],
+    [animatePanZoomTo, stats, imgNatural, centerTarget],
   );
 
   // Tile-mode initial centering — runs once per tileSet id, after the
@@ -1411,9 +1485,23 @@ export function MapViewer({
   }, [zoomToward]);
 
   const resetView = useCallback(() => {
-    setZoom(1);
-    centerView(imgNatural.w, imgNatural.h, 1);
-  }, [centerView, imgNatural]);
+    const el = containerRef.current;
+    if (!el || imgNatural.w === 0 || imgNatural.h === 0) return;
+    const rect = el.getBoundingClientRect();
+    const z = 1;
+    let targetPan: { x: number; y: number };
+    if (stats) {
+      const imgX = ((0 - stats.start_x) / stats.width_blocks) * imgNatural.w;
+      const imgY = ((0 - stats.start_z) / stats.height_blocks) * imgNatural.h;
+      targetPan = { x: rect.width / 2 - imgX * z, y: rect.height / 2 - imgY * z };
+    } else {
+      targetPan = {
+        x: (rect.width - imgNatural.w * z) / 2,
+        y: (rect.height - imgNatural.h * z) / 2,
+      };
+    }
+    animatePanZoomTo(targetPan, z);
+  }, [animatePanZoomTo, imgNatural, stats]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -1422,6 +1510,11 @@ export function MapViewer({
     // selecting a world-space endpoint (route planner etc.). The actual
     // selection happens in `handleOverlayClick` below.
     if (cursorModeRef.current === "pick") return;
+    // Any deliberate user input supersedes the in-flight fly animation.
+    if (flyAnimRef.current != null) {
+      cancelAnimationFrame(flyAnimRef.current);
+      flyAnimRef.current = null;
+    }
     setDragging(true);
     setDragStart({ x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y });
   }, []);
