@@ -1435,11 +1435,14 @@ export function MapViewer({
         const rect = containerRef.current.getBoundingClientRect();
         const imgX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
         const imgY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
-        if (imgX >= 0 && imgX < imgNatural.w && imgY >= 0 && imgY < imgNatural.h) {
-          const blockX = Math.floor((imgX / imgNatural.w) * stats.width_blocks + stats.start_x);
-          const blockZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks + stats.start_z);
-          setHoverCoords({ x: blockX, z: blockZ });
+        // Always compute world coords so the overlay keeps tracking the
+        // cursor even when the user pans outside the map image. The
+        // image-to-world transform is linear so extrapolation is valid.
+        const blockX = Math.floor((imgX / imgNatural.w) * stats.width_blocks + stats.start_x);
+        const blockZ = Math.floor((imgY / imgNatural.h) * stats.height_blocks + stats.start_z);
+        setHoverCoords({ x: blockX, z: blockZ });
 
+        if (imgX >= 0 && imgX < imgNatural.w && imgY >= 0 && imgY < imgNatural.h) {
           if (projectedOverlaySegments.length > 0) {
             const threshold = 8 / Math.max(zoomRef.current, 0.1);
             const thresholdSq = threshold * threshold;
@@ -1473,7 +1476,6 @@ export function MapViewer({
             setHoveredOverlayIndex(null);
           }
         } else {
-          setHoverCoords(null);
           setHoveredOverlayIndex(null);
         }
       }
