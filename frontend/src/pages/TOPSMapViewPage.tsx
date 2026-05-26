@@ -577,6 +577,16 @@ export function TOPSMapViewPage() {
     return levelToTileSet(info);
   }, [levelInfoQuery.data]);
 
+  // Display the currently selected level's generation time from already
+  // loaded query payloads. No extra request is needed.
+  const selectedLevelGeneratedAt = useMemo(() => {
+    const fromLevelInfo = levelInfoQuery.data?.generated_at;
+    if (fromLevelInfo) return fromLevelInfo;
+    if (selectedLevel == null) return null;
+    const match = statsQuery.data?.resolutions?.find((r) => r.level === selectedLevel);
+    return match?.generated_at ?? null;
+  }, [levelInfoQuery.data?.generated_at, selectedLevel, statsQuery.data?.resolutions]);
+
   // Prefer the backend stats payload (richer: tile count, size). When that
   // request fails (server down, etc.) but we still have a cached level-info
   // payload, derive a minimal MapStats from it so overlay projection (which
@@ -1379,7 +1389,9 @@ export function TOPSMapViewPage() {
               </div>
             )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            {stats && statsQuery.data && <MapStatsHeader stats={statsQuery.data} />}
+            {stats && statsQuery.data && (
+              <MapStatsHeader stats={statsQuery.data} generatedAt={selectedLevelGeneratedAt} />
+            )}
             {isAdmin && selectedDeposit && (
               <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
                 <Sparkles className="size-4 text-primary" />
