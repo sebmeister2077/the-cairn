@@ -35,6 +35,7 @@ import { AdminResolutionPanel } from "@/components/AdminResolutionPanel";
 import { MaintenanceChip } from "@/components/MaintenanceChip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -64,6 +65,8 @@ import { Combobox } from "@/components/ui/combobox";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -271,6 +274,10 @@ export function TOPSMapViewPage() {
   const [landmarkFocusSpanBlocks, setLandmarkFocusSpanBlocks] = useState<number | undefined>(
     undefined,
   );
+  const [goToDialogOpen, setGoToDialogOpen] = useState(false);
+  const [goToXInput, setGoToXInput] = useState("");
+  const [goToZInput, setGoToZInput] = useState("");
+  const [goToError, setGoToError] = useState<string | null>(null);
 
   // The route planner publishes a "fly here" request via Redux whenever the
   // user clicks the locate icon on a leg row. We mirror it into the shared
@@ -760,6 +767,54 @@ export function TOPSMapViewPage() {
     }
   }
 
+  const handleOpenGoToDialog = useCallback(() => {
+    const view = lastViewportRef.current;
+    if (view) {
+      setGoToXInput(String(Math.round(view.centerWorldX)));
+      setGoToZInput(String(Math.round(view.centerWorldZ)));
+    } else {
+      const fallback = favoriteStartingPosition ?? { x: 0, z: 0 };
+      setGoToXInput(String(fallback.x));
+      setGoToZInput(String(fallback.z));
+    }
+    setGoToError(null);
+    setGoToDialogOpen(true);
+  }, [favoriteStartingPosition]);
+
+  const handleGoToSubmit = useCallback(
+    (e?: React.FormEvent<HTMLFormElement>) => {
+      e?.preventDefault();
+      const x = Number(goToXInput.trim());
+      const z = Number(goToZInput.trim());
+      if (!Number.isFinite(x) || !Number.isFinite(z)) {
+        setGoToError("Enter valid numeric coordinates for both X and Z.");
+        return;
+      }
+      setLandmarkFocusSpanBlocks(undefined);
+      setLandmarkFocusPoint({ x, z });
+      setGoToDialogOpen(false);
+      setGoToError(null);
+    },
+    [goToXInput, goToZInput],
+  );
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.key.toLowerCase() !== "g") return;
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)
+      ) {
+        return;
+      }
+      e.preventDefault();
+      handleOpenGoToDialog();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleOpenGoToDialog]);
+
   /**
    * Fly to the user's saved starting position (or spawn 0,0 as a fallback).
    * A fresh object reference is required — MapViewer flies only when the
@@ -1124,6 +1179,10 @@ export function TOPSMapViewPage() {
                     onSaveCurrent={handleSetCurrentAsHome}
                     onClear={clearFavoriteStartingPosition}
                   />
+                  <Button type="button" variant="outline" onClick={handleOpenGoToDialog}>
+                    <Search className="size-4 mr-1" />
+                    Go to coordinate
+                  </Button>
                 </>
               )}
               {!loading && !hasMap && error && (
@@ -1424,6 +1483,18 @@ export function TOPSMapViewPage() {
           </>
         )}
         <div className={isFullscreen ? "absolute inset-0" : "relative"}>
+          {isFullscreen && hasMap && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={handleOpenGoToDialog}
+              className="absolute right-3 top-3 z-20 shadow"
+            >
+              <Search className="size-4 mr-1" />
+              Go to
+            </Button>
+          )}
           <MapViewer
             tileSet={tileSet}
             stats={stats}
@@ -1530,6 +1601,72 @@ export function TOPSMapViewPage() {
             state={resourcesOverlay}
           />
         )} */}
+        <Dialog open={goToDialogOpen} onOpenChange={setGoToDialogOpen}>
+          <DialogContent className="sm:max-w-md" showCloseButton>
+            <DialogHeader>
+              <DialogTitle>Go to coordinate</DialogTitle>
+              <DialogDescription>
+                Jump the map camera to any world coordinate. Tip: press Ctrl+G anytime.
+              </DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-3" onSubmit={handleGoToSubmit}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="goto-x">X</Label>
+                  <Input
+                    id="goto-x"
+                    inputMode="decimal"
+                    placeholder="e.g. 1450"
+                    value={goToXInput}
+                    onChange={(e) => {
+                      setGoToXInput(e.target.value);
+                      if (goToError) setGoToError(null);
+                    }}
+                    autoFocus
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="goto-z">Z</Label>
+                  <Input
+                    id="goto-z"
+                    inputMode="decimal"
+                    placeholder="e.g. -920"
+                    value={goToZInput}
+                    onChange={(e) => {
+                      setGoToZInput(e.target.value);
+                      if (goToError) setGoToError(null);
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>Current center is pre-filled for quick adjustments.</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => {
+                    const view = lastViewportRef.current;
+                    if (!view) return;
+                    setGoToXInput(String(Math.round(view.centerWorldX)));
+                    setGoToZInput(String(Math.round(view.centerWorldZ)));
+                    setGoToError(null);
+                  }}
+                >
+                  Use current center
+                </Button>
+              </div>
+              {goToError && <p className="text-sm text-destructive">{goToError}</p>}
+              <DialogFooter className="mx-0 mb-0 border-0 bg-transparent p-0 pt-1">
+                <Button type="button" variant="outline" onClick={() => setGoToDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Go to coordinate</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
