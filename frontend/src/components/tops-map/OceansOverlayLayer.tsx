@@ -69,13 +69,12 @@ export function OceansOverlayLayer({
           top,
           width,
           height,
+          // Override the global `img { max-width: 100% }` reset so the
+          // overlay can render at its true world-scaled size (which may
+          // exceed the transformed container's width).
           maxWidth: "none",
           imageRendering: "pixelated",
           pointerEvents: "none",
-          // TEMP DEBUG — bright outline so the bbox is visible even when
-          // pixels are transparent or hidden behind tiles.
-          //   outline: "4px solid red",
-          //   outlineOffset: "-2px",
         }}
       />
     </div>

@@ -21,6 +21,12 @@ import {
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { formatDuration } from "@/lib/format-duration";
+
+// Static count of ocean bodies in the canonical server snapshot
+// (`frontend/src/assets/Oceans/oceans.json` -> `bodies.length`). Hardcoded
+// because server size is fixed and we don't want to ship the ~1 MB JSON
+// to clients just to read its length.
+const OCEANS_TOTAL_COUNT = 1236;
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
@@ -305,6 +311,9 @@ export function FullscreenControlsOverlay({
         >
           <Switch checked={showOceans} aria-label="Show oceans background overlay" />
           <Label className="cursor-pointer">Oceans</Label>
+          <span className="text-xs text-muted-foreground">
+            {OCEANS_TOTAL_COUNT.toLocaleString()} total
+          </span>
         </div>
         <Button
           type="button"
