@@ -31,8 +31,7 @@ export function PublicRoadWorkersPage() {
         <p className="text-sm text-muted-foreground">
           Aggregated, anonymous data from players who clicked{" "}
           <em>"Save this route for road workers"</em> in the route planner. Use it to prioritise
-          tunnels, signage, and shortcuts. Personal data, IP addresses, and per-user activity are
-          not shown.
+          tunnels, signage, and shortcuts. Personal data and per-user activity are not shown.
         </p>
         <div className="flex items-center gap-2 pt-2">
           <label htmlFor="window-select" className="text-xs text-muted-foreground">
