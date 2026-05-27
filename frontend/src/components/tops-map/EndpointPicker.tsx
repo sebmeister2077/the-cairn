@@ -267,7 +267,12 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
       // TEMP debug logging to diagnose "wrong terminus wins" reports.
       // Remove once the routing-selection logic is verified end-to-end.
       // eslint-disable-next-line no-console
-      console.debug("[fastest-terminus] start", startPt, "candidates", candidates.map((c) => ({ x: c.x, z: c.z, label: c.label })));
+      console.debug(
+        "[fastest-terminus] start",
+        startPt,
+        "candidates",
+        candidates.map((c) => ({ x: c.x, z: c.z, label: c.label })),
+      );
       // eslint-disable-next-line no-console
       console.debug(
         "[fastest-terminus] results",

@@ -17,6 +17,7 @@ import {
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
+  setShowOceans as setShowOceansAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
@@ -86,6 +87,7 @@ import {
 } from "@/store/slices/routePlanner";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
+import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import {
@@ -244,6 +246,11 @@ export function TOPSMapViewPage() {
   const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
   const setShowTerminus = useCallback(
     (next: boolean) => dispatch(setShowTerminusAction(next)),
+    [dispatch],
+  );
+  const showOceans = useAppSelector((s) => s.mapView.showOceans);
+  const setShowOceans = useCallback(
+    (next: boolean) => dispatch(setShowOceansAction(next)),
     [dispatch],
   );
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
@@ -1587,15 +1594,26 @@ export function TOPSMapViewPage() {
               if (Number.isFinite(lvl)) setSelectedLevel(lvl);
             }}
             overlay={
-              isAdmin && tileSet ? (
-                <ResourcesOverlayLayer
-                  state={resourcesOverlay}
-                  stats={stats}
-                  imageWidth={tileSet.imageWidth}
-                  imageHeight={tileSet.imageHeight}
-                  onDepositClick={setSelectedDeposit}
-                  selectedDeposit={selectedDeposit}
-                />
+              tileSet ? (
+                <>
+                  {showOceans ? (
+                    <OceansOverlayLayer
+                      stats={stats}
+                      imageWidth={tileSet.imageWidth}
+                      imageHeight={tileSet.imageHeight}
+                    />
+                  ) : null}
+                  {isAdmin ? (
+                    <ResourcesOverlayLayer
+                      state={resourcesOverlay}
+                      stats={stats}
+                      imageWidth={tileSet.imageWidth}
+                      imageHeight={tileSet.imageHeight}
+                      onDepositClick={setSelectedDeposit}
+                      selectedDeposit={selectedDeposit}
+                    />
+                  ) : null}
+                </>
               ) : null
             }
             cursorMode={routePickMode ? "pick" : "default"}

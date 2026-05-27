@@ -104,6 +104,15 @@ export function ApiKeyDialog({
             onChange={(e) => setKey(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSave()}
           />
+          {/* Copy button */}
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => navigator.clipboard.writeText(key)}
+          >
+            Copy
+          </Button>
         </div>
         <Button onClick={handleSave} disabled={loading}>
           {loading ? "Saving…" : "Save"}

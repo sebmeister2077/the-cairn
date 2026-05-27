@@ -38,6 +38,13 @@ export interface MapViewState {
     /** When non-empty, restrict trader markers to these trader_type values. */
     traderTypeFilter: string[];
     showRecentlyAdded: boolean;
+    /**
+     * When true, render a translucent "oceans" raster background behind
+     * the Tops map tiles so users can see roughly where oceans exist in
+     * still-unexplored regions. Asset is shipped from the frontend bundle
+     * (see `frontend/src/assets/Oceans/`). Default OFF — opt-in.
+     */
+    showOceans: boolean;
     isFullscreen: boolean;
     /**
      * When true, the TOPS map viewer renders an animated starfield behind
@@ -92,6 +99,7 @@ export function loadInitialMapViewState(): MapViewState {
         showTraders: false,
         traderTypeFilter: [],
         showRecentlyAdded: false,
+        showOceans: false,
         isFullscreen: false,
         starfieldEnabled: true,
         favoriteStartingPosition: null,
@@ -153,6 +161,9 @@ export const mapViewSlice = createSlice({
                 state.showRecentlyAdded = !state.showRecentlyAdded;
             }
         },
+        setShowOceans(state, action: PayloadAction<boolean>) {
+            state.showOceans = action.payload;
+        },
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
         },
@@ -204,6 +215,7 @@ export const {
     setTraderTypeFilter,
     toggleTraderTypeFilter,
     toggleShowRecentlyAdded,
+    setShowOceans,
     setShowFullscreen,
     setStarfieldEnabled,
     setFavoriteStartingPosition,

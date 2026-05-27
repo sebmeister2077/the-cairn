@@ -14,6 +14,7 @@ import {
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
+  setShowOceans as setShowOceansAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
@@ -97,6 +98,11 @@ export function FullscreenControlsOverlay({
   const showTraders = useAppSelector((s) => s.mapView.showTraders);
   const setShowTraders = useCallback(
     (next: boolean) => dispatch(setShowTradersAction(next)),
+    [dispatch],
+  );
+  const showOceans = useAppSelector((s) => s.mapView.showOceans);
+  const setShowOceans = useCallback(
+    (next: boolean) => dispatch(setShowOceansAction(next)),
     [dispatch],
   );
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
@@ -292,6 +298,13 @@ export function FullscreenControlsOverlay({
               </div>
             </div>
           </div>
+        </div>
+        <div
+          onClick={() => setShowOceans(!showOceans)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch checked={showOceans} aria-label="Show oceans background overlay" />
+          <Label className="cursor-pointer">Oceans</Label>
         </div>
         <Button
           type="button"
