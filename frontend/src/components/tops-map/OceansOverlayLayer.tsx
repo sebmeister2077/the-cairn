@@ -1,5 +1,5 @@
 import type { MapStats } from "@/components/MapViewer";
-import oceanImg from "@/assets/Oceans/oceans_transparent.png";
+import oceanImg from "@/assets/Oceans/oceans.svg";
 
 // The oceans image is a 140k-block-radius scan centred on the player
 // origin (0, 0). At 8751 px wide that works out to ~32 blocks/pixel
