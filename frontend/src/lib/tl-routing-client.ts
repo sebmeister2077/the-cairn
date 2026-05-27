@@ -14,7 +14,13 @@ import type {
     RouteWorkerRequest,
     RouteWorkerResponse,
 } from "@/workers/tl-routing.worker";
-import type { RouteOptions, RouteResult, WorldPoint } from "@/lib/tl-routing";
+import type {
+    RendezvousObjective,
+    RendezvousResult,
+    RouteOptions,
+    RouteResult,
+    WorldPoint,
+} from "@/lib/tl-routing";
 import type { WorldLineSegment } from "@/components/MapViewer";
 
 // Vite's `?worker` import returns a constructor for a module worker.
@@ -23,14 +29,20 @@ import RouteWorkerCtor from "@/workers/tl-routing.worker?worker";
 let worker: Worker | null = null;
 let nextRequestId = 1;
 
+type RoutePromiseEntry = {
+    kind: "route";
+    resolve: (r: { routes: RouteResult[]; elapsedMs: number }) => void;
+    reject: (err: Error) => void;
+};
+type RendezvousPromiseEntry = {
+    kind: "rendezvous";
+    resolve: (r: { result: RendezvousResult | null; elapsedMs: number }) => void;
+    reject: (err: Error) => void;
+};
+type PendingEntry = RoutePromiseEntry | RendezvousPromiseEntry;
+
 // requestId → resolver. We always settle exactly one entry per response.
-const pending = new Map<
-    number,
-    {
-        resolve: (r: { routes: RouteResult[]; elapsedMs: number }) => void;
-        reject: (err: Error) => void;
-    }
->();
+const pending = new Map<number, PendingEntry>();
 
 function getWorker(): Worker {
     if (worker) return worker;
@@ -40,10 +52,15 @@ function getWorker(): Worker {
         const entry = pending.get(msg.requestId);
         if (!entry) return;
         pending.delete(msg.requestId);
-        if (msg.kind === "ok") {
+        if (msg.kind === "ok" && entry.kind === "route") {
             entry.resolve({ routes: msg.routes, elapsedMs: msg.elapsedMs });
-        } else {
+        } else if (msg.kind === "rendezvous-ok" && entry.kind === "rendezvous") {
+            entry.resolve({ result: msg.result, elapsedMs: msg.elapsedMs });
+        } else if (msg.kind === "error") {
             entry.reject(new Error(msg.message));
+        } else {
+            // Mismatched response kind — fail loudly so we notice during dev.
+            entry.reject(new Error(`Unexpected response kind for request ${msg.requestId}`));
         }
     };
     worker.onerror = (ev) => {
@@ -84,7 +101,7 @@ export function computeRoutesAsync(
     const requestId = nextRequestId++;
     const promise = new Promise<{ routes: RouteResult[]; elapsedMs: number }>(
         (resolve, reject) => {
-            pending.set(requestId, { resolve, reject });
+            pending.set(requestId, { kind: "route", resolve, reject });
             if (args.signal) {
                 if (args.signal.aborted) {
                     pending.delete(requestId);
@@ -104,6 +121,7 @@ export function computeRoutesAsync(
         },
     );
     const req: RouteWorkerRequest = {
+        kind: "route",
         requestId,
         segmentsKey: args.segmentsKey,
         // Workers structured-clone the payload; cast away `readonly` for postMessage.
@@ -112,6 +130,57 @@ export function computeRoutesAsync(
         to: args.to,
         opts: args.opts,
         numberOfRoutes: args.numberOfRoutes,
+    };
+    w.postMessage(req);
+    return promise;
+}
+
+export interface ComputeRendezvousAsyncArgs {
+    segments: ReadonlyArray<WorldLineSegment>;
+    segmentsKey: string;
+    players: ReadonlyArray<WorldPoint>;
+    opts: RouteOptions;
+    objective: RendezvousObjective;
+    signal?: AbortSignal;
+}
+
+export function computeRendezvousAsync(
+    args: ComputeRendezvousAsyncArgs,
+): Promise<{ result: RendezvousResult | null; elapsedMs: number }> {
+    if (!isRouteWorkerAvailable()) {
+        return Promise.reject(new Error("Web Workers are not available"));
+    }
+    const w = getWorker();
+    const requestId = nextRequestId++;
+    const promise = new Promise<{ result: RendezvousResult | null; elapsedMs: number }>(
+        (resolve, reject) => {
+            pending.set(requestId, { kind: "rendezvous", resolve, reject });
+            if (args.signal) {
+                if (args.signal.aborted) {
+                    pending.delete(requestId);
+                    reject(new DOMException("Aborted", "AbortError"));
+                    return;
+                }
+                args.signal.addEventListener(
+                    "abort",
+                    () => {
+                        if (pending.delete(requestId)) {
+                            reject(new DOMException("Aborted", "AbortError"));
+                        }
+                    },
+                    { once: true },
+                );
+            }
+        },
+    );
+    const req: RouteWorkerRequest = {
+        kind: "rendezvous",
+        requestId,
+        segmentsKey: args.segmentsKey,
+        segments: args.segments as WorldLineSegment[],
+        players: args.players.map((p) => ({ x: p.x, z: p.z })),
+        opts: args.opts,
+        objective: args.objective,
     };
     w.postMessage(req);
     return promise;

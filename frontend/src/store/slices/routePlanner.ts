@@ -9,7 +9,7 @@
 // re-hydrated only from URL params.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RouteResult, WorldPoint } from "@/lib/tl-routing";
+import type { RendezvousObjective, RendezvousResult, RouteResult, WorldPoint } from "@/lib/tl-routing";
 import {
     DEFAULT_K_NEIGHBORS,
     DEFAULT_TL_PENALTY_S,
@@ -25,20 +25,37 @@ export interface EndpointPick {
     source: "map-click" | "landmark" | "paste" | "favorite" | "url";
 }
 
+/** Top-level planner mode. */
+export type RoutePlannerMode = "route" | "rendezvous";
+
+/** Which slot a map-click will write into. `player:N` is rendezvous-mode
+ *  only and targets `state.players[N]`. */
+export type RoutePickMode = null | "from" | "to" | `player:${number}`;
+
 export interface RoutePlannerState {
     isOpen: boolean;
+    mode: RoutePlannerMode;
     from: EndpointPick | null;
     to: EndpointPick | null;
     routes: RouteResult[];
     selectedIndex: number;
     isComputing: boolean;
     error: string | null;
-    /** Map pointer mode: "from"/"to" means the next map click sets that endpoint. */
-    pickMode: null | "from" | "to";
+    /** Map pointer mode: "from"/"to"/"player:N" means the next map click
+     *  sets that endpoint. */
+    pickMode: RoutePickMode;
     /** User-configurable cost model. */
     walkSpeed: number;
     tlPenaltySeconds: number;
     kNeighbors: number;
+    /** Rendezvous-mode party. Sparse — `null` entries are empty slots
+     *  the user has added but not yet populated. Always length ≥ 2 while
+     *  in rendezvous mode (enforced by `setMode`). */
+    players: Array<EndpointPick | null>;
+    rendezvousObjective: RendezvousObjective;
+    rendezvousResult: RendezvousResult | null;
+    rendezvousIsComputing: boolean;
+    rendezvousError: string | null;
     /**
      * One-shot "fly the map here" request. The map subscribes and pans/zooms
      * whenever this object reference changes (each dispatch creates a fresh
@@ -55,6 +72,7 @@ export interface RoutePlannerState {
 
 export const initialRoutePlannerState: RoutePlannerState = {
     isOpen: false,
+    mode: "route",
     from: null,
     to: null,
     routes: [],
@@ -65,6 +83,11 @@ export const initialRoutePlannerState: RoutePlannerState = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    players: [null, null],
+    rendezvousObjective: "minimax",
+    rendezvousResult: null,
+    rendezvousIsComputing: false,
+    rendezvousError: null,
     focusRequest: null,
 };
 
@@ -106,9 +129,78 @@ export const routePlannerSlice = createSlice({
             state.selectedIndex = 0;
             state.error = null;
             state.pickMode = null;
+            state.players = state.players.map(() => null);
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
         },
         setPickMode(state, action: PayloadAction<RoutePlannerState["pickMode"]>) {
             state.pickMode = action.payload;
+        },
+        setMode(state, action: PayloadAction<RoutePlannerMode>) {
+            state.mode = action.payload;
+            state.pickMode = null;
+            // Each mode owns its own result set — clear the other side's
+            // stale data so the UI doesn't briefly render results that
+            // were computed for a different question.
+            if (action.payload === "rendezvous") {
+                if (state.players.length < 2) {
+                    state.players = [null, null];
+                }
+            } else {
+                state.rendezvousResult = null;
+                state.rendezvousError = null;
+            }
+        },
+        setPlayer(
+            state,
+            action: PayloadAction<{ index: number; pick: EndpointPick | null }>,
+        ) {
+            const { index, pick } = action.payload;
+            if (index < 0 || index >= state.players.length) return;
+            state.players[index] = pick;
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
+            if (state.pickMode === `player:${index}`) state.pickMode = null;
+        },
+        addPlayer(state) {
+            // Cap at 8 — beyond that the UX gets cramped AND the
+            // per-player Dijkstras start adding up. Tune if needed.
+            if (state.players.length >= 8) return;
+            state.players.push(null);
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
+        },
+        removePlayer(state, action: PayloadAction<number>) {
+            const index = action.payload;
+            if (index < 0 || index >= state.players.length) return;
+            // Always keep at least two slots so the panel stays in a
+            // valid rendezvous configuration.
+            if (state.players.length <= 2) {
+                state.players[index] = null;
+            } else {
+                state.players.splice(index, 1);
+            }
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
+            if (state.pickMode === `player:${index}`) state.pickMode = null;
+        },
+        setRendezvousObjective(state, action: PayloadAction<RendezvousObjective>) {
+            state.rendezvousObjective = action.payload;
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
+        },
+        setRendezvousComputing(state, action: PayloadAction<boolean>) {
+            state.rendezvousIsComputing = action.payload;
+            if (action.payload) state.rendezvousError = null;
+        },
+        setRendezvousResult(state, action: PayloadAction<RendezvousResult | null>) {
+            state.rendezvousResult = action.payload;
+            state.rendezvousIsComputing = false;
+            state.rendezvousError = null;
+        },
+        setRendezvousError(state, action: PayloadAction<string | null>) {
+            state.rendezvousError = action.payload;
+            state.rendezvousIsComputing = false;
         },
         setSelectedIndex(state, action: PayloadAction<number>) {
             const max = Math.max(0, state.routes.length - 1);
@@ -132,10 +224,12 @@ export const routePlannerSlice = createSlice({
             // Clamp to sane sprint/walk range so a fat-fingered slider can't blow up cost math.
             state.walkSpeed = Math.max(0.5, Math.min(20, action.payload));
             state.routes = [];
+            state.rendezvousResult = null;
         },
         setTLPenalty(state, action: PayloadAction<number>) {
             state.tlPenaltySeconds = Math.max(0, Math.min(600, action.payload));
             state.routes = [];
+            state.rendezvousResult = null;
         },
         setFocusRequest(
             state,
@@ -161,6 +255,14 @@ export const {
     swap: swapRouteEndpoints,
     clear: clearRoutePlanner,
     setPickMode: setRoutePickMode,
+    setMode: setRoutePlannerMode,
+    setPlayer: setRoutePlayer,
+    addPlayer: addRoutePlayer,
+    removePlayer: removeRoutePlayer,
+    setRendezvousObjective,
+    setRendezvousComputing,
+    setRendezvousResult,
+    setRendezvousError,
     setSelectedIndex: setRouteSelectedIndex,
     setComputing: setRouteComputing,
     setRoutes: setRoutePlannerRoutes,

@@ -9,10 +9,12 @@ import {
   Info,
   Loader2,
   MapPin,
+  Plus,
   Send,
   Settings2,
   Sparkles,
   Trash2,
+  Users,
   X,
 } from "lucide-react";
 
@@ -31,21 +33,32 @@ import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { routeAnalytics, type SavedRouteLeg } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
-import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
+import type {
+  RendezvousObjective,
+  RendezvousResult,
+  RouteLeg,
+  RouteResult,
+} from "@/lib/tl-routing";
+import { useTLRendezvous } from "@/hooks/useTLRendezvous";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
+  addRoutePlayer,
   clearRoutePlanner,
+  setRendezvousObjective,
   setRouteFocusRequest,
+  setRoutePlannerMode,
   setRoutePlannerOpen,
   setRouteSelectedIndex,
   setRouteTLPenalty,
   setRouteWalkSpeed,
   swapRouteEndpoints,
+  type EndpointPick,
 } from "@/store/slices/routePlanner";
 
 import { formatDuration } from "@/lib/format-duration";
 
 import { EndpointPicker } from "./EndpointPicker";
+import { PlayerPicker } from "./PlayerPicker";
 
 /** Format a leg row as a single readable line. */
 function describeLeg(leg: RouteLeg, index: number): string {
@@ -206,6 +219,16 @@ export function RoutePlannerPanel() {
   const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
   const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
   const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
+  const mode = useAppSelector((s) => s.routePlanner.mode);
+  const players = useAppSelector((s) => s.routePlanner.players);
+  const rendezvousObjective = useAppSelector((s) => s.routePlanner.rendezvousObjective);
+
+  // Drives the rendezvous worker; the hook is a no-op while `mode === "route"`.
+  const {
+    result: rendezvousResult,
+    isComputing: rendezvousIsComputing,
+    error: rendezvousError,
+  } = useTLRendezvous();
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -421,34 +444,67 @@ export function RoutePlannerPanel() {
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
-        <EndpointPicker slot="from" label="From" />
+        {/* Mode tabs — toggles between solo route planning and the
+            rendezvous (meeting-point) variant. The rendezvous code path
+            doesn't share endpoints with route mode (separate `players`
+            list), so switching modes only clears `pickMode` and lets
+            each side keep its own inputs. */}
+        <Tabs
+          value={mode}
+          onValueChange={(v) => dispatch(setRoutePlannerMode(v as "route" | "rendezvous"))}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="route" className="gap-1.5 text-xs">
+              <Sparkles className="h-3 w-3" /> Route
+            </TabsTrigger>
+            <TabsTrigger value="rendezvous" className="gap-1.5 text-xs">
+              <Users className="h-3 w-3" /> Rendezvous
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        <div className="flex items-center justify-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs"
-            onClick={() => dispatch(swapRouteEndpoints())}
-            disabled={!from && !to}
-            title="Swap From / To"
-          >
-            <ArrowLeftRight className="h-3 w-3" />
-            Swap
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs text-red-600 hover:text-red-700"
-            onClick={() => dispatch(clearRoutePlanner())}
-            disabled={!hasAnyState}
-            title="Clear From, To, and the computed route"
-          >
-            <Trash2 className="h-3 w-3" />
-            Clear
-          </Button>
-        </div>
+        {mode === "route" && (
+          <>
+            <EndpointPicker slot="from" label="From" />
 
-        <EndpointPicker slot="to" label="To" />
+            <div className="flex items-center justify-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs"
+                onClick={() => dispatch(swapRouteEndpoints())}
+                disabled={!from && !to}
+                title="Swap From / To"
+              >
+                <ArrowLeftRight className="h-3 w-3" />
+                Swap
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 gap-1 text-xs text-red-600 hover:text-red-700"
+                onClick={() => dispatch(clearRoutePlanner())}
+                disabled={!hasAnyState}
+                title="Clear From, To, and the computed route"
+              >
+                <Trash2 className="h-3 w-3" />
+                Clear
+              </Button>
+            </div>
+
+            <EndpointPicker slot="to" label="To" />
+          </>
+        )}
+
+        {mode === "rendezvous" && (
+          <RendezvousSection
+            players={players}
+            objective={rendezvousObjective}
+            result={rendezvousResult}
+            isComputing={rendezvousIsComputing}
+            error={rendezvousError}
+          />
+        )}
 
         {/* Settings popover (inline panel — kept simple to avoid pulling
             in another shadcn primitive). Sliders dispatch immediately;
@@ -510,255 +566,262 @@ export function RoutePlannerPanel() {
         <Separator />
 
         {/* Results */}
-        <div className="space-y-2">
-          {!from || !to ? (
-            <p className="text-xs text-muted-foreground">Set both endpoints to compute a route.</p>
-          ) : isComputing ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3 w-3 animate-spin" /> Computing routes…
-            </div>
-          ) : error ? (
-            <p className="text-xs text-red-600">{error}</p>
-          ) : !hasRoutes ? (
-            <p className="text-xs text-muted-foreground">No route found.</p>
-          ) : (
-            <>
-              {/* Alternate-route tabs — only show when more than one. */}
-              {routes.length > 1 && (
-                <Tabs
-                  value={String(selectedIndex)}
-                  onValueChange={(v) => dispatch(setRouteSelectedIndex(Number(v)))}
-                >
-                  <TabsList
-                    className="grid w-full"
-                    style={{
-                      gridTemplateColumns: `repeat(${routes.length}, minmax(0, 1fr))`,
-                    }}
+        {mode === "route" && (
+          <div className="space-y-2">
+            {!from || !to ? (
+              <p className="text-xs text-muted-foreground">
+                Set both endpoints to compute a route.
+              </p>
+            ) : isComputing ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Loader2 className="h-3 w-3 animate-spin" /> Computing routes…
+              </div>
+            ) : error ? (
+              <p className="text-xs text-red-600">{error}</p>
+            ) : !hasRoutes ? (
+              <p className="text-xs text-muted-foreground">No route found.</p>
+            ) : (
+              <>
+                {/* Alternate-route tabs — only show when more than one. */}
+                {routes.length > 1 && (
+                  <Tabs
+                    value={String(selectedIndex)}
+                    onValueChange={(v) => dispatch(setRouteSelectedIndex(Number(v)))}
                   >
-                    {routes.map((r, i) => (
-                      <TabsTrigger key={i} value={String(i)} className="text-xs">
-                        <span className="flex flex-col leading-tight">
-                          <span>#{i + 1}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {i === 0 ? "best" : `+${formatDuration(deltas[i])}`}
+                    <TabsList
+                      className="grid w-full"
+                      style={{
+                        gridTemplateColumns: `repeat(${routes.length}, minmax(0, 1fr))`,
+                      }}
+                    >
+                      {routes.map((r, i) => (
+                        <TabsTrigger key={i} value={String(i)} className="text-xs">
+                          <span className="flex flex-col leading-tight">
+                            <span>#{i + 1}</span>
+                            <span className="text-[10px] text-muted-foreground">
+                              {i === 0 ? "best" : `+${formatDuration(deltas[i])}`}
+                            </span>
                           </span>
-                        </span>
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              )}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
 
-              {primary && (
-                <RouteSummary route={primary} onLocate={(p) => dispatch(setRouteFocusRequest(p))} />
-              )}
+                {primary && (
+                  <RouteSummary
+                    route={primary}
+                    onLocate={(p) => dispatch(setRouteFocusRequest(p))}
+                  />
+                )}
 
-              {/* Save-as-draft action: turns the current route's TLs into
+                {/* Save-as-draft action: turns the current route's TLs into
                   a fresh TL grouping the user can rename / tweak in the
                   Groupings drawer. Disabled for walk-only routes since a
                   grouping with zero TLs would be meaningless. */}
-              {primary && (
-                <div className="space-y-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-1.5"
-                    onClick={handleSaveAsDraft}
-                    disabled={primary.tlHops === 0}
-                    title={
-                      primary.tlHops === 0
-                        ? "This route has no translocators to save"
-                        : "Create a new draft grouping containing this route's TLs"
-                    }
-                  >
-                    <BookmarkPlus className="h-3.5 w-3.5" />
-                    Save as draft grouping
-                  </Button>
-                  {savedDraft && (
-                    <p className="flex items-center gap-1 px-1 text-[11px] text-emerald-700 dark:text-emerald-400">
-                      <Check className="h-3 w-3" />
-                      Saved as <span className="font-medium">{savedDraft.name}</span>. Open the
-                      Groupings drawer to edit.
-                    </p>
-                  )}
-                </div>
-              )}
+                {primary && (
+                  <div className="space-y-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full gap-1.5"
+                      onClick={handleSaveAsDraft}
+                      disabled={primary.tlHops === 0}
+                      title={
+                        primary.tlHops === 0
+                          ? "This route has no translocators to save"
+                          : "Create a new draft grouping containing this route's TLs"
+                      }
+                    >
+                      <BookmarkPlus className="h-3.5 w-3.5" />
+                      Save as draft grouping
+                    </Button>
+                    {savedDraft && (
+                      <p className="flex items-center gap-1 px-1 text-[11px] text-emerald-700 dark:text-emerald-400">
+                        <Check className="h-3 w-3" />
+                        Saved as <span className="font-medium">{savedDraft.name}</span>. Open the
+                        Groupings drawer to edit.
+                      </p>
+                    )}
+                  </div>
+                )}
 
-              {/* Waypoint-command builder: generate the `/waypoint addati`
+                {/* Waypoint-command builder: generate the `/waypoint addati`
                   commands a player can paste into chat to drop one
                   waypoint per step in this route. Colour + label format
                   persist in localStorage (see effects above). */}
-              {primary && waypointCount > 0 && (
-                <div className="space-y-2 rounded-md border bg-muted/30 p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-medium">
-                      <MapPin className="h-3.5 w-3.5 text-purple-500" />
-                      Copy /waypoint commands
+                {primary && waypointCount > 0 && (
+                  <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <MapPin className="h-3.5 w-3.5 text-purple-500" />
+                        Copy /waypoint commands
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {waypointCount} waypoint{waypointCount === 1 ? "" : "s"}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      {waypointCount} waypoint{waypointCount === 1 ? "" : "s"}
-                    </span>
-                  </div>
 
-                  <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
-                    <Label htmlFor="wp-color" className="text-[11px]">
-                      Color
-                    </Label>
-                    <Select value={waypointColor} onValueChange={(v) => v && setWaypointColor(v)}>
-                      <SelectTrigger id="wp-color" className="h-7 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {WAYPOINT_COLORS.map((c) => (
-                          <SelectItem key={c} value={c} className="text-xs">
-                            <span className="flex items-center gap-2">
-                              <span
-                                className="inline-block h-3 w-3 rounded-full border border-foreground/20"
-                                style={{ backgroundColor: c }}
-                              />
-                              {c}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
+                      <Label htmlFor="wp-color" className="text-[11px]">
+                        Color
+                      </Label>
+                      <Select value={waypointColor} onValueChange={(v) => v && setWaypointColor(v)}>
+                        <SelectTrigger id="wp-color" className="h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {WAYPOINT_COLORS.map((c) => (
+                            <SelectItem key={c} value={c} className="text-xs">
+                              <span className="flex items-center gap-2">
+                                <span
+                                  className="inline-block h-3 w-3 rounded-full border border-foreground/20"
+                                  style={{ backgroundColor: c }}
+                                />
+                                {c}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                    <Label htmlFor="wp-template" className="text-[11px]">
-                      Label
-                    </Label>
-                    <Input
-                      id="wp-template"
-                      value={labelTemplate}
-                      onChange={(e) => setLabelTemplate(e.target.value)}
-                      placeholder={DEFAULT_LABEL_TEMPLATE}
-                      className="h-7 text-xs font-mono"
-                      spellCheck={false}
-                    />
-                  </div>
-
-                  {labelPreview && (
-                    <p className="truncate px-1 text-[10px] text-muted-foreground">
-                      Preview: <span className="font-mono text-foreground">{labelPreview}</span>
-                    </p>
-                  )}
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="flex-1 gap-1.5"
-                      onClick={handleCopyWaypointCommands}
-                    >
-                      {waypointCopied ? (
-                        <>
-                          <Check className="h-3.5 w-3.5" />
-                          Copied {waypointCount} command{waypointCount === 1 ? "" : "s"}
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-3.5 w-3.5" />
-                          Copy {waypointCount} /waypoint command{waypointCount === 1 ? "" : "s"}
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      title="Show available label placeholders"
-                      aria-label="Show available label placeholders"
-                      onClick={() => setWaypointHelpOpen((v) => !v)}
-                    >
-                      <Info className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-
-                  {waypointHelpOpen && (
-                    <div className="space-y-1 rounded border bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground">
-                      <p>
-                        Use any of these placeholders in the label — unknown ones are left untouched
-                        so typos are easy to spot:
-                      </p>
-                      <ul className="grid grid-cols-2 gap-x-2 font-mono text-foreground">
-                        <li>{"{i}"} step #</li>
-                        <li>{"{n}"} total steps</li>
-                        <li>{"{x}"} this X</li>
-                        <li>{"{z}"} this Z</li>
-                        <li>
-                          {"{y}"} fixed {WAYPOINT_Y}
-                        </li>
-                        <li>{"{next_x}"} next X</li>
-                        <li>{"{next_z}"} next Z</li>
-                        <li>{"{prev_x}"} prev X</li>
-                        <li>{"{prev_z}"} prev Z</li>
-                        <li>{"{dest_x}"} dest X</li>
-                        <li>{"{dest_z}"} dest Z</li>
-                        <li>{"{start_x}"} start X</li>
-                        <li>{"{start_z}"} start Z</li>
-                      </ul>
-                      <p>
-                        Y is fixed at {WAYPOINT_Y} since the tops map is 2D. The first and last
-                        waypoints leave <span className="font-mono">{"{prev_*}"}</span> /{" "}
-                        <span className="font-mono">{"{next_*}"}</span> empty respectively.
-                      </p>
+                      <Label htmlFor="wp-template" className="text-[11px]">
+                        Label
+                      </Label>
+                      <Input
+                        id="wp-template"
+                        value={labelTemplate}
+                        onChange={(e) => setLabelTemplate(e.target.value)}
+                        placeholder={DEFAULT_LABEL_TEMPLATE}
+                        className="h-7 text-xs font-mono"
+                        spellCheck={false}
+                      />
                     </div>
-                  )}
-                </div>
-              )}
 
-              {/* "Why only a few green TLs?" — explain that the highlight
+                    {labelPreview && (
+                      <p className="truncate px-1 text-[10px] text-muted-foreground">
+                        Preview: <span className="font-mono text-foreground">{labelPreview}</span>
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="flex-1 gap-1.5"
+                        onClick={handleCopyWaypointCommands}
+                      >
+                        {waypointCopied ? (
+                          <>
+                            <Check className="h-3.5 w-3.5" />
+                            Copied {waypointCount} command{waypointCount === 1 ? "" : "s"}
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" />
+                            Copy {waypointCount} /waypoint command{waypointCount === 1 ? "" : "s"}
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        title="Show available label placeholders"
+                        aria-label="Show available label placeholders"
+                        onClick={() => setWaypointHelpOpen((v) => !v)}
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+
+                    {waypointHelpOpen && (
+                      <div className="space-y-1 rounded border bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground">
+                        <p>
+                          Use any of these placeholders in the label — unknown ones are left
+                          untouched so typos are easy to spot:
+                        </p>
+                        <ul className="grid grid-cols-2 gap-x-2 font-mono text-foreground">
+                          <li>{"{i}"} step #</li>
+                          <li>{"{n}"} total steps</li>
+                          <li>{"{x}"} this X</li>
+                          <li>{"{z}"} this Z</li>
+                          <li>
+                            {"{y}"} fixed {WAYPOINT_Y}
+                          </li>
+                          <li>{"{next_x}"} next X</li>
+                          <li>{"{next_z}"} next Z</li>
+                          <li>{"{prev_x}"} prev X</li>
+                          <li>{"{prev_z}"} prev Z</li>
+                          <li>{"{dest_x}"} dest X</li>
+                          <li>{"{dest_z}"} dest Z</li>
+                          <li>{"{start_x}"} start X</li>
+                          <li>{"{start_z}"} start Z</li>
+                        </ul>
+                        <p>
+                          Y is fixed at {WAYPOINT_Y} since the tops map is 2D. The first and last
+                          waypoints leave <span className="font-mono">{"{prev_*}"}</span> /{" "}
+                          <span className="font-mono">{"{next_*}"}</span> empty respectively.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* "Why only a few green TLs?" — explain that the highlight
                   intentionally shows ONLY the TLs on the chosen route.
                   Surfaces the most common point of confusion right where
                   the user sees the result. */}
-              <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
-                <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                <span>
-                  Only the translocators used by this route are highlighted in green. All other TLs
-                  stay in their normal colours.
-                </span>
-              </div>
+                <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+                  <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                  <span>
+                    Only the translocators used by this route are highlighted in green. All other
+                    TLs stay in their normal colours.
+                  </span>
+                </div>
 
-              {/* "Save this route for road workers" — anonymous analytics
+                {/* "Save this route for road workers" — anonymous analytics
                   ping that helps the map's road maintainers prioritise
                   tunnel work, signage, and shortcuts. No personal data
                   is sent (only the endpoints, the TL chain, and the
                   travel time of this single route). */}
-              {primary && (
-                <div className="space-y-1 rounded-md border border-sky-200 bg-sky-50 p-2 dark:border-sky-900/50 dark:bg-sky-950/40">
-                  <p className="text-[11px] leading-snug text-sky-900 dark:text-sky-100">
-                    Saving sends just this route (endpoints, TL hops, travel time) to the map's road
-                    maintainers so they can prioritise tunnel work, signage, and shortcuts. No
-                    personal data is sent.
-                  </p>
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="w-full gap-1.5"
-                    onClick={handleSaveForRoadWorkers}
-                    disabled={analyticsState === "sending" || analyticsState === "sent"}
-                  >
-                    {analyticsState === "sending" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : analyticsState === "sent" ? (
-                      <Check className="h-3.5 w-3.5" />
-                    ) : (
-                      <Send className="h-3.5 w-3.5" />
-                    )}
-                    {analyticsState === "sending"
-                      ? "Sending…"
-                      : analyticsState === "sent"
-                        ? "Sent — thanks!"
-                        : "Save this route for road workers"}
-                  </Button>
-                  {analyticsState === "error" && analyticsError && (
-                    <p className="px-1 text-[11px] text-red-600 dark:text-red-400">
-                      {analyticsError}
+                {primary && (
+                  <div className="space-y-1 rounded-md border border-sky-200 bg-sky-50 p-2 dark:border-sky-900/50 dark:bg-sky-950/40">
+                    <p className="text-[11px] leading-snug text-sky-900 dark:text-sky-100">
+                      Saving sends just this route (endpoints, TL hops, travel time) to the map's
+                      road maintainers so they can prioritise tunnel work, signage, and shortcuts.
+                      No personal data is sent.
                     </p>
-                  )}
-                </div>
-              )}
-            </>
-          )}
-        </div>
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="w-full gap-1.5"
+                      onClick={handleSaveForRoadWorkers}
+                      disabled={analyticsState === "sending" || analyticsState === "sent"}
+                    >
+                      {analyticsState === "sending" ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : analyticsState === "sent" ? (
+                        <Check className="h-3.5 w-3.5" />
+                      ) : (
+                        <Send className="h-3.5 w-3.5" />
+                      )}
+                      {analyticsState === "sending"
+                        ? "Sending…"
+                        : analyticsState === "sent"
+                          ? "Sent — thanks!"
+                          : "Save this route for road workers"}
+                    </Button>
+                    {analyticsState === "error" && analyticsError && (
+                      <p className="px-1 text-[11px] text-red-600 dark:text-red-400">
+                        {analyticsError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
       </div>
     </aside>
   );
@@ -842,6 +905,249 @@ function RouteSummary({
           );
         })}
       </ol>
+    </div>
+  );
+}
+
+/** Format `Player N` or the original label depending on what the picker
+ *  recorded — keeps the per-player ETA list short while still
+ *  surfacing whatever the user actually typed in. */
+function playerDisplayLabel(p: EndpointPick | null, index: number): string {
+  if (!p) return `Player ${index + 1}`;
+  if (p.label && p.label !== `${p.point.x}, ${p.point.z}`) return p.label;
+  return `Player ${index + 1}`;
+}
+
+/**
+ * Rendezvous-mode body. Owns:
+ *   - dynamic list of `PlayerPicker` slots (2–8)
+ *   - objective toggle (minimax vs minisum)
+ *   - meeting-point summary card with per-player ETAs and a focus button
+ *   - a single `/waypoint addati` line for the meeting point that the
+ *     whole party can paste into chat
+ */
+function RendezvousSection({
+  players,
+  objective,
+  result,
+  isComputing,
+  error,
+}: {
+  players: Array<EndpointPick | null>;
+  objective: RendezvousObjective;
+  result: RendezvousResult | null;
+  isComputing: boolean;
+  error: string | null;
+}) {
+  const dispatch = useAppDispatch();
+  const filledCount = players.filter((p) => p != null).length;
+  const canAdd = players.length < 8;
+  const [meetingCopied, setMeetingCopied] = useState(false);
+
+  // Reset the "copied" indicator when the meeting point changes so the
+  // checkmark doesn't lie about which point the clipboard holds.
+  useEffect(() => {
+    setMeetingCopied(false);
+  }, [result?.meeting.x, result?.meeting.z]);
+
+  async function handleCopyMeetingWaypoint() {
+    if (!result) return;
+    const { x, z } = result.meeting;
+    const cmd = `/waypoint addati spiral ${x} ${WAYPOINT_Y} ${z} false yellow Meeting point`;
+    try {
+      await copyTextToClipboard(cmd);
+      setMeetingCopied(true);
+    } catch {
+      /* clipboard blocked — silently ignore */
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Place each party member; the planner finds the meeting point that minimises the worst-case
+        travel time (or the total, depending on the objective).
+      </p>
+
+      <div className="space-y-2">
+        {players.map((_p, i) => (
+          <PlayerPicker key={i} index={i} />
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 gap-1 px-2 text-xs"
+          onClick={() => dispatch(addRoutePlayer())}
+          disabled={!canAdd}
+          title={canAdd ? "Add another party member" : "Maximum 8 players"}
+        >
+          <Plus className="h-3 w-3" /> Add player
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 gap-1 px-2 text-xs text-red-600 hover:text-red-700"
+          onClick={() => dispatch(clearRoutePlanner())}
+          title="Clear all party members and the computed meeting point"
+        >
+          <Trash2 className="h-3 w-3" /> Clear
+        </Button>
+      </div>
+
+      {/* Objective picker — segmented control over a dropdown so both
+          options stay visible (only two, and the trade-off matters), and
+          a short caption below spells out exactly what the planner will
+          optimise for. Avoids the dropdown showing the raw enum value. */}
+      <div className="space-y-1">
+        <Label className="text-xs">Optimise for</Label>
+        <Tabs
+          value={objective}
+          onValueChange={(v) => v && dispatch(setRendezvousObjective(v as RendezvousObjective))}
+        >
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="minimax" className="text-xs">
+              Fairness
+            </TabsTrigger>
+            <TabsTrigger value="minisum" className="text-xs">
+              Total time
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <p className="text-[10px] leading-snug text-muted-foreground">
+          {objective === "minimax"
+            ? "Picks the spot that minimises the slowest player's travel time, so nobody is stuck waiting too long."
+            : "Picks the spot with the shortest combined travel time across the whole party — faster overall, but one player may travel much further than another."}
+        </p>
+      </div>
+
+      <Separator />
+
+      {/* Results */}
+      <div className="space-y-2">
+        {filledCount < 2 ? (
+          <p className="text-xs text-muted-foreground">
+            Set at least two player positions to find a meeting point.
+          </p>
+        ) : isComputing ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" /> Finding meeting point…
+          </div>
+        ) : error ? (
+          <p className="text-xs text-red-600">{error}</p>
+        ) : !result ? (
+          <p className="text-xs text-muted-foreground">No meeting point found.</p>
+        ) : (
+          <>
+            <div className="space-y-2 rounded-md border bg-background p-3">
+              <div className="flex items-baseline justify-between gap-2 border-b pb-2">
+                <div className="flex flex-col leading-none">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Everyone's there by
+                  </span>
+                  <span className="mt-1 flex items-baseline gap-1.5 font-mono text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
+                    <Users className="h-4 w-4 self-center text-emerald-500" />
+                    {formatDuration(result.worstSeconds)}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end gap-1 text-[10px] text-muted-foreground">
+                  <span>Total: {formatDuration(result.totalSeconds)}</span>
+                  <span>
+                    Meeting @ ({result.meeting.x}, {result.meeting.z})
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                className="w-full gap-1.5"
+                onClick={() =>
+                  dispatch(
+                    setRouteFocusRequest({
+                      x: result.meeting.x,
+                      z: result.meeting.z,
+                      spanBlocks: 400,
+                    }),
+                  )
+                }
+              >
+                <Crosshair className="h-3.5 w-3.5" /> Show meeting point on map
+              </Button>
+
+              <ol className="space-y-0.5 text-xs">
+                {result.perPlayer.map((leg, i) => {
+                  // Map each per-player result back to whatever label the
+                  // picker recorded (e.g. "Favorite home"). Position
+                  // order in `result.perPlayer` matches the filtered
+                  // (non-null) `players` order.
+                  const filled = players.filter((p): p is EndpointPick => p != null);
+                  const label = playerDisplayLabel(filled[i] ?? null, i);
+                  const midX = Math.round((leg.player.x + result.meeting.x) / 2);
+                  const midZ = Math.round((leg.player.z + result.meeting.z) / 2);
+                  const dx = result.meeting.x - leg.player.x;
+                  const dz = result.meeting.z - leg.player.z;
+                  const span = Math.max(200, Math.hypot(dx, dz) * 1.4);
+                  return (
+                    <li key={i} className="flex items-center gap-1 px-2 py-1 text-muted-foreground">
+                      <span className="flex-1 truncate">
+                        <span className="font-medium text-foreground">{label}</span>:{" "}
+                        {formatDuration(leg.route.totalSeconds)}
+                        {leg.route.tlHops > 0 && (
+                          <span className="ml-1 text-[10px]">
+                            ({leg.route.tlHops} TL{leg.route.tlHops === 1 ? "" : "s"})
+                          </span>
+                        )}
+                      </span>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        className="h-6 w-6 shrink-0 opacity-70 hover:opacity-100"
+                        onClick={() =>
+                          dispatch(setRouteFocusRequest({ x: midX, z: midZ, spanBlocks: span }))
+                        }
+                        title="Show this player's route on the map"
+                        aria-label="Show on map"
+                      >
+                        <Crosshair className="h-3 w-3" />
+                      </Button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+
+            <Button
+              size="sm"
+              variant="default"
+              className="w-full gap-1.5"
+              onClick={handleCopyMeetingWaypoint}
+            >
+              {meetingCopied ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  Copied /waypoint for meeting point
+                </>
+              ) : (
+                <>
+                  <Copy className="h-3.5 w-3.5" />
+                  Copy /waypoint for meeting point
+                </>
+              )}
+            </Button>
+
+            <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+              <Info className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>
+                The translocators each player needs to use are highlighted in green. Share the
+                meeting waypoint with your group.
+              </span>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -83,6 +83,7 @@ import {
   setRouteFrom,
   setRoutePickMode,
   setRoutePlannerOpen,
+  setRoutePlayer,
   setRouteTo,
 } from "@/store/slices/routePlanner";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
@@ -1049,11 +1050,33 @@ export function TOPSMapViewPage() {
   const routeTo = useAppSelector((s) => s.routePlanner.to);
   const routes = useAppSelector((s) => s.routePlanner.routes);
   const routeSelectedIndex = useAppSelector((s) => s.routePlanner.selectedIndex);
+  const routePlannerMode = useAppSelector((s) => s.routePlanner.mode);
+  const rendezvousResult = useAppSelector((s) => s.routePlanner.rendezvousResult);
 
-  // Build the visual overlay handed to MapViewer from the currently
-  // selected route. Recomputes only when the underlying route or picks
-  // change so the canvas effect doesn't churn on unrelated state.
+  // Build the visual overlay handed to MapViewer. In route mode this
+  // mirrors the selected route's TL + walk legs with the From/To pins.
+  // In rendezvous mode we flatten every per-player route into a single
+  // combined overlay (highlighting every TL anyone uses) and pin the
+  // meeting point as `to`; individual player positions are intentionally
+  // not pinned for now (would require a separate marker layer).
   const routeOverlay: RouteOverlay | null = useMemo(() => {
+    if (routePlannerMode === "rendezvous") {
+      if (!rendezvousResult) return null;
+      const tlSegments: WorldLineSegment[] = [];
+      const walkLegs: RouteOverlay["walkLegs"] = [];
+      for (const perPlayer of rendezvousResult.perPlayer) {
+        for (const leg of perPlayer.route.legs) {
+          if (leg.kind === "tl") tlSegments.push(leg.segment);
+          else walkLegs.push({ from: leg.from, to: leg.to });
+        }
+      }
+      return {
+        tlSegments,
+        walkLegs,
+        from: null,
+        to: { x: rendezvousResult.meeting.x, z: rendezvousResult.meeting.z },
+      };
+    }
     const selected = routes[routeSelectedIndex] ?? routes[0] ?? null;
     if (!selected && !routeFrom && !routeTo) return null;
     const tlSegments: WorldLineSegment[] = [];
@@ -1070,16 +1093,28 @@ export function TOPSMapViewPage() {
       from: routeFrom?.point ?? null,
       to: routeTo?.point ?? null,
     };
-  }, [routes, routeSelectedIndex, routeFrom, routeTo]);
+  }, [routes, routeSelectedIndex, routeFrom, routeTo, routePlannerMode, rendezvousResult]);
 
   // Click-on-map endpoint capture. Writes to the slot indicated by
   // `pickMode`, then clears pick mode so a single click ends the gesture.
+  // `pickMode` is either `"from"` / `"to"` (route mode) or the string
+  // `"player:N"` (rendezvous mode).
   const handleRouteWorldClick = useCallback(
     (x: number, z: number) => {
       if (routePickMode === "from") {
         dispatch(setRouteFrom({ point: { x, z }, label: `${x}, ${z}`, source: "map-click" }));
       } else if (routePickMode === "to") {
         dispatch(setRouteTo({ point: { x, z }, label: `${x}, ${z}`, source: "map-click" }));
+      } else if (typeof routePickMode === "string" && routePickMode.startsWith("player:")) {
+        const index = parseInt(routePickMode.slice("player:".length), 10);
+        if (Number.isFinite(index)) {
+          dispatch(
+            setRoutePlayer({
+              index,
+              pick: { point: { x, z }, label: `${x}, ${z}`, source: "map-click" },
+            }),
+          );
+        }
       }
       dispatch(setRoutePickMode(null));
     },

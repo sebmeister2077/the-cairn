@@ -836,3 +836,271 @@ function arraysEqual<T>(a: ReadonlyArray<T>, b: ReadonlyArray<T>): boolean {
     for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
     return true;
 }
+
+// ---------------------------------------------------------------------------
+// Public: Rendezvous (find a meeting point that minimises party travel time)
+// ---------------------------------------------------------------------------
+
+/** How "best meeting point" is scored across the party. */
+export type RendezvousObjective =
+    /** Minimise the slowest player's travel time. "Nobody waits too long." */
+    | "minimax"
+    /** Minimise total travel time across the party. Fastest in aggregate, but
+     *  can dump all the walking on one unlucky player. */
+    | "minisum";
+
+export interface PerPlayerLeg {
+    player: WorldPoint;
+    route: RouteResult;
+}
+
+export interface RendezvousResult {
+    /** Chosen meeting point in world coords. */
+    meeting: WorldPoint;
+    /** Per-player routes from player → meeting, in the order of the input. */
+    perPlayer: PerPlayerLeg[];
+    /** Slowest player's travel time in seconds. The "everyone's there by" ETA. */
+    worstSeconds: number;
+    /** Sum of all players' travel times — useful as a secondary score. */
+    totalSeconds: number;
+    /** Echoed back so callers can label the result without tracking it. */
+    objective: RendezvousObjective;
+}
+
+/** Run Dijkstra from a single source and record the FULL shortest-path
+ *  tree to every reachable node. Mirrors `dijkstraPath` but skips the
+ *  early-out on destIdx so we can answer "cost to candidate X" for any
+ *  X without re-running the search. */
+function dijkstraAllFrom(
+    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
+    source: number,
+): {
+    gScore: Map<number, number>;
+    cameFromNode: Map<number, number>;
+    cameFromEdge: Map<number, Edge>;
+} {
+    const gScore = new Map<number, number>();
+    const cameFromNode = new Map<number, number>();
+    const cameFromEdge = new Map<number, Edge>();
+    const open = new MinHeap();
+    gScore.set(source, 0);
+    open.push({ node: source, priority: 0 });
+    while (open.size > 0) {
+        const cur = open.pop()!;
+        const curG = gScore.get(cur.node) ?? Infinity;
+        if (cur.priority > curG + 1e-9) continue;
+        for (const e of aug.outgoing(cur.node)) {
+            const tentative = curG + e.seconds;
+            if (tentative < (gScore.get(e.to) ?? Infinity)) {
+                gScore.set(e.to, tentative);
+                cameFromNode.set(e.to, cur.node);
+                cameFromEdge.set(e.to, e);
+                open.push({ node: e.to, priority: tentative });
+            }
+        }
+    }
+    return { gScore, cameFromNode, cameFromEdge };
+}
+
+/** Reconstruct a `RouteResult` walking backwards through the predecessor
+ *  maps produced by `dijkstraAllFrom`. Returns null if `target` was never
+ *  reached. */
+function reconstructFromMaps(
+    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
+    target: number,
+    source: number,
+    cameFromNode: Map<number, number>,
+    cameFromEdge: Map<number, Edge>,
+): RouteResult | null {
+    if (target === source) {
+        return { totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
+    }
+    const nodes: number[] = [];
+    const edges: Edge[] = [];
+    let n = target;
+    // Guard against pathological cycles (shouldn't happen with Dijkstra,
+    // but cheap insurance against an infinite loop if a predecessor map
+    // somehow contains a stale entry).
+    let safety = aug.base.segments.length * 4 + 16;
+    while (n !== source) {
+        if (safety-- <= 0) return null;
+        nodes.push(n);
+        const e = cameFromEdge.get(n);
+        if (!e) return null;
+        edges.push(e);
+        const prev = cameFromNode.get(n);
+        if (prev == null) return null;
+        n = prev;
+    }
+    nodes.push(source);
+    nodes.reverse();
+    edges.reverse();
+    return reconstructLegs(aug, nodes, edges);
+}
+
+/**
+ * Find the optimal meeting point for a party of N players (N ≥ 1).
+ *
+ * Algorithm:
+ *   1. Run Dijkstra-from-source once per player on their own augmented
+ *      graph (player → all reachable nodes). O(P · (V + E log V)).
+ *   2. Score every TL endpoint as a candidate meeting node by combining
+ *      per-player costs via `objective`.
+ *   3. Also consider each player's own position as a candidate (handles
+ *      "everyone walk to player X" when the party is already close).
+ *      For these we re-run `findRoute` from each other player (cheap A*).
+ *   4. Reconstruct per-player routes to the winning candidate.
+ *
+ * Ties on the primary objective are broken by the OTHER objective so
+ * minimax doesn't pick an unnecessarily walk-heavy spot when a tied
+ * candidate would also be cheaper in aggregate.
+ */
+export function findRendezvous(
+    graph: TLGraph,
+    players: ReadonlyArray<WorldPoint>,
+    objective: RendezvousObjective = "minimax",
+): RendezvousResult | null {
+    if (players.length === 0) return null;
+    if (players.length === 1) {
+        return {
+            meeting: { x: players[0].x, z: players[0].z },
+            perPlayer: [
+                {
+                    player: players[0],
+                    route: { totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] },
+                },
+            ],
+            worstSeconds: 0,
+            totalSeconds: 0,
+            objective,
+        };
+    }
+
+    const N = graph.segments.length;
+
+    // Phase 1: per-player shortest-path trees.
+    const perPlayer = players.map((p) => {
+        // Reuse `augmentForQuery` with dest = start. The virtual dest node
+        // is harmless extra wiring (a handful of walk edges); the per-query
+        // start↔dest direct edge has cost 0 since the points coincide.
+        const aug = augmentForQuery(graph, p, p) as AugmentedGraph & {
+            outgoing: (from: number) => Edge[];
+        };
+        const trees = dijkstraAllFrom(aug, aug.startIdx);
+        return { player: p, aug, ...trees };
+    });
+
+    const scoreOf = (costs: ReadonlyArray<number>): number =>
+        objective === "minimax" ? Math.max(...costs) : costs.reduce((a, b) => a + b, 0);
+    const tieOf = (costs: ReadonlyArray<number>): number =>
+        objective === "minimax" ? costs.reduce((a, b) => a + b, 0) : Math.max(...costs);
+
+    type Best =
+        | { kind: "tlNode"; nodeIdx: number; meeting: WorldPoint; score: number; tie: number }
+        | { kind: "playerPos"; routes: RouteResult[]; meeting: WorldPoint; score: number; tie: number };
+    let best: Best | null = null;
+
+    const isBetter = (s: number, t: number): boolean => {
+        if (!best) return true;
+        if (s < best.score - 1e-9) return true;
+        if (s > best.score + 1e-9) return false;
+        return t < best.tie - 1e-9;
+    };
+
+    // Phase 2: score every TL endpoint as a meeting candidate. We only
+    // need costs here — route reconstruction is deferred to the winner.
+    const costsBuf: number[] = new Array(players.length);
+    for (let nodeIdx = 0; nodeIdx < N * 2; nodeIdx++) {
+        let reachable = true;
+        for (let i = 0; i < perPlayer.length; i++) {
+            const c = perPlayer[i].gScore.get(nodeIdx);
+            if (c == null || !Number.isFinite(c)) {
+                reachable = false;
+                break;
+            }
+            costsBuf[i] = c;
+        }
+        if (!reachable) continue;
+        const s = scoreOf(costsBuf);
+        const t = tieOf(costsBuf);
+        if (isBetter(s, t)) {
+            best = {
+                kind: "tlNode",
+                nodeIdx,
+                meeting: { x: graph.xs[nodeIdx], z: graph.zs[nodeIdx] },
+                score: s,
+                tie: t,
+            };
+        }
+    }
+
+    // Phase 3: consider "meet at player M's spot" for every player. This
+    // matters when the party is already clustered tightly enough that the
+    // best TL endpoint is a detour. For each candidate we run findRoute
+    // from every OTHER player (player M's own route is zero).
+    for (let m = 0; m < players.length; m++) {
+        const meet = players[m];
+        const routes: RouteResult[] = [];
+        let reachable = true;
+        for (let p = 0; p < players.length; p++) {
+            if (p === m) {
+                routes.push({ totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] });
+                continue;
+            }
+            const r = findRoute(graph, players[p], meet);
+            if (!r) {
+                reachable = false;
+                break;
+            }
+            routes.push(r);
+        }
+        if (!reachable) continue;
+        const costs = routes.map((r) => r.totalSeconds);
+        const s = scoreOf(costs);
+        const t = tieOf(costs);
+        if (isBetter(s, t)) {
+            best = {
+                kind: "playerPos",
+                routes,
+                meeting: { x: meet.x, z: meet.z },
+                score: s,
+                tie: t,
+            };
+        }
+    }
+
+    if (!best) return null;
+
+    // Phase 4: materialise per-player routes for the winner.
+    let perPlayerRoutes: RouteResult[];
+    if (best.kind === "tlNode") {
+        const targetNode = best.nodeIdx;
+        perPlayerRoutes = perPlayer.map((pp) => {
+            const reconstructed = reconstructFromMaps(
+                pp.aug,
+                targetNode,
+                pp.aug.startIdx,
+                pp.cameFromNode,
+                pp.cameFromEdge,
+            );
+            if (reconstructed) return reconstructed;
+            // Fallback shouldn't happen — we already know targetNode is
+            // reachable from pp.startIdx — but degrade gracefully.
+            const cost = pp.gScore.get(targetNode) ?? 0;
+            return { totalSeconds: cost, walkBlocks: 0, tlHops: 0, legs: [] };
+        });
+    } else {
+        perPlayerRoutes = best.routes;
+    }
+
+    const worstSeconds = perPlayerRoutes.reduce((m, r) => Math.max(m, r.totalSeconds), 0);
+    const totalSeconds = perPlayerRoutes.reduce((a, r) => a + r.totalSeconds, 0);
+
+    return {
+        meeting: best.meeting,
+        perPlayer: players.map((p, i) => ({ player: p, route: perPlayerRoutes[i] })),
+        worstSeconds,
+        totalSeconds,
+        objective,
+    };
+}
