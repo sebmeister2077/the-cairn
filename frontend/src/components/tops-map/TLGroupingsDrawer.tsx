@@ -171,7 +171,7 @@ export function TLGroupingsDrawer({
                     key={opt.value}
                     type="button"
                     onClick={() => onViewModeChange(opt.value)}
-                    className={`flex-1 px-2 py-1.5 text-xs transition-colors ${
+                    className={`flex-1 px-2 py-1.5 text-xs transition-colors cursor-pointer ${
                       active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
                     }`}
                   >
