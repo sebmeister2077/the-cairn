@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
 import { SafetyNotice } from "@/components/SafetyNotice";
+import { useTranslation } from "@/lib/i18n";
 import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function CommandsPage() {
+  const { t } = useTranslation();
   const [saveFile, setSaveFile] = useState<File | null>(null);
   const [wpFile, setWpFile] = useState<File | null>(null);
   const [configFile, setConfigFile] = useState<File | null>(null);
@@ -34,7 +36,7 @@ export function CommandsPage() {
       const data = await generateCommands(fd);
       setCommands(data.commands);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }
@@ -57,42 +59,54 @@ export function CommandsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Generate Commands</CardTitle>
+        <CardTitle>{t("commandsPage.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="read" />
         <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
-            label="Save file (.vcdbs)"
+            label={t("commandsPage.saveFileLabel")}
             accept=".vcdbs"
             onChange={setSaveFile}
           />
           <FileUpload
             id="wp"
-            label="— or — Waypoints JSON"
+            label={t("commandsPage.waypointsJsonAlternativeLabel")}
             accept=".json"
             onChange={setWpFile}
           />
           <FileUpload
             id="config"
-            label="Server config (optional)"
+            label={t("commandsPage.configFileLabel")}
             accept=".json"
             onChange={setConfigFile}
           />
           <SaveFileHelp />
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label htmlFor="title">Title filter</Label>
-              <Combobox id="title" value={title} onChange={setTitle} suggestions={[]} placeholder="e.g. trader" />
+              <Label htmlFor="title">{t("commandsPage.titleFilter")}</Label>
+              <Combobox
+                id="title"
+                value={title}
+                onChange={setTitle}
+                suggestions={[]}
+                placeholder={t("commandsPage.titlePlaceholder")}
+              />
             </div>
             <div>
-              <Label htmlFor="icon">Icon filter</Label>
-              <Combobox id="icon" value={icon} onChange={setIcon} suggestions={VS_WAYPOINT_ICONS} placeholder="e.g. circle" />
+              <Label htmlFor="icon">{t("commandsPage.iconFilter")}</Label>
+              <Combobox
+                id="icon"
+                value={icon}
+                onChange={setIcon}
+                suggestions={VS_WAYPOINT_ICONS}
+                placeholder={t("commandsPage.iconPlaceholder")}
+              />
             </div>
           </div>
           <Button type="submit" disabled={(!saveFile && !wpFile) || loading}>
-            {loading ? "Generating…" : "Generate"}
+            {loading ? t("commandsPage.generating") : t("commandsPage.generate")}
           </Button>
           {error && <p className="text-red-500 text-sm">{error}</p>}
         </form>
@@ -101,14 +115,14 @@ export function CommandsPage() {
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {commands.length} command(s)
+                {t("commandsPage.commandCount", { count: commands.length })}
               </p>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={copyAll}>
-                  Copy all
+                  {t("commandsPage.copyAll")}
                 </Button>
                 <Button variant="outline" size="sm" onClick={downloadTxt}>
-                  Download .txt
+                  {t("commandsPage.downloadTxt")}
                 </Button>
               </div>
             </div>

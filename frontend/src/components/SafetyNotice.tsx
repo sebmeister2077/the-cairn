@@ -8,6 +8,8 @@
  *                Shows the privacy line AND a prominent "back up first" warning.
  */
 
+import { useTranslation } from "@/lib/i18n";
+
 type Mode = "read" | "modify";
 
 interface SafetyNoticeProps {
@@ -15,22 +17,21 @@ interface SafetyNoticeProps {
 }
 
 export function SafetyNotice({ mode }: SafetyNoticeProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
       {mode === "modify" && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-xs text-red-900">
-          <strong>Back up your save file first.</strong> This tool returns a
-          modified copy of your <code>.vcdbs</code>. If you replace your
-          original with the result and something is wrong, the original is
-          gone. Keep a copy of the file you upload.
+          <strong>{t("singleplayerSafety.modify.warningTitle")}</strong>{" "}
+          {t("singleplayerSafety.modify.warningBody")}
         </div>
       )}
       <div className="rounded border border-sky-300 bg-sky-50 p-3 text-xs text-sky-900">
-        <strong>Your save file is not stored.</strong> The file you upload is
-        held in memory only for the duration of this request, used to{" "}
-        {mode === "modify" ? "modify the waypoints table" : "read the waypoints table"}
-        , and then discarded. Nothing about your world (terrain, players,
-        inventory, chunks) is read, copied, or kept on the server.
+        <strong>{t("singleplayerSafety.privacy.title")}</strong>{" "}
+        {mode === "modify"
+          ? t("singleplayerSafety.privacy.modifyBody")
+          : t("singleplayerSafety.privacy.readBody")}
       </div>
     </div>
   );

@@ -14,6 +14,20 @@ export const en = {
         size: "Size",
         unknownError: "Unknown error",
     },
+    singleplayerSafety: {
+        modify: {
+            warningTitle: "Back up your save file first.",
+            warningBody:
+                "This tool returns a modified copy of your .vcdbs. If you replace your original with the result and something is wrong, the original is gone. Keep a copy of the file you upload.",
+        },
+        privacy: {
+            title: "Your save file is not stored.",
+            readBody:
+                "The file you upload is held in memory only for the duration of this request, used to read the waypoints table, and then discarded. Nothing about your world (terrain, players, inventory, chunks) is read, copied, or kept on the server.",
+            modifyBody:
+                "The file you upload is held in memory only for the duration of this request, used to modify the waypoints table, and then discarded. Nothing about your world (terrain, players, inventory, chunks) is read, copied, or kept on the server.",
+        },
+    },
     app: {
         header: {
             tagline: "Unofficial fan project - not affiliated with Anego Studios",
@@ -217,6 +231,56 @@ export const en = {
         noMatches: "No matching waypoints found.",
         deleteResult:
             "Deleted {deleted} waypoint(s). {remaining} remaining.",
+    },
+    extractPage: {
+        title: "Extract Waypoints",
+        saveFileLabel: "Save file (.vcdbs)",
+        configFileLabel: "Server config (optional)",
+        titleFilter: "Title filter",
+        titlePlaceholder: "e.g. trader",
+        iconFilter: "Icon filter",
+        iconPlaceholder: "e.g. circle",
+        ownerFilter: "Owner filter",
+        ownerHelp:
+            "The owner is the unique player ID stored with each waypoint. In singleplayer this is your player UID. Filter to show only waypoints belonging to a specific player.",
+        extracting: "Extracting...",
+        extract: "Extract",
+        waypointsFound: "{count} waypoint(s) found",
+        downloadJson: "Download JSON",
+    },
+    importPage: {
+        title: "Import Waypoints",
+        saveFileLabel: "Save file (.vcdbs)",
+        waypointsJsonLabel: "Waypoints JSON",
+        configFileLabel: "Server config (optional)",
+        mode: "Mode",
+        modeAppend: "Append",
+        modeReplace: "Replace",
+        ownerUidOptional: "Owner UID (optional)",
+        ownerHelp:
+            "The owner UID is the unique player ID to assign to imported waypoints. In singleplayer this is your player UID. Leave blank to keep the original owner from the waypoint data.",
+        newGuids: "New GUIDs",
+        newGuidsHelp:
+            "Generate new unique identifiers for each imported waypoint. Enable this to avoid conflicts if the waypoints already exist in your save file.",
+        importing: "Importing...",
+        import: "Import",
+        importedResult: "Imported {imported} waypoint(s). Existing: {existing}.",
+        downloadModified: "Download modified .vcdbs",
+    },
+    commandsPage: {
+        title: "Generate Commands",
+        saveFileLabel: "Save file (.vcdbs)",
+        waypointsJsonAlternativeLabel: "- or - Waypoints JSON",
+        configFileLabel: "Server config (optional)",
+        titleFilter: "Title filter",
+        titlePlaceholder: "e.g. trader",
+        iconFilter: "Icon filter",
+        iconPlaceholder: "e.g. circle",
+        generating: "Generating...",
+        generate: "Generate",
+        commandCount: "{count} command(s)",
+        copyAll: "Copy all",
+        downloadTxt: "Download .txt",
     },
     contributePage: {
         cantContribute: {
@@ -992,6 +1056,41 @@ export const en = {
             searchByLabel: "Search by label...",
             noMatches: "No matches.",
             reviewNotice: "Renames on landmarks you didn't add are queued for admin review.",
+        },
+        landmarkDialogs: {
+            add: {
+                title: "Add a landmark",
+                headsUpTitle: "Heads up:",
+                headsUpBody:
+                    "landmarks are global - once added, this landmark will appear on the map for everyone using TOPS Map. Please only add real, useful locations and avoid duplicates or test entries.",
+                labelPlaceholder: "My base / Server spawn / ...",
+                type: "Type",
+                types: {
+                    base: "Base",
+                    server: "Server",
+                    terminus: "Terminus",
+                    misc: "Misc (hidden by default)",
+                },
+                yOptional: "Y (optional)",
+                coordinatesMustBeIntegers: "X and Z must be integers",
+                yMustBeInteger: "Y must be an integer",
+                coordinatesNoScientificNotation:
+                    "Coordinates must be integers (no scientific notation)",
+                submit: "Add landmark",
+            },
+            rename: {
+                titleOwned: "Rename landmark",
+                titleSuggested: "Suggest a new label",
+                queuedMessage:
+                    "Your suggestion has been queued for admin review. You'll see it under \"Pending rename requests\".",
+                ok: "OK",
+                notOwnedNotice:
+                    "This landmark wasn't added by you. Your suggestion will be reviewed by an admin before it appears.",
+                label: "Label",
+                labelRequired: "Label is required",
+                save: "Save",
+                submitSuggestion: "Submit suggestion",
+            },
         },
         translocatorLegend: {
             ariaLabel: "Translocator color legend",

@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
 import { SafetyNotice } from "@/components/SafetyNotice";
+import { useTranslation } from "@/lib/i18n";
 import {
   Select,
   SelectContent,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 
 export function ImportPage() {
+  const { t } = useTranslation();
   const [saveFile, setSaveFile] = useState<File | null>(null);
   const [wpFile, setWpFile] = useState<File | null>(null);
   const [configFile, setConfigFile] = useState<File | null>(null);
@@ -46,10 +48,10 @@ export function ImportPage() {
       const data = await importWaypoints(fd);
       setBlob(data.blob);
       setResult(
-        `Imported ${data.imported} waypoint(s). Existing: ${data.existing}.`
+        t("importPage.importedResult", { imported: data.imported, existing: data.existing }),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }
@@ -68,71 +70,69 @@ export function ImportPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Import Waypoints</CardTitle>
+        <CardTitle>{t("importPage.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="modify" />
         <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
-            label="Save file (.vcdbs)"
+            label={t("importPage.saveFileLabel")}
             accept=".vcdbs"
             required
             onChange={setSaveFile}
           />
           <FileUpload
             id="wp"
-            label="Waypoints JSON"
+            label={t("importPage.waypointsJsonLabel")}
             accept=".json"
             required
             onChange={setWpFile}
           />
           <FileUpload
             id="config"
-            label="Server config (optional)"
+            label={t("importPage.configFileLabel")}
             accept=".json"
             onChange={setConfigFile}
           />
           <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2 items-end">
             <div>
-              <Label>Mode</Label>
+              <Label>{t("importPage.mode")}</Label>
               <Select value={mode} onValueChange={(v) => v !== null && setMode(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="append">Append</SelectItem>
-                  <SelectItem value="replace">Replace</SelectItem>
+                  <SelectItem value="append">{t("importPage.modeAppend")}</SelectItem>
+                  <SelectItem value="replace">{t("importPage.modeReplace")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label htmlFor="owner">Owner UID (optional)<HelpTip text="The owner UID is the unique player ID to assign to imported waypoints. In singleplayer this is your player UID. Leave blank to keep the original owner from the waypoint data." /></Label>
-              <Input
-                id="owner"
-                value={owner}
-                onChange={(e) => setOwner(e.target.value)}
-              />
+              <Label htmlFor="owner">
+                {t("importPage.ownerUidOptional")}
+                <HelpTip text={t("importPage.ownerHelp")} />
+              </Label>
+              <Input id="owner" value={owner} onChange={(e) => setOwner(e.target.value)} />
             </div>
             <div className="flex items-center gap-2">
-              <Switch
-                id="guids"
-                checked={newGuids}
-                onCheckedChange={setNewGuids}
-              />
-              <Label htmlFor="guids">New GUIDs<HelpTip text="Generate new unique identifiers for each imported waypoint. Enable this to avoid conflicts if the waypoints already exist in your save file." /></Label>
+              <Switch id="guids" checked={newGuids} onCheckedChange={setNewGuids} />
+              <Label htmlFor="guids">
+                {t("importPage.newGuids")}
+                <HelpTip text={t("importPage.newGuidsHelp")} />
+              </Label>
             </div>
           </div>
           <Button type="submit" disabled={!saveFile || !wpFile || loading}>
-            {loading ? "Importing…" : "Import"}
+            {loading ? t("importPage.importing") : t("importPage.import")}
           </Button>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {result && (
             <div className="space-y-2">
               <p className="text-sm text-green-600">{result}</p>
               <Button variant="outline" size="sm" onClick={download}>
-                Download modified .vcdbs
+                {t("importPage.downloadModified")}
               </Button>
             </div>
           )}
