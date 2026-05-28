@@ -39,6 +39,7 @@ import {
   adminWebauthnAuthComplete,
   setAdminSession,
 } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 
 export type PasskeyDialogMode = "register" | "assert";
 
@@ -57,6 +58,7 @@ export function AdminPasskeyDialog({
    *  Use for the post-login assertion gate. */
   required?: boolean;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -70,11 +72,7 @@ export function AdminPasskeyDialog({
     const ok = typeof window !== "undefined" && !!window.PublicKeyCredential;
     setSupported(ok);
     if (!ok) {
-      setError(
-        "This browser cannot use passkeys. Open the site over HTTPS in a recent " +
-          "Chrome, Edge, Firefox or Safari, or on a device with Windows Hello, " +
-          "Touch ID, Android biometrics or a hardware security key."
-      );
+      setError(t("account.passkeys.dialog.browserUnsupported"));
     } else {
       setError(null);
     }
@@ -96,7 +94,7 @@ export function AdminPasskeyDialog({
       onSuccess?.();
       onClose();
     },
-    onError: (e: unknown) => setError(humanizeWebAuthnError(e)),
+    onError: (e: unknown) => setError(humanizeWebAuthnError(e, t)),
   });
 
   const assert = useMutation({
@@ -113,16 +111,19 @@ export function AdminPasskeyDialog({
       onSuccess?.();
       onClose();
     },
-    onError: (e: unknown) => setError(humanizeWebAuthnError(e)),
+    onError: (e: unknown) => setError(humanizeWebAuthnError(e, t)),
   });
 
   const pending = register.isPending || assert.isPending;
 
-  const title = mode === "register" ? "Register an admin passkey" : "Verify with your passkey";
+  const title =
+    mode === "register"
+      ? t("account.passkeys.dialog.registerTitle")
+      : t("account.passkeys.dialog.verifyTitle");
   const description =
     mode === "register"
-      ? "Add a second factor on top of the admin API key. Your device’s passkey provider — Windows Hello, Touch ID, a hardware security key, or your password manager — will prompt you to confirm. The private key never leaves your device."
-      : "Your API key was accepted. Tap your security key, fingerprint sensor, or Windows Hello prompt to finish signing in. The session lasts the rest of the day; after that you’ll be asked again.";
+      ? t("account.passkeys.dialog.registerDescription")
+      : t("account.passkeys.dialog.verifyDescription");
 
   return (
     <Dialog
@@ -131,9 +132,7 @@ export function AdminPasskeyDialog({
         if (!v && !required && !pending) onClose();
       }}
     >
-      <DialogContent
-        showCloseButton={!required}
-      >
+      <DialogContent showCloseButton={!required}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {mode === "register" ? (
@@ -148,18 +147,18 @@ export function AdminPasskeyDialog({
 
         {mode === "register" && supported && (
           <div className="grid gap-2">
-            <Label htmlFor="passkey-name">Device name</Label>
+            <Label htmlFor="passkey-name">{t("account.passkeys.dialog.deviceName")}</Label>
             <Input
               id="passkey-name"
               autoFocus
-              placeholder="e.g. Work laptop, YubiKey 5C, iPhone"
+              placeholder={t("account.passkeys.dialog.deviceNamePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={64}
               disabled={pending}
             />
             <p className="text-xs text-muted-foreground">
-              Shown in the Account page so you can recognise and revoke it later.
+              {t("account.passkeys.dialog.deviceNameHelp")}
             </p>
           </div>
         )}
@@ -168,7 +167,7 @@ export function AdminPasskeyDialog({
           <div className="flex flex-col items-center gap-3 py-4">
             <Fingerprint className="h-12 w-12 text-muted-foreground" aria-hidden />
             <p className="text-sm text-muted-foreground text-center">
-              Waiting for your passkey…
+              {t("account.passkeys.dialog.waiting")}
             </p>
           </div>
         )}
@@ -183,19 +182,25 @@ export function AdminPasskeyDialog({
         <DialogFooter className="gap-2">
           {!required && (
             <Button variant="ghost" onClick={onClose} disabled={pending}>
-              {mode === "assert" ? "Sign out" : "Not now"}
+              {mode === "assert"
+                ? t("account.passkeys.dialog.signOut")
+                : t("account.passkeys.dialog.notNow")}
             </Button>
           )}
           {mode === "register" ? (
             <Button
               onClick={() => {
                 setError(null);
-                register.mutate((name || "Passkey").trim());
+                register.mutate((name || t("account.passkeys.dialog.defaultPasskeyName")).trim());
               }}
               disabled={pending || !supported}
             >
-              {register.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-              Add passkey
+              {register.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <KeyRound className="h-4 w-4" />
+              )}
+              {t("account.passkeys.dialog.addPasskey")}
             </Button>
           ) : (
             <Button
@@ -205,8 +210,12 @@ export function AdminPasskeyDialog({
               }}
               disabled={pending || !supported}
             >
-              {assert.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Fingerprint className="h-4 w-4" />}
-              Verify passkey
+              {assert.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Fingerprint className="h-4 w-4" />
+              )}
+              {t("account.passkeys.dialog.verifyPasskey")}
             </Button>
           )}
         </DialogFooter>
@@ -216,29 +225,30 @@ export function AdminPasskeyDialog({
 }
 
 /** Map low-level WebAuthn / fetch errors to short, actionable copy. */
-function humanizeWebAuthnError(e: unknown): string {
+function humanizeWebAuthnError(e: unknown, t: ReturnType<typeof useTranslation>["t"]): string {
   if (e instanceof Error) {
     const msg = e.message || "";
     if (/NotAllowed/i.test(msg)) {
-      return "The passkey prompt was cancelled or timed out. Try again.";
+      return t("account.passkeys.dialog.cancelledOrTimedOut");
     }
     if (/InvalidState/i.test(msg)) {
-      return "This passkey is already registered for this admin.";
+      return t("account.passkeys.dialog.alreadyRegistered");
     }
     if (/SecurityError/i.test(msg)) {
-      return "The site origin does not match the server's WEBAUTHN_RP_ID. Check your deployment config.";
+      return t("account.passkeys.dialog.securityError");
     }
     if (/passkey_session_expired|passkey_required/i.test(msg)) {
-      return "Your passkey session expired. Please verify again.";
+      return t("account.passkeys.dialog.sessionExpired");
     }
     return msg;
   }
-  return "Unexpected error during passkey ceremony.";
+  return t("account.passkeys.dialog.unexpectedError");
 }
 
 /** Convenience hook used by the Account page badge — exposes the memoised
  *  human-readable expiry of the current admin session, refreshed every minute. */
 export function useAdminSessionExpiry() {
+  const { t } = useTranslation();
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const id = window.setInterval(() => setTick((t) => t + 1), 60_000);
@@ -254,10 +264,10 @@ export function useAdminSessionExpiry() {
     const raw = Number(localStorage.getItem("admin_session_expires") ?? "0");
     if (!raw) return null;
     const remaining = raw - Date.now();
-    if (remaining <= 0) return "expired";
+    if (remaining <= 0) return t("account.passkeys.expired");
     const minutes = Math.round(remaining / 60_000);
-    if (minutes < 60) return `expires in ${minutes} min`;
+    if (minutes < 60) return t("account.passkeys.expiresInMinutes", { count: minutes });
     const hours = Math.round(minutes / 60);
-    return `expires in ${hours} h`;
-  }, [tick]);
+    return t("account.passkeys.expiresInHours", { count: hours });
+  }, [tick, t]);
 }

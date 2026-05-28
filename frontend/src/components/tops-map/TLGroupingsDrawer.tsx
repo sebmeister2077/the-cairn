@@ -28,6 +28,7 @@ import {
   type TLGrouping,
   type UseTLGroupingsResult,
 } from "@/lib/tl-groupings";
+import { Trans, useTranslation } from "@/lib/i18n";
 
 export type TLGroupingsViewMode = "all" | "filter" | "highlight";
 
@@ -68,6 +69,7 @@ export function TLGroupingsDrawer({
   onStartEditing,
   onStopEditing,
 }: TLGroupingsDrawerProps) {
+  const { t } = useTranslation();
   const { groupings, createGrouping, renameGrouping, deleteGrouping, importJSON } = store;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -88,7 +90,9 @@ export function TLGroupingsDrawer({
   }, [allSegments]);
 
   function handleCreate() {
-    const grouping = createGrouping(`Grouping ${groupings.length + 1}`);
+    const grouping = createGrouping(
+      t("topsMap.groupingsDrawer.defaultGroupingName", { count: groupings.length + 1 }),
+    );
     onStartEditing(grouping.id);
   }
 
@@ -115,7 +119,7 @@ export function TLGroupingsDrawer({
     const text = await file.text();
     const parsed = parseImport(text);
     if (!parsed) {
-      setImportError("That file is not a valid TL groupings export.");
+      setImportError(t("topsMap.groupingsDrawer.invalidImport"));
       return;
     }
     setImportError(null);
@@ -126,7 +130,7 @@ export function TLGroupingsDrawer({
     if (!pendingImport) return;
     const result = importJSON(pendingImport, mode);
     setPendingImport(null);
-    if (!result.ok) setImportError(result.error);
+    if (!result.ok) setImportError(t("topsMap.groupingsDrawer.invalidImport"));
   }
 
   function startRename(g: TLGrouping) {
@@ -145,23 +149,20 @@ export function TLGroupingsDrawer({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>Favorite TL groupings</SheetTitle>
-            <SheetDescription>
-              Save sets of translocators you care about and reduce on-map clutter. Stored locally in
-              this browser.
-            </SheetDescription>
+            <SheetTitle>{t("topsMap.groupingsDrawer.title")}</SheetTitle>
+            <SheetDescription>{t("topsMap.groupingsDrawer.description")}</SheetDescription>
           </SheetHeader>
 
           <div className="flex flex-col gap-1">
             <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              View mode
+              {t("topsMap.groupingsDrawer.viewMode")}
             </Label>
             <div className="inline-flex w-full overflow-hidden rounded-md border">
               {(
                 [
-                  { value: "all", label: "All TLs" },
-                  { value: "filter", label: "Only selected" },
-                  { value: "highlight", label: "Highlight selected" },
+                  { value: "all", label: t("topsMap.groupingsDrawer.modes.all") },
+                  { value: "filter", label: t("topsMap.groupingsDrawer.modes.filter") },
+                  { value: "highlight", label: t("topsMap.groupingsDrawer.modes.highlight") },
                 ] as const
               ).map((opt) => {
                 const active = viewMode === opt.value;
@@ -180,15 +181,15 @@ export function TLGroupingsDrawer({
               })}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              {viewMode === "all" && "Groupings have no effect on what's drawn."}
-              {viewMode === "filter" && "Only TLs in the active groupings are rendered."}
-              {viewMode === "highlight" && "All TLs are rendered; favorites are emphasised."}
+              {viewMode === "all" && t("topsMap.groupingsDrawer.modeHelp.all")}
+              {viewMode === "filter" && t("topsMap.groupingsDrawer.modeHelp.filter")}
+              {viewMode === "highlight" && t("topsMap.groupingsDrawer.modeHelp.highlight")}
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <Button type="button" size="sm" variant="outline" onClick={handleImportClick}>
-              <Download className="size-4 mr-1" /> Import
+              <Download className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.import")}
             </Button>
             <Button
               type="button"
@@ -197,7 +198,7 @@ export function TLGroupingsDrawer({
               onClick={handleExport}
               disabled={groupings.length === 0}
             >
-              <Upload className="size-4 mr-1" /> Export
+              <Upload className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.export")}
             </Button>
             <input
               ref={fileInputRef}
@@ -212,7 +213,7 @@ export function TLGroupingsDrawer({
           <div className="flex-1 overflow-y-auto -mx-4 px-4">
             {groupings.length === 0 && (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No groupings yet. Create one and click TLs on the map to add them.
+                {t("topsMap.groupingsDrawer.empty")}
               </div>
             )}
 
@@ -234,7 +235,7 @@ export function TLGroupingsDrawer({
                         className="mt-1.5 cursor-pointer"
                         checked={isActive}
                         onCheckedChange={() => onToggleActive(g.id)}
-                        aria-label={`Activate grouping ${g.name}`}
+                        aria-label={t("topsMap.groupingsDrawer.activateGrouping", { name: g.name })}
                       />
                       <div className="flex-1 min-w-0">
                         {renamingId === g.id ? (
@@ -257,14 +258,16 @@ export function TLGroupingsDrawer({
                             type="button"
                             className="block w-full truncate text-left font-medium hover:underline"
                             onClick={() => startRename(g)}
-                            title="Click to rename"
+                            title={t("topsMap.groupingsDrawer.clickToRename")}
                           >
                             {g.name}
                           </button>
                         )}
                         <p className="text-xs text-muted-foreground">
-                          {total} TL{total === 1 ? "" : "s"}
-                          {missing > 0 ? ` (${missing} missing)` : ""}
+                          {t("topsMap.groupingsDrawer.tlCount", { count: total })}
+                          {missing > 0
+                            ? ` (${t("topsMap.groupingsDrawer.missingCount", { count: missing })})`
+                            : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-1">
@@ -273,7 +276,11 @@ export function TLGroupingsDrawer({
                           size="icon-sm"
                           variant={isEditing ? "default" : "ghost"}
                           onClick={() => (isEditing ? onStopEditing() : onStartEditing(g.id))}
-                          title={isEditing ? "Stop editing" : "Edit TLs"}
+                          title={
+                            isEditing
+                              ? t("topsMap.groupingsDrawer.stopEditing")
+                              : t("topsMap.groupingsDrawer.editTls")
+                          }
                         >
                           <Pencil className="size-4" />
                         </Button>
@@ -282,7 +289,7 @@ export function TLGroupingsDrawer({
                           size="icon-sm"
                           variant="ghost"
                           onClick={() => setConfirmDelete(g)}
-                          title="Delete grouping"
+                          title={t("topsMap.groupingsDrawer.deleteGrouping")}
                         >
                           <Trash2 className="size-4" />
                         </Button>
@@ -295,20 +302,25 @@ export function TLGroupingsDrawer({
           </div>
 
           <Button type="button" onClick={handleCreate}>
-            <Plus className="size-4 mr-1" /> New grouping
+            <Plus className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.newGrouping")}
           </Button>
         </SheetContent>
       </Sheet>
 
       <ConfirmDialog
         open={confirmDelete !== null}
-        title="Delete grouping?"
+        title={t("topsMap.groupingsDrawer.deleteTitle")}
         description={
-          confirmDelete
-            ? `“${confirmDelete.name}” will be removed from this browser. This cannot be undone.`
-            : undefined
+          confirmDelete ? (
+            <Trans
+              path="topsMap.groupingsDrawer.deleteDescription"
+              values={{ name: confirmDelete.name }}
+              components={{ strong: <strong /> }}
+            />
+          ) : undefined
         }
-        confirmLabel="Delete"
+        confirmLabel={t("topsMap.groupingsDrawer.deleteConfirm")}
+        cancelLabel={t("topsMap.groupingsDrawer.cancel")}
         variant="destructive"
         onConfirm={() => {
           if (confirmDelete) deleteGrouping(confirmDelete.id);
@@ -325,21 +337,18 @@ export function TLGroupingsDrawer({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Import groupings</DialogTitle>
-            <DialogDescription>
-              Replace your existing groupings with the imported file, or merge them into your
-              current list?
-            </DialogDescription>
+            <DialogTitle>{t("topsMap.groupingsDrawer.importTitle")}</DialogTitle>
+            <DialogDescription>{t("topsMap.groupingsDrawer.importDescription")}</DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
             <Button variant="outline" size="sm" onClick={() => setPendingImport(null)}>
-              Cancel
+              {t("topsMap.groupingsDrawer.cancel")}
             </Button>
             <Button variant="outline" size="sm" onClick={() => applyImport("replace")}>
-              Replace
+              {t("topsMap.groupingsDrawer.replace")}
             </Button>
             <Button size="sm" onClick={() => applyImport("merge")}>
-              Merge
+              {t("topsMap.groupingsDrawer.merge")}
             </Button>
           </DialogFooter>
         </DialogContent>

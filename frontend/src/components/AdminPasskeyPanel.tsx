@@ -19,13 +19,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, KeyRound, Trash2, ShieldCheck, ShieldAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   adminWebauthnStatus,
   adminWebauthnListCredentials,
@@ -33,12 +27,12 @@ import {
   adminWebauthnLogout,
   getAdminSession,
 } from "@/lib/api";
-import {
-  AdminPasskeyDialog,
-  useAdminSessionExpiry,
-} from "@/components/AdminPasskeyDialog";
+import { AdminPasskeyDialog, useAdminSessionExpiry } from "@/components/AdminPasskeyDialog";
+import { Trans, useFormat, useTranslation } from "@/lib/i18n";
 
 export function AdminPasskeyPanel() {
+  const { t } = useTranslation();
+  const { dateTime } = useFormat();
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<null | "register" | "assert">(null);
 
@@ -57,6 +51,8 @@ export function AdminPasskeyPanel() {
 
   const expiry = useAdminSessionExpiry();
   const hasSession = !!getAdminSession();
+  const sessionExpired = expiry === t("account.passkeys.expired");
+  const hasVerifiedSession = hasSession && !sessionExpired;
 
   const removeMut = useMutation({
     mutationFn: adminWebauthnDeleteCredential,
@@ -80,7 +76,7 @@ export function AdminPasskeyPanel() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <KeyRound className="h-4 w-4" /> Admin passkeys
+            <KeyRound className="h-4 w-4" /> {t("account.passkeys.loadingTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -99,34 +95,36 @@ export function AdminPasskeyPanel() {
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2">
-            <KeyRound className="h-4 w-4" /> Admin passkeys
+            <KeyRound className="h-4 w-4" /> {t("account.passkeys.title")}
             {enrolled ? (
               <span className="ml-1 inline-flex items-center gap-1 rounded bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-700 dark:text-emerald-400">
-                <ShieldCheck className="h-3 w-3" /> 2FA active
+                <ShieldCheck className="h-3 w-3" /> {t("account.passkeys.activeBadge")}
               </span>
             ) : enforced ? (
               <span className="ml-1 inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 dark:text-amber-400">
-                <ShieldAlert className="h-3 w-3" /> Recommended
+                <ShieldAlert className="h-3 w-3" /> {t("account.passkeys.recommendedBadge")}
               </span>
             ) : null}
           </CardTitle>
           <CardDescription>
-            Add a hardware-backed second factor on top of your admin API key.
-            The private key never leaves your device — only signed challenges
-            are sent to the server. Lose access to all your devices? An admin
-            can clear the <code>webauthn_credentials</code> table to recover.
+            <Trans
+              path="account.passkeys.description"
+              components={{
+                code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+              }}
+            />
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {/* Session status */}
           <div className="flex flex-wrap items-center gap-2 rounded border bg-muted/40 px-3 py-2 text-sm">
-            <span className="font-medium">Session:</span>
-            {hasSession ? (
+            <span className="font-medium">{t("account.passkeys.session")}</span>
+            {hasVerifiedSession ? (
               <>
-                <span className="text-emerald-700 dark:text-emerald-400">verified</span>
-                {expiry && expiry !== "expired" && (
-                  <span className="text-muted-foreground">({expiry})</span>
-                )}
+                <span className="text-emerald-700 dark:text-emerald-400">
+                  {t("account.passkeys.verified")}
+                </span>
+                {expiry && <span className="text-muted-foreground">({expiry})</span>}
                 <Button
                   size="sm"
                   variant="ghost"
@@ -134,21 +132,19 @@ export function AdminPasskeyPanel() {
                   onClick={() => logoutMut.mutate()}
                   disabled={logoutMut.isPending}
                 >
-                  Sign out of passkey
+                  {t("account.passkeys.signOut")}
                 </Button>
               </>
             ) : (
               <>
                 <span className="text-muted-foreground">
-                  {enrolled ? "not verified — re-authenticate to use admin endpoints" : "no passkey yet"}
+                  {enrolled
+                    ? t("account.passkeys.notVerified")
+                    : t("account.passkeys.noPasskeyYet")}
                 </span>
                 {enrolled && (
-                  <Button
-                    size="sm"
-                    className="ml-auto"
-                    onClick={() => setDialog("assert")}
-                  >
-                    Verify now
+                  <Button size="sm" className="ml-auto" onClick={() => setDialog("assert")}>
+                    {t("account.passkeys.verifyNow")}
                   </Button>
                 )}
               </>
@@ -158,7 +154,7 @@ export function AdminPasskeyPanel() {
           {/* Credential list */}
           <div className="space-y-2">
             {credentials.data?.credentials.length === 0 && (
-              <p className="text-sm text-muted-foreground">No passkeys registered yet.</p>
+              <p className="text-sm text-muted-foreground">{t("account.passkeys.noPasskeys")}</p>
             )}
             {credentials.data?.credentials.map((c) => (
               <div
@@ -168,8 +164,16 @@ export function AdminPasskeyPanel() {
                 <div className="min-w-0">
                   <div className="truncate font-medium">{c.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    Added {formatDate(c.created_at)}
-                    {c.last_used_at && <> · Last used {formatDate(c.last_used_at)}</>}
+                    {t("account.passkeys.added", { date: formatDate(c.created_at, dateTime, t) })}
+                    {c.last_used_at && (
+                      <>
+                        {" "}
+                        ·{" "}
+                        {t("account.passkeys.lastUsed", {
+                          date: formatDate(c.last_used_at, dateTime, t),
+                        })}
+                      </>
+                    )}
                   </div>
                 </div>
                 <Button
@@ -177,7 +181,7 @@ export function AdminPasskeyPanel() {
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10"
                   onClick={() => {
-                    if (confirm(`Remove passkey "${c.name}"? Make sure you have another way to sign in.`)) {
+                    if (confirm(t("account.passkeys.removeConfirm", { name: c.name }))) {
                       removeMut.mutate(c.id);
                     }
                   }}
@@ -195,7 +199,7 @@ export function AdminPasskeyPanel() {
 
           <div className="flex justify-end">
             <Button onClick={() => setDialog("register")}>
-              <KeyRound className="h-4 w-4" /> Add passkey
+              <KeyRound className="h-4 w-4" /> {t("account.passkeys.addPasskey")}
             </Button>
           </div>
         </CardContent>
@@ -213,10 +217,14 @@ export function AdminPasskeyPanel() {
   );
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+function formatDate(
+  iso: string | null,
+  dateTime: ReturnType<typeof useFormat>["dateTime"],
+  t: ReturnType<typeof useTranslation>["t"],
+): string {
+  if (!iso) return t("account.passkeys.emptyDate");
   try {
-    return new Date(iso).toLocaleString();
+    return dateTime(iso, { dateStyle: "medium", timeStyle: "short" });
   } catch {
     return iso;
   }

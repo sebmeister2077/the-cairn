@@ -6,6 +6,7 @@
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setTerminusStyle, setTLStyle, setTraderStyle } from "@/store/slices/mapView";
 import {
@@ -92,73 +93,154 @@ const TRADER_COLOR = "rgba(34, 211, 238, 0.92)";
 const TL_COLOR = "rgba(167, 139, 250, 0.95)";
 
 export function MarkerStylePicker() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const traderStyle = useReduxState("mapView.traderStyle");
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
 
+  const optionText = {
+    "gear-stack": {
+      label: t("account.appearance.markerOption.gear-stack.label"),
+      hint: t("account.appearance.markerOption.gear-stack.hint"),
+    },
+    "rusty-gear": {
+      label: t("account.appearance.markerOption.rusty-gear.label"),
+      hint: t("account.appearance.markerOption.rusty-gear.hint"),
+    },
+    gear: {
+      label: t("account.appearance.markerOption.gear.label"),
+      hint: t("account.appearance.markerOption.gear.hint"),
+    },
+    coin: {
+      label: t("account.appearance.markerOption.coin.label"),
+      hint: t("account.appearance.markerOption.coin.hint"),
+    },
+    bag: {
+      label: t("account.appearance.markerOption.bag.label"),
+      hint: t("account.appearance.markerOption.bag.hint"),
+    },
+    dot: {
+      label: t("account.appearance.markerOption.dot.label"),
+      hint: t("account.appearance.markerOption.dot.hint"),
+    },
+    spiral: {
+      label: t("account.appearance.markerOption.spiral.label"),
+      hint: t("account.appearance.markerOption.spiral.hint"),
+    },
+    "dual-spiral": {
+      label: t("account.appearance.markerOption.dual-spiral.label"),
+      hint: t("account.appearance.markerOption.dual-spiral.hint"),
+    },
+    vortex: {
+      label: t("account.appearance.markerOption.vortex.label"),
+      hint: t("account.appearance.markerOption.vortex.hint"),
+    },
+    portal: {
+      label: t("account.appearance.markerOption.portal.label"),
+      hint: t("account.appearance.markerOption.portal.hint"),
+    },
+    diamond: {
+      label: t("account.appearance.markerOption.diamond.label"),
+      hint: t("account.appearance.markerOption.diamond.hint"),
+    },
+    hex: {
+      label: t("account.appearance.markerOption.hex.label"),
+      hint: t("account.appearance.markerOption.hex.hint"),
+    },
+    tombstone: {
+      label: t("account.appearance.markerOption.tombstone.label"),
+      hint: t("account.appearance.markerOption.tombstone.hint"),
+    },
+    cross: {
+      label: t("account.appearance.markerOption.cross.label"),
+      hint: t("account.appearance.markerOption.cross.hint"),
+    },
+    skull: {
+      label: t("account.appearance.markerOption.skull.label"),
+      hint: t("account.appearance.markerOption.skull.hint"),
+    },
+    "down-arrow": {
+      label: t("account.appearance.markerOption.down-arrow.label"),
+      hint: t("account.appearance.markerOption.down-arrow.hint"),
+    },
+    rift: {
+      label: t("account.appearance.markerOption.rift.label"),
+      hint: t("account.appearance.markerOption.rift.hint"),
+    },
+  } as const;
+
   return (
     <div className="space-y-4">
       <div className="space-y-2">
         <div className="space-y-0.5">
-          <Label>Trader icon</Label>
+          <Label>{t("account.appearance.traderIcon")}</Label>
           <p className="text-xs text-muted-foreground">
-            How merchants and traveling traders appear on the map.
+            {t("account.appearance.traderIconDescription")}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {TRADER_STYLE_OPTIONS.map((opt) => (
-            <OptionButton
-              key={opt.id}
-              label={opt.label}
-              hint={opt.hint}
-              selected={traderStyle === opt.id}
-              onSelect={() => dispatch(setTraderStyle(opt.id as TraderStyle))}
-              draw={(ctx) => drawTraderMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id, TRADER_COLOR)}
-            />
-          ))}
+          {TRADER_STYLE_OPTIONS.map((opt) => {
+            const text = optionText[opt.id];
+            return (
+              <OptionButton
+                key={opt.id}
+                label={text.label}
+                hint={text.hint}
+                selected={traderStyle === opt.id}
+                onSelect={() => dispatch(setTraderStyle(opt.id as TraderStyle))}
+                draw={(ctx) => drawTraderMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id, TRADER_COLOR)}
+              />
+            );
+          })}
         </div>
       </div>
 
       <div className="space-y-2">
         <div className="space-y-0.5">
-          <Label>Translocator endpoint</Label>
+          <Label>{t("account.appearance.translocatorEndpoint")}</Label>
           <p className="text-xs text-muted-foreground">
-            Marker drawn at each end of a translocator route.
+            {t("account.appearance.translocatorEndpointDescription")}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {TL_STYLE_OPTIONS.map((opt) => (
-            <OptionButton
-              key={opt.id}
-              label={opt.label}
-              hint={opt.hint}
-              selected={tlStyle === opt.id}
-              onSelect={() => dispatch(setTLStyle(opt.id as TLStyle))}
-              draw={(ctx) => drawTLEndpoint(ctx, 0, 0, SWATCH_ZOOM, opt.id, TL_COLOR)}
-            />
-          ))}
+          {TL_STYLE_OPTIONS.map((opt) => {
+            const text = optionText[opt.id];
+            return (
+              <OptionButton
+                key={opt.id}
+                label={text.label}
+                hint={text.hint}
+                selected={tlStyle === opt.id}
+                onSelect={() => dispatch(setTLStyle(opt.id as TLStyle))}
+                draw={(ctx) => drawTLEndpoint(ctx, 0, 0, SWATCH_ZOOM, opt.id, TL_COLOR)}
+              />
+            );
+          })}
         </div>
       </div>
 
       <div className="space-y-2">
         <div className="space-y-0.5">
-          <Label>Terminus icon</Label>
+          <Label>{t("account.appearance.terminusIcon")}</Label>
           <p className="text-xs text-muted-foreground">
-            One-way death-return waypoints. Icon-only — no label is rendered.
+            {t("account.appearance.terminusIconDescription")}
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-          {TERMINUS_STYLE_OPTIONS.map((opt) => (
-            <OptionButton
-              key={opt.id}
-              label={opt.label}
-              hint={opt.hint}
-              selected={terminusStyle === opt.id}
-              onSelect={() => dispatch(setTerminusStyle(opt.id as TerminusStyle))}
-              draw={(ctx) => drawTerminusMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id)}
-            />
-          ))}
+          {TERMINUS_STYLE_OPTIONS.map((opt) => {
+            const text = optionText[opt.id];
+            return (
+              <OptionButton
+                key={opt.id}
+                label={text.label}
+                hint={text.hint}
+                selected={terminusStyle === opt.id}
+                onSelect={() => dispatch(setTerminusStyle(opt.id as TerminusStyle))}
+                draw={(ctx) => drawTerminusMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id)}
+              />
+            );
+          })}
         </div>
       </div>
     </div>

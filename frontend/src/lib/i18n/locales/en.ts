@@ -106,9 +106,162 @@ export const en = {
         },
     },
     account: {
+        noApiKey: {
+            title: "Account",
+            description: "You need to set an API key first to view or create your account.",
+        },
+        register: {
+            title: "Create your account",
+            description:
+                "Accept the terms and a random display name will be generated for you. Creating an account is not needed for viewing and contributing to the map.",
+            submit: "Accept terms and create account",
+            submitting: "Creating...",
+        },
+        adminSession: {
+            title: "Admin session",
+            description:
+                "You are signed in as the system admin. The admin key has no user profile. Manage other users under <code>Manage -> Users</code>.",
+        },
+        page: {
+            title: "My Account",
+            description: "Manage your public profile, API key, and personal data.",
+        },
+        identity: {
+            title: "Identity",
+            inGameName: "In-game name",
+            optional: "(optional)",
+            inGameNamePlaceholder: "Your Vintage Story character name",
+            save: "Save",
+            saveUpdatesDisplayName: "Saving will also update your public display name to match.",
+            hireBoardMatching: "Used for hire-board matching. Other users may flag duplicates.",
+            useInGameName: "Use in-game name as display name",
+            useInGameNameEnabled:
+                "When on, other users see your in-game name everywhere instead of a random handle.",
+            useInGameNameDisabled: "Set an in-game name first to enable this.",
+            displayName: "Display name",
+            regenerate: "Regenerate",
+            regeneratedCount: "Regenerated {count} times. Limited to 3 per day.",
+        },
+        preferences: {
+            title: "Preferences",
+            availableForHire: "Available for hire",
+            availableForHireDescription: "Show me on the hire board. (WIP)",
+            showOnLeaderboards: "Show on leaderboards",
+            showOnLeaderboardsDescription:
+                "Opt-in to appear on contributor leaderboards. (WIP)",
+            showContributions: "Show Contributions",
+            showContributionsDescription:
+                "Reveal who submitted an explored area (WIP). Will fallback to the expedition financier's name if disabled.",
+        },
         appearance: {
             title: "Appearance",
             description: "Choose how Cairn looks. Auto follows your operating system.",
+            starfieldLabel: "Animated starfield on map",
+            starfieldDescription:
+                "Show a subtle cosmos backdrop behind unexplored areas of the TOPS map. Pure CSS, GPU-only - turn off if you prefer a flat dark background.",
+            markerIconsTitle: "Map marker icons",
+            markerIconsDescription:
+                "Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the map. Changes apply immediately and are saved to your browser.",
+            traderIcon: "Trader icon",
+            traderIconDescription: "How merchants and traveling traders appear on the map.",
+            translocatorEndpoint: "Translocator endpoint",
+            translocatorEndpointDescription: "Marker drawn at each end of a translocator route.",
+            terminusIcon: "Terminus icon",
+            terminusIconDescription:
+                "One-way death-return waypoints. Icon-only - no label is rendered.",
+            markerOption: {
+                "gear-stack": { label: "Gear Stack", hint: "Two overlapping rusty gears (default)." },
+                "rusty-gear": { label: "Rusty Gear", hint: "Single gear with rust-tinted hub." },
+                gear: { label: "Gear", hint: "Plain single gear." },
+                coin: { label: "Coin", hint: "Currency disc with a +." },
+                bag: { label: "Bag", hint: "Coin-sack silhouette." },
+                dot: { label: "Dot", hint: "Simple colored disc." },
+                spiral: { label: "Spiral", hint: "Single inward spiral (default)." },
+                "dual-spiral": { label: "Dual Spiral", hint: "Two interlocking spirals." },
+                vortex: { label: "Vortex", hint: "Concentric swirl arcs." },
+                portal: { label: "Portal", hint: "Ringed dot endpoint (legacy)." },
+                diamond: { label: "Diamond", hint: "Diamond frame with double-arrow." },
+                hex: { label: "Hex", hint: "Hexagon frame with chevrons." },
+                tombstone: { label: "Tombstone", hint: "Gravestone with a cross (default)." },
+                cross: { label: "Cross", hint: "Grave-cross on a red disc." },
+                skull: { label: "Skull", hint: "Hex frame with tiny skull." },
+                "down-arrow": { label: "Down-Arrow", hint: "Hex frame with single downward arrow." },
+                rift: { label: "Rift", hint: "Vertical jagged crack." },
+            },
+        },
+        apiKey: {
+            title: "API Key",
+            description: "Your secret access key. Treat it like a password.",
+            downloadRecoveryFile: "Download recovery file",
+        },
+        dataExport: {
+            title: "Your data",
+            exportEverything: "Export everything (JSON)",
+        },
+        translocators: {
+            title: "My contributed translocators",
+            submitted: "Submitted",
+            coordinates: "Coordinates",
+            label: "Label",
+            emptyValue: "-",
+        },
+        passkeys: {
+            title: "Admin passkeys",
+            activeBadge: "2FA active",
+            recommendedBadge: "Recommended",
+            description:
+                "Add a hardware-backed second factor on top of your admin API key. The private key never leaves your device - only signed challenges are sent to the server. Lose access to all your devices? An admin can clear the <code>webauthn_credentials</code> table to recover.",
+            session: "Session:",
+            verified: "verified",
+            notVerified: "not verified - re-authenticate to use admin endpoints",
+            noPasskeyYet: "no passkey yet",
+            signOut: "Sign out of passkey",
+            verifyNow: "Verify now",
+            noPasskeys: "No passkeys registered yet.",
+            added: "Added {date}",
+            lastUsed: "Last used {date}",
+            removeConfirm:
+                "Remove passkey \"{name}\"? Make sure you have another way to sign in.",
+            addPasskey: "Add passkey",
+            loadingTitle: "Admin passkeys",
+            emptyDate: "-",
+            expiresInMinutes: "expires in {count} min",
+            expiresInHours: "expires in {count} h",
+            expired: "expired",
+            dialog: {
+                registerTitle: "Register an admin passkey",
+                verifyTitle: "Verify with your passkey",
+                registerDescription:
+                    "Add a second factor on top of the admin API key. Your device's passkey provider - Windows Hello, Touch ID, a hardware security key, or your password manager - will prompt you to confirm. The private key never leaves your device.",
+                verifyDescription:
+                    "Your API key was accepted. Tap your security key, fingerprint sensor, or Windows Hello prompt to finish signing in. The session lasts the rest of the day; after that you'll be asked again.",
+                browserUnsupported:
+                    "This browser cannot use passkeys. Open the site over HTTPS in a recent Chrome, Edge, Firefox, or Safari, or on a device with Windows Hello, Touch ID, Android biometrics, or a hardware security key.",
+                deviceName: "Device name",
+                deviceNamePlaceholder: "e.g. Work laptop, YubiKey 5C, iPhone",
+                deviceNameHelp:
+                    "Shown in the Account page so you can recognize and revoke it later.",
+                waiting: "Waiting for your passkey...",
+                signOut: "Sign out",
+                notNow: "Not now",
+                addPasskey: "Add passkey",
+                verifyPasskey: "Verify passkey",
+                defaultPasskeyName: "Passkey",
+                cancelledOrTimedOut: "The passkey prompt was cancelled or timed out. Try again.",
+                alreadyRegistered: "This passkey is already registered for this admin.",
+                securityError:
+                    "The site origin does not match the server's WEBAUTHN_RP_ID. Check your deployment config.",
+                sessionExpired: "Your passkey session expired. Please verify again.",
+                unexpectedError: "Unexpected error during passkey ceremony.",
+            },
+        },
+        dangerZone: {
+            title: "Danger zone",
+            description:
+                "Deleting your account is irreversible without admin assistance. Your API key will be revoked and your contributions will be reattributed to a tombstone identity.",
+            confirmLabel: "Type DELETE to confirm",
+            confirmPlaceholder: "DELETE",
+            deleteAccount: "Delete my account",
         },
     },
     generalPage: {
@@ -1109,6 +1262,55 @@ export const en = {
             newTitle: "Your new TLs",
             newDescription:
                 "New translocators from your current contribution that aren't on the map yet. Only visible while you're working on the Contribute TLs page.",
+        },
+        groupingsDrawer: {
+            title: "Favorite TL groupings",
+            description:
+                "Save sets of translocators you care about and reduce on-map clutter. Stored locally in this browser.",
+            viewMode: "View mode",
+            modes: {
+                all: "All TLs",
+                filter: "Only selected",
+                highlight: "Highlight selected",
+            },
+            modeHelp: {
+                all: "Groupings have no effect on what's drawn.",
+                filter: "Only TLs in the active groupings are rendered.",
+                highlight: "All TLs are rendered; favorites are emphasized.",
+            },
+            import: "Import",
+            export: "Export",
+            invalidImport: "That file is not a valid TL groupings export.",
+            empty: "No groupings yet. Create one and click TLs on the map to add them.",
+            activateGrouping: "Activate grouping {name}",
+            clickToRename: "Click to rename",
+            tlCount: {
+                one: "{count} TL",
+                few: "{count} TLs",
+                many: "{count} TLs",
+                other: "{count} TLs",
+            },
+            missingCount: {
+                one: "{count} missing",
+                few: "{count} missing",
+                many: "{count} missing",
+                other: "{count} missing",
+            },
+            stopEditing: "Stop editing",
+            editTls: "Edit TLs",
+            deleteGrouping: "Delete grouping",
+            newGrouping: "New grouping",
+            defaultGroupingName: "Grouping {count}",
+            deleteTitle: "Delete grouping?",
+            deleteDescription:
+                "<strong>{name}</strong> will be removed from this browser. This cannot be undone.",
+            deleteConfirm: "Delete",
+            cancel: "Cancel",
+            importTitle: "Import groupings",
+            importDescription:
+                "Replace your existing groupings with the imported file, or merge them into your current list?",
+            replace: "Replace",
+            merge: "Merge",
         },
     },
 } as const;

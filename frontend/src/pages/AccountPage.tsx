@@ -23,7 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
-import { useTranslation } from "@/lib/i18n";
+import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setStarfieldEnabled } from "@/store/slices/mapView";
 
@@ -93,12 +93,10 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>{t("account.noApiKey.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            You need to set an API key first to view or create your account.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("account.noApiKey.description")}</p>
         </CardContent>
       </Card>
     );
@@ -116,15 +114,14 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>
-            Accept the terms and a random display name will be generated for you. Creating account
-            is not needed for viewing & contributing the map
-          </CardDescription>
+          <CardTitle>{t("account.register.title")}</CardTitle>
+          <CardDescription>{t("account.register.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button onClick={() => registerMut.mutate()} disabled={registerMut.isPending}>
-            {registerMut.isPending ? "Creating…" : "Accept terms & create account"}
+            {registerMut.isPending
+              ? t("account.register.submitting")
+              : t("account.register.submit")}
           </Button>
           {registerMut.error && (
             <p className="text-sm text-destructive">{(registerMut.error as Error).message}</p>
@@ -148,12 +145,14 @@ export function AccountPage() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Admin session</CardTitle>
+          <CardTitle>{t("account.adminSession.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            You are signed in as the system admin. The admin key has no user profile. Manage other
-            users under <span className="font-mono">Manage → Users</span>.
+            <Trans
+              path="account.adminSession.description"
+              components={{ code: <span className="font-mono" /> }}
+            />
           </p>
         </CardContent>
       </Card>
@@ -165,28 +164,27 @@ export function AccountPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">My Account</h2>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Manage your public profile, API key, and personal data.
-        </p>
+        <h2 className="text-xl font-semibold">{t("account.page.title")}</h2>
+        <p className="text-sm text-muted-foreground mt-0.5">{t("account.page.description")}</p>
       </div>
 
       {/* Identity */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Identity</CardTitle>
+          <CardTitle className="text-base">{t("account.identity.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1">
             <Label htmlFor="ign" className="text-xs text-muted-foreground">
-              In-game name {user.use_in_game_name ? "" : "(optional)"}
+              {t("account.identity.inGameName")}{" "}
+              {user.use_in_game_name ? "" : t("account.identity.optional")}
             </Label>
             <div className="flex gap-2">
               <Input
                 id="ign"
                 value={inGameName}
                 onChange={(e) => setInGameName(e.target.value)}
-                placeholder="Your Vintage Story character name"
+                placeholder={t("account.identity.inGameNamePlaceholder")}
                 maxLength={64}
               />
               <Button
@@ -199,23 +197,23 @@ export function AccountPage() {
                 }
                 disabled={updateMut.isPending}
               >
-                Save
+                {t("account.identity.save")}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
               {user.use_in_game_name
-                ? "Saving will also update your public display name to match."
-                : "Used for hire-board matching. Other users may flag duplicates."}
+                ? t("account.identity.saveUpdatesDisplayName")
+                : t("account.identity.hireBoardMatching")}
             </p>
           </div>
           <Separator />
           <div className="flex items-center justify-between gap-4">
             <div>
-              <Label>Use in-game name as display name</Label>
+              <Label>{t("account.identity.useInGameName")}</Label>
               <p className="text-xs text-muted-foreground">
                 {user.in_game_name
-                  ? "When on, other users see your in-game name everywhere instead of a random handle."
-                  : "Set an in-game name first to enable this."}
+                  ? t("account.identity.useInGameNameEnabled")
+                  : t("account.identity.useInGameNameDisabled")}
               </p>
             </div>
             <Switch
@@ -228,7 +226,9 @@ export function AccountPage() {
             <>
               <Separator />
               <div>
-                <Label className="text-xs text-muted-foreground">Display name</Label>
+                <Label className="text-xs text-muted-foreground">
+                  {t("account.identity.displayName")}
+                </Label>
                 <div className="flex items-center gap-2 mt-1">
                   <code className="rounded bg-muted px-2 py-1 text-sm font-mono">
                     {user.display_name}
@@ -240,7 +240,7 @@ export function AccountPage() {
                     disabled={regenMut.isPending}
                   >
                     <RefreshCw className="size-3" />
-                    Regenerate
+                    {t("account.identity.regenerate")}
                   </Button>
                 </div>
                 {regenMut.error && (
@@ -249,7 +249,7 @@ export function AccountPage() {
                   </p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  Regenerated {user.name_regen_count} times. Limited to 3 per day.
+                  {t("account.identity.regeneratedCount", { count: user.name_regen_count })}
                 </p>
               </div>
             </>
@@ -263,13 +263,15 @@ export function AccountPage() {
       {/* Preferences */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Preferences</CardTitle>
+          <CardTitle className="text-base">{t("account.preferences.title")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Available for hire</Label>
-              <p className="text-xs text-muted-foreground">Show me on the hire board. (WIP)</p>
+              <Label>{t("account.preferences.availableForHire")}</Label>
+              <p className="text-xs text-muted-foreground">
+                {t("account.preferences.availableForHireDescription")}
+              </p>
             </div>
             <Switch
               disabled
@@ -280,9 +282,9 @@ export function AccountPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <Label>Show on leaderboards</Label>
+              <Label>{t("account.preferences.showOnLeaderboards")}</Label>
               <p className="text-xs text-muted-foreground">
-                Opt-in to appear on contributor leaderboards. (WIP)
+                {t("account.preferences.showOnLeaderboardsDescription")}
               </p>
             </div>
             <Switch
@@ -294,10 +296,9 @@ export function AccountPage() {
           <Separator />
           <div className="flex items-center justify-between">
             <div>
-              <Label>Show Contributions</Label>
+              <Label>{t("account.preferences.showContributions")}</Label>
               <p className="text-xs text-muted-foreground">
-                Reveal who submitted an explored area (WIP). Will fallback to the expedition
-                financier's name if disabled
+                {t("account.preferences.showContributionsDescription")}
               </p>
             </div>
             <Switch
@@ -318,10 +319,9 @@ export function AccountPage() {
         <CardContent>
           <div className="flex items-center justify-between gap-3">
             <div>
-              <Label htmlFor="starfield-toggle">Animated starfield on map</Label>
+              <Label htmlFor="starfield-toggle">{t("account.appearance.starfieldLabel")}</Label>
               <p className="text-xs text-muted-foreground">
-                Show a subtle cosmos backdrop behind unexplored areas of the TOPS map. Pure CSS,
-                GPU-only — turn off if you prefer a flat dark background.
+                {t("account.appearance.starfieldDescription")}
               </p>
             </div>
             <Switch
@@ -333,10 +333,9 @@ export function AccountPage() {
           <Separator className="my-3" />
           <div className="space-y-2">
             <div className="space-y-0.5">
-              <Label>Map marker icons</Label>
+              <Label>{t("account.appearance.markerIconsTitle")}</Label>
               <p className="text-xs text-muted-foreground">
-                Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the
-                map. Changes apply immediately and are saved to your browser.
+                {t("account.appearance.markerIconsDescription")}
               </p>
             </div>
             <MarkerStylePicker />
@@ -347,8 +346,8 @@ export function AccountPage() {
       {/* API Key */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">API Key</CardTitle>
-          <CardDescription>Your secret access key. Treat it like a password.</CardDescription>
+          <CardTitle className="text-base">{t("account.apiKey.title")}</CardTitle>
+          <CardDescription>{t("account.apiKey.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex gap-2">
@@ -393,7 +392,7 @@ export function AccountPage() {
             }}
           >
             <Download className="size-3" />
-            Download recovery file
+            {t("account.apiKey.downloadRecoveryFile")}
           </Button>
         </CardContent>
       </Card>
@@ -401,7 +400,7 @@ export function AccountPage() {
       {/* Data export */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Your data</CardTitle>
+          <CardTitle className="text-base">{t("account.dataExport.title")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Button
@@ -416,7 +415,7 @@ export function AccountPage() {
             }}
           >
             <Download className="size-3" />
-            Export everything (JSON)
+            {t("account.dataExport.exportEverything")}
           </Button>
         </CardContent>
       </Card>
@@ -432,26 +431,25 @@ export function AccountPage() {
       {/* Danger zone */}
       <Card className="border-destructive/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-base text-destructive">Danger zone</CardTitle>
-          <CardDescription>
-            Deleting your account is irreversible without admin assistance. Your API key will be
-            revoked and your contributions will be reattributed to a tombstone identity.
-          </CardDescription>
+          <CardTitle className="text-base text-destructive">
+            {t("account.dangerZone.title")}
+          </CardTitle>
+          <CardDescription>{t("account.dangerZone.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Label className="text-xs">Type DELETE to confirm</Label>
+          <Label className="text-xs">{t("account.dangerZone.confirmLabel")}</Label>
           <div className="flex gap-2">
             <Input
               value={confirmDelete}
               onChange={(e) => setConfirmDelete(e.target.value)}
-              placeholder="DELETE"
+              placeholder={t("account.dangerZone.confirmPlaceholder")}
             />
             <Button
               variant="destructive"
               disabled={confirmDelete !== "DELETE" || deleteMut.isPending}
               onClick={() => deleteMut.mutate()}
             >
-              Delete my account
+              {t("account.dangerZone.deleteAccount")}
             </Button>
           </div>
           {deleteMut.error && (

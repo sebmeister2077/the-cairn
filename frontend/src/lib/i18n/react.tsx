@@ -12,7 +12,16 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocale } from "@/store/slices/i18n";
 import { translate } from "./core";
 import { DEFAULT_LOCALE, fallbackDictionary, LOCALE_LOADERS, LOCALE_META } from "./registry";
-import type { ArgsForPath, ArgsTuple, Dict, Locale, PathOf, TranslationSchema } from "./types";
+import type {
+  ArgsForPath,
+  ArgsTuple,
+  Dict,
+  Locale,
+  PathOf,
+  PluralEntry,
+  TranslationSchema,
+  ValueAt,
+} from "./types";
 
 interface I18nContextValue {
   locale: Locale;
@@ -176,15 +185,50 @@ export function useFormat() {
   };
 }
 
+// Walk a template string at the type level and collect the names of all
+// well-formed opening tags (e.g. `<strong>`, `<link>`). Closing tags
+// (`</strong>`) and anything with whitespace/attributes are ignored so they
+// don't pollute the required-components record.
+type ExtractTagsInner<S extends string> = S extends `${string}<${infer Tag}>${infer Rest}`
+  ? Tag extends `/${string}`
+    ? ExtractTagsInner<Rest>
+    : Tag extends `${string} ${string}`
+      ? ExtractTagsInner<Rest>
+      : Tag extends ""
+        ? ExtractTagsInner<Rest>
+        : Tag | ExtractTagsInner<Rest>
+  : never;
+
+// Resolve the leaf at a translation path to the set of tag names it uses.
+// Plain string leaves are scanned directly; plural entries union the tags
+// across every variant so the required components cover any plural form.
+type ExtractTagsForValue<T> = T extends string
+  ? ExtractTagsInner<T>
+  : T extends PluralEntry
+    ? ExtractTagsInner<Extract<T[keyof T & ("one" | "few" | "many" | "other")], string>>
+    : never;
+
+type NeededComponents<P extends PathOf<TranslationSchema>> = ExtractTagsForValue<
+  ValueAt<TranslationSchema, P>
+>;
+
+// When a template has no tags, `components` is optional and unconstrained.
+// When it has at least one tag, it becomes required and must list every tag
+// the template uses.
+type ComponentsProp<P extends PathOf<TranslationSchema>> = [NeededComponents<P>] extends [never]
+  ? { components?: Record<string, ReactElement> }
+  : { components: Record<NeededComponents<P>, ReactElement> };
+
+type TransProps<P extends PathOf<TranslationSchema>> = {
+  path: P;
+  values?: ArgsForPath<P>;
+} & ComponentsProp<P>;
+
 export function Trans<P extends PathOf<TranslationSchema>>({
   path,
   values,
   components,
-}: {
-  path: P;
-  values?: ArgsForPath<P>;
-  components?: Record<string, ReactElement>;
-}) {
+}: TransProps<P>) {
   const ctx = useI18nContext();
   const rendered = translate(
     path,
@@ -194,5 +238,9 @@ export function Trans<P extends PathOf<TranslationSchema>>({
     ctx.locale,
     ctx.intlCode,
   );
-  return <>{interpolateNodes(rendered, values, components)}</>;
+  return (
+    <>
+      {interpolateNodes(rendered, values, components as Record<string, ReactElement> | undefined)}
+    </>
+  );
 }

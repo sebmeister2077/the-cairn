@@ -9,9 +9,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { getMyTranslocatorContributions } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatTimestamp } from "@/lib/utils";
+import { useFormat, useTranslation } from "@/lib/i18n";
 
 export function MyTranslocatorContributionsCard() {
+  const { t } = useTranslation();
+  const { dateTime } = useFormat();
   const { data, isLoading, error } = useQuery({
     queryKey: ["my-translocator-contributions"],
     queryFn: getMyTranslocatorContributions,
@@ -27,7 +29,7 @@ export function MyTranslocatorContributionsCard() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">My contributed translocators</CardTitle>
+        <CardTitle className="text-base">{t("account.translocators.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
         {isLoading && (
@@ -41,9 +43,13 @@ export function MyTranslocatorContributionsCard() {
             <table className="w-full text-xs">
               <thead className="text-muted-foreground">
                 <tr className="text-left border-b">
-                  <th className="py-1.5 pr-3 font-medium">Submitted</th>
-                  <th className="py-1.5 pr-3 font-medium">Coordinates</th>
-                  <th className="py-1.5 pr-3 font-medium">Label</th>
+                  <th className="py-1.5 pr-3 font-medium">
+                    {t("account.translocators.submitted")}
+                  </th>
+                  <th className="py-1.5 pr-3 font-medium">
+                    {t("account.translocators.coordinates")}
+                  </th>
+                  <th className="py-1.5 pr-3 font-medium">{t("account.translocators.label")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -55,16 +61,18 @@ export function MyTranslocatorContributionsCard() {
                   const fmt = (p: number[] | null | undefined) =>
                     p && p.length >= 2
                       ? `(${Math.round(p[0]).toLocaleString()}, ${Math.round(-p[1]).toLocaleString()})`
-                      : "—";
+                      : t("account.translocators.emptyValue");
                   return (
                     <tr key={row.segment_id} className="border-b last:border-b-0">
                       <td className="py-1.5 pr-3 whitespace-nowrap">
-                        {formatTimestamp(row.created_at)}
+                        {dateTime(row.created_at, { dateStyle: "medium", timeStyle: "short" })}
                       </td>
                       <td className="py-1.5 pr-3 font-mono whitespace-nowrap">
                         {fmt(a)} &rarr; {fmt(b)}
                       </td>
-                      <td className="py-1.5 pr-3">{row.label || "—"}</td>
+                      <td className="py-1.5 pr-3">
+                        {row.label || t("account.translocators.emptyValue")}
+                      </td>
                     </tr>
                   );
                 })}
