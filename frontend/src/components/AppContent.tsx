@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { ContactDialog, useContactDialog } from "@/components/ContactDialog";
 import { ExtractPage } from "@/pages/ExtractPage";
@@ -530,6 +532,10 @@ export function AppContent() {
             <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
               {t("app.header.apiKey")}
             </Button>
+            <div className="ml-1 flex items-center gap-1.5 border-l border-border pl-2">
+              <ThemeSwitcher />
+              <LanguageSwitcher />
+            </div>
           </div>
         </div>
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">

@@ -21,10 +21,8 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setStarfieldEnabled } from "@/store/slices/mapView";
@@ -318,16 +316,6 @@ export function AccountPage() {
           <CardDescription>{t("account.appearance.description")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <Label>{t("common.theme")}</Label>
-            <ThemeSwitcher />
-          </div>
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between">
-            <Label>{t("common.language")}</Label>
-            <LanguageSwitcher />
-          </div>
-          <Separator className="my-3" />
           <div className="flex items-center justify-between gap-3">
             <div>
               <Label htmlFor="starfield-toggle">Animated starfield on map</Label>
