@@ -963,7 +963,7 @@ function RendezvousSection({
   async function handleCopyMeetingWaypoint() {
     if (!result) return;
     const { x, z } = result.meeting;
-    const cmd = `/waypoint addati spiral ${x} ${WAYPOINT_Y} ${z} false yellow ${t("routePlanner.meetingPoint")}`;
+    const cmd = `/waypoint addati x ${x} ${WAYPOINT_Y} ${z} true blue ${t("routePlanner.meetingPoint")}`;
     try {
       await copyTextToClipboard(cmd);
       setMeetingCopied(true);
