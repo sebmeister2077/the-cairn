@@ -13,16 +13,21 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChatLogContributeFlow } from "@/components/contribute-tls/ChatLogContributeFlow";
 import { ScreenshotPairUploadCard } from "@/components/contribute-tls/ScreenshotPairUploadCard";
 import { MyScreenshotRequestsList } from "@/components/contribute-tls/MyScreenshotRequestsList";
+import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
 
 export function ContributeTLsPage() {
   const isAdmin = useReduxState("auth.isAdmin");
+  const { t } = useTranslation();
+
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <Tabs defaultValue="screenshots">
         <TabsList variant="line">
-          <TabsTrigger value="screenshots">From screenshots</TabsTrigger>
-          <TabsTrigger value="chatlog">From chat log</TabsTrigger>
+          <TabsTrigger value="screenshots">
+            {t("contributeTLsPage.tabs.fromScreenshots")}
+          </TabsTrigger>
+          <TabsTrigger value="chatlog">{t("contributeTLsPage.tabs.fromChatLog")}</TabsTrigger>
         </TabsList>
         <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />

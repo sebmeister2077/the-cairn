@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, CheckCircle2, Clipboard, ClipboardCheck } from "lucide-react";
 import { contributeTLs, ApiError } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import { matchedServerSegmentKeys, segmentKey } from "@/lib/tl-matching";
 import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
 
@@ -38,6 +39,7 @@ type Step = "upload" | "review" | "done";
 export function ChatLogContributeFlow() {
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const userTLs = useAppSelector((s) => s.contributeTLs.userTLs);
   const submittedCount = useAppSelector((s) => s.contributeTLs.submittedCount);
   const isAdmin = useReduxState("auth.isAdmin");
@@ -115,9 +117,7 @@ export function ChatLogContributeFlow() {
 
   function openSubmitConfirm() {
     if (submittableCount === 0) {
-      setSubmitError(
-        "There are no submittable translocators. Pair or fix the highlighted entries first.",
-      );
+      setSubmitError(t("contributeTLsPage.chatLogFlow.noSubmittable"));
       return;
     }
     setSubmitError(null);
@@ -129,9 +129,7 @@ export function ChatLogContributeFlow() {
       (t) => t.status === "new-confirmed" || t.status === "new-unconfirmed",
     );
     if (submittable.length === 0) {
-      setSubmitError(
-        "There are no submittable translocators. Pair or fix the highlighted entries first.",
-      );
+      setSubmitError(t("contributeTLsPage.chatLogFlow.noSubmittable"));
       return;
     }
     setSubmitting(true);
@@ -161,22 +159,15 @@ export function ChatLogContributeFlow() {
       } catch (e: unknown) {
         if (e instanceof ApiError) {
           if (e.status === 503) {
-            setSubmitError(
-              "Translocator contributions are currently disabled. Please try again later.",
-            );
+            setSubmitError(t("contributeTLsPage.chatLogFlow.disabled"));
             return;
           }
           if (e.status === 403) {
-            setSubmitError(
-              "You need an account to contribute translocators. Create one and try again.",
-            );
+            setSubmitError(t("contributeTLsPage.chatLogFlow.needsAccount"));
             return;
           }
           if (e.status === 404 || e.status === 501) {
-            setSubmitError(
-              "The backend endpoint isn\u2019t available yet. " +
-                "Your work is preserved on this page \u2014 please try again later.",
-            );
+            setSubmitError(t("contributeTLsPage.chatLogFlow.backendUnavailable"));
             return;
           }
         }
@@ -186,7 +177,9 @@ export function ChatLogContributeFlow() {
       queryClient.invalidateQueries({ queryKey: TRANSLOCATORS_QUERY_KEY });
       dispatch(setSubmittedCount(result.accepted ?? submittable.length));
     } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : "Failed to submit");
+      setSubmitError(
+        e instanceof Error ? e.message : t("contributeTLsPage.chatLogFlow.submitFailed"),
+      );
     } finally {
       setSubmitting(false);
       setConfirmOpen(false);
@@ -199,18 +192,21 @@ export function ChatLogContributeFlow() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CheckCircle2 className="size-5 text-emerald-500" />
-            Submitted
+            {t("contributeTLsPage.chatLogFlow.submittedTitle")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <p>
-            Thanks! Your contribution of <strong>{submittedCount ?? 0}</strong> translocator
-            {submittedCount === 1 ? "" : "s"} is now live on the map.
+            {t("contributeTLsPage.chatLogFlow.submittedBody", {
+              count: submittedCount ?? 0,
+              suffix: submittedCount === 1 ? "" : "s",
+            })}
           </p>
           {skippedExisting > 0 && (
             <p className="text-sm text-muted-foreground">
-              <strong>{skippedExisting}</strong> submitted pair
-              {skippedExisting === 1 ? " was" : "s were"} already on the server and skipped.
+              {t("contributeTLsPage.chatLogFlow.skippedExisting", {
+                count: skippedExisting,
+              })}
             </p>
           )}
           <Button
@@ -221,7 +217,7 @@ export function ChatLogContributeFlow() {
               setStep("upload");
             }}
           >
-            Contribute another batch
+            {t("contributeTLsPage.chatLogFlow.contributeAnotherBatch")}
           </Button>
         </CardContent>
       </Card>
@@ -242,7 +238,7 @@ export function ChatLogContributeFlow() {
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={() => setStep("upload")}>
             <ArrowLeft className="size-4 mr-1" />
-            Back to upload
+            {t("contributeTLsPage.chatLogFlow.backToUpload")}
           </Button>
           <WhatToDoDialog />
           <div className="ml-auto flex items-end gap-2">
@@ -254,8 +250,8 @@ export function ChatLogContributeFlow() {
                 disabled={adminMissingWaypointCommands.length === 0}
                 title={
                   adminMissingWaypointCommands.length === 0
-                    ? "You already have a waypoint for every server TL"
-                    : "Copy /waypoint addati commands for server TLs missing from your chat log"
+                    ? t("contributeTLsPage.chatLogFlow.adminCopyNoneTitle")
+                    : t("contributeTLsPage.chatLogFlow.adminCopySomeTitle")
                 }
               >
                 {copiedAdminCommands ? (
@@ -264,12 +260,15 @@ export function ChatLogContributeFlow() {
                   <Clipboard className="mr-2 size-4" />
                 )}
                 {copiedAdminCommands
-                  ? "Copied!"
-                  : `Copy missing TL waypoints${
-                      adminMissingWaypointCommands.length > 0
-                        ? ` (${adminMissingWaypointCommands.length})`
-                        : ""
-                    }`}
+                  ? t("contributeTLsPage.chatLogFlow.adminCopied")
+                  : t("contributeTLsPage.chatLogFlow.adminCopyMissing", {
+                      count:
+                        adminMissingWaypointCommands.length > 0
+                          ? t("contributeTLsPage.chatLogFlow.adminCopyCount", {
+                              count: adminMissingWaypointCommands.length,
+                            })
+                          : "",
+                    })}
               </Button>
             )}
             <Button
@@ -278,7 +277,14 @@ export function ChatLogContributeFlow() {
               disabled={submitting || submittableCount === 0}
             >
               {submitting && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Submit contribution{submittableCount > 0 ? ` (${submittableCount})` : ""}
+              {t("contributeTLsPage.chatLogFlow.submitContribution", {
+                count:
+                  submittableCount > 0
+                    ? t("contributeTLsPage.chatLogFlow.submitCount", {
+                        count: submittableCount,
+                      })
+                    : "",
+              })}
             </Button>
           </div>
         </div>
@@ -299,46 +305,63 @@ export function ChatLogContributeFlow() {
         <EditTLDialog serverSegments={serverSegments} />
         <ConfirmDialog
           open={confirmOpen}
-          title="Submit contribution?"
+          title={t("contributeTLsPage.chatLogFlow.confirmTitle")}
           description={
             <span className="block space-y-1">
               <span className="block">
-                You&rsquo;re about to submit <strong>{submittableCount}</strong> translocator
-                {submittableCount === 1 ? "" : "s"}:
+                {t("contributeTLsPage.chatLogFlow.confirmIntro", {
+                  count: submittableCount,
+                  suffix: submittableCount === 1 ? "" : "s",
+                })}
               </span>
               <span className="block pl-3 text-xs">
-                • {counts.confirmed} confirmed
-                <br />• {counts.unconfirmed} needing review (still submitted)
+                • {t("contributeTLsPage.chatLogFlow.confirmed", { count: counts.confirmed })}
+                <br />•{" "}
+                {t("contributeTLsPage.chatLogFlow.needsReview", {
+                  count: counts.unconfirmed,
+                })}
               </span>
               {(counts.unpaired > 0 || counts.invalid > 0 || counts.existing > 0) && (
                 <span className="block pt-1">
-                  Skipped (not submitted):
+                  {t("contributeTLsPage.chatLogFlow.skippedTitle")}
                   <span className="block pl-3 text-xs">
                     {counts.unpaired > 0 && (
                       <>
-                        • {counts.unpaired} unpaired
+                        •{" "}
+                        {t("contributeTLsPage.chatLogFlow.unpaired", {
+                          count: counts.unpaired,
+                        })}
                         <br />
                       </>
                     )}
                     {counts.invalid > 0 && (
                       <>
-                        • {counts.invalid} invalid
+                        • {t("contributeTLsPage.chatLogFlow.invalid", { count: counts.invalid })}
                         <br />
                       </>
                     )}
-                    {counts.existing > 0 && <>• {counts.existing} already on map</>}
+                    {counts.existing > 0 && (
+                      <>
+                        • {t("contributeTLsPage.chatLogFlow.existing", { count: counts.existing })}
+                      </>
+                    )}
                   </span>
                 </span>
               )}
               {counts.unconfirmed > 0 && (
                 <span className="block pt-2 text-xs text-amber-700">
-                  Note: {counts.unconfirmed} pairing{counts.unconfirmed === 1 ? " is" : "s are"}{" "}
-                  flagged as needing review. Consider verifying them before submitting.
+                  {counts.unconfirmed === 1
+                    ? t("contributeTLsPage.chatLogFlow.noteOne", {
+                        count: counts.unconfirmed,
+                      })
+                    : t("contributeTLsPage.chatLogFlow.noteMany", {
+                        count: counts.unconfirmed,
+                      })}
                 </span>
               )}
             </span>
           }
-          confirmLabel="Submit"
+          confirmLabel={t("contributeTLsPage.chatLogFlow.confirm")}
           loading={submitting}
           onConfirm={handleSubmit}
           onCancel={() => setConfirmOpen(false)}

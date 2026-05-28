@@ -2,25 +2,28 @@ import { NavLink, useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useFormat, useTranslation } from "@/lib/i18n";
 import { ArrowLeft } from "lucide-react";
 import { getPostBySlug } from "./posts";
 
 export function BlogPostPage() {
+  const { locale, t } = useTranslation();
+  const { dateTime } = useFormat();
   const { slug } = useParams<{ slug: string }>();
-  const post = slug ? getPostBySlug(slug) : undefined;
+  const post = slug ? getPostBySlug(locale, slug) : undefined;
 
   if (!post) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Post not found</CardTitle>
+          <CardTitle>{t("blog.postPage.notFoundTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">
-          <p>We couldn&rsquo;t find a post with that link. It may have been renamed or removed.</p>
+          <p>{t("blog.postPage.notFoundDescription")}</p>
           <NavLink to="/blog">
             <Button variant="outline" size="sm">
               <ArrowLeft className="size-4 mr-1.5" />
-              Back to blog
+              {t("blog.postPage.backToBlog")}
             </Button>
           </NavLink>
         </CardContent>
@@ -35,16 +38,16 @@ export function BlogPostPage() {
       <NavLink to="/blog">
         <Button variant="ghost" size="sm" className="-ml-2">
           <ArrowLeft className="size-4 mr-1.5" />
-          All posts
+          {t("blog.postPage.allPosts")}
         </Button>
       </NavLink>
 
       <header className="space-y-3">
         <h1 className="text-2xl font-semibold leading-tight">{post.title}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>{formatDate(post.date)}</span>
+          <span>{formatDate(post.date, dateTime)}</span>
           <span aria-hidden>·</span>
-          <span>{post.readingMinutes} min read</span>
+          <span>{t("blog.meta.readTime", { count: post.readingMinutes })}</span>
           {post.tags.length > 0 && (
             <>
               <span aria-hidden>·</span>
@@ -67,10 +70,13 @@ export function BlogPostPage() {
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(
+  iso: string,
+  dateTime: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) => string,
+): string {
   const d = new Date(iso + "T00:00:00Z");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+  return dateTime(d, {
     year: "numeric",
     month: "long",
     day: "numeric",

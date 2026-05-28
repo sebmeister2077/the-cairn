@@ -46,6 +46,7 @@ import {
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
 import { MaintenanceChip } from "@/components/MaintenanceChip";
 import { FilePathHelp, type FilePathHelpItem } from "@/components/FilePathHelp";
+import { useTranslation } from "@/lib/i18n";
 import { NavLink } from "react-router-dom";
 
 const LOG_FILE_PATHS: FilePathHelpItem[] = [
@@ -96,12 +97,14 @@ function filterOutKnownTraders(
 }
 
 export function ContributeTradersPage() {
+  const { t } = useTranslation();
+
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <Tabs defaultValue="chatlog">
         <TabsList variant="line">
-          <TabsTrigger value="chatlog">From chat log</TabsTrigger>
-          <TabsTrigger value="manual">Manual entry</TabsTrigger>
+          <TabsTrigger value="chatlog">{t("contributeTradersPage.tabs.fromChatLog")}</TabsTrigger>
+          <TabsTrigger value="manual">{t("contributeTradersPage.tabs.manualEntry")}</TabsTrigger>
         </TabsList>
         <TabsContent value="chatlog" className="pt-2 space-y-4">
           <ChatLogTradersFlow />
@@ -143,6 +146,8 @@ function TraderEditorRow({
   showLabel = true,
   labelReadOnly = false,
 }: TraderEditorRowProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5">
       {showLabel &&
@@ -151,12 +156,12 @@ function TraderEditorRow({
             className="flex-1 min-w-48 truncate text-sm text-muted-foreground"
             title={candidate.label}
           >
-            {candidate.label || <em>(no label)</em>}
+            {candidate.label || <em>{t("contributeTradersPage.editor.noLabel")}</em>}
           </span>
         ) : (
           <Input
             className="h-8 flex-1 min-w-48"
-            placeholder="Label (e.g. Trader Survival Goods)"
+            placeholder={t("contributeTradersPage.editor.labelPlaceholder")}
             value={candidate.label}
             onChange={(e) => onChange({ ...candidate, label: e.target.value })}
           />
@@ -165,12 +170,12 @@ function TraderEditorRow({
         <>
           <CoordInput
             value={candidate.x}
-            placeholder="x"
+            placeholder={t("contributeTradersPage.editor.xPlaceholder")}
             onChange={(n) => onChange({ ...candidate, x: n })}
           />
           <CoordInput
             value={candidate.z}
-            placeholder="z"
+            placeholder={t("contributeTradersPage.editor.zPlaceholder")}
             onChange={(n) => onChange({ ...candidate, z: n })}
           />
         </>
@@ -185,9 +190,9 @@ function TraderEditorRow({
             trader_type: isTraderType(v) ? v : null,
           });
         }}
-        aria-label="Trader type"
+        aria-label={t("contributeTradersPage.editor.traderTypeAria")}
       >
-        <option value="">Type…</option>
+        <option value="">{t("contributeTradersPage.editor.typePlaceholder")}</option>
         {TRADER_TYPES.map((t) => (
           <option key={t} value={t}>
             {TRADER_TYPE_LABELS[t]}
@@ -203,7 +208,13 @@ function TraderEditorRow({
             : "transparent",
         }}
       />
-      <Button variant="ghost" size="sm" aria-label="Remove" onClick={onRemove} type="button">
+      <Button
+        variant="ghost"
+        size="sm"
+        aria-label={t("contributeTradersPage.editor.remove")}
+        onClick={onRemove}
+        type="button"
+      >
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
@@ -298,12 +309,12 @@ function toApiItems(
   });
 }
 
-function formatApiError(e: unknown): string {
+function formatApiError(e: unknown, fallback: string): string {
   if (e instanceof ApiError) {
     return e.message || `Request failed (${e.status})`;
   }
   if (e instanceof Error) return e.message;
-  return "Failed to submit traders";
+  return fallback;
 }
 
 // ---------------------------------------------------------------------------
@@ -311,6 +322,7 @@ function formatApiError(e: unknown): string {
 // ---------------------------------------------------------------------------
 
 function ChatLogTradersFlow() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const tradersQuery = useTradersOverlay();
   const knownTraders = tradersQuery.data?.data;
@@ -340,24 +352,22 @@ function ChatLogTradersFlow() {
       setParsedCount(out.parsedWaypointCount);
       setKnownFilteredCount(removed);
       if (out.candidates.length === 0) {
-        setParseError(
-          "No trader waypoints found in this file. " +
-            'Make sure you typed "/waypoint list details" in-game first and ' +
-            'that some waypoints use the "trader" icon.',
-        );
+        setParseError(t("contributeTradersPage.chatLog.noTraderWaypointsFound"));
       } else if (kept.length === 0) {
         setParseError(
-          `All ${removed} trader waypoint${removed === 1 ? "" : "s"} in this chat log ` +
-            "already match a trader on the map (within " +
-            `${KNOWN_TRADER_DEDUPE_RADIUS} blocks). Nothing new to submit.`,
+          t("contributeTradersPage.chatLog.allFiltered", {
+            count: removed,
+            suffix: removed === 1 ? "" : "s",
+            radius: KNOWN_TRADER_DEDUPE_RADIUS,
+          }),
         );
       }
     } catch (e) {
-      setParseError(e instanceof Error ? e.message : "Failed to parse chat log");
+      setParseError(e instanceof Error ? e.message : t("contributeTradersPage.errors.parseFailed"));
     } finally {
       setParsing(false);
     }
-  }, [file, knownTraders]);
+  }, [file, knownTraders, t]);
 
   const ready = useMemo(() => readyForSubmit(candidates), [candidates]);
 
@@ -403,87 +413,93 @@ function ChatLogTradersFlow() {
       queryClient.invalidateQueries({ queryKey: [...TRADERS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [...MY_TRADERS_QUERY_KEY] });
     } catch (e) {
-      setSubmitError(formatApiError(e));
+      setSubmitError(formatApiError(e, t("contributeTradersPage.errors.submitFailed")));
     } finally {
       setSubmitting(false);
     }
-  }, [ready, parsedCount, candidates, knownFilteredCount, existingMatchPct, queryClient]);
+  }, [ready, parsedCount, candidates, knownFilteredCount, existingMatchPct, queryClient, t]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          Upload client-chat.log
+          {t("contributeTradersPage.chatLog.title")}
           <MaintenanceChip component="tops_contribute_traders_log" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground space-y-2">
           <p>
-            Step 1. In-game, type{" "}
+            {t("contributeTradersPage.chatLog.step1Prefix")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               /waypoint list details
             </code>
-            . The server will print the full list of your waypoints into the chat (only visible to
-            you).
+            {t("contributeTradersPage.chatLog.step1Suffix")}
           </p>
           <p>
-            Step 2. Find your{" "}
+            {t("contributeTradersPage.chatLog.step2Prefix")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               client-chat.log
             </code>{" "}
-            file.
+            {t("contributeTradersPage.chatLog.step2Suffix")}
           </p>
           <p>
-            Step 3. Upload the file below. We pick out every waypoint whose icon is{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trader</code>, guess
-            the type from the label, and let you review before submission. Limit:{" "}
-            <b>one chat-log submission per day</b>.
+            {t("contributeTradersPage.chatLog.step3Prefix")}{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">trader</code>
+            {t("contributeTradersPage.chatLog.step3Middle")}{" "}
+            <b>{t("contributeTradersPage.chatLog.step3Limit")}</b>.
           </p>
           <p>
-            Need the full walkthrough? Read the{" "}
+            {t("contributeTradersPage.chatLog.guidePrefix")}{" "}
             <NavLink
               to="/blog/adding-translocators-using-waypoints"
               className="underline decoration-dotted underline-offset-2 hover:text-primary"
             >
-              Contribute waypoints guide
+              {t("contributeTradersPage.chatLog.guide")}
             </NavLink>
             .
           </p>
-          <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
+          <FilePathHelp
+            summary={t("contributeTradersPage.chatLog.fileHelpSummary")}
+            items={LOG_FILE_PATHS}
+          />
         </div>
 
         <div
           className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
           role="note"
         >
-          <strong>Heads up:</strong> only trader waypoints (the ones with the{" "}
-          <code className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-xs">trader</code>{" "}
-          icon) are read from your chat-log. Every other waypoint marking — bases, landmarks,
-          translocators, notes, custom icons, etc. — is <strong>ignored</strong> and never uploaded.
+          <strong>{t("contributeTradersPage.chatLog.headsUp")}</strong>{" "}
+          {t("contributeTradersPage.chatLog.headsUpPrefix")}{" "}
+          <code className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-xs">trader</code>
+          {t("contributeTradersPage.chatLog.headsUpMiddle")}{" "}
+          <strong>{t("contributeTradersPage.chatLog.headsUpIgnored")}</strong>{" "}
+          {t("contributeTradersPage.chatLog.headsUpSuffix")}
         </div>
 
         <FileUpload
           id="trader-chat-log"
-          label="client-chat.log"
+          label={t("contributeTradersPage.chatLog.fileLabel")}
           accept=".log,.txt,text/plain"
           onChange={setFile}
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleParse} disabled={!file || parsing}>
             {parsing && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Parse traders
+            {t("contributeTradersPage.chatLog.parseButton")}
           </Button>
           {parsedCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              {parsedCount.toLocaleString()} waypoints scanned ·{" "}
-              {candidates.length.toLocaleString()} new trader
-              {candidates.length === 1 ? "" : "s"} found
+              {t("contributeTradersPage.chatLog.parsedSummary", {
+                parsed: parsedCount.toLocaleString(),
+                found: candidates.length.toLocaleString(),
+              })}
               {knownFilteredCount > 0 && (
                 <>
-                  {" "}
-                  · {knownFilteredCount.toLocaleString()} already on the map (filtered) ·{" "}
-                  <b>{existingMatchPct.toFixed(1)}% match</b> with existing traders
+                  {t("contributeTradersPage.chatLog.filteredSummary", {
+                    filtered: knownFilteredCount.toLocaleString(),
+                    match: existingMatchPct.toFixed(1),
+                  })}
                 </>
               )}
             </span>
@@ -497,7 +513,10 @@ function ChatLogTradersFlow() {
         {candidates.length > 0 && (
           <div className="space-y-2">
             <div className="text-sm font-medium">
-              Review traders ({ready.length} of {candidates.length} ready)
+              {t("contributeTradersPage.chatLog.reviewTitle", {
+                ready: ready.length,
+                total: candidates.length,
+              })}
             </div>
             <div className="space-y-1 max-h-80 overflow-auto">
               {candidates.map((c) => (
@@ -517,10 +536,13 @@ function ChatLogTradersFlow() {
             <div className="flex items-center gap-2">
               <Button onClick={handleSubmit} disabled={ready.length === 0 || submitting}>
                 {submitting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                Submit {ready.length} trader{ready.length === 1 ? "" : "s"}
+                {t("contributeTradersPage.chatLog.submitButton", {
+                  count: ready.length,
+                  suffix: ready.length === 1 ? "" : "s",
+                })}
               </Button>
               <span className="text-xs text-muted-foreground">
-                Entries missing a type or coordinates are skipped.
+                {t("contributeTradersPage.chatLog.skippedNotice")}
               </span>
             </div>
           </div>
@@ -534,13 +556,16 @@ function ChatLogTradersFlow() {
           <div className="rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm">
             <div className="flex items-center gap-2 font-medium text-green-700 dark:text-green-300">
               <CheckCircle2 className="h-4 w-4" />
-              Submitted {submitResult.accepted} trader
-              {submitResult.accepted === 1 ? "" : "s"}
+              {t("contributeTradersPage.chatLog.submitted", {
+                count: submitResult.accepted,
+                suffix: submitResult.accepted === 1 ? "" : "s",
+              })}
             </div>
             {submitResult.duplicate_flagged_count > 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {submitResult.duplicate_flagged_count} flagged as possible duplicates of nearby
-                existing traders; admins will review.
+                {t("contributeTradersPage.chatLog.duplicateFlagged", {
+                  count: submitResult.duplicate_flagged_count,
+                })}
               </p>
             )}
           </div>
@@ -555,6 +580,7 @@ function ChatLogTradersFlow() {
 // ---------------------------------------------------------------------------
 
 function ManualTraderEntryFlow() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [candidates, setCandidates] = useState<TraderCandidate[]>([blankTraderCandidate()]);
   const [submitting, setSubmitting] = useState(false);
@@ -584,25 +610,25 @@ function ManualTraderEntryFlow() {
       queryClient.invalidateQueries({ queryKey: [...TRADERS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: [...MY_TRADERS_QUERY_KEY] });
     } catch (e) {
-      setSubmitError(formatApiError(e));
+      setSubmitError(formatApiError(e, t("contributeTradersPage.errors.submitFailed")));
     } finally {
       setSubmitting(false);
     }
-  }, [ready, queryClient]);
+  }, [ready, queryClient, t]);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          Add traders manually
+          {t("contributeTradersPage.manual.title")}
           <MaintenanceChip component="tops_contribute_traders_manual" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Enter the in-game world coordinates (x, z) and choose the trader's type. Limit:{" "}
-          <b>40 submissions per day</b>. Each Submit button press counts as one submission,
-          regardless of how many traders are in the batch.
+          {t("contributeTradersPage.manual.descriptionPrefix")}{" "}
+          <b>{t("contributeTradersPage.manual.descriptionLimit")}</b>
+          {t("contributeTradersPage.manual.descriptionSuffix")}
         </p>
         <div className="space-y-1">
           {candidates.map((c) => (
@@ -639,11 +665,14 @@ function ManualTraderEntryFlow() {
             type="button"
             onClick={() => setCandidates((prev) => [...prev, blankTraderCandidate()])}
           >
-            Add row
+            {t("contributeTradersPage.manual.addRow")}
           </Button>
           <Button onClick={handleSubmit} disabled={ready.length === 0 || submitting}>
             {submitting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-            Submit {ready.length} trader{ready.length === 1 ? "" : "s"}
+            {t("contributeTradersPage.manual.submitButton", {
+              count: ready.length,
+              suffix: ready.length === 1 ? "" : "s",
+            })}
           </Button>
         </div>
         {submitError && (
@@ -655,13 +684,16 @@ function ManualTraderEntryFlow() {
           <div className="rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm">
             <div className="flex items-center gap-2 font-medium text-green-700 dark:text-green-300">
               <CheckCircle2 className="h-4 w-4" />
-              Submitted {submitResult.accepted} trader
-              {submitResult.accepted === 1 ? "" : "s"}
+              {t("contributeTradersPage.manual.submitted", {
+                count: submitResult.accepted,
+                suffix: submitResult.accepted === 1 ? "" : "s",
+              })}
             </div>
             {submitResult.duplicate_flagged_count > 0 && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {submitResult.duplicate_flagged_count} flagged as possible duplicates of nearby
-                existing traders; admins will review.
+                {t("contributeTradersPage.manual.duplicateFlagged", {
+                  count: submitResult.duplicate_flagged_count,
+                })}
               </p>
             )}
           </div>
@@ -676,6 +708,7 @@ function ManualTraderEntryFlow() {
 // ---------------------------------------------------------------------------
 
 function MyTradersList() {
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: [...MY_TRADERS_QUERY_KEY],
     queryFn: () => getMyTraderContributions({ limit: 100 }),
@@ -687,35 +720,42 @@ function MyTradersList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your trader contributions</CardTitle>
+        <CardTitle>{t("contributeTradersPage.history.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {query.isLoading && (
           <div className="text-sm text-muted-foreground flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <Loader2 className="h-4 w-4 animate-spin" />{" "}
+            {t("contributeTradersPage.history.loading")}
           </div>
         )}
         {query.isError && (
-          <p className="text-sm text-red-500">Sign in to view your trader contribution history.</p>
+          <p className="text-sm text-red-500">{t("contributeTradersPage.history.signIn")}</p>
         )}
         {stats && (
           <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span>
-              Total: <b className="text-foreground">{stats.total_added}</b>
+              {t("contributeTradersPage.history.total")}{" "}
+              <b className="text-foreground">{stats.total_added}</b>
             </span>
             <span>
-              Last 7 days: <b className="text-foreground">{stats.added_last_7d}</b>
+              {t("contributeTradersPage.history.last7Days")}{" "}
+              <b className="text-foreground">{stats.added_last_7d}</b>
             </span>
             <span>
-              Chat log: <b className="text-foreground">{stats.chatlog_added}</b>
+              {t("contributeTradersPage.history.chatLog")}{" "}
+              <b className="text-foreground">{stats.chatlog_added}</b>
             </span>
             <span>
-              Manual: <b className="text-foreground">{stats.manual_added}</b>
+              {t("contributeTradersPage.history.manual")}{" "}
+              <b className="text-foreground">{stats.manual_added}</b>
             </span>
           </div>
         )}
         {items.length === 0 && !query.isLoading && (
-          <p className="text-sm text-muted-foreground">You haven't contributed any traders yet.</p>
+          <p className="text-sm text-muted-foreground">
+            {t("contributeTradersPage.history.empty")}
+          </p>
         )}
         {items.length > 0 && (
           <ul className="space-y-1 text-sm max-h-72 overflow-auto">
@@ -741,7 +781,9 @@ function MyTradersList() {
                       }}
                     />
                   )}
-                  <span className="font-medium">{props.label || "(no label)"}</span>
+                  <span className="font-medium">
+                    {props.label || t("contributeTradersPage.editor.noLabel")}
+                  </span>
                   {r.trader_type && (
                     <span className="text-xs text-muted-foreground">
                       {TRADER_TYPE_LABELS[r.trader_type as TraderType] ?? r.trader_type}
@@ -754,11 +796,16 @@ function MyTradersList() {
                   )}
                   {r.duplicate_flagged && (
                     <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-xs text-amber-700 dark:text-amber-300">
-                      duplicate?
+                      {t("contributeTradersPage.history.duplicate")}
                     </span>
                   )}
                   <span className="ml-auto text-xs text-muted-foreground">
-                    {r.source ?? ""} · {new Date(r.created_at).toLocaleString()}
+                    {r.source === "chatlog"
+                      ? t("contributeTradersPage.history.sourceChatlog")
+                      : r.source === "manual"
+                        ? t("contributeTradersPage.history.sourceManual")
+                        : (r.source ?? "")}{" "}
+                    · {new Date(r.created_at).toLocaleString()}
                   </span>
                 </li>
               );

@@ -1,4 +1,5 @@
 import { Home, Pin, PinOff } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "../ui/button";
 
 type HomePositionControlsProps = {
@@ -29,16 +30,19 @@ export function HomePositionControls({
   onClear,
   compact = false,
 }: HomePositionControlsProps) {
+  const { t } = useTranslation();
   const hasFavorite = favorite != null;
-  const favoriteLabel = hasFavorite ? `(${favorite.x}, ${favorite.z})` : "spawn (0, 0)";
+  const favoriteLabel = hasFavorite
+    ? `(${favorite.x}, ${favorite.z})`
+    : t("topsMap.homePosition.spawnLabel");
   const jumpTitle = hasFavorite
-    ? `Jump to starting position ${favoriteLabel}`
-    : "Jump to spawn (0, 0) — no starting position set";
+    ? t("topsMap.homePosition.jumpToStartingPosition", { label: favoriteLabel })
+    : t("topsMap.homePosition.jumpToSpawn");
   const pinTitle = hasFavorite
-    ? `Clear starting position ${favoriteLabel}`
+    ? t("topsMap.homePosition.clearStartingPosition", { label: favoriteLabel })
     : canSaveCurrent
-      ? "Save current view as starting position"
-      : "Pan the map first, then save it as your starting position";
+      ? t("topsMap.homePosition.saveCurrentView")
+      : t("topsMap.homePosition.panMapFirst");
 
   const buttonSize = compact ? "sm" : "default";
   const iconSize = compact ? "size-4" : "size-4";
@@ -62,7 +66,7 @@ export function HomePositionControls({
         <Home className={iconSize} />
         {!compact && (
           <span className="ml-1">
-            {hasFavorite ? "Home" : "Spawn"}
+            {hasFavorite ? t("routePlanner.home") : t("topsMap.homePosition.spawn")}
             {hasFavorite && (
               <span className="ml-1 text-xs text-muted-foreground">{favoriteLabel}</span>
             )}
@@ -79,7 +83,11 @@ export function HomePositionControls({
         aria-label={pinTitle}
       >
         {hasFavorite ? <PinOff className={iconSize} /> : <Pin className={iconSize} />}
-        {!compact && <span className="ml-1">{hasFavorite ? "Clear" : "Pin here"}</span>}
+        {!compact && (
+          <span className="ml-1">
+            {hasFavorite ? t("routePlanner.clear") : t("topsMap.homePosition.pinHere")}
+          </span>
+        )}
       </Button>
     </div>
   );

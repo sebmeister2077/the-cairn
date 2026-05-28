@@ -1,5 +1,6 @@
 import { useCallback, useState, type ReactNode } from "react";
 import { Check, ClipboardCopy, HelpCircle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export interface FilePathHelpItem {
   label: string;
@@ -25,6 +26,7 @@ interface FilePathHelpProps {
  * Contribute) so the styling stays consistent.
  */
 export function FilePathHelp({ summary, intro, items, footer }: FilePathHelpProps) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState<string | null>(null);
 
   const copyPath = useCallback((path: string) => {
@@ -65,8 +67,8 @@ export function FilePathHelp({ summary, intro, items, footer }: FilePathHelpProp
                 type="button"
                 className="inline-flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted cursor-pointer transition-colors shrink-0"
                 onClick={() => copyPath(path)}
-                title="Copy path"
-                aria-label={`Copy ${label} path`}
+                title={t("common.copyPath")}
+                aria-label={t("common.copyPathForLabel", { label })}
               >
                 {copied === path ? (
                   <Check className="size-3.5" />

@@ -29,6 +29,7 @@ import {
   type LandmarkEditRequest,
   type LandmarkFeature,
 } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
 import { LandmarkAddDialog } from "./LandmarkAddDialog";
 import { LandmarkRenameDialog } from "./LandmarkRenameDialog";
@@ -84,6 +85,7 @@ export function LandmarkManagementCard({ onLandmarksChanged }: Props) {
 }
 
 function SignInCTA({ reason }: { reason: "no-key" | "no-account" }) {
+  const { t } = useTranslation();
   return (
     <Card className="border-dashed">
       <CardContent className="py-3 flex items-start gap-3 text-sm">
@@ -91,11 +93,11 @@ function SignInCTA({ reason }: { reason: "no-key" | "no-account" }) {
         <div className="flex-1">
           <p>
             {reason === "no-key"
-              ? "Set up an API key to add traders and add/rename landmarks."
-              : "Create an account to add traders and add/rename landmarks."}
+              ? t("topsMap.landmarksCard.signInCtaNoKey")
+              : t("topsMap.landmarksCard.signInCtaNoAccount")}
           </p>
           <Link to="/account" className="text-primary hover:underline text-xs">
-            Go to Account →
+            {t("topsMap.landmarksCard.goToAccount")}
           </Link>
         </div>
       </CardContent>
@@ -110,6 +112,7 @@ function SignedInCard({
   userId: string | null;
   onLandmarksChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditing, setIsEditing] = useState<LandmarkFeature | null>(null);
@@ -154,7 +157,7 @@ function SignedInCard({
               ) : (
                 <ChevronRight className="size-4" />
               )}
-              <MapPin className="size-4" /> Landmarks added by me
+              <MapPin className="size-4" /> {t("topsMap.landmarksCard.title")}
               {myFeatures.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
                   {myFeatures.length}
@@ -162,7 +165,9 @@ function SignedInCard({
               )}
               {pendingRequests.length > 0 && (
                 <Badge variant="outline" className="ml-1 h-5 px-1.5 text-[10px]">
-                  {pendingRequests.length} pending
+                  {t("topsMap.landmarksCard.pendingCount", {
+                    count: pendingRequests.length,
+                  })}
                 </Badge>
               )}
             </span>
@@ -175,7 +180,7 @@ function SignedInCard({
               }}
             >
               <Plus className="size-3 mr-1" />
-              Add
+              {t("topsMap.landmarksCard.add")}
             </Button>
           </CardTitle>
         </CardHeader>
@@ -198,7 +203,7 @@ function SignedInCard({
                 <p className="text-destructive">{(featuresQuery.error as Error).message}</p>
               )}
               {featuresQuery.data && myFeatures.length === 0 && (
-                <p className="text-muted-foreground italic">You haven't added any landmarks yet.</p>
+                <p className="text-muted-foreground italic">{t("topsMap.landmarksCard.empty")}</p>
               )}
               {myFeatures.map((feat) => (
                 <LandmarkRow
@@ -212,7 +217,7 @@ function SignedInCard({
               {pendingRequests.length > 0 && (
                 <div className="pt-2 border-t space-y-1.5">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                    Pending rename requests
+                    {t("topsMap.landmarksCard.pendingRenameRequests")}
                   </div>
                   {pendingRequests.map((r) => (
                     <PendingRequestRow key={r.id} request={r} />
@@ -222,16 +227,18 @@ function SignedInCard({
 
               <div className="pt-2 border-t space-y-2">
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Suggest a rename for any landmark
+                  {t("topsMap.landmarksCard.suggestRename")}
                 </div>
                 <Input
                   value={browseQuery}
                   onChange={(e) => setBrowseQuery(e.target.value)}
-                  placeholder="Search by label…"
+                  placeholder={t("topsMap.landmarksCard.searchByLabel")}
                   className="h-8 text-xs"
                 />
                 {browseQuery.trim() && browseMatches.length === 0 && (
-                  <p className="text-muted-foreground italic">No matches.</p>
+                  <p className="text-muted-foreground italic">
+                    {t("topsMap.landmarksCard.noMatches")}
+                  </p>
                 )}
                 {browseMatches.map((feat) => (
                   <LandmarkRow
@@ -242,7 +249,7 @@ function SignedInCard({
                   />
                 ))}
                 <p className="text-muted-foreground text-[10px]">
-                  Renames on landmarks you didn't add are queued for admin review.
+                  {t("topsMap.landmarksCard.reviewNotice")}
                 </p>
               </div>
             </CardContent>

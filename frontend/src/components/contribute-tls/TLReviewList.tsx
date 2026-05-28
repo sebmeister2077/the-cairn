@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Pencil, Trash2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 const STATUS_ORDER: TLStatus[] = [
   "new-confirmed",
@@ -25,14 +26,6 @@ const STATUS_ORDER: TLStatus[] = [
   "invalid",
   "existing",
 ];
-
-const STATUS_LABEL: Record<TLStatus, string> = {
-  "new-confirmed": "New \u2014 confirmed",
-  "new-unconfirmed": "New \u2014 needs review",
-  unpaired: "Unpaired",
-  invalid: "Invalid",
-  existing: "Already on map",
-};
 
 const STATUS_VARIANT: Record<TLStatus, "default" | "secondary" | "destructive" | "outline"> = {
   "new-confirmed": "default",
@@ -46,17 +39,9 @@ const STATUS_VARIANT: Record<TLStatus, "default" | "secondary" | "destructive" |
  * Short, actionable hint shown directly below each section header so the
  * user knows what to do without opening the full "What to do now?" dialog.
  */
-const STATUS_HINT: Partial<Record<TLStatus, string>> = {
-  "new-unconfirmed":
-    "Multiple possible partners — open Edit to confirm, drag a handle on the map, or use Link two TLs.",
-  unpaired:
-    "These have no partner yet. Use Link two TLs in the map toolbar, type the partner coords via Edit, or remove if you only have one side.",
-  invalid: "Fix the inline reason via Edit, or remove the entry. These are skipped at submit-time.",
-  existing: "Already on the map — skipped at submit-time. Shown for reference only.",
-};
-
 export function TLReviewList() {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const userTLs = useAppSelector((s) => s.contributeTLs.userTLs);
   const selectedTLId = useAppSelector((s) => s.contributeTLs.selectedTLId);
   const navTick = useAppSelector((s) => s.contributeTLs.navTick);
@@ -96,10 +81,27 @@ export function TLReviewList() {
     );
   }
 
+  const statusLabel: Record<TLStatus, string> = {
+    "new-confirmed": t("contributeTLsPage.reviewList.statuses.newConfirmed"),
+    "new-unconfirmed": t("contributeTLsPage.reviewList.statuses.newNeedsReview"),
+    unpaired: t("contributeTLsPage.reviewList.statuses.unpaired"),
+    invalid: t("contributeTLsPage.reviewList.statuses.invalid"),
+    existing: t("contributeTLsPage.reviewList.statuses.existing"),
+  };
+
+  const statusHint: Partial<Record<TLStatus, string>> = {
+    "new-unconfirmed": t("contributeTLsPage.reviewList.hints.newNeedsReview"),
+    unpaired: t("contributeTLsPage.reviewList.hints.unpaired"),
+    invalid: t("contributeTLsPage.reviewList.hints.invalid"),
+    existing: t("contributeTLsPage.reviewList.hints.existing"),
+  };
+
   return (
     <Card className="h-full overflow-hidden flex flex-col">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base">Translocators ({userTLs.length})</CardTitle>
+        <CardTitle className="text-base">
+          {t("contributeTLsPage.reviewList.title", { count: userTLs.length })}
+        </CardTitle>
       </CardHeader>
       <CardContent ref={scrollRootRef} className="flex-1 overflow-y-auto space-y-4">
         {STATUS_ORDER.map((status) => {
@@ -108,11 +110,11 @@ export function TLReviewList() {
           return (
             <section key={status} className="space-y-2">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-                <Badge variant={STATUS_VARIANT[status]}>{STATUS_LABEL[status]}</Badge>
+                <Badge variant={STATUS_VARIANT[status]}>{statusLabel[status]}</Badge>
                 <span>{items.length}</span>
               </h3>
-              {STATUS_HINT[status] && (
-                <p className="text-xs text-muted-foreground leading-snug">{STATUS_HINT[status]}</p>
+              {statusHint[status] && (
+                <p className="text-xs text-muted-foreground leading-snug">{statusHint[status]}</p>
               )}
               <ul className="space-y-1">
                 {items.map((tl) => (
@@ -155,8 +157,8 @@ export function TLReviewList() {
                             e.stopPropagation();
                             confirmTL(tl);
                           }}
-                          aria-label="Confirm pairing"
-                          title="Confirm this pairing as-is"
+                          aria-label={t("contributeTLsPage.reviewList.confirmPairingAria")}
+                          title={t("contributeTLsPage.reviewList.confirmPairingTitle")}
                         >
                           <Check className="size-3.5 text-emerald-600" />
                         </Button>
@@ -169,7 +171,7 @@ export function TLReviewList() {
                           e.stopPropagation();
                           dispatch(setEditingTLId(tl.localId));
                         }}
-                        aria-label="Edit translocator"
+                        aria-label={t("contributeTLsPage.reviewList.editAria")}
                       >
                         <Pencil className="size-3.5" />
                       </Button>
@@ -181,7 +183,7 @@ export function TLReviewList() {
                           e.stopPropagation();
                           dispatch(removeUserTL(tl.localId));
                         }}
-                        aria-label="Remove translocator"
+                        aria-label={t("contributeTLsPage.reviewList.removeAria")}
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -193,9 +195,7 @@ export function TLReviewList() {
           );
         })}
         {userTLs.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No translocators yet. Upload a chat-log to get started.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("contributeTLsPage.reviewList.empty")}</p>
         )}
       </CardContent>
     </Card>

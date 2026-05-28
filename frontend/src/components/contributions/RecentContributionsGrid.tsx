@@ -1,6 +1,7 @@
 import type { HistoryEntry } from "@/models/contributions";
 import { ImageOff, Loader2, Undo2, History } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { MapViewer } from "../MapViewer";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -29,6 +30,7 @@ export function RecentContributionsGridImpl({
   revertWindowDays: number;
   onRevert: (id: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [openId, setOpenId] = useState<string | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
   const [revertError, setRevertError] = useState<string | null>(null);
@@ -59,7 +61,9 @@ export function RecentContributionsGridImpl({
       setOpenId(null);
       setPendingRevert(null);
     } catch (err) {
-      setRevertError(err instanceof Error ? err.message : "Revert failed");
+      setRevertError(
+        err instanceof Error ? err.message : t("contributePage.recent.revertErrorFallback"),
+      );
       // Keep the dialog open so the operator can read the error and
       // either retry or cancel.
     } finally {
@@ -70,17 +74,21 @@ export function RecentContributionsGridImpl({
   function getMapViewerLegend(opened: HistoryEntry) {
     switch (opened.status) {
       case "withdrawn":
-        return "[Withdrawn] · preview retained for transparency";
+        return t("contributePage.recent.withdrawnLegend");
       case "reverted":
-        return `Reverted · originally by ${opened.contributor}`;
+        return t("contributePage.recent.revertedLegend", { contributor: opened.contributor });
       case "orphaned_by_restore":
-        return `Orphaned by backup restore · ${opened.contributor}`;
+        return t("contributePage.recent.orphanedLegend", { contributor: opened.contributor });
       case "approved":
-        return `${opened.contributor} · approved ${
-          opened.approved_at ? new Date(opened.approved_at).toLocaleString() : ""
-        }`;
+        return t("contributePage.recent.approvedLegend", {
+          contributor: opened.contributor,
+          date: opened.approved_at ? new Date(opened.approved_at).toLocaleString() : "",
+        });
       default:
-        return `${opened.contributor} · status: ${opened.status}`;
+        return t("contributePage.recent.statusLegend", {
+          contributor: opened.contributor,
+          status: opened.status,
+        });
     }
   }
 
@@ -92,14 +100,17 @@ export function RecentContributionsGridImpl({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <History className="h-4 w-4" />
-          Recent Contributions
+          {t("contributePage.recent.title")}
           <Badge variant="secondary" className="ml-1 font-normal">
-            all-time
+            {t("contributePage.recent.allTime")}
           </Badge>
         </CardTitle>
         {isAdmin && totalCount > history.length && (
           <p className="text-xs text-muted-foreground">
-            Showing {history.length} of {totalCount.toLocaleString()} retained.
+            {t("contributePage.recent.showingRetained", {
+              shown: history.length,
+              total: totalCount.toLocaleString(),
+            })}
           </p>
         )}
       </CardHeader>
@@ -124,7 +135,7 @@ export function RecentContributionsGridImpl({
                   {h.preview_signed_url ? (
                     <img
                       src={h.preview_signed_url}
-                      alt={`Preview of contribution ${h.id}`}
+                      alt={t("contributePage.recent.previewAlt", { id: h.id })}
                       loading="lazy"
                       className={
                         "h-full w-full object-cover transition-opacity group-hover:opacity-90 " +
@@ -142,33 +153,41 @@ export function RecentContributionsGridImpl({
                     </span>
                     {isWithdrawn ? (
                       <Badge variant="outline" className="text-[10px] py-0">
-                        withdrawn
+                        {t("contributePage.recent.withdrawn")}
                       </Badge>
                     ) : isReverted ? (
                       <Badge variant="outline" className="text-[10px] py-0">
-                        reverted
+                        {t("contributePage.recent.reverted")}
                       </Badge>
                     ) : isOrphaned ? (
                       <Badge variant="outline" className="text-[10px] py-0">
-                        orphaned
+                        {t("contributePage.recent.orphaned")}
                       </Badge>
                     ) : h.revert_status === "queued" || h.revert_status === "running" ? (
                       <Badge variant="outline" className="text-[10px] py-0">
-                        {h.revert_status === "running" ? "reverting…" : "queued"}
+                        {h.revert_status === "running"
+                          ? t("contributePage.recent.reverting")
+                          : t("contributePage.recent.queued")}
                       </Badge>
                     ) : h.revert_status === "failed" ? (
                       <Badge variant="destructive" className="text-[10px] py-0">
-                        revert failed
+                        {t("contributePage.recent.revertFailed")}
                       </Badge>
                     ) : null}
                   </div>
                   <div className="text-muted-foreground">
                     {!isWithdrawn && typeof h.tiles_new === "number"
-                      ? `+${h.tiles_new.toLocaleString()} new chunks`
-                      : `${h.tile_count.toLocaleString()} chunks`}
+                      ? t("contributePage.recent.newChunks", {
+                          count: h.tiles_new.toLocaleString(),
+                        })
+                      : t("contributePage.recent.chunks", {
+                          count: h.tile_count.toLocaleString(),
+                        })}
                   </div>
                   <div className="text-muted-foreground">
-                    {dateStr ? new Date(dateStr).toLocaleDateString() : "—"}
+                    {dateStr
+                      ? new Date(dateStr).toLocaleDateString()
+                      : t("contributePage.recent.unknownDate")}
                   </div>
                 </div>
               </button>
@@ -184,7 +203,7 @@ export function RecentContributionsGridImpl({
           >
             <MapViewer
               imageUrl={opened.preview_signed_url}
-              alt={`Preview of contribution ${opened.id}`}
+              alt={t("contributePage.recent.previewAlt", { id: opened.id })}
               height="60vh"
               bordered={false}
               legend={<span className="text-muted-foreground">{getMapViewerLegend(opened)}</span>}
@@ -194,44 +213,52 @@ export function RecentContributionsGridImpl({
                 <div className="text-muted-foreground">
                   {opened.status === "approved" ? (
                     opened.revert_status === "queued" ? (
-                      <>Queued for revert — worker will pick this up shortly.</>
+                      <>{t("contributePage.recent.queuedForRevert")}</>
                     ) : opened.revert_status === "running" ? (
                       <>
                         <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
-                        Reverting now — this can take a few minutes for large maps.
+                        {t("contributePage.recent.revertingNow")}
                       </>
                     ) : opened.revert_status === "failed" ? (
                       <span className="text-destructive">
-                        Revert failed
-                        {opened.revert_attempts
-                          ? ` (after ${opened.revert_attempts} attempts)`
-                          : ""}
-                        {opened.revert_error ? `: ${opened.revert_error}` : ""}. Click Revert to
-                        retry.
+                        {t("contributePage.recent.revertFailedDetails", {
+                          attempts: opened.revert_attempts
+                            ? t("contributePage.recent.revertAttempts", {
+                                count: opened.revert_attempts,
+                              })
+                            : "",
+                          error: opened.revert_error
+                            ? t("contributePage.recent.revertError", {
+                                error: opened.revert_error,
+                              })
+                            : "",
+                        })}
                       </span>
                     ) : opened.can_revert ? (
                       <>
-                        Revert window: {revertWindowDays}d ·{" "}
-                        {(opened.revert_added_count ?? opened.tiles_new ?? 0).toLocaleString()} tile
-                        {(opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s"}{" "}
-                        captured
-                        {opened.revert_replaced_count
-                          ? ` · ${opened.revert_replaced_count.toLocaleString()} overwrites`
-                          : ""}
+                        {t("contributePage.recent.revertWindow", {
+                          days: revertWindowDays,
+                          captured: (
+                            opened.revert_added_count ??
+                            opened.tiles_new ??
+                            0
+                          ).toLocaleString(),
+                          tileSuffix:
+                            (opened.revert_added_count ?? opened.tiles_new ?? 0) === 1 ? "" : "s",
+                          overwrites: opened.revert_replaced_count
+                            ? t("contributePage.recent.revertOverwrites", {
+                                count: opened.revert_replaced_count.toLocaleString(),
+                              })
+                            : "",
+                        })}
                       </>
                     ) : opened.revert_supported === false ? (
-                      <>
-                        Revert unavailable — undo data was not captured (file too large or feature
-                        flag was off).
-                      </>
+                      <>{t("contributePage.recent.revertUnavailable")}</>
                     ) : (
-                      <>
-                        Outside the {revertWindowDays}-day revert window — restore from a backup
-                        instead.
-                      </>
+                      <>{t("contributePage.recent.outsideWindow", { days: revertWindowDays })}</>
                     )
                   ) : (
-                    <>Status: {opened.status}</>
+                    <>{t("contributePage.recent.status", { status: opened.status })}</>
                   )}
                 </div>
                 {opened.can_revert && (
@@ -247,8 +274,8 @@ export function RecentContributionsGridImpl({
                       <Undo2 className="mr-1 h-3 w-3" />
                     )}
                     {opened.revert_status === "failed"
-                      ? "Retry revert"
-                      : "Revert this contribution"}
+                      ? t("contributePage.recent.retryRevert")
+                      : t("contributePage.recent.revertThisContribution")}
                   </Button>
                 )}
               </div>
@@ -263,27 +290,30 @@ export function RecentContributionsGridImpl({
       </CardContent>
       <ConfirmDialog
         open={pendingRevert !== null}
-        title="Revert this contribution?"
+        title={t("contributePage.recent.revertDialogTitle")}
         description={
           pendingRevert ? (
             <>
               {pendingTilesReplaced > 0 ? (
                 <>
-                  This will restore <strong>{pendingTilesReplaced.toLocaleString()}</strong> chunk
-                  {pendingTilesReplaced === 1 ? "" : "s"} to their pre-contribution state and remove{" "}
-                  <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
-                  {pendingTilesNew === 1 ? "" : "s"} added in the region.
+                  {t("contributePage.recent.revertDialogRestore", {
+                    replaced: pendingTilesReplaced.toLocaleString(),
+                    replacedSuffix: pendingTilesReplaced === 1 ? "" : "s",
+                    added: pendingTilesNew.toLocaleString(),
+                    addedSuffix: pendingTilesNew === 1 ? "" : "s",
+                  })}
                 </>
               ) : (
                 <>
-                  This will delete <strong>{pendingTilesNew.toLocaleString()}</strong> chunk
-                  {pendingTilesNew === 1 ? "" : "s"} added by this contribution. The area returns to{" "}
-                  <em>unmapped</em> — not to a previous version.
+                  {t("contributePage.recent.revertDialogDelete", {
+                    added: pendingTilesNew.toLocaleString(),
+                    addedSuffix: pendingTilesNew === 1 ? "" : "s",
+                  })}
                 </>
               )}
               <br />
               <span className="text-muted-foreground">
-                Contribution ID: <span className="font-mono">{pendingRevert.id}</span>
+                {t("contributePage.recent.contributionId", { id: pendingRevert.id })}
               </span>
               {revertError && (
                 <>
@@ -294,7 +324,7 @@ export function RecentContributionsGridImpl({
             </>
           ) : null
         }
-        confirmLabel="Revert"
+        confirmLabel={t("contributePage.recent.revertConfirm")}
         variant="destructive"
         loading={revertingId !== null}
         onConfirm={confirmRevert}

@@ -32,6 +32,7 @@ import {
 import { adminApiKeysFiltersSlice } from "./slices/adminApiKeysFilters";
 import { adminUsageFiltersSlice } from "./slices/adminUsageFilters";
 import { routePlannerSlice } from "./slices/routePlanner";
+import { i18nSlice } from "./slices/i18n";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -50,6 +51,7 @@ const rootReducer = combineReducers({
     tlGroupings: tlGroupingsSlice.reducer,
     contributeTLs: contributeTLsSlice.reducer,
     routePlanner: routePlannerSlice.reducer,
+    i18n: i18nSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

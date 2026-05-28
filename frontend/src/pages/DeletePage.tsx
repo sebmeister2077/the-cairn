@@ -10,9 +10,11 @@ import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SaveFileHelp } from "@/components/SaveFileHelp";
 import { SafetyNotice } from "@/components/SafetyNotice";
+import { useTranslation } from "@/lib/i18n";
 import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 
 export function DeletePage() {
+  const { t } = useTranslation();
   const [saveFile, setSaveFile] = useState<File | null>(null);
   const [configFile, setConfigFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -49,13 +51,13 @@ export function DeletePage() {
       if (data.modified) {
         setBlob(data.blob);
         setResult(
-          `Deleted ${data.deleted} waypoint(s). ${data.remaining} remaining.`
+          t("deletePage.deleteResult", { deleted: data.deleted, remaining: data.remaining }),
         );
       } else {
-        setResult(data.message ?? "No matching waypoints found.");
+        setResult(data.message ?? t("deletePage.noMatches"));
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      setError(err instanceof Error ? err.message : t("common.unknownError"));
     } finally {
       setLoading(false);
     }
@@ -74,61 +76,79 @@ export function DeletePage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Delete Waypoints</CardTitle>
+        <CardTitle>{t("deletePage.title")}</CardTitle>
       </CardHeader>
       <CardContent>
         <SafetyNotice mode="modify" />
         <form onSubmit={handleSubmit} className="grid gap-4 mt-4">
           <FileUpload
             id="save"
-            label="Save file (.vcdbs)"
+            label={t("deletePage.saveFileLabel")}
             accept=".vcdbs"
             required
             onChange={setSaveFile}
           />
           <FileUpload
             id="config"
-            label="Server config (optional)"
+            label={t("deletePage.configFileLabel")}
             accept=".json"
             onChange={setConfigFile}
           />
           <SaveFileHelp />
           <div className="grid grid-cols-3 gap-2">
             <div>
-              <Label htmlFor="title">Title filter</Label>
-              <Combobox id="title" value={title} onChange={setTitle} suggestions={[]} placeholder="e.g. trader" />
+              <Label htmlFor="title">{t("deletePage.titleFilter")}</Label>
+              <Combobox
+                id="title"
+                value={title}
+                onChange={setTitle}
+                suggestions={[]}
+                placeholder={t("deletePage.titlePlaceholder")}
+              />
             </div>
             <div>
-              <Label htmlFor="icon">Icon filter</Label>
-              <Combobox id="icon" value={icon} onChange={setIcon} suggestions={VS_WAYPOINT_ICONS} placeholder="e.g. circle" />
+              <Label htmlFor="icon">{t("deletePage.iconFilter")}</Label>
+              <Combobox
+                id="icon"
+                value={icon}
+                onChange={setIcon}
+                suggestions={VS_WAYPOINT_ICONS}
+                placeholder={t("deletePage.iconPlaceholder")}
+              />
             </div>
             <div>
-              <Label htmlFor="owner">Owner filter<HelpTip text="The owner is the unique player ID stored with each waypoint. In singleplayer this is your player UID. Filter to delete only waypoints belonging to a specific player." /></Label>
+              <Label htmlFor="owner">
+                {t("deletePage.ownerFilter")}
+                <HelpTip text={t("deletePage.ownerHelp")} />
+              </Label>
               <Combobox id="owner" value={owner} onChange={setOwner} suggestions={[]} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 items-end">
             <div>
-              <Label htmlFor="color">Color (#AARRGGBB)</Label>
+              <Label htmlFor="color">{t("deletePage.colorLabel")}</Label>
               <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} />
             </div>
             <div>
-              <Label htmlFor="guid">GUID<HelpTip text="The GUID is a unique identifier for each individual waypoint (e.g. 740f7877-971f-...). Use this to target a single specific waypoint for deletion." /></Label>
+              <Label htmlFor="guid">
+                {t("deletePage.guidLabel")}
+                <HelpTip text={t("deletePage.guidHelp")} />
+              </Label>
               <Input id="guid" value={guid} onChange={(e) => setGuid(e.target.value)} />
             </div>
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Switch id="pinned" checked={pinnedOnly} onCheckedChange={setPinnedOnly} />
-                <Label htmlFor="pinned">Pinned only</Label>
+                <Label htmlFor="pinned">{t("deletePage.pinnedOnly")}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <Switch id="unpinned" checked={unpinnedOnly} onCheckedChange={setUnpinnedOnly} />
-                <Label htmlFor="unpinned">Unpinned only</Label>
+                <Label htmlFor="unpinned">{t("deletePage.unpinnedOnly")}</Label>
               </div>
             </div>
           </div>
           <Button type="submit" disabled={!saveFile || loading} variant="destructive">
-            {loading ? "Deleting…" : "Delete Matching"}
+            {loading ? t("deletePage.deleting") : t("deletePage.deleteMatching")}
           </Button>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           {result && (
@@ -136,7 +156,7 @@ export function DeletePage() {
               <p className="text-sm text-green-600">{result}</p>
               {blob && (
                 <Button variant="outline" size="sm" onClick={download}>
-                  Download modified .vcdbs
+                  {t("deletePage.downloadModified")}
                 </Button>
               )}
             </div>

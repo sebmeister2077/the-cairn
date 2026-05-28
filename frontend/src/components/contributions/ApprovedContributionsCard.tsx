@@ -1,11 +1,13 @@
 import { Users } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { useTranslation } from "@/lib/i18n";
 import type { ContributeInfo } from "@/models/contributions";
 
 type Props = {
   info: ContributeInfo | null;
 };
 export function ApprovedContributionsCard({ info }: Props) {
+  const { t } = useTranslation();
   if (!info) return null;
   const revertedIds = new Set(
     (info.history ?? [])
@@ -22,7 +24,7 @@ export function ApprovedContributionsCard({ info }: Props) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Users className="h-4 w-4" />
-          Approved Contributions
+          {t("contributePage.approved.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -34,7 +36,7 @@ export function ApprovedContributionsCard({ info }: Props) {
             >
               <span className="font-medium max-w-7/12 truncate">{a.contributor}</span>
               <span className="text-muted-foreground ml-auto">
-                +{a.tiles_new.toLocaleString()} new chunks
+                {t("contributePage.approved.newChunks", { count: a.tiles_new.toLocaleString() })}
               </span>
               <span className="text-xs text-muted-foreground w-16 text-right">
                 {new Date(a.approved_at).toLocaleDateString()}

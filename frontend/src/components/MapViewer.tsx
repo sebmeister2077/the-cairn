@@ -5,6 +5,7 @@ import { TLLegendButton } from "@/components/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
+import { useTranslation } from "@/lib/i18n";
 
 // Marker icon styles are user-selectable from the Account → Appearance panel
 // and live on the `mapView` redux slice (persisted via the root envelope).
@@ -316,6 +317,7 @@ export function MapViewer({
   onWorldClick,
   routeOverlay = null,
 }: MapViewerProps) {
+  const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -1674,7 +1676,13 @@ export function MapViewer({
       )}
       <div className="flex items-center gap-1 flex-wrap">
         {toolbarStart}
-        <Button type="button" variant="outline" size="sm" onClick={zoomOut} title="Zoom out">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={zoomOut}
+          title={t("topsMap.zoomOut")}
+        >
           <ZoomOut className="size-4" />
         </Button>
         {/* <span className="text-xs text-muted-foreground w-14 text-center">
@@ -1684,10 +1692,22 @@ export function MapViewer({
               : zoom) * 100,
           )}%
         </span> */}
-        <Button type="button" variant="outline" size="sm" onClick={zoomIn} title="Zoom in">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={zoomIn}
+          title={t("topsMap.zoomIn")}
+        >
           <ZoomIn className="size-4" />
         </Button>
-        <Button type="button" variant="outline" size="sm" onClick={resetView} title="Reset view">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={resetView}
+          title={t("topsMap.resetView")}
+        >
           <RotateCcw className="size-4" />
         </Button>
         {stats && (
@@ -1697,17 +1717,24 @@ export function MapViewer({
             size="sm"
             onClick={() => centerOnOrigin()}
             title={
-              centerTarget ? `Center on (${centerTarget.x}, ${centerTarget.z})` : "Center on 0, 0"
+              centerTarget
+                ? t("topsMap.centerOnCoordinate", {
+                    x: centerTarget.x,
+                    z: centerTarget.z,
+                  })
+                : t("topsMap.centerOnOrigin")
             }
           >
             <Crosshair className="size-4" />
           </Button>
         )}
-        <span className="text-xs text-muted-foreground ml-2">Scroll to zoom · Drag to pan</span>
+        <span className="text-xs text-muted-foreground ml-2">
+          {t("topsMap.scrollToZoomDragToPan")}
+        </span>
         {enhancing && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground ml-2">
             <Loader2 className="size-3 animate-spin" />
-            Enhancing…
+            {t("topsMap.enhancing")}
           </span>
         )}
         <div className="ml-auto flex items-center gap-2">
@@ -1716,10 +1743,10 @@ export function MapViewer({
               type="button"
               variant="default"
               onClick={() => setIsFullscreen(true)}
-              title="Enter fullscreen map view"
+              title={t("topsMap.enterFullscreenMapView")}
             >
               <Maximize2 className="size-4 mr-1" />
-              Fullscreen
+              {t("topsMap.fullscreen")}
             </Button>
           )}
           <div

@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n";
 
 interface FileUploadProps {
   id: string;
@@ -23,6 +24,7 @@ function formatFileSize(bytes: number): string {
 }
 
 export function FileUpload({ id, label, accept, required, disabled, onChange }: FileUploadProps) {
+  const { t } = useTranslation();
   const [picked, setPicked] = useState<File | null>(null);
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
@@ -47,7 +49,8 @@ export function FileUpload({ id, label, accept, required, disabled, onChange }: 
       />
       {picked && (
         <p className="text-xs text-muted-foreground">
-          Size: <span className="font-medium text-foreground">{formatFileSize(picked.size)}</span>
+          {t("common.size")}:{" "}
+          <span className="font-medium text-foreground">{formatFileSize(picked.size)}</span>
         </p>
       )}
     </div>

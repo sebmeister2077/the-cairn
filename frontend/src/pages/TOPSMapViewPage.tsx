@@ -112,6 +112,7 @@ import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo"
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 
@@ -231,6 +232,7 @@ export function TOPSMapViewPage() {
     },
     [setSearchParams],
   );
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   // Overlay-visibility toggles are persisted in the mapView slice so the
   // user's preference survives reloads and cross-tab navigation.
@@ -663,9 +665,9 @@ export function TOPSMapViewPage() {
   // cached map with a spinner.
   const loading =
     statsQuery.isFetching && !statsQuery.data
-      ? "Reading global server map…"
+      ? t("topsMap.readingGlobalServerMap")
       : levelInfoQuery.isFetching && !tileSet
-        ? "Loading map chunks…"
+        ? t("topsMap.loadingMapChunks")
         : "";
   const error =
     statsQuery.error instanceof Error
@@ -817,7 +819,7 @@ export function TOPSMapViewPage() {
       const x = Number(goToXInput.trim());
       const z = Number(goToZInput.trim());
       if (!Number.isFinite(x) || !Number.isFinite(z)) {
-        setGoToError("Enter valid numeric coordinates for both X and Z.");
+        setGoToError(t("topsMap.enterValidNumericCoordinates"));
         return;
       }
       setLandmarkFocusSpanBlocks(undefined);
@@ -1188,12 +1190,10 @@ export function TOPSMapViewPage() {
       {!isFullscreen && (
         <CardHeader>
           <CardTitle className="flex flex-wrap items-center gap-2">
-            <span>TOPS Map Viewer</span>
+            <span>{t("topsMap.viewerTitle")}</span>
             <MaintenanceChip component="tops_map_viewer" />
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Explore the community-contributed global server map built from player contributions.
-          </p>
+          <p className="text-sm text-muted-foreground">{t("topsMap.viewerDescription")}</p>
         </CardHeader>
       )}
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
@@ -1222,7 +1222,7 @@ export function TOPSMapViewPage() {
                       ) : (
                         <Download className="size-4 mr-1" />
                       )}
-                      {downloading ? "Building PNG…" : "Download PNG"}
+                      {downloading ? t("topsMap.buildingPng") : t("topsMap.downloadPng")}
                     </Button>
                     <Button
                       type="button"
@@ -1230,7 +1230,9 @@ export function TOPSMapViewPage() {
                       size="sm"
                       onClick={handleReload}
                       disabled={isReloading}
-                      title={isReloading ? "Refreshing map data…" : "Refresh map data"}
+                      title={
+                        isReloading ? t("topsMap.refreshingMapData") : t("topsMap.refreshMapData")
+                      }
                       aria-busy={isReloading}
                     >
                       <RefreshCw
@@ -1238,7 +1240,7 @@ export function TOPSMapViewPage() {
                           isReloading ? "running" : "paused"
                         }`}
                       />
-                      Reload
+                      {t("topsMap.reload")}
                     </Button>
                   </div>
 
@@ -1258,17 +1260,17 @@ export function TOPSMapViewPage() {
                       variant="outline"
                       size="sm"
                       onClick={handleOpenGoToDialog}
-                      title="Jump to coordinate (Ctrl+G)"
+                      title={t("topsMap.jumpToCoordinateShortcut")}
                     >
                       <Search className="size-4 mr-1" />
-                      Go to coordinate
+                      {t("topsMap.goToCoordinate")}
                     </Button>
                   </div>
                 </>
               )}
               {!loading && !hasMap && error && (
                 <Button type="button" onClick={handleReload}>
-                  Retry
+                  {t("topsMap.retry")}
                 </Button>
               )}
 
@@ -1287,17 +1289,17 @@ export function TOPSMapViewPage() {
               {isAdmin && (
                 <div className="ml-auto inline-flex items-center gap-1 rounded-md border border-dashed bg-background/60 px-1.5 py-1">
                   <span className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Admin
+                    {t("topsMap.admin")}
                   </span>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => setResourcesDrawerOpen(true)}
-                    title="Worldgen resources overlay"
+                    title={t("topsMap.worldgenResourcesOverlay")}
                   >
                     <Sparkles className="size-4 mr-1" />
-                    Resources
+                    {t("topsMap.resources")}
                     {resourcesOverlay.depositsLoading && (
                       <Loader2 className="size-3 ml-1 animate-spin" />
                     )}
@@ -1307,13 +1309,13 @@ export function TOPSMapViewPage() {
                       render={
                         <Button type="button" variant="outline" size="sm">
                           <Settings className="size-4 mr-1" />
-                          Map cache
+                          {t("topsMap.mapCache")}
                         </Button>
                       }
                     />
                     <DialogContent className="sm:max-w-5xl lg:max-w-6xl">
                       <DialogHeader>
-                        <DialogTitle>TOPS map resolution cache</DialogTitle>
+                        <DialogTitle>{t("topsMap.topsMapResolutionCache")}</DialogTitle>
                       </DialogHeader>
                       <AdminResolutionPanel
                         onLevelComplete={() => {
@@ -1330,14 +1332,17 @@ export function TOPSMapViewPage() {
               <Switch
                 checked={showTranslocators}
                 onCheckedChange={setShowTranslocators}
-                aria-label="Show translocator overlay"
+                aria-label={t("topsMap.showTranslocatorOverlay")}
               />
-              <Label>Show translocators</Label>
+              <Label>{t("topsMap.showTranslocators")}</Label>
               <span className="text-xs text-muted-foreground ml-2">
-                TLs found:{" "}
+                {t("topsMap.translocatorsFound")}{" "}
                 <span className="font-medium text-foreground">
                   {filteringActive
-                    ? `${(visibleTranslocatorSegments?.length ?? 0).toLocaleString()} / ${translocatorCount.toLocaleString()} shown`
+                    ? t("topsMap.translocatorsShown", {
+                        visible: (visibleTranslocatorSegments?.length ?? 0).toLocaleString(),
+                        total: translocatorCount.toLocaleString(),
+                      })
                     : translocatorCount.toLocaleString()}
                 </span>
               </span>
@@ -1349,7 +1354,7 @@ export function TOPSMapViewPage() {
                 onClick={() => setGroupingsOpen(true)}
               >
                 <Layers className="size-4 mr-1" />
-                Groupings
+                {t("topsMap.groupings")}
                 {activeGroupingIds.size > 0 && (
                   <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
                     {activeGroupingIds.size}
@@ -1374,25 +1379,33 @@ export function TOPSMapViewPage() {
                 }
                 aria-label={
                   routes.length > 0
-                    ? `Route active, estimated ${formatDuration(
-                        (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                      )}. Click to ${routePlannerOpen ? "hide" : "show"} the planner.`
+                    ? t("routePlanner.routeActiveAria", {
+                        duration: formatDuration(
+                          (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
+                        ),
+                        action: routePlannerOpen
+                          ? t("routePlanner.routePlannerHide")
+                          : t("routePlanner.routePlannerShow"),
+                      })
                     : routePlannerOpen
-                      ? "Hide route planner"
-                      : "Show route planner"
+                      ? t("routePlanner.routePlannerHide")
+                      : t("routePlanner.routePlannerShow")
                 }
                 title={
                   routes.length > 0
-                    ? `Active route — ${formatDuration(
-                        (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                      )} (${(routes[routeSelectedIndex] ?? routes[0]).tlHops} TL${
-                        (routes[routeSelectedIndex] ?? routes[0]).tlHops === 1 ? "" : "s"
-                      })`
+                    ? t("routePlanner.routeActiveTitle", {
+                        duration: formatDuration(
+                          (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
+                        ),
+                        count: t("routePlanner.tlHops", {
+                          count: (routes[routeSelectedIndex] ?? routes[0]).tlHops,
+                        }),
+                      })
                     : undefined
                 }
               >
                 <Waypoints className="size-4 mr-1" />
-                Route
+                {t("routePlanner.routeButton")}
                 {routes.length > 0 ? (
                   // Inline ETA pill — visible whether the planner is open
                   // or collapsed, so the user always knows a route is
@@ -1416,11 +1429,11 @@ export function TOPSMapViewPage() {
               <Switch
                 checked={showRecentlyAddedTLs}
                 onCheckedChange={toggleShowRecentlyAddedTLs}
-                aria-label="Emphasize recently added translocators"
+                aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
               />
-              <Label>Emphasize recently added TLs (last 14 days)</Label>
+              <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
               <span className="text-xs text-muted-foreground ml-2">
-                {recentTLIdSet.size.toLocaleString()} recent
+                {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
               </span>
             </div>
             <GroupEditingInfo
@@ -1431,11 +1444,11 @@ export function TOPSMapViewPage() {
               <Switch
                 checked={showLandmarks}
                 onCheckedChange={setShowLandmarks}
-                aria-label="Show landmarks overlay"
+                aria-label={t("topsMap.showLandmarksOverlay")}
               />
-              <Label>Show landmarks</Label>
+              <Label>{t("topsMap.showLandmarks")}</Label>
               <span className="text-xs text-muted-foreground ml-2">
-                Landmarks found:{" "}
+                {t("topsMap.landmarksFound")}{" "}
                 <span className="font-medium text-foreground">
                   {landmarkCount.toLocaleString()}
                 </span>
@@ -1445,11 +1458,11 @@ export function TOPSMapViewPage() {
               <Switch
                 checked={showTerminus}
                 onCheckedChange={setShowTerminus}
-                aria-label="Show Terminus teleporters overlay"
+                aria-label={t("topsMap.showTerminusTeleportersOverlay")}
               />
-              <Label>Show Terminus teleporters</Label>
+              <Label>{t("topsMap.showTerminusTeleporters")}</Label>
               <span className="text-xs text-muted-foreground ml-2">
-                Terminus mapped:{" "}
+                {t("topsMap.terminusMapped")}{" "}
                 <span className="font-medium text-foreground">
                   {terminusCount.toLocaleString()}
                 </span>
@@ -1461,11 +1474,11 @@ export function TOPSMapViewPage() {
                   <Switch
                     checked={showTraders}
                     onCheckedChange={setShowTraders}
-                    aria-label="Show traders overlay"
+                    aria-label={t("topsMap.showTradersOverlay")}
                   />
-                  <Label>Show traders</Label>
+                  <Label>{t("topsMap.showTraders")}</Label>
                   <span className="text-xs text-muted-foreground ml-2">
-                    Traders mapped:{" "}
+                    {t("topsMap.tradersMapped")}{" "}
                     <span className="font-medium text-foreground">
                       {traderCount.toLocaleString()}
                     </span>
@@ -1523,7 +1536,10 @@ export function TOPSMapViewPage() {
                             animationDuration: "260ms",
                           }}
                         >
-                          Showing {traderTypeFilterSet.size} of {TRADER_TYPES.length} types
+                          {t("topsMap.showingTypes", {
+                            shown: traderTypeFilterSet.size,
+                            total: TRADER_TYPES.length,
+                          })}
                         </span>
                       )}
                     </div>
@@ -1535,11 +1551,11 @@ export function TOPSMapViewPage() {
             {hasMap && (
               <div className="flex flex-col gap-1">
                 <Label htmlFor="landmark-search" className="text-sm">
-                  Search landmark
+                  {t("topsMap.searchLandmark")}
                 </Label>
                 <Combobox
                   id="landmark-search"
-                  placeholder="Type to search…"
+                  placeholder={t("topsMap.typeToSearch")}
                   value={landmarkSearch}
                   suggestions={landmarkSuggestions}
                   onChange={setLandmarkSearch}
@@ -1560,12 +1576,16 @@ export function TOPSMapViewPage() {
                 </span>
                 {selectedDeposit.qty != null && (
                   <span className="text-xs text-muted-foreground">
-                    qty {selectedDeposit.qty.toFixed(2)}
+                    {t("topsMap.depositQuantity", {
+                      value: selectedDeposit.qty.toFixed(2),
+                    })}
                   </span>
                 )}
                 {selectedDeposit.richness != null && (
                   <span className="text-xs text-muted-foreground">
-                    richness {selectedDeposit.richness.toFixed(2)}
+                    {t("topsMap.depositRichness", {
+                      value: selectedDeposit.richness.toFixed(2),
+                    })}
                   </span>
                 )}
                 <Button
@@ -1574,7 +1594,7 @@ export function TOPSMapViewPage() {
                   size="icon-sm"
                   className="ml-auto"
                   onClick={() => setSelectedDeposit(null)}
-                  aria-label="Dismiss deposit info"
+                  aria-label={t("topsMap.dismissDepositInfo")}
                 >
                   <X className="size-4" />
                 </Button>
@@ -1592,7 +1612,7 @@ export function TOPSMapViewPage() {
               className="absolute right-3 top-3 z-20 shadow"
             >
               <Search className="size-4 mr-1" />
-              Go to
+              {t("topsMap.goToCoordinate")}
             </Button>
           )}
           <MapViewer
@@ -1716,10 +1736,8 @@ export function TOPSMapViewPage() {
         <Dialog open={goToDialogOpen} onOpenChange={setGoToDialogOpen}>
           <DialogContent className="sm:max-w-md" showCloseButton>
             <DialogHeader>
-              <DialogTitle>Go to coordinate</DialogTitle>
-              <DialogDescription>
-                Jump the map camera to any world coordinate. Tip: press Ctrl+G anytime.
-              </DialogDescription>
+              <DialogTitle>{t("topsMap.goToCoordinate")}</DialogTitle>
+              <DialogDescription>{t("topsMap.goToCoordinateDescription")}</DialogDescription>
             </DialogHeader>
             <form className="grid gap-3" onSubmit={handleGoToSubmit}>
               <div className="grid gap-3 sm:grid-cols-2">
@@ -1728,7 +1746,7 @@ export function TOPSMapViewPage() {
                   <Input
                     id="goto-x"
                     inputMode="decimal"
-                    placeholder="e.g. 1450"
+                    placeholder={t("topsMap.examplePositiveCoordinate")}
                     value={goToXInput}
                     onChange={(e) => {
                       setGoToXInput(e.target.value);
@@ -1742,7 +1760,7 @@ export function TOPSMapViewPage() {
                   <Input
                     id="goto-z"
                     inputMode="decimal"
-                    placeholder="e.g. -920"
+                    placeholder={t("topsMap.exampleNegativeCoordinate")}
                     value={goToZInput}
                     onChange={(e) => {
                       setGoToZInput(e.target.value);
@@ -1752,7 +1770,7 @@ export function TOPSMapViewPage() {
                 </div>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Current center is pre-filled for quick adjustments.</span>
+                <span>{t("topsMap.currentCenterPrefilled")}</span>
                 <Button
                   type="button"
                   variant="ghost"
@@ -1766,15 +1784,15 @@ export function TOPSMapViewPage() {
                     setGoToError(null);
                   }}
                 >
-                  Use current center
+                  {t("topsMap.useCurrentCenter")}
                 </Button>
               </div>
               {goToError && <p className="text-sm text-destructive">{goToError}</p>}
               <DialogFooter className="mx-0 mb-0 border-0 bg-transparent p-0 pt-1">
                 <Button type="button" variant="outline" onClick={() => setGoToDialogOpen(false)}>
-                  Cancel
+                  {t("topsMap.cancel")}
                 </Button>
-                <Button type="submit">Go to coordinate</Button>
+                <Button type="submit">{t("topsMap.goToCoordinate")}</Button>
               </DialogFooter>
             </form>
           </DialogContent>

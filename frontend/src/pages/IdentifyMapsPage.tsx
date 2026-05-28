@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n";
 import { extractDBFromLogs, type MapFileInfo, type ServerMapResult } from "@/lib/identify-maps";
 import { useRef, useState, type FormEvent } from "react";
 
 export function IdentifyMapsPage() {
+  const { t } = useTranslation();
   const [logFiles, setLogFiles] = useState<File[]>([]);
   const [mapFiles, setMapFiles] = useState<File[]>([]);
   const [settingsFile, setSettingsFile] = useState<File | null>(null);
@@ -53,7 +55,7 @@ export function IdentifyMapsPage() {
       setResults(data);
       setHasRun(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to process files");
+      setError(err instanceof Error ? err.message : t("identifyMapsPage.failedToProcessFiles"));
     } finally {
       setLoading(false);
     }
@@ -71,29 +73,33 @@ export function IdentifyMapsPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Identify Map Databases</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Match your multiplayer map files to the servers they belong to by analyzing your game
-          logs.
-        </p>
+        <CardTitle>{t("identifyMapsPage.title")}</CardTitle>
+        <p className="text-sm text-muted-foreground">{t("identifyMapsPage.description")}</p>
       </CardHeader>
       <CardContent className="grid gap-6">
         <FilePathHelp
-          summary="Where can I find these files?"
+          summary={t("identifyMapsPage.filePathSummary")}
           items={[
-            { label: "Logs", path: String.raw`%AppData%\VintagestoryData\Logs` },
-            { label: "Maps", path: String.raw`%AppData%\VintagestoryData\Maps` },
-            { label: "Settings", path: String.raw`%AppData%\VintagestoryData\clientsettings.json` },
+            {
+              label: t("identifyMapsPage.paths.logsLabel"),
+              path: String.raw`%AppData%\VintagestoryData\Logs`,
+            },
+            {
+              label: t("identifyMapsPage.paths.mapsLabel"),
+              path: String.raw`%AppData%\VintagestoryData\Maps`,
+            },
+            {
+              label: t("identifyMapsPage.paths.settingsLabel"),
+              path: String.raw`%AppData%\VintagestoryData\clientsettings.json`,
+            },
           ]}
-          footer={
-            <p className="text-xs">Paste these paths directly into File Explorer's address bar.</p>
-          }
+          footer={<p className="text-xs">{t("identifyMapsPage.paths.footer")}</p>}
         />
 
         <form onSubmit={handleSubmit} className="grid gap-4">
           <FileUpload
             id="logfile"
-            label="Client log (client-main.log)"
+            label={t("identifyMapsPage.clientLogLabel")}
             accept=".log,.txt"
             required
             onChange={handleLogFiles}
@@ -102,11 +108,11 @@ export function IdentifyMapsPage() {
           <div className="grid gap-1.5">
             <Label htmlFor="mapfolder">
               <span className="inline-flex items-center">
-                Maps folder
-                <HelpTip text="Used only to match each .db file to a server connection by comparing the file's last updated time with when your log shows that server connection. The page uses file metadata (name, size, last-modified), not map tile contents, for this correlation." />
+                {t("identifyMapsPage.mapsFolderLabel")}
+                <HelpTip text={t("identifyMapsPage.mapsFolderHelp")} />
               </span>
               <span className="text-muted-foreground ml-1 font-normal">
-                (select your VintagestoryData/Maps directory)
+                ({t("identifyMapsPage.mapsFolderHint")})
               </span>
             </Label>
             <Input
@@ -120,25 +126,25 @@ export function IdentifyMapsPage() {
             />
             {mapFiles.length > 0 && (
               <p className="text-xs text-muted-foreground">
-                {mapFiles.length} .db file{mapFiles.length !== 1 && "s"} found
+                {t("identifyMapsPage.mapFilesFound", { count: mapFiles.length })}
               </p>
             )}
           </div>
 
           <FileUpload
             id="settings"
-            label="Client settings (optional — for friendly server names)"
+            label={t("identifyMapsPage.clientSettingsLabel")}
             accept=".json"
             onChange={setSettingsFile}
           />
 
           <div className="flex gap-2">
             <Button type="submit" disabled={logFiles.length === 0 || loading}>
-              {loading ? "Analyzing…" : "Identify"}
+              {loading ? t("identifyMapsPage.analyzing") : t("identifyMapsPage.identify")}
             </Button>
             {hasRun && (
               <Button type="button" variant="outline" onClick={handleReset}>
-                Clear
+                {t("identifyMapsPage.clear")}
               </Button>
             )}
           </div>

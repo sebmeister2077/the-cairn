@@ -21,6 +21,7 @@ import {
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { formatDuration } from "@/lib/format-duration";
+import { useTranslation } from "@/lib/i18n";
 
 // Static count of ocean bodies in the canonical server snapshot
 // (`frontend/src/assets/Oceans/oceans.json` -> `bodies.length`). Hardcoded
@@ -85,6 +86,7 @@ export function FullscreenControlsOverlay({
   onSaveCurrentAsHome,
   onClearHome,
 }: FullscreenControlsOverlayProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
   const setShowTranslocators = useCallback(
@@ -154,11 +156,11 @@ export function FullscreenControlsOverlay({
           variant="secondary"
           size="sm"
           onClick={() => setIsFullscreen(false)}
-          title="Exit fullscreen"
+          title={t("topsMap.exitFullscreen")}
           className="shadow-md"
         >
           <Minimize2 className="size-4 mr-1" />
-          Exit fullscreen
+          {t("topsMap.exitFullscreen")}
         </Button>
         <HomePositionControls
           favorite={favoriteStartingPosition}
@@ -176,8 +178,8 @@ export function FullscreenControlsOverlay({
           onClick={() => setShowTranslocators(!showTranslocators)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
-          <Switch checked={showTranslocators} aria-label="Show translocator overlay" />
-          <Label className="cursor-pointer">Translocators</Label>
+          <Switch checked={showTranslocators} aria-label={t("topsMap.showTranslocatorOverlay")} />
+          <Label className="cursor-pointer">{t("topsMap.showTranslocators")}</Label>
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {filteringActive
               ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
@@ -197,15 +199,17 @@ export function FullscreenControlsOverlay({
           <Switch
             disabled={!showTranslocators}
             checked={showRecentlyAddedTLs}
-            aria-label="Emphasize recently added translocators"
+            aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
           />
           <Label
             className={cn(" text-xs leading-tight", {
               "cursor-pointer": showTranslocators,
             })}
           >
-            Recently added TLs
-            <span className="block text-[10px] text-muted-foreground">last 14 days</span>
+            {t("topsMap.recentlyAddedTitle")}
+            <span className="block text-[10px] text-muted-foreground">
+              {t("topsMap.recentlyAddedSubtitle", { days: 14 })}
+            </span>
           </Label>
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {recentTLCount.toLocaleString()}
@@ -215,8 +219,8 @@ export function FullscreenControlsOverlay({
           onClick={() => setShowLandmarks(!showLandmarks)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
-          <Switch checked={showLandmarks} aria-label="Show landmarks overlay" />
-          <Label className="cursor-pointer">Landmarks</Label>
+          <Switch checked={showLandmarks} aria-label={t("topsMap.showLandmarksOverlay")} />
+          <Label className="cursor-pointer">{t("topsMap.showLandmarks")}</Label>
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {landmarkCount.toLocaleString()}
           </span>
@@ -225,8 +229,8 @@ export function FullscreenControlsOverlay({
           onClick={() => setShowTerminus(!showTerminus)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
-          <Switch checked={showTerminus} aria-label="Show Terminus teleporters overlay" />
-          <Label className="cursor-pointer">Terminus teleporters</Label>
+          <Switch checked={showTerminus} aria-label={t("topsMap.showTerminusTeleportersOverlay")} />
+          <Label className="cursor-pointer">{t("topsMap.showTerminusTeleporters")}</Label>
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {terminusCount.toLocaleString()}
           </span>
@@ -236,8 +240,8 @@ export function FullscreenControlsOverlay({
             onClick={() => setShowTraders(!showTraders)}
             className="cursor-pointer flex items-center gap-2"
           >
-            <Switch checked={showTraders} aria-label="Show traders overlay" />
-            <Label className="cursor-pointer">Traders</Label>
+            <Switch checked={showTraders} aria-label={t("topsMap.showTradersOverlay")} />
+            <Label className="cursor-pointer">{t("topsMap.showTraders")}</Label>
             <span className="ml-auto text-xs text-muted-foreground select-none">
               {traderCount.toLocaleString()}
             </span>
@@ -298,7 +302,10 @@ export function FullscreenControlsOverlay({
                       animationDuration: "260ms",
                     }}
                   >
-                    {traderTypeFilterSet.size}/{TRADER_TYPES.length} types
+                    {t("topsMap.showingTypes", {
+                      shown: traderTypeFilterSet.size,
+                      total: TRADER_TYPES.length,
+                    })}
                   </span>
                 )}
               </div>
@@ -309,10 +316,10 @@ export function FullscreenControlsOverlay({
           onClick={() => setShowOceans(!showOceans)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
         >
-          <Switch checked={showOceans} aria-label="Show oceans background overlay" />
-          <Label className="cursor-pointer">Oceans</Label>
+          <Switch checked={showOceans} aria-label={t("topsMap.showOceansOverlay")} />
+          <Label className="cursor-pointer">{t("topsMap.oceans")}</Label>
           <span className="text-xs text-muted-foreground">
-            {OCEANS_TOTAL_COUNT.toLocaleString()} total
+            {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
           </span>
         </div>
         <Button
@@ -323,7 +330,7 @@ export function FullscreenControlsOverlay({
           className="shadow-md"
         >
           <Layers className="size-4 mr-1" />
-          Groupings
+          {t("topsMap.groupings")}
           {activeGroupingCount > 0 && (
             <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground select-none">
               {activeGroupingCount}
@@ -342,19 +349,27 @@ export function FullscreenControlsOverlay({
           )}
           aria-label={
             activeRoute
-              ? `Route active, estimated ${formatDuration(activeRoute.totalSeconds)}. Click to ${routePlannerOpen ? "hide" : "show"} the planner.`
+              ? t("routePlanner.routeActiveAria", {
+                  duration: formatDuration(activeRoute.totalSeconds),
+                  action: routePlannerOpen
+                    ? t("routePlanner.routePlannerHide")
+                    : t("routePlanner.routePlannerShow"),
+                })
               : routePlannerOpen
-                ? "Hide route planner"
-                : "Show route planner"
+                ? t("routePlanner.routePlannerHide")
+                : t("routePlanner.routePlannerShow")
           }
           title={
             activeRoute
-              ? `Active route — ${formatDuration(activeRoute.totalSeconds)} (${activeRoute.tlHops} TL${activeRoute.tlHops === 1 ? "" : "s"})`
+              ? t("routePlanner.routeActiveTitle", {
+                  duration: formatDuration(activeRoute.totalSeconds),
+                  count: t("routePlanner.tlHops", { count: activeRoute.tlHops }),
+                })
               : undefined
           }
         >
           <Waypoints className="size-4 mr-1" />
-          Route
+          {t("routePlanner.routeButton")}
           {activeRoute ? (
             <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
               {formatDuration(activeRoute.totalSeconds)}
@@ -375,11 +390,11 @@ export function FullscreenControlsOverlay({
           className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
         >
           <Search className="size-3" />
-          Search landmark
+          {t("topsMap.searchLandmark")}
         </Label>
         <Combobox
           id="landmark-search-fullscreen"
-          placeholder="Type to search…"
+          placeholder={t("topsMap.typeToSearch")}
           value={landmarkSearch}
           suggestions={landmarkSuggestions}
           onChange={onLandmarkSearchChange}

@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "@/lib/i18n";
 import { ContributionRegionPicker } from "../ContributionRegionPicker";
 import type { ContributeInfo } from "@/models/contributions";
 import type { ContributionRegion, TopsMapResolutionMeta } from "@/lib/api";
@@ -86,6 +87,7 @@ export function ContributionRegionField({
   onRegionChange,
   disabled = false,
 }: Props) {
+  const { t } = useTranslation();
   // Backend exposes `region_chunk_area_cap_non_admin` (new name) plus the
   // legacy `region_tile_cap_non_admin` alias for one release. Prefer the
   // new field but fall back to the alias.
@@ -114,34 +116,31 @@ export function ContributionRegionField({
   return (
     <div className="space-y-3 rounded border p-3">
       <div className="flex items-center justify-between gap-2">
-        <Label className="m-0">Contribution mode</Label>
-        {isAdmin && <Badge variant="outline">admin / region_overwrite</Badge>}
+        <Label className="m-0">{t("contributePage.regionField.title")}</Label>
+        {isAdmin && <Badge variant="outline">{t("contributePage.regionField.adminBadge")}</Badge>}
       </div>
 
       <Tabs value={mode} onValueChange={(v) => onModeChange(v as ContributionMode)}>
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="gap_fill" disabled={disabled}>
-            Add new areas
+            {t("contributePage.regionField.addNewAreas")}
           </TabsTrigger>
           <TabsTrigger value="overwrite" disabled={disabled}>
-            Update existing region
+            {t("contributePage.regionField.updateExistingRegion")}
           </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {mode === "gap_fill" && (
         <p className="text-xs text-muted-foreground">
-          Default mode. Your upload only fills in chunks that aren't already mapped. Existing chunks
-          on the server are never touched.
+          {t("contributePage.regionField.gapFillDescription")}
         </p>
       )}
 
       {mode === "overwrite" && (
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
-            Replace mode. Draw the rectangle whose chunks should be overwritten by your upload —
-            chunks outside the rectangle are left untouched. The rectangle snaps to whole 32-block
-            chunks.
+            {t("contributePage.regionField.overwriteDescription")}
           </p>
           <ContributionRegionPicker
             availableLevels={availableLevels}
@@ -154,19 +153,24 @@ export function ContributionRegionField({
             {region ? (
               <>
                 <span>
-                  Selection: <strong>{area.toLocaleString()}</strong> chunk
-                  {area === 1 ? "" : "s"}
+                  {t("contributePage.regionField.selection", {
+                    count: area.toLocaleString(),
+                    suffix: area === 1 ? "" : "s",
+                  })}
                 </span>
                 {cap != null && (
                   <span className={overCap ? "text-destructive" : ""}>
-                    · cap {cap.toLocaleString()} chunks
-                    {overCap ? " (over!)" : ""}
+                    ·{" "}
+                    {t("contributePage.regionField.cap", {
+                      count: cap.toLocaleString(),
+                      over: overCap ? t("contributePage.regionField.capOver") : "",
+                    })}
                   </span>
                 )}
               </>
             ) : (
               <span className="text-warning">
-                Draw a rectangle on the map above to pick the region to overwrite.
+                {t("contributePage.regionField.drawRectangleWarning")}
               </span>
             )}
           </div>

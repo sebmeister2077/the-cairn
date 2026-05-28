@@ -6,6 +6,7 @@ import { MapViewer } from "../MapViewer";
 import { ContributionBeforeAfter } from "../ContributionBeforeAfter";
 import { AdminRegionReviewPanel } from "../admin/AdminRegionReviewPanel";
 import { MatchScoreBadge } from "./MatchScoreBadge";
+import { useTranslation } from "@/lib/i18n";
 import { normalizeContributionRegion } from "@/lib/api";
 
 export function PendingContributionsSection({
@@ -35,28 +36,27 @@ export function PendingContributionsSection({
   setRejectingId: (contributionId: string | null) => void;
   handleRecomputeMatchScore: (contributionId: string) => void;
 }) {
+  const { t } = useTranslation();
   const previewBlocked =
     contributeInfo?.heavy_compute_enabled === false && !contribution.preview_signed_url;
   const isPreviewLoading = previewLoading && previewId === contribution.id;
   const previewDisabled = isPreviewLoading || previewBlocked;
-  const previewTitle = previewBlocked
-    ? "Preview generation is paused while the server is at reduced capacity. An admin will render previews shortly."
-    : undefined;
+  const previewTitle = previewBlocked ? t("contributePage.pending.previewPausedTitle") : undefined;
 
   const validating = contribution.validation_status === "pending";
   const merging =
     contribution.approval_status === "queued" || contribution.approval_status === "running";
   const approveDisabled = actionLoading === contribution.id || validating || merging;
   const approveTitle = validating
-    ? "Waiting for upload validation to finish before approval is allowed."
+    ? t("contributePage.pending.waitingValidationTitle")
     : merging
-      ? "Already merging in the background."
+      ? t("contributePage.pending.alreadyMergingTitle")
       : undefined;
   const approveLabel = merging
     ? contribution.approval_status === "running"
-      ? "Merging…"
-      : "Queued…"
-    : "Approve";
+      ? t("contributePage.pending.mergingRunning")
+      : t("contributePage.pending.mergingQueued")
+    : t("contributePage.pending.approve");
 
   return (
     <div key={contribution.id} className="space-y-2">
@@ -64,8 +64,12 @@ export function PendingContributionsSection({
         <div className="space-y-0.5">
           <div className="text-sm font-medium">{contribution.contributor}</div>
           <div className="text-xs text-muted-foreground">
-            {contribution.tile_count.toLocaleString()} chunks &middot;{" "}
-            {new Date(contribution.created_at ?? contribution.timestamp ?? "").toLocaleDateString()}
+            {t("contributePage.pending.itemMeta", {
+              count: contribution.tile_count.toLocaleString(),
+              date: new Date(
+                contribution.created_at ?? contribution.timestamp ?? "",
+              ).toLocaleDateString(),
+            })}
           </div>
           <div className="text-xs text-muted-foreground font-mono">{contribution.id}</div>
           {contributeInfo.match_score_enabled && contribution.match_score && (
@@ -96,7 +100,9 @@ export function PendingContributionsSection({
             ) : (
               <Eye className="mr-1 h-3.5 w-3.5" />
             )}
-            {previewBlocked ? "Preview paused" : "Preview"}
+            {previewBlocked
+              ? t("contributePage.pending.previewPaused")
+              : t("contributePage.pending.preview")}
           </Button>
           {contribution.is_mine && (
             <Button
@@ -109,9 +115,9 @@ export function PendingContributionsSection({
               }
               title={
                 !isAdmin && contributeInfo?.withdraw_next_allowed_at
-                  ? `Weekly withdraw limit reached. Next allowed: ${new Date(
-                      contributeInfo.withdraw_next_allowed_at,
-                    ).toLocaleString()}`
+                  ? t("contributePage.pending.withdrawLimitReached", {
+                      date: new Date(contributeInfo.withdraw_next_allowed_at).toLocaleString(),
+                    })
                   : undefined
               }
               className="text-destructive hover:text-destructive"
@@ -121,7 +127,7 @@ export function PendingContributionsSection({
               ) : (
                 <Undo2 className="mr-1 h-3.5 w-3.5" />
               )}
-              Withdraw
+              {t("contributePage.pending.withdraw")}
             </Button>
           )}
           {isAdmin && (
@@ -147,7 +153,7 @@ export function PendingContributionsSection({
                 disabled={actionLoading === contribution.id}
               >
                 <XIcon className="mr-1 h-3.5 w-3.5" />
-                Reject
+                {t("contributePage.pending.reject")}
               </Button>
             </>
           )}
@@ -159,13 +165,13 @@ export function PendingContributionsSection({
         <div className="rounded-md border overflow-hidden bg-black/5">
           <MapViewer
             imageUrl={previewUrl}
-            alt="Merge preview"
+            alt={t("contributePage.pending.mergePreviewAlt")}
             height="60vh"
             bordered={false}
             legend={
               <>
                 <span className="inline-block w-3 h-3 rounded-sm bg-green-500/70" />
-                <span>Green-highlighted areas are new chunks from this contribution</span>
+                <span>{t("contributePage.pending.mergePreviewLegend")}</span>
               </>
             }
           />
@@ -198,14 +204,14 @@ export function PendingContributionsSection({
           const regionForBadge = normalizeContributionRegion(contribution.update_region);
           return (
             <div className="text-xs text-muted-foreground">
-              Region overwrite
-              {regionForBadge && (
-                <>
-                  {" "}
-                  — x [{regionForBadge.min_x}, {regionForBadge.max_x}], z [{regionForBadge.min_z},{" "}
-                  {regionForBadge.max_z}]
-                </>
-              )}
+              {regionForBadge
+                ? t("contributePage.pending.regionOverwriteBounds", {
+                    minX: regionForBadge.min_x,
+                    maxX: regionForBadge.max_x,
+                    minZ: regionForBadge.min_z,
+                    maxZ: regionForBadge.max_z,
+                  })
+                : t("contributePage.pending.regionOverwrite")}
             </div>
           );
         })()}

@@ -1,6 +1,7 @@
 import type { PendingContribution } from "@/models/contributions";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { Badge } from "../ui/badge";
 
 // ---------------------------------------------------------------------------
@@ -14,6 +15,7 @@ export function PendingLifecycleBadge({
   contribution: PendingContribution;
   heavyComputeEnabled: boolean;
 }) {
+  const { t } = useTranslation();
   // Async upload validation. The row exists in the DB but the worker
   // hasn't opened the .db file yet — Approve will be greyed out upstream.
   // When the heavy-compute kill switch is OFF no worker will spawn, so
@@ -22,15 +24,15 @@ export function PendingLifecycleBadge({
     if (!heavyComputeEnabled) {
       return (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Awaiting admin compute</span>
-          <HelpTip text="Heavy background work is paused on the server. Upload validation will run once an admin re-enables heavy compute or drains the queue manually." />
+          <span>{t("contributePage.lifecycle.awaitingAdminCompute")}</span>
+          <HelpTip text={t("contributePage.lifecycle.awaitingAdminComputeHelp")} />
         </div>
       );
     }
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Validating upload…</span>
+        <span>{t("contributePage.lifecycle.validatingUpload")}</span>
       </div>
     );
   }
@@ -48,9 +50,11 @@ export function PendingLifecycleBadge({
           className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
         >
           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Queued for merge
+          {t("contributePage.lifecycle.queuedForMerge")}
         </Badge>
-        <span className="text-muted-foreground">Worker will pick this up shortly</span>
+        <span className="text-muted-foreground">
+          {t("contributePage.lifecycle.workerWillPickThisUp")}
+        </span>
       </div>
     );
   }
@@ -62,7 +66,7 @@ export function PendingLifecycleBadge({
           className="bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
         >
           <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          Merging into map…
+          {t("contributePage.lifecycle.mergingIntoMap")}
         </Badge>
       </div>
     );
@@ -74,7 +78,7 @@ export function PendingLifecycleBadge({
           variant="outline"
           className="bg-destructive/15 text-destructive border-destructive/30"
         >
-          Merge failed
+          {t("contributePage.lifecycle.mergeFailed")}
         </Badge>
         {contribution.approval_error && (
           <span

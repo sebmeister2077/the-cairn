@@ -1,4 +1,5 @@
 import type { ContributeInfo } from "@/models/contributions";
+import { useTranslation } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Undo2 } from "lucide-react";
 
@@ -9,6 +10,7 @@ export function RevertedContributionsSection({
   info: ContributeInfo | null;
   isAdmin: boolean;
 }) {
+  const { t } = useTranslation();
   if (
     !info ||
     (!isAdmin && !info.is_admin) ||
@@ -23,7 +25,7 @@ export function RevertedContributionsSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base text-muted-foreground">
           <Undo2 className="h-4 w-4" />
-          Reverted Contributions
+          {t("contributePage.reverted.title")}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -39,7 +41,9 @@ export function RevertedContributionsSection({
                 <div>
                   <span className="font-medium">{h.contributor}</span>
                   <span className="text-muted-foreground ml-2">
-                    {h.status === "orphaned_by_restore" ? "[Orphaned by restore]" : "[Reverted]"}
+                    {h.status === "orphaned_by_restore"
+                      ? t("contributePage.reverted.orphanedByRestore")
+                      : t("contributePage.reverted.reverted")}
                   </span>
                   <span className="text-xs text-muted-foreground ml-2 font-mono">{h.id}</span>
                 </div>
@@ -48,7 +52,7 @@ export function RevertedContributionsSection({
                     ? new Date(h.reverted_at).toLocaleDateString()
                     : h.approved_at
                       ? new Date(h.approved_at).toLocaleDateString()
-                      : "—"}
+                      : t("contributePage.reverted.unknownDate")}
                 </span>
               </div>
             ))}

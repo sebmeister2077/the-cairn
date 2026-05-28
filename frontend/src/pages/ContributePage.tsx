@@ -22,12 +22,14 @@ import {
 } from "@/lib/api";
 import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
 import { contributeQueries } from "@/lib/constants/react-query";
+import { useTranslation } from "@/lib/i18n";
 import type { ContributeInfo } from "@/models/contributions";
 import { useReduxState } from "@/store/hooks";
 import { useQuery, useQueryClient, type DefaultError } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export function ContributePage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const isAdmin = useReduxState("auth.isAdmin");
   const canContribute = useReduxState("auth.canContribute");
@@ -148,7 +150,9 @@ export function ContributePage() {
       if (previewId === id) setPreviewId(null);
       queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Approve failed");
+      setActionError(
+        err instanceof Error ? err.message : t("contributePage.pending.approveFailed"),
+      );
     } finally {
       setActionLoading(null);
     }
@@ -162,7 +166,7 @@ export function ContributePage() {
       if (previewId === id) setPreviewId(null);
       queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Reject failed");
+      setActionError(err instanceof Error ? err.message : t("contributePage.pending.rejectFailed"));
     } finally {
       setActionLoading(null);
     }
@@ -176,7 +180,9 @@ export function ContributePage() {
       if (previewId === id) setPreviewId(null);
       queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Withdraw failed");
+      setActionError(
+        err instanceof Error ? err.message : t("contributePage.pending.withdrawFailed"),
+      );
     } finally {
       setActionLoading(null);
     }
@@ -189,7 +195,9 @@ export function ContributePage() {
       await recomputeMatchScore(id);
       queryClient.invalidateQueries({ queryKey: contributeQueries.contributeInfo.queryKey });
     } catch (err: unknown) {
-      setActionError(err instanceof Error ? err.message : "Recompute failed");
+      setActionError(
+        err instanceof Error ? err.message : t("contributePage.pending.recomputeFailed"),
+      );
     } finally {
       setActionLoading(null);
     }
@@ -215,7 +223,9 @@ export function ContributePage() {
       {/* Pending contributions */}
       <Card>
         <CardHeader className="flex">
-          <CardTitle className="inline-flex text-base">Pending Contributions</CardTitle>
+          <CardTitle className="inline-flex text-base">
+            {t("contributePage.pending.title")}
+          </CardTitle>
           {contributeInfoQuery.isFetching && <Spinner className="ml-auto" />}
         </CardHeader>
         <CardContent className="space-y-3">
@@ -274,21 +284,17 @@ export function ContributePage() {
       {/* Two-step confirmation for the destructive Reject action. */}
       <ConfirmDialog
         open={!!rejectingId}
-        title="Reject this contribution?"
+        title={t("contributePage.rejectDialog.title")}
         description={
-          deleteTarget ? (
-            <>
-              This will permanently reject the contribution from{" "}
-              <span className="font-medium">{deleteTarget.contributor}</span> (
-              {deleteTarget.tile_count.toLocaleString()} chunks). The uploaded data will be
-              discarded and cannot be recovered.
-            </>
-          ) : (
-            "The uploaded data will be discarded and cannot be recovered."
-          )
+          deleteTarget
+            ? t("contributePage.rejectDialog.descriptionNamed", {
+                contributor: deleteTarget.contributor,
+                chunks: deleteTarget.tile_count.toLocaleString(),
+              })
+            : t("contributePage.rejectDialog.descriptionFallback")
         }
-        confirmLabel="Reject contribution"
-        cancelLabel="Keep pending"
+        confirmLabel={t("contributePage.rejectDialog.confirm")}
+        cancelLabel={t("contributePage.rejectDialog.cancel")}
         variant="destructive"
         loading={!!rejectingId && actionLoading === rejectingId}
         onCancel={() => setRejectingId(null)}

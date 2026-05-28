@@ -1,4 +1,5 @@
 import { Loader2, RefreshCw } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { HelpTip } from "../ui/help-tip";
@@ -17,19 +18,20 @@ export function MatchScoreBadge({
   recomputing: boolean;
   heavyComputeEnabled: boolean;
 }) {
+  const { t } = useTranslation();
   if (score.status === "pending") {
     if (!heavyComputeEnabled) {
       return (
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>Match score awaiting admin compute</span>
-          <HelpTip text="Heavy background work is paused on the server. The match score (how much of this upload overlaps the existing map) will be computed once an admin re-enables heavy compute or drains the queue manually." />
+          <span>{t("contributePage.matchScore.awaitingAdminCompute")}</span>
+          <HelpTip text={t("contributePage.matchScore.awaitingAdminComputeHelp")} />
         </div>
       );
     }
     return (
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />
-        <span>Computing match score…</span>
+        <span>{t("contributePage.matchScore.computing")}</span>
       </div>
     );
   }
@@ -38,7 +40,7 @@ export function MatchScoreBadge({
     return (
       <div className="flex items-center gap-1.5 text-xs">
         <Badge variant="outline" className="text-muted-foreground">
-          Match score unknown
+          {t("contributePage.matchScore.unknown")}
         </Badge>
         {canRecompute && (
           <Button
@@ -47,14 +49,14 @@ export function MatchScoreBadge({
             className="h-6 px-1.5 text-xs"
             onClick={onRecompute}
             disabled={recomputing}
-            title={score.reason || "Retry match-score computation"}
+            title={score.reason || t("contributePage.matchScore.retryTitle")}
           >
             {recomputing ? (
               <Loader2 className="mr-1 h-3 w-3 animate-spin" />
             ) : (
               <RefreshCw className="mr-1 h-3 w-3" />
             )}
-            Recompute
+            {t("contributePage.matchScore.recompute")}
           </Button>
         )}
       </div>
@@ -73,13 +75,13 @@ export function MatchScoreBadge({
   let label: string;
   if (pixel >= 80) {
     badgeClass = "bg-green-500/15 text-green-700 dark:text-green-400 border-green-500/30";
-    label = "Looks like our map";
+    label = t("contributePage.matchScore.looksLikeOurMap");
   } else if (pixel < 20) {
     badgeClass = "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30";
-    label = "May be wrong file";
+    label = t("contributePage.matchScore.mayBeWrongFile");
   } else {
     badgeClass = "bg-muted text-muted-foreground border-border";
-    label = "Partial match";
+    label = t("contributePage.matchScore.partialMatch");
   }
 
   return (
@@ -88,8 +90,12 @@ export function MatchScoreBadge({
         {label}
       </Badge>
       <span className="text-muted-foreground">
-        {overlap.toFixed(0)}% overlap ({overlapCount.toLocaleString()}/{total.toLocaleString()}) ·{" "}
-        {pixel.toFixed(0)}% pixel-similar
+        {t("contributePage.matchScore.overlapSummary", {
+          overlap: overlap.toFixed(0),
+          overlapCount: overlapCount.toLocaleString(),
+          total: total.toLocaleString(),
+          pixel: pixel.toFixed(0),
+        })}
       </span>
       {canRecompute && (
         <Button
@@ -98,7 +104,7 @@ export function MatchScoreBadge({
           className="h-6 px-1.5 text-xs"
           onClick={onRecompute}
           disabled={recomputing}
-          title="Recompute match score"
+          title={t("contributePage.matchScore.recomputeTitle")}
         >
           {recomputing ? (
             <Loader2 className="h-3 w-3 animate-spin" />

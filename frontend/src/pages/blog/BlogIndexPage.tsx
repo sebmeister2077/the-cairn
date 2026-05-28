@@ -1,24 +1,27 @@
 import { NavLink } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BLOG_POSTS } from "./posts";
+import { useFormat, useTranslation } from "@/lib/i18n";
+import { getBlogPosts } from "./posts";
 
 export function BlogIndexPage() {
+  const { locale, t } = useTranslation();
+  const { dateTime } = useFormat();
+  const posts = getBlogPosts(locale);
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>Blog</CardTitle>
+          <CardTitle>{t("blog.index.title")}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          <p>
-            Guides, walkthroughs, and notes about Cairn and the shared <em>Vintage Story</em> map.
-          </p>
+          <p>{t("blog.index.description")}</p>
         </CardContent>
       </Card>
 
       <ul className="space-y-3">
-        {BLOG_POSTS.map((post) => (
+        {posts.map((post) => (
           <li key={post.slug}>
             <NavLink
               to={`/blog/${post.slug}`}
@@ -28,7 +31,8 @@ export function BlogIndexPage() {
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                   <h2 className="text-base font-semibold leading-snug">{post.title}</h2>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(post.date)} · {post.readingMinutes} min read
+                    {formatDate(post.date, dateTime)} ·{" "}
+                    {t("blog.meta.readTime", { count: post.readingMinutes })}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{post.excerpt}</p>
@@ -50,10 +54,13 @@ export function BlogIndexPage() {
   );
 }
 
-function formatDate(iso: string): string {
+function formatDate(
+  iso: string,
+  dateTime: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) => string,
+): string {
   const d = new Date(iso + "T00:00:00Z");
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, {
+  return dateTime(d, {
     year: "numeric",
     month: "short",
     day: "numeric",

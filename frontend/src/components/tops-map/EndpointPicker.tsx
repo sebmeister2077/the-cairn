@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLandmarksOverlay, useTranslocatorsOverlay } from "@/hooks/useOverlayData";
 import { formatDuration } from "@/lib/format-duration";
+import { useTranslation } from "@/lib/i18n";
 import { computeRoutesAsync, isRouteWorkerAvailable } from "@/lib/tl-routing-client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -76,6 +77,7 @@ interface EndpointPickerProps {
  *   4. Favorite home     — reads `mapView.favoriteStartingPosition`.
  */
 export function EndpointPicker({ slot, label }: EndpointPickerProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const value = useAppSelector((s) => (slot === "from" ? s.routePlanner.from : s.routePlanner.to));
   const pickMode = useAppSelector((s) => s.routePlanner.pickMode);
@@ -155,7 +157,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
   const handlePasteApply = () => {
     const parsed = parseCoordsInput(pasteText);
     if (!parsed) {
-      setPasteError("Couldn't parse — try `123, -456`, `/tp 123 110 -456`, or `x=123 z=-456`.");
+      setPasteError(t("routePlanner.parseCoordsError"));
       return;
     }
     setSlot({
@@ -172,7 +174,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
     if (!favorite) return;
     setSlot({
       point: { x: favorite.x, z: favorite.z },
-      label: "Favorite home",
+      label: t("routePlanner.favoriteHome"),
       source: "favorite",
     });
   };
@@ -222,7 +224,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
     const terminuses = data.filter((lm) => lm.kind === "Terminus");
     if (terminuses.length === 0) {
       setFastestState("error");
-      setFastestError("No Terminus markers found on this map.");
+      setFastestError(t("routePlanner.noTerminusMarkers"));
       return;
     }
     const startPt = fromValue.point;
@@ -239,7 +241,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
     setFastestError(null);
     try {
       if (!isRouteWorkerAvailable()) {
-        throw new Error("Routing worker is unavailable in this browser.");
+        throw new Error(t("routePlanner.workerUnavailable"));
       }
       const key = segmentsEtag ?? `len:${segments.length}`;
       const opts = { walkSpeed, tlPenaltySeconds, kNeighbors };
@@ -287,7 +289,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
       );
       if (reachable.length === 0) {
         setFastestState("error");
-        setFastestError("Couldn't reach any nearby Terminus from the current start.");
+        setFastestError(t("routePlanner.noReachableTerminus"));
         return;
       }
       reachable.sort((a, b) => a.route.totalSeconds - b.route.totalSeconds);
@@ -303,7 +305,9 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
       setFastestState("idle");
     } catch (err) {
       setFastestState("error");
-      setFastestError(err instanceof Error ? err.message : "Couldn't compute fastest terminus.");
+      setFastestError(
+        err instanceof Error ? err.message : t("routePlanner.computeFastestTerminusError"),
+      );
     }
   }
 
@@ -337,7 +341,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           <div className="flex items-center gap-2">
             <MapPin className="h-3 w-3 shrink-0 text-emerald-600" />
             <div className="min-w-0 flex-1 truncate">
-              <span className="font-medium">{value.label ?? "Picked point"}</span>
+              <span className="font-medium">{value.label ?? t("routePlanner.pickedPoint")}</span>
               <span className="ml-1 text-muted-foreground">
                 ({value.point.x}, {value.point.z})
               </span>
@@ -347,7 +351,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
             </span>
           </div>
         ) : (
-          <span className="text-muted-foreground">Not set</span>
+          <span className="text-muted-foreground">{t("routePlanner.notSet")}</span>
         )}
       </div>
 
@@ -361,7 +365,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           onClick={togglePickMode}
         >
           <Crosshair className="h-3 w-3" />
-          {isPicking ? "Click map…" : "Pick on map"}
+          {isPicking ? t("routePlanner.clickMap") : t("routePlanner.pickOnMap")}
         </Button>
         <Button
           size="sm"
@@ -369,7 +373,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           className="h-7 gap-1 px-2 text-xs flex-1"
           onClick={() => setLandmarkOpen((v) => !v)}
         >
-          <MapPin className="h-3 w-3" /> Landmark
+          <MapPin className="h-3 w-3" /> {t("routePlanner.landmark")}
         </Button>
         <Button
           size="sm"
@@ -377,7 +381,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           className="h-7 px-2 text-xs flex-1"
           onClick={() => setPasteOpen((v) => !v)}
         >
-          Paste
+          {t("routePlanner.paste")}
         </Button>
         <Button
           size="sm"
@@ -385,9 +389,9 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           className="h-7 gap-1 px-2 text-xs flex-1"
           disabled={!favorite}
           onClick={handleUseFavorite}
-          title={favorite ? "Use favorite home" : "No favorite home set"}
+          title={favorite ? t("routePlanner.useFavoriteHome") : t("routePlanner.noFavoriteHome")}
         >
-          <Star className="h-3 w-3" /> Home
+          <Star className="h-3 w-3" /> {t("routePlanner.home")}
         </Button>
       </div>
 
@@ -405,10 +409,10 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
             onClick={handleFindFastestTerminus}
             title={
               !fromValue
-                ? "Set From first to find the fastest Terminus from there"
+                ? t("routePlanner.fastestTerminusNeedsFrom")
                 : !segments
-                  ? "Loading translocator graph…"
-                  : "Find the Terminus reachable fastest from From"
+                  ? t("routePlanner.fastestTerminusLoadingGraph")
+                  : t("routePlanner.fastestTerminusTitle")
             }
           >
             {fastestState === "computing" ? (
@@ -416,7 +420,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
             ) : (
               <Skull className="h-3 w-3" />
             )}
-            Fastest terminus from start
+            {t("routePlanner.fastestTerminusButton")}
           </Button>
           {fastestError && fastestState === "error" && (
             <p className="text-[11px] text-red-600">{fastestError}</p>
@@ -430,7 +434,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           {fastestResults.length > 1 && fastestSourceKey === fromKey && (
             <div className="space-y-1 rounded-md border bg-muted/30 p-2">
               <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Other reachable terminuses
+                {t("routePlanner.otherReachableTerminuses")}
               </p>
               <div className="flex flex-wrap gap-1">
                 {fastestResults.slice(1, 1 + FASTEST_MAX_ALTS).map((alt) => {
@@ -444,7 +448,10 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
                       size="sm"
                       variant={isSelected ? "default" : "outline"}
                       className="h-6 max-w-full gap-1 px-2 text-[11px]"
-                      title={`Total ${formatDuration(alt.totalSeconds)} (+${formatDuration(delta)} vs fastest)`}
+                      title={t("routePlanner.totalVsFastest", {
+                        total: formatDuration(alt.totalSeconds),
+                        delta: formatDuration(delta),
+                      })}
                       onClick={() =>
                         setSlot({
                           point: alt.point,
@@ -471,12 +478,16 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
           {/* Tiny segmented filter — Terminus markers tend to share labels
               and outnumber regular landmarks, so let the user narrow the
               search before the Combobox starts matching. */}
-          <div className="flex gap-1" role="group" aria-label="Filter landmark suggestions">
+          <div
+            className="flex gap-1"
+            role="group"
+            aria-label={t("routePlanner.filterLandmarkSuggestions")}
+          >
             {(
               [
-                { key: "landmarks", label: "Landmarks" },
-                { key: "terminus", label: "Terminuses" },
-                { key: "all", label: "All" },
+                { key: "landmarks", label: t("routePlanner.filterLandmarks") },
+                { key: "terminus", label: t("routePlanner.filterTerminuses") },
+                { key: "all", label: t("routePlanner.filterAll") },
               ] as const
             ).map((opt) => (
               <Button
@@ -499,10 +510,10 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
             suggestions={landmarkSuggestions}
             placeholder={
               landmarks.isLoading
-                ? "Loading landmarks…"
+                ? t("routePlanner.loadingLandmarks")
                 : landmarkFilter === "terminus"
-                  ? "Search terminuses…"
-                  : "Search landmarks…"
+                  ? t("routePlanner.searchTerminuses")
+                  : t("routePlanner.searchLandmarks")
             }
           />
         </div>
@@ -516,7 +527,7 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
               setPasteText(e.target.value);
               setPasteError(null);
             }}
-            placeholder="e.g. 1234, -5678  or  /tp 1234 110 -5678"
+            placeholder={t("routePlanner.pasteCoordsPlaceholderLong")}
             onKeyDown={(e) => {
               if (e.key === "Enter") handlePasteApply();
             }}
@@ -535,10 +546,10 @@ export function EndpointPicker({ slot, label }: EndpointPickerProps) {
                 setPasteError(null);
               }}
             >
-              Cancel
+              {t("routePlanner.cancel")}
             </Button>
             <Button size="sm" className="h-6 px-2 text-xs" onClick={handlePasteApply}>
-              Apply
+              {t("routePlanner.apply")}
             </Button>
           </div>
         </div>

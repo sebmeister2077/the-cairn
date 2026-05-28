@@ -10,11 +10,13 @@ import { Check, Copy, Loader2, Trash2 } from "lucide-react";
 import { listMyTLScreenshotRequests, withdrawTLScreenshotRequest } from "@/lib/api";
 import type { TLScreenshotCoords, TLScreenshotRequest } from "@/models/tlScreenshots";
 import { useCopy } from "@/components/useCopy";
+import { useTranslation } from "@/lib/i18n";
 
 const QUERY_KEY = ["my-tl-screenshot-requests"] as const;
 
 export function MyScreenshotRequestsList() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const query = useQuery({
     queryKey: QUERY_KEY,
     queryFn: listMyTLScreenshotRequests,
@@ -37,7 +39,7 @@ export function MyScreenshotRequestsList() {
       <Card>
         <CardContent className="py-6 text-sm text-muted-foreground flex items-center gap-2">
           <Loader2 className="size-4 animate-spin" />
-          Loading your submissions…
+          {t("contributeTLsPage.screenshotHistory.loading")}
         </CardContent>
       </Card>
     );
@@ -46,7 +48,7 @@ export function MyScreenshotRequestsList() {
     return (
       <Card>
         <CardContent className="py-6 text-sm text-destructive">
-          Failed to load your submissions.
+          {t("contributeTLsPage.screenshotHistory.loadFailed")}
         </CardContent>
       </Card>
     );
@@ -57,10 +59,10 @@ export function MyScreenshotRequestsList() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Your screenshot submissions</CardTitle>
+          <CardTitle>{t("contributeTLsPage.screenshotHistory.title")}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          You haven&rsquo;t submitted any screenshot pairs yet.
+          {t("contributeTLsPage.screenshotHistory.empty")}
         </CardContent>
       </Card>
     );
@@ -69,7 +71,9 @@ export function MyScreenshotRequestsList() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Your screenshot submissions ({items.length})</CardTitle>
+        <CardTitle>
+          {t("contributeTLsPage.screenshotHistory.titleWithCount", { count: items.length })}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {items.map((r) => (
@@ -92,6 +96,7 @@ interface RowProps {
 }
 
 function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
+  const { t } = useTranslation();
   const a = request.coords_a;
   const b = request.coords_b;
   // Persist the "Copied" indicator until the row unmounts: the user is
@@ -121,11 +126,15 @@ function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
             ) : (
               <Trash2 className="size-3" />
             )}
-            <span className="ml-1">Withdraw</span>
+            <span className="ml-1">{t("contributeTLsPage.screenshotHistory.withdraw")}</span>
           </Button>
         )}
       </div>
-      {request.label && <div className="text-muted-foreground">Label: {request.label}</div>}
+      {request.label && (
+        <div className="text-muted-foreground">
+          {t("contributeTLsPage.screenshotHistory.label", { label: request.label })}
+        </div>
+      )}
       <div className="font-mono text-xs">
         A: {fmtCoord(a)} &nbsp;→&nbsp; B: {fmtCoord(b)}
       </div>
@@ -146,7 +155,9 @@ function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
                 <Copy className="size-3" />
               )}
               <span className="ml-1 text-xs">
-                {copied === "a" ? "Copied A!" : "Copy command A"}
+                {copied === "a"
+                  ? t("contributeTLsPage.screenshotHistory.copiedA")
+                  : t("contributeTLsPage.screenshotHistory.copyA")}
               </span>
             </Button>
           )}
@@ -165,7 +176,9 @@ function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
                 <Copy className="size-3" />
               )}
               <span className="ml-1 text-xs">
-                {copied === "b" ? "Copied B!" : "Copy command B"}
+                {copied === "b"
+                  ? t("contributeTLsPage.screenshotHistory.copiedB")
+                  : t("contributeTLsPage.screenshotHistory.copyB")}
               </span>
             </Button>
           )}
@@ -190,13 +203,23 @@ function RequestRow({ request, onWithdraw, withdrawing }: RowProps) {
         </ul>
       )}
       {request.status === "rejected" && request.decision_reason && (
-        <div className="text-xs text-destructive">Rejected: {request.decision_reason}</div>
+        <div className="text-xs text-destructive">
+          {t("contributeTLsPage.screenshotHistory.rejected", {
+            reason: request.decision_reason,
+          })}
+        </div>
       )}
       {request.analysis_status === "failed" && request.analysis_error && (
-        <div className="text-xs text-destructive">Analysis failed: {request.analysis_error}</div>
+        <div className="text-xs text-destructive">
+          {t("contributeTLsPage.screenshotHistory.analysisFailed", {
+            error: request.analysis_error,
+          })}
+        </div>
       )}
       <div className="text-xs text-muted-foreground">
-        Submitted {new Date(request.created_at).toLocaleString()}
+        {t("contributeTLsPage.screenshotHistory.submittedAt", {
+          date: new Date(request.created_at).toLocaleString(),
+        })}
       </div>
     </div>
   );
@@ -227,6 +250,7 @@ function buildWaypointCommand(
 }
 
 function StatusPill({ status }: { status: TLScreenshotRequest["status"] }) {
+  const { t } = useTranslation();
   const cls =
     status === "approved"
       ? "bg-emerald-100 text-emerald-800"
@@ -237,22 +261,18 @@ function StatusPill({ status }: { status: TLScreenshotRequest["status"] }) {
           : "bg-blue-100 text-blue-800";
   return (
     <span className={`text-[10px] uppercase tracking-wider rounded px-1.5 py-0.5 ${cls}`}>
-      {status}
+      {t(`contributeTLsPage.screenshotHistory.statuses.${status}` as const)}
     </span>
   );
 }
 
 function AnalysisPill({ status }: { status: TLScreenshotRequest["analysis_status"] }) {
+  const { t } = useTranslation();
   if (status === "done") return null;
-  const labels: Record<string, string> = {
-    queued: "queued",
-    running: "analysing",
-    failed: "analysis failed",
-  };
   const cls = status === "failed" ? "bg-rose-50 text-rose-700" : "bg-amber-50 text-amber-700";
   return (
     <span className={`text-[10px] uppercase tracking-wider rounded px-1.5 py-0.5 ${cls}`}>
-      {labels[status] ?? status}
+      {t(`contributeTLsPage.screenshotHistory.analysisStatuses.${status}` as const)}
     </span>
   );
 }

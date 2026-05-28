@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
+import { PrivacyPageRu } from "./PrivacyPage.ru";
 
 const LAST_UPDATED = "May 25, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
+  const { locale } = useTranslation();
+  if (locale === "ru") return <PrivacyPageRu />;
+
   return (
     <Card>
       <CardHeader>

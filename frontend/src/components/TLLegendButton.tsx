@@ -10,7 +10,7 @@
 import * as React from "react";
 import { createPortal } from "react-dom";
 import { Palette } from "lucide-react";
-import { Label } from "./ui/label";
+import { useTranslation } from "@/lib/i18n";
 
 interface TLLegendButtonProps {
   /** When true, also show the light-blue "Your new TLs" entry. */
@@ -38,40 +38,8 @@ const HIGHLIGHT_COLOR = "rgb(243, 232, 255)"; // violet-100
 // Mirrors the emerald route stroke in MapViewer.tsx route overlay.
 const ROUTE_COLOR = "rgb(16, 185, 129)"; // emerald-500
 
-const BASE_ENTRIES: LegendEntry[] = [
-  {
-    color: SERVER_COLOR,
-    title: "Server",
-    description: "Confirmed to be on the server. Seeded from the official map data.",
-  },
-  {
-    color: USER_COLOR,
-    title: "Player-contributed",
-    description: "Added by another player and accepted into the database.",
-  },
-  {
-    color: HIGHLIGHT_COLOR,
-    title: "Emphasised",
-    description:
-      "Bright outline drawn over a TL\u2019s normal colour when it matches an active filter \u2014 favourite groupings, or the \u201cEmphasise recently added TLs\u201d toggle.",
-  },
-  {
-    color: ROUTE_COLOR,
-    title: "Current route",
-    description:
-      "Translocators that make up the route currently shown in the Route planner. Only the TLs used by the active route are recoloured; everything else keeps its normal colour.",
-  },
-];
-
-const CONTRIBUTE_ENTRY: LegendEntry = {
-  color: NEW_COLOR,
-  title: "Your new TLs",
-  description:
-    "New translocators from your current contribution that aren't on the map yet. " +
-    "Only visible while you're working on the Contribute TLs page.",
-};
-
 export function TLLegendButton({ showContributeColors = false, className }: TLLegendButtonProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
   const popoverRef = React.useRef<HTMLDivElement>(null);
@@ -110,16 +78,46 @@ export function TLLegendButton({ showContributeColors = false, className }: TLLe
     };
   }, [open]);
 
-  const entries = showContributeColors ? [...BASE_ENTRIES, CONTRIBUTE_ENTRY] : BASE_ENTRIES;
+  const entries: LegendEntry[] = [
+    {
+      color: SERVER_COLOR,
+      title: t("topsMap.translocatorLegend.serverTitle"),
+      description: t("topsMap.translocatorLegend.serverDescription"),
+    },
+    {
+      color: USER_COLOR,
+      title: t("topsMap.translocatorLegend.playerTitle"),
+      description: t("topsMap.translocatorLegend.playerDescription"),
+    },
+    {
+      color: HIGHLIGHT_COLOR,
+      title: t("topsMap.translocatorLegend.emphasizedTitle"),
+      description: t("topsMap.translocatorLegend.emphasizedDescription"),
+    },
+    {
+      color: ROUTE_COLOR,
+      title: t("topsMap.translocatorLegend.routeTitle"),
+      description: t("topsMap.translocatorLegend.routeDescription"),
+    },
+    ...(showContributeColors
+      ? [
+          {
+            color: NEW_COLOR,
+            title: t("topsMap.translocatorLegend.newTitle"),
+            description: t("topsMap.translocatorLegend.newDescription"),
+          },
+        ]
+      : []),
+  ];
 
   return (
     <>
       <button
         ref={buttonRef}
         type="button"
-        aria-label="Translocator color legend"
+        aria-label={t("topsMap.translocatorLegend.ariaLabel")}
         aria-expanded={open}
-        title="Translocator color legend"
+        title={t("topsMap.translocatorLegend.title")}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -156,7 +154,7 @@ export function TLLegendButton({ showContributeColors = false, className }: TLLe
           <div
             ref={popoverRef}
             role="dialog"
-            aria-label="Translocator color legend"
+            aria-label={t("topsMap.translocatorLegend.ariaLabel")}
             style={{
               position: "fixed",
               top: coords.top,
@@ -167,7 +165,7 @@ export function TLLegendButton({ showContributeColors = false, className }: TLLe
             className="w-72 rounded-md border border-input bg-popover text-popover-foreground shadow-lg"
           >
             <div className="border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Translocator colors
+              {t("topsMap.translocatorLegend.heading")}
             </div>
             <ul className="divide-y">
               {entries.map((entry) => (

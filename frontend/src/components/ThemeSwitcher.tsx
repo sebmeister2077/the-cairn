@@ -6,35 +6,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/components/ThemeProvider";
 import type { ThemePreference } from "@/lib/theme";
 
-const OPTIONS: ReadonlyArray<{
-  value: ThemePreference;
-  label: string;
-  Icon: typeof Sun;
-}> = [
-  { value: "auto", label: "Auto", Icon: Monitor },
-  { value: "light", label: "Light", Icon: Sun },
-  { value: "dark", label: "Dark", Icon: Moon },
-];
-
 export function ThemeSwitcher() {
+  const { t } = useTranslation();
   const { preference, resolved, setPreference } = useTheme();
   const TriggerIcon = preference === "auto" ? Monitor : resolved === "dark" ? Moon : Sun;
+  const options: ReadonlyArray<{
+    value: ThemePreference;
+    label: string;
+    Icon: typeof Sun;
+  }> = [
+    { value: "auto", label: t("common.auto"), Icon: Monitor },
+    { value: "light", label: t("common.light"), Icon: Sun },
+    { value: "dark", label: t("common.dark"), Icon: Moon },
+  ];
 
   return (
     <Select value={preference} onValueChange={(v) => setPreference(v as ThemePreference)}>
-      <SelectTrigger aria-label="Select theme" className="min-w-32">
+      <SelectTrigger aria-label={t("common.selectTheme")} className="min-w-32">
         <SelectValue>
           <span className="flex items-center gap-2">
             <TriggerIcon className="size-4" />
-            {OPTIONS.find((o) => o.value === preference)?.label ?? "Auto"}
+            {options.find((o) => o.value === preference)?.label ?? t("common.auto")}
           </span>
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
-        {OPTIONS.map(({ value, label, Icon }) => (
+        {options.map(({ value, label, Icon }) => (
           <SelectItem key={value} value={value}>
             <Icon className="size-4" />
             {label}

@@ -21,13 +21,16 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setStarfieldEnabled } from "@/store/slices/mapView";
 
 export function AccountPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const apiKey = useReduxState("auth.apiKey");
   const dispatch = useAppDispatch();
@@ -311,15 +314,18 @@ export function AccountPage() {
       {/* Appearance */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-base">Appearance</CardTitle>
-          <CardDescription>
-            Choose how Cairn looks. Auto follows your operating system.
-          </CardDescription>
+          <CardTitle className="text-base">{t("account.appearance.title")}</CardTitle>
+          <CardDescription>{t("account.appearance.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
-            <Label>Theme</Label>
+            <Label>{t("common.theme")}</Label>
             <ThemeSwitcher />
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between">
+            <Label>{t("common.language")}</Label>
+            <LanguageSwitcher />
           </div>
           <Separator className="my-3" />
           <div className="flex items-center justify-between gap-3">

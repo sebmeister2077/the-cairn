@@ -22,6 +22,7 @@ import {
   type ContributionRegionTuple,
   normalizeContributionRegion,
 } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import { Loader2 } from "lucide-react";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { MapViewer, type MapStats, type WorldPointMarker } from "./MapViewer";
@@ -78,6 +79,7 @@ export function ContributionBeforeAfter({
   refreshKey = 0,
   region = null,
 }: Props) {
+  const { t } = useTranslation();
   const [before, setBefore] = useState<LoadedImage | null>(null);
   const [after, setAfter] = useState<LoadedImage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -210,38 +212,41 @@ export function ContributionBeforeAfter({
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading region preview…
+        <Loader2 className="h-4 w-4 animate-spin" /> {t("contributePage.beforeAfter.loading")}
       </div>
     );
   }
   if (error) {
-    return <div className="text-sm text-destructive">Region preview unavailable: {error}</div>;
+    return (
+      <div className="text-sm text-destructive">
+        {t("contributePage.beforeAfter.unavailable", { error })}
+      </div>
+    );
   }
   if (!before || !after) return null;
 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-xs text-muted-foreground">
-          Region before / after — green chunks are newly added, orange chunks are overwriting
-          existing data. Only the selected region is rendered.
-        </div>
+        <div className="text-xs text-muted-foreground">{t("contributePage.beforeAfter.help")}</div>
         <Label className="flex items-center gap-2 text-xs">
           <Switch
             checked={showLandmarks}
             onCheckedChange={setShowLandmarks}
-            aria-label="Toggle landmarks"
+            aria-label={t("contributePage.beforeAfter.toggleLandmarks")}
           />
-          Landmarks
+          {t("contributePage.beforeAfter.landmarks")}
         </Label>
       </div>
       <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <figure className="space-y-1">
-          <figcaption className="text-xs font-medium">Before</figcaption>
+          <figcaption className="text-xs font-medium">
+            {t("contributePage.beforeAfter.before")}
+          </figcaption>
           <MapViewer
             imageUrl={before.url}
             stats={stats}
-            alt="Region before"
+            alt={t("contributePage.beforeAfter.beforeAlt")}
             height="360px"
             focusPoint={focusPoint}
             focusZoom={2}
@@ -250,11 +255,13 @@ export function ContributionBeforeAfter({
           />
         </figure>
         <figure className="space-y-1">
-          <figcaption className="text-xs font-medium">After</figcaption>
+          <figcaption className="text-xs font-medium">
+            {t("contributePage.beforeAfter.after")}
+          </figcaption>
           <MapViewer
             imageUrl={after.url}
             stats={stats}
-            alt="Region after"
+            alt={t("contributePage.beforeAfter.afterAlt")}
             height="360px"
             focusPoint={focusPoint}
             focusZoom={2}

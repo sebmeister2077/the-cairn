@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n";
 import type { WorldLineSegment } from "@/components/MapViewer";
 
 interface EditTLDialogProps {
@@ -42,6 +43,7 @@ function endpointToForm(tl: UserTL): FormState {
 
 export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const editingTLId = useAppSelector((s) => s.contributeTLs.editingTLId);
   const tl = useAppSelector(
     (s) => s.contributeTLs.userTLs.find((t) => t.localId === editingTLId) ?? null,
@@ -67,7 +69,7 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
     const aX = Number(form.aX);
     const aZ = Number(form.aZ);
     if (!Number.isFinite(aX) || !Number.isFinite(aZ)) {
-      setError("Endpoint A must be a valid pair of integers.");
+      setError(t("contributeTLsPage.editDialog.endpointAInvalid"));
       return;
     }
     let nextEndpointB: UserTLEndpoint | null = tl.endpointB;
@@ -77,7 +79,7 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
       const bX = Number(bXTrim);
       const bZ = Number(bZTrim);
       if (!Number.isFinite(bX) || !Number.isFinite(bZ)) {
-        setError("Endpoint B must be either empty or a valid pair of integers.");
+        setError(t("contributeTLsPage.editDialog.endpointBInvalid"));
         return;
       }
       nextEndpointB = {
@@ -109,14 +111,16 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
     <Dialog open={tl != null} onOpenChange={(v) => !v && close()}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit translocator</DialogTitle>
+          <DialogTitle>{t("contributeTLsPage.editDialog.title")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="text-sm text-muted-foreground">
-            Coordinates are in world blocks (X / Z). Y is ignored.
+            {t("contributeTLsPage.editDialog.coordinatesHelp")}
           </div>
           <div className="space-y-2">
-            <Label className="text-xs uppercase">Endpoint A</Label>
+            <Label className="text-xs uppercase">
+              {t("contributeTLsPage.editDialog.endpointA")}
+            </Label>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label htmlFor="edit-tl-aX">X</Label>
@@ -137,11 +141,17 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
                 />
               </div>
             </div>
-            <p className="text-xs text-muted-foreground truncate">From: {tl.endpointA.label}</p>
+            <p className="text-xs text-muted-foreground truncate">
+              {t("contributeTLsPage.editDialog.from", { label: tl.endpointA.label })}
+            </p>
           </div>
           <div className="space-y-2">
             <Label className="text-xs uppercase">
-              Endpoint B {tl.endpointB ? "" : "(currently unpaired)"}
+              {t("contributeTLsPage.editDialog.endpointB", {
+                suffix: tl.endpointB
+                  ? ""
+                  : t("contributeTLsPage.editDialog.endpointBUnpairedSuffix"),
+              })}
             </Label>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -151,7 +161,7 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
                   inputMode="numeric"
                   value={form.bX}
                   onChange={(e) => setForm((p) => ({ ...p, bX: e.target.value }))}
-                  placeholder="(empty = unpaired)"
+                  placeholder={t("contributeTLsPage.editDialog.emptyMeansUnpaired")}
                 />
               </div>
               <div>
@@ -161,12 +171,14 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
                   inputMode="numeric"
                   value={form.bZ}
                   onChange={(e) => setForm((p) => ({ ...p, bZ: e.target.value }))}
-                  placeholder="(empty = unpaired)"
+                  placeholder={t("contributeTLsPage.editDialog.emptyMeansUnpaired")}
                 />
               </div>
             </div>
             {tl.endpointB && (
-              <p className="text-xs text-muted-foreground truncate">From: {tl.endpointB.label}</p>
+              <p className="text-xs text-muted-foreground truncate">
+                {t("contributeTLsPage.editDialog.from", { label: tl.endpointB.label })}
+              </p>
             )}
           </div>
           {error && (
@@ -184,14 +196,14 @@ export function EditTLDialog({ serverSegments }: EditTLDialogProps) {
               close();
             }}
           >
-            Remove
+            {t("contributeTLsPage.editDialog.remove")}
           </Button>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={close}>
-              Cancel
+              {t("contributeTLsPage.editDialog.cancel")}
             </Button>
             <Button type="button" onClick={handleSave}>
-              Save
+              {t("contributeTLsPage.editDialog.save")}
             </Button>
           </div>
         </DialogFooter>

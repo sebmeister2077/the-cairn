@@ -58,17 +58,18 @@ import {
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useReduxState } from "@/store/hooks";
+import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "./ErrorBoundary";
 
 const BASE_CATEGORIES = [
-  { value: "/general", label: "General" },
-  { value: "/singleplayer", label: "Singleplayer" },
-  { value: "/multiplayer", label: "Multiplayer" },
+  { value: "/general", labelKey: "app.nav.categories.general" },
+  { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
+  { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
 ] as const;
 
-const ADMIN_CATEGORY = { value: "/manage", label: "Manage" } as const;
-const USAGE_CATEGORY = { value: "/usage", label: "Usage" } as const;
+const ADMIN_CATEGORY = { value: "/manage", labelKey: "app.nav.categories.manage" } as const;
+const USAGE_CATEGORY = { value: "/usage", labelKey: "app.nav.categories.usage" } as const;
 
 const NavigationRoutes = {
   Singleplayer: {
@@ -105,8 +106,8 @@ const NavigationRoutes = {
 } as const;
 type SubTab<V extends any = string> = {
   value: V;
-  label: string;
-  chip?: string;
+  labelKey: PathOf<TranslationSchema>;
+  chip?: PathOf<TranslationSchema>;
   chipShownUntil?: string;
 };
 type SubtabKey = keyof typeof NavigationRoutes;
@@ -116,44 +117,73 @@ type SubtabKeyToValue<K extends SubtabKey> =
 type Subtabs = {
   [K in SubtabKey as `/${Lowercase<K>}`]: SubTab<SubtabKeyToValue<K>>[];
 };
+
+type StaticNavLabelKey =
+  | "app.nav.categories.general"
+  | "app.nav.categories.singleplayer"
+  | "app.nav.categories.multiplayer"
+  | "app.nav.categories.manage"
+  | "app.nav.categories.usage"
+  | "app.nav.subtabs.extract"
+  | "app.nav.subtabs.import"
+  | "app.nav.subtabs.commands"
+  | "app.nav.subtabs.delete"
+  | "app.nav.subtabs.identifyMaps"
+  | "app.nav.subtabs.localMapViewer"
+  | "app.nav.subtabs.topsMapViewer"
+  | "app.nav.subtabs.contributeMap"
+  | "app.nav.subtabs.contributeTls"
+  | "app.nav.subtabs.contributeTraders"
+  | "app.nav.subtabs.apiKeys"
+  | "app.nav.subtabs.users"
+  | "app.nav.subtabs.bannedIps"
+  | "app.nav.subtabs.flags"
+  | "app.nav.subtabs.featureFlags"
+  | "app.nav.subtabs.maintenance"
+  | "app.nav.subtabs.resources"
+  | "app.nav.subtabs.waypointsBackup"
+  | "app.nav.subtabs.translocators"
+  | "app.nav.subtabs.traders"
+  | "app.nav.subtabs.tlScreenshots"
+  | "app.nav.chip.new";
 const subTabs: Subtabs = {
   "/singleplayer": [
-    { value: "/singleplayer/extract", label: "Extract" },
-    { value: "/singleplayer/import", label: "Import" },
-    { value: "/singleplayer/commands", label: "Commands" },
-    { value: "/singleplayer/delete", label: "Delete" },
+    { value: "/singleplayer/extract", labelKey: "app.nav.subtabs.extract" },
+    { value: "/singleplayer/import", labelKey: "app.nav.subtabs.import" },
+    { value: "/singleplayer/commands", labelKey: "app.nav.subtabs.commands" },
+    { value: "/singleplayer/delete", labelKey: "app.nav.subtabs.delete" },
   ],
   "/multiplayer": [
-    { value: "/multiplayer/identify", label: "Identify Maps" },
-    { value: "/multiplayer/map-viewer", label: "Local Map Viewer" },
-    { value: "/multiplayer/tops-map", label: "TOPS Map Viewer" },
-    { value: "/multiplayer/contribute-map", label: "Contribute Map" },
+    { value: "/multiplayer/identify", labelKey: "app.nav.subtabs.identifyMaps" },
+    { value: "/multiplayer/map-viewer", labelKey: "app.nav.subtabs.localMapViewer" },
+    { value: "/multiplayer/tops-map", labelKey: "app.nav.subtabs.topsMapViewer" },
+    { value: "/multiplayer/contribute-map", labelKey: "app.nav.subtabs.contributeMap" },
     {
       value: "/multiplayer/contribute-tls",
-      label: "Contribute TLs",
-      chip: "New",
+      labelKey: "app.nav.subtabs.contributeTls",
+      chip: "app.nav.chip.new",
       chipShownUntil: "2026-05-23",
     },
     {
       value: "/multiplayer/contribute-traders",
-      label: "Contribute Traders",
-      chip: "New",
+      labelKey: "app.nav.subtabs.contributeTraders",
+      chip: "app.nav.chip.new",
       chipShownUntil: "2026-06-02",
     },
   ],
   "/general": [],
   "/manage": [
-    { value: "/manage/api-keys", label: "API Keys" },
-    { value: "/manage/users", label: "Users" },
-    { value: "/manage/banned-ips", label: "Banned IPs" },
-    { value: "/manage/flags", label: "Flags" },
-    { value: "/manage/feature-flags", label: "Feature Flags" },
-    { value: "/manage/maintenance", label: "Maintenance" },
-    { value: "/manage/resources", label: "Resources" },
-    { value: "/manage/waypoints-backup", label: "Waypoints & Backup" },
-    { value: "/manage/translocators", label: "Translocators" },
-    { value: "/manage/traders", label: "Traders" },
-    { value: "/manage/tl-screenshots", label: "TL Screenshots" },
+    { value: "/manage/api-keys", labelKey: "app.nav.subtabs.apiKeys" },
+    { value: "/manage/users", labelKey: "app.nav.subtabs.users" },
+    { value: "/manage/banned-ips", labelKey: "app.nav.subtabs.bannedIps" },
+    { value: "/manage/flags", labelKey: "app.nav.subtabs.flags" },
+    { value: "/manage/feature-flags", labelKey: "app.nav.subtabs.featureFlags" },
+    { value: "/manage/maintenance", labelKey: "app.nav.subtabs.maintenance" },
+    { value: "/manage/resources", labelKey: "app.nav.subtabs.resources" },
+    { value: "/manage/waypoints-backup", labelKey: "app.nav.subtabs.waypointsBackup" },
+    { value: "/manage/translocators", labelKey: "app.nav.subtabs.translocators" },
+    { value: "/manage/traders", labelKey: "app.nav.subtabs.traders" },
+    { value: "/manage/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
   ],
   "/usage": [],
 };
@@ -207,6 +237,8 @@ function formatPendingCount(n: number): string {
 }
 
 export function AppContent() {
+  const { t } = useTranslation();
+  const tStatic = t as (path: StaticNavLabelKey) => string;
   const [keyOpen, setKeyOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const [passkeyDialog, setPasskeyDialog] = useState<{
@@ -463,34 +495,30 @@ export function AppContent() {
           >
             <Logo className="h-10 w-auto" />
             <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-              Unofficial fan project &mdash; not affiliated with Anego Studios
+              {t("app.header.tagline")}
             </span>
           </a>
           <div className="flex items-center gap-2">
             {isAdmin && (
               <Badge variant="default" className="bg-amber-500 text-white hover:bg-amber-500">
-                Admin
+                {t("app.header.admin")}
               </Badge>
             )}
             <NavLink to="/general">
-              <Button
-                variant="ghost"
-                size="sm"
-                title="What is Cairn? Learn about the project and its tools."
-              >
+              <Button variant="ghost" size="sm" title={t("app.header.aboutTitle")}>
                 <span aria-hidden="true" className="mr-1">
                   &#9432;
                 </span>
-                About
+                {t("app.header.about")}
               </Button>
             </NavLink>
             <NavLink to="/account">
               <Button variant="ghost" size="sm" className="relative">
-                Account
+                {t("app.header.account")}
                 {needsRegister && (
                   <span
-                    aria-label="Account setup required"
-                    title="Finish setting up your account"
+                    aria-label={t("app.header.accountSetupRequired")}
+                    title={t("app.header.finishAccountSetup")}
                     className="absolute -top-0.5 -right-0.5 flex size-2.5"
                   >
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
@@ -500,7 +528,7 @@ export function AppContent() {
               </Button>
             </NavLink>
             <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
-              API Key
+              {t("app.header.apiKey")}
             </Button>
           </div>
         </div>
@@ -513,12 +541,12 @@ export function AppContent() {
                   <NavLink key={c.value} to={c.value} end={false}>
                     {() => (
                       <TabsTrigger value={c.value} className="relative">
-                        {c.label}
+                        {tStatic(c.labelKey as StaticNavLabelKey)}
                         {pending > 0 && (
                           <Badge
                             variant="default"
-                            aria-label={`${pending} pending review${pending === 1 ? "" : "s"}`}
-                            title={`${pending} item${pending === 1 ? "" : "s"} awaiting your review`}
+                            aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                            title={t("app.nav.pendingReviewTitle", { count: pending })}
                             className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
                           >
                             {formatPendingCount(pending)}
@@ -534,26 +562,26 @@ export function AppContent() {
           {activeSubs.length > 0 && (
             <Tabs value={activeSub}>
               <TabsList variant="line">
-                {activeSubs.map((t) => {
-                  const pending = getPendingCountFor(t.value, pendingCounts);
+                {activeSubs.map((tab) => {
+                  const pending = getPendingCountFor(tab.value, pendingCounts);
                   return (
-                    <NavLink key={t.value} to={t.value} end>
+                    <NavLink key={tab.value} to={tab.value} end>
                       {() => (
-                        <TabsTrigger value={t.value} className="relative">
-                          {t.label}
-                          {shouldShowChip(t) && (
+                        <TabsTrigger value={tab.value} className="relative">
+                          {tStatic(tab.labelKey as StaticNavLabelKey)}
+                          {shouldShowChip(tab) && (
                             <Badge
                               variant="default"
                               className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
                             >
-                              {t.chip}
+                              {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
                             </Badge>
                           )}
                           {pending > 0 && (
                             <Badge
                               variant="default"
-                              aria-label={`${pending} pending review${pending === 1 ? "" : "s"}`}
-                              title={`${pending} item${pending === 1 ? "" : "s"} awaiting your review`}
+                              aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                              title={t("app.nav.pendingReviewTitle", { count: pending })}
                               className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
                             >
                               {formatPendingCount(pending)}
@@ -591,11 +619,9 @@ export function AppContent() {
         {!hasApiKey && !inviteClaim && !authRejected && defaultInvite === null && (
           <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
             <CardContent className="p-4 space-y-1">
-              <p className="font-medium text-foreground">Access not available</p>
+              <p className="font-medium text-foreground">{t("app.access.unavailableTitle")}</p>
               <p className="text-sm text-muted-foreground">
-                Automatic sign-up is currently disabled. Please contact an administrator for an
-                invite link, or paste an existing access key via the &ldquo;API Key&rdquo; button at
-                the top right.
+                {t("app.access.unavailableDescription")}
               </p>
             </CardContent>
           </Card>
@@ -853,32 +879,32 @@ export function AppContent() {
       </main>
       <footer className="border-t mt-8">
         <div className="container mx-auto px-4 py-4 text-xs text-muted-foreground flex flex-wrap items-center justify-between gap-2">
-          <span>Cairn &mdash; unofficial fan project.</span>
+          <span>{t("app.footer.fanProject")}</span>
           <span className="flex gap-3">
             <NavLink
               to="/blog"
               className="hover:text-foreground underline-offset-2 hover:underline"
             >
-              Blog
+              {t("app.footer.blog")}
             </NavLink>
             <NavLink
               to="/privacy"
               className="hover:text-foreground underline-offset-2 hover:underline"
             >
-              Privacy
+              {t("app.footer.privacy")}
             </NavLink>
             <NavLink
               to="/terms"
               className="hover:text-foreground underline-offset-2 hover:underline"
             >
-              Terms
+              {t("app.footer.terms")}
             </NavLink>
             <button
               type="button"
               onClick={contact.openDialog}
               className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
             >
-              Contact
+              {t("app.footer.contact")}
             </button>
           </span>
         </div>

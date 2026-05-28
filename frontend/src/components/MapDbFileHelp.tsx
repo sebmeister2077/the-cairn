@@ -1,4 +1,5 @@
 import { FilePathHelp } from "@/components/FilePathHelp";
+import { Trans, useTranslation } from "@/lib/i18n";
 
 interface MapDbFileHelpProps {
   /**
@@ -16,23 +17,30 @@ const MAP_DB_PATHS = [
 ];
 
 export function MapDbFileHelp({ showServerIdHint = false }: MapDbFileHelpProps) {
+  const { t } = useTranslation();
+
   return (
     <FilePathHelp
-      summary="Where can I find this file?"
+      summary={t("mapDbFileHelp.summary")}
       intro={
         showServerIdHint ? (
           <p>
-            Vintage Story stores a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache
-            file for each server you've visited. Look for the file whose name matches the{" "}
-            <strong>Server Map ID</strong> shown above.
+            <Trans
+              path="mapDbFileHelp.serverIdIntro"
+              components={{
+                code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+                strong: <strong />,
+              }}
+            />
           </p>
         ) : (
           <p>
-            Vintage Story stores a{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map cache
-            file for each multiplayer server you've visited. Pick any of them to render and explore
-            the world chunks your client has cached.
+            <Trans
+              path="mapDbFileHelp.genericIntro"
+              components={{
+                code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+              }}
+            />
           </p>
         )
       }
@@ -40,15 +48,19 @@ export function MapDbFileHelp({ showServerIdHint = false }: MapDbFileHelpProps) 
       footer={
         <p className="text-xs">
           {showServerIdHint ? (
-            <>
-              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is named
-              after the server's map ID. Copy the file matching the ID above and upload it below.
-            </>
+            <Trans
+              path="mapDbFileHelp.serverIdFooter"
+              components={{
+                code: <code className="rounded bg-muted px-1 py-0.5 font-mono" />,
+              }}
+            />
           ) : (
-            <>
-              Each <code className="rounded bg-muted px-1 py-0.5 font-mono">.db</code> file is named
-              after the server's map ID.
-            </>
+            <Trans
+              path="mapDbFileHelp.genericFooter"
+              components={{
+                code: <code className="rounded bg-muted px-1 py-0.5 font-mono" />,
+              }}
+            />
           )}
         </p>
       }

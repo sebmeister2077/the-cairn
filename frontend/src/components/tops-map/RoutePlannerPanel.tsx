@@ -56,16 +56,28 @@ import {
 } from "@/store/slices/routePlanner";
 
 import { formatDuration } from "@/lib/format-duration";
+import { useTranslation } from "@/lib/i18n";
 
 import { EndpointPicker } from "./EndpointPicker";
 import { PlayerPicker } from "./PlayerPicker";
 
+type TranslateFn = ReturnType<typeof useTranslation>["t"];
+
 /** Format a leg row as a single readable line. */
-function describeLeg(leg: RouteLeg, index: number): string {
+function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
   if (leg.kind === "walk") {
-    return `${index + 1}. Walk ${Math.round(leg.blocks)} blocks (${formatDuration(leg.seconds)})`;
+    return t("routePlanner.walkLeg", {
+      index: index + 1,
+      blocks: Math.round(leg.blocks),
+      duration: formatDuration(leg.seconds),
+    });
   }
-  return `${index + 1}. TL → (${leg.to.x}, ${leg.to.z}) — ${formatDuration(leg.seconds)}`;
+  return t("routePlanner.tlLeg", {
+    index: index + 1,
+    x: leg.to.x,
+    z: leg.to.z,
+    duration: formatDuration(leg.seconds),
+  });
 }
 
 // Y coordinate baked into generated /waypoint commands. Tops-map endpoints
@@ -208,6 +220,7 @@ async function copyTextToClipboard(text: string): Promise<void> {
  * aside so the map stays fully interactive while the panel is open.
  */
 export function RoutePlannerPanel() {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector((s) => s.routePlanner.isOpen);
   const from = useAppSelector((s) => s.routePlanner.from);
@@ -325,8 +338,8 @@ export function RoutePlannerPanel() {
       // — because groupings match against the map's raw segment
       // orientation. Mixing the two would silently break the highlight.
       .map((l) => tlIdFor(l.segment));
-    const destLabel = to ? `(${to.point.x}, ${to.point.z})` : "destination";
-    const name = `Route to ${destLabel}`;
+    const destLabel = to ? `(${to.point.x}, ${to.point.z})` : t("routePlanner.destinationFallback");
+    const name = t("routePlanner.routeTo", { destination: destLabel });
     const grouping = createGrouping(name, { tlIds });
     setSavedDraft({ id: grouping.id, name: grouping.name });
   }
@@ -410,7 +423,7 @@ export function RoutePlannerPanel() {
     } catch (err) {
       setAnalyticsState("error");
       setAnalyticsError(
-        err instanceof Error ? err.message : "Could not send route. Please try again.",
+        err instanceof Error ? err.message : t("routePlanner.analyticsErrorFallback"),
       );
     }
   }
@@ -421,23 +434,21 @@ export function RoutePlannerPanel() {
     <aside
       className="fixed right-3 top-3 bottom-3 z-40 flex w-[min(420px,calc(100vw-1.5rem))] flex-col gap-0 rounded-lg border bg-popover text-sm text-popover-foreground shadow-xl ring-1 ring-foreground/10"
       role="dialog"
-      aria-label="Route planner"
+      aria-label={t("routePlanner.panelAriaLabel")}
     >
       <header className="flex items-start gap-2 border-b px-4 py-3">
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-base font-medium leading-none">
             <Sparkles className="h-4 w-4 text-emerald-500" />
-            Route planner
+            {t("routePlanner.title")}
           </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Pick a start and a destination; the planner finds the fastest translocator chain.
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{t("routePlanner.description")}</p>
         </div>
         <Button
           variant="ghost"
           size="icon-sm"
           onClick={() => dispatch(setRoutePlannerOpen(false))}
-          aria-label="Close route planner"
+          aria-label={t("routePlanner.close")}
         >
           <X className="h-4 w-4" />
         </Button>
@@ -455,17 +466,17 @@ export function RoutePlannerPanel() {
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="route" className="gap-1.5 text-xs">
-              <Sparkles className="h-3 w-3" /> Route
+              <Sparkles className="h-3 w-3" /> {t("routePlanner.routeTab")}
             </TabsTrigger>
             <TabsTrigger value="rendezvous" className="gap-1.5 text-xs">
-              <Users className="h-3 w-3" /> Rendezvous
+              <Users className="h-3 w-3" /> {t("routePlanner.rendezvousTab")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         {mode === "route" && (
           <>
-            <EndpointPicker slot="from" label="From" />
+            <EndpointPicker slot="from" label={t("routePlanner.from")} />
 
             <div className="flex items-center justify-center gap-1">
               <Button
@@ -474,10 +485,10 @@ export function RoutePlannerPanel() {
                 className="h-7 gap-1 text-xs"
                 onClick={() => dispatch(swapRouteEndpoints())}
                 disabled={!from && !to}
-                title="Swap From / To"
+                title={t("routePlanner.swapTitle")}
               >
                 <ArrowLeftRight className="h-3 w-3" />
-                Swap
+                {t("routePlanner.swap")}
               </Button>
               <Button
                 size="sm"
@@ -485,14 +496,14 @@ export function RoutePlannerPanel() {
                 className="h-7 gap-1 text-xs text-red-600 hover:text-red-700"
                 onClick={() => dispatch(clearRoutePlanner())}
                 disabled={!hasAnyState}
-                title="Clear From, To, and the computed route"
+                title={t("routePlanner.clearRouteTitle")}
               >
                 <Trash2 className="h-3 w-3" />
-                Clear
+                {t("routePlanner.clear")}
               </Button>
             </div>
 
-            <EndpointPicker slot="to" label="To" />
+            <EndpointPicker slot="to" label={t("routePlanner.to")} />
           </>
         )}
 
@@ -511,7 +522,10 @@ export function RoutePlannerPanel() {
             changing either clears stale routes via the slice. */}
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs text-muted-foreground">
-            Walk {walkSpeed.toFixed(1)} b/s · TL penalty {tlPenaltySeconds}s
+            {t("routePlanner.settingsSummary", {
+              walkSpeed: walkSpeed.toFixed(1),
+              penalty: tlPenaltySeconds,
+            })}
           </span>
           <Button
             size="sm"
@@ -519,7 +533,7 @@ export function RoutePlannerPanel() {
             className="h-7 gap-1 px-2 text-xs"
             onClick={() => setSettingsOpen((v) => !v)}
           >
-            <Settings2 className="h-3 w-3" /> Settings
+            <Settings2 className="h-3 w-3" /> {t("routePlanner.settings")}
           </Button>
         </div>
 
@@ -527,9 +541,9 @@ export function RoutePlannerPanel() {
           <div className="space-y-3 rounded-md border bg-muted/30 p-3">
             <div className="space-y-1">
               <Label className="flex items-center justify-between text-xs">
-                <span>Walk speed</span>
+                <span>{t("routePlanner.walkSpeed")}</span>
                 <span className="font-mono text-muted-foreground">
-                  {walkSpeed.toFixed(1)} blocks/s
+                  {t("routePlanner.walkSpeedValue", { value: walkSpeed.toFixed(1) })}
                 </span>
               </Label>
               <Slider
@@ -539,15 +553,14 @@ export function RoutePlannerPanel() {
                 value={walkSpeed}
                 onValueChange={(v) => dispatch(setRouteWalkSpeed(v))}
               />
-              <p className="text-[10px] text-muted-foreground">
-                Default 7 (sprint on road). 11 for elk on road. Change based on your needs (elk or
-                no path, heavy armor journey,etc).
-              </p>
+              <p className="text-[10px] text-muted-foreground">{t("routePlanner.walkSpeedHelp")}</p>
             </div>
             <div className="space-y-1">
               <Label className="flex items-center justify-between text-xs">
-                <span>TL penalty</span>
-                <span className="font-mono text-muted-foreground">{tlPenaltySeconds}s</span>
+                <span>{t("routePlanner.tlPenalty")}</span>
+                <span className="font-mono text-muted-foreground">
+                  {t("routePlanner.tlPenaltyValue", { value: tlPenaltySeconds })}
+                </span>
               </Label>
               <Slider
                 min={0}
@@ -556,9 +569,7 @@ export function RoutePlannerPanel() {
                 value={tlPenaltySeconds}
                 onValueChange={(v) => dispatch(setRouteTLPenalty(v))}
               />
-              <p className="text-[10px] text-muted-foreground">
-                Fixed time cost per hop (charge-up, possible ladder climbing).
-              </p>
+              <p className="text-[10px] text-muted-foreground">{t("routePlanner.tlPenaltyHelp")}</p>
             </div>
           </div>
         )}
@@ -570,16 +581,16 @@ export function RoutePlannerPanel() {
           <div className="space-y-2">
             {!from || !to ? (
               <p className="text-xs text-muted-foreground">
-                Set both endpoints to compute a route.
+                {t("routePlanner.setEndpointsPrompt")}
               </p>
             ) : isComputing ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> Computing routes…
+                <Loader2 className="h-3 w-3 animate-spin" /> {t("routePlanner.computingRoutes")}
               </div>
             ) : error ? (
               <p className="text-xs text-red-600">{error}</p>
             ) : !hasRoutes ? (
-              <p className="text-xs text-muted-foreground">No route found.</p>
+              <p className="text-xs text-muted-foreground">{t("routePlanner.noRouteFound")}</p>
             ) : (
               <>
                 {/* Alternate-route tabs — only show when more than one. */}
@@ -597,9 +608,13 @@ export function RoutePlannerPanel() {
                       {routes.map((r, i) => (
                         <TabsTrigger key={i} value={String(i)} className="text-xs">
                           <span className="flex flex-col leading-tight">
-                            <span>#{i + 1}</span>
+                            <span>{t("routePlanner.routeAlternative", { index: i + 1 })}</span>
                             <span className="text-[10px] text-muted-foreground">
-                              {i === 0 ? "best" : `+${formatDuration(deltas[i])}`}
+                              {i === 0
+                                ? t("routePlanner.best")
+                                : t("routePlanner.deltaDuration", {
+                                    duration: formatDuration(deltas[i]),
+                                  })}
                             </span>
                           </span>
                         </TabsTrigger>
@@ -629,18 +644,17 @@ export function RoutePlannerPanel() {
                       disabled={primary.tlHops === 0}
                       title={
                         primary.tlHops === 0
-                          ? "This route has no translocators to save"
-                          : "Create a new draft grouping containing this route's TLs"
+                          ? t("routePlanner.saveDraftNoTls")
+                          : t("routePlanner.saveDraftTitle")
                       }
                     >
                       <BookmarkPlus className="h-3.5 w-3.5" />
-                      Save as draft grouping
+                      {t("routePlanner.saveDraftButton")}
                     </Button>
                     {savedDraft && (
                       <p className="flex items-center gap-1 px-1 text-[11px] text-emerald-700 dark:text-emerald-400">
                         <Check className="h-3 w-3" />
-                        Saved as <span className="font-medium">{savedDraft.name}</span>. Open the
-                        Groupings drawer to edit.
+                        {t("routePlanner.savedAs", { name: savedDraft.name })}
                       </p>
                     )}
                   </div>
@@ -655,16 +669,16 @@ export function RoutePlannerPanel() {
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 text-xs font-medium">
                         <MapPin className="h-3.5 w-3.5 text-purple-500" />
-                        Copy /waypoint commands
+                        {t("routePlanner.waypointSectionTitle")}
                       </div>
                       <span className="text-[10px] text-muted-foreground">
-                        {waypointCount} waypoint{waypointCount === 1 ? "" : "s"}
+                        {t("routePlanner.waypointCount", { count: waypointCount })}
                       </span>
                     </div>
 
                     <div className="grid grid-cols-[auto_1fr] items-center gap-x-2 gap-y-1.5">
                       <Label htmlFor="wp-color" className="text-[11px]">
-                        Color
+                        {t("routePlanner.color")}
                       </Label>
                       <Select value={waypointColor} onValueChange={(v) => v && setWaypointColor(v)}>
                         <SelectTrigger id="wp-color" className="h-7 text-xs">
@@ -686,7 +700,7 @@ export function RoutePlannerPanel() {
                       </Select>
 
                       <Label htmlFor="wp-template" className="text-[11px]">
-                        Label
+                        {t("routePlanner.label")}
                       </Label>
                       <Input
                         id="wp-template"
@@ -700,7 +714,8 @@ export function RoutePlannerPanel() {
 
                     {labelPreview && (
                       <p className="truncate px-1 text-[10px] text-muted-foreground">
-                        Preview: <span className="font-mono text-foreground">{labelPreview}</span>
+                        {t("routePlanner.labelPreview")}{" "}
+                        <span className="font-mono text-foreground">{labelPreview}</span>
                       </p>
                     )}
 
@@ -714,20 +729,20 @@ export function RoutePlannerPanel() {
                         {waypointCopied ? (
                           <>
                             <Check className="h-3.5 w-3.5" />
-                            Copied {waypointCount} command{waypointCount === 1 ? "" : "s"}
+                            {t("routePlanner.copiedCommands", { count: waypointCount })}
                           </>
                         ) : (
                           <>
                             <Copy className="h-3.5 w-3.5" />
-                            Copy {waypointCount} /waypoint command{waypointCount === 1 ? "" : "s"}
+                            {t("routePlanner.copyCommands", { count: waypointCount })}
                           </>
                         )}
                       </Button>
                       <Button
                         size="icon-sm"
                         variant="ghost"
-                        title="Show available label placeholders"
-                        aria-label="Show available label placeholders"
+                        title={t("routePlanner.showLabelPlaceholders")}
+                        aria-label={t("routePlanner.showLabelPlaceholders")}
                         onClick={() => setWaypointHelpOpen((v) => !v)}
                       >
                         <Info className="h-3.5 w-3.5" />
@@ -736,31 +751,30 @@ export function RoutePlannerPanel() {
 
                     {waypointHelpOpen && (
                       <div className="space-y-1 rounded border bg-background/60 p-2 text-[10px] leading-snug text-muted-foreground">
-                        <p>
-                          Use any of these placeholders in the label — unknown ones are left
-                          untouched so typos are easy to spot:
-                        </p>
+                        <p>{t("routePlanner.placeholderHelpIntro")}</p>
                         <ul className="grid grid-cols-2 gap-x-2 font-mono text-foreground">
-                          <li>{"{i}"} step #</li>
-                          <li>{"{n}"} total steps</li>
-                          <li>{"{x}"} this X</li>
-                          <li>{"{z}"} this Z</li>
+                          <li>{t("routePlanner.placeholderStepNumber", { token: "{i}" })}</li>
+                          <li>{t("routePlanner.placeholderTotalSteps", { token: "{n}" })}</li>
+                          <li>{t("routePlanner.placeholderThisX", { token: "{x}" })}</li>
+                          <li>{t("routePlanner.placeholderThisZ", { token: "{z}" })}</li>
                           <li>
-                            {"{y}"} fixed {WAYPOINT_Y}
+                            {t("routePlanner.placeholderFixedY", { token: "{y}", y: WAYPOINT_Y })}
                           </li>
-                          <li>{"{next_x}"} next X</li>
-                          <li>{"{next_z}"} next Z</li>
-                          <li>{"{prev_x}"} prev X</li>
-                          <li>{"{prev_z}"} prev Z</li>
-                          <li>{"{dest_x}"} dest X</li>
-                          <li>{"{dest_z}"} dest Z</li>
-                          <li>{"{start_x}"} start X</li>
-                          <li>{"{start_z}"} start Z</li>
+                          <li>{t("routePlanner.placeholderNextX", { token: "{next_x}" })}</li>
+                          <li>{t("routePlanner.placeholderNextZ", { token: "{next_z}" })}</li>
+                          <li>{t("routePlanner.placeholderPrevX", { token: "{prev_x}" })}</li>
+                          <li>{t("routePlanner.placeholderPrevZ", { token: "{prev_z}" })}</li>
+                          <li>{t("routePlanner.placeholderDestX", { token: "{dest_x}" })}</li>
+                          <li>{t("routePlanner.placeholderDestZ", { token: "{dest_z}" })}</li>
+                          <li>{t("routePlanner.placeholderStartX", { token: "{start_x}" })}</li>
+                          <li>{t("routePlanner.placeholderStartZ", { token: "{start_z}" })}</li>
                         </ul>
                         <p>
-                          Y is fixed at {WAYPOINT_Y} since the tops map is 2D. The first and last
-                          waypoints leave <span className="font-mono">{"{prev_*}"}</span> /{" "}
-                          <span className="font-mono">{"{next_*}"}</span> empty respectively.
+                          {t("routePlanner.placeholderHelpFooter", {
+                            y: WAYPOINT_Y,
+                            prev: "{prev_*}",
+                            next: "{next_*}",
+                          })}
                         </p>
                       </div>
                     )}
@@ -773,10 +787,7 @@ export function RoutePlannerPanel() {
                   the user sees the result. */}
                 <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
                   <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                  <span>
-                    Only the translocators used by this route are highlighted in green. All other
-                    TLs stay in their normal colours.
-                  </span>
+                  <span>{t("routePlanner.usedTlsOnlyNotice")}</span>
                 </div>
 
                 {/* "Save this route for road workers" — anonymous analytics
@@ -787,9 +798,7 @@ export function RoutePlannerPanel() {
                 {primary && (
                   <div className="space-y-1 rounded-md border border-sky-200 bg-sky-50 p-2 dark:border-sky-900/50 dark:bg-sky-950/40">
                     <p className="text-[11px] leading-snug text-sky-900 dark:text-sky-100">
-                      Saving sends just this route (endpoints, TL hops, travel time) to the map's
-                      road maintainers so they can prioritise tunnel work, signage, and shortcuts.
-                      No personal data is sent.
+                      {t("routePlanner.analyticsInfo")}
                     </p>
                     <Button
                       size="sm"
@@ -806,10 +815,10 @@ export function RoutePlannerPanel() {
                         <Send className="h-3.5 w-3.5" />
                       )}
                       {analyticsState === "sending"
-                        ? "Sending…"
+                        ? t("routePlanner.analyticsSending")
                         : analyticsState === "sent"
-                          ? "Sent — thanks!"
-                          : "Save this route for road workers"}
+                          ? t("routePlanner.analyticsSent")
+                          : t("routePlanner.analyticsSave")}
                     </Button>
                     {analyticsState === "error" && analyticsError && (
                       <p className="px-1 text-[11px] text-red-600 dark:text-red-400">
@@ -839,6 +848,8 @@ function RouteSummary({
    *  endpoints in frame for long TL hops / walks. */
   onLocate: (point: { x: number; z: number; spanBlocks?: number }) => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
       {/* Hero ETA — the headline answer to "how long will this take?".
@@ -847,7 +858,7 @@ function RouteSummary({
       <div className="flex items-baseline justify-between gap-2 border-b pb-2">
         <div className="flex flex-col leading-none">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Estimated time
+            {t("routePlanner.estimatedTime")}
           </span>
           <span className="mt-1 flex items-baseline gap-1.5 font-mono text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
             <Sparkles className="h-4 w-4 self-center text-emerald-500" />
@@ -857,11 +868,9 @@ function RouteSummary({
         <div className="flex flex-col items-end gap-1 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
             <Footprints className="h-3 w-3" />
-            {Math.round(route.walkBlocks)} blocks
+            {t("routePlanner.walkBlocks", { count: Math.round(route.walkBlocks) })}
           </span>
-          <span>
-            {route.tlHops} TL{route.tlHops === 1 ? "" : "s"}
-          </span>
+          <span>{t("routePlanner.tlHops", { count: route.tlHops })}</span>
         </div>
       </div>
       <ol className="space-y-0.5 text-xs">
@@ -886,7 +895,7 @@ function RouteSummary({
                   : "flex items-center gap-1 px-2 py-1 text-muted-foreground"
               }
             >
-              <span className="flex-1 truncate">{describeLeg(leg, i)}</span>
+              <span className="flex-1 truncate">{describeLeg(leg, i, t)}</span>
               <Button
                 size="icon-sm"
                 variant="ghost"
@@ -894,10 +903,10 @@ function RouteSummary({
                 onClick={() => onLocate({ x: midX, z: midZ, spanBlocks })}
                 title={
                   leg.kind === "tl"
-                    ? `Show this TL pair on the map`
-                    : `Show this walk segment on the map`
+                    ? t("routePlanner.showTlPairOnMap")
+                    : t("routePlanner.showWalkSegmentOnMap")
                 }
-                aria-label="Show on map"
+                aria-label={t("routePlanner.showOnMap")}
               >
                 <Crosshair className="h-3 w-3" />
               </Button>
@@ -912,10 +921,10 @@ function RouteSummary({
 /** Format `Player N` or the original label depending on what the picker
  *  recorded — keeps the per-player ETA list short while still
  *  surfacing whatever the user actually typed in. */
-function playerDisplayLabel(p: EndpointPick | null, index: number): string {
-  if (!p) return `Player ${index + 1}`;
+function playerDisplayLabel(p: EndpointPick | null, index: number, t: TranslateFn): string {
+  if (!p) return t("routePlanner.playerLabel", { index: index + 1 });
   if (p.label && p.label !== `${p.point.x}, ${p.point.z}`) return p.label;
-  return `Player ${index + 1}`;
+  return t("routePlanner.playerLabel", { index: index + 1 });
 }
 
 /**
@@ -940,6 +949,7 @@ function RendezvousSection({
   error: string | null;
 }) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const filledCount = players.filter((p) => p != null).length;
   const canAdd = players.length < 8;
   const [meetingCopied, setMeetingCopied] = useState(false);
@@ -953,7 +963,7 @@ function RendezvousSection({
   async function handleCopyMeetingWaypoint() {
     if (!result) return;
     const { x, z } = result.meeting;
-    const cmd = `/waypoint addati spiral ${x} ${WAYPOINT_Y} ${z} false yellow Meeting point`;
+    const cmd = `/waypoint addati spiral ${x} ${WAYPOINT_Y} ${z} false yellow ${t("routePlanner.meetingPoint")}`;
     try {
       await copyTextToClipboard(cmd);
       setMeetingCopied(true);
@@ -965,8 +975,7 @@ function RendezvousSection({
   return (
     <div className="space-y-3">
       <p className="text-[11px] leading-snug text-muted-foreground">
-        Place each party member; the planner finds the meeting point that minimises the worst-case
-        travel time (or the total, depending on the objective).
+        {t("routePlanner.rendezvousIntro")}
       </p>
 
       <div className="space-y-2">
@@ -982,18 +991,18 @@ function RendezvousSection({
           className="h-7 gap-1 px-2 text-xs"
           onClick={() => dispatch(addRoutePlayer())}
           disabled={!canAdd}
-          title={canAdd ? "Add another party member" : "Maximum 8 players"}
+          title={canAdd ? t("routePlanner.addPlayerTitle") : t("routePlanner.maxPlayers")}
         >
-          <Plus className="h-3 w-3" /> Add player
+          <Plus className="h-3 w-3" /> {t("routePlanner.addPlayer")}
         </Button>
         <Button
           size="sm"
           variant="ghost"
           className="h-7 gap-1 px-2 text-xs text-red-600 hover:text-red-700"
           onClick={() => dispatch(clearRoutePlanner())}
-          title="Clear all party members and the computed meeting point"
+          title={t("routePlanner.clearPlayersTitle")}
         >
-          <Trash2 className="h-3 w-3" /> Clear
+          <Trash2 className="h-3 w-3" /> {t("routePlanner.clear")}
         </Button>
       </div>
 
@@ -1002,24 +1011,24 @@ function RendezvousSection({
           a short caption below spells out exactly what the planner will
           optimise for. Avoids the dropdown showing the raw enum value. */}
       <div className="space-y-1">
-        <Label className="text-xs">Optimise for</Label>
+        <Label className="text-xs">{t("routePlanner.optimizeFor")}</Label>
         <Tabs
           value={objective}
           onValueChange={(v) => v && dispatch(setRendezvousObjective(v as RendezvousObjective))}
         >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="minimax" className="text-xs">
-              Fairness
+              {t("routePlanner.fairness")}
             </TabsTrigger>
             <TabsTrigger value="minisum" className="text-xs">
-              Total time
+              {t("routePlanner.totalTime")}
             </TabsTrigger>
           </TabsList>
         </Tabs>
         <p className="text-[10px] leading-snug text-muted-foreground">
           {objective === "minimax"
-            ? "Picks the spot that minimises the slowest player's travel time, so nobody is stuck waiting too long."
-            : "Picks the spot with the shortest combined travel time across the whole party — faster overall, but one player may travel much further than another."}
+            ? t("routePlanner.objectiveFairness")
+            : t("routePlanner.objectiveTotalTime")}
         </p>
       </div>
 
@@ -1028,24 +1037,22 @@ function RendezvousSection({
       {/* Results */}
       <div className="space-y-2">
         {filledCount < 2 ? (
-          <p className="text-xs text-muted-foreground">
-            Set at least two player positions to find a meeting point.
-          </p>
+          <p className="text-xs text-muted-foreground">{t("routePlanner.atLeastTwoPlayers")}</p>
         ) : isComputing ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" /> Finding meeting point…
+            <Loader2 className="h-3 w-3 animate-spin" /> {t("routePlanner.findingMeetingPoint")}
           </div>
         ) : error ? (
           <p className="text-xs text-red-600">{error}</p>
         ) : !result ? (
-          <p className="text-xs text-muted-foreground">No meeting point found.</p>
+          <p className="text-xs text-muted-foreground">{t("routePlanner.noMeetingPointFound")}</p>
         ) : (
           <>
             <div className="space-y-2 rounded-md border bg-background p-3">
               <div className="flex items-baseline justify-between gap-2 border-b pb-2">
                 <div className="flex flex-col leading-none">
                   <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Everyone's there by
+                    {t("routePlanner.everyonesThereBy")}
                   </span>
                   <span className="mt-1 flex items-baseline gap-1.5 font-mono text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
                     <Users className="h-4 w-4 self-center text-emerald-500" />
@@ -1053,9 +1060,13 @@ function RendezvousSection({
                   </span>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-[10px] text-muted-foreground">
-                  <span>Total: {formatDuration(result.totalSeconds)}</span>
                   <span>
-                    Meeting @ ({result.meeting.x}, {result.meeting.z})
+                    {t("routePlanner.totalDuration", {
+                      duration: formatDuration(result.totalSeconds),
+                    })}
+                  </span>
+                  <span>
+                    {t("routePlanner.meetingAt", { x: result.meeting.x, z: result.meeting.z })}
                   </span>
                 </div>
               </div>
@@ -1074,7 +1085,7 @@ function RendezvousSection({
                   )
                 }
               >
-                <Crosshair className="h-3.5 w-3.5" /> Show meeting point on map
+                <Crosshair className="h-3.5 w-3.5" /> {t("routePlanner.showMeetingPointOnMap")}
               </Button>
 
               <ol className="space-y-0.5 text-xs">
@@ -1084,7 +1095,7 @@ function RendezvousSection({
                   // order in `result.perPlayer` matches the filtered
                   // (non-null) `players` order.
                   const filled = players.filter((p): p is EndpointPick => p != null);
-                  const label = playerDisplayLabel(filled[i] ?? null, i);
+                  const label = playerDisplayLabel(filled[i] ?? null, i, t);
                   const midX = Math.round((leg.player.x + result.meeting.x) / 2);
                   const midZ = Math.round((leg.player.z + result.meeting.z) / 2);
                   const dx = result.meeting.x - leg.player.x;
@@ -1093,11 +1104,15 @@ function RendezvousSection({
                   return (
                     <li key={i} className="flex items-center gap-1 px-2 py-1 text-muted-foreground">
                       <span className="flex-1 truncate">
-                        <span className="font-medium text-foreground">{label}</span>:{" "}
-                        {formatDuration(leg.route.totalSeconds)}
+                        <span className="font-medium text-foreground">
+                          {t("routePlanner.playerRouteDuration", {
+                            label,
+                            duration: formatDuration(leg.route.totalSeconds),
+                          })}
+                        </span>
                         {leg.route.tlHops > 0 && (
                           <span className="ml-1 text-[10px]">
-                            ({leg.route.tlHops} TL{leg.route.tlHops === 1 ? "" : "s"})
+                            ({t("routePlanner.tlHops", { count: leg.route.tlHops })})
                           </span>
                         )}
                       </span>
@@ -1108,8 +1123,8 @@ function RendezvousSection({
                         onClick={() =>
                           dispatch(setRouteFocusRequest({ x: midX, z: midZ, spanBlocks: span }))
                         }
-                        title="Show this player's route on the map"
-                        aria-label="Show on map"
+                        title={t("routePlanner.showPlayerRouteOnMap")}
+                        aria-label={t("routePlanner.showOnMap")}
                       >
                         <Crosshair className="h-3 w-3" />
                       </Button>
@@ -1128,22 +1143,19 @@ function RendezvousSection({
               {meetingCopied ? (
                 <>
                   <Check className="h-3.5 w-3.5" />
-                  Copied /waypoint for meeting point
+                  {t("routePlanner.copiedMeetingWaypoint")}
                 </>
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5" />
-                  Copy /waypoint for meeting point
+                  {t("routePlanner.copyMeetingWaypoint")}
                 </>
               )}
             </Button>
 
             <div className="flex items-start gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
               <Info className="mt-0.5 h-3 w-3 shrink-0" />
-              <span>
-                The translocators each player needs to use are highlighted in green. Share the
-                meeting waypoint with your group.
-              </span>
+              <span>{t("routePlanner.meetingTlsNotice")}</span>
             </div>
           </>
         )}

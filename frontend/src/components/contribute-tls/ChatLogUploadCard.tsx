@@ -8,6 +8,7 @@ import { Loader2, Loader2Icon, LoaderIcon } from "lucide-react";
 import { parseChatLogWaypoints, extractTLs } from "@/lib/tl-parser";
 import { pairUserTLs } from "@/lib/tl-matching";
 import { setUserTLs } from "@/store/slices/contributeTLs";
+import { useTranslation } from "@/lib/i18n";
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { FilePathHelp, type FilePathHelpItem } from "../FilePathHelp";
 import { MaintenanceChip } from "../MaintenanceChip";
@@ -35,6 +36,7 @@ const LOG_FILE_PATHS: FilePathHelpItem[] = [
 
 export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [working, setWorking] = useState(false);
   const [parseErrorMessage, setParseErrorMessage] = useState<string | null>(null);
@@ -57,10 +59,7 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
       const all = parseChatLogWaypoints(text);
       const tls = extractTLs(all);
       if (tls.length === 0) {
-        setParseErrorMessage(
-          "No translocator waypoints (icon \u201Cspiral\u201D) found in this file. " +
-            "Make sure you typed /waypoint list details in-game first.",
-        );
+        setParseErrorMessage(t("contributeTLsPage.chatLogUpload.noTranslocatorWaypointsFound"));
         return;
       }
       const userTLs = pairUserTLs(tls, serverSegments);
@@ -76,7 +75,9 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
       });
       dispatch(setUserTLs(userTLs));
     } catch (e: unknown) {
-      setParseErrorMessage(e instanceof Error ? e.message : "Failed to parse the chat-log");
+      setParseErrorMessage(
+        e instanceof Error ? e.message : t("contributeTLsPage.chatLogUpload.parseFailed"),
+      );
     } finally {
       setWorking(false);
     }
@@ -86,59 +87,58 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          Upload your client-chat.log
+          {t("contributeTLsPage.chatLogUpload.title")}
           <MaintenanceChip component="tops_contribute_tls_log" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="text-sm text-muted-foreground space-y-2">
           <p>
-            Step 1. In-game, type{" "}
+            {t("contributeTLsPage.chatLogUpload.step1Prefix")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               /waypoint list details
             </code>
-            . The server will print the full list of your waypoints into the chat (only visible to
-            you).
+            {t("contributeTLsPage.chatLogUpload.step1Suffix")}
           </p>
           <p>
-            Step 2. Find your{" "}
+            {t("contributeTLsPage.chatLogUpload.step2Prefix")}{" "}
             <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
               client-chat.log
             </code>{" "}
-            file.
+            {t("contributeTLsPage.chatLogUpload.step2Suffix")}
           </p>
+          <p>{t("contributeTLsPage.chatLogUpload.step3")}</p>
           <p>
-            Step 3. Upload the file below. The Y coordinate is ignored — only X/Z matter, and the
-            automatic linker only works when each TL waypoint label includes the approximate X/Z
-            coordinates of the other end. The coordinates do not need to be exact, as long as both
-            labels point near their matching exits.
-          </p>
-          <p>
-            Need the full walkthrough? Read the{" "}
+            {t("contributeTLsPage.chatLogUpload.guidePrefix")}{" "}
             <NavLink
               to="/blog/adding-translocators-using-waypoints"
               className="underline decoration-dotted underline-offset-2 hover:text-primary"
             >
-              Contribute waypoints guide
+              {t("contributeTLsPage.chatLogUpload.guide")}
             </NavLink>
             .
           </p>
-          <FilePathHelp summary="Where can I find this file?" items={LOG_FILE_PATHS} />
+          <FilePathHelp
+            summary={t("contributeTLsPage.chatLogUpload.fileHelpSummary")}
+            items={LOG_FILE_PATHS}
+          />
         </div>
 
         <div
           className="rounded-md border border-amber-500/60 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
           role="note"
         >
-          <strong>Heads up:</strong> only translocator waypoints (the ones with the{" "}
+          <strong>{t("contributeTLsPage.chatLogUpload.headsUp")}</strong>{" "}
+          {t("contributeTLsPage.chatLogUpload.headsUpPrefix")}{" "}
           <code className="rounded bg-amber-500/15 px-1 py-0.5 font-mono text-xs">spiral</code>{" "}
-          icon) are read from your chat-log. Every other waypoint marking — bases, landmarks, notes,
-          custom icons, etc. — is <strong>ignored</strong> and never uploaded.
+          {t("contributeTLsPage.chatLogUpload.headsUpMiddle")}{" "}
+          <strong>{t("contributeTLsPage.chatLogUpload.headsUpIgnored")}</strong>{" "}
+          {t("contributeTLsPage.chatLogUpload.headsUpSuffix")}
         </div>
 
         <FileUpload
           id="contribute-tls-chatlog"
-          label="client-chat.log"
+          label={t("contributeTLsPage.chatLogUpload.fileLabel")}
           accept=".log,.txt,text/plain"
           onChange={(f) => {
             setFile(f);
@@ -156,20 +156,28 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
         {parseSummary && (
           <div className="rounded-md border bg-muted/40 p-3 text-sm space-y-1">
             <p>
-              Parsed <strong>{parseSummary.totalWaypoints}</strong> waypoints, of which{" "}
-              <strong>{parseSummary.totalTLs}</strong> translocators.
+              {t("contributeTLsPage.chatLogUpload.parsedWaypoints", {
+                waypoints: parseSummary.totalWaypoints,
+                translocators: parseSummary.totalTLs,
+              })}
             </p>
             <p className="text-muted-foreground">
-              <span className="text-emerald-600">{parseSummary.existing} already on the map</span> ·{" "}
-              <span>{parseSummary.paired - parseSummary.existing} new pairs</span> ·{" "}
-              <span className="text-red-500">{parseSummary.unpaired} unpaired</span>
+              <span className="text-emerald-600">
+                {t("contributeTLsPage.chatLogUpload.parsedBreakdown", {
+                  existing: parseSummary.existing,
+                  newPairs: parseSummary.paired - parseSummary.existing,
+                  unpaired: parseSummary.unpaired,
+                })}
+              </span>
             </p>
           </div>
         )}
         {isServerLoadingMoreThanOnce && noServerTLsAvailable && (
           <div className="flex gap-2 items-center text-sm">
             <Spinner />
-            <span className="text-xs text-muted-foreground">Loading Server TL file</span>
+            <span className="text-xs text-muted-foreground">
+              {t("contributeTLsPage.chatLogUpload.loadingServerFile")}
+            </span>
           </div>
         )}
         {isServerError && (
@@ -177,9 +185,8 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
             className="rounded-md border border-red-500/60 bg-red-50 p-3 text-sm text-red-900 dark:bg-red-950/40 dark:text-red-200"
             role="alert"
           >
-            <strong>Could not load the server translocator data.</strong> This file is required to
-            match your waypoints against the known TL network. Please try refreshing the page — if
-            the problem persists, check back later.
+            <strong>{t("contributeTLsPage.chatLogUpload.serverDataLoadFailedTitle")}</strong>{" "}
+            {t("contributeTLsPage.chatLogUpload.serverDataLoadFailedBody")}
           </div>
         )}
 
@@ -191,7 +198,9 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
             variant={parseSummary ? "outline" : "default"}
           >
             {working && <Spinner className="mr-2" />}
-            {parseSummary ? "Re-parse file" : "Parse file"}
+            {parseSummary
+              ? t("contributeTLsPage.chatLogUpload.reparseFile")
+              : t("contributeTLsPage.chatLogUpload.parseFile")}
           </Button>
           {parseSummary && (
             <Button
@@ -202,7 +211,7 @@ export function ChatLogUploadCard({ onParsed }: ChatLogUploadCardProps) {
               }}
               disabled={noServerTLsAvailable}
             >
-              Continue to review
+              {t("contributeTLsPage.chatLogUpload.continueToReview")}
             </Button>
           )}
         </div>

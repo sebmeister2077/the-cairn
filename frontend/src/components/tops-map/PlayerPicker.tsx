@@ -3,6 +3,7 @@ import { Crosshair, MapPin, Star, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { removeRoutePlayer, setRoutePickMode, setRoutePlayer } from "@/store/slices/routePlanner";
 
@@ -22,6 +23,7 @@ interface PlayerPickerProps {
  * Terminus as their position.
  */
 export function PlayerPicker({ index }: PlayerPickerProps) {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const value = useAppSelector((s) => s.routePlanner.players[index] ?? null);
   const pickMode = useAppSelector((s) => s.routePlanner.pickMode);
@@ -46,7 +48,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
         index,
         pick: {
           point: { x: favorite.x, z: favorite.z },
-          label: "Favorite home",
+          label: t("routePlanner.favoriteHome"),
           source: "favorite",
         },
       }),
@@ -56,7 +58,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
   const handlePasteApply = () => {
     const parsed = parseCoordsInput(pasteText);
     if (!parsed) {
-      setPasteError("Couldn't parse — try `123, -456`, `/tp 123 110 -456`, or `x=123 z=-456`.");
+      setPasteError(t("routePlanner.parseCoordsError"));
       return;
     }
     dispatch(
@@ -78,7 +80,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
     <div className="space-y-1.5 rounded-md border bg-muted/20 p-2">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Player {index + 1}
+          {t("routePlanner.playerLabel", { index: index + 1 })}
         </span>
         <div className="flex items-center gap-1">
           {value && (
@@ -87,7 +89,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
               size="sm"
               className="h-5 px-1.5 text-xs"
               onClick={() => dispatch(setRoutePlayer({ index, pick: null }))}
-              title="Clear this player's position"
+              title={t("routePlanner.clearPlayerPosition")}
             >
               <X className="h-3 w-3" />
             </Button>
@@ -98,9 +100,9 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
               size="sm"
               className="h-5 px-1.5 text-xs text-red-600 hover:text-red-700"
               onClick={() => dispatch(removeRoutePlayer(index))}
-              title="Remove this player from the party"
+              title={t("routePlanner.removePlayerTitle")}
             >
-              Remove
+              {t("routePlanner.removePlayer")}
             </Button>
           )}
         </div>
@@ -113,7 +115,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
           <div className="flex items-center gap-2">
             <MapPin className="h-3 w-3 shrink-0 text-emerald-600" />
             <div className="min-w-0 flex-1 truncate">
-              <span className="font-medium">{value.label ?? "Picked point"}</span>
+              <span className="font-medium">{value.label ?? t("routePlanner.pickedPoint")}</span>
               <span className="ml-1 text-muted-foreground">
                 ({value.point.x}, {value.point.z})
               </span>
@@ -123,7 +125,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
             </span>
           </div>
         ) : (
-          <span className="text-muted-foreground">Not set</span>
+          <span className="text-muted-foreground">{t("routePlanner.notSet")}</span>
         )}
       </div>
 
@@ -135,7 +137,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
           onClick={togglePickMode}
         >
           <Crosshair className="h-3 w-3" />
-          {isPicking ? "Click map…" : "Pick on map"}
+          {isPicking ? t("routePlanner.clickMap") : t("routePlanner.pickOnMap")}
         </Button>
         <Button
           size="sm"
@@ -143,7 +145,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
           className="h-7 px-2 text-xs flex-1"
           onClick={() => setPasteOpen((v) => !v)}
         >
-          Paste
+          {t("routePlanner.paste")}
         </Button>
         <Button
           size="sm"
@@ -151,9 +153,9 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
           className="h-7 gap-1 px-2 text-xs"
           disabled={!favorite}
           onClick={handleUseFavorite}
-          title={favorite ? "Use favorite home" : "No favorite home set"}
+          title={favorite ? t("routePlanner.useFavoriteHome") : t("routePlanner.noFavoriteHome")}
         >
-          <Star className="h-3 w-3" /> Home
+          <Star className="h-3 w-3" /> {t("routePlanner.home")}
         </Button>
       </div>
 
@@ -165,7 +167,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
               setPasteText(e.target.value);
               if (pasteError) setPasteError(null);
             }}
-            placeholder="x, z   or   /tp x y z"
+            placeholder={t("routePlanner.pasteCoordsPlaceholderShort")}
             className="h-7 font-mono text-xs"
             spellCheck={false}
             onKeyDown={(e) => {
@@ -184,7 +186,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
                 setPasteError(null);
               }}
             >
-              Cancel
+              {t("routePlanner.cancel")}
             </Button>
             <Button
               size="sm"
@@ -192,7 +194,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
               className="h-6 px-2 text-xs"
               onClick={handlePasteApply}
             >
-              Apply
+              {t("routePlanner.apply")}
             </Button>
           </div>
         </div>

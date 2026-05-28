@@ -1,9 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n";
+import { TermsPageRu } from "./TermsPage.ru";
 
 const LAST_UPDATED = "May 15, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function TermsPage() {
+  const { locale } = useTranslation();
+  if (locale === "ru") return <TermsPageRu />;
+
   return (
     <Card>
       <CardHeader>

@@ -8,12 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Download, Loader2 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
 
 const NON_ADMIN_MAX_MB = 200;
 const NON_ADMIN_MAX_BYTES = NON_ADMIN_MAX_MB * 1024 * 1024;
 
 export function MapViewPage() {
+  const { t } = useTranslation();
   const [dbFile, setDbFile] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [stats, setStats] = useState<MapStats | null>(null);
@@ -36,7 +38,12 @@ export function MapViewPage() {
     // expensive). Admins have no client-side limit.
     if (!isAdmin && dbFile.size > NON_ADMIN_MAX_BYTES) {
       const sizeMb = (dbFile.size / (1024 * 1024)).toFixed(1);
-      setError(`Map file is ${sizeMb} MB, which exceeds the ${NON_ADMIN_MAX_MB} MB limit`);
+      setError(
+        t("mapViewPage.fileTooLarge", {
+          sizeMb,
+          limitMb: NON_ADMIN_MAX_MB,
+        }),
+      );
       return;
     }
 
@@ -47,14 +54,14 @@ export function MapViewPage() {
     }
 
     // Step 1: Get stats
-    setLoading("Reading map database…");
+    setLoading(t("mapViewPage.readingMapDatabase"));
     try {
       const fd = new FormData();
       fd.append("db_file", dbFile);
       const s = await getMapStats(fd);
       setStats(s);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to read map database");
+      setError(err instanceof Error ? err.message : t("mapViewPage.failedToReadMapDatabase"));
       setLoading("");
       return;
     }
@@ -62,8 +69,8 @@ export function MapViewPage() {
     // Step 2: Render image
     setLoading(
       effectiveFastPreview
-        ? "Rendering fast preview…"
-        : "Rendering map image… This may take a moment for large maps.",
+        ? t("mapViewPage.renderingFastPreview")
+        : t("mapViewPage.renderingMapImage"),
     );
     try {
       const fd = new FormData();
@@ -72,7 +79,7 @@ export function MapViewPage() {
       const url = URL.createObjectURL(blob);
       setImageUrl(url);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to render map");
+      setError(err instanceof Error ? err.message : t("mapViewPage.failedToRenderMap"));
     } finally {
       setLoading("");
     }
@@ -109,11 +116,11 @@ export function MapViewPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Local Map Viewer</CardTitle>
+        <CardTitle>{t("mapViewPage.title")}</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Upload a multiplayer map{" "}
-          <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file to render
-          and explore the world map your client has cached.
+          {t("mapViewPage.descriptionPrefix")}{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file to render{" "}
+          {t("mapViewPage.descriptionSuffix")}
         </p>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -122,7 +129,7 @@ export function MapViewPage() {
           <FileUpload
             key={fileInputKey}
             id="dbfile"
-            label="Map database (.db)"
+            label={t("mapViewPage.mapDatabaseLabel")}
             accept=".db"
             required
             onChange={setDbFile}
@@ -132,23 +139,23 @@ export function MapViewPage() {
               <Switch
                 checked={fastPreview}
                 onCheckedChange={setFastPreview}
-                aria-label="Fast preview mode"
+                aria-label={t("mapViewPage.fastPreviewMode")}
               />
-              <Label>Fast preview mode (much faster, lower detail)</Label>
+              <Label>{t("mapViewPage.fastPreviewModeDescription")}</Label>
             </div>
           )}
           <div className="flex gap-2">
             <Button type="submit" disabled={!dbFile || !!loading}>
-              {loading || "Render Map"}
+              {loading || t("mapViewPage.renderMap")}
             </Button>
             {imageUrl && (
               <>
                 <Button type="button" variant="outline" onClick={handleDownload}>
                   <Download className="size-4 mr-1" />
-                  Download PNG
+                  {t("mapViewPage.downloadPng")}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleReset}>
-                  Clear
+                  {t("mapViewPage.clear")}
                 </Button>
               </>
             )}
@@ -160,7 +167,7 @@ export function MapViewPage() {
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground border rounded-md px-4 py-3">
             <span>
               <span className="font-medium text-foreground">{stats.pieces.toLocaleString()}</span>{" "}
-              map chunks
+              {t("mapViewPage.mapChunks")}
             </span>
             <span>
               <span className="font-medium text-foreground">{stats.size_mb}</span> MB
@@ -169,7 +176,7 @@ export function MapViewPage() {
               <span className="font-medium text-foreground">
                 {stats.width_blocks.toLocaleString()} × {stats.height_blocks.toLocaleString()}
               </span>{" "}
-              blocks
+              {t("mapViewPage.blocks")}
             </span>
           </div>
         )}
@@ -177,7 +184,7 @@ export function MapViewPage() {
         <MapViewer
           imageUrl={imageUrl}
           stats={stats}
-          alt="Vintage Story world map"
+          alt={t("mapViewPage.mapAlt")}
           // enhanceFn={dbFile ? enhanceFn : undefined}
         />
       </CardContent>

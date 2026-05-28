@@ -35,6 +35,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Loader2, Lock, Unlock, Link2 } from "lucide-react";
 import { useTopsMapData } from "@/hooks/useTopsMapData";
+import { useTranslation } from "@/lib/i18n";
 
 interface TLPreviewMapProps {
   serverSegments: WorldLineSegment[];
@@ -66,6 +67,7 @@ interface DragState {
 
 export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const userTLs = useAppSelector((s) => s.contributeTLs.userTLs);
   const selectedTLId = useAppSelector((s) => s.contributeTLs.selectedTLId);
   const navTick = useAppSelector((s) => s.contributeTLs.navTick);
@@ -185,13 +187,13 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
         updateUserTL({
           ...donor,
           status: "invalid",
-          invalidReason: "Merged into another translocator (remove this entry).",
+          invalidReason: t("contributeTLsPage.previewMap.mergedInvalidReason"),
           pairConfidence: "none",
           endpointB: null,
         }),
       );
     },
-    [dispatch, selectedTL, serverSegments],
+    [dispatch, selectedTL, serverSegments, t],
   );
 
   // Convert image-space coords back to world coords given stats + image.
@@ -255,7 +257,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
                 endpointA: linkPick.endpoint === "A" ? other.endpointA : other.endpointA,
                 // Mark donor as invalid so the user can prune it.
                 status: "invalid",
-                invalidReason: "Merged into another translocator (remove this entry).",
+                invalidReason: t("contributeTLsPage.previewMap.mergedInvalidReason"),
                 pairConfidence: "none",
                 endpointB: null,
               }),
@@ -272,7 +274,7 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
       (e.target as Element).setPointerCapture?.(e.pointerId);
       setDrag({ tlLocalId: tl.localId, endpoint, imgX, imgY });
     },
-    [dispatch, dragMode, linkPick, serverSegments, userTLs],
+    [dispatch, dragMode, linkPick, serverSegments, t, userTLs],
   );
 
   const handleOverlayPointerMove = useCallback(
@@ -370,7 +372,9 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
           onClick={() => dispatch(setDragMode(dragMode === "link" ? "none" : "link"))}
         >
           <Link2 className="size-4 mr-1" />
-          {dragMode === "link" ? "Linking\u2026 (click two endpoints)" : "Link two TLs"}
+          {dragMode === "link"
+            ? t("contributeTLsPage.previewMap.linking")
+            : t("contributeTLsPage.previewMap.linkTwoTls")}
         </Button>
         <div className="flex items-center gap-2">
           <Switch
@@ -379,12 +383,11 @@ export function TLPreviewMap({ serverSegments }: TLPreviewMapProps) {
             onCheckedChange={(v) => dispatch(setShowCandidates(v))}
           />
           <Label htmlFor="contribute-show-candidates" className="text-xs">
-            Show pairing candidates
+            {t("contributeTLsPage.previewMap.showPairingCandidates")}
           </Label>
         </div>
         <span className="text-xs text-muted-foreground">
-          Drag a square handle to move an endpoint. Endpoints snap to existing user-TL endpoints
-          within {EXACT_MATCH_RADIUS} blocks.
+          {t("contributeTLsPage.previewMap.dragHelp", { radius: EXACT_MATCH_RADIUS })}
         </span>
       </div>
 
@@ -440,6 +443,7 @@ interface InnerProps {
 }
 
 function MapViewerWithUserTLs(props: InnerProps) {
+  const { t } = useTranslation();
   const {
     serverSegments,
     interactionsLocked,
@@ -460,11 +464,18 @@ function MapViewerWithUserTLs(props: InnerProps) {
     selectedTL,
   } = props;
   const { tileSet, stats, isLoading, error } = useTopsMapData();
+  const statusLabel: Record<TLStatus, string> = {
+    existing: t("contributeTLsPage.previewMap.statuses.existing"),
+    "new-confirmed": t("contributeTLsPage.previewMap.statuses.newConfirmed"),
+    "new-unconfirmed": t("contributeTLsPage.previewMap.statuses.newNeedsReview"),
+    unpaired: t("contributeTLsPage.previewMap.statuses.unpaired"),
+    invalid: t("contributeTLsPage.previewMap.statuses.invalid"),
+  };
 
   if (error) {
     return (
       <div className="rounded-md border border-red-500/50 bg-red-50 p-4 text-sm text-red-700">
-        Failed to load the global map: {error}
+        {t("contributeTLsPage.previewMap.globalMapLoadFailed", { error })}
       </div>
     );
   }
@@ -472,7 +483,9 @@ function MapViewerWithUserTLs(props: InnerProps) {
     return (
       <div className="flex items-center justify-center rounded-md border bg-muted/30 p-12 text-sm text-muted-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
-        {isLoading ? "Loading map\u2026" : "Map unavailable"}
+        {isLoading
+          ? t("contributeTLsPage.previewMap.loadingMap")
+          : t("contributeTLsPage.previewMap.mapUnavailable")}
       </div>
     );
   }
@@ -481,7 +494,7 @@ function MapViewerWithUserTLs(props: InnerProps) {
     <MapViewer
       tileSet={tileSet}
       stats={stats}
-      alt="Contribute translocators preview map"
+      alt={t("contributeTLsPage.previewMap.mapAlt")}
       showTLLegend
       tlLegendShowContributeColors
       overlaySegments={serverSegments}
@@ -583,7 +596,7 @@ function MapViewerWithUserTLs(props: InnerProps) {
                         onSelectTL(tl.localId);
                       }}
                       onDoubleClick={() => onEditTL(tl.localId)}
-                      tooltip={`${STATUS_LABEL[tl.status]} \u2014 ${tl.endpointB!.label}`}
+                      tooltip={`${statusLabel[tl.status]} \u2014 ${tl.endpointB!.label}`}
                     />
                   );
                 }
@@ -601,7 +614,7 @@ function MapViewerWithUserTLs(props: InnerProps) {
                       onPointerDown={(e) => onEndpointPointerDown(e, tl, "A", aPos.x, aPos.y)}
                       onClick={() => onSelectTL(tl.localId)}
                       onDoubleClick={() => onEditTL(tl.localId)}
-                      tooltip={`${STATUS_LABEL[tl.status]} \u2014 ${tl.endpointA.label}`}
+                      tooltip={`${statusLabel[tl.status]} \u2014 ${tl.endpointA.label}`}
                     />
                     {bSquare}
                   </g>
@@ -643,7 +656,10 @@ function MapViewerWithUserTLs(props: InnerProps) {
                         }}
                       >
                         <title>
-                          Click to pair with this translocator ({ep.x}, {ep.z})
+                          {t("contributeTLsPage.previewMap.candidateTooltip", {
+                            x: ep.x,
+                            z: ep.z,
+                          })}
                         </title>
                       </line>
                     </g>

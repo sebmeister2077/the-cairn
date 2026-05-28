@@ -1,89 +1,110 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Trans, useTranslation } from "@/lib/i18n";
 
 export function GeneralPage() {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cairn</CardTitle>
+        <CardTitle>{t("generalPage.title")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 text-sm text-muted-foreground">
         <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
-          <strong>Unofficial fan project.</strong> This site is not affiliated with, endorsed by, or
-          sponsored by Anego Studios, the developers of <em>Vintage Story</em>. “Vintage Story” is a
-          trademark of Anego Studios.
+          <Trans
+            path="generalPage.disclaimer"
+            components={{
+              strong: <strong />,
+              em: <em />,
+            }}
+          />
         </div>
         <p className="rounded border border-border bg-muted/40 p-3 italic">
-          <strong className="not-italic text-foreground">
-            <a
-              href="https://en.wikipedia.org/wiki/Cairn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline decoration-dotted underline-offset-2 hover:text-primary"
-            >
-              cairn
-            </a>
-          </strong>{" "}
-          <span className="not-italic">(noun)</span>: what your ancestors built when they ran out of
-          dye and signs but still needed to mark the spot where they died to a drifter. We&rsquo;ve
-          upgraded the tech a little.
+          <Trans
+            path="generalPage.cairnDefinition"
+            components={{
+              strong: <strong className="not-italic text-foreground" />,
+              link: (
+                <a
+                  href="https://en.wikipedia.org/wiki/Cairn"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline decoration-dotted underline-offset-2 hover:text-primary"
+                />
+              ),
+              noun: <span className="not-italic" />,
+            }}
+          />
         </p>
-        <p>
-          A web toolkit for managing Vintage Story waypoints and map data. Choose a category above
-          to get started.
-        </p>
+        <p>{t("generalPage.intro")}</p>
         <div className="grid gap-3">
           <div>
-            <p className="font-medium text-foreground">Singleplayer</p>
+            <p className="font-medium text-foreground">{t("generalPage.singleplayerTitle")}</p>
             <ul className="list-disc list-inside space-y-1 ml-1">
               <li>
-                <strong>Extract</strong> &mdash; pull waypoints out of your{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.vcdbs</code> save
-                file into JSON.
+                <strong>{t("app.nav.subtabs.extract")}</strong> &mdash;{" "}
+                <Trans
+                  path="generalPage.extractDescription"
+                  components={{
+                    code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+                  }}
+                />
               </li>
               <li>
-                <strong>Import</strong> &mdash; write waypoints back into a save file (append or
-                replace).
+                <strong>{t("app.nav.subtabs.import")}</strong> &mdash;{" "}
+                {t("generalPage.importDescription")}
               </li>
               <li>
-                <strong>Commands</strong> &mdash; generate{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">
-                  /waypoint addati
-                </code>{" "}
-                chat commands from a JSON list.
+                <strong>{t("app.nav.subtabs.commands")}</strong> &mdash;{" "}
+                <Trans
+                  path="generalPage.commandsDescription"
+                  components={{
+                    code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+                  }}
+                />
               </li>
               <li>
-                <strong>Delete</strong> &mdash; remove matching waypoints from a save file by name,
-                icon, or colour.
+                <strong>{t("app.nav.subtabs.delete")}</strong> &mdash;{" "}
+                {t("generalPage.deleteDescription")}
               </li>
             </ul>
             <p className="text-xs italic mt-2">
-              Singleplayer tools only touch the waypoints table of the
-              <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono mx-1">.vcdbs</code>
-              file you upload &mdash; nothing else is read or modified, and the uploaded file is
-              held in memory only for the duration of the request, then discarded. Your world data
-              never leaves your machine permanently.
+              <Trans
+                path="generalPage.singleplayerNote"
+                components={{
+                  code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono mx-1" />,
+                }}
+              />
             </p>
           </div>
           <div>
-            <p className="font-medium text-foreground">Multiplayer</p>
+            <p className="font-medium text-foreground">{t("generalPage.multiplayerTitle")}</p>
             <ul className="list-disc list-inside space-y-1 ml-1">
               <li>
-                <strong>Identify Maps</strong> &mdash; figure out which{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> map
-                cache files belong to which server using your client log.
+                <strong>{t("app.nav.subtabs.identifyMaps")}</strong> &mdash;{" "}
+                <Trans
+                  path="generalPage.identifyMapsDescription"
+                  components={{
+                    code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+                  }}
+                />
               </li>
               <li>
-                <strong>Local Map Viewer</strong> &mdash; render and explore a cached map{" "}
-                <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">.db</code> file as
-                an interactive image.
+                <strong>{t("app.nav.subtabs.localMapViewer")}</strong> &mdash;{" "}
+                <Trans
+                  path="generalPage.localMapViewerDescription"
+                  components={{
+                    code: <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono" />,
+                  }}
+                />
               </li>
               <li>
-                <strong>TOPS Map Viewer</strong> &mdash; explore the community-contributed global
-                server map.
+                <strong>{t("app.nav.subtabs.topsMapViewer")}</strong> &mdash;{" "}
+                {t("generalPage.topsMapViewerDescription")}
               </li>
               <li>
-                <strong>Contribute</strong> &mdash; upload your map cache to help build a shared
-                community map for your server.
+                <strong>{t("app.nav.subtabs.contributeMap")}</strong> &mdash;{" "}
+                {t("generalPage.contributeDescription")}
               </li>
             </ul>
           </div>

@@ -26,6 +26,7 @@ import {
   requestTLScreenshotUploadUrls,
   uploadScreenshotToR2,
 } from "@/lib/api";
+import { useTranslation } from "@/lib/i18n";
 import { MaintenanceChip } from "../MaintenanceChip";
 
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -45,6 +46,7 @@ interface Props {
 
 export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [slotA, setSlotA] = useState<SlotState>(EMPTY_SLOT);
   const [slotB, setSlotB] = useState<SlotState>(EMPTY_SLOT);
   const [label, setLabel] = useState("");
@@ -60,34 +62,40 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
     slotBRef.current = slotB;
   }, [slotB]);
 
-  const pickFile = useCallback((file: File | null, slot: "a" | "b") => {
-    const setter = slot === "a" ? setSlotA : setSlotB;
-    if (file == null) {
-      setter(EMPTY_SLOT);
-      return;
-    }
-    if (!ACCEPTED_TYPES.includes(file.type)) {
+  const pickFile = useCallback(
+    (file: File | null, slot: "a" | "b") => {
+      const setter = slot === "a" ? setSlotA : setSlotB;
+      if (file == null) {
+        setter(EMPTY_SLOT);
+        return;
+      }
+      if (!ACCEPTED_TYPES.includes(file.type)) {
+        setter({
+          file: null,
+          previewUrl: null,
+          error: t("contributeTLsPage.screenshots.pngOnly"),
+        });
+        return;
+      }
+      if (file.size > MAX_BYTES) {
+        setter({
+          file: null,
+          previewUrl: null,
+          error: t("contributeTLsPage.screenshots.imageTooLarge", {
+            size: Math.round(file.size / 1024),
+            max: MAX_BYTES / 1024,
+          }),
+        });
+        return;
+      }
       setter({
-        file: null,
-        previewUrl: null,
-        error: "Only PNG images are accepted (Vintage Story default screenshot format).",
+        file,
+        previewUrl: URL.createObjectURL(file),
+        error: null,
       });
-      return;
-    }
-    if (file.size > MAX_BYTES) {
-      setter({
-        file: null,
-        previewUrl: null,
-        error: `Image too large (${Math.round(file.size / 1024)} KiB > ${MAX_BYTES / 1024} KiB).`,
-      });
-      return;
-    }
-    setter({
-      file,
-      previewUrl: URL.createObjectURL(file),
-      error: null,
-    });
-  }, []);
+    },
+    [t],
+  );
 
   // Decide which slot a pasted/dropped image should fill.
   const targetSlotForPaste = useCallback((): "a" | "b" | null => {
@@ -102,7 +110,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
     (file: File, preferredSlot?: "a" | "b") => {
       const slot = preferredSlot ?? targetSlotForPaste();
       if (slot == null) {
-        setPasteHint("Both slots already have an image. Remove one first to paste a new image.");
+        setPasteHint(t("contributeTLsPage.screenshots.bothSlotsFilled"));
         return;
       }
       // Snipping Tool drops files as "image.png"; give them a more useful name.
@@ -111,9 +119,9 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
           ? file
           : new File([file], `pasted-screenshot-${slot}-${Date.now()}.png`, { type: file.type });
       pickFile(named, slot);
-      setPasteHint(`Pasted into Screenshot ${slot.toUpperCase()}.`);
+      setPasteHint(t("contributeTLsPage.screenshots.pastedInto", { slot: slot.toUpperCase() }));
     },
-    [pickFile, targetSlotForPaste],
+    [pickFile, t, targetSlotForPaste],
   );
 
   // Global paste handler scoped to when the card is mounted. Active anywhere
@@ -147,9 +155,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
         read?: () => Promise<ClipboardItems>;
       };
       if (typeof clipboard.read !== "function") {
-        setPasteHint(
-          "Your browser doesn't support reading images from the clipboard. Press Ctrl+V instead.",
-        );
+        setPasteHint(t("contributeTLsPage.screenshots.browserClipboardUnsupported"));
         return;
       }
       try {
@@ -167,22 +173,22 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
             return;
           }
         }
-        setPasteHint("No image found on the clipboard. Take a screenshot first (Shift+Win+S).");
+        setPasteHint(t("contributeTLsPage.screenshots.noImageOnClipboard"));
       } catch (err) {
         setPasteHint(
           err instanceof Error && err.name === "NotAllowedError"
-            ? "Clipboard permission denied. You can still press Ctrl+V to paste."
-            : "Couldn't read the clipboard. You can still press Ctrl+V to paste.",
+            ? t("contributeTLsPage.screenshots.clipboardPermissionDenied")
+            : t("contributeTLsPage.screenshots.clipboardReadFailed"),
         );
       }
     },
-    [acceptPastedImage],
+    [acceptPastedImage, t],
   );
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!slotA.file || !slotB.file) {
-        throw new Error("Both screenshots are required.");
+        throw new Error(t("contributeTLsPage.screenshots.bothRequired"));
       }
       const urls = await requestTLScreenshotUploadUrls();
       // Upload both in parallel; if either fails the request stays pending
@@ -206,25 +212,25 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
       if (err instanceof ApiError) {
         const detail = err.message;
         if (err.status === 404) {
-          setSubmitError("Screenshot contributions are currently disabled by the admin.");
+          setSubmitError(t("contributeTLsPage.screenshots.disabled"));
           return;
         }
         if (err.status === 403) {
-          setSubmitError("You need an account to submit screenshot contributions.");
+          setSubmitError(t("contributeTLsPage.screenshots.needsAccount"));
           return;
         }
         if (err.status === 429) {
           setSubmitError(
-            typeof detail === "string"
-              ? detail
-              : "You already have too many pending screenshot requests. Wait for the admin to review them.",
+            typeof detail === "string" ? detail : t("contributeTLsPage.screenshots.tooManyPending"),
           );
           return;
         }
         setSubmitError(typeof detail === "string" ? detail : `HTTP ${err.status}`);
         return;
       }
-      setSubmitError(err instanceof Error ? err.message : "Submission failed.");
+      setSubmitError(
+        err instanceof Error ? err.message : t("contributeTLsPage.screenshots.submissionFailed"),
+      );
     },
   });
 
@@ -234,41 +240,27 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
     <Card>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
-          Submit a translocator pair via screenshots
+          {t("contributeTLsPage.screenshots.title")}
           <MaintenanceChip component="tops_contribute_tls_screenshot" />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Take a screenshot at <strong>each</strong> end of the translocator. The screenshot must
-          clearly show the <strong>in-game minimap</strong> (top-right corner) and the{" "}
-          <strong>coordinate readout</strong> (default: bottom of the HUD, e.g.{" "}
-          <code>X=1234 Y=110 Z=-5678</code>). We use OCR to read the coordinates and compare the
-          minimap against the server map to verify authenticity. An admin reviews every submission
-          before it's added to the live map. Need examples? Read the{" "}
+          {t("contributeTLsPage.screenshots.descriptionPrefix")} <code>X=1234 Y=110 Z=-5678</code>
+          {t("contributeTLsPage.screenshots.descriptionSuffix")}{" "}
           <NavLink
             to="/blog/submitting-translocator-screenshots"
             className="underline decoration-dotted underline-offset-2 hover:text-primary"
           >
-            Screenshot submission guide
+            {t("contributeTLsPage.screenshots.guide")}
           </NavLink>
           .
         </p>
-        <p className="text-xs text-muted-foreground">
-          Tip: use <kbd className="rounded border px-1">Shift</kbd>+
-          <kbd className="rounded border px-1">Win</kbd>+
-          <kbd className="rounded border px-1">S</kbd> (Windows) or{" "}
-          <kbd className="rounded border px-1">Shift</kbd>+
-          <kbd className="rounded border px-1">Cmd</kbd>+
-          <kbd className="rounded border px-1">4</kbd> (macOS) to capture, then press{" "}
-          <kbd className="rounded border px-1">Ctrl</kbd>+
-          <kbd className="rounded border px-1">V</kbd> anywhere on this page — the image will fill
-          the next empty slot.
-        </p>
+        <p className="text-xs text-muted-foreground">{t("contributeTLsPage.screenshots.tip")}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <SlotPicker
-            label="Screenshot A (first endpoint)"
+            label={t("contributeTLsPage.screenshots.screenshotA")}
             slot={slotA}
             onPick={(f) => pickFile(f, "a")}
             onClear={() => setSlotA(EMPTY_SLOT)}
@@ -276,7 +268,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
             disabled={mutation.isPending}
           />
           <SlotPicker
-            label="Screenshot B (second endpoint)"
+            label={t("contributeTLsPage.screenshots.screenshotB")}
             slot={slotB}
             onPick={(f) => pickFile(f, "b")}
             onClear={() => setSlotB(EMPTY_SLOT)}
@@ -292,13 +284,15 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
         )}
 
         <div className="space-y-1">
-          <Label htmlFor="tl-screenshot-label">Optional label</Label>
+          <Label htmlFor="tl-screenshot-label">
+            {t("contributeTLsPage.screenshots.optionalLabel")}
+          </Label>
           <Input
             id="tl-screenshot-label"
             type="text"
             value={label}
             onChange={(e) => setLabel(e.target.value)}
-            placeholder="e.g. Spawn -> NE outpost"
+            placeholder={t("contributeTLsPage.screenshots.optionalLabelPlaceholder")}
             maxLength={200}
             disabled={mutation.isPending}
           />
@@ -317,7 +311,7 @@ export function ScreenshotPairUploadCard({ onSubmitted }: Props) {
           <Button type="button" disabled={!canSubmit} onClick={() => mutation.mutate()}>
             {mutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
             <Upload className="mr-2 size-4" />
-            Submit for review
+            {t("contributeTLsPage.screenshots.submitForReview")}
           </Button>
         </div>
       </CardContent>
@@ -335,6 +329,8 @@ interface SlotPickerProps {
 }
 
 function SlotPicker({ label, slot, onPick, onClear, onPasteClick, disabled }: SlotPickerProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
@@ -342,7 +338,7 @@ function SlotPicker({ label, slot, onPick, onClear, onPasteClick, disabled }: Sl
         <div className="relative">
           <img
             src={slot.previewUrl}
-            alt={`${label} preview`}
+            alt={t("contributeTLsPage.screenshots.previewAlt", { label })}
             className="w-full max-h-64 object-contain rounded-md border border-border bg-muted"
           />
           <button
@@ -350,7 +346,7 @@ function SlotPicker({ label, slot, onPick, onClear, onPasteClick, disabled }: Sl
             onClick={onClear}
             disabled={disabled}
             className="absolute top-2 right-2 rounded-full bg-background/80 hover:bg-background border border-border p-1 disabled:opacity-50"
-            aria-label="Remove image"
+            aria-label={t("contributeTLsPage.screenshots.removeImage")}
           >
             <X className="size-4" />
           </button>
@@ -375,7 +371,7 @@ function SlotPicker({ label, slot, onPick, onClear, onPasteClick, disabled }: Sl
             className="w-full"
           >
             <ClipboardPaste className="mr-2 size-4" />
-            Paste from clipboard
+            {t("contributeTLsPage.screenshots.pasteFromClipboard")}
           </Button>
         </div>
       )}
