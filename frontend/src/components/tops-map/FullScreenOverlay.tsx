@@ -110,12 +110,12 @@ export function FullscreenControlsOverlay({
   );
 
   // Oceans overlay is a special case: it's very expensive to render, so we want to keep it off by default and let users explicitly opt in when they want to see it. Because of this, its visibility state is kept local and not synced to the Redux store (unlike the other overlays), so it won't affect users who don't care about oceans and won't be accidentally toggled on by users who do.
-  const [showOceans, setShowOceans] = useState(false);
-  // const showOceans = useAppSelector((s) => s.mapView.showOceans);
-  // const setShowOceans = useCallback(
-  //   (next: boolean) => dispatch(setShowOceansAction(next)),
-  //   [dispatch],
-  // );
+  // const [showOceans, setShowOceans] = useState(false);
+  const showOceans = useAppSelector((s) => s.mapView.showOceans);
+  const setShowOceans = useCallback(
+    (next: boolean) => dispatch(setShowOceansAction(next)),
+    [dispatch],
+  );
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
   const toggleTraderType = useCallback(
