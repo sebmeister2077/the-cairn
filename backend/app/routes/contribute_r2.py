@@ -1613,6 +1613,13 @@ _MATCH_SIMILAR_THRESHOLD = 8
 # Per-channel tolerance for "match" — VS map renderer can vary by ±1 from
 # anti-aliasing rounding even on identical tiles, so be lenient.
 _MATCH_PIXEL_TOLERANCE = 6
+# Cap the per-tile pixel scan at this many overlapping tiles. Overlaps above
+# the cap are scored from a uniform random sample (SQLite ORDER BY RANDOM())
+# — overlap_count and tile_overlap_pct stay exact, but pixel_similar_pct is
+# estimated from the sample. Production overlaps frequently exceed 100k
+# tiles and the full scan dominates worker latency; 30k keeps the estimate
+# tight (≈ ±0.6pp 95% CI for a 50% true rate) while running ~4× faster.
+_MATCH_SAMPLE_CAP = 30_000
 
 
 def _pixel_close(a: tuple, b: tuple) -> bool:
@@ -1679,42 +1686,94 @@ def _compute_match_score(
         safe_path = pending_path.replace("'", "''")
         combined_conn.execute(f"ATTACH DATABASE '{safe_path}' AS pend")
 
-        overlap_count = 0
+        # When a region is set the in-loop bbox filter discards many rows; we
+        # need the exact count of *post-filter* overlap to decide whether to
+        # sample and to report an accurate ``tile_overlap_pct``. Without a
+        # region, SQL COUNT(*) on the join is the exact figure.
+        rmin_x = rmax_x = rmin_z = rmax_z = 0
+        if region is not None:
+            rmin_x, rmax_x, rmin_z, rmax_z = region
+
+        def _in_region(pos: int) -> bool:
+            if region is None:
+                return True
+            tx, ty = decode_position(pos)
+            tile_min_x = tx * TILE_SIZE - DEFAULT_MAP_MIDDLE
+            tile_min_z = ty * TILE_SIZE - DEFAULT_MAP_MIDDLE
+            tile_max_x = tile_min_x + TILE_SIZE - 1
+            tile_max_z = tile_min_z + TILE_SIZE - 1
+            return not (
+                tile_max_x < rmin_x or tile_min_x > rmax_x
+                or tile_max_z < rmin_z or tile_min_z > rmax_z
+            )
+
+        if region is None:
+            overlap_count = combined_conn.execute(
+                f"""SELECT COUNT(*) FROM main.{MAPPIECE_TABLE} m
+                    INNER JOIN pend.{MAPPIECE_TABLE} p ON m.position = p.position"""
+            ).fetchone()[0] or 0
+        else:
+            # With a region we still need to filter in Python (positions
+            # encode a 2D coord, not a single range), so do a streaming
+            # position-only pass first to learn the post-filter overlap.
+            cur_pos = combined_conn.execute(
+                f"""SELECT main.{MAPPIECE_TABLE}.position
+                    FROM main.{MAPPIECE_TABLE}
+                    INNER JOIN pend.{MAPPIECE_TABLE}
+                      ON main.{MAPPIECE_TABLE}.position
+                       = pend.{MAPPIECE_TABLE}.position"""
+            )
+            overlap_count = sum(1 for (p,) in cur_pos if _in_region(p))
+
+        sampled = overlap_count > _MATCH_SAMPLE_CAP
+        # When sampling we may need to oversample a bit so the post-region
+        # filter still leaves us at or above _MATCH_SAMPLE_CAP rows.
+        if sampled:
+            limit = (
+                _MATCH_SAMPLE_CAP if region is None
+                else min(
+                    overlap_count,
+                    int(_MATCH_SAMPLE_CAP * 1.05) + 16,
+                )
+            )
+            cur = combined_conn.execute(
+                f"""SELECT main.{MAPPIECE_TABLE}.position,
+                           main.{MAPPIECE_TABLE}.data,
+                           pend.{MAPPIECE_TABLE}.data
+                    FROM main.{MAPPIECE_TABLE}
+                    INNER JOIN pend.{MAPPIECE_TABLE}
+                      ON main.{MAPPIECE_TABLE}.position
+                       = pend.{MAPPIECE_TABLE}.position
+                    ORDER BY RANDOM()
+                    LIMIT {int(limit)}"""
+            )
+        else:
+            cur = combined_conn.execute(
+                f"""SELECT main.{MAPPIECE_TABLE}.position,
+                           main.{MAPPIECE_TABLE}.data,
+                           pend.{MAPPIECE_TABLE}.data
+                    FROM main.{MAPPIECE_TABLE}
+                    INNER JOIN pend.{MAPPIECE_TABLE}
+                      ON main.{MAPPIECE_TABLE}.position
+                       = pend.{MAPPIECE_TABLE}.position"""
+            )
+
         tiles_scanned = 0
         tiles_similar = 0
-
-        cur = combined_conn.execute(
-            f"""SELECT main.{MAPPIECE_TABLE}.position,
-                       main.{MAPPIECE_TABLE}.data,
-                       pend.{MAPPIECE_TABLE}.data
-                FROM main.{MAPPIECE_TABLE}
-                INNER JOIN pend.{MAPPIECE_TABLE}
-                  ON main.{MAPPIECE_TABLE}.position = pend.{MAPPIECE_TABLE}.position"""
-        )
+        rows_examined = 0
 
         for pos, combined_blob, pending_blob in cur:
-            if region is not None:
-                # Filter by region — convert tile position → world block bounds.
-                # ``decode_position`` returns absolute tile coords; ``region``
-                # is signed in-game world blocks, so shift the tile's bounds
-                # down by ``DEFAULT_MAP_MIDDLE`` before comparing.
-                tx, ty = decode_position(pos)
-                tile_min_x = tx * TILE_SIZE - DEFAULT_MAP_MIDDLE
-                tile_min_z = ty * TILE_SIZE - DEFAULT_MAP_MIDDLE
-                tile_max_x = tile_min_x + TILE_SIZE - 1
-                tile_max_z = tile_min_z + TILE_SIZE - 1
-                rmin_x, rmax_x, rmin_z, rmax_z = region
-                if (tile_max_x < rmin_x or tile_min_x > rmax_x
-                        or tile_max_z < rmin_z or tile_min_z > rmax_z):
-                    continue
-
-            overlap_count += 1
+            if not _in_region(pos):
+                continue
+            if sampled and rows_examined >= _MATCH_SAMPLE_CAP:
+                # Don't scan beyond the cap once we have enough post-filter rows.
+                break
+            rows_examined += 1
             try:
                 samples_a = _sample_n_pixels(combined_blob, _MATCH_PIXELS_PER_TILE, pos)
                 samples_b = _sample_n_pixels(pending_blob, _MATCH_PIXELS_PER_TILE, pos)
             except Exception:
-                # Non-decodable blob — skip the pixel comparison for this tile
-                # but still count it as overlapping.
+                # Non-decodable blob — skip the pixel comparison.
                 continue
 
             denominator = 0
@@ -1755,6 +1814,8 @@ def _compute_match_score(
         "tiles_scanned": tiles_scanned,
         "tiles_similar": tiles_similar,
         "region": region,
+        "sampled": sampled,
+        "sample_size": (rows_examined if sampled else 0),
     }
 
 
@@ -1781,6 +1842,46 @@ def _compute_match_score_for_contribution(cid: str) -> dict:
             os.unlink(pending_tmp)
         except OSError:
             pass
+
+
+def _old_archive_is_strict_subset(old_db_path: str, new_db_path: str) -> bool:
+    """Return True iff ``old_db_path``'s set of ``mappiece.position`` values
+    is a strict subset of ``new_db_path``'s — i.e. the new map covers every
+    position of the old one *and* has more rows total. Both files are read
+    via SQLite's ATTACH; only the indexed integer PK is consulted (no blob
+    fetches), so the check is fast even for ~1 GiB archives.
+
+    Used by ``dedupe_archive`` to decide whether the new contribution
+    strictly supersedes the old (same source map, more data).
+    """
+    new_conn = sqlite3.connect(new_db_path)
+    try:
+        safe_old = old_db_path.replace("'", "''")
+        new_conn.execute(f"ATTACH DATABASE '{safe_old}' AS old")
+        try:
+            new_count = new_conn.execute(
+                f"SELECT COUNT(*) FROM main.{MAPPIECE_TABLE}"
+            ).fetchone()[0] or 0
+            old_count = new_conn.execute(
+                f"SELECT COUNT(*) FROM old.{MAPPIECE_TABLE}"
+            ).fetchone()[0] or 0
+            if old_count == 0 or new_count <= old_count:
+                return False
+            missing = new_conn.execute(
+                f"""SELECT 1 FROM old.{MAPPIECE_TABLE} o
+                    LEFT JOIN main.{MAPPIECE_TABLE} m
+                      ON m.position = o.position
+                    WHERE m.position IS NULL
+                    LIMIT 1"""
+            ).fetchone()
+            return missing is None
+        finally:
+            try:
+                new_conn.execute("DETACH DATABASE old")
+            except sqlite3.OperationalError:
+                pass
+    finally:
+        new_conn.close()
 
 
 # ===========================================================================
@@ -3172,6 +3273,27 @@ def run_approval_merge(contribution_id: str) -> dict:
         except Exception:
             # Do not fail approval if archive move fails; keep pending object as fallback.
             archive_moved = False
+
+    # Per-submitter archive dedupe — when this is a full-DB gap-fill upload
+    # and the submitter has a prior approved archive that this one strictly
+    # supersedes, the worker deletes the old R2 blob. Best-effort and
+    # backgrounded so it never blocks approval. With ``compress_artefacts``
+    # ON the archive isn't actually in R2 yet — the compress worker calls
+    # ``dedupe_archive.start_job`` on its own after a successful upload, so
+    # we skip the inline kick to avoid racing the compress upload.
+    if (
+        archive_moved
+        and update_region is None
+        and not _compress_on
+        and meta.get("submitted_by_key_id")
+    ):
+        try:
+            from ..tasks import dedupe_archive
+            dedupe_archive.start_job(contribution_id)
+        except Exception:
+            logger.exception(
+                "dedupe_archive: schedule failed for %s", contribution_id,
+            )
 
     # Promote the preview into the history bucket so it remains accessible
     # to the "Recent contributions" grid. Previews are kept indefinitely;

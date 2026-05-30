@@ -5,6 +5,10 @@ export type MatchScore = {
     pixel_similar_pct?: number;
     overlap_count?: number;
     pending_total?: number;
+    // Set when overlap_count > backend sample cap; pixel_similar_pct is then
+    // estimated from sample_size randomly-drawn overlapping tiles.
+    sampled?: boolean;
+    sample_size?: number;
     reason?: string;
 }
 

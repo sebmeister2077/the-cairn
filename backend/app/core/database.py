@@ -417,6 +417,27 @@ CREATE INDEX IF NOT EXISTS idx_contributions_update_region
     ON contributions (update_region_min_x)
     WHERE update_region_min_x IS NOT NULL;
 
+-- Per-submitter archive dedupe: when a user uploads an updated full-map
+-- gap-fill that strictly supersedes their previous approved upload, the
+-- ``dedupe_archive`` worker deletes the older ``archived/<id>.db[.zst]``
+-- and records the supersession here so the audit trail and history grid
+-- can render it. ``archive_deleted_at`` is non-NULL exactly when the R2
+-- object was intentionally removed by dedupe (distinct from cleanup-
+-- history's retention sweep, which clears preview_retained_until).
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS superseded_by_cid TEXT;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS superseded_at TIMESTAMPTZ;
+ALTER TABLE contributions
+ADD COLUMN IF NOT EXISTS archive_deleted_at TIMESTAMPTZ;
+CREATE INDEX IF NOT EXISTS idx_contributions_supersedable
+    ON contributions (submitted_by_key_id, approved_at DESC)
+    WHERE status = 'approved'
+      AND superseded_by_cid IS NULL
+      AND archive_deleted_at IS NULL
+      AND archived_is_region_pruned IS NOT TRUE
+      AND update_region_min_x IS NULL;
+
 -- Invite-link traceability: record which invite minted each API key so
 -- admins can audit who claimed a given link. NULL for keys created via
 -- the admin route or the legacy paths that pre-date this column.
@@ -859,6 +880,54 @@ def set_archive_pruned_metadata(
                            archived_dst_bytes = %s
                      WHERE id = %s""",
                 (int(kept_tiles), int(src_bytes), int(dst_bytes), cid),
+            )
+
+
+def get_previous_supersedable_archive(
+    submitted_by_key_id: str,
+    exclude_cid: str,
+) -> Optional[dict]:
+    """Newest approved full-DB gap-fill archive by ``submitted_by_key_id`` that
+    is eligible for dedupe by a newer upload from the same submitter.
+
+    Excludes region-pruned archives (different shape, no point comparing),
+    rows whose archive was already dedupe-deleted, rows already marked
+    superseded, and the new contribution itself (``exclude_cid``).
+    """
+    if not submitted_by_key_id:
+        return None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, tile_count, approved_at
+                       FROM contributions
+                      WHERE submitted_by_key_id = %s
+                        AND status = 'approved'
+                        AND id != %s
+                        AND superseded_by_cid IS NULL
+                        AND archive_deleted_at IS NULL
+                        AND (archived_is_region_pruned IS NOT TRUE)
+                        AND update_region_min_x IS NULL
+                      ORDER BY approved_at DESC NULLS LAST
+                      LIMIT 1""",
+                (submitted_by_key_id, exclude_cid),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def mark_archive_superseded(old_cid: str, new_cid: str) -> None:
+    """Record that ``old_cid``'s archived .db has been deleted in favour of
+    ``new_cid`` (which strictly contains every position of the old one)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE contributions
+                       SET superseded_by_cid = %s,
+                           superseded_at = now(),
+                           archive_deleted_at = now()
+                     WHERE id = %s""",
+                (new_cid, old_cid),
             )
 
 

@@ -68,6 +68,8 @@ export function MatchScoreBadge({
   const overlap = score.tile_overlap_pct ?? 0;
   const overlapCount = score.overlap_count ?? 0;
   const total = score.pending_total ?? 0;
+  const sampled = score.sampled === true;
+  const sampleSize = score.sample_size ?? 0;
 
   // Plan thresholds: ≥80% green ("looks like our map"), <20% orange
   // ("may be wrong file"), in between grey/neutral.
@@ -89,13 +91,21 @@ export function MatchScoreBadge({
       <Badge variant="outline" className={badgeClass}>
         {label}
       </Badge>
-      <span className="text-muted-foreground">
+      <span
+        className="text-muted-foreground"
+        title={
+          sampled
+            ? `Pixel similarity estimated from a random sample of ${sampleSize.toLocaleString()} of ${overlapCount.toLocaleString()} overlapping tiles.`
+            : undefined
+        }
+      >
         {t("contributePage.matchScore.overlapSummary", {
           overlap: overlap.toFixed(0),
           overlapCount: overlapCount.toLocaleString(),
           total: total.toLocaleString(),
           pixel: pixel.toFixed(0),
         })}
+        {sampled ? " (sampled)" : null}
       </span>
       {canRecompute && (
         <Button

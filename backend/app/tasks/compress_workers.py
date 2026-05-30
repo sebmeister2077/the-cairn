@@ -322,6 +322,27 @@ def _run_archive_compress(contribution_id: str) -> None:
             undo_replaced_raw, undo_replaced_zst, level, threads,
         )
 
+    # Per-submitter archive dedupe runs only after the archive upload has
+    # actually landed in R2 — kicking from the approve flow would race the
+    # compress worker. The dedupe worker itself checks contribution shape
+    # (gap-fill only, submitter set) before doing any work.
+    try:
+        from ..core import database as db
+        row = db.get_contribution(contribution_id)
+        if (
+            row
+            and row.get("status") == "approved"
+            and row.get("update_region_min_x") is None
+            and not row.get("archived_is_region_pruned")
+            and row.get("submitted_by_key_id")
+        ):
+            from . import dedupe_archive
+            dedupe_archive.start_job(contribution_id)
+    except Exception:
+        logger.exception(
+            "compress_workers: dedupe schedule failed for %s", contribution_id,
+        )
+
 
 def _compress_one_archive_artefact(
     src_key: str,
