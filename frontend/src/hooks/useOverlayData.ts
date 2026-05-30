@@ -29,7 +29,11 @@ export interface CachedOverlay<T> {
 }
 
 export const LANDMARKS_QUERY_KEY = ["overlay", "landmarks"] as const;
-export const TRANSLOCATORS_QUERY_KEY = ["overlay", "translocators"] as const;
+// Bump the version suffix whenever `parseTranslocators` starts producing
+// new fields — the persister replays the previously-parsed payload as
+// long as the etag matches, so without a key change old clients keep
+// seeing pre-change data forever.
+export const TRANSLOCATORS_QUERY_KEY = ["overlay", "translocators", "v2"] as const;
 export const TRADERS_QUERY_KEY = ["overlay", "traders"] as const;
 
 // Refresh ~1 minute before the server says the URL expires so the in-flight
