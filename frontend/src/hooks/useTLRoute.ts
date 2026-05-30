@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useTranslocatorsOverlay } from "@/hooks/useOverlayData";
+import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import {
     buildTLGraph,
     findRoutes,
@@ -79,9 +79,10 @@ export function useTLRoute(): UseTLRouteResult {
     const isComputing = useAppSelector((s) => s.routePlanner.isComputing);
     const error = useAppSelector((s) => s.routePlanner.error);
 
-    const translocatorsQuery = useTranslocatorsOverlay();
-    const segments = translocatorsQuery.data?.data ?? null;
-    const segmentsEtag = translocatorsQuery.data?.etag ?? null;
+    // Pull the segment set that matches the user's selected tile source
+    // (cairn vs WebCartographer) so the planner routes through exactly
+    // the TLs the map is drawing.
+    const { segments, etag: segmentsEtag } = useActiveTranslocators();
 
     const opts = useMemo<RouteOptions>(
         () => ({ walkSpeed, tlPenaltySeconds, kNeighbors }),

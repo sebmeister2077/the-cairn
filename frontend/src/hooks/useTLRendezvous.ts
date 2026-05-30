@@ -9,7 +9,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { useTranslocatorsOverlay } from "@/hooks/useOverlayData";
+import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import type {
     RendezvousResult,
     RouteOptions,
@@ -45,9 +45,9 @@ export function useTLRendezvous(): UseTLRendezvousResult {
     const isComputing = useAppSelector((s) => s.routePlanner.rendezvousIsComputing);
     const error = useAppSelector((s) => s.routePlanner.rendezvousError);
 
-    const translocatorsQuery = useTranslocatorsOverlay();
-    const segments = translocatorsQuery.data?.data ?? null;
-    const segmentsEtag = translocatorsQuery.data?.etag ?? null;
+    // Route against the same TL set the map is drawing — see
+    // `useActiveTranslocators` for the cairn/WC switch.
+    const { segments, etag: segmentsEtag } = useActiveTranslocators();
 
     const opts = useMemo<RouteOptions>(
         () => ({ walkSpeed, tlPenaltySeconds, kNeighbors }),
