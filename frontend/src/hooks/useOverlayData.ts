@@ -36,7 +36,7 @@ export const TRADERS_QUERY_KEY = ["overlay", "traders"] as const;
 // fetch can't race the deadline.
 const EXPIRY_GUARD_MS = 60_000;
 
-function parseLandmarks(json: unknown): WorldPointMarker[] {
+export function parseLandmarks(json: unknown): WorldPointMarker[] {
     const features = Array.isArray((json as { features?: unknown })?.features)
         ? ((json as { features: unknown[] }).features)
         : [];
@@ -65,7 +65,7 @@ function parseLandmarks(json: unknown): WorldPointMarker[] {
     return points;
 }
 
-function parseTranslocators(json: unknown): WorldLineSegment[] {
+export function parseTranslocators(json: unknown): WorldLineSegment[] {
     const features = Array.isArray((json as { features?: unknown })?.features)
         ? ((json as { features: unknown[] }).features)
         : [];

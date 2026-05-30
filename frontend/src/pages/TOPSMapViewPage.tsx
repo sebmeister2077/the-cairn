@@ -98,6 +98,10 @@ import {
   LANDMARKS_QUERY_KEY,
 } from "@/hooks/useOverlayData";
 import {
+  useWebCartographerLandmarks,
+  useWebCartographerTranslocators,
+} from "@/hooks/useWebCartographerOverlays";
+import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
   TRADER_TYPE_COLORS,
@@ -276,7 +280,12 @@ export function TOPSMapViewPage() {
   // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
   // their favourite groupings *and* still see freshly contributed segments
   // from the community.
-  const showRecentlyAddedTLs = useAppSelector((s) => s.mapView.showRecentlyAdded);
+  const showRecentlyAddedTLsRaw = useAppSelector((s) => s.mapView.showRecentlyAdded);
+  // WebCartographer's geojson exports don't carry an `addedAt` timestamp, so
+  // the "recently added" augmentation has no signal to work with there.
+  // Force-off in WC mode (the toggle UI is also hidden) without touching
+  // the persisted preference, so it comes back when switching to cairn.
+  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw && !usingWebCartographer;
   const toggleShowRecentlyAddedTLs = useCallback(
     () => dispatch(toggleShowRecentlyAddedAction()),
     [dispatch],
@@ -320,8 +329,27 @@ export function TOPSMapViewPage() {
   const landmarksQuery = useLandmarksOverlay();
   const translocatorsQuery = useTranslocatorsOverlay();
   const tradersQuery = useTradersOverlay();
-  const allLandmarks = landmarksQuery.data?.data;
-  const allTranslocators = translocatorsQuery.data?.data;
+  // When the WebCartographer source is selected we fetch translocators and
+  // landmarks from the WC host's own geojson exports instead of using ours.
+  // Our backend landmarks are still loaded so we can surface Terminus
+  // teleporters (WC has no concept of Terminus). Traders always come from
+  // the backend regardless of map source.
+  const wcTranslocatorsQuery = useWebCartographerTranslocators(
+    webCartographerUrl,
+    usingWebCartographer,
+  );
+  const wcLandmarksQuery = useWebCartographerLandmarks(webCartographerUrl, usingWebCartographer);
+  const backendLandmarks = landmarksQuery.data?.data;
+  const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
+    if (!usingWebCartographer) return backendLandmarks;
+    const wc = wcLandmarksQuery.data;
+    const terminus = (backendLandmarks ?? []).filter((p) => p.kind === "Terminus");
+    if (!wc) return terminus.length > 0 ? terminus : undefined;
+    return [...wc, ...terminus];
+  }, [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks]);
+  const allTranslocators = usingWebCartographer
+    ? wcTranslocatorsQuery.data
+    : translocatorsQuery.data?.data;
   const allTraders = tradersQuery.data?.data;
   // "Landmarks found" excludes Terminus — Terminus is surfaced via its own
   // toggle/count below.
@@ -1459,17 +1487,19 @@ export function TOPSMapViewPage() {
                 ) : null}
               </Button>
             </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Switch
-                checked={showRecentlyAddedTLs}
-                onCheckedChange={toggleShowRecentlyAddedTLs}
-                aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
-              />
-              <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
-              <span className="text-xs text-muted-foreground ml-2">
-                {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
-              </span>
-            </div>
+            {!usingWebCartographer && (
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showRecentlyAddedTLs}
+                  onCheckedChange={toggleShowRecentlyAddedTLs}
+                  aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
+                />
+                <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
+                </span>
+              </div>
+            )}
             <GroupEditingInfo
               editingGrouping={editingGrouping}
               setEditingGroupingId={setEditingGroupingId}

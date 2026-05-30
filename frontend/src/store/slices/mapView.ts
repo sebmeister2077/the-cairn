@@ -37,9 +37,10 @@ export type MapSource = "cairn" | "webcartographer";
 export const DEFAULT_WEBCARTOGRAPHER_URL = "https://tops-map.translocator.moe";
 
 /** Built-in preset hosts shown in the source selector dropdown. */
-export const WEBCARTOGRAPHER_PRESETS: Array<{ label: string; url: string }> = [
-    { label: "Translocator.moe (Th3Dilli)", url: "https://tops-map.translocator.moe" },
-    { label: "Old TOPS (vintagestory.at)", url: "https://map.oldtops.vintagestory.at" },
+export const WEBCARTOGRAPHER_PRESETS: Array<{ label: string; url: string, disabled?: boolean }> = [
+    { label: "Translocator.moe", url: "https://tops-map.translocator.moe" },
+    { label: "Old TOPS", url: "https://map.oldtops.vintagestory.at" },
+    { label: "TOPS", url: "https://map.tops.vintagestory.at" },
 ];
 
 export interface MapViewState {

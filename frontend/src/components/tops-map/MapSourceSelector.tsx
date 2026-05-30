@@ -102,7 +102,7 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
               </SelectTrigger>
               <SelectContent>
                 {WEBCARTOGRAPHER_PRESETS.map((p) => (
-                  <SelectItem key={p.url} value={p.url}>
+                  <SelectItem key={p.url} value={p.url} disabled={p.disabled}>
                     {p.label}
                   </SelectItem>
                 ))}

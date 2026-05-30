@@ -135,7 +135,13 @@ export function FullscreenControlsOverlay({
   // `meta.addedAt` falls inside RECENT_TL_WINDOW_MS — so a user can keep
   // their favourite groupings *and* still see freshly contributed segments
   // from the community.
-  const showRecentlyAddedTLs = useAppSelector((s) => s.mapView.showRecentlyAdded);
+  const showRecentlyAddedTLsRaw = useAppSelector((s) => s.mapView.showRecentlyAdded);
+  // WC geojson exports lack `addedAt` timestamps so the recently-added
+  // augmentation has no signal there. Mirror the gate in TOPSMapViewPage
+  // so the FS overlay matches: hide the toggle and force the effect off
+  // without clobbering the persisted preference.
+  const usingWebCartographer = useAppSelector((s) => s.mapView.mapSource) === "webcartographer";
+  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw && !usingWebCartographer;
   const toggleShowRecentlyAddedTLs = useCallback(
     (next?: boolean) => dispatch(toggleShowRecentlyAddedAction(next)),
     [dispatch],
@@ -196,6 +202,7 @@ export function FullscreenControlsOverlay({
             {
               "opacity-50": !showTranslocators,
               "cursor-pointer": showTranslocators,
+              "hidden": usingWebCartographer,
             },
           )}
         >
