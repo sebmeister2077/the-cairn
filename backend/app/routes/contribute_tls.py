@@ -139,6 +139,19 @@ _BATCH_RATE_MAX_DEFAULT = 3
 _BATCH_RATE_MAX_FLAG = "translocators_chatlog_daily_cap"
 _BATCH_RATE_WINDOW = 86400  # 24 hours
 
+# Manual TL entry (typed coordinates, no chat-log parsing). Independent
+# kill switch + daily cap so admins can disable just the manual path
+# without touching the chat-log flow. Submissions are instant — same
+# dedupe / write-lock / audit pipeline as the chat-log endpoint.
+_MANUAL_FLAG_KEY = "manual_translocators"
+_MANUAL_FLAG_OFF_DETAIL = {
+    "code": "feature_disabled",
+    "message": "Manual translocator entry is currently disabled.",
+}
+_MANUAL_BATCH_RATE_SCOPE = "contribute-tls-manual"
+_MANUAL_BATCH_RATE_MAX_DEFAULT = 15
+_MANUAL_BATCH_RATE_MAX_FLAG = "translocators_manual_daily_cap"
+
 _ACCOUNT_REQUIRED_DETAIL = {
     "code": "account_required",
     "message": "Create an account to contribute translocators.",
@@ -288,6 +301,11 @@ class TLContributionItem(BaseModel):
     x2: int
     z2: int
     label: Optional[str] = None
+    # Optional per-endpoint Y depth, stored on the geojson feature as
+    # ``depth1`` / ``depth2``. Defaults to 0 when omitted (matches the
+    # behaviour for chat-log submissions, which never carry Y).
+    y1: Optional[int] = None
+    y2: Optional[int] = None
 
 
 class TLContributionStats(BaseModel):
@@ -303,6 +321,151 @@ class TLContributionBody(BaseModel):
     translocators: List[TLContributionItem] = Field(..., min_length=1)
     stats: TLContributionStats
     client_batch_id: Optional[str] = None
+
+
+class TLManualContributionBody(BaseModel):
+    """Manual-entry submission body. Mirrors :class:`TLContributionBody`
+    but omits the chat-log-only ``stats`` (existing-match heuristics
+    don't apply when the user types coordinates by hand)."""
+
+    translocators: List[TLContributionItem] = Field(..., min_length=1)
+    client_batch_id: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Shared submission pipeline
+# ---------------------------------------------------------------------------
+
+async def _process_tl_submission(
+    items: List[TLContributionItem],
+    *,
+    ctx: dict,
+    user: dict,
+    origin: str,
+    extra_submission_stats: Optional[dict] = None,
+    client_batch_id: Optional[str] = None,
+) -> dict:
+    """Validate, dedupe, append, audit. Shared by chat-log and manual
+    endpoints. Caller is responsible for flag + rate-limit checks.
+
+    ``origin`` ends up in each feature's ``properties.origin`` so the
+    map UI / admin tooling can tell where a segment came from
+    (``"user"`` for chat-log, ``"user_manual"`` for typed entry).
+    """
+    max_batch = feature_flags.get_int(_MAX_BATCH_FLAG, _MAX_BATCH_DEFAULT)
+    if len(items) > max_batch:
+        raise HTTPException(
+            status_code=400,
+            detail=f"too many translocators in one batch (max {max_batch})",
+        )
+
+    for idx, it in enumerate(items):
+        for v, name in (
+            (it.x1, "x1"),
+            (it.z1, "z1"),
+            (it.x2, "x2"),
+            (it.z2, "z2"),
+        ):
+            if abs(int(v)) > _COORD_LIMIT:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"item {idx}: {name} out of range",
+                )
+        if it.x1 == it.x2 and it.z1 == it.z2:
+            raise HTTPException(
+                status_code=400,
+                detail=f"item {idx}: endpoints are identical",
+            )
+        for y, name in ((it.y1, "y1"), (it.y2, "y2")):
+            if y is not None and not (-1024 <= int(y) <= 1024):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"item {idx}: {name} out of range",
+                )
+        object.__setattr__(it, "label", _normalise_label(it.label))
+
+    api_key_id = _ctx_api_key_id(ctx)
+    user_id = str(user["id"]) if user.get("id") is not None else None
+    if not user_id:
+        raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
+    display_name = user.get("display_name") or "Anonymous"
+
+    batch_id = (client_batch_id or str(uuid.uuid4()))[:64]
+    now_iso = _now_iso()
+
+    accepted_features: list = []
+    skipped_existing = 0
+
+    async with translocators_write_lock("contribute"):
+        data = await asyncio.to_thread(_load_translocators_file)
+        existing = _existing_segments(data)
+
+        for it in items:
+            geo = (
+                int(it.x1),
+                -int(it.z1),
+                int(it.x2),
+                -int(it.z2),
+            )
+            if any(_segment_endpoints_overlap(geo, e) for e in existing):
+                skipped_existing += 1
+                continue
+
+            segment_id = str(uuid.uuid4())
+            feature = {
+                "type": "Feature",
+                "properties": {
+                    "id": segment_id,
+                    "label": it.label or "",
+                    "depth1": int(it.y1) if it.y1 is not None else 0,
+                    "depth2": int(it.y2) if it.y2 is not None else 0,
+                    "tag": "user",
+                    "origin": origin,
+                    "added_by": display_name,
+                    "added_by_user_id": user_id,
+                    "added_at": now_iso,
+                },
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [geo[0], geo[1]],
+                        [geo[2], geo[3]],
+                    ],
+                },
+            }
+            data["features"].append(feature)
+            existing.append(geo)
+            accepted_features.append(feature)
+
+        if accepted_features:
+            await asyncio.to_thread(_save_translocators_file, data)
+
+    submission_stats: dict = {
+        "submitted_count": len(items),
+        "accepted_count": len(accepted_features),
+        "skipped_existing": skipped_existing,
+        "batch_id": batch_id,
+        "source": "manual" if origin == "user_manual" else "chatlog",
+    }
+    if extra_submission_stats:
+        submission_stats.update(extra_submission_stats)
+
+    for feat in accepted_features:
+        await asyncio.to_thread(
+            db.insert_translocator_audit,
+            segment_id=feat["properties"]["id"],
+            action="add",
+            actor_api_key_id=api_key_id,
+            actor_display_name=display_name,
+            after_payload=feat,
+            submission_stats=submission_stats,
+        )
+
+    return {
+        "accepted": len(accepted_features),
+        "skipped_existing": skipped_existing,
+        "batch_id": batch_id,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -340,120 +503,54 @@ async def contribute_translocators(
             _BATCH_RATE_WINDOW,
         )
 
-    items = payload.translocators
-    max_batch = feature_flags.get_int(_MAX_BATCH_FLAG, _MAX_BATCH_DEFAULT)
-    if len(items) > max_batch:
-        raise HTTPException(
-            status_code=400,
-            detail=f"too many translocators in one batch (max {max_batch})",
+    return await _process_tl_submission(
+        payload.translocators,
+        ctx=ctx,
+        user=user,
+        origin="user",
+        extra_submission_stats={
+            "existing_match_pct": float(payload.stats.existing_match_pct),
+            "existing_pair_count": int(payload.stats.existing_pair_count),
+        },
+        client_batch_id=payload.client_batch_id,
+    )
+
+
+@router.post("/contribute-tls/manual")
+async def contribute_translocators_manual(
+    payload: TLManualContributionBody,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
+    """Append manually-typed TL pairs to the live translocators.geojson.
+
+    Same instant live-merge pipeline as :func:`contribute_translocators`,
+    but with its own kill-switch (``manual_translocators``) and daily
+    cap (``translocators_manual_daily_cap``) so admins can disable just
+    the typed-entry path without touching the chat-log flow.
+    """
+    if not feature_flags.is_feature_enabled_default(_MANUAL_FLAG_KEY, False):
+        raise HTTPException(status_code=503, detail=_MANUAL_FLAG_OFF_DETAIL)
+
+    user = _require_account_user(ctx)
+
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    if not is_admin:
+        check_scoped_rate_limit(
+            ctx["key"],
+            _MANUAL_BATCH_RATE_SCOPE,
+            feature_flags.get_int(
+                _MANUAL_BATCH_RATE_MAX_FLAG, _MANUAL_BATCH_RATE_MAX_DEFAULT
+            ),
+            _BATCH_RATE_WINDOW,
         )
 
-    # Validate coords + label up front so we never touch R2 on bad input.
-    for idx, it in enumerate(items):
-        for v, name in (
-            (it.x1, "x1"),
-            (it.z1, "z1"),
-            (it.x2, "x2"),
-            (it.z2, "z2"),
-        ):
-            if abs(int(v)) > _COORD_LIMIT:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"item {idx}: {name} out of range",
-                )
-        if it.x1 == it.x2 and it.z1 == it.z2:
-            raise HTTPException(
-                status_code=400,
-                detail=f"item {idx}: endpoints are identical",
-            )
-        # Mutate via __setattr__ for Pydantic v2: validate / normalise label
-        object.__setattr__(it, "label", _normalise_label(it.label))
-
-    api_key_id = _ctx_api_key_id(ctx)
-    user_id = str(user["id"]) if user.get("id") is not None else None
-    if not user_id:
-        # Unreachable due to _require_account_user, but defensive.
-        raise HTTPException(status_code=403, detail=_ACCOUNT_REQUIRED_DETAIL)
-    display_name = user.get("display_name") or "Anonymous"
-
-    batch_id = (payload.client_batch_id or str(uuid.uuid4()))[:64]
-    now_iso = _now_iso()
-
-    accepted_features: list = []
-    skipped_existing = 0
-
-    async with translocators_write_lock("contribute"):
-        data = await asyncio.to_thread(_load_translocators_file)
-        existing = _existing_segments(data)
-
-        for it in items:
-            # Geojson stores +Z = south; frontend sends world Z (+Z = north).
-            # Negate on the way in so the live file stays self-consistent
-            # with the seed data (and existing readers).
-            geo = (
-                int(it.x1),
-                -int(it.z1),
-                int(it.x2),
-                -int(it.z2),
-            )
-            if any(_segment_endpoints_overlap(geo, e) for e in existing):
-                skipped_existing += 1
-                continue
-
-            segment_id = str(uuid.uuid4())
-            feature = {
-                "type": "Feature",
-                "properties": {
-                    "id": segment_id,
-                    "label": it.label or "",
-                    "depth1": 0,
-                    "depth2": 0,
-                    "tag": "user",
-                    "origin": "user",
-                    "added_by": display_name,
-                    "added_by_user_id": user_id,
-                    "added_at": now_iso,
-                },
-                "geometry": {
-                    "type": "LineString",
-                    "coordinates": [
-                        [geo[0], geo[1]],
-                        [geo[2], geo[3]],
-                    ],
-                },
-            }
-            data["features"].append(feature)
-            existing.append(geo)  # so within-batch duplicates also dedupe
-            accepted_features.append(feature)
-
-        if accepted_features:
-            await asyncio.to_thread(_save_translocators_file, data)
-
-    # Audit rows outside the lock — ordering is preserved by created_at.
-    submission_stats = {
-        "existing_match_pct": float(payload.stats.existing_match_pct),
-        "existing_pair_count": int(payload.stats.existing_pair_count),
-        "submitted_count": len(items),
-        "accepted_count": len(accepted_features),
-        "skipped_existing": skipped_existing,
-        "batch_id": batch_id,
-    }
-    for feat in accepted_features:
-        await asyncio.to_thread(
-            db.insert_translocator_audit,
-            segment_id=feat["properties"]["id"],
-            action="add",
-            actor_api_key_id=api_key_id,
-            actor_display_name=display_name,
-            after_payload=feat,
-            submission_stats=submission_stats,
-        )
-
-    return {
-        "accepted": len(accepted_features),
-        "skipped_existing": skipped_existing,
-        "batch_id": batch_id,
-    }
+    return await _process_tl_submission(
+        payload.translocators,
+        ctx=ctx,
+        user=user,
+        origin="user_manual",
+        client_batch_id=payload.client_batch_id,
+    )
 
 
 # ---------------------------------------------------------------------------

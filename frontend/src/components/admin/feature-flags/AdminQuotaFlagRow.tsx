@@ -60,6 +60,15 @@ export const QUOTA_FLAGS: QuotaFlagSpec[] = [
     max: 100,
   },
   {
+    key: "translocators_manual_daily_cap",
+    label: "Translocator manual-entry daily cap",
+    help: "Per-API-key max manual translocator submissions per rolling 24h window. Admins bypass.",
+    unit: "per 24h",
+    defaultValue: 15,
+    min: 0,
+    max: 500,
+  },
+  {
     key: "translocators_max_batch",
     label: "Translocator batch size cap",
     help: "Max number of translocator segments accepted in a single POST.",

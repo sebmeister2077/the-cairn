@@ -98,3 +98,21 @@ export interface TLContributionResult {
     /** Server-side identifier for the batch (echoed back). */
     batch_id?: string;
 }
+
+/**
+ * Payload for the manual-entry endpoint (`POST /contribute-tls/manual`).
+ * No `label` (the manual flow does not collect one) and Y depths
+ * (`y1` / `y2`) are optional — when omitted the server stores
+ * `depth1` / `depth2` as 0.
+ */
+export interface TLManualContributionPayload {
+    translocators: Array<{
+        x1: number;
+        z1: number;
+        x2: number;
+        z2: number;
+        y1?: number;
+        y2?: number;
+    }>;
+    client_batch_id?: string;
+}

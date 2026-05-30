@@ -700,6 +700,29 @@ export const en = {
         tabs: {
             fromScreenshots: "From screenshots",
             fromChatLog: "From chat log",
+            manualEntry: "Manual entry",
+        },
+        manual: {
+            title: "Add translocators manually",
+            descriptionPrefix:
+                "Enter both endpoint coordinates (x, z) for each translocator. Y depth is optional. Pairs go live on the map instantly. Limit:",
+            descriptionLimit: "15 submissions per day",
+            descriptionSuffix:
+                ". Each Submit press counts as one submission, regardless of how many pairs are in the batch.",
+            yPlaceholder: "y",
+            remove: "Remove",
+            addRow: "Add row",
+            submitButton: "Submit {count} TL{suffix}",
+            submitted: "Submitted {count} translocator{suffix}",
+            skippedExisting:
+                "{count} submitted pair(s) were already on the server and skipped.",
+            disabled:
+                "Manual translocator entry is currently disabled. Please try again later.",
+            needsAccount:
+                "You need an account to contribute translocators. Create one and try again.",
+            rateLimited:
+                "You've reached the daily limit for manual TL submissions. Please try again later.",
+            submitFailed: "Failed to submit translocators",
         },
         chatLogUpload: {
             title: "Upload your client-chat.log",

@@ -135,6 +135,11 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
         help: "ON = POST /api/contribute-tls accepts client-chat.log batches and merges them live into translocators.geojson. OFF = the endpoint returns 503 and the Contribute TLs page degrades gracefully. Non-admin callers are additionally rate-limited to 3 submissions per 24h.",
       },
       {
+        key: "manual_translocators",
+        title: "Translocator contributions (manual entry)",
+        help: "ON = POST /api/contribute-tls/manual accepts typed TL pairs and merges them live into translocators.geojson without admin review. OFF = the endpoint returns 503 and the Manual entry tab surfaces a disabled message. Non-admin callers are rate-limited by translocators_manual_daily_cap (default 15/24h).",
+      },
+      {
         key: "translocator_screenshot_contributions",
         title: "Translocator contributions (screenshots)",
         help: "ON = POST /api/contribute-tls/screenshots/* accepts uploads and queues OCR + minimap analysis. OFF = those endpoints return 404 and the frontend tab hides the form. Independent of the chat-log flag above.",

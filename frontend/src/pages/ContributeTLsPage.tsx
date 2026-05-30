@@ -11,6 +11,7 @@
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ChatLogContributeFlow } from "@/components/contribute-tls/ChatLogContributeFlow";
+import { ManualTLEntryFlow } from "@/components/contribute-tls/ManualTLEntryFlow";
 import { ScreenshotPairUploadCard } from "@/components/contribute-tls/ScreenshotPairUploadCard";
 import { MyScreenshotRequestsList } from "@/components/contribute-tls/MyScreenshotRequestsList";
 import { useTranslation } from "@/lib/i18n";
@@ -28,9 +29,13 @@ export function ContributeTLsPage() {
             {t("contributeTLsPage.tabs.fromScreenshots")}
           </TabsTrigger>
           <TabsTrigger value="chatlog">{t("contributeTLsPage.tabs.fromChatLog")}</TabsTrigger>
+          <TabsTrigger value="manual">{t("contributeTLsPage.tabs.manualEntry")}</TabsTrigger>
         </TabsList>
         <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />
+        </TabsContent>
+        <TabsContent value="manual" className="pt-2">
+          <ManualTLEntryFlow />
         </TabsContent>
         <TabsContent value="screenshots" className="pt-2 space-y-4">
           <ScreenshotPairUploadCard />

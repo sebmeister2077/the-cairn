@@ -269,6 +269,11 @@ INSERT INTO feature_flags (key, enabled) VALUES
     -- OFF = the endpoint returns 503 (frontend Contribute TLs page degrades
     -- gracefully). Audit + admin endpoints work regardless of this flag.
     ('translocator_contributions', FALSE),
+    -- Manual TL entry path (typed coordinates). Independent of the
+    -- chat-log flag: ON = POST /api/contribute-tls/manual accepts typed
+    -- pairs and merges them live (no admin review); OFF = the endpoint
+    -- returns 503 and the Manual entry tab surfaces a disabled message.
+    ('manual_translocators', FALSE),
     -- Screenshot-based translocator contribution path. Independent of
     -- ``translocator_contributions``: ON = POST
     -- /api/contribute-tls/screenshots/* accepts uploads and queues OCR +
@@ -284,6 +289,7 @@ INSERT INTO feature_flags (key, enabled) VALUES
     ('traders_max_batch', TRUE),
     ('traders_dedupe_radius', TRUE),
     ('translocators_chatlog_daily_cap', TRUE),
+    ('translocators_manual_daily_cap', TRUE),
     ('translocators_max_batch', TRUE),
     ('translocators_dedupe_radius', TRUE),
     ('translocator_screenshots_max_pending', TRUE),

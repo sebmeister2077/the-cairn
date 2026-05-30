@@ -9,7 +9,7 @@ import {
     clearAdminSession as clearAdminSessionAction,
     markCurrentKeyRejected,
 } from "@/store/slices/auth";
-import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
+import type { TLContributionPayload, TLContributionResult, TLManualContributionPayload } from "@/models/contributeTLs";
 
 const configuredApiBase = import.meta.env.VITE_API_BASE?.replace(/\/+$/, "");
 export const API_BASE = configuredApiBase || "/api";
@@ -379,6 +379,24 @@ export async function contributeTLs(
     payload: TLContributionPayload,
 ): Promise<TLContributionResult> {
     const res = await fetch(`${API_BASE}/contribute-tls`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/**
+ * Manual TL contribution. Mirrors `contributeTLs` but hits a separate
+ * endpoint that is gated by its own feature flag (`manual_translocators`)
+ * and daily cap (`translocators_manual_daily_cap`). Submissions are
+ * instant — they merge into the live translocators.geojson with no
+ * admin review.
+ */
+export async function contributeTLsManual(
+    payload: TLManualContributionPayload,
+): Promise<TLContributionResult> {
+    const res = await fetch(`${API_BASE}/contribute-tls/manual`, {
         method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
