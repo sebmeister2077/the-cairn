@@ -332,8 +332,9 @@ export function TOPSMapViewPage() {
   // When the WebCartographer source is selected we fetch translocators and
   // landmarks from the WC host's own geojson exports instead of using ours.
   // Our backend landmarks are still loaded so we can surface Terminus
-  // teleporters (WC has no concept of Terminus). Traders always come from
-  // the backend regardless of map source.
+  // teleporters and Server spawn points (WC has no Terminus concept and
+  // usually exports only a single "Spawn" Server landmark). Traders always
+  // come from the backend regardless of map source.
   const wcTranslocatorsQuery = useWebCartographerTranslocators(
     webCartographerUrl,
     usingWebCartographer,
@@ -342,10 +343,17 @@ export function TOPSMapViewPage() {
   const backendLandmarks = landmarksQuery.data?.data;
   const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
     if (!usingWebCartographer) return backendLandmarks;
+    // Merge rule for WC source:
+    //   - From the WC (official) export: keep only "Base" landmarks.
+    //   - From our backend (mine): keep "Terminus" and "Server" landmarks
+    //     (our Server set is richer than WC's single Spawn marker).
     const wc = wcLandmarksQuery.data;
-    const terminus = (backendLandmarks ?? []).filter((p) => p.kind === "Terminus");
-    if (!wc) return terminus.length > 0 ? terminus : undefined;
-    return [...wc, ...terminus];
+    const fromBackend = (backendLandmarks ?? []).filter(
+      (p) => p.kind === "Terminus" || p.kind === "Server",
+    );
+    const fromWc = (wc ?? []).filter((p) => p.kind === "Base");
+    if (!wc) return fromBackend.length > 0 ? fromBackend : undefined;
+    return [...fromWc, ...fromBackend];
   }, [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks]);
   const allTranslocators = usingWebCartographer
     ? wcTranslocatorsQuery.data
