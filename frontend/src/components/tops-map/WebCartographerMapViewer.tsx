@@ -1,0 +1,1433 @@
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { Button } from "@/components/ui/button";
+import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Maximize2 } from "lucide-react";
+import { TLLegendButton } from "@/components/TLLegendButton";
+import { useAppDispatch, useReduxState } from "@/store/hooks";
+import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
+import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
+import { useTranslation } from "@/lib/i18n";
+import type {
+  MapStats,
+  RouteOverlay,
+  WorldLineSegment,
+  WorldPointMarker,
+} from "@/components/MapViewer";
+
+/**
+ * WebCartographer-compatible tile parameters.
+ *
+ * WebCartographer (https://gitlab.com/th3dilli_vintagestory/WebCartographer)
+ * exports an OpenLayers-XYZ tile pyramid covering a fixed 1,024,000-block
+ * square centred on the world origin, with a top-left tile-grid origin and
+ * 10 zoom levels whose resolutions (world blocks per pixel) halve at each
+ * step from 512 down to 1. See `worldExtent.js` on any WC host.
+ */
+const WC_EXTENT_HALF_BLOCKS = 512_000;
+const WC_WORLD_BLOCKS = WC_EXTENT_HALF_BLOCKS * 2;
+const WC_TILE_SIZE_PX = 256;
+const WC_RESOLUTIONS = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1] as const;
+const WC_MAX_ZOOM = WC_RESOLUTIONS.length - 1;
+
+/**
+ * On-screen pixels-per-block at which we'd like the viewer to start so a
+ * meaningful chunk of the explored world is visible without first having to
+ * zoom out. ~0.004 px/block = ~4000 blocks per 16px = comfortable overview
+ * of the global map.
+ */
+const INITIAL_PIXELS_PER_BLOCK = 0.004;
+
+const MIN_PIXELS_PER_BLOCK = 0.0005;
+/** A single block stretched across 8 screen pixels — useful for inspecting
+ * landmark details. */
+const MAX_PIXELS_PER_BLOCK = 8;
+
+const WHEEL_ZOOM_FACTOR = 1.3;
+const BUTTON_ZOOM_FACTOR = 1.75;
+
+/**
+ * Render this many extra tile widths around the viewport so panning never
+ * exposes empty edges before the next request lands.
+ */
+const TILE_OVERSCAN_TILES = 1;
+
+/**
+ * Maximum number of decoded tile bitmaps to keep alive at once. Each
+ * 256×256 RGBA tile is ~256KB in memory, so 600 ≈ 150MB worst-case — a
+ * comfortable budget for desktop browsers while still allowing fast
+ * pan/zoom across the world.
+ */
+const TILE_CACHE_LIMIT = 600;
+
+/**
+ * Synthetic {@link MapStats} mirroring the WC world extent — all our overlays
+ * (TLs, traders, landmarks, oceans, route planner) project world-block coords
+ * through this so they line up pixel-for-pixel with the imported tiles.
+ *
+ * `pieces` and `size_mb` are admin-stats-header fields that have no meaning
+ * for the WC path; they stay at zero.
+ */
+const WC_STATS: MapStats = {
+  pieces: 0,
+  size_mb: 0,
+  width_chunks: WC_WORLD_BLOCKS / 32,
+  height_chunks: WC_WORLD_BLOCKS / 32,
+  width_blocks: WC_WORLD_BLOCKS,
+  height_blocks: WC_WORLD_BLOCKS,
+  start_x: -WC_EXTENT_HALF_BLOCKS,
+  start_z: -WC_EXTENT_HALF_BLOCKS,
+};
+
+function normaliseBaseUrl(url: string): string {
+  return url.trim().replace(/\/+$/, "");
+}
+
+/** State of one cached tile image. */
+interface TileEntry {
+  status: "loading" | "loaded" | "error";
+  img?: HTMLImageElement;
+}
+
+interface WebCartographerMapViewerProps {
+  /** WC host (with or without trailing slash). Tiles served at
+   * `${baseUrl}/data/world/{z}/{x}_{y}.png`. */
+  baseUrl: string;
+
+  // ── Visual / layout ─────────────────────────────────────────────────────
+  height?: string;
+  alt?: string;
+  bordered?: boolean;
+  starfield?: boolean;
+  showFullscreenControl?: boolean;
+  showTLLegend?: boolean;
+  tlLegendShowContributeColors?: boolean;
+  toolbarStart?: React.ReactNode;
+  legend?: React.ReactNode;
+
+  // ── Overlay data ────────────────────────────────────────────────────────
+  overlaySegments?: WorldLineSegment[];
+  overlayPoints?: WorldPointMarker[];
+  routeOverlay?: RouteOverlay | null;
+  highlightedSegment?: WorldLineSegment | null;
+  highlightedSegments?: WorldLineSegment[];
+
+  // ── Interaction ─────────────────────────────────────────────────────────
+  onOverlaySegmentClick?: (segment: WorldLineSegment | null) => void;
+  onOverlaySegmentRightClick?: (segment: WorldLineSegment) => void;
+  cursorMode?: "default" | "pick";
+  onWorldClick?: (x: number, z: number) => void;
+  interactionsLocked?: boolean;
+
+  // ── Navigation ──────────────────────────────────────────────────────────
+  focusPoint?: { x: number; z: number };
+  focusZoom?: number;
+  focusSpanBlocks?: number;
+  initialView?: {
+    centerWorldX: number;
+    centerWorldZ: number;
+    pixelsPerBlock: number;
+  };
+  centerTarget?: { x: number; z: number } | null;
+  onViewportChange?: (info: {
+    centerWorldX: number;
+    centerWorldZ: number;
+    pixelsPerBlock: number;
+    worldMinX: number;
+    worldMaxX: number;
+    worldMinZ: number;
+    worldMaxZ: number;
+  }) => void;
+
+  // ── Extra render slots ──────────────────────────────────────────────────
+  /**
+   * JSX rendered inside a transformed `<div>` above the canvas. Coordinates
+   * are in image-space pixels (sized to the synthetic WC image). Used for
+   * SVG-based layers like the oceans overlay.
+   */
+  overlay?: React.ReactNode;
+  overlayRender?: (info: {
+    zoom: number;
+    imgNatural: { w: number; h: number };
+    stats: MapStats | null;
+  }) => React.ReactNode;
+}
+
+/**
+ * Canvas-based viewer for WebCartographer-style external map hosts.
+ *
+ * Unlike {@link MapViewer} (which renders one DOM `<img>` per visible tile),
+ * this viewer paints all tiles into a single full-viewport `<canvas>` per
+ * frame. That:
+ *   - Avoids the per-frame DOM reconciliation cost of ~150 image elements,
+ *     which is the dominant cost when panning across a busy region.
+ *   - Lets us draw lower-pyramid-level tiles underneath while higher-level
+ *     tiles are still in flight, so panning never reveals blank gaps.
+ *   - Silently drops 404 tiles instead of rendering the browser's
+ *     broken-image glyph (WC pyramids are sparse — every unexplored cell
+ *     returns 404 and there's no JSON manifest of "which exist").
+ *
+ * Overlays (TLs, points, route, labels) are drawn on the same canvas after
+ * the tiles; the JSX-style `overlayRender` slot is still supported via a
+ * transformed `<div>` above the canvas for SVG/HTML overlays such as the
+ * oceans layer.
+ */
+export function WebCartographerMapViewer({
+  baseUrl,
+  alt = "Map",
+  height = "70vh",
+  bordered = true,
+  starfield = false,
+  showFullscreenControl = false,
+  showTLLegend = false,
+  tlLegendShowContributeColors = false,
+  toolbarStart,
+  legend,
+  overlaySegments,
+  overlayPoints,
+  routeOverlay = null,
+  highlightedSegment,
+  highlightedSegments,
+  onOverlaySegmentClick,
+  onOverlaySegmentRightClick,
+  cursorMode = "default",
+  onWorldClick,
+  interactionsLocked = false,
+  focusPoint,
+  focusZoom = 1,
+  focusSpanBlocks,
+  initialView,
+  centerTarget = null,
+  onViewportChange,
+  overlay,
+  overlayRender,
+}: WebCartographerMapViewerProps) {
+  const { t } = useTranslation();
+  const normalisedUrl = useMemo(() => normaliseBaseUrl(baseUrl), [baseUrl]);
+
+  const dispatch = useAppDispatch();
+  const isFullscreen = useReduxState("mapView.isFullscreen");
+  const traderStyle = useReduxState("mapView.traderStyle");
+  const tlStyle = useReduxState("mapView.tlStyle");
+  const terminusStyle = useReduxState("mapView.terminusStyle");
+  const setIsFullscreen = useCallback(
+    (next: boolean) => dispatch(setShowFullscreenAction(next)),
+    [dispatch],
+  );
+
+  // ── Refs ─────────────────────────────────────────────────────────────────
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const tileCacheRef = useRef<{ baseUrl: string; cache: Map<string, TileEntry> }>({
+    baseUrl: normalisedUrl,
+    cache: new Map(),
+  });
+  if (tileCacheRef.current.baseUrl !== normalisedUrl) {
+    // Host change: abandon old images (browser GCs them) and start fresh.
+    for (const entry of tileCacheRef.current.cache.values()) {
+      if (entry.img) entry.img.src = "";
+    }
+    tileCacheRef.current = { baseUrl: normalisedUrl, cache: new Map() };
+  }
+
+  /** Triggers a canvas redraw on the next animation frame. */
+  const redrawRequestedRef = useRef(false);
+  const redrawHandleRef = useRef<number | null>(null);
+
+  // ── Viewport state ───────────────────────────────────────────────────────
+  // `pixelsPerBlock` is the on-screen scale: 1 world block occupies this
+  // many CSS pixels in the viewer. `centerWorldX/Z` is the world coordinate
+  // currently under the viewport centre. Together they fully describe pan +
+  // zoom in a way that's invariant under container resizes.
+  const [pixelsPerBlock, setPixelsPerBlock] = useState(INITIAL_PIXELS_PER_BLOCK);
+  const [centerWorldX, setCenterWorldX] = useState(0);
+  const [centerWorldZ, setCenterWorldZ] = useState(0);
+
+  const pixelsPerBlockRef = useRef(pixelsPerBlock);
+  const centerWorldXRef = useRef(centerWorldX);
+  const centerWorldZRef = useRef(centerWorldZ);
+  useEffect(() => {
+    pixelsPerBlockRef.current = pixelsPerBlock;
+  }, [pixelsPerBlock]);
+  useEffect(() => {
+    centerWorldXRef.current = centerWorldX;
+  }, [centerWorldX]);
+  useEffect(() => {
+    centerWorldZRef.current = centerWorldZ;
+  }, [centerWorldZ]);
+
+  // ── Container size (CSS px) ──────────────────────────────────────────────
+  const [containerSize, setContainerSize] = useState({ w: 0, h: 0 });
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const sync = () => setContainerSize({ w: el.clientWidth, h: el.clientHeight });
+    sync();
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // ── UI state ─────────────────────────────────────────────────────────────
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; cwX: number; cwZ: number } | null>(null);
+  const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
+  const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  const interactionsLockedRef = useRef(interactionsLocked);
+  const cursorModeRef = useRef(cursorMode);
+  useEffect(() => {
+    interactionsLockedRef.current = interactionsLocked;
+  }, [interactionsLocked]);
+  useEffect(() => {
+    cursorModeRef.current = cursorMode;
+  }, [cursorMode]);
+
+  // ── Pyramid level selection ──────────────────────────────────────────────
+  // WC_RESOLUTIONS[z] = world blocks per source pixel at level z.
+  // We're drawing each block as `pixelsPerBlock` screen px, so 1 source
+  // pixel covers `res * ppb` screen px. To avoid upsampling (blurry) we
+  // want `res * ppb <= 1` ⇒ `res <= 1/ppb`. Picking the COARSEST level
+  // that still satisfies this minimises bandwidth and tile count without
+  // sacrificing crispness; only when ppb exceeds the highest level's
+  // native scale (max zoom-in) do we accept some upsampling at WC_MAX_ZOOM.
+  const currentZoomLevel = useMemo(() => {
+    const targetRes = 1 / Math.max(pixelsPerBlock, 1e-6);
+    for (let z = 0; z <= WC_MAX_ZOOM; z++) {
+      if (WC_RESOLUTIONS[z] <= targetRes) return z;
+    }
+    return WC_MAX_ZOOM;
+  }, [pixelsPerBlock]);
+
+  // ── Tile loading ─────────────────────────────────────────────────────────
+  /**
+   * Look up (or kick off a fetch of) the tile at the given pyramid coords.
+   * Returns the cached entry — caller should `status === "loaded"` check
+   * before drawing.
+   */
+  const requestTile = useCallback(
+    (z: number, cx: number, cy: number): TileEntry => {
+      const cache = tileCacheRef.current.cache;
+      const key = `${z}/${cx}/${cy}`;
+      const hit = cache.get(key);
+      if (hit) {
+        // Touch for LRU.
+        cache.delete(key);
+        cache.set(key, hit);
+        return hit;
+      }
+      const entry: TileEntry = { status: "loading" };
+      const img = new Image();
+      img.decoding = "async";
+      // No `crossOrigin` — we only `drawImage` these tiles, never read
+      // pixels back, so tainting the canvas is fine. Requesting CORS would
+      // force the WC host to send Access-Control-Allow-Origin headers and
+      // images would fail to load entirely when those are absent.
+      img.onload = () => {
+        // Guard against an entry that was evicted while the request was in
+        // flight — re-inserting here would silently bypass the cap.
+        if (!cache.has(key)) return;
+        entry.status = "loaded";
+        entry.img = img;
+        scheduleRedraw();
+      };
+      img.onerror = () => {
+        if (!cache.has(key)) return;
+        entry.status = "error";
+        // Don't re-request — sparse WC pyramids have empty cells everywhere
+        // and retrying would be a perpetual storm of 404s.
+        scheduleRedraw();
+      };
+      img.src = `${tileCacheRef.current.baseUrl}/data/world/${z}/${cx}_${cy}.png`;
+      cache.set(key, entry);
+
+      // LRU eviction: drop oldest entries when over budget. Abort in-flight
+      // requests so we don't hold onto network resources we'll never use.
+      while (cache.size > TILE_CACHE_LIMIT) {
+        const oldestKey = cache.keys().next().value;
+        if (oldestKey === undefined) break;
+        const oldest = cache.get(oldestKey);
+        cache.delete(oldestKey);
+        if (oldest?.img && oldest.status === "loading") {
+          oldest.img.src = "";
+        }
+      }
+      return entry;
+    },
+    // scheduleRedraw is stable (defined below with refs) — eslint may warn
+    // here but we deliberately keep this callback identity stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // ── Projection helpers (world ↔ image) ───────────────────────────────────
+  const imgNatural = useMemo(() => {
+    const resolution = WC_RESOLUTIONS[currentZoomLevel];
+    const size = WC_WORLD_BLOCKS / resolution;
+    return { w: size, h: size };
+  }, [currentZoomLevel]);
+
+  /**
+   * Project world-block coords (x, z) into screen-space (CSS px) coords.
+   * Both axes use the same scale factor `pixelsPerBlock`. Origin is at
+   * the canvas top-left; +x = east, +z = south.
+   */
+  const projectWorld = useCallback(
+    (wx: number, wz: number) => {
+      return {
+        x: (wx - centerWorldX) * pixelsPerBlock + containerSize.w / 2,
+        y: (wz - centerWorldZ) * pixelsPerBlock + containerSize.h / 2,
+      };
+    },
+    [centerWorldX, centerWorldZ, pixelsPerBlock, containerSize.w, containerSize.h],
+  );
+
+  /** Inverse of {@link projectWorld}. */
+  const unprojectScreen = useCallback(
+    (sx: number, sy: number) => {
+      const ppb = pixelsPerBlockRef.current;
+      return {
+        x: (sx - containerSize.w / 2) / ppb + centerWorldXRef.current,
+        z: (sy - containerSize.h / 2) / ppb + centerWorldZRef.current,
+      };
+    },
+    [containerSize.w, containerSize.h],
+  );
+
+  // ── Projected overlay data ───────────────────────────────────────────────
+  const projectedSegments = useMemo(() => {
+    if (!overlaySegments || overlaySegments.length === 0) {
+      return [] as Array<{
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        kind?: "default" | "user";
+      }>;
+    }
+    const out: Array<{
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      kind?: "default" | "user";
+    }> = [];
+    for (const s of overlaySegments) {
+      const a = projectWorld(s.x1, s.z1);
+      const b = projectWorld(s.x2, s.z2);
+      if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
+      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: s.kind });
+    }
+    return out;
+  }, [overlaySegments, projectWorld]);
+
+  const projectedPoints = useMemo(() => {
+    if (!overlayPoints || overlayPoints.length === 0) {
+      return [] as Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
+    }
+    const out: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }> = [];
+    for (const p of overlayPoints) {
+      const s = projectWorld(p.x, p.z);
+      if (!Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
+      out.push({ x: s.x, y: s.y, label: p.label, kind: p.kind, color: p.color });
+    }
+    return out;
+  }, [overlayPoints, projectWorld]);
+
+  const projectedRoute = useMemo(() => {
+    if (!routeOverlay) return null;
+    const tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const s of routeOverlay.tlSegments) {
+      const a = projectWorld(s.x1, s.z1);
+      const b = projectWorld(s.x2, s.z2);
+      if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
+      tlSegs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+    }
+    const walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const leg of routeOverlay.walkLegs) {
+      const a = projectWorld(leg.from.x, leg.from.z);
+      const b = projectWorld(leg.to.x, leg.to.z);
+      if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
+      walkLegs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+    }
+    const pin = (p: { x: number; z: number } | null | undefined) => {
+      if (!p) return null;
+      const s = projectWorld(p.x, p.z);
+      if (!Number.isFinite(s.x) || !Number.isFinite(s.y)) return null;
+      return s;
+    };
+    const tlIdSet = new Set<string>();
+    for (const s of routeOverlay.tlSegments) {
+      tlIdSet.add(`${s.x1},${s.z1},${s.x2},${s.z2}`);
+      tlIdSet.add(`${s.x2},${s.z2},${s.x1},${s.z1}`);
+    }
+    return { tlSegs, walkLegs, from: pin(routeOverlay.from), to: pin(routeOverlay.to), tlIdSet };
+  }, [routeOverlay, projectWorld]);
+
+  const highlightedSegmentIndices = useMemo(() => {
+    if (!overlaySegments || overlaySegments.length === 0) return new Set<number>();
+    const targets = new Set<string>();
+    if (highlightedSegment) {
+      targets.add(
+        `${highlightedSegment.x1},${highlightedSegment.z1},${highlightedSegment.x2},${highlightedSegment.z2}`,
+      );
+    }
+    if (highlightedSegments) {
+      for (const s of highlightedSegments) {
+        targets.add(`${s.x1},${s.z1},${s.x2},${s.z2}`);
+      }
+    }
+    if (targets.size === 0) return new Set<number>();
+    const out = new Set<number>();
+    for (let i = 0; i < overlaySegments.length; i++) {
+      const s = overlaySegments[i];
+      if (targets.has(`${s.x1},${s.z1},${s.x2},${s.z2}`)) out.add(i);
+    }
+    return out;
+  }, [highlightedSegment, highlightedSegments, overlaySegments]);
+
+  const routeTLBaseSkipIndices = useMemo(() => {
+    if (!overlaySegments || !projectedRoute) return new Set<number>();
+    const out = new Set<number>();
+    for (let i = 0; i < overlaySegments.length; i++) {
+      const s = overlaySegments[i];
+      if (projectedRoute.tlIdSet.has(`${s.x1},${s.z1},${s.x2},${s.z2}`)) out.add(i);
+    }
+    return out;
+  }, [overlaySegments, projectedRoute]);
+
+  // ── Redraw scheduler (rAF-coalesced) ─────────────────────────────────────
+  const drawRef = useRef<() => void>(() => {});
+  const scheduleRedraw = useCallback(() => {
+    if (redrawRequestedRef.current) return;
+    redrawRequestedRef.current = true;
+    redrawHandleRef.current = requestAnimationFrame(() => {
+      redrawRequestedRef.current = false;
+      redrawHandleRef.current = null;
+      drawRef.current();
+    });
+  }, []);
+
+  // ── The draw routine ─────────────────────────────────────────────────────
+  drawRef.current = () => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    if (cw <= 0 || ch <= 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr)) {
+      canvas.width = Math.round(cw * dpr);
+      canvas.height = Math.round(ch * dpr);
+      canvas.style.width = `${cw}px`;
+      canvas.style.height = `${ch}px`;
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Starfield is provided by the parent CSS class; clear to transparent
+    // so it shows through where tiles are missing.
+    ctx.clearRect(0, 0, cw, ch);
+
+    // ── Tiles ─────────────────────────────────────────────────────────────
+    const ppb = pixelsPerBlockRef.current;
+    const cWx = centerWorldXRef.current;
+    const cWz = centerWorldZRef.current;
+    const level = currentZoomLevel;
+    const resolution = WC_RESOLUTIONS[level];
+    /** Source tile span in world blocks. */
+    const tileSpanBlocks = WC_TILE_SIZE_PX * resolution;
+    /** Destination tile size in CSS px (what we draw to canvas). */
+    const tileSpanScreen = tileSpanBlocks * ppb;
+
+    // Total tiles per axis at this pyramid level.
+    const tilesPerSide = Math.ceil(WC_WORLD_BLOCKS / resolution / WC_TILE_SIZE_PX);
+
+    // World coords of the viewport corners.
+    const halfWBlocks = cw / 2 / ppb;
+    const halfHBlocks = ch / 2 / ppb;
+    const viewWMinX = cWx - halfWBlocks;
+    const viewWMinZ = cWz - halfHBlocks;
+    const viewWMaxX = cWx + halfWBlocks;
+    const viewWMaxZ = cWz + halfHBlocks;
+
+    // Translate to tile coords (origin top-left = world (-512000, -512000)).
+    const startX = -WC_EXTENT_HALF_BLOCKS;
+    const startZ = -WC_EXTENT_HALF_BLOCKS;
+    const cxMin = Math.max(
+      0,
+      Math.floor((viewWMinX - startX) / tileSpanBlocks) - TILE_OVERSCAN_TILES,
+    );
+    const cyMin = Math.max(
+      0,
+      Math.floor((viewWMinZ - startZ) / tileSpanBlocks) - TILE_OVERSCAN_TILES,
+    );
+    const cxMax = Math.min(
+      tilesPerSide - 1,
+      Math.floor((viewWMaxX - startX) / tileSpanBlocks) + TILE_OVERSCAN_TILES,
+    );
+    const cyMax = Math.min(
+      tilesPerSide - 1,
+      Math.floor((viewWMaxZ - startZ) / tileSpanBlocks) + TILE_OVERSCAN_TILES,
+    );
+
+    // Pixelated upsampling when stretched far beyond native resolution; a
+    // smooth filter when downscaling so far-zoomed views don't shimmer.
+    ctx.imageSmoothingEnabled = tileSpanScreen < WC_TILE_SIZE_PX * 1.2;
+    ctx.imageSmoothingQuality = "low";
+
+    // Optional parent-level fill-in: try level `level - 1` first so freshly-
+    // discovered cells show *something* immediately while the higher-detail
+    // request streams in. Cheap because we only iterate visible parent tiles
+    // (at most 1/4 the count of `level`).
+    if (level > 0) {
+      const parentRes = WC_RESOLUTIONS[level - 1];
+      const parentSpanBlocks = WC_TILE_SIZE_PX * parentRes;
+      const parentSpanScreen = parentSpanBlocks * ppb;
+      const parentSide = Math.ceil(WC_WORLD_BLOCKS / parentRes / WC_TILE_SIZE_PX);
+      const pcxMin = Math.max(0, Math.floor((viewWMinX - startX) / parentSpanBlocks));
+      const pcyMin = Math.max(0, Math.floor((viewWMinZ - startZ) / parentSpanBlocks));
+      const pcxMax = Math.min(parentSide - 1, Math.floor((viewWMaxX - startX) / parentSpanBlocks));
+      const pcyMax = Math.min(parentSide - 1, Math.floor((viewWMaxZ - startZ) / parentSpanBlocks));
+      for (let cy = pcyMin; cy <= pcyMax; cy++) {
+        for (let cx = pcxMin; cx <= pcxMax; cx++) {
+          const key = `${level - 1}/${cx}/${cy}`;
+          const entry = tileCacheRef.current.cache.get(key);
+          if (!entry || entry.status !== "loaded" || !entry.img) continue;
+          const wx0 = startX + cx * parentSpanBlocks;
+          const wz0 = startZ + cy * parentSpanBlocks;
+          const sx = (wx0 - cWx) * ppb + cw / 2;
+          const sy = (wz0 - cWz) * ppb + ch / 2;
+          ctx.drawImage(entry.img, sx, sy, parentSpanScreen, parentSpanScreen);
+        }
+      }
+    }
+
+    // Main level pass. Always requests every visible tile so progressive
+    // loading covers the viewport as fast as the network allows.
+    for (let cy = cyMin; cy <= cyMax; cy++) {
+      for (let cx = cxMin; cx <= cxMax; cx++) {
+        const entry = requestTile(level, cx, cy);
+        if (entry.status !== "loaded" || !entry.img) continue;
+        const wx0 = startX + cx * tileSpanBlocks;
+        const wz0 = startZ + cy * tileSpanBlocks;
+        const sx = (wx0 - cWx) * ppb + cw / 2;
+        const sy = (wz0 - cWz) * ppb + ch / 2;
+        ctx.drawImage(entry.img, sx, sy, tileSpanScreen, tileSpanScreen);
+      }
+    }
+
+    // ── Overlays ──────────────────────────────────────────────────────────
+    // From here on, all coordinates are already in screen-space px (the
+    // projected* memos handle the world → screen conversion), so no
+    // `ctx.translate / scale` is needed. Line widths and radii are
+    // therefore quoted directly in screen pixels.
+    drawOverlaysScreenSpace(ctx, {
+      segments: projectedSegments,
+      points: projectedPoints,
+      route: projectedRoute,
+      hoveredSegmentIndex,
+      highlightedSegmentIndices,
+      routeTLBaseSkipIndices,
+      tlStyle,
+      traderStyle,
+      terminusStyle,
+    });
+
+    // ── Hover-point labels ────────────────────────────────────────────────
+    if (projectedPoints.length > 0) {
+      drawPointLabels(ctx, projectedPoints, cw, ch);
+    }
+  };
+
+  // Trigger redraw whenever anything that affects the picture changes.
+  useEffect(() => {
+    scheduleRedraw();
+  }, [
+    scheduleRedraw,
+    pixelsPerBlock,
+    centerWorldX,
+    centerWorldZ,
+    containerSize.w,
+    containerSize.h,
+    currentZoomLevel,
+    projectedSegments,
+    projectedPoints,
+    projectedRoute,
+    hoveredSegmentIndex,
+    highlightedSegmentIndices,
+    routeTLBaseSkipIndices,
+    tlStyle,
+    traderStyle,
+    terminusStyle,
+  ]);
+
+  // Cleanup any pending rAF on unmount.
+  useEffect(() => {
+    return () => {
+      if (redrawHandleRef.current != null) {
+        cancelAnimationFrame(redrawHandleRef.current);
+      }
+    };
+  }, []);
+
+  // ── Initial view ─────────────────────────────────────────────────────────
+  const initialViewAppliedRef = useRef(false);
+  useEffect(() => {
+    if (initialViewAppliedRef.current) return;
+    if (containerSize.w === 0 || containerSize.h === 0) return;
+    if (!initialView) {
+      initialViewAppliedRef.current = true;
+      return;
+    }
+    const { centerWorldX: cx, centerWorldZ: cz, pixelsPerBlock: ppb } = initialView;
+    if (![cx, cz, ppb].every(Number.isFinite) || ppb <= 0) {
+      initialViewAppliedRef.current = true;
+      return;
+    }
+    setCenterWorldX(cx);
+    setCenterWorldZ(cz);
+    setPixelsPerBlock(Math.min(MAX_PIXELS_PER_BLOCK, Math.max(MIN_PIXELS_PER_BLOCK, ppb)));
+    initialViewAppliedRef.current = true;
+  }, [initialView, containerSize.w, containerSize.h]);
+
+  // ── focusPoint navigation ────────────────────────────────────────────────
+  const prevFocusPointRef = useRef<{ x: number; z: number } | undefined>(undefined);
+  useEffect(() => {
+    if (!focusPoint) return;
+    if (prevFocusPointRef.current === focusPoint) return;
+    prevFocusPointRef.current = focusPoint;
+    if (containerSize.w === 0 || containerSize.h === 0) return;
+
+    let targetPpb: number;
+    if (focusSpanBlocks && focusSpanBlocks > 0) {
+      const minViewportPx = Math.min(containerSize.w, containerSize.h);
+      targetPpb = (minViewportPx * 0.85) / Math.max(1, focusSpanBlocks);
+      targetPpb = Math.min(MAX_PIXELS_PER_BLOCK, Math.max(MIN_PIXELS_PER_BLOCK, targetPpb));
+    } else {
+      // `focusZoom` from the legacy API: a multiplier vs the initial scale.
+      targetPpb = Math.max(pixelsPerBlockRef.current, INITIAL_PIXELS_PER_BLOCK * focusZoom);
+    }
+    setCenterWorldX(focusPoint.x);
+    setCenterWorldZ(focusPoint.z);
+    setPixelsPerBlock(targetPpb);
+  }, [focusPoint, focusSpanBlocks, focusZoom, containerSize.w, containerSize.h]);
+
+  // ── Viewport-change reporting (debounced) ────────────────────────────────
+  useEffect(() => {
+    if (!onViewportChange) return;
+    if (containerSize.w === 0 || containerSize.h === 0) return;
+    const handle = setTimeout(() => {
+      const halfWBlocks = containerSize.w / 2 / pixelsPerBlock;
+      const halfHBlocks = containerSize.h / 2 / pixelsPerBlock;
+      onViewportChange({
+        centerWorldX,
+        centerWorldZ,
+        pixelsPerBlock,
+        worldMinX: centerWorldX - halfWBlocks,
+        worldMaxX: centerWorldX + halfWBlocks,
+        worldMinZ: centerWorldZ - halfHBlocks,
+        worldMaxZ: centerWorldZ + halfHBlocks,
+      });
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [
+    onViewportChange,
+    pixelsPerBlock,
+    centerWorldX,
+    centerWorldZ,
+    containerSize.w,
+    containerSize.h,
+  ]);
+
+  // ── Zoom helpers ─────────────────────────────────────────────────────────
+  /**
+   * Zoom toward a screen-space focal point — pinning the world coord under
+   * `(focalX, focalY)` so it stays put while the scale changes.
+   */
+  const zoomToward = useCallback(
+    (focalX: number, focalY: number, nextPpb: number) => {
+      const clamped = Math.min(MAX_PIXELS_PER_BLOCK, Math.max(MIN_PIXELS_PER_BLOCK, nextPpb));
+      if (clamped === pixelsPerBlockRef.current) return;
+      const oldPpb = pixelsPerBlockRef.current;
+      const w = containerSize.w || 1;
+      const h = containerSize.h || 1;
+      // World coord under the focal point before the zoom change.
+      const worldX = (focalX - w / 2) / oldPpb + centerWorldXRef.current;
+      const worldZ = (focalY - h / 2) / oldPpb + centerWorldZRef.current;
+      // Recompute centre so that the same world point lands at the same
+      // screen coord with the new scale.
+      const newCx = worldX - (focalX - w / 2) / clamped;
+      const newCz = worldZ - (focalY - h / 2) / clamped;
+      setPixelsPerBlock(clamped);
+      setCenterWorldX(newCx);
+      setCenterWorldZ(newCz);
+    },
+    [containerSize.w, containerSize.h],
+  );
+
+  const zoomIn = useCallback(() => {
+    zoomToward(
+      containerSize.w / 2,
+      containerSize.h / 2,
+      pixelsPerBlockRef.current * BUTTON_ZOOM_FACTOR,
+    );
+  }, [zoomToward, containerSize.w, containerSize.h]);
+
+  const zoomOut = useCallback(() => {
+    zoomToward(
+      containerSize.w / 2,
+      containerSize.h / 2,
+      pixelsPerBlockRef.current / BUTTON_ZOOM_FACTOR,
+    );
+  }, [zoomToward, containerSize.w, containerSize.h]);
+
+  const resetView = useCallback(() => {
+    setCenterWorldX(0);
+    setCenterWorldZ(0);
+    setPixelsPerBlock(INITIAL_PIXELS_PER_BLOCK);
+  }, []);
+
+  const centerOnOrigin = useCallback(() => {
+    const target =
+      centerTarget && Number.isFinite(centerTarget.x) && Number.isFinite(centerTarget.z)
+        ? centerTarget
+        : { x: 0, z: 0 };
+    setCenterWorldX(target.x);
+    setCenterWorldZ(target.z);
+  }, [centerTarget]);
+
+  // ── Wheel zoom (non-passive so we can preventDefault) ────────────────────
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const focalX = e.clientX - rect.left;
+      const focalY = e.clientY - rect.top;
+      const factor = e.deltaY < 0 ? WHEEL_ZOOM_FACTOR : 1 / WHEEL_ZOOM_FACTOR;
+      zoomToward(focalX, focalY, pixelsPerBlockRef.current * factor);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [zoomToward]);
+
+  // ── Mouse interaction ────────────────────────────────────────────────────
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    if (interactionsLockedRef.current) return;
+    if (cursorModeRef.current === "pick") return;
+    setDragging(true);
+    dragStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      cwX: centerWorldXRef.current,
+      cwZ: centerWorldZRef.current,
+    };
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+
+      if (dragging && dragStartRef.current) {
+        const dx = e.clientX - dragStartRef.current.x;
+        const dy = e.clientY - dragStartRef.current.y;
+        const ppb = pixelsPerBlockRef.current;
+        setCenterWorldX(dragStartRef.current.cwX - dx / ppb);
+        setCenterWorldZ(dragStartRef.current.cwZ - dy / ppb);
+      }
+
+      // Hover coord readout.
+      const world = unprojectScreen(sx, sy);
+      setHoverCoords({ x: Math.floor(world.x), z: Math.floor(world.z) });
+
+      // Hover-on-segment hit test in screen space.
+      if (projectedSegments.length > 0) {
+        const threshold = 8;
+        const thresholdSq = threshold * threshold;
+        let best = -1;
+        let bestDistSq = Infinity;
+        for (let i = 0; i < projectedSegments.length; i++) {
+          const seg = projectedSegments[i];
+          const abx = seg.x2 - seg.x1;
+          const aby = seg.y2 - seg.y1;
+          const apx = sx - seg.x1;
+          const apy = sy - seg.y1;
+          const abLenSq = abx * abx + aby * aby;
+          const t = abLenSq > 0 ? Math.max(0, Math.min(1, (apx * abx + apy * aby) / abLenSq)) : 0;
+          const cxp = seg.x1 + t * abx;
+          const cyp = seg.y1 + t * aby;
+          const ddx = sx - cxp;
+          const ddy = sy - cyp;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < thresholdSq && dsq < bestDistSq) {
+            bestDistSq = dsq;
+            best = i;
+          }
+        }
+        setHoveredSegmentIndex(best === -1 ? null : best);
+      } else if (hoveredSegmentIndex !== null) {
+        setHoveredSegmentIndex(null);
+      }
+    },
+    [dragging, projectedSegments, unprojectScreen, hoveredSegmentIndex],
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setDragging(false);
+    dragStartRef.current = null;
+  }, []);
+  const handleMouseLeave = useCallback(() => {
+    setDragging(false);
+    dragStartRef.current = null;
+    setHoverCoords(null);
+    setHoveredSegmentIndex(null);
+  }, []);
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const sx = e.clientX - rect.left;
+      const sy = e.clientY - rect.top;
+      if (cursorModeRef.current === "pick" && onWorldClick) {
+        const world = unprojectScreen(sx, sy);
+        onWorldClick(Math.floor(world.x), Math.floor(world.z));
+        return;
+      }
+      if (!onOverlaySegmentClick || !overlaySegments || overlaySegments.length === 0) return;
+      if (hoveredSegmentIndex === null) {
+        onOverlaySegmentClick(null);
+        return;
+      }
+      onOverlaySegmentClick(overlaySegments[hoveredSegmentIndex] ?? null);
+    },
+    [hoveredSegmentIndex, onOverlaySegmentClick, onWorldClick, overlaySegments, unprojectScreen],
+  );
+
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (!onOverlaySegmentRightClick || !overlaySegments || overlaySegments.length === 0) return;
+      if (hoveredSegmentIndex === null) return;
+      const seg = overlaySegments[hoveredSegmentIndex];
+      if (!seg) return;
+      e.preventDefault();
+      onOverlaySegmentRightClick(seg);
+    },
+    [hoveredSegmentIndex, onOverlaySegmentRightClick, overlaySegments],
+  );
+
+  // ── Canvas-class assembly ────────────────────────────────────────────────
+  const canvasClass = [
+    "relative overflow-hidden",
+    starfield ? "starfield" : "bg-black/90",
+    bordered ? "rounded-md border" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  // ── Overlay-render transform ─────────────────────────────────────────────
+  // overlayRender returns image-space JSX (e.g. OceansOverlayLayer's SVG
+  // sized to imgNatural.w × imgNatural.h). We project the world origin to
+  // its screen coordinate and apply the per-block scale; the result lines
+  // up pixel-for-pixel with the tile draw above.
+  const overlayTransform = useMemo<CSSProperties>(() => {
+    const origin = projectWorld(WC_STATS.start_x, WC_STATS.start_z);
+    const scale = (pixelsPerBlock * WC_STATS.width_blocks) / imgNatural.w;
+    return {
+      position: "absolute",
+      left: 0,
+      top: 0,
+      transformOrigin: "0 0",
+      transform: `translate3d(${origin.x}px, ${origin.y}px, 0) scale(${scale})`,
+      width: imgNatural.w,
+      height: imgNatural.h,
+      // Pointer events stay enabled so individual children inside the
+      // overlay (e.g. SVG layers that attach their own click handlers) can
+      // still receive input. The wrapping container's drag handlers receive
+      // events that bubble up from the overlay just like a normal child.
+      willChange: "transform",
+    };
+  }, [projectWorld, pixelsPerBlock, imgNatural.w, imgNatural.h]);
+
+  return (
+    <div className="space-y-2 p-2">
+      {legend && (
+        <div className="flex items-center gap-2 p-2 text-xs text-muted-foreground border-b bg-muted/30">
+          {legend}
+        </div>
+      )}
+      <div className="flex items-center gap-1 flex-wrap">
+        {toolbarStart}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={zoomOut}
+          title={t("topsMap.zoomOut")}
+        >
+          <ZoomOut className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={zoomIn}
+          title={t("topsMap.zoomIn")}
+        >
+          <ZoomIn className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={resetView}
+          title={t("topsMap.resetView")}
+        >
+          <RotateCcw className="size-4" />
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={centerOnOrigin}
+          title={
+            centerTarget
+              ? t("topsMap.centerOnCoordinate", { x: centerTarget.x, z: centerTarget.z })
+              : t("topsMap.centerOnOrigin")
+          }
+        >
+          <Crosshair className="size-4" />
+        </Button>
+        <span className="text-xs text-muted-foreground ml-2">
+          {t("topsMap.scrollToZoomDragToPan")}
+        </span>
+        <div className="ml-auto flex items-center gap-2">
+          {showFullscreenControl && !isFullscreen && (
+            <Button
+              type="button"
+              variant="default"
+              onClick={() => setIsFullscreen(true)}
+              title={t("topsMap.enterFullscreenMapView")}
+            >
+              <Maximize2 className="size-4 mr-1" />
+              {t("topsMap.fullscreen")}
+            </Button>
+          )}
+          <div
+            className={`grid transition-[grid-template-columns,opacity] duration-300 ease-out ${
+              showTLLegend
+                ? "grid-cols-[1fr] opacity-100"
+                : "grid-cols-[0fr] opacity-0 pointer-events-none"
+            }`}
+            aria-hidden={!showTLLegend}
+          >
+            <div className="overflow-hidden min-w-0">
+              <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        ref={containerRef}
+        className={canvasClass}
+        style={{
+          height,
+          cursor:
+            cursorMode === "pick"
+              ? "crosshair"
+              : dragging
+                ? "grabbing"
+                : hoveredSegmentIndex !== null
+                  ? "pointer"
+                  : "grab",
+          touchAction: "none",
+        }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+        aria-label={alt}
+        role="img"
+      >
+        <canvas ref={canvasRef} className="absolute inset-0" />
+        {(overlay || overlayRender) && (
+          <div style={overlayTransform}>
+            {overlay}
+            {overlayRender?.({ zoom: pixelsPerBlock, imgNatural, stats: WC_STATS })}
+          </div>
+        )}
+        {hoverCoords && (
+          <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">
+            X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Overlay drawing helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface OverlayDrawArgs {
+  segments: Array<{ x1: number; y1: number; x2: number; y2: number; kind?: "default" | "user" }>;
+  points: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
+  route: {
+    tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+    walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+    from: { x: number; y: number } | null;
+    to: { x: number; y: number } | null;
+    tlIdSet: Set<string>;
+  } | null;
+  hoveredSegmentIndex: number | null;
+  highlightedSegmentIndices: Set<number>;
+  routeTLBaseSkipIndices: Set<number>;
+  tlStyle: string;
+  traderStyle: string;
+  terminusStyle: string;
+}
+
+/**
+ * Draws every overlay layer onto the provided context using already-projected
+ * screen-space coordinates. Mirrors the visual style of the Cairn-backed
+ * {@link MapViewer}; sizes are quoted directly in screen px (no zoom
+ * compensation needed since the canvas is screen-space).
+ *
+ * The marker helpers (`drawTLEndpoint`, `drawTraderMarker`,
+ * `drawTerminusMarker`) expect an image-space zoom argument that they divide
+ * radii by — they were written for the image-space canvas in MapViewer.
+ * We pass `1` so radii are interpreted in CSS px directly, which is exactly
+ * what we want for a screen-space canvas.
+ */
+function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDrawArgs): void {
+  const {
+    segments,
+    points,
+    route,
+    hoveredSegmentIndex,
+    highlightedSegmentIndices,
+    routeTLBaseSkipIndices,
+    tlStyle,
+    traderStyle,
+    terminusStyle,
+  } = args;
+
+  if (segments.length === 0 && points.length === 0 && !route) return;
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+
+  const baseLineColor = "rgba(139, 92, 246, 0.95)";
+  const hoverLineColor = "rgba(243, 232, 255, 1)";
+  const glowColor = "rgba(76, 29, 149, 0.55)";
+  const portalOuter = "rgba(168, 85, 247, 0.95)";
+  const userLineColor = "rgba(37, 99, 235, 0.95)";
+  const userGlowColor = "rgba(30, 58, 138, 0.55)";
+  const userPortalOuter = "rgba(59, 130, 246, 0.95)";
+
+  const baseWidth = 2.3;
+  const glowWidth = baseWidth * 2.4;
+
+  // ── Translocator segments ────────────────────────────────────────────────
+  if (segments.length > 0) {
+    const defaultSegs: typeof segments = [];
+    const userSegs: typeof segments = [];
+    for (let i = 0; i < segments.length; i++) {
+      if (routeTLBaseSkipIndices.has(i)) continue;
+      const s = segments[i];
+      if (s.kind === "user") userSegs.push(s);
+      else defaultSegs.push(s);
+    }
+    const drawPass = (segs: typeof segments, line: string, glow: string) => {
+      if (segs.length === 0) return;
+      ctx.strokeStyle = glow;
+      ctx.lineWidth = glowWidth;
+      ctx.beginPath();
+      for (const s of segs) {
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = line;
+      ctx.lineWidth = baseWidth;
+      ctx.beginPath();
+      for (const s of segs) {
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+    };
+    drawPass(defaultSegs, baseLineColor, glowColor);
+    drawPass(userSegs, userLineColor, userGlowColor);
+
+    if (hoveredSegmentIndex !== null && segments[hoveredSegmentIndex]) {
+      const s = segments[hoveredSegmentIndex];
+      ctx.strokeStyle = hoverLineColor;
+      ctx.lineWidth = baseWidth * 1.6;
+      ctx.beginPath();
+      ctx.moveTo(s.x1, s.y1);
+      ctx.lineTo(s.x2, s.y2);
+      ctx.stroke();
+    }
+    if (highlightedSegmentIndices.size > 0) {
+      ctx.strokeStyle = hoverLineColor;
+      ctx.lineWidth = baseWidth * 1.6;
+      ctx.beginPath();
+      for (const idx of highlightedSegmentIndices) {
+        if (idx === hoveredSegmentIndex) continue;
+        const s = segments[idx];
+        if (!s) continue;
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+    }
+
+    // Portal-dot endpoints. `drawTLEndpoint` was authored for the
+    // image-space MapViewer canvas and divides its radius by the supplied
+    // `zoom` to keep dots a constant on-screen size; we pass 1 so radii are
+    // already in CSS pixels.
+    for (const s of defaultSegs) {
+      drawTLEndpoint(ctx, s.x1, s.y1, 1, tlStyle as never, portalOuter);
+      drawTLEndpoint(ctx, s.x2, s.y2, 1, tlStyle as never, portalOuter);
+    }
+    for (const s of userSegs) {
+      drawTLEndpoint(ctx, s.x1, s.y1, 1, tlStyle as never, userPortalOuter);
+      drawTLEndpoint(ctx, s.x2, s.y2, 1, tlStyle as never, userPortalOuter);
+    }
+  }
+
+  // ── Point markers ────────────────────────────────────────────────────────
+  if (points.length > 0) {
+    const pointOuter = 3.6;
+    const pointInner = pointOuter * 0.48;
+
+    ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
+    for (const p of points) {
+      if (p.kind === "Server" || p.kind === "Trader" || p.kind === "Home" || p.kind === "Terminus")
+        continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pointOuter, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
+    for (const p of points) {
+      if (p.kind === "Server" || p.kind === "Trader" || p.kind === "Home" || p.kind === "Terminus")
+        continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, pointInner, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const p of points) {
+      if (p.kind !== "Trader") continue;
+      drawTraderMarker(
+        ctx,
+        p.x,
+        p.y,
+        1,
+        traderStyle as never,
+        p.color ?? "rgba(34, 211, 238, 0.92)",
+      );
+    }
+
+    // Server (spawn) star
+    const starOuter = 7.2;
+    const starInner = starOuter * 0.45;
+    const drawStar = (cx: number, cy: number) => {
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? starOuter : starInner;
+        const a = -Math.PI / 2 + (i * Math.PI) / 5;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    };
+    ctx.lineWidth = 1.1;
+    for (const p of points) {
+      if (p.kind !== "Server") continue;
+      drawStar(p.x, p.y);
+      ctx.fillStyle = "rgba(250, 204, 21, 0.95)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.stroke();
+    }
+
+    // Home glyph
+    const homeSize = 3.6;
+    ctx.lineWidth = 0.55;
+    for (const p of points) {
+      if (p.kind !== "Home") continue;
+      const half = homeSize;
+      const bodyTopY = p.y - half * 0.15;
+      const bodyBottomY = p.y + half;
+      const leftX = p.x - half;
+      const rightX = p.x + half;
+      ctx.beginPath();
+      ctx.moveTo(leftX, bodyBottomY);
+      ctx.lineTo(leftX, bodyTopY);
+      ctx.lineTo(p.x, p.y - half);
+      ctx.lineTo(rightX, bodyTopY);
+      ctx.lineTo(rightX, bodyBottomY);
+      ctx.closePath();
+      ctx.fillStyle = p.color ?? "rgba(245, 158, 11, 0.95)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+      ctx.stroke();
+      const doorW = homeSize * 0.32;
+      const doorH = homeSize * 0.55;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.85)";
+      ctx.fillRect(p.x - doorW / 2, p.y + homeSize - doorH, doorW, doorH);
+    }
+
+    for (const p of points) {
+      if (p.kind !== "Terminus") continue;
+      drawTerminusMarker(ctx, p.x, p.y, 1, terminusStyle as never);
+    }
+  }
+
+  // ── Route overlay ────────────────────────────────────────────────────────
+  if (route) {
+    if (route.walkLegs.length > 0) {
+      const dashUnit = 8;
+      const walkW = 2.0;
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.7)";
+      ctx.lineWidth = walkW * 2.2;
+      ctx.beginPath();
+      for (const leg of route.walkLegs) {
+        ctx.moveTo(leg.x1, leg.y1);
+        ctx.lineTo(leg.x2, leg.y2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([dashUnit, dashUnit * 0.75]);
+      ctx.strokeStyle = "rgba(226, 232, 240, 0.98)";
+      ctx.lineWidth = walkW;
+      ctx.beginPath();
+      for (const leg of route.walkLegs) {
+        ctx.moveTo(leg.x1, leg.y1);
+        ctx.lineTo(leg.x2, leg.y2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    if (route.tlSegs.length > 0) {
+      const routeBase = 2.8;
+      ctx.strokeStyle = "rgba(6, 78, 59, 0.6)";
+      ctx.lineWidth = routeBase * 2.4;
+      ctx.beginPath();
+      for (const s of route.tlSegs) {
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.98)";
+      ctx.lineWidth = routeBase;
+      ctx.beginPath();
+      for (const s of route.tlSegs) {
+        ctx.moveTo(s.x1, s.y1);
+        ctx.lineTo(s.x2, s.y2);
+      }
+      ctx.stroke();
+      const dotOuter = 3.4;
+      const dotInner = dotOuter * 0.5;
+      ctx.fillStyle = "rgba(16, 185, 129, 0.98)";
+      for (const s of route.tlSegs) {
+        ctx.beginPath();
+        ctx.arc(s.x1, s.y1, dotOuter, 0, Math.PI * 2);
+        ctx.arc(s.x2, s.y2, dotOuter, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(236, 253, 245, 0.98)";
+      for (const s of route.tlSegs) {
+        ctx.beginPath();
+        ctx.arc(s.x1, s.y1, dotInner, 0, Math.PI * 2);
+        ctx.arc(s.x2, s.y2, dotInner, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    const pinRadius = 7.5;
+    const drawPin = (cx: number, cy: number, fill: string, label: string) => {
+      ctx.beginPath();
+      ctx.arc(cx, cy - pinRadius, pinRadius, Math.PI * 0.2, Math.PI * 0.8, true);
+      ctx.lineTo(cx, cy);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(248, 250, 252, 0.98)";
+      ctx.font = `bold ${pinRadius * 1.1}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, cx, cy - pinRadius);
+    };
+    if (route.from) drawPin(route.from.x, route.from.y, "rgba(34, 197, 94, 0.98)", "A");
+    if (route.to) drawPin(route.to.x, route.to.y, "rgba(239, 68, 68, 0.98)", "B");
+  }
+}
+
+/**
+ * Draws labels for `overlayPoints` directly above their dots. Mirrors the
+ * styling of MapViewer's labels canvas — keeps font and badge in screen px
+ * so labels stay readable at every zoom.
+ */
+function drawPointLabels(
+  ctx: CanvasRenderingContext2D,
+  points: Array<{ x: number; y: number; label?: string; kind?: string }>,
+  w: number,
+  h: number,
+): void {
+  const FONT_SIZE = 11;
+  const PAD_X = 4;
+  const PAD_Y = 2;
+  const DOT_RADIUS = 4;
+  ctx.font = `600 ${FONT_SIZE}px sans-serif`;
+  ctx.textBaseline = "top";
+  ctx.textAlign = "left";
+
+  for (const p of points) {
+    const raw = (p.label ?? "").replace(/\s+/g, " ").trim();
+    if (!raw) continue;
+    if (p.kind === "Home" || p.kind === "Terminus") continue;
+    const sx = p.x;
+    const sy = p.y;
+    if (sx < -200 || sx > w + 200 || sy < -200 || sy > h + 200) continue;
+    const isServer = p.kind === "Server";
+    const text = raw.length > 30 ? `${raw.slice(0, 29)}\u2026` : raw;
+    const textW = ctx.measureText(text).width;
+    const textH = FONT_SIZE;
+    const dotRadius = isServer ? DOT_RADIUS + 4 : DOT_RADIUS;
+    const tx = sx + dotRadius + 3;
+    const ty = sy - dotRadius - PAD_Y - textH;
+    ctx.fillStyle = isServer ? "rgba(120, 53, 15, 0.88)" : "rgba(15, 23, 42, 0.80)";
+    ctx.fillRect(tx - PAD_X, ty - PAD_Y, textW + PAD_X * 2, textH + PAD_Y * 2);
+    ctx.fillStyle = isServer ? "rgba(254, 240, 138, 1)" : "rgba(236, 254, 255, 0.98)";
+    ctx.fillText(text, tx, ty);
+  }
+}

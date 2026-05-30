@@ -18,8 +18,29 @@ const ACTIVE_LS = "tops-map-tl-groupings-active";
 const SHOW_LANDMARKS_LS = "tops-map-show-landmarks";
 const SHOW_TRANSLOCATORS_LS = "tops-map-show-translocators";
 const STARFIELD_ENABLED_LS = "tops-map-starfield-enabled";
+const MAP_SOURCE_LS = "tops-map-source";
+const WC_URL_LS = "tops-map-webcartographer-url";
 
 export type TLGroupingsViewMode = "all" | "highlight" | "filter";
+
+/**
+ * Which tile source backs the TOPS map viewer.
+ *  - "cairn":            our own pre-rendered TOPS chunks (default).
+ *  - "webcartographer":  an external WebCartographer-style XYZ tile host
+ *                        (e.g. https://tops-map.translocator.moe). Tile
+ *                        imagery only; all overlays (TLs/landmarks/traders/
+ *                        oceans) still come from our database.
+ */
+export type MapSource = "cairn" | "webcartographer";
+
+/** Default WebCartographer host used when the user has not entered a URL. */
+export const DEFAULT_WEBCARTOGRAPHER_URL = "https://tops-map.translocator.moe";
+
+/** Built-in preset hosts shown in the source selector dropdown. */
+export const WEBCARTOGRAPHER_PRESETS: Array<{ label: string; url: string }> = [
+    { label: "Translocator.moe (Th3Dilli)", url: "https://tops-map.translocator.moe" },
+    { label: "Old TOPS (vintagestory.at)", url: "https://map.oldtops.vintagestory.at" },
+];
 
 export interface MapViewState {
     selectedLevel: number | null;
@@ -67,6 +88,10 @@ export interface MapViewState {
     traderStyle: TraderStyle;
     tlStyle: TLStyle;
     terminusStyle: TerminusStyle;
+    /** Active map tile source. See {@link MapSource}. */
+    mapSource: MapSource;
+    /** Configured WebCartographer host URL (used when mapSource === "webcartographer"). */
+    webCartographerUrl: string;
 }
 
 function readSelectedLevel(): number | null {
@@ -85,6 +110,16 @@ function readActive(): string[] {
     const arr = lsReadJson<unknown>(ACTIVE_LS, []);
     if (!Array.isArray(arr)) return [];
     return arr.filter((v): v is string => typeof v === "string");
+}
+
+function readMapSource(): MapSource {
+    const raw = lsRead(MAP_SOURCE_LS);
+    return raw === "webcartographer" ? "webcartographer" : "cairn";
+}
+
+function readWebCartographerUrl(): string {
+    const raw = lsRead(WC_URL_LS);
+    return raw && raw.trim().length > 0 ? raw : DEFAULT_WEBCARTOGRAPHER_URL;
 }
 
 
@@ -106,6 +141,8 @@ export function loadInitialMapViewState(): MapViewState {
         traderStyle: DEFAULT_TRADER_STYLE,
         tlStyle: DEFAULT_TL_STYLE,
         terminusStyle: DEFAULT_TERMINUS_STYLE,
+        mapSource: readMapSource(),
+        webCartographerUrl: readWebCartographerUrl(),
     };
 }
 
@@ -188,6 +225,13 @@ export const mapViewSlice = createSlice({
         setTerminusStyle(state, action: PayloadAction<TerminusStyle>) {
             state.terminusStyle = action.payload;
         },
+        setMapSource(state, action: PayloadAction<MapSource>) {
+            state.mapSource = action.payload;
+        },
+        setWebCartographerUrl(state, action: PayloadAction<string>) {
+            const trimmed = action.payload.trim();
+            state.webCartographerUrl = trimmed.length > 0 ? trimmed : DEFAULT_WEBCARTOGRAPHER_URL;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -223,6 +267,8 @@ export const {
     setTraderStyle,
     setTLStyle,
     setTerminusStyle,
+    setMapSource,
+    setWebCartographerUrl,
 } = mapViewSlice.actions;
 
 export function persistMapView(getSlice: () => MapViewState, prev: MapViewState) {
@@ -236,6 +282,12 @@ export function persistMapView(getSlice: () => MapViewState, prev: MapViewState)
     if (s.activeGroupingIds !== prev.activeGroupingIds) {
         lsWriteJson(ACTIVE_LS, s.activeGroupingIds);
     }
+    if (s.mapSource !== prev.mapSource) {
+        lsWrite(MAP_SOURCE_LS, s.mapSource);
+    }
+    if (s.webCartographerUrl !== prev.webCartographerUrl) {
+        lsWrite(WC_URL_LS, s.webCartographerUrl);
+    }
 }
 
 export function reconcileMapViewFromStorage(key: string) {
@@ -246,6 +298,10 @@ export function reconcileMapViewFromStorage(key: string) {
             return setGroupingsViewMode(readViewMode());
         case ACTIVE_LS:
             return setActiveGroupingIds(readActive());
+        case MAP_SOURCE_LS:
+            return setMapSource(readMapSource());
+        case WC_URL_LS:
+            return setWebCartographerUrl(readWebCartographerUrl());
         default:
             return null;
     }

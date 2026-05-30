@@ -92,7 +92,29 @@ export interface MapTile {
 export interface MapTileSet {
   /** Stable identity. When this changes the viewer treats it as a new map. */
   id: string | number;
+  /**
+   * Pre-materialised tile list. Required unless {@link chunksProvider}
+   * is supplied; the viewport-cull loop iterates this whole array on
+   * every pan/zoom, so very large pyramids (>>10k tiles) should prefer
+   * the on-demand provider instead.
+   */
   chunks: MapTile[];
+  /**
+   * Optional on-demand alternative to {@link chunks}. When provided, the
+   * viewer calls this with the current image-space viewport (already
+   * including overscan) on every pan/zoom and expects only the tiles that
+   * intersect to be returned. Avoids materialising millions of tile
+   * metadata entries for huge external XYZ pyramids (e.g. WebCartographer
+   * at zoom 9 = 16M cells).
+   *
+   * Implementations MUST be cheap and pure — it runs on every render.
+   */
+  chunksProvider?: (bounds: {
+    minX: number;
+    minY: number;
+    maxX: number;
+    maxY: number;
+  }) => MapTile[];
   imageWidth: number;
   imageHeight: number;
 }
@@ -834,6 +856,17 @@ export function MapViewer({
     const viewMinY = (-pan.y - TILE_OVERSCAN_PX) / zoom;
     const viewMaxX = (containerSize.w - pan.x + TILE_OVERSCAN_PX) / zoom;
     const viewMaxY = (containerSize.h - pan.y + TILE_OVERSCAN_PX) / zoom;
+    // On-demand provider path: lets huge pyramids avoid materialising every
+    // tile up front. Implementation already restricts to visible cells, so
+    // we just hand the result back.
+    if (activeTileSet.chunksProvider) {
+      return activeTileSet.chunksProvider({
+        minX: viewMinX,
+        minY: viewMinY,
+        maxX: viewMaxX,
+        maxY: viewMaxY,
+      });
+    }
     const out: MapTile[] = [];
     for (const t of activeTileSet.chunks) {
       if (t.px + t.w < viewMinX || t.py + t.h < viewMinY) continue;
@@ -1811,6 +1844,13 @@ export function MapViewer({
                 // ourselves via `visibleTiles`, so every <img> rendered here
                 // is genuinely on-screen and should fetch eagerly.
                 decoding="async"
+                // Hide tiles that 404. WebCartographer pyramids are sparse
+                // (no tile is generated for fully-unexplored cells), and
+                // without this the browser renders its built-in "broken
+                // image" glyph in every empty cell.
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).style.visibility = "hidden";
+                }}
                 style={{
                   position: "absolute",
                   left: t.px,

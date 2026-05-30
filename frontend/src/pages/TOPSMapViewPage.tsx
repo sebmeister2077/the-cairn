@@ -112,6 +112,8 @@ import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo"
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
+import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
+import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
@@ -183,6 +185,12 @@ export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
   const isAdmin = useReduxState("auth.isAdmin");
   const apiKey = useReduxState("auth.apiKey");
+  const mapSource = useReduxState("mapView.mapSource");
+  const webCartographerUrl = useReduxState("mapView.webCartographerUrl");
+  // Tile imagery flag: only the Cairn source has resolution levels and a
+  // per-level fetch lifecycle. The WebCartographer path is a thin static
+  // tile pyramid loaded directly from the configured remote host.
+  const usingWebCartographer = mapSource === "webcartographer";
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the
@@ -1199,14 +1207,17 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
         {!isFullscreen && (
           <>
+            <div className="rounded-lg border bg-muted/30 p-3">
+              <MapSourceSelector />
+            </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
-              {loading && (
+              {loading && !usingWebCartographer && (
                 <Button disabled>
                   <Loader2 className="size-4 mr-1 animate-spin" />
                   {loading}
                 </Button>
               )}
-              {!loading && hasMap && (
+              {!loading && hasMap && !usingWebCartographer && (
                 <>
                   {/* Group 1 — Map data actions */}
                   <div className="inline-flex items-center gap-1">
@@ -1268,6 +1279,29 @@ export function TOPSMapViewPage() {
                   </div>
                 </>
               )}
+              {/* WebCartographer mode: no download/reload (it's an external host),
+                  but navigation is still useful. */}
+              {usingWebCartographer && (
+                <div className="inline-flex items-center gap-1">
+                  <HomePositionControls
+                    favorite={favoriteStartingPosition}
+                    canSaveCurrent={lastViewportRef.current != null}
+                    onJumpHome={handleJumpHome}
+                    onSaveCurrent={handleSetCurrentAsHome}
+                    onClear={clearFavoriteStartingPosition}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleOpenGoToDialog}
+                    title={t("topsMap.jumpToCoordinateShortcut")}
+                  >
+                    <Search className="size-4 mr-1" />
+                    {t("topsMap.goToCoordinate")}
+                  </Button>
+                </div>
+              )}
               {!loading && !hasMap && error && (
                 <Button type="button" onClick={handleReload}>
                   {t("topsMap.retry")}
@@ -1275,7 +1309,7 @@ export function TOPSMapViewPage() {
               )}
 
               {/* Resolution selector — visible whenever multiple completed levels exist. */}
-              {completedLevels.length > 1 && (
+              {!usingWebCartographer && completedLevels.length > 1 && (
                 <>
                   <div aria-hidden="true" className="hidden sm:block h-6 w-px bg-border" />
                   <ResolutionSelector
@@ -1286,7 +1320,7 @@ export function TOPSMapViewPage() {
                 </>
               )}
 
-              {isAdmin && (
+              {isAdmin && !usingWebCartographer && (
                 <div className="ml-auto inline-flex items-center gap-1 rounded-md border border-dashed bg-background/60 px-1.5 py-1">
                   <span className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                     {t("topsMap.admin")}
@@ -1564,7 +1598,7 @@ export function TOPSMapViewPage() {
               </div>
             )}
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            {stats && statsQuery.data && (
+            {!usingWebCartographer && stats && statsQuery.data && (
               <MapStatsHeader stats={statsQuery.data} generatedAt={selectedLevelGeneratedAt} />
             )}
             {isAdmin && selectedDeposit && (
@@ -1615,66 +1649,112 @@ export function TOPSMapViewPage() {
               {t("topsMap.goToCoordinate")}
             </Button>
           )}
-          <MapViewer
-            tileSet={tileSet}
-            stats={stats}
-            alt="TOPS global server map"
-            height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
-            showTLLegend={showTranslocators}
-            showFullscreenControl
-            starfield={starfieldEnabled}
-            overlaySegments={visibleTranslocatorSegments}
-            overlayPoints={landmarkPoints}
-            onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
-            onOverlaySegmentRightClick={
-              showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
-            }
-            highlightedSegment={
-              showTranslocators && !editingGrouping && translocatorPinned
-                ? selectedTranslocator
-                : undefined
-            }
-            highlightedSegments={highlightedTranslocatorSegments}
-            focusPoint={landmarkFocusPoint}
-            focusSpanBlocks={landmarkFocusSpanBlocks}
-            enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
-            initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
-            onViewportChange={handleViewportChange}
-            onTileSetEnhanced={(next) => {
-              // Persist the upgrade so future page loads start at the higher
-              // level. Runs after MapViewer's internal swap, so the resulting
-              // tileSet prop change is recognised as already-adopted (Case 1
-              // in the tileSet?.id effect) and doesn't re-scale pan/zoom.
-              const lvl = typeof next.id === "number" ? next.id : Number(next.id);
-              if (Number.isFinite(lvl)) setSelectedLevel(lvl);
-            }}
-            overlay={
-              tileSet ? (
-                <>
-                  {showOceans ? (
-                    <OceansOverlayLayer
-                      stats={stats}
-                      imageWidth={tileSet.imageWidth}
-                      imageHeight={tileSet.imageHeight}
-                    />
-                  ) : null}
-                  {isAdmin ? (
-                    <ResourcesOverlayLayer
-                      state={resourcesOverlay}
-                      stats={stats}
-                      imageWidth={tileSet.imageWidth}
-                      imageHeight={tileSet.imageHeight}
-                      onDepositClick={setSelectedDeposit}
-                      selectedDeposit={selectedDeposit}
-                    />
-                  ) : null}
-                </>
-              ) : null
-            }
-            cursorMode={routePickMode ? "pick" : "default"}
-            onWorldClick={handleRouteWorldClick}
-            routeOverlay={routeOverlay}
-          />
+          {usingWebCartographer ? (
+            <WebCartographerMapViewer
+              baseUrl={webCartographerUrl}
+              alt="TOPS global server map"
+              height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
+              showTLLegend={showTranslocators}
+              showFullscreenControl
+              starfield={starfieldEnabled}
+              overlaySegments={visibleTranslocatorSegments}
+              overlayPoints={landmarkPoints}
+              onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
+              onOverlaySegmentRightClick={
+                showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
+              }
+              highlightedSegment={
+                showTranslocators && !editingGrouping && translocatorPinned
+                  ? selectedTranslocator
+                  : undefined
+              }
+              highlightedSegments={highlightedTranslocatorSegments}
+              focusPoint={landmarkFocusPoint}
+              focusSpanBlocks={landmarkFocusSpanBlocks}
+              initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
+              onViewportChange={handleViewportChange}
+              // For WC we use `overlayRender` so the overlay layers can size
+              // themselves to the synthetic WC image without the parent peeking
+              // into the wrapper's internal tileSet.
+              overlayRender={({ imgNatural, stats: wcStats }) =>
+                wcStats && imgNatural.w > 0 && imgNatural.h > 0 ? (
+                  <>
+                    {showOceans ? (
+                      <OceansOverlayLayer
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                      />
+                    ) : null}
+                  </>
+                ) : null
+              }
+              cursorMode={routePickMode ? "pick" : "default"}
+              onWorldClick={handleRouteWorldClick}
+              routeOverlay={routeOverlay}
+            />
+          ) : (
+            <MapViewer
+              tileSet={tileSet}
+              stats={stats}
+              alt="TOPS global server map"
+              height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
+              showTLLegend={showTranslocators}
+              showFullscreenControl
+              starfield={starfieldEnabled}
+              overlaySegments={visibleTranslocatorSegments}
+              overlayPoints={landmarkPoints}
+              onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
+              onOverlaySegmentRightClick={
+                showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
+              }
+              highlightedSegment={
+                showTranslocators && !editingGrouping && translocatorPinned
+                  ? selectedTranslocator
+                  : undefined
+              }
+              highlightedSegments={highlightedTranslocatorSegments}
+              focusPoint={landmarkFocusPoint}
+              focusSpanBlocks={landmarkFocusSpanBlocks}
+              enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
+              initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
+              onViewportChange={handleViewportChange}
+              onTileSetEnhanced={(next) => {
+                // Persist the upgrade so future page loads start at the higher
+                // level. Runs after MapViewer's internal swap, so the resulting
+                // tileSet prop change is recognised as already-adopted (Case 1
+                // in the tileSet?.id effect) and doesn't re-scale pan/zoom.
+                const lvl = typeof next.id === "number" ? next.id : Number(next.id);
+                if (Number.isFinite(lvl)) setSelectedLevel(lvl);
+              }}
+              overlay={
+                tileSet ? (
+                  <>
+                    {showOceans ? (
+                      <OceansOverlayLayer
+                        stats={stats}
+                        imageWidth={tileSet.imageWidth}
+                        imageHeight={tileSet.imageHeight}
+                      />
+                    ) : null}
+                    {isAdmin ? (
+                      <ResourcesOverlayLayer
+                        state={resourcesOverlay}
+                        stats={stats}
+                        imageWidth={tileSet.imageWidth}
+                        imageHeight={tileSet.imageHeight}
+                        onDepositClick={setSelectedDeposit}
+                        selectedDeposit={selectedDeposit}
+                      />
+                    ) : null}
+                  </>
+                ) : null
+              }
+              cursorMode={routePickMode ? "pick" : "default"}
+              onWorldClick={handleRouteWorldClick}
+              routeOverlay={routeOverlay}
+            />
+          )}
           {showTranslocators && selectedTranslocator && (
             <SelectedTranslocatorHeader
               selectedTranslocator={selectedTranslocator}
