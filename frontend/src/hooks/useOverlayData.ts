@@ -54,7 +54,7 @@ export function parseLandmarks(json: unknown): WorldPointMarker[] {
         const [x, z] = coords as [number, number];
         if (!Number.isFinite(x) || !Number.isFinite(z)) continue;
 
-        const props = (f?.properties ?? {}) as LandmarkProperty;
+        const props = (f?.properties ?? {}) as LandmarkProperty & { origin?: unknown };
         if (props.type === "Misc") continue;
 
         points.push({
@@ -63,6 +63,7 @@ export function parseLandmarks(json: unknown): WorldPointMarker[] {
             z: -z,
             label: typeof props.label === "string" ? props.label : undefined,
             kind: typeof props.type === "string" ? props.type : undefined,
+            origin: props.origin === "user" ? "user" : undefined,
         });
     }
 

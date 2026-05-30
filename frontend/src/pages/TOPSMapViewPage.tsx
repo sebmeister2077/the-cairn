@@ -344,14 +344,25 @@ export function TOPSMapViewPage() {
   const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
     if (!usingWebCartographer) return backendLandmarks;
     // Merge rule for WC source:
-    //   - From the WC (official) export: keep only "Base" landmarks.
-    //   - From our backend (mine): keep "Terminus" and "Server" landmarks
-    //     (our Server set is richer than WC's single Spawn marker).
+    //   - From the WC (official) export: keep "Base" landmarks, but drop
+    //     "Trader.*" entries — those duplicate the trader overlay and
+    //     clutter the map with redundant pins.
+    //   - From our backend: keep "Terminus" and "Server" (our Server set
+    //     is richer than WC's single Spawn marker), AND "Base" landmarks
+    //     that were contributed by players (`origin === "user"`).
+    //     Backend seed Bases are skipped to avoid duplicating the WC
+    //     export.
     const wc = wcLandmarksQuery.data;
     const fromBackend = (backendLandmarks ?? []).filter(
-      (p) => p.kind === "Terminus" || p.kind === "Server",
+      (p) =>
+        p.kind === "Terminus" || p.kind === "Server" || (p.kind === "Base" && p.origin === "user"),
     );
-    const fromWc = (wc ?? []).filter((p) => p.kind === "Base");
+    const fromWc = (wc ?? []).filter(
+      (p) =>
+        p.kind === "Base" &&
+        !(p.label ?? "").startsWith("Trader.") &&
+        !(p.label ?? "").toLowerCase().includes("terminus"),
+    );
     if (!wc) return fromBackend.length > 0 ? fromBackend : undefined;
     return [...fromWc, ...fromBackend];
   }, [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks]);

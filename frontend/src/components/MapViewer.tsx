@@ -74,6 +74,12 @@ export interface WorldPointMarker {
   kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
+  /** `"user"` when this landmark was contributed by a player (backend
+   *  stamps `origin: "user"` on the feature's properties), otherwise
+   *  undefined for seed / official data. Used to distinguish
+   *  player-added bases from WebCartographer-exported ones so we can
+   *  merge without duplicates. */
+  origin?: "user";
 }
 export type LandmarkProperty = {
   label: string;
