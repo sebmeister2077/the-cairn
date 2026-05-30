@@ -681,6 +681,70 @@ export function WebCartographerMapViewer({
     };
   }, []);
 
+  // ── Smooth camera animation ──────────────────────────────────────────────
+  // Used by focusPoint / Reset / Centre / search-landmark navigation so the
+  // viewport eases to the target instead of teleporting. Cancels itself the
+  // moment the user touches the wheel / starts a drag so input always wins.
+  const flyAnimRef = useRef<number | null>(null);
+  const cancelFlyAnim = useCallback(() => {
+    if (flyAnimRef.current != null) {
+      cancelAnimationFrame(flyAnimRef.current);
+      flyAnimRef.current = null;
+    }
+  }, []);
+  const animateCameraTo = useCallback(
+    (targetCx: number, targetCz: number, targetPpb: number) => {
+      cancelFlyAnim();
+      const clampedPpb = Math.min(MAX_PIXELS_PER_BLOCK, Math.max(MIN_PIXELS_PER_BLOCK, targetPpb));
+      const startCx = centerWorldXRef.current;
+      const startCz = centerWorldZRef.current;
+      const startPpb = pixelsPerBlockRef.current;
+      const dCx = targetCx - startCx;
+      const dCz = targetCz - startCz;
+      // Animate scale in log-space so each frame's perceived zoom change is
+      // constant — linear-in-ppb feels glacial at low zooms and abrupt at
+      // high zooms.
+      const startLog = Math.log(startPpb);
+      const endLog = Math.log(clampedPpb);
+      const dLog = endLog - startLog;
+
+      // Screen-space distance the centre will traverse, in *target* px.
+      // Used to size the animation duration so long jumps still feel snappy.
+      const screenDist = Math.hypot(dCx * clampedPpb, dCz * clampedPpb);
+      const prefersReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const negligible =
+        Math.abs(dCx) * clampedPpb < 0.5 &&
+        Math.abs(dCz) * clampedPpb < 0.5 &&
+        Math.abs(dLog) < 0.001;
+      if (prefersReducedMotion || negligible) {
+        setCenterWorldX(targetCx);
+        setCenterWorldZ(targetCz);
+        setPixelsPerBlock(clampedPpb);
+        return;
+      }
+      const duration = Math.min(700, Math.max(260, screenDist * 0.5));
+      const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+      const startTs = performance.now();
+      const step = (now: number) => {
+        const tNorm = Math.min(1, (now - startTs) / duration);
+        const k = ease(tNorm);
+        setCenterWorldX(startCx + dCx * k);
+        setCenterWorldZ(startCz + dCz * k);
+        setPixelsPerBlock(Math.exp(startLog + dLog * k));
+        if (tNorm < 1) {
+          flyAnimRef.current = requestAnimationFrame(step);
+        } else {
+          flyAnimRef.current = null;
+        }
+      };
+      flyAnimRef.current = requestAnimationFrame(step);
+    },
+    [cancelFlyAnim],
+  );
+  useEffect(() => () => cancelFlyAnim(), [cancelFlyAnim]);
+
   // ── Initial view ─────────────────────────────────────────────────────────
   const initialViewAppliedRef = useRef(false);
   useEffect(() => {
@@ -718,10 +782,8 @@ export function WebCartographerMapViewer({
       // `focusZoom` from the legacy API: a multiplier vs the initial scale.
       targetPpb = Math.max(pixelsPerBlockRef.current, INITIAL_PIXELS_PER_BLOCK * focusZoom);
     }
-    setCenterWorldX(focusPoint.x);
-    setCenterWorldZ(focusPoint.z);
-    setPixelsPerBlock(targetPpb);
-  }, [focusPoint, focusSpanBlocks, focusZoom, containerSize.w, containerSize.h]);
+    animateCameraTo(focusPoint.x, focusPoint.z, targetPpb);
+  }, [focusPoint, focusSpanBlocks, focusZoom, containerSize.w, containerSize.h, animateCameraTo]);
 
   // ── Viewport-change reporting (debounced) ────────────────────────────────
   useEffect(() => {
@@ -793,19 +855,16 @@ export function WebCartographerMapViewer({
   }, [zoomToward, containerSize.w, containerSize.h]);
 
   const resetView = useCallback(() => {
-    setCenterWorldX(0);
-    setCenterWorldZ(0);
-    setPixelsPerBlock(INITIAL_PIXELS_PER_BLOCK);
-  }, []);
+    animateCameraTo(0, 0, INITIAL_PIXELS_PER_BLOCK);
+  }, [animateCameraTo]);
 
   const centerOnOrigin = useCallback(() => {
     const target =
       centerTarget && Number.isFinite(centerTarget.x) && Number.isFinite(centerTarget.z)
         ? centerTarget
         : { x: 0, z: 0 };
-    setCenterWorldX(target.x);
-    setCenterWorldZ(target.z);
-  }, [centerTarget]);
+    animateCameraTo(target.x, target.z, pixelsPerBlockRef.current);
+  }, [animateCameraTo, centerTarget]);
 
   // ── Wheel zoom (non-passive so we can preventDefault) ────────────────────
   useEffect(() => {
@@ -813,6 +872,7 @@ export function WebCartographerMapViewer({
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      cancelFlyAnim();
       const rect = el.getBoundingClientRect();
       const focalX = e.clientX - rect.left;
       const focalY = e.clientY - rect.top;
@@ -821,21 +881,25 @@ export function WebCartographerMapViewer({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [zoomToward]);
+  }, [zoomToward, cancelFlyAnim]);
 
   // ── Mouse interaction ────────────────────────────────────────────────────
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    if (interactionsLockedRef.current) return;
-    if (cursorModeRef.current === "pick") return;
-    setDragging(true);
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      cwX: centerWorldXRef.current,
-      cwZ: centerWorldZRef.current,
-    };
-  }, []);
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      if (interactionsLockedRef.current) return;
+      if (cursorModeRef.current === "pick") return;
+      cancelFlyAnim();
+      setDragging(true);
+      dragStartRef.current = {
+        x: e.clientX,
+        y: e.clientY,
+        cwX: centerWorldXRef.current,
+        cwZ: centerWorldZRef.current,
+      };
+    },
+    [cancelFlyAnim],
+  );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -1069,13 +1133,18 @@ export function WebCartographerMapViewer({
         aria-label={alt}
         role="img"
       >
-        <canvas ref={canvasRef} className="absolute inset-0" />
         {(overlay || overlayRender) && (
+          // Rendered BEFORE the canvas in DOM order so it stacks below the
+          // tile layer — but above the container's background. WC tiles are
+          // sparse PNGs (404 in unexplored cells), so the oceans / other
+          // image-space overlays show through wherever no tile imagery
+          // exists, exactly like on the original WebCartographer UI.
           <div style={overlayTransform}>
             {overlay}
             {overlayRender?.({ zoom: pixelsPerBlock, imgNatural, stats: WC_STATS })}
           </div>
         )}
+        <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
         {hoverCoords && (
           <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
