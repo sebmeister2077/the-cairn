@@ -91,6 +91,7 @@ import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLay
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
+import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
@@ -285,7 +286,7 @@ export function TOPSMapViewPage() {
   // the "recently added" augmentation has no signal to work with there.
   // Force-off in WC mode (the toggle UI is also hidden) without touching
   // the persisted preference, so it comes back when switching to cairn.
-  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw && !usingWebCartographer;
+  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw; // && !usingWebCartographer;
   const toggleShowRecentlyAddedTLs = useCallback(
     () => dispatch(toggleShowRecentlyAddedAction()),
     [dispatch],
@@ -366,9 +367,11 @@ export function TOPSMapViewPage() {
     if (!wc) return fromBackend.length > 0 ? fromBackend : undefined;
     return [...fromWc, ...fromBackend];
   }, [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks]);
-  const allTranslocators = usingWebCartographer
-    ? wcTranslocatorsQuery.data
-    : translocatorsQuery.data?.data;
+  // Single source of truth for the TL set we draw + route against. In WC
+  // mode this merges the external snapshot with any recently-contributed
+  // backend TLs (see `useActiveTranslocators` + `TOPS_MAP_LAST_UPDATE`).
+  const { segments: activeTranslocators } = useActiveTranslocators();
+  const allTranslocators = activeTranslocators ?? undefined;
   const allTraders = tradersQuery.data?.data;
   // "Landmarks found" excludes Terminus — Terminus is surfaced via its own
   // toggle/count below.
@@ -1506,19 +1509,19 @@ export function TOPSMapViewPage() {
                 ) : null}
               </Button>
             </div>
-            {!usingWebCartographer && (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showRecentlyAddedTLs}
-                  onCheckedChange={toggleShowRecentlyAddedTLs}
-                  aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
-                />
-                <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
-                </span>
-              </div>
-            )}
+            {/* {!usingWebCartographer && ( */}
+            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <Switch
+                checked={showRecentlyAddedTLs}
+                onCheckedChange={toggleShowRecentlyAddedTLs}
+                aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
+              />
+              <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
+              <span className="text-xs text-muted-foreground ml-2">
+                {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
+              </span>
+            </div>
+            {/* )} */}
             <GroupEditingInfo
               editingGrouping={editingGrouping}
               setEditingGroupingId={setEditingGroupingId}

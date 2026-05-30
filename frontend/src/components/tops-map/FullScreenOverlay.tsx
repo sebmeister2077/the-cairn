@@ -141,7 +141,7 @@ export function FullscreenControlsOverlay({
   // so the FS overlay matches: hide the toggle and force the effect off
   // without clobbering the persisted preference.
   const usingWebCartographer = useAppSelector((s) => s.mapView.mapSource) === "webcartographer";
-  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw && !usingWebCartographer;
+  const showRecentlyAddedTLs = showRecentlyAddedTLsRaw; //&& !usingWebCartographer;
   const toggleShowRecentlyAddedTLs = useCallback(
     (next?: boolean) => dispatch(toggleShowRecentlyAddedAction(next)),
     [dispatch],
@@ -202,7 +202,7 @@ export function FullscreenControlsOverlay({
             {
               "opacity-50": !showTranslocators,
               "cursor-pointer": showTranslocators,
-              "hidden": usingWebCartographer,
+              // "hidden": usingWebCartographer,
             },
           )}
         >

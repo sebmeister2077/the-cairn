@@ -36,6 +36,20 @@ export type MapSource = "cairn" | "webcartographer";
 /** Default WebCartographer host used when the user has not entered a URL. */
 export const DEFAULT_WEBCARTOGRAPHER_URL = "https://tops-map.translocator.moe";
 
+/**
+ * ISO-8601 timestamp of the last known refresh of the external
+ * WebCartographer (TOPS) translocator export. When WC mode is active,
+ * any user-contributed TL whose `added_at` is strictly newer than this
+ * cutoff is merged into the WC set so the map shows official TLs plus
+ * anything submitted on our site after that snapshot.
+ *
+ * Bump this whenever the external export is known to have been
+ * regenerated. Player-added TLs older than the cutoff will then drop
+ * back out of the merge (they're assumed to be present in the new WC
+ * export).
+ */
+export const TOPS_MAP_LAST_UPDATE = "2026-05-29T00:00:00Z";
+
 /** Built-in preset hosts shown in the source selector dropdown. */
 export const WEBCARTOGRAPHER_PRESETS: Array<{ label: string; url: string, disabled?: boolean }> = [
     // { label: "Translocator.moe", url: "https://tops-map.translocator.moe" },
