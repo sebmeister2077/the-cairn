@@ -72,6 +72,26 @@ function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
       duration: formatDuration(leg.seconds),
     });
   }
+  // The entry Y is only known for seeded TLs (bundled geojson has
+  // depth1/depth2); user-contributed TLs omit it. Pick the depth that
+  // matches the leg's `from` endpoint so the displayed Y tells the
+  // player how deep they may have to dig to reach the TL entrance.
+  const seg = leg.segment;
+  let entryY: number | undefined;
+  if (seg.x1 === leg.from.x && seg.z1 === leg.from.z) {
+    entryY = seg.y1;
+  } else if (seg.x2 === leg.from.x && seg.z2 === leg.from.z) {
+    entryY = seg.y2;
+  }
+  if (typeof entryY === "number") {
+    return t("routePlanner.tlLegWithY", {
+      index: index + 1,
+      x: leg.to.x,
+      y: entryY,
+      z: leg.to.z,
+      duration: formatDuration(leg.seconds),
+    });
+  }
   return t("routePlanner.tlLeg", {
     index: index + 1,
     x: leg.to.x,

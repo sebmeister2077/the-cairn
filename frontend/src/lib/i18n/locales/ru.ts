@@ -966,6 +966,7 @@ const ru = {
         best: "лучший",
         walkLeg: "{index}. Пешком {blocks} блоков ({duration})",
         tlLeg: "{index}. TL -> ({x}, {z}) - {duration}",
+        tlLegWithY: "{index}. TL -> ({x}, y{y}, {z}) - {duration}",
         routeTo: "Маршрут до {destination}",
         destinationFallback: "назначения",
         deltaDuration: "+{duration}",

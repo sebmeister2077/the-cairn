@@ -964,6 +964,7 @@ export const en = {
         best: "best",
         walkLeg: "{index}. Walk {blocks} blocks ({duration})",
         tlLeg: "{index}. TL -> ({x}, {z}) - {duration}",
+        tlLegWithY: "{index}. TL -> ({x}, y{y}, {z}) - {duration}",
         routeTo: "Route to {destination}",
         destinationFallback: "destination",
         deltaDuration: "+{duration}",

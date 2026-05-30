@@ -33,6 +33,10 @@ export interface WorldLineSegment {
   z1: number;
   x2: number;
   z2: number;
+  /** Y (depth) at each endpoint, when known. Seeded TLs from the bundled
+   *  geojson carry `depth1`/`depth2`; user-contributed TLs omit them. */
+  y1?: number;
+  y2?: number;
   /** Visual / data classification for the segment.
    *  - "default" (or undefined): seeded translocator (purple).
    *  - "user": user-contributed translocator (blue) — carries `meta`.

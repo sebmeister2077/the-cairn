@@ -91,6 +91,8 @@ export function parseTranslocators(json: unknown): WorldLineSegment[] {
         const meta: WorldLineSegment["meta"] | undefined = isUser
             ? { segmentId, addedBy, addedAt }
             : undefined;
+        const depth1 = typeof props.depth1 === "number" ? props.depth1 : undefined;
+        const depth2 = typeof props.depth2 === "number" ? props.depth2 : undefined;
         for (let i = 1; i < coords.length; i++) {
             const [x1, z1raw] = (coords[i - 1] ?? []) as [number, number];
             const [x2, z2raw] = (coords[i] ?? []) as [number, number];
@@ -102,7 +104,16 @@ export function parseTranslocators(json: unknown): WorldLineSegment[] {
                 Number.isFinite(x2) &&
                 Number.isFinite(z2)
             ) {
-                segments.push({ x1, z1, x2, z2, kind, meta });
+                segments.push({
+                    x1,
+                    z1,
+                    x2,
+                    z2,
+                    y1: Number.isFinite(depth1) ? depth1 : undefined,
+                    y2: Number.isFinite(depth2) ? depth2 : undefined,
+                    kind,
+                    meta,
+                });
             }
         }
     }
