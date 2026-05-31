@@ -67,7 +67,12 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
     <div className={cn("flex flex-col gap-3", className)}>
       <Tabs value={mapSource} onValueChange={(v) => handleSourceChange(v as MapSource)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="cairn" className="flex items-center gap-1.5">
+          <TabsTrigger
+            value="cairn"
+            disabled
+            className="flex items-center gap-1.5"
+            title="Cairn map is temporarily disabled"
+          >
             <MapPinned className="size-3.5" />
             Cairn map
           </TabsTrigger>

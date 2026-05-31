@@ -34,7 +34,7 @@ export type TLGroupingsViewMode = "all" | "highlight" | "filter";
 export type MapSource = "cairn" | "webcartographer";
 
 /** Default WebCartographer host used when the user has not entered a URL. */
-export const DEFAULT_WEBCARTOGRAPHER_URL = "https://tops-map.translocator.moe";
+export const DEFAULT_WEBCARTOGRAPHER_URL = "https://map.tops.vintagestory.at";
 
 /**
  * ISO-8601 timestamp of the last known refresh of the external
@@ -128,8 +128,9 @@ function readActive(): string[] {
 }
 
 function readMapSource(): MapSource {
-    const raw = lsRead(MAP_SOURCE_LS);
-    return raw === "webcartographer" ? "webcartographer" : "cairn";
+    // Cairn map is disabled; always use WebCartographer regardless of any
+    // previously-persisted preference.
+    return "webcartographer";
 }
 
 function readWebCartographerUrl(): string {
@@ -257,7 +258,10 @@ export const mapViewSlice = createSlice({
             // any future additions) as `undefined` on existing accounts.
             const next = action.payload.mapView as Partial<MapViewState> | undefined;
             if (!next) return state;
-            return { ...state, ...next };
+            const merged = { ...state, ...next };
+            // Cairn map is disabled; coerce any persisted value forward.
+            if (merged.mapSource !== "webcartographer") merged.mapSource = "webcartographer";
+            return merged;
         });
     },
 });
