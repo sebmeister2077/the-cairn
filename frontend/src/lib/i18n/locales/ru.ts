@@ -1023,6 +1023,14 @@ const ru = {
         analyticsSent: "Отправлено - спасибо!",
         analyticsSave: "Сохранить этот маршрут для дорожных рабочих",
         analyticsErrorFallback: "Не удалось отправить маршрут. Попробуйте еще раз.",
+        shareRoute: "Поделиться маршрутом",
+        shareRouteTitle:
+            "Скопировать ссылку, которая откроет этот маршрут (точки и настройки) у другого игрока",
+        shareRendezvous: "Поделиться встречей",
+        shareRendezvousTitle:
+            "Скопировать ссылку, которая откроет эту встречу (игроки и настройки) для всей группы",
+        copiedShareLink: "Ссылка скопирована!",
+        shareNothingToShare: "Сначала задайте точки",
         estimatedTime: "Расчетное время",
         walkBlocks: "{count} блоков",
         tlHops: {

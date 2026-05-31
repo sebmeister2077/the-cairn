@@ -231,6 +231,53 @@ export const routePlannerSlice = createSlice({
             state.routes = [];
             state.rendezvousResult = null;
         },
+        /**
+         * Apply a decoded share-link payload. Wipes existing routes /
+         * results so the recompute hooks start from a clean slate, and
+         * opens the panel so the user actually sees what was loaded.
+         */
+        hydrateFromShare(
+            state,
+            action: PayloadAction<{
+                mode: RoutePlannerMode;
+                from: EndpointPick | null;
+                to: EndpointPick | null;
+                walkSpeed?: number;
+                tlPenaltySeconds?: number;
+                kNeighbors?: number;
+                players?: Array<EndpointPick | null>;
+                rendezvousObjective?: RendezvousObjective;
+            }>,
+        ) {
+            const p = action.payload;
+            state.mode = p.mode;
+            state.from = p.from;
+            state.to = p.to;
+            state.routes = [];
+            state.selectedIndex = 0;
+            state.error = null;
+            state.pickMode = null;
+            state.rendezvousResult = null;
+            state.rendezvousError = null;
+            if (p.players !== undefined) {
+                const next = p.players.slice();
+                while (next.length < 2) next.push(null);
+                state.players = next.slice(0, 8);
+            }
+            if (p.rendezvousObjective !== undefined) {
+                state.rendezvousObjective = p.rendezvousObjective;
+            }
+            if (p.walkSpeed !== undefined) {
+                state.walkSpeed = Math.max(0.5, Math.min(20, p.walkSpeed));
+            }
+            if (p.tlPenaltySeconds !== undefined) {
+                state.tlPenaltySeconds = Math.max(0, Math.min(600, p.tlPenaltySeconds));
+            }
+            if (p.kNeighbors !== undefined) {
+                state.kNeighbors = Math.max(1, Math.min(64, Math.trunc(p.kNeighbors)));
+            }
+            state.isOpen = true;
+        },
         setFocusRequest(
             state,
             action: PayloadAction<(WorldPoint & { spanBlocks?: number }) | null>,
@@ -270,4 +317,5 @@ export const {
     setWalkSpeed: setRouteWalkSpeed,
     setTLPenalty: setRouteTLPenalty,
     setFocusRequest: setRouteFocusRequest,
+    hydrateFromShare: hydrateRoutePlannerFromShare,
 } = routePlannerSlice.actions;

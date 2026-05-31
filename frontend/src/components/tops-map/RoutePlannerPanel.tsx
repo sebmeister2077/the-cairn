@@ -12,6 +12,7 @@ import {
   Plus,
   Send,
   Settings2,
+  Share2,
   Sparkles,
   Trash2,
   Users,
@@ -32,6 +33,7 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { routeAnalytics, type SavedRouteLeg } from "@/lib/api";
+import { buildRouteShareUrl } from "@/lib/route-share";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import type {
   RendezvousObjective,
@@ -279,6 +281,37 @@ export function RoutePlannerPanel() {
   });
   const [waypointCopied, setWaypointCopied] = useState(false);
   const [waypointHelpOpen, setWaypointHelpOpen] = useState(false);
+  // Share-link feedback. Local 2s timer rather than a hook so it lines
+  // up with the sibling waypoint/meeting copy indicators.
+  const [shareCopied, setShareCopied] = useState(false);
+  useEffect(() => {
+    if (!shareCopied) return;
+    const id = window.setTimeout(() => setShareCopied(false), 2000);
+    return () => window.clearTimeout(id);
+  }, [shareCopied]);
+
+  async function handleCopyShareLink() {
+    const url = buildRouteShareUrl({
+      mode,
+      from,
+      to,
+      walkSpeed,
+      tlPenaltySeconds,
+      kNeighbors,
+      players,
+      rendezvousObjective,
+    });
+    if (!url) return;
+    try {
+      await copyTextToClipboard(url);
+      setShareCopied(true);
+    } catch {
+      /* clipboard blocked — silently ignore */
+    }
+  }
+
+  // Whether there's anything meaningful to share for the current mode.
+  const canShare = mode === "route" ? Boolean(from || to) : players.some((p) => p != null);
 
   useEffect(() => {
     try {
@@ -535,6 +568,9 @@ export function RoutePlannerPanel() {
             result={rendezvousResult}
             isComputing={rendezvousIsComputing}
             error={rendezvousError}
+            onCopyShareLink={handleCopyShareLink}
+            shareCopied={shareCopied}
+            canShare={canShare}
           />
         )}
 
@@ -654,24 +690,52 @@ export function RoutePlannerPanel() {
                 {/* Save-as-draft action: turns the current route's TLs into
                   a fresh TL grouping the user can rename / tweak in the
                   Groupings drawer. Disabled for walk-only routes since a
-                  grouping with zero TLs would be meaningless. */}
+                  grouping with zero TLs would be meaningless.
+                  Share button sits beside it so both "keep this route"
+                  affordances live in the same row. */}
                 {primary && (
                   <div className="space-y-1">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full gap-1.5"
-                      onClick={handleSaveAsDraft}
-                      disabled={primary.tlHops === 0}
-                      title={
-                        primary.tlHops === 0
-                          ? t("routePlanner.saveDraftNoTls")
-                          : t("routePlanner.saveDraftTitle")
-                      }
-                    >
-                      <BookmarkPlus className="h-3.5 w-3.5" />
-                      {t("routePlanner.saveDraftButton")}
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5"
+                        onClick={handleSaveAsDraft}
+                        disabled={primary.tlHops === 0}
+                        title={
+                          primary.tlHops === 0
+                            ? t("routePlanner.saveDraftNoTls")
+                            : t("routePlanner.saveDraftTitle")
+                        }
+                      >
+                        <BookmarkPlus className="h-3.5 w-3.5" />
+                        {t("routePlanner.saveDraftButton")}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1 gap-1.5"
+                        onClick={handleCopyShareLink}
+                        disabled={!canShare}
+                        title={
+                          canShare
+                            ? t("routePlanner.shareRouteTitle")
+                            : t("routePlanner.shareNothingToShare")
+                        }
+                      >
+                        {shareCopied ? (
+                          <>
+                            <Check className="h-3.5 w-3.5" />
+                            {t("routePlanner.copiedShareLink")}
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="h-3.5 w-3.5" />
+                            {t("routePlanner.shareRoute")}
+                          </>
+                        )}
+                      </Button>
+                    </div>
                     {savedDraft && (
                       <p className="flex items-center gap-1 px-1 text-[11px] text-emerald-700 dark:text-emerald-400">
                         <Check className="h-3 w-3" />
@@ -962,12 +1026,18 @@ function RendezvousSection({
   result,
   isComputing,
   error,
+  onCopyShareLink,
+  shareCopied,
+  canShare,
 }: {
   players: Array<EndpointPick | null>;
   objective: RendezvousObjective;
   result: RendezvousResult | null;
   isComputing: boolean;
   error: string | null;
+  onCopyShareLink: () => void;
+  shareCopied: boolean;
+  canShare: boolean;
 }) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
@@ -1170,6 +1240,27 @@ function RendezvousSection({
                 <>
                   <Copy className="h-3.5 w-3.5" />
                   {t("routePlanner.copyMeetingWaypoint")}
+                </>
+              )}
+            </Button>
+
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={onCopyShareLink}
+              disabled={!canShare}
+              title={t("routePlanner.shareRendezvousTitle")}
+            >
+              {shareCopied ? (
+                <>
+                  <Check className="h-3.5 w-3.5" />
+                  {t("routePlanner.copiedShareLink")}
+                </>
+              ) : (
+                <>
+                  <Share2 className="h-3.5 w-3.5" />
+                  {t("routePlanner.shareRendezvous")}
                 </>
               )}
             </Button>

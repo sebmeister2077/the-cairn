@@ -1044,6 +1044,14 @@ export const en = {
         analyticsSent: "Sent - thanks!",
         analyticsSave: "Save this route for road workers",
         analyticsErrorFallback: "Could not send route. Please try again.",
+        shareRoute: "Share route",
+        shareRouteTitle:
+            "Copy a link that opens this route (endpoints + settings) for someone else",
+        shareRendezvous: "Share meeting",
+        shareRendezvousTitle:
+            "Copy a link that opens this rendezvous (players + settings) for the party",
+        copiedShareLink: "Link copied!",
+        shareNothingToShare: "Set endpoints first",
         estimatedTime: "Estimated time",
         walkBlocks: "{count} blocks",
         tlHops: {

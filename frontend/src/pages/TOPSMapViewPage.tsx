@@ -85,6 +85,7 @@ import {
   setRoutePlannerOpen,
   setRoutePlayer,
   setRouteTo,
+  hydrateRoutePlannerFromShare,
 } from "@/store/slices/routePlanner";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
@@ -122,6 +123,7 @@ import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerM
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
+import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/route-share";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -247,6 +249,32 @@ export function TOPSMapViewPage() {
   );
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  // One-shot rehydrate of a shared route-planner link. Runs in an effect
+  // (not during render) so the dispatch and the URL strip don't race
+  // with other mount-time effects that read/write `searchParams`. The
+  // ref guard makes it idempotent across React Strict Mode double-mounts.
+  const shareHydratedRef = useRef(false);
+  useEffect(() => {
+    if (shareHydratedRef.current) return;
+    shareHydratedRef.current = true;
+    // Read the URL directly rather than the captured `searchParams`
+    // closure, since the effect might run a tick after other URL
+    // writers have already shifted the params.
+    const liveParams = new URLSearchParams(window.location.search);
+    const payload = decodeRouteShareParams(liveParams);
+    if (!payload) return;
+    dispatch(hydrateRoutePlannerFromShare(payload));
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        for (const k of ROUTE_SHARE_PARAM_KEYS) next.delete(k);
+        return next;
+      },
+      { replace: true },
+    );
+    // Intentionally a once-on-mount effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Overlay-visibility toggles are persisted in the mapView slice so the
   // user's preference survives reloads and cross-tab navigation.
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
@@ -1191,51 +1219,6 @@ export function TOPSMapViewPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [routePickMode, dispatch]);
-
-  // URL state for shareable routes — `?rfrom=x,z&rto=x,z`. We use the
-  // `r`-prefix to avoid colliding with any future `?from=` page params.
-  // Hydration runs once on mount; the writeback effect mirrors the slice.
-  const routeUrlHydratedRef = useRef(false);
-  useEffect(() => {
-    if (routeUrlHydratedRef.current) return;
-    routeUrlHydratedRef.current = true;
-    const parseParam = (raw: string | null): { x: number; z: number } | null => {
-      if (!raw) return null;
-      const m = raw.match(/^(-?\d+)\s*,\s*(-?\d+)$/);
-      if (!m) return null;
-      return { x: parseInt(m[1], 10), z: parseInt(m[2], 10) };
-    };
-    const f = parseParam(searchParams.get("rfrom"));
-    const t = parseParam(searchParams.get("rto"));
-    if (f) {
-      dispatch(setRouteFrom({ point: f, label: `${f.x}, ${f.z}`, source: "url" }));
-    }
-    if (t) {
-      dispatch(setRouteTo({ point: t, label: `${t.x}, ${t.z}`, source: "url" }));
-    }
-    // Intentionally do NOT auto-open the planner panel when hydrating from
-    // the URL. The active route is already advertised by the emerald Route
-    // button (with ETA pill) and the on-map overlay, and forcing the panel
-    // open on every reload would steal screen real estate from users who
-    // explicitly closed it.
-    // searchParams intentionally omitted — we want a true once-on-mount hydrate.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!routeUrlHydratedRef.current) return;
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (routeFrom) next.set("rfrom", `${routeFrom.point.x},${routeFrom.point.z}`);
-        else next.delete("rfrom");
-        if (routeTo) next.set("rto", `${routeTo.point.x},${routeTo.point.z}`);
-        else next.delete("rto");
-        return next;
-      },
-      { replace: true },
-    );
-  }, [routeFrom, routeTo, setSearchParams]);
 
   return (
     <Card
