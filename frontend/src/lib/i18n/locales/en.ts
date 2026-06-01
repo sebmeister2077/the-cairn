@@ -1072,7 +1072,7 @@ export const en = {
         notSet: "Not set",
         clickMap: "Click map...",
         pickOnMap: "Pick on map",
-        paste: "Paste",
+        input: "Input",
         home: "Home",
         favoriteHome: "Favorite home",
         useFavoriteHome: "Use favorite home",

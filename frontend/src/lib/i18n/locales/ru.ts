@@ -1051,7 +1051,7 @@ const ru = {
         notSet: "Не задано",
         clickMap: "Кликните по карте...",
         pickOnMap: "Выбрать на карте",
-        paste: "Вставить",
+        input: "Ввод",
         home: "Дом",
         favoriteHome: "Избранный дом",
         useFavoriteHome: "Использовать избранный дом",

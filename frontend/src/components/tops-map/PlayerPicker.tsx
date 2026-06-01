@@ -145,7 +145,7 @@ export function PlayerPicker({ index }: PlayerPickerProps) {
           className="h-7 px-2 text-xs flex-1"
           onClick={() => setPasteOpen((v) => !v)}
         >
-          {t("routePlanner.paste")}
+          {t("routePlanner.input")}
         </Button>
         <Button
           size="sm"
