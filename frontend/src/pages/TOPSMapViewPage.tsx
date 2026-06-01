@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getTopsMapStats,
   getTopsMapLevel,
+  getMyAccountSafe,
   type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
 } from "@/lib/api";
@@ -78,6 +79,8 @@ import {
   type TLGroupingsViewMode,
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { useTLRoute } from "@/hooks/useTLRoute";
+import { useElkWalkable } from "@/hooks/useElkWalkable";
+import { walkLegEdgeRef, classifyWalkLeg } from "@/lib/elk-walkable";
 import { formatDuration } from "@/lib/format-duration";
 import {
   setRouteFrom,
@@ -1145,6 +1148,28 @@ export function TOPSMapViewPage() {
   const routePlannerMode = useAppSelector((s) => s.routePlanner.mode);
   const rendezvousResult = useAppSelector((s) => s.routePlanner.rendezvousResult);
 
+  // Elk-walkable: hydrate slice + read draft/server state so the route
+  // overlay can recolour walk legs based on community attestation.
+  useElkWalkable();
+  const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
+  const elkPendingAttest = useAppSelector((s) => s.elkWalkable.pendingAttest);
+  const elkPendingUnattest = useAppSelector((s) => s.elkWalkable.pendingUnattest);
+  const accountMeQuery = useQuery({
+    queryKey: ["account-me", apiKey ?? ""],
+    queryFn: getMyAccountSafe,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const selfUserId = accountMeQuery.data?.user?.id ?? null;
+  const elkPendingAttestKeys = useMemo(
+    () => new Set(elkPendingAttest.map((p) => p.key)),
+    [elkPendingAttest],
+  );
+  const elkPendingUnattestKeys = useMemo(
+    () => new Set(elkPendingUnattest.map((p) => p.key)),
+    [elkPendingUnattest],
+  );
+
   // Build the visual overlay handed to MapViewer. In route mode this
   // mirrors the selected route's TL + walk legs with the From/To pins.
   // In rendezvous mode we flatten every per-player route into a single
@@ -1157,9 +1182,22 @@ export function TOPSMapViewPage() {
       const tlSegments: WorldLineSegment[] = [];
       const walkLegs: RouteOverlay["walkLegs"] = [];
       for (const perPlayer of rendezvousResult.perPlayer) {
-        for (const leg of perPlayer.route.legs) {
-          if (leg.kind === "tl") tlSegments.push(leg.segment);
-          else walkLegs.push({ from: leg.from, to: leg.to });
+        const legs = perPlayer.route.legs;
+        for (let i = 0; i < legs.length; i++) {
+          const leg = legs[i];
+          if (leg.kind === "tl") {
+            tlSegments.push(leg.segment);
+          } else {
+            const ref = walkLegEdgeRef(legs, i);
+            const elkState = classifyWalkLeg(
+              ref,
+              elkEdges,
+              elkPendingAttestKeys,
+              elkPendingUnattestKeys,
+              selfUserId,
+            );
+            walkLegs.push({ from: leg.from, to: leg.to, elkState });
+          }
         }
       }
       return {
@@ -1174,9 +1212,22 @@ export function TOPSMapViewPage() {
     const tlSegments: WorldLineSegment[] = [];
     const walkLegs: RouteOverlay["walkLegs"] = [];
     if (selected) {
-      for (const leg of selected.legs) {
-        if (leg.kind === "tl") tlSegments.push(leg.segment);
-        else walkLegs.push({ from: leg.from, to: leg.to });
+      const legs = selected.legs;
+      for (let i = 0; i < legs.length; i++) {
+        const leg = legs[i];
+        if (leg.kind === "tl") {
+          tlSegments.push(leg.segment);
+        } else {
+          const ref = walkLegEdgeRef(legs, i);
+          const elkState = classifyWalkLeg(
+            ref,
+            elkEdges,
+            elkPendingAttestKeys,
+            elkPendingUnattestKeys,
+            selfUserId,
+          );
+          walkLegs.push({ from: leg.from, to: leg.to, elkState });
+        }
       }
     }
     return {
@@ -1185,7 +1236,18 @@ export function TOPSMapViewPage() {
       from: routeFrom?.point ?? null,
       to: routeTo?.point ?? null,
     };
-  }, [routes, routeSelectedIndex, routeFrom, routeTo, routePlannerMode, rendezvousResult]);
+  }, [
+    routes,
+    routeSelectedIndex,
+    routeFrom,
+    routeTo,
+    routePlannerMode,
+    rendezvousResult,
+    elkEdges,
+    elkPendingAttestKeys,
+    elkPendingUnattestKeys,
+    selfUserId,
+  ]);
 
   // Click-on-map endpoint capture. Writes to the slot indicated by
   // `pickMode`, then clears pick mode so a single click ends the gesture.

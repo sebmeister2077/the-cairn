@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeftRight,
   BookmarkPlus,
@@ -9,6 +10,7 @@ import {
   Info,
   Loader2,
   MapPin,
+  PawPrint,
   Plus,
   Send,
   Settings2,
@@ -31,8 +33,9 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { routeAnalytics, type SavedRouteLeg } from "@/lib/api";
+import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/api";
 import { buildRouteShareUrl } from "@/lib/route-share";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import type {
@@ -42,11 +45,19 @@ import type {
   RouteResult,
 } from "@/lib/tl-routing";
 import { useTLRendezvous } from "@/hooks/useTLRendezvous";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { useElkWalkable, useElkWalkableSubmit } from "@/hooks/useElkWalkable";
+import {
+  classifyWalkLeg,
+  walkLegEdgeRef,
+  type EdgeEndpointRef,
+  type WalkLegElkState,
+} from "@/lib/elk-walkable";
+import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
   addRoutePlayer,
   clearRoutePlanner,
   setRendezvousObjective,
+  setRouteElkFriendlyOnly,
   setRouteFocusRequest,
   setRoutePlannerMode,
   setRoutePlannerOpen,
@@ -56,6 +67,11 @@ import {
   swapRouteEndpoints,
   type EndpointPick,
 } from "@/store/slices/routePlanner";
+import {
+  clearElkDraft,
+  removeElkPending,
+  toggleElkPendingAttest,
+} from "@/store/slices/elkWalkable";
 
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
@@ -103,10 +119,11 @@ function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
   });
 }
 
-// Y coordinate baked into generated /waypoint commands. Tops-map endpoints
-// are 2D, so we pin Y to a reasonable surface value — players can drag the
-// waypoint in-game if it lands inside a hill.
-const WAYPOINT_Y = 110;
+// Y coordinate used as a fallback when a TL endpoint has no recorded Y
+// (user-contributed TLs only carry 2D coordinates). Seeded TLs ship
+// `y1`/`y2` and are passed through directly so the in-game waypoint sits
+// at the correct depth.
+const FALLBACK_WAYPOINT_Y = 110;
 
 // Curated palette of CSS colour names that VS's /waypoint command renders
 // nicely on the in-game map. Hex inputs also work in-game, but a fixed
@@ -130,7 +147,7 @@ const WAYPOINT_COLORS = [
 
 const LS_COLOR_KEY = "routePlanner.waypointColor";
 const LS_TEMPLATE_KEY = "routePlanner.waypointLabelTemplate";
-const DEFAULT_LABEL_TEMPLATE = "Route {i}/{n} ({x},{z})";
+const DEFAULT_LABEL_TEMPLATE = "Route {i}/{n} ({linked_x},{linked_z})";
 
 /** Per-waypoint context exposed to label templates. */
 interface WaypointContext {
@@ -139,6 +156,12 @@ interface WaypointContext {
   x: number;
   y: number;
   z: number;
+  /** Coordinates of the OTHER end of the TL this waypoint sits on —
+   *  i.e. where stepping into this TL will take the player. Same as
+   *  `x`/`z` if this waypoint has no linked endpoint (shouldn't happen
+   *  in practice since chain entries are only emitted for TL hops). */
+  linked_x: number;
+  linked_z: number;
   next_x: number | "";
   next_z: number | "";
   prev_x: number | "";
@@ -161,23 +184,59 @@ function renderTemplate(template: string, ctx: WaypointContext): string {
   });
 }
 
+/** A single waypoint candidate — a TL endpoint plus the coordinates of
+ *  the TL's OTHER end (so label templates can show "goes to (x,z)"). */
+interface RouteWaypoint {
+  x: number;
+  z: number;
+  y: number;
+  linked_x: number;
+  linked_z: number;
+}
+
 /** Collapse a route into the chain of unique waypoints worth dropping in
  *  the world: only TL endpoints (entry + exit of each TL hop). Route
  *  start and finish are intentionally excluded — the player already
  *  knows where they're standing and where they're going; what they need
  *  marked on the map are the translocators they have to find. Consecutive
  *  duplicates are dropped so a TL exit immediately followed by another
- *  TL entry at the same coords only produces one waypoint. */
-function routeWaypointChain(route: RouteResult): Array<{ x: number; z: number }> {
-  const chain: Array<{ x: number; z: number }> = [];
+ *  TL entry at the same coords only produces one waypoint. When that
+ *  collapse happens we overwrite the previous waypoint's linked endpoint
+ *  with the NEXT TL's exit so the label reflects where the player will
+ *  travel from this point, not where they just came from. */
+function routeWaypointChain(route: RouteResult): RouteWaypoint[] {
+  const chain: RouteWaypoint[] = [];
   for (const leg of route.legs) {
     if (leg.kind !== "tl") continue;
-    const entry = { x: leg.from.x, z: leg.from.z };
+    const seg = leg.segment;
+    // Map `from`/`to` back to the seg's (x1,y1,z1)/(x2,y2,z2) pair so we
+    // can pull the correct Y for each endpoint. User-contributed TLs omit
+    // y1/y2 — fall back to a reasonable surface value in that case.
+    const fromIs1 = seg.x1 === leg.from.x && seg.z1 === leg.from.z;
+    const fromY = (fromIs1 ? seg.y1 : seg.y2) ?? FALLBACK_WAYPOINT_Y;
+    const toY = (fromIs1 ? seg.y2 : seg.y1) ?? FALLBACK_WAYPOINT_Y;
+    const entry: RouteWaypoint = {
+      x: leg.from.x,
+      z: leg.from.z,
+      y: fromY,
+      linked_x: leg.to.x,
+      linked_z: leg.to.z,
+    };
     const last = chain[chain.length - 1];
     if (!last || last.x !== entry.x || last.z !== entry.z) {
       chain.push(entry);
+    } else {
+      // Same physical spot — swap the previous TL's outgoing-link for this
+      // new TL's so the label tells the player where THIS TL goes next.
+      chain[chain.length - 1] = entry;
     }
-    const exit = { x: leg.to.x, z: leg.to.z };
+    const exit: RouteWaypoint = {
+      x: leg.to.x,
+      z: leg.to.z,
+      y: toY,
+      linked_x: leg.from.x,
+      linked_z: leg.from.z,
+    };
     const prev = chain[chain.length - 1];
     if (prev.x !== exit.x || prev.z !== exit.z) {
       chain.push(exit);
@@ -202,8 +261,10 @@ function buildRouteWaypointCommands(route: RouteResult, color: string, template:
         i: i + 1,
         n: chain.length,
         x: p.x,
-        y: WAYPOINT_Y,
+        y: p.y,
         z: p.z,
+        linked_x: p.linked_x,
+        linked_z: p.linked_z,
         next_x: next ? next.x : "",
         next_z: next ? next.z : "",
         prev_x: prev ? prev.x : "",
@@ -213,7 +274,7 @@ function buildRouteWaypointCommands(route: RouteResult, color: string, template:
         start_x: start.x,
         start_z: start.z,
       }).trim() || `Route ${i + 1}/${chain.length}`;
-    lines.push(`/waypoint addati spiral ${p.x} ${WAYPOINT_Y} ${p.z} false ${color} ${label}`);
+    lines.push(`/waypoint addati spiral ${p.x} ${p.y} ${p.z} false ${color} ${label}`);
   }
   return lines.join("\n");
 }
@@ -258,6 +319,35 @@ export function RoutePlannerPanel() {
   const mode = useAppSelector((s) => s.routePlanner.mode);
   const players = useAppSelector((s) => s.routePlanner.players);
   const rendezvousObjective = useAppSelector((s) => s.routePlanner.rendezvousObjective);
+  const elkFriendlyOnly = useAppSelector((s) => s.routePlanner.elkFriendlyOnly);
+
+  // Elk-walkable: load the server snapshot once and read the local draft.
+  useElkWalkable();
+  const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
+  const elkPendingAttest = useAppSelector((s) => s.elkWalkable.pendingAttest);
+  const elkPendingUnattest = useAppSelector((s) => s.elkWalkable.pendingUnattest);
+  const elkSubmitStatus = useAppSelector((s) => s.elkWalkable.submit);
+  const elkPendingAttestKeys = useMemo(
+    () => new Set(elkPendingAttest.map((p) => p.key)),
+    [elkPendingAttest],
+  );
+  const elkPendingUnattestKeys = useMemo(
+    () => new Set(elkPendingUnattest.map((p) => p.key)),
+    [elkPendingUnattest],
+  );
+  const elkSubmit = useElkWalkableSubmit();
+
+  // Self user id is used to label "already confirmed by me" walk legs so
+  // the user can tell their own contributions apart from the community's.
+  const apiKey = useReduxState("auth.apiKey");
+  const accountMeQuery = useQuery({
+    queryKey: ["account-me", apiKey ?? ""],
+    queryFn: getMyAccountSafe,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const selfUserId = accountMeQuery.data?.user?.id ?? null;
+  const isLoggedIn = Boolean(accountMeQuery.data?.user);
 
   // Drives the rendezvous worker; the hook is a no-op while `mode === "route"`.
   const {
@@ -411,8 +501,10 @@ export function RoutePlannerPanel() {
       i: 1,
       n: chain.length,
       x: first.x,
-      y: WAYPOINT_Y,
+      y: first.y,
       z: first.z,
+      linked_x: first.linked_x,
+      linked_z: first.linked_z,
       next_x: next ? next.x : "",
       next_z: next ? next.z : "",
       prev_x: "",
@@ -628,6 +720,23 @@ export function RoutePlannerPanel() {
               />
               <p className="text-[10px] text-muted-foreground">{t("routePlanner.tlPenaltyHelp")}</p>
             </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="elk-friendly-only" className="flex items-center gap-1.5 text-xs">
+                  <PawPrint className="h-3 w-3 text-emerald-600" />
+                  {t("routePlanner.elk.elkFriendlyOnly")}
+                </Label>
+                <Switch
+                  id="elk-friendly-only"
+                  checked={elkFriendlyOnly}
+                  disabled
+                  onCheckedChange={(v) => dispatch(setRouteElkFriendlyOnly(Boolean(v)))}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {t("routePlanner.elk.elkFriendlyOnlyHelp")}
+              </p>
+            </div>
           </div>
         )}
 
@@ -647,7 +756,15 @@ export function RoutePlannerPanel() {
             ) : error ? (
               <p className="text-xs text-red-600">{error}</p>
             ) : !hasRoutes ? (
-              <p className="text-xs text-muted-foreground">{t("routePlanner.noRouteFound")}</p>
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">{t("routePlanner.noRouteFound")}</p>
+                {elkFriendlyOnly && (
+                  <div className="flex items-start gap-1.5 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+                    <PawPrint className="mt-0.5 h-3 w-3 shrink-0" />
+                    <span>{t("routePlanner.elk.noRouteHintElkOnly")}</span>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 {/* Alternate-route tabs — only show when more than one. */}
@@ -684,6 +801,31 @@ export function RoutePlannerPanel() {
                   <RouteSummary
                     route={primary}
                     onLocate={(p) => dispatch(setRouteFocusRequest(p))}
+                    elk={
+                      isLoggedIn
+                        ? {
+                            edges: elkEdges,
+                            pendingAttestKeys: elkPendingAttestKeys,
+                            pendingUnattestKeys: elkPendingUnattestKeys,
+                            selfUserId,
+                            onToggle: (a, b) => dispatch(toggleElkPendingAttest({ a, b })),
+                          }
+                        : undefined
+                    }
+                  />
+                )}
+
+                {primary && isLoggedIn && (
+                  <ElkWalkableDraftSection
+                    route={primary}
+                    edges={elkEdges}
+                    pendingAttest={elkPendingAttest}
+                    pendingUnattest={elkPendingUnattest}
+                    submitStatus={elkSubmitStatus}
+                    canSubmit={elkSubmit.canSubmit}
+                    onSubmit={() => elkSubmit.submit()}
+                    onClear={() => dispatch(clearElkDraft())}
+                    onRemove={(key) => dispatch(removeElkPending(key))}
                   />
                 )}
 
@@ -842,9 +984,9 @@ export function RoutePlannerPanel() {
                           <li>{t("routePlanner.placeholderTotalSteps", { token: "{n}" })}</li>
                           <li>{t("routePlanner.placeholderThisX", { token: "{x}" })}</li>
                           <li>{t("routePlanner.placeholderThisZ", { token: "{z}" })}</li>
-                          <li>
-                            {t("routePlanner.placeholderFixedY", { token: "{y}", y: WAYPOINT_Y })}
-                          </li>
+                          <li>{t("routePlanner.placeholderFixedY", { token: "{y}" })}</li>
+                          <li>{t("routePlanner.placeholderLinkedX", { token: "{linked_x}" })}</li>
+                          <li>{t("routePlanner.placeholderLinkedZ", { token: "{linked_z}" })}</li>
                           <li>{t("routePlanner.placeholderNextX", { token: "{next_x}" })}</li>
                           <li>{t("routePlanner.placeholderNextZ", { token: "{next_z}" })}</li>
                           <li>{t("routePlanner.placeholderPrevX", { token: "{prev_x}" })}</li>
@@ -856,7 +998,6 @@ export function RoutePlannerPanel() {
                         </ul>
                         <p>
                           {t("routePlanner.placeholderHelpFooter", {
-                            y: WAYPOINT_Y,
                             prev: "{prev_*}",
                             next: "{next_*}",
                           })}
@@ -921,10 +1062,35 @@ export function RoutePlannerPanel() {
   );
 }
 
+/** Per-walk-leg attestation controls accepted by {@link RouteSummary}. */
+interface ElkRouteSummaryProps {
+  edges: Record<string, import("@/lib/elk-walkable").ElkWalkableEdge>;
+  pendingAttestKeys: ReadonlySet<string>;
+  pendingUnattestKeys: ReadonlySet<string>;
+  selfUserId: string | null;
+  onToggle: (a: EdgeEndpointRef, b: EdgeEndpointRef) => void;
+}
+
+/** Tailwind classes per elk state — keeps the per-leg row styling in one
+ *  place so the legend and the walk rows agree on colour. */
+const ELK_STATE_ROW_CLASSES: Record<WalkLegElkState, string> = {
+  "not-attestable": "flex items-center gap-1 px-2 py-1 text-muted-foreground",
+  unconfirmed: "flex items-center gap-1 rounded px-2 py-1 text-muted-foreground",
+  confirmed:
+    "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100",
+  "confirmed-by-me":
+    "flex items-center gap-1 rounded bg-emerald-100 px-2 py-1 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-50",
+  "pending-attest":
+    "flex items-center gap-1 rounded bg-amber-50 px-2 py-1 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100",
+  "pending-unattest":
+    "flex items-center gap-1 rounded bg-red-50 px-2 py-1 text-red-900 line-through decoration-red-700/60 dark:bg-red-950/40 dark:text-red-100",
+};
+
 /** Summary card for a single `RouteResult`: totals + per-leg list. */
 function RouteSummary({
   route,
   onLocate,
+  elk,
 }: {
   route: RouteResult;
   /** Called when the user clicks a leg's locate button. Receives the
@@ -932,6 +1098,10 @@ function RouteSummary({
    *  `spanBlocks` so the viewer can pick a zoom that keeps both leg
    *  endpoints in frame for long TL hops / walks. */
   onLocate: (point: { x: number; z: number; spanBlocks?: number }) => void;
+  /** Optional elk-walkable attestation hooks. When omitted (e.g. anon
+   *  user, contributions disabled), walk rows render with the legacy
+   *  muted-foreground style and no toggle. */
+  elk?: ElkRouteSummaryProps;
 }) {
   const { t } = useTranslation();
 
@@ -971,16 +1141,47 @@ function RouteSummary({
           const dz = leg.to.z - leg.from.z;
           const legDistance = Math.hypot(dx, dz);
           const spanBlocks = Math.max(80, legDistance * 1.4);
+          // Resolve walk-leg → elk edge ref (null when between Start/Dest
+          // and a TL, or when surrounding TLs lack stable ids). Drives
+          // the row colour AND whether the elk toggle button renders.
+          const edgeRef = leg.kind === "walk" && elk ? walkLegEdgeRef(route.legs, i) : null;
+          const elkState: WalkLegElkState =
+            leg.kind === "walk" && elk
+              ? classifyWalkLeg(
+                  edgeRef,
+                  elk.edges,
+                  elk.pendingAttestKeys,
+                  elk.pendingUnattestKeys,
+                  elk.selfUserId,
+                )
+              : "not-attestable";
+          const rowClass =
+            leg.kind === "tl"
+              ? "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
+              : ELK_STATE_ROW_CLASSES[elkState];
           return (
-            <li
-              key={i}
-              className={
-                leg.kind === "tl"
-                  ? "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
-                  : "flex items-center gap-1 px-2 py-1 text-muted-foreground"
-              }
-            >
+            <li key={i} className={rowClass}>
               <span className="flex-1 truncate">{describeLeg(leg, i, t)}</span>
+              {leg.kind === "walk" && edgeRef && elk && (
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0 text-current opacity-80 hover:opacity-100"
+                  onClick={() => elk.onToggle(edgeRef.a, edgeRef.b)}
+                  title={
+                    elkState === "pending-attest"
+                      ? t("routePlanner.elk.cancelAttest")
+                      : elkState === "confirmed-by-me"
+                        ? t("routePlanner.elk.alreadyAttested")
+                        : elkState === "confirmed"
+                          ? t("routePlanner.elk.addAttestation")
+                          : t("routePlanner.elk.markElkWalkable")
+                  }
+                  aria-label={t("routePlanner.elk.markElkWalkable")}
+                >
+                  <PawPrint className="h-3 w-3" />
+                </Button>
+              )}
               <Button
                 size="icon-sm"
                 variant="ghost"
@@ -999,6 +1200,189 @@ function RouteSummary({
           );
         })}
       </ol>
+    </div>
+  );
+}
+
+/**
+ * Draft + submission UI for the user's pending elk-walkable contributions.
+ * Hidden entirely when the user has nothing pending AND the active route
+ * has no attestable walk legs (i.e. the feature would just be visual
+ * noise).
+ */
+function ElkWalkableDraftSection({
+  route,
+  edges,
+  pendingAttest,
+  pendingUnattest,
+  submitStatus,
+  canSubmit,
+  onSubmit,
+  onClear,
+  onRemove,
+}: {
+  route: RouteResult;
+  edges: Record<string, import("@/lib/elk-walkable").ElkWalkableEdge>;
+  pendingAttest: import("@/lib/elk-walkable").PendingEdgeChange[];
+  pendingUnattest: import("@/lib/elk-walkable").PendingEdgeChange[];
+  submitStatus: import("@/store/slices/elkWalkable").SubmitStatus;
+  canSubmit: boolean;
+  onSubmit: () => void;
+  onClear: () => void;
+  onRemove: (key: string) => void;
+}) {
+  const { t } = useTranslation();
+
+  // How many of the current route's walk legs are even attestable? If
+  // zero AND the draft is empty, hide the section entirely so it doesn't
+  // clutter the panel for routes that consist solely of TLs or
+  // start/dest walks.
+  const hasAttestableLeg = useMemo(() => {
+    for (let i = 0; i < route.legs.length; i++) {
+      if (route.legs[i].kind !== "walk") continue;
+      if (walkLegEdgeRef(route.legs, i)) return true;
+    }
+    return false;
+  }, [route.legs]);
+
+  // Friendlier confirmed count — only this route's edges.
+  const confirmedInRoute = useMemo(() => {
+    let n = 0;
+    for (let i = 0; i < route.legs.length; i++) {
+      if (route.legs[i].kind !== "walk") continue;
+      const ref = walkLegEdgeRef(route.legs, i);
+      if (ref && edges[ref.key]) n++;
+    }
+    return n;
+  }, [route.legs, edges]);
+
+  const pendingCount = pendingAttest.length + pendingUnattest.length;
+  if (!hasAttestableLeg && pendingCount === 0) return null;
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium">
+          <PawPrint className="h-3.5 w-3.5 text-emerald-600" />
+          {t("routePlanner.elk.sectionTitle")}
+        </div>
+        <span className="text-[10px] text-muted-foreground">
+          {t("routePlanner.elk.confirmedInRoute", { count: confirmedInRoute })}
+        </span>
+      </div>
+
+      {/* Legend — same colour vocabulary as the per-leg row backgrounds. */}
+      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
+          {t("routePlanner.elk.legendConfirmed")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+          {t("routePlanner.elk.legendPendingAttest")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+          {t("routePlanner.elk.legendUnconfirmed")}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
+          {t("routePlanner.elk.legendPendingUnattest")}
+        </span>
+      </div>
+
+      {pendingCount > 0 ? (
+        <ul className="space-y-0.5 text-[11px]">
+          {pendingAttest.map((p) => (
+            <li
+              key={`a:${p.key}`}
+              className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+            >
+              <span className="flex-1 truncate font-mono">
+                {t("routePlanner.elk.draftItemAttest", {
+                  a: `${p.a.tl_id}#${p.a.ep}`,
+                  b: `${p.b.tl_id}#${p.b.ep}`,
+                })}
+              </span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
+                onClick={() => onRemove(p.key)}
+                aria-label={t("routePlanner.elk.removeDraft")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </li>
+          ))}
+          {pendingUnattest.map((p) => (
+            <li
+              key={`u:${p.key}`}
+              className="flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-red-900 dark:bg-red-950/40 dark:text-red-100"
+            >
+              <span className="flex-1 truncate font-mono">
+                {t("routePlanner.elk.draftItemUnattest", {
+                  a: `${p.a.tl_id}#${p.a.ep}`,
+                  b: `${p.b.tl_id}#${p.b.ep}`,
+                })}
+              </span>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
+                onClick={() => onRemove(p.key)}
+                aria-label={t("routePlanner.elk.removeDraft")}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[10px] text-muted-foreground">{t("routePlanner.elk.draftEmpty")}</p>
+      )}
+
+      <div className="flex items-center gap-1">
+        <Button
+          size="sm"
+          variant="default"
+          className="flex-1 gap-1.5"
+          disabled={!canSubmit || submitStatus.kind === "submitting"}
+          onClick={() => onSubmit()}
+        >
+          {submitStatus.kind === "submitting" ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : submitStatus.kind === "success" ? (
+            <Check className="h-3.5 w-3.5" />
+          ) : (
+            <Send className="h-3.5 w-3.5" />
+          )}
+          {submitStatus.kind === "submitting"
+            ? t("routePlanner.elk.submittingStatus")
+            : t("routePlanner.elk.submitButton")}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          disabled={pendingCount === 0 || submitStatus.kind === "submitting"}
+          onClick={() => onClear()}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          {t("routePlanner.elk.clearButton")}
+        </Button>
+      </div>
+
+      {submitStatus.kind === "success" && (
+        <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+          {t("routePlanner.elk.submitSuccess", { count: submitStatus.appliedCount })}
+        </p>
+      )}
+      {submitStatus.kind === "error" && (
+        <p className="text-[10px] text-red-600 dark:text-red-400">
+          {t("routePlanner.elk.submitError", { message: submitStatus.message })}
+        </p>
+      )}
     </div>
   );
 }
@@ -1054,7 +1438,7 @@ function RendezvousSection({
   async function handleCopyMeetingWaypoint() {
     if (!result) return;
     const { x, z } = result.meeting;
-    const cmd = `/waypoint addati x ${x} ${WAYPOINT_Y} ${z} true blue ${t("routePlanner.meetingPoint")}`;
+    const cmd = `/waypoint addati x ${x} ${FALLBACK_WAYPOINT_Y} ${z} true blue ${t("routePlanner.meetingPoint")}`;
     try {
       await copyTextToClipboard(cmd);
       setMeetingCopied(true);

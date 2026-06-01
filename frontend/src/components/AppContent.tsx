@@ -29,6 +29,7 @@ import { AdminMaintenancePage } from "@/pages/admin/AdminMaintenancePage";
 import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
+import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
@@ -101,6 +102,7 @@ const NavigationRoutes = {
     Translocators: "/manage/translocators",
     Traders: "/manage/traders",
     TLScreenshots: "/manage/tl-screenshots",
+    ElkWalkable: "/manage/elk-walkable",
   },
   Usage: {
     Overview: "/usage",
@@ -147,6 +149,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.translocators"
   | "app.nav.subtabs.traders"
   | "app.nav.subtabs.tlScreenshots"
+  | "app.nav.subtabs.elkWalkable"
   | "app.nav.chip.new";
 const subTabs: Subtabs = {
   "/singleplayer": [
@@ -186,6 +189,7 @@ const subTabs: Subtabs = {
     { value: "/manage/translocators", labelKey: "app.nav.subtabs.translocators" },
     { value: "/manage/traders", labelKey: "app.nav.subtabs.traders" },
     { value: "/manage/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
+    { value: "/manage/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
   ],
   "/usage": [],
 };
@@ -814,6 +818,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="TL Screenshots failed" resetKeys={[location.pathname]}>
                 <AdminTLScreenshotsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/elk-walkable"
+            element={
+              <ErrorBoundary title="Elk-walkable failed" resetKeys={[location.pathname]}>
+                <AdminElkWalkablePage />
               </ErrorBoundary>
             }
           />

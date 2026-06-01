@@ -413,6 +413,93 @@ export async function submitElkWalkable(
 }
 
 // ---------------------------------------------------------------------------
+// Admin: elk-walkable audit + snapshots
+// ---------------------------------------------------------------------------
+
+export interface AdminElkWalkableAuditEntry {
+    id: number;
+    change_id: string | null;
+    action: string;
+    edge_key: string | null;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    snapshot_key: string | null;
+    before_payload: unknown;
+    after_payload: unknown;
+    created_at: string;
+}
+
+export interface AdminElkWalkableSnapshot {
+    key: string;
+}
+
+export async function adminListElkWalkableAudit(
+    opts: {
+        action?: string;
+        edge_key?: string;
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<{
+    audit: AdminElkWalkableAuditEntry[];
+    limit: number;
+    offset: number;
+}> {
+    const params = new URLSearchParams();
+    if (opts.action) params.set("action", opts.action);
+    if (opts.edge_key) params.set("edge_key", opts.edge_key);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(
+        `${API_BASE}/admin/elk-walkable/audit${qs ? `?${qs}` : ""}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRevertElkWalkableAudit(
+    auditId: number,
+): Promise<{
+    change_id: string;
+    snapshot_key: string;
+    audit_id: number;
+    reverted_audit_id: number;
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/elk-walkable/audit/${encodeURIComponent(String(auditId))}/revert`,
+        { method: "POST", headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListElkWalkableSnapshots(
+    limit = 200,
+): Promise<{ snapshots: AdminElkWalkableSnapshot[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/elk-walkable/snapshots?limit=${limit}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRestoreElkWalkableSnapshot(
+    snapshotKey: string,
+): Promise<{
+    change_id: string;
+    snapshot_key: string;
+    audit_id: number;
+    restored_from: string;
+}> {
+    const res = await fetch(`${API_BASE}/admin/elk-walkable/restore`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ snapshot_key: snapshotKey }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Contribute Translocators (Phase: frontend-only stub).
 // The backend endpoint is not implemented yet — callers should be prepared
 // for a 404 or 501 response and surface the error gracefully.

@@ -60,8 +60,20 @@ export interface WorldLineSegment {
 export interface RouteOverlay {
   /** TL segments to recolour as "part of the route". */
   tlSegments: WorldLineSegment[];
-  /** Walk legs as world-space `[from, to]` pairs, drawn dashed. */
-  walkLegs: Array<{ from: { x: number; z: number }; to: { x: number; z: number } }>;
+  /** Walk legs as world-space `[from, to]` pairs, drawn dashed. The
+   *  optional `elkState` recolours the segment to communicate community
+   *  attestation status (see `WalkLegElkState` in lib/elk-walkable.ts). */
+  walkLegs: Array<{
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    elkState?:
+      | "not-attestable"
+      | "unconfirmed"
+      | "confirmed"
+      | "confirmed-by-me"
+      | "pending-attest"
+      | "pending-unattest";
+  }>;
   /** Origin pin (green). */
   from?: { x: number; z: number } | null;
   /** Destination pin (red). */
@@ -567,14 +579,20 @@ export function MapViewer({
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
       tlSegs.push({ x1, y1, x2, y2 });
     }
-    const walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const walkLegs: Array<{
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+    }> = [];
     for (const leg of routeOverlay.walkLegs) {
       const x1 = toImgX(leg.from.x);
       const y1 = toImgY(leg.from.z);
       const x2 = toImgX(leg.to.x);
       const y2 = toImgY(leg.to.z);
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
-      walkLegs.push({ x1, y1, x2, y2 });
+      walkLegs.push({ x1, y1, x2, y2, elkState: leg.elkState });
     }
     const projectPin = (p: { x: number; z: number } | null | undefined) => {
       if (!p) return null;
@@ -1192,9 +1210,12 @@ export function MapViewer({
 
     // ----- Route overlay (drawn last so it sits on top of every other layer).
     if (projectedRouteOverlay) {
-      // 1. Walk legs: dashed slate-200 line with a thin dark outline so they
-      //    stay legible against any biome tile. We draw the outline first
-      //    (slightly wider, solid black) then the dashed bright line on top.
+      // 1. Walk legs: dashed line(s) with a thin dark outline so they
+      //    stay legible against any biome tile. Default colour is
+      //    slate-200; elk-walkable states recolour the dashed line
+      //    only — outline stays uniform so all walk legs share the
+      //    same physical thickness. Drawn in per-colour passes to
+      //    keep stroke calls minimal.
       if (projectedRouteOverlay.walkLegs.length > 0) {
         const dashUnit = Math.max(4, 8 / Math.max(zoom, 0.1));
         const walkLineWidth = Math.max(0.9, 2.0 / Math.max(zoom, 0.1));
@@ -1208,15 +1229,47 @@ export function MapViewer({
         }
         ctx.stroke();
 
-        ctx.setLineDash([dashUnit, dashUnit * 0.75]);
-        ctx.strokeStyle = "rgba(226, 232, 240, 0.98)";
-        ctx.lineWidth = walkLineWidth;
-        ctx.beginPath();
+        // Per-state colour table. Anything not classified renders in
+        // the default slate-200; the others use saturated hues that
+        // read clearly against the map's earthy palette.
+        const colourFor = (state: RouteOverlay["walkLegs"][number]["elkState"]): string => {
+          switch (state) {
+            case "confirmed":
+            case "confirmed-by-me":
+              return "rgba(34, 197, 94, 0.98)"; // emerald-500
+            case "pending-attest":
+              return "rgba(250, 204, 21, 0.98)"; // amber-400
+            case "pending-unattest":
+              return "rgba(248, 113, 113, 0.98)"; // red-400
+            default:
+              return "rgba(226, 232, 240, 0.98)"; // slate-200
+          }
+        };
+
+        const groups = new Map<
+          string,
+          { colour: string; legs: typeof projectedRouteOverlay.walkLegs }
+        >();
         for (const leg of projectedRouteOverlay.walkLegs) {
-          ctx.moveTo(leg.x1, leg.y1);
-          ctx.lineTo(leg.x2, leg.y2);
+          const colour = colourFor(leg.elkState);
+          let bucket = groups.get(colour);
+          if (!bucket) {
+            bucket = { colour, legs: [] };
+            groups.set(colour, bucket);
+          }
+          bucket.legs.push(leg);
         }
-        ctx.stroke();
+        ctx.setLineDash([dashUnit, dashUnit * 0.75]);
+        ctx.lineWidth = walkLineWidth;
+        for (const { colour, legs } of groups.values()) {
+          ctx.strokeStyle = colour;
+          ctx.beginPath();
+          for (const leg of legs) {
+            ctx.moveTo(leg.x1, leg.y1);
+            ctx.lineTo(leg.x2, leg.y2);
+          }
+          ctx.stroke();
+        }
         ctx.setLineDash([]);
       }
 

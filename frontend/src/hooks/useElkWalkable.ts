@@ -28,7 +28,8 @@ import {
 } from "@/store/slices/elkWalkable";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 
-const QUERY_KEY = ["elk-walkable"] as const;
+export const ELK_WALKABLE_QUERY_KEY = ["elk-walkable"] as const;
+const QUERY_KEY = ELK_WALKABLE_QUERY_KEY;
 
 /** ~30s less than the backend's reuse window to avoid races at the edge. */
 const EXPIRY_GUARD_MS = 30_000;
