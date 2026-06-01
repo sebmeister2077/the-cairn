@@ -49,6 +49,8 @@ from .routes import usage_ingest as usage_ingest_routes
 from .routes import route_analytics as route_analytics_routes
 from .routes import public_road_workers as public_road_workers_routes
 from .routes import webcartographer as webcartographer_routes
+from .routes import elk_walkable as elk_walkable_routes
+from .routes import admin_elk_walkable as admin_elk_walkable_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -638,6 +640,8 @@ app.include_router(usage_ingest_routes.router, prefix="/api")
 app.include_router(route_analytics_routes.router, prefix="/api")
 app.include_router(public_road_workers_routes.router, prefix="/api")
 app.include_router(webcartographer_routes.router, prefix="/api")
+app.include_router(elk_walkable_routes.router, prefix="/api")
+app.include_router(admin_elk_walkable_routes.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 

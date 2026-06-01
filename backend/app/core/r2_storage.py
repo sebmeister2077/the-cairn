@@ -782,6 +782,8 @@ def backup_manual_key(
 LANDMARKS_LIVE_KEY = "landmarks.geojson"
 TRANSLOCATORS_LIVE_KEY = "translocators.geojson"
 TRADERS_LIVE_KEY = "traders.geojson"
+ELK_WALKABLE_LIVE_KEY = "elk_walkable.json"
+ELK_WALKABLE_SNAPSHOTS_PREFIX = "elk_walkable/snapshots/"
 
 
 def landmarks_live_key() -> str:
@@ -794,6 +796,21 @@ def translocators_live_key() -> str:
 
 def traders_live_key() -> str:
     return TRADERS_LIVE_KEY
+
+
+def elk_walkable_live_key() -> str:
+    return ELK_WALKABLE_LIVE_KEY
+
+
+def elk_walkable_snapshot_key(iso_ts: str, change_id: str) -> str:
+    """R2 key for a pre-mutation snapshot of ``elk_walkable.json``.
+
+    ``iso_ts`` should be an ISO-8601 UTC timestamp (colons replaced for
+    filename-safety) and ``change_id`` a short uuid hex so the listing is
+    sortable + unique.
+    """
+    safe_ts = iso_ts.replace(":", "").replace("+", "Z")
+    return f"{ELK_WALKABLE_SNAPSHOTS_PREFIX}{safe_ts}-{change_id}.json"
 
 
 def landmarks_backup_scheduled_key(iso_year: int, iso_week: int) -> str:

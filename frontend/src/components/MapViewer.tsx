@@ -37,6 +37,13 @@ export interface WorldLineSegment {
    *  geojson carry `depth1`/`depth2`; user-contributed TLs omit them. */
   y1?: number;
   y2?: number;
+  /** Stable TL id from `properties.id` in the translocators geojson.
+   *  Present on every TL the backend has assigned an id for (which is
+   *  the entire seeded set since the `translocator_ids` migration ran);
+   *  used by features that need a long-lived TL identifier — e.g.
+   *  elk-walkable edge attestations. Distinct from `meta.segmentId`,
+   *  which is only set for user-contributed TLs. */
+  id?: string;
   /** Visual / data classification for the segment.
    *  - "default" (or undefined): seeded translocator (purple).
    *  - "user": user-contributed translocator (blue) — carries `meta`.

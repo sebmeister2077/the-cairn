@@ -32,6 +32,7 @@ import {
 import { adminApiKeysFiltersSlice } from "./slices/adminApiKeysFilters";
 import { adminUsageFiltersSlice } from "./slices/adminUsageFilters";
 import { routePlannerSlice } from "./slices/routePlanner";
+import { elkWalkableSlice } from "./slices/elkWalkable";
 import { i18nSlice } from "./slices/i18n";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
@@ -51,6 +52,7 @@ const rootReducer = combineReducers({
     tlGroupings: tlGroupingsSlice.reducer,
     contributeTLs: contributeTLsSlice.reducer,
     routePlanner: routePlannerSlice.reducer,
+    elkWalkable: elkWalkableSlice.reducer,
     i18n: i18nSlice.reducer,
 });
 

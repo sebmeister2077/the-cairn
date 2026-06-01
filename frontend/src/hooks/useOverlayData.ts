@@ -117,6 +117,7 @@ export function parseTranslocators(json: unknown): WorldLineSegment[] {
                     z2,
                     y1: Number.isFinite(depth1) ? depth1 : undefined,
                     y2: Number.isFinite(depth2) ? depth2 : undefined,
+                    id: segmentId,
                     kind,
                     meta,
                 });

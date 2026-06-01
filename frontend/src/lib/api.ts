@@ -370,6 +370,49 @@ export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
 }
 
 // ---------------------------------------------------------------------------
+// Elk-walkable edges
+// ---------------------------------------------------------------------------
+
+/** Response shape from `/api/elk-walkable/url`. Identical to
+ *  `MarkerFileUrlResponse` except for the `empty` flag the backend
+ *  sets when the live file does not yet exist (no attestations ever
+ *  recorded) — in that case `url` is the empty string and the caller
+ *  should treat the edge set as empty without fetching. */
+export interface ElkWalkableUrlResponse extends MarkerFileUrlResponse {
+    empty?: boolean;
+}
+
+export async function getElkWalkableUrl(): Promise<ElkWalkableUrlResponse> {
+    const res = await fetch(`${API_BASE}/elk-walkable/url`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface ElkWalkableSubmitPayload {
+    attest: Array<{ a: { tl_id: string; ep: 0 | 1 }; b: { tl_id: string; ep: 0 | 1 } }>;
+    unattest: Array<{ a: { tl_id: string; ep: 0 | 1 }; b: { tl_id: string; ep: 0 | 1 } }>;
+    note?: string;
+}
+
+export interface ElkWalkableSubmitResult {
+    change_id: string;
+    applied_count: number;
+    audit_ids: number[];
+}
+
+export async function submitElkWalkable(
+    payload: ElkWalkableSubmitPayload,
+): Promise<ElkWalkableSubmitResult> {
+    const res = await fetch(`${API_BASE}/elk-walkable/submit`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Contribute Translocators (Phase: frontend-only stub).
 // The backend endpoint is not implemented yet — callers should be prepared
 // for a 404 or 501 response and surface the error gracefully.

@@ -35,6 +35,11 @@ const USE_MAIN_THREAD_FALLBACK = false;
 interface GraphCacheEntry {
     segments: ReadonlyArray<WorldLineSegment>;
     opts: RouteOptions;
+    /** Identity fingerprint of `opts.confirmedElkEdges` — the server etag
+     *  if available, otherwise the empty string. Without this, switching
+     *  elk-friendly on/off or refreshing the elk file would silently hit
+     *  the stale cached graph. */
+    elkSignature: string;
     graph: TLGraph;
 }
 let graphCache: GraphCacheEntry | null = null;
@@ -42,18 +47,21 @@ let graphCache: GraphCacheEntry | null = null;
 function getOrBuildGraph(
     segments: ReadonlyArray<WorldLineSegment>,
     opts: RouteOptions,
+    elkSignature: string,
 ): TLGraph {
     if (
         graphCache &&
         graphCache.segments === segments &&
         graphCache.opts.walkSpeed === opts.walkSpeed &&
         graphCache.opts.tlPenaltySeconds === opts.tlPenaltySeconds &&
-        graphCache.opts.kNeighbors === opts.kNeighbors
+        graphCache.opts.kNeighbors === opts.kNeighbors &&
+        graphCache.opts.elkFriendlyOnly === opts.elkFriendlyOnly &&
+        graphCache.elkSignature === elkSignature
     ) {
         return graphCache.graph;
     }
     const graph = buildTLGraph(segments, opts);
-    graphCache = { segments, opts, graph };
+    graphCache = { segments, opts, elkSignature, graph };
     return graph;
 }
 
@@ -74,6 +82,9 @@ export function useTLRoute(): UseTLRouteResult {
     const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
     const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
     const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
+    const elkFriendlyOnly = useAppSelector((s) => s.routePlanner.elkFriendlyOnly);
+    const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
+    const elkEtag = useAppSelector((s) => s.elkWalkable.etag);
     const routes = useAppSelector((s) => s.routePlanner.routes);
     const selectedIndex = useAppSelector((s) => s.routePlanner.selectedIndex);
     const isComputing = useAppSelector((s) => s.routePlanner.isComputing);
@@ -84,9 +95,24 @@ export function useTLRoute(): UseTLRouteResult {
     // the TLs the map is drawing.
     const { segments, etag: segmentsEtag } = useActiveTranslocators();
 
+    // Materialise the elk edge set as a Set<string> for O(1) lookup
+    // inside the graph builder. Only re-derive when the underlying
+    // edge map changes; gate it on `elkFriendlyOnly` so paying users
+    // who don't care about the feature don't pay the allocation cost.
+    const confirmedElkEdges = useMemo<ReadonlySet<string> | undefined>(() => {
+        if (Object.keys(elkEdges).length === 0) return undefined;
+        return new Set(Object.keys(elkEdges));
+    }, [elkEdges]);
+
     const opts = useMemo<RouteOptions>(
-        () => ({ walkSpeed, tlPenaltySeconds, kNeighbors }),
-        [walkSpeed, tlPenaltySeconds, kNeighbors],
+        () => ({
+            walkSpeed,
+            tlPenaltySeconds,
+            kNeighbors,
+            elkFriendlyOnly,
+            confirmedElkEdges,
+        }),
+        [walkSpeed, tlPenaltySeconds, kNeighbors, elkFriendlyOnly, confirmedElkEdges],
     );
 
     // Debounced compute. We carry both a setTimeout handle (for the
@@ -133,6 +159,7 @@ export function useTLRoute(): UseTLRouteResult {
                     from: capturedFrom.point,
                     to: capturedTo.point,
                     opts,
+                    elkSignature: elkEtag,
                     numberOfRoutes: NUMBER_OF_ROUTES,
                     signal: ctrl.signal,
                 })
@@ -180,7 +207,7 @@ export function useTLRoute(): UseTLRouteResult {
         ) {
             const run = () => {
                 try {
-                    const graph = getOrBuildGraph(segs, opts);
+                    const graph = getOrBuildGraph(segs, opts, elkEtag);
                     const t0 = performance.now();
                     const result = findRoutes(graph, fromPt, toPt, NUMBER_OF_ROUTES);
                     const elapsed = performance.now() - t0;
@@ -230,7 +257,7 @@ export function useTLRoute(): UseTLRouteResult {
                 pendingAbort.current = null;
             }
         };
-    }, [dispatch, from, to, segments, segmentsEtag, opts]);
+    }, [dispatch, from, to, segments, segmentsEtag, opts, elkEtag]);
 
     return { routes, selectedIndex, isComputing, error };
 }

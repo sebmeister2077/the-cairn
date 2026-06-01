@@ -24,6 +24,7 @@ import type { RootState } from "./index";
 import { loadInitialMapViewState } from "./slices/mapView";
 import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
 import { initialRoutePlannerState } from "./slices/routePlanner";
+import { initialElkWalkableState } from "./slices/elkWalkable";
 import {
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
@@ -74,6 +75,15 @@ const STRIP_BEFORE_WRITE: {
         walkSpeed: s.walkSpeed,
         tlPenaltySeconds: s.tlPenaltySeconds,
         kNeighbors: s.kNeighbors,
+        elkFriendlyOnly: s.elkFriendlyOnly,
+    }),
+    // Only persist the draft attest/unattest lists. Server `edges` are
+    // always re-fetched on load; transient `loading` / `submit` flags
+    // would be confusing if restored from a prior session.
+    elkWalkable: (s) => ({
+        ...initialElkWalkableState,
+        pendingAttest: s.pendingAttest,
+        pendingUnattest: s.pendingUnattest,
     }),
 };
 
@@ -134,6 +144,14 @@ const NORMALIZE_ON_READ: {
     // fields (routes, focusRequest, pickMode, isOpen, endpoints) always
     // reset on reload even if an older envelope happened to persist them.
     routePlanner: (s) => ({ ...initialRoutePlannerState, ...s }),
+    // Drafts persist; server state is always re-fetched, so merge over
+    // initial state to wipe any stale `edges` / status flags from older
+    // envelopes that may have been written before this stripper existed.
+    elkWalkable: (s) => ({
+        ...initialElkWalkableState,
+        pendingAttest: Array.isArray(s?.pendingAttest) ? s.pendingAttest : [],
+        pendingUnattest: Array.isArray(s?.pendingUnattest) ? s.pendingUnattest : [],
+    }),
 };
 
 interface Envelope {

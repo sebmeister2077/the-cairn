@@ -41,6 +41,15 @@ export interface RouteOptions {
     tlPenaltySeconds: number;
     /** Neighbours considered per endpoint when wiring walk edges. Default 8. */
     kNeighbors: number;
+    /** When true, the planner only considers walk edges between TL
+     *  endpoints that the community has confirmed are safely traversable
+     *  by an elk (no chasm, shore, acid pool, etc). A walk edge survives
+     *  iff its canonical key is in `confirmedElkEdges`. Default false. */
+    elkFriendlyOnly?: boolean;
+    /** Canonical-key set of elk-walkable edges. Used both to filter walk
+     *  edges (when `elkFriendlyOnly` is on) and to inject confirmed edges
+     *  the K-nearest wiring would otherwise miss. */
+    confirmedElkEdges?: ReadonlySet<string>;
 }
 
 export const DEFAULT_WALK_SPEED = 7;
@@ -51,6 +60,8 @@ export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    elkFriendlyOnly: false,
+    confirmedElkEdges: undefined,
 };
 
 /** A single leg of a computed route. */
@@ -104,6 +115,10 @@ type Edge = {
     kind: "tl" | "walk";
     /** Set on TL edges; index into `graph.segments`. */
     tlIndex?: number;
+    /** Set on walk edges between two TL endpoints when the community has
+     *  confirmed the segment is elk-walkable. Walk edges between virtual
+     *  Start/Dest nodes and TL endpoints leave this undefined. */
+    isElk?: boolean;
 };
 
 export interface TLGraph {
@@ -283,10 +298,35 @@ export function buildTLGraph(
         adj[b].push({ to: a, seconds: tlSeconds, kind: "tl", tlIndex: i });
     }
 
+    // Pre-compute the elk lookup. We use the TL's stable
+    // `properties.id` so the edge identity survives small coordinate
+    // jitter on re-imports; TLs without an id (e.g. user TLs the
+    // backend hasn't id-stamped yet) can never be marked elk-walkable.
+    const elkSet = opts.confirmedElkEdges;
+    const filterToElk = opts.elkFriendlyOnly === true && elkSet !== undefined;
+
+    /** Build the canonical elk key for the walk edge between two endpoint
+     *  indices, or `null` when either endpoint has no stable TL id. */
+    const elkKeyForEndpoints = (a: number, b: number): string | null => {
+        if (!elkSet) return null;
+        const tlA = segments[a >>> 1]?.id;
+        const tlB = segments[b >>> 1]?.id;
+        if (!tlA || !tlB) return null;
+        const epA = (a & 1) as 0 | 1;
+        const epB = (b & 1) as 0 | 1;
+        const tokA = `${tlA}:${epA}`;
+        const tokB = `${tlB}:${epB}`;
+        if (tokA === tokB) return null;
+        return tokA < tokB ? `${tokA}|${tokB}` : `${tokB}|${tokA}`;
+    };
+
     // Walk edges via K-NN. Skip the query point itself AND its paired
     // endpoint (the TL edge already handles that connection, and including
     // it as a walk edge would only ever look worse).
     const speed = opts.walkSpeed;
+    /** Track keys already added so the "inject missing confirmed edges"
+     *  pass below doesn't double-wire any K-NN neighbours we already saw. */
+    const seenWalkEdges = elkSet ? new Set<string>() : null;
     for (let i = 0; i < N * 2; i++) {
         const partner = i ^ 1;
         const nn = knn(
@@ -298,7 +338,63 @@ export function buildTLGraph(
         );
         for (const { idx, d2 } of nn) {
             const seconds = Math.sqrt(d2) / speed;
-            adj[i].push({ to: idx, seconds, kind: "walk" });
+            const elkKey = elkKeyForEndpoints(i, idx);
+            const isElk = elkKey !== null && elkSet!.has(elkKey);
+            if (filterToElk && !isElk) continue;
+            adj[i].push({ to: idx, seconds, kind: "walk", isElk: isElk || undefined });
+            if (seenWalkEdges && elkKey) seenWalkEdges.add(`${Math.min(i, idx)}|${Math.max(i, idx)}`);
+        }
+    }
+
+    // Inject any community-confirmed elk edges that K-nearest missed.
+    // Without this, a far-but-confirmed link (e.g. a long hand-checked
+    // path between two distant TLs) would silently disappear from the
+    // elk-only graph and the planner would report "no route".
+    if (elkSet && elkSet.size > 0) {
+        // Build TL-id → array of endpoint indices once, so injection is
+        // O(elkSet.size) instead of O(elkSet.size · N).
+        const idToEndpoints = new Map<string, number[]>();
+        for (let i = 0; i < N; i++) {
+            const id = segments[i].id;
+            if (!id) continue;
+            const list = idToEndpoints.get(id);
+            if (list) list.push(i * 2, i * 2 + 1);
+            else idToEndpoints.set(id, [i * 2, i * 2 + 1]);
+        }
+        for (const key of elkSet) {
+            const sep = key.indexOf("|");
+            if (sep < 0) continue;
+            const lo = key.slice(0, sep);
+            const hi = key.slice(sep + 1);
+            const splitTok = (t: string): { id: string; ep: 0 | 1 } | null => {
+                const j = t.lastIndexOf(":");
+                if (j < 0) return null;
+                const epNum = Number(t.slice(j + 1));
+                if (epNum !== 0 && epNum !== 1) return null;
+                return { id: t.slice(0, j), ep: epNum };
+            };
+            const a = splitTok(lo);
+            const b = splitTok(hi);
+            if (!a || !b) continue;
+            const aEndpoints = idToEndpoints.get(a.id);
+            const bEndpoints = idToEndpoints.get(b.id);
+            if (!aEndpoints || !bEndpoints) continue;
+            // A TL may appear multiple times in the segment list (e.g.
+            // mis-imported duplicates); link every instance pair so the
+            // graph doesn't silently drop the confirmation for some.
+            for (const aIdx of aEndpoints.filter((idx) => (idx & 1) === a.ep)) {
+                for (const bIdx of bEndpoints.filter((idx) => (idx & 1) === b.ep)) {
+                    if (aIdx === bIdx) continue;
+                    const seenKey = `${Math.min(aIdx, bIdx)}|${Math.max(aIdx, bIdx)}`;
+                    if (seenWalkEdges?.has(seenKey)) continue;
+                    seenWalkEdges?.add(seenKey);
+                    const dx = xs[aIdx] - xs[bIdx];
+                    const dz = zs[aIdx] - zs[bIdx];
+                    const seconds = Math.sqrt(dx * dx + dz * dz) / speed;
+                    adj[aIdx].push({ to: bIdx, seconds, kind: "walk", isElk: true });
+                    adj[bIdx].push({ to: aIdx, seconds, kind: "walk", isElk: true });
+                }
+            }
         }
     }
 

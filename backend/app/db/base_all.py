@@ -13,3 +13,4 @@ from app.db.models import landmarks  # noqa: F401
 from app.db.models import translocators  # noqa: F401
 from app.db.models import screenshot_tl_requests  # noqa: F401
 from app.db.models import traders  # noqa: F401
+from app.db.models import elk_walkable  # noqa: F401

@@ -48,6 +48,11 @@ export interface RoutePlannerState {
     walkSpeed: number;
     tlPenaltySeconds: number;
     kNeighbors: number;
+    /** When true, the planner only routes through TL-to-TL walk
+     *  segments the community has confirmed are safely traversable
+     *  by an elk. Persisted so a logged-in player's preference
+     *  survives reloads. */
+    elkFriendlyOnly: boolean;
     /** Rendezvous-mode party. Sparse — `null` entries are empty slots
      *  the user has added but not yet populated. Always length ≥ 2 while
      *  in rendezvous mode (enforced by `setMode`). */
@@ -83,6 +88,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    elkFriendlyOnly: false,
     players: [null, null],
     rendezvousObjective: "minimax",
     rendezvousResult: null,
@@ -231,6 +237,15 @@ export const routePlannerSlice = createSlice({
             state.routes = [];
             state.rendezvousResult = null;
         },
+        setElkFriendlyOnly(state, action: PayloadAction<boolean>) {
+            state.elkFriendlyOnly = action.payload;
+            // Recompute on next tick — the toggle changes which walk
+            // edges the graph allows, so the cached routes may no
+            // longer be valid (or may now be discoverable for the first
+            // time).
+            state.routes = [];
+            state.rendezvousResult = null;
+        },
         /**
          * Apply a decoded share-link payload. Wipes existing routes /
          * results so the recompute hooks start from a clean slate, and
@@ -316,6 +331,7 @@ export const {
     setError: setRoutePlannerError,
     setWalkSpeed: setRouteWalkSpeed,
     setTLPenalty: setRouteTLPenalty,
+    setElkFriendlyOnly: setRouteElkFriendlyOnly,
     setFocusRequest: setRouteFocusRequest,
     hydrateFromShare: hydrateRoutePlannerFromShare,
 } = routePlannerSlice.actions;

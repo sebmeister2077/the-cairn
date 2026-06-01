@@ -86,6 +86,10 @@ export interface ComputeRoutesAsyncArgs {
     from: WorldPoint;
     to: WorldPoint;
     opts: RouteOptions;
+    /** Stable fingerprint of `opts.confirmedElkEdges` (server etag).
+     *  Combined with `opts.elkFriendlyOnly` to invalidate the worker's
+     *  cached graph when the elk attestations change. */
+    elkSignature?: string;
     numberOfRoutes: number;
     /** Optional AbortSignal — when aborted the returned promise rejects. */
     signal?: AbortSignal;
@@ -124,6 +128,7 @@ export function computeRoutesAsync(
         kind: "route",
         requestId,
         segmentsKey: args.segmentsKey,
+        elkSignature: args.elkSignature,
         // Workers structured-clone the payload; cast away `readonly` for postMessage.
         segments: args.segments as WorldLineSegment[],
         from: args.from,

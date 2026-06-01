@@ -2590,7 +2590,7 @@ class GeojsonLocked(Exception):
 
 
 GEOJSON_LOCK_TTL_SECONDS = 60
-_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks"}
+_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks", "elk_walkable"}
 
 
 def try_acquire_geojson_lock(
@@ -3167,6 +3167,109 @@ def list_translocator_audit_added_index() -> dict:
                     "added_at": created.isoformat() if hasattr(created, "isoformat") else created,
                 }
             return out
+
+
+# ---------------------------------------------------------------------------
+# Elk-walkable audit CRUD (user-attested elk-passable walk edges between TLs)
+# ---------------------------------------------------------------------------
+
+def insert_elk_walkable_audit(
+    *,
+    change_id: str,
+    action: str,
+    edge_key: Optional[str],
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+    snapshot_key: Optional[str] = None,
+) -> int:
+    """Append-only audit row for an elk-walkable edge mutation.
+
+    ``action`` is one of ``attest`` | ``unattest`` | ``admin_revert`` |
+    ``admin_restore_snapshot``. ``snapshot_key`` is the R2 key of the
+    full ``elk_walkable.json`` copied *before* this mutation. Returns
+    the inserted row id.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO elk_walkable_audit
+                       (change_id, action, edge_key,
+                        actor_api_key_id, actor_display_name,
+                        before_payload, after_payload, snapshot_key)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    change_id,
+                    action,
+                    edge_key,
+                    actor_api_key_id,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                    snapshot_key,
+                ),
+            )
+            row_id = int(cur.fetchone()[0])
+    _emit_usage_event(
+        f"elk_walkable.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={"edge_key": edge_key, "change_id": change_id},
+    )
+    return row_id
+
+
+def get_elk_walkable_audit(audit_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, change_id, action, edge_key, actor_api_key_id,
+                          actor_display_name, before_payload, after_payload,
+                          snapshot_key, created_at
+                     FROM elk_walkable_audit
+                    WHERE id = %s""",
+                (int(audit_id),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_elk_walkable_audit(
+    *,
+    edge_key: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    action: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    where: List[str] = []
+    params: list = []
+    if edge_key:
+        where.append("edge_key = %s")
+        params.append(edge_key)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    params.extend([int(limit), int(offset)])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT id, change_id, action, edge_key, actor_api_key_id,
+                           actor_display_name, before_payload, after_payload,
+                           snapshot_key, created_at
+                     FROM elk_walkable_audit
+                     {where_sql}
+                     ORDER BY created_at DESC
+                     LIMIT %s OFFSET %s""",
+                params,
+            )
+            return [dict(r) for r in cur.fetchall()]
 
 
 # ---------------------------------------------------------------------------

@@ -30,6 +30,8 @@ export interface RouteWorkerRouteRequest {
     requestId: number;
     /** Stable key for the segments payload — usually the overlay etag. */
     segmentsKey: string;
+    /** Stable fingerprint of `opts.confirmedElkEdges` (server etag). */
+    elkSignature?: string;
     segments: WorldLineSegment[];
     from: WorldPoint;
     to: WorldPoint;
@@ -41,6 +43,7 @@ export interface RouteWorkerRendezvousRequest {
     kind: "rendezvous";
     requestId: number;
     segmentsKey: string;
+    elkSignature?: string;
     segments: WorldLineSegment[];
     players: WorldPoint[];
     opts: RouteOptions;
@@ -68,6 +71,7 @@ export type RouteWorkerResponse =
 interface CacheEntry {
     segmentsKey: string;
     opts: RouteOptions;
+    elkSignature: string;
     graph: TLGraph;
 }
 let cache: CacheEntry | null = null;
@@ -76,25 +80,33 @@ function getOrBuildGraph(
     segmentsKey: string,
     segments: WorldLineSegment[],
     opts: RouteOptions,
+    elkSignature: string,
 ): TLGraph {
     if (
         cache &&
         cache.segmentsKey === segmentsKey &&
         cache.opts.walkSpeed === opts.walkSpeed &&
         cache.opts.tlPenaltySeconds === opts.tlPenaltySeconds &&
-        cache.opts.kNeighbors === opts.kNeighbors
+        cache.opts.kNeighbors === opts.kNeighbors &&
+        cache.opts.elkFriendlyOnly === opts.elkFriendlyOnly &&
+        cache.elkSignature === elkSignature
     ) {
         return cache.graph;
     }
     const graph = buildTLGraph(segments, opts);
-    cache = { segmentsKey, opts, graph };
+    cache = { segmentsKey, opts, elkSignature, graph };
     return graph;
 }
 
 self.onmessage = (ev: MessageEvent<RouteWorkerRequest>) => {
     const req = ev.data;
     try {
-        const graph = getOrBuildGraph(req.segmentsKey, req.segments, req.opts);
+        const graph = getOrBuildGraph(
+            req.segmentsKey,
+            req.segments,
+            req.opts,
+            req.elkSignature ?? "",
+        );
         const t0 = performance.now();
         if (req.kind === "rendezvous") {
             const result = findRendezvous(graph, req.players, req.objective);
