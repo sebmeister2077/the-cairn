@@ -159,6 +159,9 @@ export const en = {
             starfieldLabel: "Animated starfield on map",
             starfieldDescription:
                 "Show a subtle cosmos backdrop behind unexplored areas of the TOPS map. Pure CSS, GPU-only - turn off if you prefer a flat dark background.",
+            advancedMapOptionsLabel: "Show additional options on Map",
+            advancedMapOptionsDescription:
+                "Reveal advanced/experimental controls on the TOPS map (currently the Oceans overlay toggle in fullscreen). When off, those overlays are hidden and never rendered.",
             markerIconsTitle: "Map marker icons",
             markerIconsDescription:
                 "Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the map. Changes apply immediately and are saved to your browser.",

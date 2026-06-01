@@ -81,6 +81,14 @@ export interface MapViewState {
      * (see `frontend/src/assets/Oceans/`). Default OFF — opt-in.
      */
     showOceans: boolean;
+    /**
+     * Account-level preference ("Show additional options on Map") that
+     * gates advanced/experimental map controls. When OFF (default), the
+     * fullscreen Oceans toggle is hidden and the Oceans overlay image is
+     * never rendered, regardless of `showOceans`. Toggled from the
+     * Account → Appearance panel.
+     */
+    showAdvancedMapOptions: boolean;
     isFullscreen: boolean;
     /**
      * When true, the TOPS map viewer renders an animated starfield behind
@@ -151,6 +159,7 @@ export function loadInitialMapViewState(): MapViewState {
         traderTypeFilter: [],
         showRecentlyAdded: false,
         showOceans: false,
+        showAdvancedMapOptions: false,
         isFullscreen: false,
         starfieldEnabled: true,
         favoriteStartingPosition: null,
@@ -217,6 +226,9 @@ export const mapViewSlice = createSlice({
         setShowOceans(state, action: PayloadAction<boolean>) {
             state.showOceans = action.payload;
         },
+        setShowAdvancedMapOptions(state, action: PayloadAction<boolean>) {
+            state.showAdvancedMapOptions = action.payload;
+        },
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
         },
@@ -279,6 +291,7 @@ export const {
     toggleTraderTypeFilter,
     toggleShowRecentlyAdded,
     setShowOceans,
+    setShowAdvancedMapOptions,
     setShowFullscreen,
     setStarfieldEnabled,
     setFavoriteStartingPosition,

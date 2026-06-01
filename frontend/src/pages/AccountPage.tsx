@@ -25,7 +25,7 @@ import { MyTranslocatorContributionsCard } from "@/components/account/MyTransloc
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
-import { setStarfieldEnabled } from "@/store/slices/mapView";
+import { setStarfieldEnabled, setShowAdvancedMapOptions } from "@/store/slices/mapView";
 
 export function AccountPage() {
   const { t } = useTranslation();
@@ -33,6 +33,7 @@ export function AccountPage() {
   const apiKey = useReduxState("auth.apiKey");
   const dispatch = useAppDispatch();
   const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
+  const showAdvancedMapOptions = useReduxState("mapView.showAdvancedMapOptions");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -328,6 +329,22 @@ export function AccountPage() {
               id="starfield-toggle"
               checked={starfieldEnabled}
               onCheckedChange={(v) => dispatch(setStarfieldEnabled(v))}
+            />
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label htmlFor="advanced-map-options-toggle">
+                {t("account.appearance.advancedMapOptionsLabel")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("account.appearance.advancedMapOptionsDescription")}
+              </p>
+            </div>
+            <Switch
+              id="advanced-map-options-toggle"
+              checked={showAdvancedMapOptions}
+              onCheckedChange={(v) => dispatch(setShowAdvancedMapOptions(v))}
             />
           </div>
           <Separator className="my-3" />

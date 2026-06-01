@@ -116,6 +116,10 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowOceansAction(next)),
     [dispatch],
   );
+  // Account-level gate: the Oceans toggle in fullscreen is only visible
+  // when the user has opted into "Show additional options on Map" from
+  // their account preferences. Default OFF.
+  const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
   const toggleTraderType = useCallback(
@@ -324,7 +328,10 @@ export function FullscreenControlsOverlay({
         </div>
         <div
           onClick={() => setShowOceans(!showOceans)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          className={cn(
+            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+            !showAdvancedMapOptions && "hidden",
+          )}
         >
           <Switch checked={showOceans} aria-label={t("topsMap.showOceansOverlay")} />
           <Label className="cursor-pointer">{t("topsMap.oceans")}</Label>

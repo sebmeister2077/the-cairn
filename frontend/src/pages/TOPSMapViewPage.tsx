@@ -297,6 +297,10 @@ export function TOPSMapViewPage() {
     (next: boolean) => dispatch(setShowOceansAction(next)),
     [dispatch],
   );
+  // Account-level gate for advanced map controls. When OFF (default),
+  // the Oceans overlay image is suppressed regardless of `showOceans`.
+  const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
+  const oceansVisible = showOceans && showAdvancedMapOptions;
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
@@ -1714,7 +1718,7 @@ export function TOPSMapViewPage() {
               overlayRender={({ imgNatural, stats: wcStats }) =>
                 wcStats && imgNatural.w > 0 && imgNatural.h > 0 ? (
                   <>
-                    {showOceans ? (
+                    {oceansVisible ? (
                       <OceansOverlayLayer
                         stats={wcStats}
                         imageWidth={imgNatural.w}
@@ -1765,7 +1769,7 @@ export function TOPSMapViewPage() {
               overlay={
                 tileSet ? (
                   <>
-                    {showOceans ? (
+                    {oceansVisible ? (
                       <OceansOverlayLayer
                         stats={stats}
                         imageWidth={tileSet.imageWidth}
