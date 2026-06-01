@@ -110,6 +110,14 @@ export function parseTranslocators(json: unknown): WorldLineSegment[] {
                 Number.isFinite(x2) &&
                 Number.isFinite(z2)
             ) {
+                // Fallback id from orientation-agnostic coords when the
+                // feature lacks `properties.id` (e.g. WebCartographer
+                // exports). Lets elk-walkable attestations key off
+                // *something* stable even without a backend-assigned id.
+                const fallbackId =
+                    x1 < x2 || (x1 === x2 && z1 <= z2)
+                        ? `xz:${x1},${z1},${x2},${z2}`
+                        : `xz:${x2},${z2},${x1},${z1}`;
                 segments.push({
                     x1,
                     z1,
@@ -117,7 +125,7 @@ export function parseTranslocators(json: unknown): WorldLineSegment[] {
                     z2,
                     y1: Number.isFinite(depth1) ? depth1 : undefined,
                     y2: Number.isFinite(depth2) ? depth2 : undefined,
-                    id: segmentId,
+                    id: segmentId ?? fallbackId,
                     kind,
                     meta,
                 });

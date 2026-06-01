@@ -985,11 +985,11 @@ export const en = {
         tlPenaltyValue: "{value}s",
         tlPenaltyHelp: "Fixed time cost per hop (charge-up, possible ladder climbing).",
         elk: {
-            elkFriendlyOnly: "Only elk-walkable routes",
+            elkFriendlyOnly: "Prefer elk-walkable routes",
             elkFriendlyOnlyHelp:
-                "Restrict walking shortcuts between translocators to segments the community has confirmed an elk can cross (no chasms, shores, or acid).",
+                "Strongly prefer walking shortcuts the community has confirmed an elk can cross (no chasms, shores, or acid). Unverified shortcuts still appear, but with a large time penalty so verified chains win when reasonable.",
             noRouteHintElkOnly:
-                "No route found with the elk-walkable restriction. Try disabling it or marking more segments as elk-walkable.",
+                "No route found. Try disabling the elk preference or marking more segments as elk-walkable.",
             sectionTitle: "Elk-walkable contributions",
             confirmedInRoute: {
                 one: "{count} confirmed segment on this route",
@@ -1026,6 +1026,9 @@ export const en = {
         routeAlternative: "#{index}",
         best: "best",
         walkLeg: "{index}. Walk {blocks} blocks ({duration})",
+        walkLegUnverifiedExtra: "+ up to {duration} if unverified",
+        estimatedTimeRange: "{best} – {worst}",
+        estimatedTimeRangeCaption: "upper bound assumes every unverified elk walk needs extra effort",
         tlLeg: "{index}. TL -> ({x}, {z}) - {duration}",
         tlLegWithY: "{index}. TL -> ({x}, y{y}, {z}) - {duration}",
         routeTo: "Route to {destination}",

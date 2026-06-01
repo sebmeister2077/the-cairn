@@ -200,6 +200,17 @@ def _edges_by_key(data: dict) -> dict:
     return by_key
 
 
+import re
+
+# `xz:x1,z1,x2,z2` fallback ids are self-describing: they encode the
+# segment's world coordinates directly (see `useOverlayData.parseTranslocators`).
+# We accept them without checking the live R2 geojson because the user may
+# be viewing a WebCartographer map whose translocators are sourced from a
+# different host. Assigned `properties.id` strings still go through the
+# membership check.
+_XZ_FALLBACK_RE = re.compile(r"^xz:-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$")
+
+
 def _validate_tl_ids(
     valid_tl_ids: Iterable[str],
     refs: Iterable[dict],
@@ -209,11 +220,19 @@ def _validate_tl_ids(
         for side in ("a", "b"):
             ref = r.get(side) or {}
             tl_id = ref.get("tl_id")
-            if not isinstance(tl_id, str) or tl_id not in s:
+            if not isinstance(tl_id, str) or not tl_id:
                 raise HTTPException(
                     status_code=422,
                     detail=f"unknown translocator id: {tl_id!r}",
                 )
+            if tl_id in s:
+                continue
+            if _XZ_FALLBACK_RE.match(tl_id):
+                continue
+            raise HTTPException(
+                status_code=422,
+                detail=f"unknown translocator id: {tl_id!r}",
+            )
 
 
 # ---------------------------------------------------------------------------

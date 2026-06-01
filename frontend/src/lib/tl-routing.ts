@@ -41,10 +41,12 @@ export interface RouteOptions {
     tlPenaltySeconds: number;
     /** Neighbours considered per endpoint when wiring walk edges. Default 8. */
     kNeighbors: number;
-    /** When true, the planner only considers walk edges between TL
-     *  endpoints that the community has confirmed are safely traversable
-     *  by an elk (no chasm, shore, acid pool, etc). A walk edge survives
-     *  iff its canonical key is in `confirmedElkEdges`. Default false. */
+    /** When true, the planner *prefers* walk edges between TL endpoints
+     *  that the community has confirmed are safely traversable by an elk
+     *  (no chasm, shore, acid pool, etc). Non-confirmed inter-TL walks
+     *  stay routable but accrue an elk-climbing overhead based on how
+     *  far below `elkDepthBaselineY` (default y=130) each endpoint sits.
+     *  Default false. */
     elkFriendlyOnly?: boolean;
     /** Canonical-key set of elk-walkable edges. Used both to filter walk
      *  edges (when `elkFriendlyOnly` is on) and to inject confirmed edges
@@ -55,6 +57,31 @@ export interface RouteOptions {
 export const DEFAULT_WALK_SPEED = 7;
 export const DEFAULT_TL_PENALTY_S = 15;
 export const DEFAULT_K_NEIGHBORS = 8;
+/** Surface-ish baseline. Endpoints at/above this y level pay only the
+ *  small fixed minimum overhead; endpoints below pay proportionally more. */
+export const DEFAULT_ELK_DEPTH_BASELINE_Y = 110;
+/** Seconds of elk-climbing overhead per 30-block chunk (rounded up)
+ *  below `DEFAULT_ELK_DEPTH_BASELINE_Y`. Charged once per endpoint
+ *  involved in an unverified inter-TL walk. */
+export const DEFAULT_ELK_PENALTY_PER_30_BLOCKS_S = 80;
+/** Minimum per-endpoint overhead charged when a TL endpoint sits at or
+ *  above the baseline y — leading an elk still has some unavoidable
+ *  setup cost (loading, leashing, navigating doorways). */
+export const DEFAULT_ELK_MIN_PENALTY_S = 40;
+/** Fallback per-endpoint overhead used when a TL has no recorded y
+ *  (user-contributed TLs only carry 2D coordinates). */
+export const DEFAULT_ELK_UNKNOWN_Y_PENALTY_S = 250;
+
+/** Per-endpoint elk-overhead in seconds. Endpoints with no recorded y
+ *  fall back to `DEFAULT_ELK_UNKNOWN_Y_PENALTY_S`. Endpoints at or
+ *  above `DEFAULT_ELK_DEPTH_BASELINE_Y` pay `DEFAULT_ELK_MIN_PENALTY_S`.
+ *  Deeper endpoints add `ceil((baseline - y) / 30) * 50` seconds. */
+export function elkEndpointOverheadSeconds(y: number | undefined): number {
+    if (y == null) return DEFAULT_ELK_UNKNOWN_Y_PENALTY_S;
+    const depth = DEFAULT_ELK_DEPTH_BASELINE_Y - y;
+    if (depth <= 0) return DEFAULT_ELK_MIN_PENALTY_S;
+    return Math.ceil(depth / 30) * DEFAULT_ELK_PENALTY_PER_30_BLOCKS_S;
+}
 
 export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
     walkSpeed: DEFAULT_WALK_SPEED,
@@ -73,6 +100,13 @@ export type RouteLeg =
         /** Euclidean blocks walked. */
         blocks: number;
         seconds: number;
+        /** Portion of `seconds` that comes from the elk-prefer penalty on
+         *  unverified inter-TL walks. The actual physical traversal cost
+         *  is `seconds - penaltySeconds`; the rest is a worst-case
+         *  estimate of the extra effort to lead an elk through an
+         *  unconfirmed passage. Zero/absent on confirmed walks and on
+         *  start/dest walks. */
+        penaltySeconds?: number;
     }
     | {
         kind: "tl";
@@ -88,8 +122,14 @@ export type RouteLeg =
     };
 
 export interface RouteResult {
-    /** Total cost in seconds (walk + TL hops). */
+    /** Total cost in seconds (walk + TL hops), penalty included. */
     totalSeconds: number;
+    /** Portion of `totalSeconds` that comes from the elk-prefer penalty
+     *  on unverified inter-TL walks. Zero when the toggle is off or the
+     *  route uses only confirmed elk-walkable walks. UI can render the
+     *  ETA as a range `[totalSeconds - uncertainSeconds, totalSeconds]`
+     *  to communicate that the upper bound is a worst-case estimate. */
+    uncertainSeconds: number;
     /** Sum of all walk-leg distances. */
     walkBlocks: number;
     /** Number of TL hops in the route. */
@@ -119,6 +159,10 @@ type Edge = {
      *  confirmed the segment is elk-walkable. Walk edges between virtual
      *  Start/Dest nodes and TL endpoints leave this undefined. */
     isElk?: boolean;
+    /** Portion of `seconds` that is a soft penalty rather than physical
+     *  traversal time. Routing still uses `seconds` as-is; this field
+     *  lets path reconstruction surface the uncertain time separately. */
+    penaltySeconds?: number;
 };
 
 export interface TLGraph {
@@ -303,7 +347,18 @@ export function buildTLGraph(
     // jitter on re-imports; TLs without an id (e.g. user TLs the
     // backend hasn't id-stamped yet) can never be marked elk-walkable.
     const elkSet = opts.confirmedElkEdges;
-    const filterToElk = opts.elkFriendlyOnly === true && elkSet !== undefined;
+    const preferElk = opts.elkFriendlyOnly === true;
+
+    // Per-endpoint elk-climbing overhead. Computed once: depends only on
+    // the endpoint's y, not on which neighbour is being wired.
+    const endpointOverhead: number[] = new Array(N * 2);
+    if (preferElk) {
+        for (let i = 0; i < N; i++) {
+            const s = segments[i];
+            endpointOverhead[i * 2] = elkEndpointOverheadSeconds(s.y1);
+            endpointOverhead[i * 2 + 1] = elkEndpointOverheadSeconds(s.y2);
+        }
+    }
 
     /** Build the canonical elk key for the walk edge between two endpoint
      *  indices, or `null` when either endpoint has no stable TL id. */
@@ -337,11 +392,24 @@ export function buildTLGraph(
             (idx) => idx === i || idx === partner,
         );
         for (const { idx, d2 } of nn) {
-            const seconds = Math.sqrt(d2) / speed;
+            const baseSeconds = Math.sqrt(d2) / speed;
             const elkKey = elkKeyForEndpoints(i, idx);
             const isElk = elkKey !== null && elkSet!.has(elkKey);
-            if (filterToElk && !isElk) continue;
-            adj[i].push({ to: idx, seconds, kind: "walk", isElk: isElk || undefined });
+            // Soft preference: unverified inter-TL walks are still routable
+            // but pay an elk-climbing overhead equal to the sum of both
+            // endpoints' depth-based costs (or a fallback for endpoints
+            // with no recorded y). Confirmed walks pay nothing.
+            const edgePenalty = preferElk && !isElk
+                ? endpointOverhead[i] + endpointOverhead[idx]
+                : 0;
+            const seconds = baseSeconds + edgePenalty;
+            adj[i].push({
+                to: idx,
+                seconds,
+                kind: "walk",
+                isElk: isElk || undefined,
+                penaltySeconds: edgePenalty > 0 ? edgePenalty : undefined,
+            });
             if (seenWalkEdges && elkKey) seenWalkEdges.add(`${Math.min(i, idx)}|${Math.max(i, idx)}`);
         }
     }
@@ -586,7 +654,14 @@ function reconstructLegs(
             const dz = to.z - from.z;
             const blocks = Math.sqrt(dx * dx + dz * dz);
             walkBlocks += blocks;
-            legs.push({ kind: "walk", from, to, blocks, seconds: e.seconds });
+            legs.push({
+                kind: "walk",
+                from,
+                to,
+                blocks,
+                seconds: e.seconds,
+                penaltySeconds: e.penaltySeconds,
+            });
         }
     }
 
@@ -604,19 +679,56 @@ function reconstructLegs(
             prev.to.x === leg.from.x &&
             prev.to.z === leg.from.z
         ) {
+            const mergedPenalty =
+                (prev.penaltySeconds ?? 0) + (leg.penaltySeconds ?? 0);
             merged[merged.length - 1] = {
                 kind: "walk",
                 from: prev.from,
                 to: leg.to,
                 blocks: prev.blocks + leg.blocks,
                 seconds: prev.seconds + leg.seconds,
+                penaltySeconds: mergedPenalty > 0 ? mergedPenalty : undefined,
             };
         } else {
             merged.push(leg);
         }
     }
 
-    return { totalSeconds, walkBlocks, tlHops, legs: merged };
+    // Strip the elk-prefer penalty from walk legs that sit BEFORE the
+    // first TL hop or AFTER the last TL hop. Those segments are the
+    // player walking solo (no elk to lead), so they shouldn't be
+    // charged the "leading an elk through an unverified passage"
+    // surcharge — only the inter-TL middle walks should.
+    let firstTlIdx = -1;
+    let lastTlIdx = -1;
+    for (let i = 0; i < merged.length; i++) {
+        if (merged[i].kind === "tl") {
+            if (firstTlIdx === -1) firstTlIdx = i;
+            lastTlIdx = i;
+        }
+    }
+    for (let i = 0; i < merged.length; i++) {
+        const leg = merged[i];
+        if (leg.kind !== "walk" || !leg.penaltySeconds) continue;
+        const isStartSide = firstTlIdx === -1 || i < firstTlIdx;
+        const isEndSide = lastTlIdx === -1 || i > lastTlIdx;
+        if (!isStartSide && !isEndSide) continue;
+        totalSeconds -= leg.penaltySeconds;
+        merged[i] = {
+            ...leg,
+            seconds: leg.seconds - leg.penaltySeconds,
+            penaltySeconds: undefined,
+        };
+    }
+
+    let uncertainSeconds = 0;
+    for (const leg of merged) {
+        if (leg.kind === "walk" && leg.penaltySeconds) {
+            uncertainSeconds += leg.penaltySeconds;
+        }
+    }
+
+    return { totalSeconds, uncertainSeconds, walkBlocks, tlHops, legs: merged };
 }
 
 // ---------------------------------------------------------------------------
@@ -1009,7 +1121,7 @@ function reconstructFromMaps(
     cameFromEdge: Map<number, Edge>,
 ): RouteResult | null {
     if (target === source) {
-        return { totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
+        return { totalSeconds: 0, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
     }
     const nodes: number[] = [];
     const edges: Edge[] = [];
@@ -1063,7 +1175,7 @@ export function findRendezvous(
             perPlayer: [
                 {
                     player: players[0],
-                    route: { totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] },
+                    route: { totalSeconds: 0, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] },
                 },
             ],
             worstSeconds: 0,
@@ -1140,7 +1252,7 @@ export function findRendezvous(
         let reachable = true;
         for (let p = 0; p < players.length; p++) {
             if (p === m) {
-                routes.push({ totalSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] });
+                routes.push({ totalSeconds: 0, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] });
                 continue;
             }
             const r = findRoute(graph, players[p], meet);
@@ -1183,7 +1295,7 @@ export function findRendezvous(
             // Fallback shouldn't happen — we already know targetNode is
             // reachable from pp.startIdx — but degrade gracefully.
             const cost = pp.gScore.get(targetNode) ?? 0;
-            return { totalSeconds: cost, walkBlocks: 0, tlHops: 0, legs: [] };
+            return { totalSeconds: cost, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
         });
     } else {
         perPlayerRoutes = best.routes;

@@ -84,10 +84,11 @@ type TranslateFn = ReturnType<typeof useTranslation>["t"];
 /** Format a leg row as a single readable line. */
 function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
   if (leg.kind === "walk") {
+    const baseSeconds = leg.seconds - (leg.penaltySeconds ?? 0);
     return t("routePlanner.walkLeg", {
       index: index + 1,
       blocks: Math.round(leg.blocks),
-      duration: formatDuration(leg.seconds),
+      duration: formatDuration(baseSeconds),
     });
   }
   // Show the TL ENTRY (the endpoint the player walks to and may have to
@@ -729,7 +730,6 @@ export function RoutePlannerPanel() {
                 <Switch
                   id="elk-friendly-only"
                   checked={elkFriendlyOnly}
-                  disabled
                   onCheckedChange={(v) => dispatch(setRouteElkFriendlyOnly(Boolean(v)))}
                 />
               </div>
@@ -1109,7 +1109,9 @@ function RouteSummary({
     <div className="space-y-2 rounded-md border bg-background p-3">
       {/* Hero ETA — the headline answer to "how long will this take?".
           Kept visually dominant so the user sees the total time first,
-          before scanning per-leg details. */}
+          before scanning per-leg details. When the route includes
+          unverified elk walks we render a range `best – worst` instead
+          of pretending the penalty is a certainty. */}
       <div className="flex items-baseline justify-between gap-2 border-b pb-2">
         <div className="flex flex-col leading-none">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -1117,8 +1119,18 @@ function RouteSummary({
           </span>
           <span className="mt-1 flex items-baseline gap-1.5 font-mono text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
             <Sparkles className="h-4 w-4 self-center text-emerald-500" />
-            {formatDuration(route.totalSeconds)}
+            {route.uncertainSeconds > 0
+              ? t("routePlanner.estimatedTimeRange", {
+                  best: formatDuration(route.totalSeconds - route.uncertainSeconds),
+                  worst: formatDuration(route.totalSeconds),
+                })
+              : formatDuration(route.totalSeconds)}
           </span>
+          {route.uncertainSeconds > 0 && (
+            <span className="mt-1 text-[10px] italic text-muted-foreground">
+              {t("routePlanner.estimatedTimeRangeCaption")}
+            </span>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1 text-[10px] text-muted-foreground">
           <span className="flex items-center gap-1">
@@ -1162,6 +1174,16 @@ function RouteSummary({
           return (
             <li key={i} className={rowClass}>
               <span className="flex-1 truncate">{describeLeg(leg, i, t)}</span>
+              {leg.kind === "walk" && leg.penaltySeconds ? (
+                <span
+                  className="shrink-0 whitespace-nowrap rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900 dark:bg-amber-900/60 dark:text-amber-50"
+                  title={t("routePlanner.estimatedTimeRangeCaption")}
+                >
+                  {t("routePlanner.walkLegUnverifiedExtra", {
+                    duration: formatDuration(leg.penaltySeconds),
+                  })}
+                </span>
+              ) : null}
               {leg.kind === "walk" && edgeRef && elk && (
                 <Button
                   size="icon-sm"

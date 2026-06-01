@@ -98,7 +98,10 @@ def _ctx_api_key_id(ctx: dict) -> Optional[str]:
 
 def _load_translocator_ids() -> set:
     """Collect every TL ``properties.id`` from the live translocators
-    geojson. Used to reject submissions referencing unknown TLs."""
+    geojson. Used to validate submissions referencing server-assigned
+    ids. Synthetic ``xz:x1,z1,x2,z2`` fallback ids (used by features
+    without an assigned id, e.g. WebCartographer-sourced maps) are
+    accepted by the store directly — see ``_validate_tl_ids``."""
     try:
         raw = r2_storage.download_bytes(r2_storage.translocators_live_key())
     except FileNotFoundError:
