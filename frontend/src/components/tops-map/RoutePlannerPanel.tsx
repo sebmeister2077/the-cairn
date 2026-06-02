@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { NavLink } from "react-router-dom";
 import {
   ArrowLeftRight,
   BookmarkPlus,
@@ -1369,7 +1370,14 @@ function ElkWalkableDraftSection({
                 the section is for before being shown a legend full of
                 colour codes. */}
             <p className="text-[11px] leading-snug text-muted-foreground">
-              {t("routePlanner.elk.sectionIntro")}
+              {t("routePlanner.elk.sectionIntro")}{" "}
+              <NavLink
+                to="/blog/contributing-elk-walkable-roads"
+                className="underline decoration-dotted underline-offset-2 hover:text-primary"
+              >
+                {t("routePlanner.elk.readGuide")}
+              </NavLink>
+              .
             </p>
 
             {/* Legend — same colour vocabulary as the per-leg row backgrounds. */}

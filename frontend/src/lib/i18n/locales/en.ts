@@ -993,6 +993,7 @@ export const en = {
             sectionTitle: "Elk-walkable contributions",
             sectionIntro:
                 "Help the community map which walking shortcuts an elk mount can actually cross. Click the paw button next to a walk leg above to mark it elk-walkable, then submit your draft below. Your attestations help other players plan smarter routes.",
+            readGuide: "Read the full guide",
             pendingCount: {
                 one: "{count} pending change",
                 few: "{count} pending changes",

@@ -2,6 +2,8 @@ import type { Locale } from "@/lib/i18n";
 import type { ComponentType } from "react";
 import { AddingTranslocatorsWithContributeTLsPost } from "./AddingTranslocatorsWithContributeTLsPost";
 import { AddingTranslocatorsWithContributeTLsPostRu } from "./AddingTranslocatorsWithContributeTLsPost.ru";
+import { ContributingElkWalkableRoadsPost } from "./ContributingElkWalkableRoadsPost";
+import { ContributingElkWalkableRoadsPostRu } from "./ContributingElkWalkableRoadsPost.ru";
 import { ContributingToTopsMapPost } from "./ContributingToTopsMapPost";
 import { ContributingToTopsMapPostRu } from "./ContributingToTopsMapPost.ru";
 import { ManagingLandmarksPost } from "./ManagingLandmarksPost";
@@ -27,6 +29,27 @@ interface BlogPostRecord {
 }
 
 const BLOG_POSTS: BlogPostRecord[] = [
+    {
+        slug: "contributing-elk-walkable-roads",
+        date: "2026-06-02",
+        readingMinutes: 5,
+        translations: {
+            en: {
+                title: "Submitting Elk-walkable Roads",
+                excerpt:
+                    "Turn on the elk-walkable preference, read the new time-range estimates, and attest the walking shortcuts your elk can actually cross so the planner trusts them at full speed.",
+                tags: ["guide", "multiplayer", "route-planner", "elk-walkable"],
+                Component: ContributingElkWalkableRoadsPost,
+            },
+            ru: {
+                title: "Заверение «лосиных» пеших срезок",
+                excerpt:
+                    "Включите предпочтение лосиных маршрутов, разберитесь с интервалом оценки времени и заверяйте пешие срезки, которые ваш лось реально проходит, чтобы планировщик доверял им на полной скорости.",
+                tags: ["гайд", "мультиплеер", "маршруты", "лось"],
+                Component: ContributingElkWalkableRoadsPostRu,
+            },
+        },
+    },
     {
         slug: "managing-landmarks",
         date: "2026-05-22",
