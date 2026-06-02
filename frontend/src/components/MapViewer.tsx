@@ -1236,7 +1236,9 @@ export function MapViewer({
           switch (state) {
             case "confirmed":
             case "confirmed-by-me":
-              return "rgba(34, 197, 94, 0.98)"; // emerald-500
+              // Sky-400 — deliberately distinct from the emerald TL
+              // segments so a confirmed walk doesn't read as a TL hop.
+              return "rgba(56, 189, 248, 0.98)";
             case "pending-attest":
               return "rgba(250, 204, 21, 0.98)"; // amber-400
             case "pending-unattest":

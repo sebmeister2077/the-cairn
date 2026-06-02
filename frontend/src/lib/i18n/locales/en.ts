@@ -991,6 +991,14 @@ export const en = {
             noRouteHintElkOnly:
                 "No route found. Try disabling the elk preference or marking more segments as elk-walkable.",
             sectionTitle: "Elk-walkable contributions",
+            sectionIntro:
+                "Help the community map which walking shortcuts an elk mount can actually cross. Click the paw button next to a walk leg above to mark it elk-walkable, then submit your draft below. Your attestations help other players plan smarter routes.",
+            pendingCount: {
+                one: "{count} pending change",
+                few: "{count} pending changes",
+                many: "{count} pending changes",
+                other: "{count} pending changes",
+            },
             confirmedInRoute: {
                 one: "{count} confirmed segment on this route",
                 few: "{count} confirmed segments on this route",
@@ -1003,7 +1011,9 @@ export const en = {
             legendPendingUnattest: "Removing my attestation",
             markElkWalkable: "Mark this walk as elk-walkable",
             cancelAttest: "Cancel pending attestation",
+            cancelUnattest: "Cancel pending removal",
             alreadyAttested: "You already attested this — click to remove your attestation",
+            removeAttestation: "Remove your attestation from this segment",
             addAttestation: "Add your attestation to this confirmed segment",
             draftItemAttest: "Mark {a} ↔ {b}",
             draftItemUnattest: "Unmark {a} ↔ {b}",

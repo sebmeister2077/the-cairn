@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   BookmarkPlus,
   Check,
+  ChevronDown,
   Copy,
   Crosshair,
   Footprints,
@@ -71,10 +72,12 @@ import {
   clearElkDraft,
   removeElkPending,
   toggleElkPendingAttest,
+  toggleElkPendingUnattest,
 } from "@/store/slices/elkWalkable";
 
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 
 import { EndpointPicker } from "./EndpointPicker";
 import { PlayerPicker } from "./PlayerPicker";
@@ -682,13 +685,28 @@ export function RoutePlannerPanel() {
             variant="ghost"
             className="h-7 gap-1 px-2 text-xs"
             onClick={() => setSettingsOpen((v) => !v)}
+            aria-expanded={settingsOpen}
           >
             <Settings2 className="h-3 w-3" /> {t("routePlanner.settings")}
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform duration-200",
+                settingsOpen && "rotate-180",
+              )}
+            />
           </Button>
         </div>
 
-        {settingsOpen && (
-          <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+        <div
+          data-open={settingsOpen}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            settingsOpen ? "grid-rows-[1fr]" : "mt-0! grid-rows-[0fr]",
+          )}
+          aria-hidden={!settingsOpen}
+        >
+          <div className="overflow-hidden">
+            <div className="space-y-3 rounded-md border bg-muted/30 p-3">
             <div className="space-y-1">
               <Label className="flex items-center justify-between text-xs">
                 <span>{t("routePlanner.walkSpeed")}</span>
@@ -737,8 +755,9 @@ export function RoutePlannerPanel() {
                 {t("routePlanner.elk.elkFriendlyOnlyHelp")}
               </p>
             </div>
+            </div>
           </div>
-        )}
+        </div>
 
         <Separator />
 
@@ -808,7 +827,18 @@ export function RoutePlannerPanel() {
                             pendingAttestKeys: elkPendingAttestKeys,
                             pendingUnattestKeys: elkPendingUnattestKeys,
                             selfUserId,
-                            onToggle: (a, b) => dispatch(toggleElkPendingAttest({ a, b })),
+                            // Dispatch attest vs unattest based on the leg's
+                            // current state. "confirmed-by-me" and
+                            // "pending-unattest" target the unattest list so
+                            // the user can actually remove their own
+                            // confirmation; everything else toggles attest.
+                            onToggle: (a, b, state) => {
+                              if (state === "confirmed-by-me" || state === "pending-unattest") {
+                                dispatch(toggleElkPendingUnattest({ a, b }));
+                              } else {
+                                dispatch(toggleElkPendingAttest({ a, b }));
+                              }
+                            },
                           }
                         : undefined
                     }
@@ -1068,7 +1098,7 @@ interface ElkRouteSummaryProps {
   pendingAttestKeys: ReadonlySet<string>;
   pendingUnattestKeys: ReadonlySet<string>;
   selfUserId: string | null;
-  onToggle: (a: EdgeEndpointRef, b: EdgeEndpointRef) => void;
+  onToggle: (a: EdgeEndpointRef, b: EdgeEndpointRef, state: WalkLegElkState) => void;
 }
 
 /** Tailwind classes per elk state — keeps the per-leg row styling in one
@@ -1077,9 +1107,9 @@ const ELK_STATE_ROW_CLASSES: Record<WalkLegElkState, string> = {
   "not-attestable": "flex items-center gap-1 px-2 py-1 text-muted-foreground",
   unconfirmed: "flex items-center gap-1 rounded px-2 py-1 text-muted-foreground",
   confirmed:
-    "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100",
+    "flex items-center gap-1 rounded bg-sky-50 px-2 py-1 text-sky-900 dark:bg-sky-950/40 dark:text-sky-100",
   "confirmed-by-me":
-    "flex items-center gap-1 rounded bg-emerald-100 px-2 py-1 text-emerald-900 dark:bg-emerald-900/60 dark:text-emerald-50",
+    "flex items-center gap-1 rounded bg-sky-100 px-2 py-1 text-sky-900 dark:bg-sky-900/60 dark:text-sky-50",
   "pending-attest":
     "flex items-center gap-1 rounded bg-amber-50 px-2 py-1 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100",
   "pending-unattest":
@@ -1189,15 +1219,17 @@ function RouteSummary({
                   size="icon-sm"
                   variant="ghost"
                   className="h-6 w-6 shrink-0 text-current opacity-80 hover:opacity-100"
-                  onClick={() => elk.onToggle(edgeRef.a, edgeRef.b)}
+                  onClick={() => elk.onToggle(edgeRef.a, edgeRef.b, elkState)}
                   title={
                     elkState === "pending-attest"
                       ? t("routePlanner.elk.cancelAttest")
-                      : elkState === "confirmed-by-me"
-                        ? t("routePlanner.elk.alreadyAttested")
-                        : elkState === "confirmed"
-                          ? t("routePlanner.elk.addAttestation")
-                          : t("routePlanner.elk.markElkWalkable")
+                      : elkState === "pending-unattest"
+                        ? t("routePlanner.elk.cancelUnattest")
+                        : elkState === "confirmed-by-me"
+                          ? t("routePlanner.elk.removeAttestation")
+                          : elkState === "confirmed"
+                            ? t("routePlanner.elk.addAttestation")
+                            : t("routePlanner.elk.markElkWalkable")
                   }
                   aria-label={t("routePlanner.elk.markElkWalkable")}
                 >
@@ -1279,132 +1311,182 @@ function ElkWalkableDraftSection({
   }, [route.legs, edges]);
 
   const pendingCount = pendingAttest.length + pendingUnattest.length;
+
+  // Expanded by default whenever the user has pending items so they can
+  // see/manage their draft without an extra click. Otherwise start
+  // collapsed — the section is informational at that point and would
+  // just take up vertical space on a route the user already understands.
+  const [expanded, setExpanded] = useState(pendingCount > 0);
+
+  // Auto-expand the moment a pending item appears (e.g. the user clicked
+  // the paw button on a walk leg). We don't auto-collapse when the draft
+  // empties because the user might have manually opened the section to
+  // read the legend / explanation.
+  useEffect(() => {
+    if (pendingCount > 0) setExpanded(true);
+  }, [pendingCount]);
+
   if (!hasAttestableLeg && pendingCount === 0) return null;
 
+  const summaryText =
+    pendingCount > 0
+      ? t("routePlanner.elk.pendingCount", { count: pendingCount })
+      : t("routePlanner.elk.confirmedInRoute", { count: confirmedInRoute });
+
   return (
-    <div className="space-y-2 rounded-md border bg-muted/30 p-2">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 text-xs font-medium">
-          <PawPrint className="h-3.5 w-3.5 text-emerald-600" />
+    <div className="rounded-md border bg-muted/30">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center gap-2 px-2 py-2 text-left transition-colors hover:bg-muted/50"
+      >
+        <PawPrint className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+        <span className="flex-1 text-xs font-medium">
           {t("routePlanner.elk.sectionTitle")}
-        </div>
-        <span className="text-[10px] text-muted-foreground">
-          {t("routePlanner.elk.confirmedInRoute", { count: confirmedInRoute })}
         </span>
-      </div>
-
-      {/* Legend — same colour vocabulary as the per-leg row backgrounds. */}
-      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" />
-          {t("routePlanner.elk.legendConfirmed")}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
-          {t("routePlanner.elk.legendPendingAttest")}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
-          {t("routePlanner.elk.legendUnconfirmed")}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
-          {t("routePlanner.elk.legendPendingUnattest")}
-        </span>
-      </div>
-
-      {pendingCount > 0 ? (
-        <ul className="space-y-0.5 text-[11px]">
-          {pendingAttest.map((p) => (
-            <li
-              key={`a:${p.key}`}
-              className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
-            >
-              <span className="flex-1 truncate font-mono">
-                {t("routePlanner.elk.draftItemAttest", {
-                  a: `${p.a.tl_id}#${p.a.ep}`,
-                  b: `${p.b.tl_id}#${p.b.ep}`,
-                })}
-              </span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
-                onClick={() => onRemove(p.key)}
-                aria-label={t("routePlanner.elk.removeDraft")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </li>
-          ))}
-          {pendingUnattest.map((p) => (
-            <li
-              key={`u:${p.key}`}
-              className="flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-red-900 dark:bg-red-950/40 dark:text-red-100"
-            >
-              <span className="flex-1 truncate font-mono">
-                {t("routePlanner.elk.draftItemUnattest", {
-                  a: `${p.a.tl_id}#${p.a.ep}`,
-                  b: `${p.b.tl_id}#${p.b.ep}`,
-                })}
-              </span>
-              <Button
-                size="icon-sm"
-                variant="ghost"
-                className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
-                onClick={() => onRemove(p.key)}
-                aria-label={t("routePlanner.elk.removeDraft")}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-[10px] text-muted-foreground">{t("routePlanner.elk.draftEmpty")}</p>
-      )}
-
-      <div className="flex items-center gap-1">
-        <Button
-          size="sm"
-          variant="default"
-          className="flex-1 gap-1.5"
-          disabled={!canSubmit || submitStatus.kind === "submitting"}
-          onClick={() => onSubmit()}
-        >
-          {submitStatus.kind === "submitting" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : submitStatus.kind === "success" ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
+        <span className="text-[10px] text-muted-foreground">{summaryText}</span>
+        <ChevronDown
+          className={cn(
+            "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+            expanded && "rotate-180",
           )}
-          {submitStatus.kind === "submitting"
-            ? t("routePlanner.elk.submittingStatus")
-            : t("routePlanner.elk.submitButton")}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-1.5"
-          disabled={pendingCount === 0 || submitStatus.kind === "submitting"}
-          onClick={() => onClear()}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-          {t("routePlanner.elk.clearButton")}
-        </Button>
-      </div>
+        />
+      </button>
 
-      {submitStatus.kind === "success" && (
-        <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
-          {t("routePlanner.elk.submitSuccess", { count: submitStatus.appliedCount })}
-        </p>
-      )}
-      {submitStatus.kind === "error" && (
-        <p className="text-[10px] text-red-600 dark:text-red-400">
-          {t("routePlanner.elk.submitError", { message: submitStatus.message })}
-        </p>
-      )}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-200 ease-out",
+          expanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+        aria-hidden={!expanded}
+      >
+        <div className="overflow-hidden">
+          <div className="space-y-2 border-t px-2 pb-2 pt-2">
+            {/* Plain-language intro so first-time users understand what
+                the section is for before being shown a legend full of
+                colour codes. */}
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              {t("routePlanner.elk.sectionIntro")}
+            </p>
+
+            {/* Legend — same colour vocabulary as the per-leg row backgrounds. */}
+            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-sky-400" />
+                {t("routePlanner.elk.legendConfirmed")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+                {t("routePlanner.elk.legendPendingAttest")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+                {t("routePlanner.elk.legendUnconfirmed")}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-400" />
+                {t("routePlanner.elk.legendPendingUnattest")}
+              </span>
+            </div>
+
+            {pendingCount > 0 ? (
+              <ul className="space-y-0.5 text-[11px]">
+                {pendingAttest.map((p) => (
+                  <li
+                    key={`a:${p.key}`}
+                    className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+                  >
+                    <span className="flex-1 truncate font-mono">
+                      {t("routePlanner.elk.draftItemAttest", {
+                        a: `${p.a.tl_id}#${p.a.ep}`,
+                        b: `${p.b.tl_id}#${p.b.ep}`,
+                      })}
+                    </span>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
+                      onClick={() => onRemove(p.key)}
+                      aria-label={t("routePlanner.elk.removeDraft")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+                {pendingUnattest.map((p) => (
+                  <li
+                    key={`u:${p.key}`}
+                    className="flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-red-900 dark:bg-red-950/40 dark:text-red-100"
+                  >
+                    <span className="flex-1 truncate font-mono">
+                      {t("routePlanner.elk.draftItemUnattest", {
+                        a: `${p.a.tl_id}#${p.a.ep}`,
+                        b: `${p.b.tl_id}#${p.b.ep}`,
+                      })}
+                    </span>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="h-5 w-5 shrink-0 text-current opacity-70 hover:opacity-100"
+                      onClick={() => onRemove(p.key)}
+                      aria-label={t("routePlanner.elk.removeDraft")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-[10px] text-muted-foreground">
+                {t("routePlanner.elk.draftEmpty")}
+              </p>
+            )}
+
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="default"
+                className="flex-1 gap-1.5"
+                disabled={!canSubmit || submitStatus.kind === "submitting"}
+                onClick={() => onSubmit()}
+              >
+                {submitStatus.kind === "submitting" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : submitStatus.kind === "success" ? (
+                  <Check className="h-3.5 w-3.5" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                {submitStatus.kind === "submitting"
+                  ? t("routePlanner.elk.submittingStatus")
+                  : t("routePlanner.elk.submitButton")}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={pendingCount === 0 || submitStatus.kind === "submitting"}
+                onClick={() => onClear()}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {t("routePlanner.elk.clearButton")}
+              </Button>
+            </div>
+
+            {submitStatus.kind === "success" && (
+              <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                {t("routePlanner.elk.submitSuccess", { count: submitStatus.appliedCount })}
+              </p>
+            )}
+            {submitStatus.kind === "error" && (
+              <p className="text-[10px] text-red-600 dark:text-red-400">
+                {t("routePlanner.elk.submitError", { message: submitStatus.message })}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
