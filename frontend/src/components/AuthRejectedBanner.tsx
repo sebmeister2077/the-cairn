@@ -28,24 +28,24 @@ export function AuthRejectedBanner({
 
   return <></>;
 
-  return (
-    <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
-      <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
-          <p className="font-medium text-foreground">{title}</p>
-          <p className="text-sm text-muted-foreground">{body}</p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="ghost" size="sm" onClick={onDismiss}>
-            Dismiss
-          </Button>
-          {primary && (
-            <Button size="sm" onClick={primary.onClick}>
-              {primary.label}
-            </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+  // return (
+  //   <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
+  //     <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
+  //       <div className="space-y-1">
+  //         <p className="font-medium text-foreground">{title}</p>
+  //         <p className="text-sm text-muted-foreground">{body}</p>
+  //       </div>
+  //       <div className="flex shrink-0 gap-2">
+  //         <Button variant="ghost" size="sm" onClick={onDismiss}>
+  //           Dismiss
+  //         </Button>
+  //         {primary && (
+  //           <Button size="sm" onClick={primary.onClick}>
+  //             {primary.label}
+  //           </Button>
+  //         )}
+  //       </div>
+  //     </CardContent>
+  //   </Card>
+  // );
 }
