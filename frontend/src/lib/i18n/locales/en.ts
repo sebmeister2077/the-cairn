@@ -994,6 +994,9 @@ export const en = {
             sectionIntro:
                 "Help the community map which walking shortcuts an elk mount can actually cross. Click the paw button next to a walk leg above to mark it elk-walkable, then submit your draft below. Your attestations help other players plan smarter routes.",
             readGuide: "Read the full guide",
+            signInNotice:
+                "Want to mark walks on this route as elk-walkable? Create a free account to start contributing your attestations to the community map.",
+            signInCta: "Sign in or create an account",
             pendingCount: {
                 one: "{count} pending change",
                 few: "{count} pending changes",

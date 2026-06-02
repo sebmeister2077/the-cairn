@@ -864,6 +864,8 @@ export function RoutePlannerPanel() {
                   />
                 )}
 
+                {primary && !isLoggedIn && <ElkWalkableSignInNotice route={primary} />}
+
                 {/* Save-as-draft action: turns the current route's TLs into
                   a fresh TL grouping the user can rename / tweak in the
                   Groupings drawer. Disabled for walk-only routes since a
@@ -1496,6 +1498,39 @@ function ElkWalkableDraftSection({
             )}
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Sign-in CTA shown to anonymous users in place of the elk-walkable
+ * draft section, but only when the active route actually has walk legs
+ * an account holder could attest. Keeps the planner panel quiet for
+ * pure-TL routes where the feature wouldn't apply anyway.
+ */
+function ElkWalkableSignInNotice({ route }: { route: RouteResult }) {
+  const { t } = useTranslation();
+  const hasAttestableLeg = useMemo(() => {
+    for (let i = 0; i < route.legs.length; i++) {
+      if (route.legs[i].kind !== "walk") continue;
+      if (walkLegEdgeRef(route.legs, i)) return true;
+    }
+    return false;
+  }, [route.legs]);
+
+  if (!hasAttestableLeg) return null;
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-2 text-[11px] text-emerald-900 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-100">
+      <PawPrint className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <div className="flex-1 space-y-1">
+        <p className="leading-snug">{t("routePlanner.elk.signInNotice")}</p>
+        <NavLink
+          to="/account"
+          className="inline-block font-medium underline decoration-dotted underline-offset-2 hover:text-emerald-700 dark:hover:text-emerald-200"
+        >
+          {t("routePlanner.elk.signInCta")}
+        </NavLink>
       </div>
     </div>
   );

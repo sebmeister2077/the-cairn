@@ -26,6 +26,8 @@ export function AuthRejectedBanner({
     primary = { label: "Enter an access key", onClick: onOpenApiKey };
   }
 
+  return <></>;
+
   return (
     <Card className="mb-4 border-amber-300 bg-amber-50/70 dark:bg-amber-950/30">
       <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
