@@ -40,12 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/api";
 import { buildRouteShareUrl } from "@/lib/route-share";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
-import type {
-  RendezvousObjective,
-  RendezvousResult,
-  RouteLeg,
-  RouteResult,
-} from "@/lib/tl-routing";
+
 import { useTLRendezvous } from "@/hooks/useTLRendezvous";
 import { useElkWalkable, useElkWalkableSubmit } from "@/hooks/useElkWalkable";
 import {
@@ -95,6 +90,7 @@ import {
   RoutePlannerCommandBuilder,
 } from "./routeplanner/RoutePlannerCommandBuilder";
 import { SaveRouteForRoadWorkersSection } from "./routeplanner/SaveRouteForRoadWorkersSection";
+import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
 
 // Y coordinate used as a fallback when a TL endpoint has no recorded Y
 // (user-contributed TLs only carry 2D coordinates). Seeded TLs ship

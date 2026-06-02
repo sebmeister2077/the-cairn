@@ -18,9 +18,9 @@
  *     a TL-distinctness filter so the alternatives users see feel
  *     meaningfully different rather than micro-variations.
  *
- * Everything in this module is a pure function over plain data so it stays
- * easy to unit-test (and trivially worker-portable if we ever decide to
- * move compute off the main thread).
+ * Internals are CSR-shaped (parallel typed arrays, integer edge IDs) so
+ * the inner Dijkstra/A* loops avoid per-edge object allocation and Yen's
+ * forbidden-edge tracking is a `Uint8Array` mask rather than a string set.
  */
 
 import type { WorldLineSegment } from "@/components/MapViewer";
@@ -138,42 +138,46 @@ export interface RouteResult {
 }
 
 // ---------------------------------------------------------------------------
-// Internal graph representation
+// Internal CSR graph representation
 // ---------------------------------------------------------------------------
+//
+// Node indices < 2*N are TL endpoints, encoded as `tlIndex * 2 + side`
+// (side 0 = (x1,z1), side 1 = (x2,z2)). N = number of TLs. The Start/
+// Dest virtual nodes are attached per-query at indices `2*N` and `2*N+1`.
+//
+// Edges are stored in a single Compressed-Sparse-Row block of typed
+// arrays. For node `u`, outgoing edges are at indices
+// `[baseHead[u], baseHead[u+1])`. Each edge `eid` has parallel fields
+// `baseTo[eid]`, `baseSec[eid]`, `baseKindTlIdx[eid]`, `basePenalty[eid]`.
+//
+// `baseKindTlIdx` packs both edge kind and TL index into one int:
+//   • >= 0 ⇒ TL edge with that tlIndex
+//   • -1   ⇒ plain walk edge
+//   • -2   ⇒ confirmed elk-walkable walk edge
 
-/**
- * Node indices < 2*N are TL endpoints, encoded as `tlIndex * 2 + side`
- * (side 0 = (x1,z1), side 1 = (x2,z2)). N = number of TLs.
- *
- * The Start/Dest virtual nodes are attached per-query with indices
- * `2*N` and `2*N+1`.
- */
-type Edge = {
-    to: number;
-    seconds: number;
-    /** `"tl"` for the TL hop edge, `"walk"` otherwise. Used for leg reconstruction. */
-    kind: "tl" | "walk";
-    /** Set on TL edges; index into `graph.segments`. */
-    tlIndex?: number;
-    /** Set on walk edges between two TL endpoints when the community has
-     *  confirmed the segment is elk-walkable. Walk edges between virtual
-     *  Start/Dest nodes and TL endpoints leave this undefined. */
-    isElk?: boolean;
-    /** Portion of `seconds` that is a soft penalty rather than physical
-     *  traversal time. Routing still uses `seconds` as-is; this field
-     *  lets path reconstruction surface the uncertain time separately. */
-    penaltySeconds?: number;
-};
+const KIND_WALK = -1;
+const KIND_WALK_ELK = -2;
 
 export interface TLGraph {
     segments: WorldLineSegment[];
-    /** Flat x coordinates per node (length = 2*N). */
-    xs: number[];
-    /** Flat z coordinates per node. */
-    zs: number[];
-    /** Adjacency: built-in walk + TL edges. Length 2*N. */
-    adj: Edge[][];
-    /** Spatial index over endpoints for K-nearest lookups. */
+    /** Number of nodes (= 2 * segments.length). */
+    numNodes: number;
+    /** Flat x/z coordinates per node. */
+    xs: Float64Array;
+    zs: Float64Array;
+
+    // CSR adjacency (length = numNodes + 1, with `baseHead[numNodes]` =
+    // total edge count).
+    baseHead: Int32Array;
+    baseTo: Int32Array;
+    baseSec: Float64Array;
+    /** See packing rules above. */
+    baseKindTlIdx: Int32Array;
+    /** 0 if the edge has no soft elk-prefer penalty. */
+    basePenalty: Float64Array;
+    /** Total number of base edges (= baseHead[numNodes]). */
+    baseEdgeCount: number;
+
     kd: KDTree;
     opts: RouteOptions;
 }
@@ -199,15 +203,15 @@ interface KDNode {
 }
 
 export interface KDTree {
-    xs: ReadonlyArray<number>;
-    zs: ReadonlyArray<number>;
+    xs: ArrayLike<number>;
+    zs: ArrayLike<number>;
     root: KDNode | null;
-    /** Indices flagged as ignored by queries (used to skip the same-TL endpoint). */
 }
 
-function buildKD(xs: ReadonlyArray<number>, zs: ReadonlyArray<number>): KDTree {
-    const indices = new Array<number>(xs.length);
-    for (let i = 0; i < xs.length; i++) indices[i] = i;
+function buildKD(xs: ArrayLike<number>, zs: ArrayLike<number>): KDTree {
+    const n = xs.length;
+    const indices = new Array<number>(n);
+    for (let i = 0; i < n; i++) indices[i] = i;
 
     const build = (lo: number, hi: number, depth: number): KDNode | null => {
         if (lo >= hi) return null;
@@ -226,7 +230,7 @@ function buildKD(xs: ReadonlyArray<number>, zs: ReadonlyArray<number>): KDTree {
         return node;
     };
 
-    return { xs, zs, root: build(0, xs.length, 0) };
+    return { xs, zs, root: build(0, n, 0) };
 }
 
 /**
@@ -320,8 +324,9 @@ export function buildTLGraph(
 ): TLGraph {
     const opts: RouteOptions = { ...DEFAULT_ROUTE_OPTIONS, ...options };
     const N = segments.length;
-    const xs = new Array<number>(N * 2);
-    const zs = new Array<number>(N * 2);
+    const numNodes = N * 2;
+    const xs = new Float64Array(numNodes);
+    const zs = new Float64Array(numNodes);
     for (let i = 0; i < N; i++) {
         const s = segments[i];
         xs[i * 2] = s.x1;
@@ -331,27 +336,17 @@ export function buildTLGraph(
     }
 
     const kd = buildKD(xs, zs);
-    const adj: Edge[][] = Array.from({ length: N * 2 }, () => [] as Edge[]);
 
-    // TL edges (paired endpoints).
+    // First pass: gather all (u, v, seconds, kindTlIdx, penalty) records
+    // in plain JS arrays so we don't need to know the per-node degree
+    // ahead of time. Second pass converts to CSR.
     const tlSeconds = opts.tlPenaltySeconds;
-    for (let i = 0; i < N; i++) {
-        const a = i * 2;
-        const b = i * 2 + 1;
-        adj[a].push({ to: b, seconds: tlSeconds, kind: "tl", tlIndex: i });
-        adj[b].push({ to: a, seconds: tlSeconds, kind: "tl", tlIndex: i });
-    }
-
-    // Pre-compute the elk lookup. We use the TL's stable
-    // `properties.id` so the edge identity survives small coordinate
-    // jitter on re-imports; TLs without an id (e.g. user TLs the
-    // backend hasn't id-stamped yet) can never be marked elk-walkable.
     const elkSet = opts.confirmedElkEdges;
     const preferElk = opts.elkFriendlyOnly === true;
 
     // Per-endpoint elk-climbing overhead. Computed once: depends only on
     // the endpoint's y, not on which neighbour is being wired.
-    const endpointOverhead: number[] = new Array(N * 2);
+    const endpointOverhead: number[] = preferElk ? new Array(numNodes) : [];
     if (preferElk) {
         for (let i = 0; i < N; i++) {
             const s = segments[i];
@@ -375,6 +370,33 @@ export function buildTLGraph(
         return tokA < tokB ? `${tokA}|${tokB}` : `${tokB}|${tokA}`;
     };
 
+    // Outgoing edge buckets per node. We accumulate then flatten to CSR.
+    const outTo: number[][] = new Array(numNodes);
+    const outSec: number[][] = new Array(numNodes);
+    const outKind: number[][] = new Array(numNodes);
+    const outPen: number[][] = new Array(numNodes);
+    for (let i = 0; i < numNodes; i++) {
+        outTo[i] = [];
+        outSec[i] = [];
+        outKind[i] = [];
+        outPen[i] = [];
+    }
+
+    const addEdge = (u: number, v: number, seconds: number, kindTlIdx: number, penalty: number) => {
+        outTo[u].push(v);
+        outSec[u].push(seconds);
+        outKind[u].push(kindTlIdx);
+        outPen[u].push(penalty);
+    };
+
+    // TL edges (paired endpoints).
+    for (let i = 0; i < N; i++) {
+        const a = i * 2;
+        const b = i * 2 + 1;
+        addEdge(a, b, tlSeconds, i, 0);
+        addEdge(b, a, tlSeconds, i, 0);
+    }
+
     // Walk edges via K-NN. Skip the query point itself AND its paired
     // endpoint (the TL edge already handles that connection, and including
     // it as a walk edge would only ever look worse).
@@ -382,7 +404,7 @@ export function buildTLGraph(
     /** Track keys already added so the "inject missing confirmed edges"
      *  pass below doesn't double-wire any K-NN neighbours we already saw. */
     const seenWalkEdges = elkSet ? new Set<string>() : null;
-    for (let i = 0; i < N * 2; i++) {
+    for (let i = 0; i < numNodes; i++) {
         const partner = i ^ 1;
         const nn = knn(
             kd,
@@ -403,14 +425,10 @@ export function buildTLGraph(
                 ? endpointOverhead[i] + endpointOverhead[idx]
                 : 0;
             const seconds = baseSeconds + edgePenalty;
-            adj[i].push({
-                to: idx,
-                seconds,
-                kind: "walk",
-                isElk: isElk || undefined,
-                penaltySeconds: edgePenalty > 0 ? edgePenalty : undefined,
-            });
-            if (seenWalkEdges && elkKey) seenWalkEdges.add(`${Math.min(i, idx)}|${Math.max(i, idx)}`);
+            addEdge(i, idx, seconds, isElk ? KIND_WALK_ELK : KIND_WALK, edgePenalty);
+            if (seenWalkEdges && elkKey) {
+                seenWalkEdges.add(`${Math.min(i, idx)}|${Math.max(i, idx)}`);
+            }
         }
     }
 
@@ -459,27 +477,83 @@ export function buildTLGraph(
                     const dx = xs[aIdx] - xs[bIdx];
                     const dz = zs[aIdx] - zs[bIdx];
                     const seconds = Math.sqrt(dx * dx + dz * dz) / speed;
-                    adj[aIdx].push({ to: bIdx, seconds, kind: "walk", isElk: true });
-                    adj[bIdx].push({ to: aIdx, seconds, kind: "walk", isElk: true });
+                    addEdge(aIdx, bIdx, seconds, KIND_WALK_ELK, 0);
+                    addEdge(bIdx, aIdx, seconds, KIND_WALK_ELK, 0);
                 }
             }
         }
     }
 
-    return { segments: segments.slice(), xs, zs, adj, kd, opts };
+    // Flatten to CSR.
+    let total = 0;
+    for (let i = 0; i < numNodes; i++) total += outTo[i].length;
+    const baseHead = new Int32Array(numNodes + 1);
+    const baseTo = new Int32Array(total);
+    const baseSec = new Float64Array(total);
+    const baseKindTlIdx = new Int32Array(total);
+    const basePenalty = new Float64Array(total);
+    let cursor = 0;
+    for (let i = 0; i < numNodes; i++) {
+        baseHead[i] = cursor;
+        const tos = outTo[i];
+        const secs = outSec[i];
+        const kinds = outKind[i];
+        const pens = outPen[i];
+        for (let j = 0; j < tos.length; j++) {
+            baseTo[cursor] = tos[j];
+            baseSec[cursor] = secs[j];
+            baseKindTlIdx[cursor] = kinds[j];
+            basePenalty[cursor] = pens[j];
+            cursor++;
+        }
+    }
+    baseHead[numNodes] = cursor;
+
+    return {
+        segments: segments.slice(),
+        numNodes,
+        xs,
+        zs,
+        baseHead,
+        baseTo,
+        baseSec,
+        baseKindTlIdx,
+        basePenalty,
+        baseEdgeCount: cursor,
+        kd,
+        opts,
+    };
 }
 
 // ---------------------------------------------------------------------------
 // Per-query augmentation: attach virtual Start / Dest nodes
 // ---------------------------------------------------------------------------
+//
+// We don't rebuild CSR for the augmented graph — extras live in side
+// arrays indexed by `extraId = eid - baseEdgeCount`. Outgoing-edge
+// iteration walks the base CSR slice (when the source is a non-virtual
+// node) followed by the extras list for that node.
 
 interface AugmentedGraph {
     base: TLGraph;
     startIdx: number;
     destIdx: number;
-    /** Edges from virtual nodes (added on top of base.adj via overlay maps). */
-    extraOut: Map<number, Edge[]>;
-    /** Coordinate lookup that includes virtual nodes. */
+    /** Total node count including the two virtuals. */
+    numNodes: number;
+
+    // Extra edge fields (one entry per appended edge).
+    extraTo: Int32Array;
+    extraSec: Float64Array;
+    extraKindTlIdx: Int32Array;
+    extraPenalty: Float64Array;
+    /** Number of populated entries in the extra arrays. */
+    extraCount: number;
+    /** Per-source-node list of extra edge IDs (full-space, i.e. >=
+     *  baseEdgeCount). */
+    extrasBySource: Map<number, number[]>;
+    /** baseEdgeCount + extra capacity. Used to size forbidden masks. */
+    edgeCapacity: number;
+
     coord(idx: number): WorldPoint;
 }
 
@@ -487,30 +561,44 @@ function augmentForQuery(
     graph: TLGraph,
     start: WorldPoint,
     dest: WorldPoint,
-    /** Optional set of edges to forbid (used by Yen's). Keys are `from|to|kind|tlIndex`. */
-    forbiddenEdges?: ReadonlySet<string>,
-    /** Optional set of node indices to skip entirely (Yen's spur path setup). */
-    forbiddenNodes?: ReadonlySet<number>,
 ): AugmentedGraph {
-    const N = graph.segments.length;
-    const startIdx = N * 2;
-    const destIdx = N * 2 + 1;
-    const extraOut = new Map<number, Edge[]>();
+    const numBase = graph.numNodes;
+    const startIdx = numBase;
+    const destIdx = numBase + 1;
     const speed = graph.opts.walkSpeed;
+    const k = graph.opts.kNeighbors;
+
+    // Worst case: 2 virtuals * (k neighbours both directions = 2k each)
+    // + 1 direct start↔dest * 2. Allocate generously to avoid resizes.
+    const cap = 4 * k + 2 + 4;
+    const extraTo = new Int32Array(cap);
+    const extraSec = new Float64Array(cap);
+    const extraKindTlIdx = new Int32Array(cap);
+    const extraPenalty = new Float64Array(cap);
+    let extraCount = 0;
+    const extrasBySource = new Map<number, number[]>();
+
+    const appendEdge = (from: number, to: number, seconds: number) => {
+        const localId = extraCount;
+        extraTo[localId] = to;
+        extraSec[localId] = seconds;
+        extraKindTlIdx[localId] = KIND_WALK;
+        extraPenalty[localId] = 0;
+        extraCount++;
+        const eid = graph.baseEdgeCount + localId;
+        const list = extrasBySource.get(from);
+        if (list) list.push(eid);
+        else extrasBySource.set(from, [eid]);
+    };
 
     const linkVirtual = (virtualIdx: number, vx: number, vz: number) => {
-        const nn = knn(graph.kd, vx, vz, graph.opts.kNeighbors);
-        const out: Edge[] = [];
+        const nn = knn(graph.kd, vx, vz, k);
         for (const { idx, d2 } of nn) {
-            if (forbiddenNodes?.has(idx)) continue;
             const seconds = Math.sqrt(d2) / speed;
-            out.push({ to: idx, seconds, kind: "walk" });
+            appendEdge(virtualIdx, idx, seconds);
             // Reverse direction so endpoints can reach virtuals too.
-            const rev = extraOut.get(idx) ?? [];
-            rev.push({ to: virtualIdx, seconds, kind: "walk" });
-            extraOut.set(idx, rev);
+            appendEdge(idx, virtualIdx, seconds);
         }
-        extraOut.set(virtualIdx, out);
     };
 
     linkVirtual(startIdx, start.x, start.z);
@@ -520,101 +608,109 @@ function augmentForQuery(
     const dsx = dest.x - start.x;
     const dsz = dest.z - start.z;
     const directSeconds = Math.sqrt(dsx * dsx + dsz * dsz) / speed;
-    extraOut.get(startIdx)!.push({ to: destIdx, seconds: directSeconds, kind: "walk" });
-    extraOut.get(destIdx)!.push({ to: startIdx, seconds: directSeconds, kind: "walk" });
+    appendEdge(startIdx, destIdx, directSeconds);
+    appendEdge(destIdx, startIdx, directSeconds);
 
+    const xs = graph.xs;
+    const zs = graph.zs;
     const coord = (idx: number): WorldPoint => {
         if (idx === startIdx) return start;
         if (idx === destIdx) return dest;
-        return { x: graph.xs[idx], z: graph.zs[idx] };
-    };
-
-    const edgeKey = (from: number, e: Edge) =>
-        `${from}|${e.to}|${e.kind}|${e.tlIndex ?? ""}`;
-
-    // Wrap adjacency lookups so callers can iterate forbidden-free outgoing edges.
-    const outgoing = (from: number): Edge[] => {
-        const baseEdges = from < N * 2 ? graph.adj[from] : [];
-        const extras = extraOut.get(from) ?? [];
-        if (!forbiddenEdges && !forbiddenNodes) {
-            // Concat lazily to avoid an allocation when neither set exists.
-            return baseEdges.length === 0 ? extras : extras.length === 0 ? baseEdges : baseEdges.concat(extras);
-        }
-        const result: Edge[] = [];
-        for (const e of baseEdges) {
-            if (forbiddenNodes?.has(e.to)) continue;
-            if (forbiddenEdges?.has(edgeKey(from, e))) continue;
-            result.push(e);
-        }
-        for (const e of extras) {
-            if (forbiddenNodes?.has(e.to)) continue;
-            if (forbiddenEdges?.has(edgeKey(from, e))) continue;
-            result.push(e);
-        }
-        return result;
+        return { x: xs[idx], z: zs[idx] };
     };
 
     return {
         base: graph,
         startIdx,
         destIdx,
-        extraOut,
+        numNodes: numBase + 2,
+        extraTo,
+        extraSec,
+        extraKindTlIdx,
+        extraPenalty,
+        extraCount,
+        extrasBySource,
+        edgeCapacity: graph.baseEdgeCount + cap,
         coord,
-        // Stash outgoing on the object via a non-enum prop using `as any`-free path.
-        ...({ outgoing } as { outgoing: (from: number) => Edge[] }),
-    } as AugmentedGraph & { outgoing: (from: number) => Edge[] };
+    };
+}
+
+/** Read (to, seconds) for a given edge id without materialising any
+ *  intermediate object. Hot-path helper used during reconstruction —
+ *  inner Dijkstra/A* loops inline these reads instead of calling. */
+function edgeEndpoint(aug: AugmentedGraph, eid: number): { to: number; seconds: number; kindTlIdx: number; penalty: number } {
+    const baseN = aug.base.baseEdgeCount;
+    if (eid < baseN) {
+        return {
+            to: aug.base.baseTo[eid],
+            seconds: aug.base.baseSec[eid],
+            kindTlIdx: aug.base.baseKindTlIdx[eid],
+            penalty: aug.base.basePenalty[eid],
+        };
+    }
+    const li = eid - baseN;
+    return {
+        to: aug.extraTo[li],
+        seconds: aug.extraSec[li],
+        kindTlIdx: aug.extraKindTlIdx[li],
+        penalty: aug.extraPenalty[li],
+    };
 }
 
 // ---------------------------------------------------------------------------
-// Min-heap (binary) keyed by `priority` ascending
+// Min-heap (binary) keyed by `priority` ascending — parallel arrays so
+// pushes don't allocate a wrapper object per entry.
 // ---------------------------------------------------------------------------
-
-interface HeapItem {
-    node: number;
-    priority: number;
-}
 
 class MinHeap {
-    private a: HeapItem[] = [];
+    private nodes: number[] = [];
+    private prio: number[] = [];
     get size(): number {
-        return this.a.length;
+        return this.nodes.length;
     }
-    push(item: HeapItem): void {
-        const a = this.a;
-        a.push(item);
-        let i = a.length - 1;
+    push(node: number, priority: number): void {
+        const ns = this.nodes;
+        const ps = this.prio;
+        ns.push(node);
+        ps.push(priority);
+        let i = ns.length - 1;
         while (i > 0) {
             const p = (i - 1) >>> 1;
-            if (a[p].priority > a[i].priority) {
-                const t = a[p];
-                a[p] = a[i];
-                a[i] = t;
+            if (ps[p] > ps[i]) {
+                const tn = ns[p]; ns[p] = ns[i]; ns[i] = tn;
+                const tp = ps[p]; ps[p] = ps[i]; ps[i] = tp;
                 i = p;
             } else break;
         }
     }
-    pop(): HeapItem | undefined {
-        const a = this.a;
-        if (a.length === 0) return undefined;
-        const top = a[0];
-        const last = a.pop()!;
-        if (a.length > 0) {
-            a[0] = last;
+    /** Pops the smallest-priority entry, writing into `out` to avoid
+     *  allocating a result object per pop. Returns false when empty. */
+    pop(out: { node: number; priority: number }): boolean {
+        const ns = this.nodes;
+        const ps = this.prio;
+        if (ns.length === 0) return false;
+        out.node = ns[0];
+        out.priority = ps[0];
+        const lastN = ns.pop()!;
+        const lastP = ps.pop()!;
+        if (ns.length > 0) {
+            ns[0] = lastN;
+            ps[0] = lastP;
             let i = 0;
+            const n = ns.length;
             for (; ;) {
                 const l = i * 2 + 1;
                 const r = i * 2 + 2;
                 let smallest = i;
-                if (l < a.length && a[l].priority < a[smallest].priority) smallest = l;
-                if (r < a.length && a[r].priority < a[smallest].priority) smallest = r;
+                if (l < n && ps[l] < ps[smallest]) smallest = l;
+                if (r < n && ps[r] < ps[smallest]) smallest = r;
                 if (smallest === i) break;
-                const t = a[smallest];
-                a[smallest] = a[i];
-                a[i] = t;
+                const tn = ns[smallest]; ns[smallest] = ns[i]; ns[i] = tn;
+                const tp = ps[smallest]; ps[smallest] = ps[i]; ps[i] = tp;
                 i = smallest;
             }
         }
-        return top;
+        return true;
     }
 }
 
@@ -623,23 +719,23 @@ class MinHeap {
 // ---------------------------------------------------------------------------
 
 function reconstructLegs(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
+    aug: AugmentedGraph,
     nodePath: number[],
-    edgePath: Edge[],
+    edgeIds: number[],
 ): RouteResult {
     const legs: RouteLeg[] = [];
     let totalSeconds = 0;
     let walkBlocks = 0;
     let tlHops = 0;
-    for (let i = 0; i < edgePath.length; i++) {
-        const e = edgePath[i];
+    for (let i = 0; i < edgeIds.length; i++) {
+        const e = edgeEndpoint(aug, edgeIds[i]);
         const fromIdx = nodePath[i];
         const toIdx = nodePath[i + 1];
         const from = aug.coord(fromIdx);
         const to = aug.coord(toIdx);
         totalSeconds += e.seconds;
-        if (e.kind === "tl" && e.tlIndex != null) {
-            const seg = aug.base.segments[e.tlIndex];
+        if (e.kindTlIdx >= 0) {
+            const seg = aug.base.segments[e.kindTlIdx];
             tlHops += 1;
             legs.push({
                 kind: "tl",
@@ -660,7 +756,7 @@ function reconstructLegs(
                 to,
                 blocks,
                 seconds: e.seconds,
-                penaltySeconds: e.penaltySeconds,
+                penaltySeconds: e.penalty > 0 ? e.penalty : undefined,
             });
         }
     }
@@ -732,143 +828,210 @@ function reconstructLegs(
 }
 
 // ---------------------------------------------------------------------------
-// Algorithm A: A* with Euclidean / walkSpeed heuristic
+// Core search (A* + Dijkstra) over CSR
 // ---------------------------------------------------------------------------
+//
+// Both routines share the same shape: typed-array distance + parent
+// arrays indexed by node id, lazy-deletion heap. `forbiddenEdges` and
+// `forbiddenNodes` are optional Uint8Array masks (1 = blocked) — a
+// sentinel for `null` keeps the inner loop branch-free in the common
+// no-forbidden case.
 
-function heuristicSeconds(
-    ax: number,
-    az: number,
-    bx: number,
-    bz: number,
-    speed: number,
-): number {
-    const dx = ax - bx;
-    const dz = az - bz;
-    return Math.sqrt(dx * dx + dz * dz) / speed;
+const POP_SCRATCH = { node: 0, priority: 0 };
+
+interface SearchResult {
+    nodes: number[];
+    edgeIds: number[];
+    cost: number;
 }
 
-function aStarOnAugmented(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
-): RouteResult | null {
-    const { base, startIdx, destIdx } = aug;
-    const speed = base.opts.walkSpeed;
-    const destPt = aug.coord(destIdx);
+/** Walks from `target` back to `source` via the parent arrays and emits
+ *  forward node + edge-id paths. Returns null on any inconsistency. */
+function tracePath(
+    parentNode: Int32Array,
+    parentEdge: Int32Array,
+    source: number,
+    target: number,
+    safetyCap: number,
+): { nodes: number[]; edgeIds: number[] } | null {
+    if (target === source) return { nodes: [source], edgeIds: [] };
+    const nodes: number[] = [];
+    const edgeIds: number[] = [];
+    let n = target;
+    let safety = safetyCap;
+    while (n !== source) {
+        if (safety-- <= 0) return null;
+        nodes.push(n);
+        const eid = parentEdge[n];
+        if (eid < 0) return null;
+        edgeIds.push(eid);
+        const prev = parentNode[n];
+        if (prev < 0) return null;
+        n = prev;
+    }
+    nodes.push(source);
+    nodes.reverse();
+    edgeIds.reverse();
+    return { nodes, edgeIds };
+}
 
-    const gScore = new Map<number, number>();
-    const cameFromNode = new Map<number, number>();
-    const cameFromEdge = new Map<number, Edge>();
-    const open = new MinHeap();
+/** Common A* / Dijkstra inner loop. When `useHeuristic` is true, edges
+ *  are prioritised by `g + h`; otherwise pure Dijkstra. Stops as soon
+ *  as `target` is popped (consistent heuristic ⇒ optimal at pop). When
+ *  `target < 0`, the search runs to exhaustion (used by the rendezvous
+ *  routine to populate a full SPT). */
+function searchCSR(
+    aug: AugmentedGraph,
+    source: number,
+    target: number,
+    useHeuristic: boolean,
+    forbiddenEdges: Uint8Array | null,
+    forbiddenNodes: Uint8Array | null,
+): { dist: Float64Array; parentNode: Int32Array; parentEdge: Int32Array; reachedTarget: boolean } {
+    const numNodes = aug.numNodes;
+    const dist = new Float64Array(numNodes);
+    const parentNode = new Int32Array(numNodes);
+    const parentEdge = new Int32Array(numNodes);
+    dist.fill(Infinity);
+    parentNode.fill(-1);
+    parentEdge.fill(-1);
+    dist[source] = 0;
 
-    gScore.set(startIdx, 0);
-    open.push({ node: startIdx, priority: 0 });
+    const heap = new MinHeap();
+    heap.push(source, 0);
 
-    while (open.size > 0) {
-        const cur = open.pop()!;
-        if (cur.node === destIdx) {
-            // Reconstruct.
-            const nodePath: number[] = [];
-            const edgePath: Edge[] = [];
-            let n = destIdx;
-            while (n !== startIdx) {
-                nodePath.push(n);
-                const e = cameFromEdge.get(n);
-                if (!e) return null;
-                edgePath.push(e);
-                const prev = cameFromNode.get(n);
-                if (prev == null) return null;
-                n = prev;
+    const speed = aug.base.opts.walkSpeed;
+    const baseHead = aug.base.baseHead;
+    const baseTo = aug.base.baseTo;
+    const baseSec = aug.base.baseSec;
+    const baseN = aug.base.baseEdgeCount;
+    const numBaseNodes = aug.base.numNodes;
+    const xs = aug.base.xs;
+    const zs = aug.base.zs;
+    const extrasBySource = aug.extrasBySource;
+    const extraTo = aug.extraTo;
+    const extraSec = aug.extraSec;
+
+    // Precompute target coords for the heuristic (skipped when target<0).
+    let tx = 0;
+    let tz = 0;
+    if (useHeuristic && target >= 0) {
+        const tp = aug.coord(target);
+        tx = tp.x;
+        tz = tp.z;
+    }
+
+    let reachedTarget = false;
+    while (heap.pop(POP_SCRATCH)) {
+        const u = POP_SCRATCH.node;
+        const pri = POP_SCRATCH.priority;
+        if (forbiddenNodes && forbiddenNodes[u] === 1) continue;
+        const gU = dist[u];
+        // Stale heap entry (better g already recorded) — skip.
+        if (useHeuristic) {
+            // pri = g + h; reconstruct g for the staleness check.
+            const p = aug.coord(u);
+            const dx = p.x - tx;
+            const dz = p.z - tz;
+            const hU = Math.sqrt(dx * dx + dz * dz) / speed;
+            if (pri - hU > gU + 1e-9) continue;
+        } else {
+            if (pri > gU + 1e-9) continue;
+        }
+        if (u === target) {
+            reachedTarget = true;
+            break;
+        }
+
+        // Iterate base CSR edges (only when u is a non-virtual node).
+        if (u < numBaseNodes) {
+            const eEnd = baseHead[u + 1];
+            for (let eid = baseHead[u]; eid < eEnd; eid++) {
+                if (forbiddenEdges && forbiddenEdges[eid] === 1) continue;
+                const v = baseTo[eid];
+                if (forbiddenNodes && forbiddenNodes[v] === 1) continue;
+                const tentative = gU + baseSec[eid];
+                if (tentative < dist[v]) {
+                    dist[v] = tentative;
+                    parentNode[v] = u;
+                    parentEdge[v] = eid;
+                    let priority = tentative;
+                    if (useHeuristic) {
+                        // For non-virtual neighbours we have the coords in
+                        // typed arrays directly; virtual neighbours can't
+                        // appear here (they're not in baseTo).
+                        const dx = xs[v] - tx;
+                        const dz = zs[v] - tz;
+                        priority += Math.sqrt(dx * dx + dz * dz) / speed;
+                    }
+                    heap.push(v, priority);
+                }
             }
-            nodePath.push(startIdx);
-            nodePath.reverse();
-            edgePath.reverse();
-            return reconstructLegs(aug, nodePath, edgePath);
         }
-        const curG = gScore.get(cur.node) ?? Infinity;
-        // Stale heap entry — recomputed with a better g already, skip.
-        if (cur.priority - heuristicEstimate(cur.node, destPt, aug, speed) > curG + 1e-9) {
-            continue;
-        }
-        const edges = aug.outgoing(cur.node);
-        for (const e of edges) {
-            const tentative = curG + e.seconds;
-            const existing = gScore.get(e.to) ?? Infinity;
-            if (tentative < existing) {
-                gScore.set(e.to, tentative);
-                cameFromNode.set(e.to, cur.node);
-                cameFromEdge.set(e.to, e);
-                const h = heuristicEstimate(e.to, destPt, aug, speed);
-                open.push({ node: e.to, priority: tentative + h });
+        // Iterate extras.
+        const extras = extrasBySource.get(u);
+        if (extras) {
+            for (let k = 0; k < extras.length; k++) {
+                const eid = extras[k];
+                if (forbiddenEdges && forbiddenEdges[eid] === 1) continue;
+                const li = eid - baseN;
+                const v = extraTo[li];
+                if (forbiddenNodes && forbiddenNodes[v] === 1) continue;
+                const tentative = gU + extraSec[li];
+                if (tentative < dist[v]) {
+                    dist[v] = tentative;
+                    parentNode[v] = u;
+                    parentEdge[v] = eid;
+                    let priority = tentative;
+                    if (useHeuristic) {
+                        const vp = aug.coord(v);
+                        const dx = vp.x - tx;
+                        const dz = vp.z - tz;
+                        priority += Math.sqrt(dx * dx + dz * dz) / speed;
+                    }
+                    heap.push(v, priority);
+                }
             }
         }
     }
-    return null;
+    return { dist, parentNode, parentEdge, reachedTarget };
 }
 
-function heuristicEstimate(
-    node: number,
-    dest: WorldPoint,
-    aug: AugmentedGraph,
-    speed: number,
-): number {
-    const p = aug.coord(node);
-    return heuristicSeconds(p.x, p.z, dest.x, dest.z, speed);
+function aStarOnAugmented(aug: AugmentedGraph): RouteResult | null {
+    const { startIdx, destIdx } = aug;
+    const { dist, parentNode, parentEdge, reachedTarget } = searchCSR(
+        aug,
+        startIdx,
+        destIdx,
+        true,
+        null,
+        null,
+    );
+    if (!reachedTarget || !Number.isFinite(dist[destIdx])) return null;
+    const traced = tracePath(parentNode, parentEdge, startIdx, destIdx, aug.numNodes * 2 + 16);
+    if (!traced) return null;
+    return reconstructLegs(aug, traced.nodes, traced.edgeIds);
 }
-
-// ---------------------------------------------------------------------------
-// Algorithm B helper: Dijkstra (used inside Yen's). Returns full path or null.
-// ---------------------------------------------------------------------------
 
 function dijkstraPath(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
-    fromOverride?: number,
-    toOverride?: number,
-): { nodes: number[]; edges: Edge[]; cost: number } | null {
-    // Yen's spur computation needs to run dijkstra from a node OTHER than
-    // the virtual start. Allow callers to override the source / sink while
-    // keeping the rest of the augmented graph (extras, forbidden filters)
-    // intact so node indices remain consistent with the parent path.
-    const startIdx = fromOverride ?? aug.startIdx;
-    const destIdx = toOverride ?? aug.destIdx;
-    const gScore = new Map<number, number>();
-    const cameFromNode = new Map<number, number>();
-    const cameFromEdge = new Map<number, Edge>();
-    const open = new MinHeap();
-    gScore.set(startIdx, 0);
-    open.push({ node: startIdx, priority: 0 });
-
-    while (open.size > 0) {
-        const cur = open.pop()!;
-        if (cur.node === destIdx) {
-            const nodes: number[] = [];
-            const edges: Edge[] = [];
-            let n = destIdx;
-            while (n !== startIdx) {
-                nodes.push(n);
-                const e = cameFromEdge.get(n);
-                if (!e) return null;
-                edges.push(e);
-                const prev = cameFromNode.get(n);
-                if (prev == null) return null;
-                n = prev;
-            }
-            nodes.push(startIdx);
-            nodes.reverse();
-            edges.reverse();
-            return { nodes, edges, cost: cur.priority };
-        }
-        const curG = gScore.get(cur.node) ?? Infinity;
-        if (cur.priority > curG + 1e-9) continue;
-        for (const e of aug.outgoing(cur.node)) {
-            const tentative = curG + e.seconds;
-            if (tentative < (gScore.get(e.to) ?? Infinity)) {
-                gScore.set(e.to, tentative);
-                cameFromNode.set(e.to, cur.node);
-                cameFromEdge.set(e.to, e);
-                open.push({ node: e.to, priority: tentative });
-            }
-        }
-    }
-    return null;
+    aug: AugmentedGraph,
+    fromOverride: number,
+    toOverride: number,
+    forbiddenEdges: Uint8Array | null,
+    forbiddenNodes: Uint8Array | null,
+): SearchResult | null {
+    const { dist, parentNode, parentEdge, reachedTarget } = searchCSR(
+        aug,
+        fromOverride,
+        toOverride,
+        false,
+        forbiddenEdges,
+        forbiddenNodes,
+    );
+    if (!reachedTarget || !Number.isFinite(dist[toOverride])) return null;
+    const traced = tracePath(parentNode, parentEdge, fromOverride, toOverride, aug.numNodes * 2 + 16);
+    if (!traced) return null;
+    return { nodes: traced.nodes, edgeIds: traced.edgeIds, cost: dist[toOverride] };
 }
 
 // ---------------------------------------------------------------------------
@@ -880,9 +1043,7 @@ export function findRoute(
     start: WorldPoint,
     dest: WorldPoint,
 ): RouteResult | null {
-    const aug = augmentForQuery(graph, start, dest) as AugmentedGraph & {
-        outgoing: (from: number) => Edge[];
-    };
+    const aug = augmentForQuery(graph, start, dest);
     return aStarOnAugmented(aug);
 }
 
@@ -906,69 +1067,115 @@ export function findRoutes(
     k: number,
 ): RouteResult[] {
     if (k <= 0) return [];
-    const aug0 = augmentForQuery(graph, start, dest) as AugmentedGraph & {
-        outgoing: (from: number) => Edge[];
-    };
-    const first = dijkstraPath(aug0);
+    const aug = augmentForQuery(graph, start, dest);
+    const first = dijkstraPath(aug, aug.startIdx, aug.destIdx, null, null);
     if (!first) return [];
 
-    const A: Array<{ nodes: number[]; edges: Edge[]; cost: number }> = [first];
-    const B: Array<{ nodes: number[]; edges: Edge[]; cost: number }> = [];
+    // Edge-id space is fixed for this augmented graph: base edges
+    // [0, baseEdgeCount) plus extras [baseEdgeCount, edgeCapacity).
+    // Forbidden masks reuse this contiguous space so Yen's spur setup
+    // is just a few `Uint8Array` writes/clears per iteration.
+    const edgeMaskLen = aug.edgeCapacity;
+    const nodeMaskLen = aug.numNodes;
+    const forbiddenEdges = new Uint8Array(edgeMaskLen);
+    const forbiddenNodes = new Uint8Array(nodeMaskLen);
+
+    const A: SearchResult[] = [first];
+    const B: SearchResult[] = [];
 
     // Cap raw Yen iterations to avoid degenerate cost on pathological graphs.
     // Generous multiplier so we still have material after dedup filtering.
     const RAW_K = Math.max(k * 5, 12);
 
-    const edgeKey = (from: number, e: Edge) =>
-        `${from}|${e.to}|${e.kind}|${e.tlIndex ?? ""}`;
-    const reverseEdgeKey = (from: number, e: Edge) =>
-        `${e.to}|${from}|${e.kind}|${e.tlIndex ?? ""}`;
+    /** Pair an edge id with its reverse. Both base TL/walk edges and
+     *  extras are wired symmetrically (we always `addEdge(u,v)` AND
+     *  `addEdge(v,u)`), so there's exactly one reverse — find it once
+     *  and forbid the pair together. */
+    const findReverseEdge = (from: number, to: number, eid: number): number => {
+        if (eid < aug.base.baseEdgeCount) {
+            // Search base CSR slice of `to` for an edge back to `from`
+            // with matching kindTlIdx (TL edges are 1:1 by tlIndex; walk
+            // edges by direction). Returns -1 if missing.
+            const baseHead = aug.base.baseHead;
+            const baseTo = aug.base.baseTo;
+            const baseKind = aug.base.baseKindTlIdx;
+            const targetKind = aug.base.baseKindTlIdx[eid];
+            const eEnd = baseHead[to + 1];
+            for (let r = baseHead[to]; r < eEnd; r++) {
+                if (baseTo[r] === from && baseKind[r] === targetKind) return r;
+            }
+            return -1;
+        }
+        // Extras: walk through the source's extras list.
+        const list = aug.extrasBySource.get(to);
+        if (!list) return -1;
+        for (const r of list) {
+            const baseN = aug.base.baseEdgeCount;
+            const li = r - baseN;
+            if (aug.extraTo[li] === from) return r;
+        }
+        return -1;
+    };
 
     while (A.length < RAW_K) {
         const prev = A[A.length - 1];
         for (let i = 0; i < prev.nodes.length - 1; i++) {
             const spurNode = prev.nodes[i];
-            const rootNodes = prev.nodes.slice(0, i + 1);
-            const rootEdges = prev.edges.slice(0, i);
-            const forbiddenEdges = new Set<string>();
-            for (const p of A) {
-                if (p.nodes.length > i && arraysEqual(p.nodes.slice(0, i + 1), rootNodes)) {
-                    const e = p.edges[i];
-                    forbiddenEdges.add(edgeKey(p.nodes[i], e));
-                    // Also forbid the reverse direction so undirected behaviour holds.
-                    forbiddenEdges.add(reverseEdgeKey(p.nodes[i], e));
-                }
-            }
-            const forbiddenNodes = new Set<number>(rootNodes.slice(0, -1));
 
-            // Compute the spur path from spurNode → destIdx with restrictions.
-            // Reuse the original start/dest (same node-index space as aug0)
-            // so the resulting path indices can be safely concatenated and
-            // later reconstructed against aug0 without translation.
-            const spurAug = augmentForQuery(
-                graph,
-                start,
-                dest,
-                forbiddenEdges,
-                forbiddenNodes,
-            ) as AugmentedGraph & { outgoing: (from: number) => Edge[] };
-            const spur = dijkstraPath(spurAug, spurNode, spurAug.destIdx);
+            // Build forbidden-edges set: every previous A-path that shares
+            // the same root prefix [0..i] forbids its (i)th edge in BOTH
+            // directions, so the spur Dijkstra can't recreate any earlier
+            // result.
+            forbiddenEdges.fill(0);
+            forbiddenNodes.fill(0);
+            for (const p of A) {
+                if (p.nodes.length <= i) continue;
+                let same = true;
+                for (let j = 0; j <= i; j++) {
+                    if (p.nodes[j] !== prev.nodes[j]) { same = false; break; }
+                }
+                if (!same) continue;
+                const eid = p.edgeIds[i];
+                forbiddenEdges[eid] = 1;
+                const rev = findReverseEdge(p.nodes[i], p.nodes[i + 1], eid);
+                if (rev >= 0) forbiddenEdges[rev] = 1;
+            }
+            // Forbid root nodes (excluding the spur node itself) so the
+            // spur path is loopless w.r.t. the root.
+            for (let j = 0; j < i; j++) {
+                forbiddenNodes[prev.nodes[j]] = 1;
+            }
+
+            const spur = dijkstraPath(aug, spurNode, aug.destIdx, forbiddenEdges, forbiddenNodes);
             if (!spur) continue;
 
             // Stitch: rootNodes already ends at spurNode, spur.nodes starts
             // at spurNode — drop the duplicate when concatenating.
-            const candidateNodes = rootNodes.concat(spur.nodes.slice(1));
-            const candidateEdges = rootEdges.concat(spur.edges);
+            const candidateNodes = prev.nodes.slice(0, i + 1).concat(spur.nodes.slice(1));
+            const candidateEdges = prev.edgeIds.slice(0, i).concat(spur.edgeIds);
             let totalSeconds = 0;
-            for (const e of candidateEdges) totalSeconds += e.seconds;
-            const candidate = {
+            for (const eid of candidateEdges) {
+                if (eid < aug.base.baseEdgeCount) totalSeconds += aug.base.baseSec[eid];
+                else totalSeconds += aug.extraSec[eid - aug.base.baseEdgeCount];
+            }
+            const candidate: SearchResult = {
                 nodes: candidateNodes,
-                edges: candidateEdges,
+                edgeIds: candidateEdges,
                 cost: totalSeconds,
             };
-            if (!B.some((b) => b.cost === candidate.cost && arraysEqual(b.nodes, candidate.nodes))) {
-                B.push(candidate);
+            // Cheap dedup against B by cost+length (full equality check
+            // only when those tie — exact-match collisions are rare).
+            let dup = false;
+            for (const b of B) {
+                if (b.cost !== candidate.cost) continue;
+                if (b.nodes.length !== candidate.nodes.length) continue;
+                let eq = true;
+                for (let j = 0; j < b.nodes.length; j++) {
+                    if (b.nodes[j] !== candidate.nodes[j]) { eq = false; break; }
+                }
+                if (eq) { dup = true; break; }
             }
+            if (!dup) B.push(candidate);
         }
         if (B.length === 0) break;
         B.sort((a, b) => a.cost - b.cost);
@@ -983,21 +1190,30 @@ export function findRoutes(
     // genuinely-different TL chains, we run an extra pass: for each TL
     // used by the best route, forbid both directions of that TL's edges
     // and re-run plain dijkstra. Each successful result is appended to
-    // `A` and goes through the same dedupe below, so duplicates and the
-    // original best are filtered out naturally.
+    // `A` and goes through the same dedupe below.
     const firstTLIndices = new Set<number>();
-    for (const e of A[0].edges) {
-        if (e.kind === "tl" && e.tlIndex !== undefined) firstTLIndices.add(e.tlIndex);
+    for (const eid of A[0].edgeIds) {
+        if (eid < aug.base.baseEdgeCount && aug.base.baseKindTlIdx[eid] >= 0) {
+            firstTLIndices.add(aug.base.baseKindTlIdx[eid]);
+        }
     }
     for (const tlIdx of firstTLIndices) {
-        const forbidden = new Set<string>([
-            `${tlIdx * 2}|${tlIdx * 2 + 1}|tl|${tlIdx}`,
-            `${tlIdx * 2 + 1}|${tlIdx * 2}|tl|${tlIdx}`,
-        ]);
-        const altAug = augmentForQuery(graph, start, dest, forbidden) as AugmentedGraph & {
-            outgoing: (from: number) => Edge[];
-        };
-        const alt = dijkstraPath(altAug);
+        forbiddenEdges.fill(0);
+        forbiddenNodes.fill(0);
+        // The two TL edges for tlIdx live in the CSR slice of node
+        // `tlIdx*2` and `tlIdx*2+1` respectively — find them once.
+        const a = tlIdx * 2;
+        const b = tlIdx * 2 + 1;
+        const baseHead = aug.base.baseHead;
+        const baseTo = aug.base.baseTo;
+        const baseKind = aug.base.baseKindTlIdx;
+        for (let r = baseHead[a]; r < baseHead[a + 1]; r++) {
+            if (baseTo[r] === b && baseKind[r] === tlIdx) { forbiddenEdges[r] = 1; break; }
+        }
+        for (let r = baseHead[b]; r < baseHead[b + 1]; r++) {
+            if (baseTo[r] === a && baseKind[r] === tlIdx) { forbiddenEdges[r] = 1; break; }
+        }
+        const alt = dijkstraPath(aug, aug.startIdx, aug.destIdx, forbiddenEdges, null);
         if (alt) A.push(alt);
     }
     A.sort((a, b) => a.cost - b.cost);
@@ -1012,7 +1228,7 @@ export function findRoutes(
     // user cannot meaningfully choose between them in game. A pure-walk
     // route (no TLs) gets a stable sentinel key so it surfaces at most
     // once.
-    const built = A.map((p) => legsFromPath(aug0, p.nodes, p.edges));
+    const built = A.map((p) => reconstructLegs(aug, p.nodes, p.edgeIds));
     const out: RouteResult[] = [];
     const seenKeys = new Set<string>();
     const tlKey = (r: RouteResult): string => {
@@ -1029,20 +1245,6 @@ export function findRoutes(
         if (out.length >= k) break;
     }
     return out;
-}
-
-function legsFromPath(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
-    nodes: number[],
-    edges: Edge[],
-): RouteResult {
-    return reconstructLegs(aug, nodes, edges);
-}
-
-function arraysEqual<T>(a: ReadonlyArray<T>, b: ReadonlyArray<T>): boolean {
-    if (a.length !== b.length) return false;
-    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1076,74 +1278,29 @@ export interface RendezvousResult {
 }
 
 /** Run Dijkstra from a single source and record the FULL shortest-path
- *  tree to every reachable node. Mirrors `dijkstraPath` but skips the
- *  early-out on destIdx so we can answer "cost to candidate X" for any
- *  X without re-running the search. */
-function dijkstraAllFrom(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
-    source: number,
-): {
-    gScore: Map<number, number>;
-    cameFromNode: Map<number, number>;
-    cameFromEdge: Map<number, Edge>;
-} {
-    const gScore = new Map<number, number>();
-    const cameFromNode = new Map<number, number>();
-    const cameFromEdge = new Map<number, Edge>();
-    const open = new MinHeap();
-    gScore.set(source, 0);
-    open.push({ node: source, priority: 0 });
-    while (open.size > 0) {
-        const cur = open.pop()!;
-        const curG = gScore.get(cur.node) ?? Infinity;
-        if (cur.priority > curG + 1e-9) continue;
-        for (const e of aug.outgoing(cur.node)) {
-            const tentative = curG + e.seconds;
-            if (tentative < (gScore.get(e.to) ?? Infinity)) {
-                gScore.set(e.to, tentative);
-                cameFromNode.set(e.to, cur.node);
-                cameFromEdge.set(e.to, e);
-                open.push({ node: e.to, priority: tentative });
-            }
-        }
-    }
-    return { gScore, cameFromNode, cameFromEdge };
+ *  tree to every reachable node. Used by the rendezvous scoring step
+ *  so we can answer "cost to candidate X" for any X without re-running
+ *  the search. */
+function dijkstraAllFrom(aug: AugmentedGraph, source: number) {
+    return searchCSR(aug, source, -1, false, null, null);
 }
 
-/** Reconstruct a `RouteResult` walking backwards through the predecessor
- *  maps produced by `dijkstraAllFrom`. Returns null if `target` was never
- *  reached. */
-function reconstructFromMaps(
-    aug: AugmentedGraph & { outgoing: (from: number) => Edge[] },
+/** Reconstruct a `RouteResult` walking backwards through the parent
+ *  arrays produced by `dijkstraAllFrom`. Returns null if `target` was
+ *  never reached. */
+function reconstructFromTree(
+    aug: AugmentedGraph,
     target: number,
     source: number,
-    cameFromNode: Map<number, number>,
-    cameFromEdge: Map<number, Edge>,
+    parentNode: Int32Array,
+    parentEdge: Int32Array,
 ): RouteResult | null {
     if (target === source) {
         return { totalSeconds: 0, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
     }
-    const nodes: number[] = [];
-    const edges: Edge[] = [];
-    let n = target;
-    // Guard against pathological cycles (shouldn't happen with Dijkstra,
-    // but cheap insurance against an infinite loop if a predecessor map
-    // somehow contains a stale entry).
-    let safety = aug.base.segments.length * 4 + 16;
-    while (n !== source) {
-        if (safety-- <= 0) return null;
-        nodes.push(n);
-        const e = cameFromEdge.get(n);
-        if (!e) return null;
-        edges.push(e);
-        const prev = cameFromNode.get(n);
-        if (prev == null) return null;
-        n = prev;
-    }
-    nodes.push(source);
-    nodes.reverse();
-    edges.reverse();
-    return reconstructLegs(aug, nodes, edges);
+    const traced = tracePath(parentNode, parentEdge, source, target, aug.numNodes * 2 + 16);
+    if (!traced) return null;
+    return reconstructLegs(aug, traced.nodes, traced.edgeIds);
 }
 
 /**
@@ -1184,16 +1341,14 @@ export function findRendezvous(
         };
     }
 
-    const N = graph.segments.length;
+    const numBaseNodes = graph.numNodes;
 
     // Phase 1: per-player shortest-path trees.
     const perPlayer = players.map((p) => {
         // Reuse `augmentForQuery` with dest = start. The virtual dest node
         // is harmless extra wiring (a handful of walk edges); the per-query
         // start↔dest direct edge has cost 0 since the points coincide.
-        const aug = augmentForQuery(graph, p, p) as AugmentedGraph & {
-            outgoing: (from: number) => Edge[];
-        };
+        const aug = augmentForQuery(graph, p, p);
         const trees = dijkstraAllFrom(aug, aug.startIdx);
         return { player: p, aug, ...trees };
     });
@@ -1218,11 +1373,11 @@ export function findRendezvous(
     // Phase 2: score every TL endpoint as a meeting candidate. We only
     // need costs here — route reconstruction is deferred to the winner.
     const costsBuf: number[] = new Array(players.length);
-    for (let nodeIdx = 0; nodeIdx < N * 2; nodeIdx++) {
+    for (let nodeIdx = 0; nodeIdx < numBaseNodes; nodeIdx++) {
         let reachable = true;
         for (let i = 0; i < perPlayer.length; i++) {
-            const c = perPlayer[i].gScore.get(nodeIdx);
-            if (c == null || !Number.isFinite(c)) {
+            const c = perPlayer[i].dist[nodeIdx];
+            if (!Number.isFinite(c)) {
                 reachable = false;
                 break;
             }
@@ -1284,18 +1439,24 @@ export function findRendezvous(
     if (best.kind === "tlNode") {
         const targetNode = best.nodeIdx;
         perPlayerRoutes = perPlayer.map((pp) => {
-            const reconstructed = reconstructFromMaps(
+            const reconstructed = reconstructFromTree(
                 pp.aug,
                 targetNode,
                 pp.aug.startIdx,
-                pp.cameFromNode,
-                pp.cameFromEdge,
+                pp.parentNode,
+                pp.parentEdge,
             );
             if (reconstructed) return reconstructed;
             // Fallback shouldn't happen — we already know targetNode is
             // reachable from pp.startIdx — but degrade gracefully.
-            const cost = pp.gScore.get(targetNode) ?? 0;
-            return { totalSeconds: cost, uncertainSeconds: 0, walkBlocks: 0, tlHops: 0, legs: [] };
+            const cost = pp.dist[targetNode];
+            return {
+                totalSeconds: Number.isFinite(cost) ? cost : 0,
+                uncertainSeconds: 0,
+                walkBlocks: 0,
+                tlHops: 0,
+                legs: [],
+            };
         });
     } else {
         perPlayerRoutes = best.routes;
