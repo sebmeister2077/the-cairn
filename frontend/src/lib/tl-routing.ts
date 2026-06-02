@@ -41,6 +41,17 @@ export interface RouteOptions {
     tlPenaltySeconds: number;
     /** Neighbours considered per endpoint when wiring walk edges. Default 8. */
     kNeighbors: number;
+    /** Neighbours considered when wiring the per-query Start / Dest virtual
+     *  nodes into the graph. Defaults to a much larger value than
+     *  `kNeighbors` because endpoints in remote regions sometimes form a
+     *  self-contained K-NN cluster that the K=8 base wiring can't reach
+     *  back to the rest of the network from. Wiring the virtuals to more
+     *  neighbours guarantees they touch at least one endpoint that's
+     *  itself well-connected to the main TL graph, so the planner can
+     *  find a TL-mediated route rather than silently falling back to a
+     *  multi-hour direct walk. The cost is negligible (each virtual is
+     *  popped at most once during a search). */
+    kNeighborsVirtual?: number;
     /** When true, the planner *prefers* walk edges between TL endpoints
      *  that the community has confirmed are safely traversable by an elk
      *  (no chasm, shore, acid pool, etc). Non-confirmed inter-TL walks
@@ -57,6 +68,7 @@ export interface RouteOptions {
 export const DEFAULT_WALK_SPEED = 7;
 export const DEFAULT_TL_PENALTY_S = 15;
 export const DEFAULT_K_NEIGHBORS = 8;
+export const DEFAULT_K_NEIGHBORS_VIRTUAL = 24;
 /** Surface-ish baseline. Endpoints at/above this y level pay only the
  *  small fixed minimum overhead; endpoints below pay proportionally more. */
 export const DEFAULT_ELK_DEPTH_BASELINE_Y = 110;
@@ -87,6 +99,7 @@ export const DEFAULT_ROUTE_OPTIONS: RouteOptions = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    kNeighborsVirtual: DEFAULT_K_NEIGHBORS_VIRTUAL,
     elkFriendlyOnly: false,
     confirmedElkEdges: undefined,
 };
@@ -566,7 +579,10 @@ function augmentForQuery(
     const startIdx = numBase;
     const destIdx = numBase + 1;
     const speed = graph.opts.walkSpeed;
-    const k = graph.opts.kNeighbors;
+    // Virtuals are wired to MORE neighbours than the base graph (see the
+    // doc on `kNeighborsVirtual`). Falling back to `kNeighbors` keeps
+    // older callers that omit the field working unchanged.
+    const k = graph.opts.kNeighborsVirtual ?? graph.opts.kNeighbors;
 
     // Worst case: 2 virtuals * (k neighbours both directions = 2k each)
     // + 1 direct start↔dest * 2. Allocate generously to avoid resizes.
