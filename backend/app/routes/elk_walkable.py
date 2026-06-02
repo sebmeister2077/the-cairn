@@ -35,7 +35,7 @@ router = APIRouter(tags=["elk-walkable"])
 
 _FLAG_KEY = "elk_walkable_contributions"
 _DAILY_CAP_FLAG = "elk_walkable_daily_cap"
-_DAILY_CAP_DEFAULT = 10
+_DAILY_CAP_DEFAULT = 100
 _RATE_SCOPE = "elk-walkable-submit"
 _RATE_WINDOW = 86400  # 24 hours
 

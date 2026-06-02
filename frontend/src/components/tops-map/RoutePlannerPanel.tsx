@@ -707,54 +707,58 @@ export function RoutePlannerPanel() {
         >
           <div className="overflow-hidden">
             <div className="space-y-3 rounded-md border bg-muted/30 p-3">
-            <div className="space-y-1">
-              <Label className="flex items-center justify-between text-xs">
-                <span>{t("routePlanner.walkSpeed")}</span>
-                <span className="font-mono text-muted-foreground">
-                  {t("routePlanner.walkSpeedValue", { value: walkSpeed.toFixed(1) })}
-                </span>
-              </Label>
-              <Slider
-                min={1}
-                max={15}
-                step={0.5}
-                value={walkSpeed}
-                onValueChange={(v) => dispatch(setRouteWalkSpeed(v))}
-              />
-              <p className="text-[10px] text-muted-foreground">{t("routePlanner.walkSpeedHelp")}</p>
-            </div>
-            <div className="space-y-1">
-              <Label className="flex items-center justify-between text-xs">
-                <span>{t("routePlanner.tlPenalty")}</span>
-                <span className="font-mono text-muted-foreground">
-                  {t("routePlanner.tlPenaltyValue", { value: tlPenaltySeconds })}
-                </span>
-              </Label>
-              <Slider
-                min={0}
-                max={60}
-                step={1}
-                value={tlPenaltySeconds}
-                onValueChange={(v) => dispatch(setRouteTLPenalty(v))}
-              />
-              <p className="text-[10px] text-muted-foreground">{t("routePlanner.tlPenaltyHelp")}</p>
-            </div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="elk-friendly-only" className="flex items-center gap-1.5 text-xs">
-                  <PawPrint className="h-3 w-3 text-emerald-600" />
-                  {t("routePlanner.elk.elkFriendlyOnly")}
+              <div className="space-y-1">
+                <Label className="flex items-center justify-between text-xs">
+                  <span>{t("routePlanner.walkSpeed")}</span>
+                  <span className="font-mono text-muted-foreground">
+                    {t("routePlanner.walkSpeedValue", { value: walkSpeed.toFixed(1) })}
+                  </span>
                 </Label>
-                <Switch
-                  id="elk-friendly-only"
-                  checked={elkFriendlyOnly}
-                  onCheckedChange={(v) => dispatch(setRouteElkFriendlyOnly(Boolean(v)))}
+                <Slider
+                  min={1}
+                  max={15}
+                  step={0.5}
+                  value={walkSpeed}
+                  onValueChange={(v) => dispatch(setRouteWalkSpeed(v))}
                 />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("routePlanner.walkSpeedHelp")}
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground">
-                {t("routePlanner.elk.elkFriendlyOnlyHelp")}
-              </p>
-            </div>
+              <div className="space-y-1">
+                <Label className="flex items-center justify-between text-xs">
+                  <span>{t("routePlanner.tlPenalty")}</span>
+                  <span className="font-mono text-muted-foreground">
+                    {t("routePlanner.tlPenaltyValue", { value: tlPenaltySeconds })}
+                  </span>
+                </Label>
+                <Slider
+                  min={0}
+                  max={60}
+                  step={1}
+                  value={tlPenaltySeconds}
+                  onValueChange={(v) => dispatch(setRouteTLPenalty(v))}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("routePlanner.tlPenaltyHelp")}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="elk-friendly-only" className="flex items-center gap-1.5 text-xs">
+                    <PawPrint className="h-3 w-3 text-emerald-600" />
+                    {t("routePlanner.elk.elkFriendlyOnly")}
+                  </Label>
+                  <Switch
+                    id="elk-friendly-only"
+                    checked={elkFriendlyOnly}
+                    onCheckedChange={(v) => dispatch(setRouteElkFriendlyOnly(Boolean(v)))}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  {t("routePlanner.elk.elkFriendlyOnlyHelp")}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1342,9 +1346,7 @@ function ElkWalkableDraftSection({
         className="flex w-full items-center gap-2 px-2 py-2 text-left transition-colors hover:bg-muted/50"
       >
         <PawPrint className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
-        <span className="flex-1 text-xs font-medium">
-          {t("routePlanner.elk.sectionTitle")}
-        </span>
+        <span className="flex-1 text-xs font-medium">{t("routePlanner.elk.sectionTitle")}</span>
         <span className="text-[10px] text-muted-foreground">{summaryText}</span>
         <ChevronDown
           className={cn(
