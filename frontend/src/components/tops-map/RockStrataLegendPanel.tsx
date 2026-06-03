@@ -7,6 +7,7 @@ import { useTranslation } from "@/lib/i18n";
 import type { LegendEntry, RockStrataLayerKind } from "@/lib/rockstrata/types";
 import { isLayerAvailable } from "@/lib/rockstrata/loader";
 import { cn } from "@/lib/utils";
+import { useReduxState } from "@/store/hooks";
 
 interface RockStrataLegendPanelProps {
   enabled: boolean;
@@ -50,6 +51,7 @@ export function RockStrataLegendPanel({
   error,
 }: RockStrataLegendPanelProps) {
   const { t } = useTranslation();
+  const isAdmin = useReduxState("auth.isAdmin");
   const geoAvailable = isLayerAvailable("geo");
 
   const allCodes = useMemo(() => legend?.map((e) => e.code) ?? [], [legend]);
@@ -162,7 +164,7 @@ export function RockStrataLegendPanel({
             </div>
 
             {/* Blocky warning */}
-            {warnBlocky && sourceBlocksPerPixel != null && (
+            {warnBlocky && sourceBlocksPerPixel != null && isAdmin && (
               <div className="rounded-md border border-amber-500/50 bg-amber-50/30 dark:bg-amber-500/10 px-2 py-1.5 text-xs text-amber-900 dark:text-amber-200">
                 {t("topsMap.rockStrataBlockyWarning", {
                   bpp: sourceBlocksPerPixel.toLocaleString(),

@@ -342,12 +342,18 @@ export function TOPSMapViewPage() {
     (next: number) => dispatch(setRockStrataOpacityAction(next)),
     [dispatch],
   );
+  // Rock-strata is gated by the same advanced-map-options account toggle
+  // as the Oceans overlay: the persisted `showRockStrata` preference is
+  // honoured only when advanced options are enabled. When OFF, the
+  // overlay image, hook fetches, and the legend/toggle panel are all
+  // suppressed without touching the persisted preference.
+  const rockStrataVisible = showRockStrata && showAdvancedMapOptions;
   // Viewport center fed into the rock-strata hook so panning regenerates
   // the cropped overlay. Updated only while the layer is enabled to keep
   // re-render churn near zero when it's off.
   const [rockStrataCenter, setRockStrataCenter] = useState<{ x: number; z: number } | null>(null);
   const rockStrataOverlay = useRockStrataOverlay({
-    enabled: showRockStrata,
+    enabled: rockStrataVisible,
     layerKind: rockStrataKind,
     keepCodes: rockStrataKeepCodes,
     halfBlocks: rockStrataHalfBlocks,
@@ -704,7 +710,7 @@ export function TOPSMapViewPage() {
       };
       // Feed the rock-strata hook only while the overlay is on; setting
       // state every pan when the layer is off would just churn re-renders.
-      if (showRockStrata) {
+      if (rockStrataVisible) {
         setRockStrataCenter({ x: info.centerWorldX, z: info.centerWorldZ });
       }
       updateUrlParams({
@@ -721,7 +727,7 @@ export function TOPSMapViewPage() {
         worldMaxZ: info.worldMaxZ,
       });
     },
-    [updateUrlParams, showRockStrata],
+    [updateUrlParams, rockStrataVisible],
   );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
@@ -1738,6 +1744,7 @@ export function TOPSMapViewPage() {
               </div>
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
+            {showAdvancedMapOptions && (
             <RockStrataLegendPanel
               enabled={showRockStrata}
               onEnabledChange={setShowRockStrata}
@@ -1755,6 +1762,7 @@ export function TOPSMapViewPage() {
               status={rockStrataOverlay.status}
               error={rockStrataOverlay.error}
             />
+            )}
             {hasMap && (
               <div className="flex flex-col gap-1">
                 <Label htmlFor="landmark-search" className="text-sm">
@@ -1861,7 +1869,7 @@ export function TOPSMapViewPage() {
                 ) : null
               }
               overlayRenderAbove={({ imgNatural, stats: wcStats }) =>
-                wcStats && imgNatural.w > 0 && imgNatural.h > 0 && showRockStrata ? (
+                wcStats && imgNatural.w > 0 && imgNatural.h > 0 && rockStrataVisible ? (
                   <RockStrataOverlayLayer
                     bounds={rockStrataOverlay.overlayBounds}
                     overlayUrl={rockStrataOverlay.overlayUrl}
@@ -1920,7 +1928,7 @@ export function TOPSMapViewPage() {
                         imageHeight={tileSet.imageHeight}
                       />
                     ) : null}
-                    {showRockStrata ? (
+                    {rockStrataVisible ? (
                       <RockStrataOverlayLayer
                         bounds={rockStrataOverlay.overlayBounds}
                         overlayUrl={rockStrataOverlay.overlayUrl}
