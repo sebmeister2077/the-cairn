@@ -373,7 +373,12 @@ export function FullscreenControlsOverlay({
             {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
           </span>
         </div>
-        <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
+        <div
+          className={cn(
+            "flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+            !showAdvancedMapOptions && "hidden",
+          )}
+        >
           <div
             onClick={() => setShowRockStrata(!showRockStrata)}
             className="cursor-pointer flex items-center gap-2"

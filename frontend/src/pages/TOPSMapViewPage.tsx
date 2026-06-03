@@ -1745,23 +1745,23 @@ export function TOPSMapViewPage() {
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
             {showAdvancedMapOptions && (
-            <RockStrataLegendPanel
-              enabled={showRockStrata}
-              onEnabledChange={setShowRockStrata}
-              layerKind={rockStrataKind}
-              onLayerKindChange={setRockStrataKind}
-              halfBlocks={rockStrataHalfBlocks}
-              onHalfBlocksChange={setRockStrataHalfBlocks}
-              opacity={rockStrataOpacity}
-              onOpacityChange={setRockStrataOpacity}
-              keepCodes={rockStrataKeepCodes}
-              onKeepCodesChange={setRockStrataKeepCodes}
-              legend={rockStrataOverlay.legend}
-              warnBlocky={rockStrataOverlay.warnBlocky}
-              sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
-              status={rockStrataOverlay.status}
-              error={rockStrataOverlay.error}
-            />
+              <RockStrataLegendPanel
+                enabled={showRockStrata}
+                onEnabledChange={setShowRockStrata}
+                layerKind={rockStrataKind}
+                onLayerKindChange={setRockStrataKind}
+                halfBlocks={rockStrataHalfBlocks}
+                onHalfBlocksChange={setRockStrataHalfBlocks}
+                opacity={rockStrataOpacity}
+                onOpacityChange={setRockStrataOpacity}
+                keepCodes={rockStrataKeepCodes}
+                onKeepCodesChange={setRockStrataKeepCodes}
+                legend={rockStrataOverlay.legend}
+                warnBlocky={rockStrataOverlay.warnBlocky}
+                sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
+                status={rockStrataOverlay.status}
+                error={rockStrataOverlay.error}
+              />
             )}
             {hasMap && (
               <div className="flex flex-col gap-1">
