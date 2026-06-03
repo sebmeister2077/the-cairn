@@ -47,6 +47,14 @@ export interface UseRockStrataOverlayResult {
 /** Spec hard cap. */
 const HALF_BLOCKS_MAX = 12000;
 
+/** VS world center in blocks (1024000 / 2). The TOPS map exposes
+ *  `MapStats.start_x` / `start_z` and `centerWorldX/Z` in *centered*
+ *  world-block coords (spawn ≈ 0,0), but the rockstrata raster's
+ *  `world.json` uses *absolute* world-block coords (origin 0, center
+ *  ~512000). All translation between the two coord systems happens at
+ *  this module's boundary so callers can stay in centered space. */
+export const ROCKSTRATA_WORLD_CENTER_OFFSET = 512000;
+
 let workerSingleton: Worker | null = null;
 function getWorker(): Worker {
     if (!workerSingleton) {
@@ -139,9 +147,14 @@ export function useRockStrataOverlay({
             .map((e) => e.hexcolor.toUpperCase());
     }, [loaded, keepCodes]);
 
-    // Centre defaults to the export's metadata centre.
+    // Centre defaults to the export's metadata centre. Inputs are in
+    // centered TOPS coords; convert to the raster's absolute coord space.
     const effectiveCenter = useMemo(() => {
-        if (center) return center;
+        if (center)
+            return {
+                x: center.x + ROCKSTRATA_WORLD_CENTER_OFFSET,
+                z: center.z + ROCKSTRATA_WORLD_CENTER_OFFSET,
+            };
         return loaded ? loaded.meta.center : null;
     }, [center, loaded]);
 
@@ -189,8 +202,12 @@ export function useRockStrataOverlay({
                 return encodeRgbaToPngUrl(crop.rgba, crop.width, crop.height).then((url) => ({
                     url,
                     bounds: {
-                        originX: crop.originBlockX,
-                        originZ: crop.originBlockZ,
+                        // Convert absolute raster coords back to centered
+                        // TOPS world-block space so consumers (overlay
+                        // layers) can place the image alongside other
+                        // map features without re-doing the offset.
+                        originX: crop.originBlockX - ROCKSTRATA_WORLD_CENTER_OFFSET,
+                        originZ: crop.originBlockZ - ROCKSTRATA_WORLD_CENTER_OFFSET,
                         extentX: crop.extentBlocksX,
                         extentZ: crop.extentBlocksZ,
                     },

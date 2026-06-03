@@ -390,7 +390,7 @@ export function FullscreenControlsOverlay({
             aria-hidden={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
           >
             <div className="overflow-hidden min-h-0">
-              <div className="flex flex-wrap gap-1 pt-2 max-h-40 overflow-y-auto pr-1">
+              <div className="flex flex-wrap gap-1 pt-2 max-h-56 overflow-y-auto pr-1">
                 {(rockStrataLegend ?? []).map((e, i) => {
                   const active = rockStrataKeptSet.has(e.code);
                   return (
@@ -403,7 +403,7 @@ export function FullscreenControlsOverlay({
                       }}
                       tabIndex={showRockStrata ? 0 : -1}
                       className={cn(
-                        "select-none rounded-full border px-1.5 py-0 text-[10px] leading-4 cursor-pointer",
+                        "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
                         showRockStrata && "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
                         "transition-colors duration-150",
                         active ? "bg-foreground text-background" : "bg-background",
@@ -418,7 +418,7 @@ export function FullscreenControlsOverlay({
                     >
                       <span
                         aria-hidden
-                        className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+                        className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
                         style={{ backgroundColor: e.hexcolor }}
                       />
                       {e.code}
@@ -433,7 +433,7 @@ export function FullscreenControlsOverlay({
                       setRockStrataKeepCodes(rockStrataKeepCodes == null ? [] : null);
                     }}
                     tabIndex={showRockStrata ? 0 : -1}
-                    className="select-none rounded-full border px-1.5 py-0 text-[10px] leading-4 cursor-pointer text-muted-foreground hover:bg-muted"
+                    className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
                     title={
                       rockStrataKeepCodes == null
                         ? t("topsMap.rockStrataClearAll")
