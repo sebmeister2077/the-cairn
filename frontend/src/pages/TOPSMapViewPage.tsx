@@ -19,6 +19,11 @@ import {
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
+  setShowRockStrata as setShowRockStrataAction,
+  setRockStrataKind as setRockStrataKindAction,
+  setRockStrataKeepCodes as setRockStrataKeepCodesAction,
+  setRockStrataHalfBlocks as setRockStrataHalfBlocksAction,
+  setRockStrataOpacity as setRockStrataOpacityAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
@@ -93,6 +98,9 @@ import {
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
+import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayLayer";
+import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
+import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
@@ -304,6 +312,48 @@ export function TOPSMapViewPage() {
   // the Oceans overlay image is suppressed regardless of `showOceans`.
   const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
   const oceansVisible = showOceans && showAdvancedMapOptions;
+
+  // Rock-strata overlay (rockstratafinder mod export). Optional opt-in
+  // layer with its own legend filter, debounced re-crop on pan, and a
+  // worker-side keep-color filter. State lives in the mapView slice so
+  // toggles persist across reloads.
+  const showRockStrata = useAppSelector((s) => s.mapView.showRockStrata);
+  const setShowRockStrata = useCallback(
+    (next: boolean) => dispatch(setShowRockStrataAction(next)),
+    [dispatch],
+  );
+  const rockStrataKind = useAppSelector((s) => s.mapView.rockStrataKind);
+  const setRockStrataKind = useCallback(
+    (next: "rock" | "geo") => dispatch(setRockStrataKindAction(next)),
+    [dispatch],
+  );
+  const rockStrataKeepCodes = useAppSelector((s) => s.mapView.rockStrataKeepCodes);
+  const setRockStrataKeepCodes = useCallback(
+    (next: string[] | null) => dispatch(setRockStrataKeepCodesAction(next)),
+    [dispatch],
+  );
+  const rockStrataHalfBlocks = useAppSelector((s) => s.mapView.rockStrataHalfBlocks);
+  const setRockStrataHalfBlocks = useCallback(
+    (next: number) => dispatch(setRockStrataHalfBlocksAction(next)),
+    [dispatch],
+  );
+  const rockStrataOpacity = useAppSelector((s) => s.mapView.rockStrataOpacity);
+  const setRockStrataOpacity = useCallback(
+    (next: number) => dispatch(setRockStrataOpacityAction(next)),
+    [dispatch],
+  );
+  // Viewport center fed into the rock-strata hook so panning regenerates
+  // the cropped overlay. Updated only while the layer is enabled to keep
+  // re-render churn near zero when it's off.
+  const [rockStrataCenter, setRockStrataCenter] = useState<{ x: number; z: number } | null>(null);
+  const rockStrataOverlay = useRockStrataOverlay({
+    enabled: showRockStrata,
+    layerKind: rockStrataKind,
+    keepCodes: rockStrataKeepCodes,
+    halfBlocks: rockStrataHalfBlocks,
+    center: rockStrataCenter,
+  });
+
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
@@ -652,6 +702,11 @@ export function TOPSMapViewPage() {
         centerWorldZ: info.centerWorldZ,
         pixelsPerBlock: info.pixelsPerBlock,
       };
+      // Feed the rock-strata hook only while the overlay is on; setting
+      // state every pan when the layer is off would just churn re-renders.
+      if (showRockStrata) {
+        setRockStrataCenter({ x: info.centerWorldX, z: info.centerWorldZ });
+      }
       updateUrlParams({
         x: String(Math.round(info.centerWorldX)),
         z: String(Math.round(info.centerWorldZ)),
@@ -666,7 +721,7 @@ export function TOPSMapViewPage() {
         worldMaxZ: info.worldMaxZ,
       });
     },
-    [updateUrlParams],
+    [updateUrlParams, showRockStrata],
   );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
@@ -1683,6 +1738,23 @@ export function TOPSMapViewPage() {
               </div>
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
+            <RockStrataLegendPanel
+              enabled={showRockStrata}
+              onEnabledChange={setShowRockStrata}
+              layerKind={rockStrataKind}
+              onLayerKindChange={setRockStrataKind}
+              halfBlocks={rockStrataHalfBlocks}
+              onHalfBlocksChange={setRockStrataHalfBlocks}
+              opacity={rockStrataOpacity}
+              onOpacityChange={setRockStrataOpacity}
+              keepCodes={rockStrataKeepCodes}
+              onKeepCodesChange={setRockStrataKeepCodes}
+              legend={rockStrataOverlay.legend}
+              warnBlocky={rockStrataOverlay.warnBlocky}
+              sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
+              status={rockStrataOverlay.status}
+              error={rockStrataOverlay.error}
+            />
             {hasMap && (
               <div className="flex flex-col gap-1">
                 <Label htmlFor="landmark-search" className="text-sm">
@@ -1776,18 +1848,28 @@ export function TOPSMapViewPage() {
               onViewportChange={handleViewportChange}
               // For WC we use `overlayRender` so the overlay layers can size
               // themselves to the synthetic WC image without the parent peeking
-              // into the wrapper's internal tileSet.
+              // into the wrapper's internal tileSet. Oceans render *below* the
+              // tile canvas (only visible in unexplored cells); rock-strata
+              // renders *above* via `overlayRenderAbove` so it covers terrain.
               overlayRender={({ imgNatural, stats: wcStats }) =>
-                wcStats && imgNatural.w > 0 && imgNatural.h > 0 ? (
-                  <>
-                    {oceansVisible ? (
-                      <OceansOverlayLayer
-                        stats={wcStats}
-                        imageWidth={imgNatural.w}
-                        imageHeight={imgNatural.h}
-                      />
-                    ) : null}
-                  </>
+                wcStats && imgNatural.w > 0 && imgNatural.h > 0 && oceansVisible ? (
+                  <OceansOverlayLayer
+                    stats={wcStats}
+                    imageWidth={imgNatural.w}
+                    imageHeight={imgNatural.h}
+                  />
+                ) : null
+              }
+              overlayRenderAbove={({ imgNatural, stats: wcStats }) =>
+                wcStats && imgNatural.w > 0 && imgNatural.h > 0 && showRockStrata ? (
+                  <RockStrataOverlayLayer
+                    bounds={rockStrataOverlay.overlayBounds}
+                    overlayUrl={rockStrataOverlay.overlayUrl}
+                    stats={wcStats}
+                    imageWidth={imgNatural.w}
+                    imageHeight={imgNatural.h}
+                    opacity={rockStrataOpacity}
+                  />
                 ) : null
               }
               cursorMode={routePickMode ? "pick" : "default"}
@@ -1836,6 +1918,16 @@ export function TOPSMapViewPage() {
                         stats={stats}
                         imageWidth={tileSet.imageWidth}
                         imageHeight={tileSet.imageHeight}
+                      />
+                    ) : null}
+                    {showRockStrata ? (
+                      <RockStrataOverlayLayer
+                        bounds={rockStrataOverlay.overlayBounds}
+                        overlayUrl={rockStrataOverlay.overlayUrl}
+                        stats={stats}
+                        imageWidth={tileSet.imageWidth}
+                        imageHeight={tileSet.imageHeight}
+                        opacity={rockStrataOpacity}
                       />
                     ) : null}
                     {isAdmin ? (
@@ -1887,6 +1979,7 @@ export function TOPSMapViewPage() {
               onJumpHome={handleJumpHome}
               onSaveCurrentAsHome={handleSetCurrentAsHome}
               onClearHome={clearFavoriteStartingPosition}
+              rockStrataLegend={rockStrataOverlay.legend}
             />
           )}
         </div>

@@ -15,6 +15,8 @@ import {
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
+  setShowRockStrata as setShowRockStrataAction,
+  setRockStrataKeepCodes as setRockStrataKeepCodesAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
@@ -35,6 +37,7 @@ import {
   type TraderType,
 } from "@/lib/trader-types";
 import { HomePositionControls } from "./HomePositionControls";
+import type { LegendEntry } from "@/lib/rockstrata/types";
 import { cn } from "@/lib/utils";
 
 type FullscreenControlsOverlayProps = {
@@ -56,6 +59,8 @@ type FullscreenControlsOverlayProps = {
   onJumpHome: () => void;
   onSaveCurrentAsHome: () => void;
   onClearHome: () => void;
+  /** Rock-strata legend (null while disabled / loading). */
+  rockStrataLegend: LegendEntry[] | null;
 };
 
 /**
@@ -85,6 +90,7 @@ export function FullscreenControlsOverlay({
   onJumpHome,
   onSaveCurrentAsHome,
   onClearHome,
+  rockStrataLegend,
 }: FullscreenControlsOverlayProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -115,6 +121,34 @@ export function FullscreenControlsOverlay({
   const setShowOceans = useCallback(
     (next: boolean) => dispatch(setShowOceansAction(next)),
     [dispatch],
+  );
+  const showRockStrata = useAppSelector((s) => s.mapView.showRockStrata);
+  const setShowRockStrata = useCallback(
+    (next: boolean) => dispatch(setShowRockStrataAction(next)),
+    [dispatch],
+  );
+  const rockStrataKeepCodes = useAppSelector((s) => s.mapView.rockStrataKeepCodes);
+  const setRockStrataKeepCodes = useCallback(
+    (next: string[] | null) => dispatch(setRockStrataKeepCodesAction(next)),
+    [dispatch],
+  );
+  const rockStrataAllCodes = useMemo(
+    () => rockStrataLegend?.map((e) => e.code) ?? [],
+    [rockStrataLegend],
+  );
+  const rockStrataKeptSet = useMemo(
+    () =>
+      rockStrataKeepCodes == null ? new Set(rockStrataAllCodes) : new Set(rockStrataKeepCodes),
+    [rockStrataKeepCodes, rockStrataAllCodes],
+  );
+  const toggleRockStrataCode = useCallback(
+    (code: string) => {
+      const next = new Set(rockStrataKeptSet);
+      if (next.has(code)) next.delete(code);
+      else next.add(code);
+      setRockStrataKeepCodes(Array.from(next));
+    },
+    [rockStrataKeptSet, setRockStrataKeepCodes],
   );
   // Account-level gate: the Oceans toggle in fullscreen is only visible
   // when the user has opted into "Show additional options on Map" from
@@ -338,6 +372,82 @@ export function FullscreenControlsOverlay({
           <span className="text-xs text-muted-foreground">
             {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
           </span>
+        </div>
+        <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
+          <div
+            onClick={() => setShowRockStrata(!showRockStrata)}
+            className="cursor-pointer flex items-center gap-2"
+          >
+            <Switch checked={showRockStrata} aria-label={t("topsMap.showRockStrataOverlay")} />
+            <Label className="cursor-pointer">{t("topsMap.rockStrata")}</Label>
+          </div>
+          <div
+            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+            style={{
+              gridTemplateRows:
+                showRockStrata && rockStrataLegend && rockStrataLegend.length > 0 ? "1fr" : "0fr",
+            }}
+            aria-hidden={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
+          >
+            <div className="overflow-hidden min-h-0">
+              <div className="flex flex-wrap gap-1 pt-2 max-h-40 overflow-y-auto pr-1">
+                {(rockStrataLegend ?? []).map((e, i) => {
+                  const active = rockStrataKeptSet.has(e.code);
+                  return (
+                    <button
+                      key={e.code}
+                      type="button"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        toggleRockStrataCode(e.code);
+                      }}
+                      tabIndex={showRockStrata ? 0 : -1}
+                      className={cn(
+                        "select-none rounded-full border px-1.5 py-0 text-[10px] leading-4 cursor-pointer",
+                        showRockStrata && "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                        "transition-colors duration-150",
+                        active ? "bg-foreground text-background" : "bg-background",
+                      )}
+                      style={{
+                        borderColor: e.hexcolor,
+                        animationDelay: `${i * 15}ms`,
+                        animationDuration: "260ms",
+                      }}
+                      aria-pressed={active}
+                      title={`${e.code} — ${e.pixelCount.toLocaleString()}`}
+                    >
+                      <span
+                        aria-hidden
+                        className="mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle"
+                        style={{ backgroundColor: e.hexcolor }}
+                      />
+                      {e.code}
+                    </button>
+                  );
+                })}
+                {(rockStrataLegend ?? []).length > 0 && (
+                  <button
+                    type="button"
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      setRockStrataKeepCodes(rockStrataKeepCodes == null ? [] : null);
+                    }}
+                    tabIndex={showRockStrata ? 0 : -1}
+                    className="select-none rounded-full border px-1.5 py-0 text-[10px] leading-4 cursor-pointer text-muted-foreground hover:bg-muted"
+                    title={
+                      rockStrataKeepCodes == null
+                        ? t("topsMap.rockStrataClearAll")
+                        : t("topsMap.rockStrataSelectAll")
+                    }
+                  >
+                    {rockStrataKeepCodes == null
+                      ? t("topsMap.rockStrataClearAll")
+                      : t("topsMap.rockStrataSelectAll")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
         <Button
           type="button"

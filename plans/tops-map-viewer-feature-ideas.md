@@ -55,13 +55,68 @@ Existing features inventoried in [Architecture.md](../Architecture.md), [docs/mu
 - ✅ **Climate / temperature heatmap** *(M, server)* — already partly available via worldgen sample; expose as toggleable layer with legend.
 - ✅ **Forest density layer** *(M, server)* — same data path.
 - ✅ **Rock strata** *(M, server)* — from worldgen sample; show dominant strata with color coding and legend.
+- **Top-rock layer** *(M, server)* — color the surface by `TopRockIdMap` (granite/andesite/basalt/chalk/sandstone/...). Critical for prospecting and aesthetic builds, and already partially indexed by the cairn pipeline.
+- **Rock-strata cross-section probe** *(M, server)* — click a point and see the projected rock column (top → bedrock) based on worldgen layer config; not a full overlay but a layer-aware tool.
+- **Crop suitability picker** *(M, client+server)* — pick a crop (flax, rice, rye, soybean, ...) and shade tiles green/red for "can grow here" using crop temperature/moisture ranges.
+- **Temperature heatmap (yearly avg / Jan / Jul)** *(M, server)* — `WorldGenTemperature` sampled at a sparse grid; toggle between annual mean and seasonal extremes. Drives crop/honey/livestock viability.
+
+
 - **Biome / region boundary overlay** *(M, server)*.
-- **Player territory / claims overlay** *(L, server)* — if claim data can be uploaded.
-- **Traffic heatmap** *(M, server)* — derived from saved routes / road-worker submissions: which corridors are most used.
-- **Road overlay** *(M, server)* — community-submitted road segments distinct from TLs and walkable edges.
-- **Day/night and seasons preview** *(S, client, fun)* — tint the map by simulated in-game time.
-- **Layer presets** *(S, client)* — save a named combination of toggled overlays + opacities.
-- **Layer opacity sliders for every overlay** *(S, client)* — currently only resources has one.
+
+
+### 5a. Vintage Story–specific overlays
+
+Worldgen and game-data driven layers unique to VS. Most are derivable from `IBlockAccessor.GetClimateAt(...)` (worldgen mode), `IMapChunk.TopRockIdMap` / `RainHeightMap`, deposit generators, and entity/structure spawn rules — same data path as the existing resources overlay.
+
+**Terrain & topography**
+- **Elevation / hillshade layer** *(M, server)* — render a shaded-relief map from `RainHeightMap`. Toggleable hillshade, contour lines every N blocks, and a "sea level boundary" highlight.
+- **Slope / walkability layer** *(M, server)* — gradient of terrain steepness; useful for road-builders and elk routes (pairs with elk-walkable contributions).
+- **Cave / underground entrance hints** *(M, server)* — flag chunks with significant overhang or pit features detected from the rendered tile alpha or height variance.
+- **Top-rock layer** *(M, server)* — color the surface by `TopRockIdMap` (granite/andesite/basalt/chalk/sandstone/...). Critical for prospecting and aesthetic builds, and already partially indexed by the cairn pipeline.
+- **Rock-strata cross-section probe** *(M, server)* — click a point and see the projected rock column (top → bedrock) based on worldgen layer config; not a full overlay but a layer-aware tool.
+
+**Climate & biome**
+- **Temperature heatmap (yearly avg / Jan / Jul)** *(M, server)* — `WorldGenTemperature` sampled at a sparse grid; toggle between annual mean and seasonal extremes. Drives crop/honey/livestock viability.
+- **Rainfall layer** *(M, server)* — `WorldgenRainfall`; pair with temperature for biome inference.
+- **Forest density layer** *(M, server)* — `ForestDensity`; helpful for finding clearings, dense logging spots, or rare-tree biomes.
+- **Tree-species probability overlay** *(M, server)* — derived from temp+rain+forest density: where birch, kapok, acacia, larch, etc. dominate. Especially valuable for fruit trees (rare cultivars).
+- **Fruit-tree / berry-bush hotspots** *(M, server)* — same data path, filtered to edible species.
+- **Biome / Köppen-style classification** *(M, server)* — derived layer combining temp + rain + forest into named biomes (taiga, temperate, savanna, tropical, ...).
+- **Crop suitability picker** *(M, client+server)* — pick a crop (flax, rice, rye, soybean, ...) and shade tiles green/red for "can grow here" using crop temperature/moisture ranges.
+- **Beehive / wild bee suitability** *(S, server)* — flowers + warm temperate climate; a niche but heavily-asked overlay.
+- **Permafrost / glacier line** *(S, server)* — temperature isotherm overlay marking always-frozen ground.
+- **Sea-ice line** *(S, server)* — winter freeze boundary, useful for boat routes.
+- **Ocean depth / shallows** *(M, server)* — extend the existing oceans overlay with bathymetry (shallow → deep gradient) for boat travel and fishing.
+- **Fishing hotspots** *(S, server)* — derived from water-body size + climate, mark good cod/salmon/trout zones.
+
+**Resources & prospecting (extending the resources overlay)**
+- **Per-ore richness gradient** *(M, server)* — already in the resources bundle; expose finer-grained richness contours per deposit type rather than binary presence.
+- **"Find me X" search-as-overlay** *(M, server)* — type "cinnabar" and the map highlights every chunk where the deposit generator returns a non-zero abs-quantity.
+- **Salt / halite layer** *(S, server)* — saltpeter and salt deposits get their own toggle (commonly hunted for, currently lumped with other surface ores).
+- **Clay / peat / bog-iron layer** *(S, server)* — surface materials that are climate-gated rather than deposit-gated.
+- **Rare-rock outcrops** *(S, server)* — rhyolite, kimberlite, phyllite chunks where the top-rock map has rare ids.
+- **Prospecting-pick simulator overlay** *(M, server)* — given a chunk, predict the in-game `/proPick` density readings without visiting; respects ore-map factor.
+- **Meteorite / impact crater layer** *(S, server)* — if structure-spawn data is exposed, mark crater locations.
+
+**Structures & POIs**
+- **Ruins / villages / structures overlay** *(M, server)* — generated structures (storyworld ruins, villages, towers, translocator pillars). Many players want this independent of community landmarks.
+- **Story locations** *(S, server)* — Resonance Archives, Devastation, fragmented temporal storms, etc.
+- **Trader-village proximity layer** *(S, server)* — heatmap of "nearest trader" distance, useful for picking a base.
+- **Wolf / drifter / locust spawn-density layer** *(M, server)* — derived from biome + climate + surface-cave proximity; helpful for safe-route planning at night.
+- **Surface-drifter risk by lat/temporal-stability** *(M, server)* — temporal stability falls off with distance from spawn; show a stability gradient (also relevant for temporal storm survival).
+- **Temporal-storm intensity layer** *(S, server)* — same data, exposed as its own toggle.
+
+**Civilization & community**
+- **Player-base / settlement clusters** *(M, server)* — derived from clusters of user-uploaded waypoints with home-marker icons; opt-in.
+- **Active region heatmap** *(M, server)* — chunks contributed within the last N days (already partly via "recent TLs" filter; generalize to all chunk uploads).
+- **Road network overlay** *(M, server)* — community-submitted roads as polylines, distinct from TLs and walkable edges. Already noted above; VS-specific because it pairs with the road-workers flow.
+- **Claim / land-claim overlay** *(L, server)* — if server admins can export claim regions, render them as semi-transparent polygons.
+
+**Quality of life**
+- **Spawn-radius rings** *(S, client)* — concentric rings at 1k/5k/10k/40k from world spawn; classic VS reference.
+- **Translocator-link overlay (link lines)** *(S, client)* — draw straight lines between every TL pair currently visible, color-coded by length; quickly spot dead-end TLs and clusters.
+- **Coordinate grid** *(S, client)* — toggleable 1k or 5k chunk grid with labels.
+- **"Where am I now" pin from in-game** *(M, server+mod)* — companion mod posts the player's current chunk; viewer renders a live pin.
 
 ## 6. Annotations & community content
 

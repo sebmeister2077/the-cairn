@@ -81,6 +81,16 @@ export interface MapViewState {
      * (see `frontend/src/assets/Oceans/`). Default OFF — opt-in.
      */
     showOceans: boolean;
+    /** Rock-strata overlay enable flag (rockstratafinder mod export). */
+    showRockStrata: boolean;
+    /** Which rockstratafinder layer to render: rocks vs geological provinces. */
+    rockStrataKind: "rock" | "geo";
+    /** Legend codes to keep visible. `null` = all on (default). */
+    rockStrataKeepCodes: string[] | null;
+    /** Display window half-size in world blocks. Spec hard-clamped to ≤12000. */
+    rockStrataHalfBlocks: number;
+    /** Rock-strata overlay opacity (0..1). */
+    rockStrataOpacity: number;
     /**
      * Account-level preference ("Show additional options on Map") that
      * gates advanced/experimental map controls. When OFF (default), the
@@ -159,6 +169,11 @@ export function loadInitialMapViewState(): MapViewState {
         traderTypeFilter: [],
         showRecentlyAdded: false,
         showOceans: false,
+        showRockStrata: false,
+        rockStrataKind: "rock",
+        rockStrataKeepCodes: null,
+        rockStrataHalfBlocks: 10000,
+        rockStrataOpacity: 0.85,
         showAdvancedMapOptions: false,
         isFullscreen: false,
         starfieldEnabled: true,
@@ -226,6 +241,26 @@ export const mapViewSlice = createSlice({
         setShowOceans(state, action: PayloadAction<boolean>) {
             state.showOceans = action.payload;
         },
+        setShowRockStrata(state, action: PayloadAction<boolean>) {
+            state.showRockStrata = action.payload;
+        },
+        setRockStrataKind(state, action: PayloadAction<"rock" | "geo">) {
+            state.rockStrataKind = action.payload;
+        },
+        setRockStrataKeepCodes(state, action: PayloadAction<string[] | null>) {
+            state.rockStrataKeepCodes =
+                action.payload == null ? null : Array.from(new Set(action.payload));
+        },
+        setRockStrataHalfBlocks(state, action: PayloadAction<number>) {
+            // Spec hard cap at 12000.
+            const v = Math.round(action.payload);
+            state.rockStrataHalfBlocks = Math.max(1, Math.min(12000, v));
+        },
+        setRockStrataOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.rockStrataOpacity = Math.max(0, Math.min(1, v));
+        },
         setShowAdvancedMapOptions(state, action: PayloadAction<boolean>) {
             state.showAdvancedMapOptions = action.payload;
         },
@@ -291,6 +326,11 @@ export const {
     toggleTraderTypeFilter,
     toggleShowRecentlyAdded,
     setShowOceans,
+    setShowRockStrata,
+    setRockStrataKind,
+    setRockStrataKeepCodes,
+    setRockStrataHalfBlocks,
+    setRockStrataOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,
     setStarfieldEnabled,

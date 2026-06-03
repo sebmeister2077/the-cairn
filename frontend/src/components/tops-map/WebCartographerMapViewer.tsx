@@ -157,6 +157,19 @@ interface WebCartographerMapViewerProps {
     imgNatural: { w: number; h: number };
     stats: MapStats | null;
   }) => React.ReactNode;
+  /**
+   * Same as {@link overlay} / {@link overlayRender} but rendered in a
+   * transformed `<div>` *above* the tile canvas. Used for layers that
+   * should sit on top of explored terrain (e.g. rock-strata raster),
+   * unlike the regular overlay slot which sits below the canvas so
+   * background imagery (oceans) only shows through unexplored cells.
+   */
+  overlayAbove?: React.ReactNode;
+  overlayRenderAbove?: (info: {
+    zoom: number;
+    imgNatural: { w: number; h: number };
+    stats: MapStats | null;
+  }) => React.ReactNode;
 }
 
 /**
@@ -207,6 +220,8 @@ export function WebCartographerMapViewer({
   onViewportChange,
   overlay,
   overlayRender,
+  overlayAbove,
+  overlayRenderAbove,
 }: WebCartographerMapViewerProps) {
   const { t } = useTranslation();
   const normalisedUrl = useMemo(() => normaliseBaseUrl(baseUrl), [baseUrl]);
@@ -224,6 +239,12 @@ export function WebCartographerMapViewer({
   // ── Refs ─────────────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Second canvas stacked above `canvasRef`, used purely for the dynamic
+  // overlays (TLs, points, route, labels). Splitting tiles vs overlays
+  // into separate canvases lets the parent slot a DOM-based layer (e.g.
+  // rock-strata raster) between them, so it covers the terrain tiles
+  // but stays beneath translocators / landmarks / traders.
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const tileCacheRef = useRef<{ baseUrl: string; cache: Map<string, TileEntry> }>({
     baseUrl: normalisedUrl,
     cache: new Map(),
@@ -516,28 +537,36 @@ export function WebCartographerMapViewer({
   // ── The draw routine ─────────────────────────────────────────────────────
   drawRef.current = () => {
     const canvas = canvasRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container) return;
+    if (!canvas || !overlayCanvas || !container) return;
 
     const cw = container.clientWidth;
     const ch = container.clientHeight;
     if (cw <= 0 || ch <= 0) return;
 
     const dpr = window.devicePixelRatio || 1;
-    if (canvas.width !== Math.round(cw * dpr) || canvas.height !== Math.round(ch * dpr)) {
-      canvas.width = Math.round(cw * dpr);
-      canvas.height = Math.round(ch * dpr);
-      canvas.style.width = `${cw}px`;
-      canvas.style.height = `${ch}px`;
-    }
+    const sizeCanvas = (c: HTMLCanvasElement) => {
+      if (c.width !== Math.round(cw * dpr) || c.height !== Math.round(ch * dpr)) {
+        c.width = Math.round(cw * dpr);
+        c.height = Math.round(ch * dpr);
+        c.style.width = `${cw}px`;
+        c.style.height = `${ch}px`;
+      }
+    };
+    sizeCanvas(canvas);
+    sizeCanvas(overlayCanvas);
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const octx = overlayCanvas.getContext("2d");
+    if (!ctx || !octx) return;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    octx.setTransform(dpr, 0, 0, dpr, 0, 0);
     // Starfield is provided by the parent CSS class; clear to transparent
     // so it shows through where tiles are missing.
     ctx.clearRect(0, 0, cw, ch);
+    octx.clearRect(0, 0, cw, ch);
 
     // ── Tiles ─────────────────────────────────────────────────────────────
     const ppb = pixelsPerBlockRef.current;
@@ -628,11 +657,14 @@ export function WebCartographerMapViewer({
     }
 
     // ── Overlays ──────────────────────────────────────────────────────────
+    // Painted on a separate canvas stacked above the tile canvas (and
+    // above any DOM overlay slotted between the two — e.g. rock-strata),
+    // so dynamic markers always stay on top regardless of overlay state.
     // From here on, all coordinates are already in screen-space px (the
     // projected* memos handle the world → screen conversion), so no
     // `ctx.translate / scale` is needed. Line widths and radii are
     // therefore quoted directly in screen pixels.
-    drawOverlaysScreenSpace(ctx, {
+    drawOverlaysScreenSpace(octx, {
       segments: projectedSegments,
       points: projectedPoints,
       route: projectedRoute,
@@ -646,7 +678,7 @@ export function WebCartographerMapViewer({
 
     // ── Hover-point labels ────────────────────────────────────────────────
     if (projectedPoints.length > 0) {
-      drawPointLabels(ctx, projectedPoints, cw, ch);
+      drawPointLabels(octx, projectedPoints, cw, ch);
     }
   };
 
@@ -1145,6 +1177,17 @@ export function WebCartographerMapViewer({
           </div>
         )}
         <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+        {(overlayAbove || overlayRenderAbove) && (
+          // Rendered between the tile canvas and the overlay canvas so it
+          // covers the painted tiles but stays beneath dynamic overlays
+          // (TLs, landmarks, traders, route). Same image-space transform
+          // as the below-canvas overlay.
+          <div style={overlayTransform}>
+            {overlayAbove}
+            {overlayRenderAbove?.({ zoom: pixelsPerBlock, imgNatural, stats: WC_STATS })}
+          </div>
+        )}
+        <canvas ref={overlayCanvasRef} className="absolute inset-0 pointer-events-none" />
         {hoverCoords && (
           <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}

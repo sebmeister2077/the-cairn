@@ -1,0 +1,97 @@
+{
+  "seed": 421943594,
+  "center": {
+    "x": 512000,
+    "z": 512000
+  },
+  "halfSizeBlocks": 512000,
+  "outputPx": 2000,
+  "seaLevel": 110,
+  "approximation": "tier1: surfaceY=seaLevel, no mountain erosion",
+  "worldBox": {
+    "minX": 0,
+    "minZ": 0,
+    "maxX": 1024000,
+    "maxZ": 1024000
+  },
+  "legend": [
+    {
+      "blockId": 11139,
+      "code": "rock-granite",
+      "pixelCount": 1049943,
+      "hexcolor": "#C9A8A8"
+    },
+    {
+      "blockId": 11138,
+      "code": "rock-claystone",
+      "pixelCount": 572120,
+      "hexcolor": "#B8966F"
+    },
+    {
+      "blockId": 11140,
+      "code": "rock-sandstone",
+      "pixelCount": 443931,
+      "hexcolor": "#E0C77A"
+    },
+    {
+      "blockId": 11133,
+      "code": "rock-andesite",
+      "pixelCount": 323743,
+      "hexcolor": "#8E8B86"
+    },
+    {
+      "blockId": 11141,
+      "code": "rock-shale",
+      "pixelCount": 323051,
+      "hexcolor": "#6E6058"
+    },
+    {
+      "blockId": 11143,
+      "code": "rock-peridotite",
+      "pixelCount": 299722,
+      "hexcolor": "#4F6047"
+    },
+    {
+      "blockId": 11136,
+      "code": "rock-conglomerate",
+      "pixelCount": 264280,
+      "hexcolor": "#A08C72"
+    },
+    {
+      "blockId": 11145,
+      "code": "rock-slate",
+      "pixelCount": 181687,
+      "hexcolor": "#555F6B"
+    },
+    {
+      "blockId": 11137,
+      "code": "rock-limestone",
+      "pixelCount": 165709,
+      "hexcolor": "#D8D5C0"
+    },
+    {
+      "blockId": 11135,
+      "code": "rock-chert",
+      "pixelCount": 131611,
+      "hexcolor": "#6B5740"
+    },
+    {
+      "blockId": 11142,
+      "code": "rock-basalt",
+      "pixelCount": 102172,
+      "hexcolor": "#2F2F35"
+    },
+    {
+      "blockId": 11150,
+      "code": "rock-bauxite",
+      "pixelCount": 83422,
+      "hexcolor": "#C85A33"
+    },
+    {
+      "blockId": 11134,
+      "code": "rock-chalk",
+      "pixelCount": 58609,
+      "hexcolor": "#F0EFE3"
+    }
+  ]
+}
