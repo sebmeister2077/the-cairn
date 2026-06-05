@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Copy, Pin, PinOff, X } from "lucide-react";
 import type { WorldLineSegment } from "../MapViewer";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 // Y coordinate used for the generated /waypoint commands. Translocator
 // endpoints are stored as 2D coords on the tops map, so we pin Y to a
@@ -32,6 +33,7 @@ export function SelectedTranslocatorHeader({
    */
   onClose?: () => void;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   if (!selectedTranslocator) return null;
 
@@ -84,32 +86,35 @@ export function SelectedTranslocatorHeader({
       {selectedTranslocator.kind === "user" && (
         <span
           className="rounded bg-blue-600/15 text-blue-700 dark:text-blue-300 text-xs font-medium px-2 py-0.5"
-          title="User-contributed translocator"
+          title={t("topsMap.selectedTranslocator.userBadgeTitle")}
         >
-          User
+          {t("topsMap.selectedTranslocator.userBadge")}
         </span>
       )}
       <span>
-        Start:{" "}
+        {t("topsMap.selectedTranslocator.start")}{" "}
         <span className="font-medium text-foreground">
-          X {selectedTranslocator.x1.toLocaleString()}, Z {selectedTranslocator.z1.toLocaleString()}
+          X {selectedTranslocator.x1.toLocaleString()} Y{" "}
+          {selectedTranslocator.y1?.toLocaleString() ?? t("topsMap.selectedTranslocator.emptyValue")} Z{" "}
+          {selectedTranslocator.z1.toLocaleString()}
         </span>
       </span>
       <span>
-        End:{" "}
+        {t("topsMap.selectedTranslocator.end")}{" "}
         <span className="font-medium text-foreground">
-          X {selectedTranslocator.x2.toLocaleString()}, Z {selectedTranslocator.z2.toLocaleString()}
+          X {selectedTranslocator.x2.toLocaleString()} Y{" "}
+          {selectedTranslocator.y2?.toLocaleString() ?? t("topsMap.selectedTranslocator.emptyValue")} Z{" "}
+          {selectedTranslocator.z2.toLocaleString()}
         </span>
       </span>
       {meta?.addedBy && (
         <span className="text-xs">
-          Added by <span className="font-medium text-foreground">{meta.addedBy}</span>
-          {addedAtLabel && (
-            <>
-              {" "}
-              on <span className="font-medium text-foreground">{addedAtLabel}</span>
-            </>
-          )}
+          {addedAtLabel
+            ? t("topsMap.selectedTranslocator.addedByOn", {
+                name: meta.addedBy,
+                date: addedAtLabel,
+              })
+            : t("topsMap.selectedTranslocator.addedBy", { name: meta.addedBy })}
         </span>
       )}
       {translocatorPinned ? (
@@ -118,33 +123,35 @@ export function SelectedTranslocatorHeader({
           variant="ghost"
           size="sm"
           onClick={handleUnpinTranslocator}
-          title="Unpin translocator (also unpins on clicking another TL)"
+          title={t("topsMap.selectedTranslocator.unpinTitle")}
           className="h-7 px-2 text-foreground"
         >
           <Pin className="size-4 mr-1 fill-current" />
-          Pinned
+          {t("topsMap.selectedTranslocator.pinned")}
           <PinOff className="size-4 ml-1" />
         </Button>
       ) : (
-        <span className="text-xs text-muted-foreground">Right-click a TL to pin</span>
+        <span className="text-xs text-muted-foreground">
+          {t("topsMap.selectedTranslocator.rightClickToPin")}
+        </span>
       )}
       <Button
         type="button"
         variant="ghost"
         size="sm"
         onClick={handleCopyWaypointCommands}
-        title={`Copy /waypoint commands for both endpoints to clipboard`}
+        title={t("topsMap.selectedTranslocator.copyWaypointsTitle")}
         className="h-7 px-2 text-foreground"
       >
         {copied ? (
           <>
             <Check className="size-4 mr-1" />
-            Copied
+            {t("topsMap.selectedTranslocator.copied")}
           </>
         ) : (
           <>
             <Copy className="size-4 mr-1" />
-            Copy waypoints
+            {t("topsMap.selectedTranslocator.copyWaypoints")}
           </>
         )}
       </Button>
@@ -154,8 +161,8 @@ export function SelectedTranslocatorHeader({
           variant="ghost"
           size="icon-sm"
           onClick={onClose}
-          aria-label="Dismiss selected translocator"
-          title="Dismiss"
+          aria-label={t("topsMap.selectedTranslocator.dismissAria")}
+          title={t("topsMap.selectedTranslocator.dismissTitle")}
           className="ml-1"
         >
           <X className="size-4" />

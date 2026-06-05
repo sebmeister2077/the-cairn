@@ -1395,6 +1395,23 @@ const ru = {
             replace: "Заменить",
             merge: "Объединить",
         },
+        selectedTranslocator: {
+            userBadge: "Игрок",
+            userBadgeTitle: "Транслокатор, добавленный игроком",
+            start: "Начало:",
+            end: "Конец:",
+            addedBy: "Добавил {name}",
+            addedByOn: "Добавил {name} {date}",
+            pinned: "Закреплён",
+            unpinTitle: "Открепить транслокатор (также открепляется при клике по другому TL)",
+            rightClickToPin: "Правый клик по TL, чтобы закрепить",
+            copyWaypoints: "Скопировать точки",
+            copied: "Скопировано",
+            copyWaypointsTitle: "Скопировать команды /waypoint для обеих конечных точек в буфер обмена",
+            dismissAria: "Закрыть выбранный транслокатор",
+            dismissTitle: "Закрыть",
+            emptyValue: "-",
+        },
     },
 } satisfies LocaleDictionary;
 

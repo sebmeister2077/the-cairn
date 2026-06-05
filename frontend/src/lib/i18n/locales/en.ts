@@ -1416,6 +1416,23 @@ export const en = {
             replace: "Replace",
             merge: "Merge",
         },
+        selectedTranslocator: {
+            userBadge: "User",
+            userBadgeTitle: "User-contributed translocator",
+            start: "Start:",
+            end: "End:",
+            addedBy: "Added by {name}",
+            addedByOn: "Added by {name} on {date}",
+            pinned: "Pinned",
+            unpinTitle: "Unpin translocator (also unpins on clicking another TL)",
+            rightClickToPin: "Right-click a TL to pin",
+            copyWaypoints: "Copy waypoints",
+            copied: "Copied",
+            copyWaypointsTitle: "Copy /waypoint commands for both endpoints to clipboard",
+            dismissAria: "Dismiss selected translocator",
+            dismissTitle: "Dismiss",
+            emptyValue: "-",
+        },
     },
 } as const;
 
