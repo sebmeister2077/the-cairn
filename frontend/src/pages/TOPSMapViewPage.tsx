@@ -444,7 +444,7 @@ export function TOPSMapViewPage() {
     //     that were contributed by players (`origin === "user"`).
     //     Backend seed Bases are skipped to avoid duplicating the WC
     //     export.
-    const wc = wcLandmarksQuery.data;
+    const wc = wcLandmarksQuery.data?.data;
     const fromBackend = (backendLandmarks ?? []).filter(
       (p) =>
         p.kind === "Terminus" || p.kind === "Server" || (p.kind === "Base" && p.origin === "user"),

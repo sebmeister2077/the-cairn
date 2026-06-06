@@ -430,6 +430,10 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    # Last-Modified is not a CORS-safelisted response header, so the browser
+    # would otherwise hide it from `fetch()` — needed by the WebCartographer
+    # geojson proxy so the frontend can read the upstream snapshot date.
+    expose_headers=["Last-Modified"],
 )
 
 

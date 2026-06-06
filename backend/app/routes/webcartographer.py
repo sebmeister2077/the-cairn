@@ -58,6 +58,7 @@ def fetch_webcartographer_geojson(
     try:
         with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT_S) as resp:  # noqa: S310 - scheme validated above
             raw = resp.read(_MAX_BYTES + 1)
+            upstream_last_modified = resp.headers.get("Last-Modified")
     except urllib.error.HTTPError as e:
         if e.code == 404:
             # Many WC hosts simply don't export one of the files; treat as empty.
@@ -81,4 +82,10 @@ def fetch_webcartographer_geojson(
     except (UnicodeDecodeError, json.JSONDecodeError):
         raise HTTPException(status_code=502, detail="upstream returned invalid JSON")
 
-    return JSONResponse(data, headers={"Cache-Control": "public, max-age=1800"})
+    # Forward upstream Last-Modified so the frontend can use it as a freshness
+    # cutoff (e.g. when merging in user-contributed TLs added after the last
+    # WC snapshot regen). CORS-exposed in main.py so the browser can read it.
+    headers: dict[str, str] = {"Cache-Control": "public, max-age=1800"}
+    if upstream_last_modified:
+        headers["Last-Modified"] = upstream_last_modified
+    return JSONResponse(data, headers=headers)

@@ -6,9 +6,11 @@
 // nobody notices until someone runs face-first into a missing portal.
 //
 // In WebCartographer mode we ALSO splice in any backend (user-contributed)
-// TL whose `added_at` is newer than `TOPS_MAP_LAST_UPDATE` — the WC
-// export is a periodic snapshot, so this keeps freshly-contributed TLs
-// visible (and routable) without waiting for the next regen.
+// TL whose `added_at` is newer than the WC export's `Last-Modified` header
+// (falling back to the static `TOPS_MAP_LAST_UPDATE` constant if the
+// upstream didn't supply one) — the WC export is a periodic snapshot, so
+// this keeps freshly-contributed TLs visible (and routable) without
+// waiting for the next regen.
 
 import { useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
@@ -35,12 +37,18 @@ export function useActiveTranslocators(): ActiveTranslocators {
 
     const backendSegments = backendQuery.data?.data ?? null;
     const backendEtag = backendQuery.data?.etag ?? null;
-    const wcSegments = wcQuery.data ?? null;
+    const wcSegments = wcQuery.data?.data ?? null;
+    const wcLastModified = wcQuery.data?.lastModified ?? null;
 
     const cutoffMs = useMemo(() => {
-        const t = Date.parse(TOPS_MAP_LAST_UPDATE);
+        // Prefer the WC export's own Last-Modified header (forwarded from
+        // the upstream geojson response by our backend proxy). Fall back
+        // to the hard-coded constant for the very first paint before the
+        // header has been observed, or for hosts that don't supply one.
+        const raw = wcLastModified ?? TOPS_MAP_LAST_UPDATE;
+        const t = Date.parse(raw);
         return Number.isFinite(t) ? t : null;
-    }, []);
+    }, [wcLastModified]);
 
     const wcMerged = useMemo<WorldLineSegment[] | null>(() => {
         if (!usingWebCartographer) return null;
@@ -65,7 +73,7 @@ export function useActiveTranslocators(): ActiveTranslocators {
         if (!wcMerged) return { segments: null, etag: null };
         return {
             segments: wcMerged,
-            etag: `wc:${webCartographerUrl}:${wcMerged.length}:${TOPS_MAP_LAST_UPDATE}`,
+            etag: `wc:${webCartographerUrl}:${wcMerged.length}:${wcLastModified ?? TOPS_MAP_LAST_UPDATE}`,
         };
     }
 

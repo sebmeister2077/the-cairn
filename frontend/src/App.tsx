@@ -15,6 +15,12 @@ import {
 import "./index.css";
 
 const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;
+// Persisted-cache snapshot lifetime. The WebCartographer overlay queries
+// opt into a 3-month per-query gcTime (see `useWebCartographerOverlays`)
+// so users can return weeks later and still see the last-known waypoints
+// while a fresh refetch is in flight; the global persister cap has to be
+// at least as large or those entries get discarded on hydration.
+const THREE_MONTHS = 90 * 24 * 60 * 60 * 1000;
 
 // HTTP statuses that indicate the request will keep failing the same way no
 // matter how many times we retry. Hammering them just spams the server and
@@ -90,7 +96,7 @@ export default function App() {
       persistOptions={{
         persister,
         hydrateOptions: queryClientConfig,
-        maxAge: TWO_WEEKS,
+        maxAge: THREE_MONTHS,
         // Bump this string whenever a persisted query payload's shape or
         // semantics changes in a way that would corrupt rendering if a
         // returning user hydrated from an old snapshot. The persister
