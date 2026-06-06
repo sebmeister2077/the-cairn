@@ -104,7 +104,15 @@ function normaliseBaseUrl(url: string): string {
 interface TileEntry {
   status: "loading" | "loaded" | "error";
   img?: HTMLImageElement;
+  /** `performance.now()` timestamp the image finished loading; used to
+   * fade tiles in over {@link TILE_FADE_MS} for a subtle progressive-
+   * reveal effect when the user pans into unexplored regions or crosses
+   * a zoom threshold. */
+  loadedAt?: number;
 }
+
+/** Duration of the per-tile fade-in animation, in ms. */
+const TILE_FADE_MS = 280;
 
 interface WebCartographerMapViewerProps {
   /** WC host (with or without trailing slash). Tiles served at
@@ -366,6 +374,7 @@ export function WebCartographerMapViewer({
         if (!cache.has(key)) return;
         entry.status = "loaded";
         entry.img = img;
+        entry.loadedAt = performance.now();
         scheduleRedraw();
       };
       img.onerror = () => {
@@ -720,12 +729,15 @@ export function WebCartographerMapViewer({
     // is filled by a coarser cached version while the higher-resolution
     // tiles stream in, instead of going blank. We do this BEFORE the main
     // pass so freshly-loaded current-level tiles paint over the fallback.
+    //
+    // We also record which tiles had fallback coverage so the main pass
+    // can skip the fade-in animation for them — crossfading a sharper
+    // image over an already-visible blurry version of the same area looks
+    // muddy. Fading should only happen for genuinely-blank tiles.
+    const tilesWithFallback = new Set<number>();
+    const fallbackKey = (cx: number, cy: number) => cx * 100000 + cy;
     for (let cy = cyMin; cy <= cyMax; cy++) {
       for (let cx = cxMin; cx <= cxMax; cx++) {
-        const currentKey = `${level}/${cx}/${cy}`;
-        const currentEntry = tileCacheRef.current.cache.get(currentKey);
-        if (currentEntry?.status === "loaded" && currentEntry.img) continue;
-
         const maxUp = Math.min(level, TILE_FALLBACK_PARENT_LEVELS);
         for (let up = 1; up <= maxUp; up++) {
           const pz = level - up;
@@ -756,6 +768,7 @@ export function WebCartographerMapViewer({
             tileSpanScreen,
             tileSpanScreen,
           );
+          tilesWithFallback.add(fallbackKey(cx, cy));
           break;
         }
       }
@@ -771,10 +784,7 @@ export function WebCartographerMapViewer({
       const childSpanScreen = childSpanBlocks * ppb;
       for (let cy = cyMin; cy <= cyMax; cy++) {
         for (let cx = cxMin; cx <= cxMax; cx++) {
-          const currentKey = `${level}/${cx}/${cy}`;
-          const currentEntry = tileCacheRef.current.cache.get(currentKey);
-          if (currentEntry?.status === "loaded" && currentEntry.img) continue;
-
+          let drewChild = false;
           for (let dy = 0; dy < 2; dy++) {
             for (let dx = 0; dx < 2; dx++) {
               const ccx = cx * 2 + dx;
@@ -787,8 +797,10 @@ export function WebCartographerMapViewer({
               const sx = (wx0 - cWx) * ppb + cw / 2;
               const sy = (wz0 - cWz) * ppb + ch / 2;
               ctx.drawImage(cEntry.img, sx, sy, childSpanScreen, childSpanScreen);
+              drewChild = true;
             }
           }
+          if (drewChild) tilesWithFallback.add(fallbackKey(cx, cy));
         }
       }
     }
@@ -797,17 +809,39 @@ export function WebCartographerMapViewer({
     // fetches are kicked off by `scheduleTileFetch` after a short idle so
     // a fast wheel-zoom across many levels doesn't fire 1000+ requests for
     // intermediate levels the user blows past.
+    //
+    // Tiles fade in over TILE_FADE_MS once they finish decoding so newly-
+    // arrived imagery dissolves smoothly into genuinely-empty regions.
+    // We skip the fade when a coarser/finer fallback was already drawn
+    // for the same area — crossfading a sharper version over an existing
+    // blurry version of the same imagery looks muddy; a hard swap reads
+    // as a crisp focus-in instead. While anything is mid-fade we request
+    // another animation frame so the alpha keeps progressing.
+    const now = performance.now();
+    let anyFading = false;
     for (let cy = cyMin; cy <= cyMax; cy++) {
       for (let cx = cxMin; cx <= cxMax; cx++) {
         const entry = tileCacheRef.current.cache.get(`${level}/${cx}/${cy}`);
         if (!entry || entry.status !== "loaded" || !entry.img) continue;
+        const hadFallback = tilesWithFallback.has(fallbackKey(cx, cy));
+        const age = entry.loadedAt != null ? now - entry.loadedAt : TILE_FADE_MS;
+        const alpha = hadFallback || age >= TILE_FADE_MS ? 1 : Math.max(0, age / TILE_FADE_MS);
+        if (alpha < 1) anyFading = true;
         const wx0 = startX + cx * tileSpanBlocks;
         const wz0 = startZ + cy * tileSpanBlocks;
         const sx = (wx0 - cWx) * ppb + cw / 2;
         const sy = (wz0 - cWz) * ppb + ch / 2;
-        ctx.drawImage(entry.img, sx, sy, tileSpanScreen, tileSpanScreen);
+        if (alpha < 1) {
+          ctx.globalAlpha = alpha;
+          ctx.drawImage(entry.img, sx, sy, tileSpanScreen, tileSpanScreen);
+          ctx.globalAlpha = 1;
+        } else {
+          ctx.drawImage(entry.img, sx, sy, tileSpanScreen, tileSpanScreen);
+        }
       }
     }
+
+    if (anyFading) scheduleRedraw();
 
     scheduleTileFetch();
 
