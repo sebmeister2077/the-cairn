@@ -1478,6 +1478,13 @@ export const en = {
                 sequence:
                     "Write your own repeating move sequence (e.g. 1U 2F 1R) — useful for ladders, spiral stairs, or any bespoke pattern.",
             },
+            modeBullets: {
+                bresenham: "shortest auto-balanced 3D path",
+                "vertical-first": "45° climb out of the start TL, then flat tunnel",
+                "vertical-last": "flat tunnel first, 45° climb into the end TL",
+                stepped: "your own per-axis step ratios (custom staircase)",
+                sequence: "your own repeating move sequence (1U 2F 1R, …)",
+            },
             steppedSection: "Step ratios",
             autoFit: "Auto-fit straight line",
             autoFitTitle: "Compute the cleanest integer ratio that aims at the destination",
@@ -1504,13 +1511,24 @@ export const en = {
             sequenceParsed: "Parsed:",
             paddingLabel: "Straight padding (blocks)",
             paddingHint:
-                "Keeps the tunnel straight along the forward axis for this many blocks at each TL before the sequence kicks in (and again before reaching the end TL).",
+                "Keeps the tunnel straight along the forward axis for this many blocks at each TL before the chosen pattern kicks in (and again before reaching the end TL). Applies to every pattern.",
             sectionStats: "Path stats",
-            statTotalBlocks: "Blocks dug",
+            unitBlocks: "blocks",
+            statTotalBlocks: "Blocks to dig",
+            statTotalBlocksHint:
+                "How many blocks you'd carve out following this exact path (TLs included). Equal to |Δx|+|Δy|+|Δz| for any face-adjacent tunnel — so it doesn't change between modes, only between TL pairs.",
             statStraightLine: "Straight-line distance",
-            statLengthRatio: "Length ratio",
-            statMaxDeviation: "Max deviation",
-            statRmsDeviation: "RMS deviation",
+            statStraightLineHint:
+                "Pure 3D diagonal between the two TLs (as the crow flies). Just for reference — you can't actually dig a diagonal block, every dug block changes one coordinate at a time.",
+            statTraverseTime: "Sprint time (vs. direct)",
+            statTraverseTimeHint:
+                "How long it takes to sprint through the finished tunnel (sprint ≈ {sprintingSpeed} b/s), and in parentheses how much longer that is than the {directTime} a straight-line flight would take. Like in a right-angle triangle, walking the two legs is always longer than the hypotenuse.",
+            statMaxDeviation: "Max sideways drift",
+            statMaxDeviationHint:
+                "Furthest a single block strays from the straight line between the TLs. Lower = straighter tunnel.",
+            statRmsDeviation: "Average sideways drift",
+            statRmsDeviationHint:
+                "Average distance the path keeps from the straight line (root-mean-square). The main number that actually changes when you switch modes.",
             sectionActions: "Actions",
             copyLink: "Copy share link",
             copyLinkCopied: "Copied!",

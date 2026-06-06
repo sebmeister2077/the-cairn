@@ -143,7 +143,12 @@ export function clampPattern(p: TunnelPattern): TunnelPattern {
 /** Generate the block-by-block path from `from` to `to` honoring the
  *  selected `mode`. Always includes both endpoints. Consecutive
  *  blocks are **face-adjacent** (exactly one of x/y/z differs by ±1),
- *  so the result is a single connected dig in voxel terms. */
+ *  so the result is a single connected dig in voxel terms.
+ *
+ *  `pattern.padding` is applied uniformly to every mode: the path
+ *  walks `padding` straight forward blocks out of each TL before/after
+ *  the mode-specific shape kicks in. Forward = the dominant horizontal
+ *  axis pointing from `from` toward `to`. */
 export function generateTunnelPath(
     from: Block3,
     to: Block3,
@@ -157,24 +162,58 @@ export function generateTunnelPath(
     }
     const c: Cursor = { x: from.x, y: from.y, z: from.z };
 
+    // Forward axis = dominant horizontal toward `to`. If both
+    // horizontals are zero we can't pad without overshooting.
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
+    const fwdDelta = to[fwdAxis] - from[fwdAxis];
+    const fwdSign = Math.sign(fwdDelta);
+    const padReq = Math.max(0, Math.min(MAX_PADDING, Math.trunc(pattern.padding ?? 0)));
+    // Cap padding so start + end stretches don't overlap and we have
+    // at least one block left for the mode walker.
+    const padding =
+        fwdSign === 0 ? 0 : Math.min(padReq, Math.max(0, Math.floor((Math.abs(fwdDelta) - 1) / 2)));
+
+    // Start padding: pure forward.
+    for (let i = 0; i < padding; i++) {
+        c[fwdAxis] += fwdSign;
+        if (!emit(path, c, maxBlocks)) return path;
+    }
+
+    // Inner target = `to` shifted backward along forward axis so the
+    // mode walker stops short and the tail padding lands on `to`.
+    const innerTo: Block3 = { x: to.x, y: to.y, z: to.z };
+    if (fwdAxis === "x") innerTo.x -= padding * fwdSign;
+    else innerTo.z -= padding * fwdSign;
+
     switch (mode) {
         case "vertical-first":
-            walkClimb45First(c, to, path, maxBlocks);
+            walkClimb45First(c, innerTo, path, maxBlocks);
             break;
         case "vertical-last":
-            walkClimb45Last(c, to, path, maxBlocks);
+            walkClimb45Last(c, innerTo, path, maxBlocks);
             break;
         case "stepped":
-            walkStepped(c, to, pattern, path, maxBlocks);
+            walkStepped(c, innerTo, pattern, path, maxBlocks);
             break;
         case "sequence":
-            walkSequence(c, to, pattern.sequence, pattern.padding, path, maxBlocks);
+            walkSequence(c, innerTo, pattern.sequence, path, maxBlocks);
             break;
         case "bresenham":
         default:
-            walkBresenhamAuto(c, to, path, maxBlocks);
+            walkBresenhamAuto(c, innerTo, path, maxBlocks);
             break;
     }
+
+    // End padding: pure forward to land on `to`. Defensive: only step
+    // while we're still short of the target so an unexpectedly-long
+    // walker can't push us past.
+    while (c[fwdAxis] !== to[fwdAxis]) {
+        c[fwdAxis] += fwdSign;
+        if (!emit(path, c, maxBlocks)) return path;
+    }
+
     return path;
 }
 
@@ -433,17 +472,16 @@ function directionResolver(from: Cursor, to: Block3) {
     };
 }
 
-/** Custom move-sequence walker. Pads with `padding` straight forward
- *  blocks at each end so the tunnel exits each TL straight, then loops
- *  the token list. Token moves are skipped when the matching axis is
+/** Custom move-sequence walker. Loops the token list until the cursor
+ *  reaches `to`. Token moves are skipped when the matching axis is
  *  already at target or moving in the requested direction would
  *  overshoot. Falls back to a clean drain (Y → forward → right) for
- *  any leftover after the sequence runs out of progress. */
+ *  any leftover after the sequence runs out of progress. Padding is
+ *  applied by the outer wrapper, not here. */
 function walkSequence(
     c: Cursor,
     to: Block3,
     sequence: string,
-    paddingRaw: number,
     path: Block3[],
     max: number,
 ): boolean {
@@ -452,32 +490,19 @@ function walkSequence(
         // No usable tokens — fall back to the safest mode.
         return walkBresenhamAuto(c, to, path, max);
     }
-    const padding = Math.max(0, Math.min(MAX_PADDING, Math.trunc(paddingRaw) || 0));
 
     const dx = to.x - c.x;
     const dz = to.z - c.z;
     const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
-    const fwdSign = Math.sign(fwdAxis === "x" ? dx : dz) || 1;
     const rightAxis: Axis = fwdAxis === "x" ? "z" : "x";
     const resolve = directionResolver(c, to);
 
-    // Start padding: pure forward, capped by available forward distance.
-    const fwdTotal = Math.abs(to[fwdAxis] - c[fwdAxis]);
-    const padBudget = Math.min(padding, fwdTotal);
-    for (let i = 0; i < padBudget; i++) {
-        c[fwdAxis] += fwdSign;
-        if (!emit(path, c, max)) return false;
-    }
-
-    // Pattern loop. Stop when the only thing left is the tail padding
-    // (forward axis), or no token in a full pass made progress.
+    // Pattern loop. Stop when fully aligned, or when no token in a
+    // full pass made progress (sequence direction conflicts target).
     const safetyCap = Math.max(1, max * 2);
     let iter = 0;
     while (iter++ < safetyCap) {
-        const fwdRem = to[fwdAxis] - c[fwdAxis];
-        const yRem = to.y - c.y;
-        const rightRem = to[rightAxis] - c[rightAxis];
-        if (Math.abs(fwdRem) <= padding && yRem === 0 && rightRem === 0) break;
+        if (c.x === to.x && c.y === to.y && c.z === to.z) break;
 
         let progress = false;
         for (const token of tokens) {
@@ -486,8 +511,6 @@ function walkSequence(
                 const rem = to[axis] - c[axis];
                 if (rem === 0) continue;
                 if (Math.sign(rem) !== sign) continue;
-                // Reserve the tail padding on the forward axis.
-                if (axis === fwdAxis && Math.abs(rem) <= padding) continue;
                 c[axis] += sign;
                 if (!emit(path, c, max)) return false;
                 progress = true;
@@ -496,9 +519,8 @@ function walkSequence(
         if (!progress) break;
     }
 
-    // Drain Y first (climb correction), then forward (tail padding),
-    // then right. Each `walkAxis` is single-axis ±1 so face-adjacency
-    // holds end-to-end.
+    // Drain Y first (climb correction), then forward, then right.
+    // Each `walkAxis` is single-axis ±1 so face-adjacency holds.
     if (!walkAxis(c, "y", to.y, path, max)) return false;
     if (!walkAxis(c, fwdAxis, to[fwdAxis], path, max)) return false;
     return walkAxis(c, rightAxis, to[rightAxis], path, max);
@@ -507,6 +529,13 @@ function walkSequence(
 export interface PathStats {
     totalBlocks: number;
     straightLineBlocks: number;
+    /** Approximate distance the player actually traverses through the
+     *  finished tunnel. Pure same-axis runs count at full length, but
+     *  alternating-axis runs (Bresenham/zigzag) collapse to their
+     *  Euclidean diagonal — modelling that the player can sprint
+     *  diagonally through a checker-pattern but has to walk both legs
+     *  of a hard L-shape. */
+    walkableLength: number;
     lengthRatio: number;
     maxDeviation: number;
     rmsDeviation: number;
@@ -529,9 +558,47 @@ function pointLineDistance(p: Block3, a: Block3, b: Block3): number {
     return crossMag / abMag;
 }
 
+function stepAxisOf(a: Block3, b: Block3): Axis {
+    if (b.x !== a.x) return "x";
+    if (b.y !== a.y) return "y";
+    return "z";
+}
+
+/** Walkable length: split the path into "alternating chunks" — within
+ *  each chunk no two consecutive steps share an axis once a switch has
+ *  occurred — and replace each chunk with its Euclidean start→end
+ *  distance. Same-axis runs stay at full length, perfect zigzags
+ *  collapse to the diagonal. */
+function computeWalkableLength(path: Block3[]): number {
+    if (path.length < 2) return 0;
+    let total = 0;
+    let chunkStartIdx = 0;
+    let lastAxis: Axis | null = null;
+    let switched = false;
+    for (let i = 1; i < path.length; i++) {
+        const ax = stepAxisOf(path[i - 1], path[i]);
+        const repeat = ax === lastAxis;
+        if (switched && repeat) {
+            const a = path[chunkStartIdx];
+            const b = path[i - 1];
+            total += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+            chunkStartIdx = i - 1;
+            switched = false;
+        } else if (lastAxis !== null && !repeat) {
+            switched = true;
+        }
+        lastAxis = ax;
+    }
+    const a = path[chunkStartIdx];
+    const b = path[path.length - 1];
+    total += Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z);
+    return total;
+}
+
 export function pathStats(path: Block3[], from: Block3, to: Block3): PathStats {
     const totalBlocks = Math.max(0, path.length - 1);
     const straightLineBlocks = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+    const walkableLength = computeWalkableLength(path);
     const lengthRatio = straightLineBlocks > 0 ? totalBlocks / straightLineBlocks : 0;
     let maxDev = 0;
     let sumSq = 0;
@@ -544,6 +611,7 @@ export function pathStats(path: Block3[], from: Block3, to: Block3): PathStats {
     return {
         totalBlocks,
         straightLineBlocks,
+        walkableLength,
         lengthRatio,
         maxDeviation: maxDev,
         rmsDeviation: rms,

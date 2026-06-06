@@ -43,9 +43,17 @@ export function PatternCard({
 
   return (
     <div className="space-y-3 rounded-md border bg-background p-3">
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <h2 className="text-sm font-semibold">{t("tools.tunnel.sectionPattern")}</h2>
-        <p className="text-xs text-muted-foreground">{t("tools.tunnel.patternHint")}</p>
+        <ul className="ml-3 list-disc space-y-0.5 text-xs text-muted-foreground marker:text-muted-foreground/70">
+          {TUNNEL_MODES.map((m) => (
+            <li key={m}>
+              <span className="font-medium text-foreground">{t(`tools.tunnel.modes.${m}`)}</span>
+              {": "}
+              {t(`tools.tunnel.modeBullets.${m}`)}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <fieldset className="space-y-1">
@@ -70,7 +78,9 @@ export function PatternCard({
             </label>
           ))}
         </div>
-        <p className="text-[10px] text-muted-foreground">{t(`tools.tunnel.modeHints.${mode}`)}</p>
+        <p className="text-[10px] h-6 text-muted-foreground">
+          {t(`tools.tunnel.modeHints.${mode}`)}
+        </p>
       </fieldset>
 
       {isStepped && (
@@ -206,20 +216,20 @@ export function PatternCard({
               </span>
             )}
           </div>
-
-          <div className="grid grid-cols-[1fr_auto] items-end gap-2">
-            <IntegerField
-              id="tunnel-padding"
-              label={t("tools.tunnel.paddingLabel")}
-              value={pattern.padding}
-              onChange={(padding) => onChange({ ...pattern, padding })}
-              min={0}
-              max={64}
-            />
-          </div>
-          <p className="text-[10px] text-muted-foreground">{t("tools.tunnel.paddingHint")}</p>
         </div>
       )}
+
+      <div className="space-y-1 border-t border-border/60 pt-2">
+        <IntegerField
+          id="tunnel-padding"
+          label={t("tools.tunnel.paddingLabel")}
+          value={pattern.padding}
+          onChange={(padding) => onChange({ ...pattern, padding })}
+          min={0}
+          max={64}
+        />
+        <p className="text-[10px] text-muted-foreground">{t("tools.tunnel.paddingHint")}</p>
+      </div>
     </div>
   );
 }
