@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   ArrowLeftRight,
   BookmarkPlus,
@@ -13,6 +13,7 @@ import {
   Loader2,
   MapPin,
   PawPrint,
+  Pickaxe,
   Plus,
   Send,
   Settings2,
@@ -39,6 +40,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/api";
 import { buildRouteShareUrl } from "@/lib/route-share";
+import { buildTunnelToolPath, type Block3 } from "@/lib/tunnel-share";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import type {
   RendezvousObjective,
@@ -79,6 +81,7 @@ import {
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { FALLBACK_WAYPOINT_Y } from "../RoutePlannerPanel";
 
 /** Per-walk-leg attestation controls accepted by {@link RouteSummary}. */
 interface ElkRouteSummaryProps {
@@ -105,6 +108,48 @@ const ELK_STATE_ROW_CLASSES: Record<WalkLegElkState, string> = {
 };
 
 type TranslateFn = ReturnType<typeof useTranslation>["t"];
+
+/** Tunnel endpoints derived from the TL legs immediately before and
+ *  after a walk leg sandwiched between two TLs. Y is taken from the
+ *  matching `segment.y1`/`y2` (orientation-aware), falling back to
+ *  `FALLBACK_WAYPOINT_Y` when the seeded depth is missing.
+ *
+ *  Returns null when the walk leg isn't between two TLs (e.g. the
+ *  trailing walk to the destination, or the leading walk from the
+ *  start) since we have no reliable Y in that case. */
+function tunnelEndpointsForWalk(
+  legs: ReadonlyArray<RouteLeg>,
+  i: number,
+): { from: Block3; to: Block3 } | null {
+  const leg = legs[i];
+  if (!leg || leg.kind !== "walk") return null;
+  const prev = legs[i - 1];
+  const next = legs[i + 1];
+  if (!prev || prev.kind !== "tl") return null;
+  if (!next || next.kind !== "tl") return null;
+
+  const prevSeg = prev.segment;
+  const nextSeg = next.segment;
+  // The walk *starts* at the prev TL's exit (= prev.to). Match against
+  // the segment's two endpoints so we read the right Y.
+  const fromY =
+    prevSeg.x1 === prev.to.x && prevSeg.z1 === prev.to.z
+      ? (prevSeg.y1 ?? FALLBACK_WAYPOINT_Y)
+      : prevSeg.x2 === prev.to.x && prevSeg.z2 === prev.to.z
+        ? (prevSeg.y2 ?? FALLBACK_WAYPOINT_Y)
+        : FALLBACK_WAYPOINT_Y;
+  // The walk *ends* at the next TL's entry (= next.from).
+  const toY =
+    nextSeg.x1 === next.from.x && nextSeg.z1 === next.from.z
+      ? (nextSeg.y1 ?? FALLBACK_WAYPOINT_Y)
+      : nextSeg.x2 === next.from.x && nextSeg.z2 === next.from.z
+        ? (nextSeg.y2 ?? FALLBACK_WAYPOINT_Y)
+        : FALLBACK_WAYPOINT_Y;
+  return {
+    from: { x: leg.from.x, y: fromY, z: leg.from.z },
+    to: { x: leg.to.x, y: toY, z: leg.to.z },
+  };
+}
 
 /** Format a leg row as a single readable line. */
 function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
@@ -163,6 +208,7 @@ export function RouteSummary({
   elk?: ElkRouteSummaryProps;
 }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
@@ -216,6 +262,10 @@ export function RouteSummary({
           // and a TL, or when surrounding TLs lack stable ids). Drives
           // the row colour AND whether the elk toggle button renders.
           const edgeRef = leg.kind === "walk" && elk ? walkLegEdgeRef(route.legs, i) : null;
+          // For walks sandwiched between two TLs, derive 3D endpoints
+          // (with seeded Y when available) for the tunnel-builder tool.
+          const tunnelEndpoints =
+            leg.kind === "walk" ? tunnelEndpointsForWalk(route.legs, i) : null;
           const elkState: WalkLegElkState =
             leg.kind === "walk" && elk
               ? classifyWalkLeg(
@@ -263,6 +313,20 @@ export function RouteSummary({
                   aria-label={t("routePlanner.elk.markElkWalkable")}
                 >
                   <PawPrint className="h-3 w-3" />
+                </Button>
+              )}
+              {tunnelEndpoints && (
+                <Button
+                  size="icon-sm"
+                  variant="ghost"
+                  className="h-6 w-6 shrink-0 text-current opacity-70 hover:opacity-100"
+                  onClick={() =>
+                    navigate(buildTunnelToolPath(tunnelEndpoints.from, tunnelEndpoints.to))
+                  }
+                  title={t("routePlanner.openTunnelTool")}
+                  aria-label={t("routePlanner.openTunnelToolAria")}
+                >
+                  <Pickaxe className="h-3 w-3" />
                 </Button>
               )}
               <Button

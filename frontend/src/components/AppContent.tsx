@@ -34,6 +34,7 @@ import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
 import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
+import { ToolsTunnelPage } from "@/pages/ToolsTunnelPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -518,6 +519,11 @@ export function AppContent() {
                 {t("app.header.about")}
               </Button>
             </NavLink>
+            <NavLink to="/tools">
+              <Button variant="ghost" size="sm" title={t("app.header.toolsTitle")}>
+                {t("app.header.tools")}
+              </Button>
+            </NavLink>
             <NavLink to="/account">
               <Button variant="ghost" size="sm" className="relative">
                 {t("app.header.account")}
@@ -842,6 +848,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Road workers page failed" resetKeys={[location.pathname]}>
                 <PublicRoadWorkersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/tools"
+            element={
+              <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
+                <ToolsTunnelPage />
               </ErrorBoundary>
             }
           />

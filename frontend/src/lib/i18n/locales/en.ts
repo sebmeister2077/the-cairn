@@ -38,6 +38,8 @@ export const en = {
             accountSetupRequired: "Account setup required",
             finishAccountSetup: "Finish setting up your account",
             apiKey: "API Key",
+            tools: "Tools",
+            toolsTitle: "Builder tools (tunnel previewer, etc.)",
         },
         nav: {
             categories: {
@@ -1125,6 +1127,8 @@ export const en = {
         showTlPairOnMap: "Show this TL pair on the map",
         showWalkSegmentOnMap: "Show this walk segment on the map",
         showOnMap: "Show on map",
+        openTunnelTool: "Plan this walk as a tunnel",
+        openTunnelToolAria: "Open tunnel & road builder for this walk",
         playerLabel: "Player {index}",
         meetingPoint: "Meeting point",
         pickedPoint: "Picked point",
@@ -1435,6 +1439,96 @@ export const en = {
             dismissAria: "Dismiss selected translocator",
             dismissTitle: "Dismiss",
             emptyValue: "-",
+        },
+    },
+    tools: {
+        tunnel: {
+            pageTitle: "Tunnel & road builder",
+            pageDescription:
+                "Plan an efficient tunnel between two points. Pick a tunnel pattern, or switch to custom step ratios for a regular staircase that's easier to dig than a true diagonal.",
+            invalidUrlTitle: "Missing or invalid coordinates",
+            invalidUrlBody:
+                "Open this page from a route planner walk leg, or pass `?from=x,y,z&to=x,y,z` in the URL.",
+            sectionEndpoints: "Endpoints",
+            from: "From (start TL)",
+            to: "To (end TL)",
+            x: "X (E/W)",
+            y: "Y (U/D)",
+            z: "Z (N/S)",
+            sectionPattern: "Tunnel pattern",
+            patternHint:
+                "Direct gives the shortest connected dig. Climb-first/last carves a 45° staircase next to one TL with a flat run in between. Custom lets you define the staircase ratio yourself, or write your own move sequence.",
+            modeLabel: "Pattern",
+            modes: {
+                bresenham: "Direct (auto)",
+                "vertical-first": "Climb first (45°)",
+                "vertical-last": "Climb last (45°)",
+                stepped: "Custom steps",
+                sequence: "Custom sequence",
+            },
+            modeHints: {
+                bresenham:
+                    "Auto-balanced 3D path that picks the shortest route between the endpoints.",
+                "vertical-first":
+                    "45° staircase out of the start TL (one block up paired with one block forward), then flat tunnel to the end.",
+                "vertical-last":
+                    "Flat tunnel from the start TL, then a 45° staircase that climbs into the end TL.",
+                stepped:
+                    "Manual per-axis ratio. Pick the primary axis that advances by 1 each cycle; the others shift when their accumulated ratio crosses 1.",
+                sequence:
+                    "Write your own repeating move sequence (e.g. 1U 2F 1R) — useful for ladders, spiral stairs, or any bespoke pattern.",
+            },
+            steppedSection: "Step ratios",
+            autoFit: "Auto-fit straight line",
+            autoFitTitle: "Compute the cleanest integer ratio that aims at the destination",
+            stepX: "E/W step (X)",
+            stepY: "U/D step (Y)",
+            stepZ: "N/S step (Z)",
+            primaryAxis: "Primary axis",
+            primaryAxisHint:
+                "The axis that advances by one block every step. The other two shift when their accumulated ratio crosses 1.",
+            sequenceLabel: "Move sequence",
+            sequencePlaceholder: "e.g. 1U 2F 1R",
+            sequenceHint:
+                "Each token is a single move; the whole list repeats until the end TL is reached. Counts are optional (default 1). Tokens are direction-relative — see legend below.",
+            sequenceLegendTitle: "Direction tokens",
+            sequenceLegend: {
+                F: "1 block forward (toward end TL)",
+                B: "1 block backward",
+                L: "1 block left of forward",
+                R: "1 block right of forward",
+                U: "1 block up",
+                D: "1 block down",
+            },
+            sequenceEmpty: "No valid tokens — falls back to Direct.",
+            sequenceParsed: "Parsed:",
+            paddingLabel: "Straight padding (blocks)",
+            paddingHint:
+                "Keeps the tunnel straight along the forward axis for this many blocks at each TL before the sequence kicks in (and again before reaching the end TL).",
+            sectionStats: "Path stats",
+            statTotalBlocks: "Blocks dug",
+            statStraightLine: "Straight-line distance",
+            statLengthRatio: "Length ratio",
+            statMaxDeviation: "Max deviation",
+            statRmsDeviation: "RMS deviation",
+            sectionActions: "Actions",
+            copyLink: "Copy share link",
+            copyLinkCopied: "Copied!",
+            reset: "Reset to original",
+            recenter: "Recenter view",
+            previewCapTitle: "Path is very long",
+            previewCapBody:
+                "Only the first {limit} blocks are rendered in 3D. Stats reflect the full path.",
+            compass: {
+                north: "N",
+                south: "S",
+                east: "E",
+                west: "W",
+                up: "Up",
+                down: "Down",
+            },
+            startTlMarker: "Start TL",
+            endTlMarker: "End TL",
         },
     },
 } as const;
