@@ -114,6 +114,7 @@ import {
   useWebCartographerLandmarks,
   useWebCartographerTranslocators,
 } from "@/hooks/useWebCartographerOverlays";
+import { notifyWCTileCacheVersion } from "@/lib/wcTileCache";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
@@ -432,6 +433,27 @@ export function TOPSMapViewPage() {
     usingWebCartographer,
   );
   const wcLandmarksQuery = useWebCartographerLandmarks(webCartographerUrl, usingWebCartographer);
+  // Notify the WC tile service worker whenever the upstream content
+  // version changes. We treat the combined `Last-Modified` of the
+  // landmarks + translocators exports as a proxy for "the WC server
+  // re-ran its world export" — when a re-export happens the rendered
+  // tile pyramid is regenerated alongside the geojson, so the cache
+  // should be wiped. Including `webCartographerUrl` ensures switching
+  // hosts also invalidates so we never serve cached tiles from a
+  // different world under the same key.
+  const wcTranslocatorsLastModified = wcTranslocatorsQuery.data?.lastModified ?? null;
+  const wcLandmarksLastModified = wcLandmarksQuery.data?.lastModified ?? null;
+  useEffect(() => {
+    if (!usingWebCartographer || !webCartographerUrl) return;
+    if (!wcTranslocatorsLastModified && !wcLandmarksLastModified) return;
+    const version = `${webCartographerUrl}|${wcTranslocatorsLastModified ?? ""}|${wcLandmarksLastModified ?? ""}`;
+    notifyWCTileCacheVersion(version);
+  }, [
+    usingWebCartographer,
+    webCartographerUrl,
+    wcTranslocatorsLastModified,
+    wcLandmarksLastModified,
+  ]);
   const backendLandmarks = landmarksQuery.data?.data;
   const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
     if (!usingWebCartographer) return backendLandmarks;

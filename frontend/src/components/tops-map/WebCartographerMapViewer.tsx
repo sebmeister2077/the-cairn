@@ -14,6 +14,7 @@ import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
+import { registerWCTileServiceWorker } from "@/lib/wcTileCache";
 import type {
   MapStats,
   RouteOverlay,
@@ -903,6 +904,16 @@ export function WebCartographerMapViewer({
         window.clearTimeout(fetchTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Register the WC tile service worker on mount. The SW transparently
+  // caches `<img>` requests for `*/data/world/{z}/{x}_{y}.png` in a
+  // persistent Cache Storage bucket so reloads (and even re-visits days
+  // later) skip the network for already-seen tiles. Cache invalidation
+  // is driven by the page via `notifyWCTileCacheVersion(...)` whenever
+  // the upstream landmarks/translocators `Last-Modified` advances.
+  useEffect(() => {
+    void registerWCTileServiceWorker();
   }, []);
 
   // ── Smooth camera animation ──────────────────────────────────────────────
