@@ -25,7 +25,11 @@ import { MyTranslocatorContributionsCard } from "@/components/account/MyTransloc
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
-import { setStarfieldEnabled, setShowAdvancedMapOptions, setWCTileCacheEnabled } from "@/store/slices/mapView";
+import {
+  setStarfieldEnabled,
+  setShowAdvancedMapOptions,
+  setWCTileCacheEnabled,
+} from "@/store/slices/mapView";
 
 export function AccountPage() {
   const { t } = useTranslation();
