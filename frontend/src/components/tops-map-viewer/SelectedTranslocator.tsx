@@ -95,16 +95,18 @@ export function SelectedTranslocatorHeader({
         {t("topsMap.selectedTranslocator.start")}{" "}
         <span className="font-medium text-foreground">
           X {selectedTranslocator.x1.toLocaleString()} Y{" "}
-          {selectedTranslocator.y1?.toLocaleString() ?? t("topsMap.selectedTranslocator.emptyValue")} Z{" "}
-          {selectedTranslocator.z1.toLocaleString()}
+          {selectedTranslocator.y1?.toLocaleString() ??
+            t("topsMap.selectedTranslocator.emptyValue")}{" "}
+          Z {selectedTranslocator.z1.toLocaleString()}
         </span>
       </span>
       <span>
         {t("topsMap.selectedTranslocator.end")}{" "}
         <span className="font-medium text-foreground">
           X {selectedTranslocator.x2.toLocaleString()} Y{" "}
-          {selectedTranslocator.y2?.toLocaleString() ?? t("topsMap.selectedTranslocator.emptyValue")} Z{" "}
-          {selectedTranslocator.z2.toLocaleString()}
+          {selectedTranslocator.y2?.toLocaleString() ??
+            t("topsMap.selectedTranslocator.emptyValue")}{" "}
+          Z {selectedTranslocator.z2.toLocaleString()}
         </span>
       </span>
       {meta?.addedBy && (

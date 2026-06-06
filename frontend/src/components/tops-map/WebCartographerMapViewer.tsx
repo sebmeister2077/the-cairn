@@ -60,11 +60,22 @@ const TILE_OVERSCAN_TILES = 1;
 
 /**
  * Maximum number of decoded tile bitmaps to keep alive at once. Each
- * 256×256 RGBA tile is ~256KB in memory, so 600 ≈ 150MB worst-case — a
+ * 256×256 RGBA tile is ~256KB in memory, so 1800 ≈ 450MB worst-case — a
  * comfortable budget for desktop browsers while still allowing fast
- * pan/zoom across the world.
+ * pan/zoom across multiple pyramid levels (each level visited adds another
+ * viewport's worth of tiles, and we want previous levels to survive so
+ * zooming back doesn't refetch).
  */
-const TILE_CACHE_LIMIT = 600;
+const TILE_CACHE_LIMIT = 1800;
+
+/**
+ * How many parent pyramid levels above the current one to consult when a
+ * tile at the current level hasn't loaded yet. Each step up halves the
+ * number of fallback tiles to scan, so this is cheap; it lets us paint
+ * *something* (a coarser ancestor) the moment the user crosses a zoom
+ * threshold, even if they jumped multiple levels at once.
+ */
+const TILE_FALLBACK_PARENT_LEVELS = 8;
 
 /**
  * Synthetic {@link MapStats} mirroring the WC world extent — all our overlays
@@ -386,6 +397,92 @@ export function WebCartographerMapViewer({
     [],
   );
 
+  /**
+   * Debounced loader for the current viewport. Called from the draw routine
+   * each frame, but it only kicks off network fetches once the view has
+   * been idle for ~120ms — so a fast wheel-zoom across many levels (or a
+   * fling-pan) doesn't fire requests for every intermediate state. Right
+   * before fetching, it cancels any still-in-flight request that's no
+   * longer relevant (different level, or outside the new viewport) so the
+   * browser's network queue isn't clogged with stale tiles.
+   *
+   * This is what OpenLayers (and therefore the upstream WebCartographer
+   * UI) does internally — its `TileQueue` only loads tiles after movement
+   * has settled, which is why their zoom-from-min-to-max produces ~120
+   * requests instead of 1000+.
+   */
+  const fetchTimeoutRef = useRef<number | null>(null);
+  const scheduleTileFetch = useCallback(() => {
+    if (fetchTimeoutRef.current != null) {
+      window.clearTimeout(fetchTimeoutRef.current);
+    }
+    fetchTimeoutRef.current = window.setTimeout(() => {
+      fetchTimeoutRef.current = null;
+      const container = containerRef.current;
+      if (!container) return;
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      if (cw <= 0 || ch <= 0) return;
+      const ppb = pixelsPerBlockRef.current;
+      const cWx = centerWorldXRef.current;
+      const cWz = centerWorldZRef.current;
+      const targetRes = 1 / Math.max(ppb, 1e-6);
+      let level = WC_MAX_ZOOM;
+      for (let z = 0; z <= WC_MAX_ZOOM; z++) {
+        if (WC_RESOLUTIONS[z] <= targetRes) {
+          level = z;
+          break;
+        }
+      }
+      const resolution = WC_RESOLUTIONS[level];
+      const tileSpanBlocks = WC_TILE_SIZE_PX * resolution;
+      const tilesPerSide = Math.ceil(WC_WORLD_BLOCKS / resolution / WC_TILE_SIZE_PX);
+      const halfWBlocks = cw / 2 / ppb;
+      const halfHBlocks = ch / 2 / ppb;
+      const startX = -WC_EXTENT_HALF_BLOCKS;
+      const startZ = -WC_EXTENT_HALF_BLOCKS;
+      const cxMin = Math.max(
+        0,
+        Math.floor((cWx - halfWBlocks - startX) / tileSpanBlocks) - TILE_OVERSCAN_TILES,
+      );
+      const cyMin = Math.max(
+        0,
+        Math.floor((cWz - halfHBlocks - startZ) / tileSpanBlocks) - TILE_OVERSCAN_TILES,
+      );
+      const cxMax = Math.min(
+        tilesPerSide - 1,
+        Math.floor((cWx + halfWBlocks - startX) / tileSpanBlocks) + TILE_OVERSCAN_TILES,
+      );
+      const cyMax = Math.min(
+        tilesPerSide - 1,
+        Math.floor((cWz + halfHBlocks - startZ) / tileSpanBlocks) + TILE_OVERSCAN_TILES,
+      );
+
+      // Cancel obsolete in-flight requests (different level or outside the
+      // settled viewport). Setting `img.src = ""` aborts the network fetch
+      // in all major browsers.
+      const cache = tileCacheRef.current.cache;
+      for (const [key, entry] of cache) {
+        if (entry.status !== "loading" || !entry.img) continue;
+        const slash1 = key.indexOf("/");
+        const slash2 = key.indexOf("/", slash1 + 1);
+        const kz = +key.slice(0, slash1);
+        const kx = +key.slice(slash1 + 1, slash2);
+        const ky = +key.slice(slash2 + 1);
+        const inViewport = kz === level && kx >= cxMin && kx <= cxMax && ky >= cyMin && ky <= cyMax;
+        if (inViewport) continue;
+        entry.img.src = "";
+        cache.delete(key);
+      }
+
+      for (let cy = cyMin; cy <= cyMax; cy++) {
+        for (let cx = cxMin; cx <= cxMax; cx++) {
+          requestTile(level, cx, cy);
+        }
+      }
+    }, 120);
+  }, [requestTile]);
+
   // ── Projection helpers (world ↔ image) ───────────────────────────────────
   const imgNatural = useMemo(() => {
     const resolution = WC_RESOLUTIONS[currentZoomLevel];
@@ -615,39 +712,95 @@ export function WebCartographerMapViewer({
     ctx.imageSmoothingEnabled = tileSpanScreen < WC_TILE_SIZE_PX * 1.2;
     ctx.imageSmoothingQuality = "low";
 
-    // Optional parent-level fill-in: try level `level - 1` first so freshly-
-    // discovered cells show *something* immediately while the higher-detail
-    // request streams in. Cheap because we only iterate visible parent tiles
-    // (at most 1/4 the count of `level`).
-    if (level > 0) {
-      const parentRes = WC_RESOLUTIONS[level - 1];
-      const parentSpanBlocks = WC_TILE_SIZE_PX * parentRes;
-      const parentSpanScreen = parentSpanBlocks * ppb;
-      const parentSide = Math.ceil(WC_WORLD_BLOCKS / parentRes / WC_TILE_SIZE_PX);
-      const pcxMin = Math.max(0, Math.floor((viewWMinX - startX) / parentSpanBlocks));
-      const pcyMin = Math.max(0, Math.floor((viewWMinZ - startZ) / parentSpanBlocks));
-      const pcxMax = Math.min(parentSide - 1, Math.floor((viewWMaxX - startX) / parentSpanBlocks));
-      const pcyMax = Math.min(parentSide - 1, Math.floor((viewWMaxZ - startZ) / parentSpanBlocks));
-      for (let cy = pcyMin; cy <= pcyMax; cy++) {
-        for (let cx = pcxMin; cx <= pcxMax; cx++) {
-          const key = `${level - 1}/${cx}/${cy}`;
-          const entry = tileCacheRef.current.cache.get(key);
-          if (!entry || entry.status !== "loaded" || !entry.img) continue;
-          const wx0 = startX + cx * parentSpanBlocks;
-          const wz0 = startZ + cy * parentSpanBlocks;
+    // Optional parent-level fill-in: for every visible tile at the current
+    // level that isn't loaded yet, walk up the pyramid and draw the
+    // appropriate sub-rect of the first cached ancestor we find. This is
+    // what OpenLayers (and therefore the upstream WebCartographer UI) does
+    // — it means the moment the user crosses a zoom threshold, the screen
+    // is filled by a coarser cached version while the higher-resolution
+    // tiles stream in, instead of going blank. We do this BEFORE the main
+    // pass so freshly-loaded current-level tiles paint over the fallback.
+    for (let cy = cyMin; cy <= cyMax; cy++) {
+      for (let cx = cxMin; cx <= cxMax; cx++) {
+        const currentKey = `${level}/${cx}/${cy}`;
+        const currentEntry = tileCacheRef.current.cache.get(currentKey);
+        if (currentEntry?.status === "loaded" && currentEntry.img) continue;
+
+        const maxUp = Math.min(level, TILE_FALLBACK_PARENT_LEVELS);
+        for (let up = 1; up <= maxUp; up++) {
+          const pz = level - up;
+          const factor = 1 << up;
+          const pcx = cx >> up;
+          const pcy = cy >> up;
+          const pKey = `${pz}/${pcx}/${pcy}`;
+          const pEntry = tileCacheRef.current.cache.get(pKey);
+          if (!pEntry || pEntry.status !== "loaded" || !pEntry.img) continue;
+
+          // Source sub-rect inside the ancestor that covers this tile.
+          const srcSize = WC_TILE_SIZE_PX / factor;
+          const srcX = (cx & (factor - 1)) * srcSize;
+          const srcY = (cy & (factor - 1)) * srcSize;
+
+          const wx0 = startX + cx * tileSpanBlocks;
+          const wz0 = startZ + cy * tileSpanBlocks;
           const sx = (wx0 - cWx) * ppb + cw / 2;
           const sy = (wz0 - cWz) * ppb + ch / 2;
-          ctx.drawImage(entry.img, sx, sy, parentSpanScreen, parentSpanScreen);
+          ctx.drawImage(
+            pEntry.img,
+            srcX,
+            srcY,
+            srcSize,
+            srcSize,
+            sx,
+            sy,
+            tileSpanScreen,
+            tileSpanScreen,
+          );
+          break;
         }
       }
     }
 
-    // Main level pass. Always requests every visible tile so progressive
-    // loading covers the viewport as fast as the network allows.
+    // Also try one level DOWN (children) — when zooming OUT we usually have
+    // higher-resolution tiles still cached from before. Drawing those at a
+    // smaller scale fills the viewport instantly while the new coarser
+    // tiles load. Cheap because there are only 4 child tiles per parent.
+    if (level < WC_MAX_ZOOM) {
+      const childRes = WC_RESOLUTIONS[level + 1];
+      const childSpanBlocks = WC_TILE_SIZE_PX * childRes;
+      const childSpanScreen = childSpanBlocks * ppb;
+      for (let cy = cyMin; cy <= cyMax; cy++) {
+        for (let cx = cxMin; cx <= cxMax; cx++) {
+          const currentKey = `${level}/${cx}/${cy}`;
+          const currentEntry = tileCacheRef.current.cache.get(currentKey);
+          if (currentEntry?.status === "loaded" && currentEntry.img) continue;
+
+          for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+              const ccx = cx * 2 + dx;
+              const ccy = cy * 2 + dy;
+              const cKey = `${level + 1}/${ccx}/${ccy}`;
+              const cEntry = tileCacheRef.current.cache.get(cKey);
+              if (!cEntry || cEntry.status !== "loaded" || !cEntry.img) continue;
+              const wx0 = startX + ccx * childSpanBlocks;
+              const wz0 = startZ + ccy * childSpanBlocks;
+              const sx = (wx0 - cWx) * ppb + cw / 2;
+              const sy = (wz0 - cWz) * ppb + ch / 2;
+              ctx.drawImage(cEntry.img, sx, sy, childSpanScreen, childSpanScreen);
+            }
+          }
+        }
+      }
+    }
+
+    // Main level pass. Reads from the cache only — actual `new Image()`
+    // fetches are kicked off by `scheduleTileFetch` after a short idle so
+    // a fast wheel-zoom across many levels doesn't fire 1000+ requests for
+    // intermediate levels the user blows past.
     for (let cy = cyMin; cy <= cyMax; cy++) {
       for (let cx = cxMin; cx <= cxMax; cx++) {
-        const entry = requestTile(level, cx, cy);
-        if (entry.status !== "loaded" || !entry.img) continue;
+        const entry = tileCacheRef.current.cache.get(`${level}/${cx}/${cy}`);
+        if (!entry || entry.status !== "loaded" || !entry.img) continue;
         const wx0 = startX + cx * tileSpanBlocks;
         const wz0 = startZ + cy * tileSpanBlocks;
         const sx = (wx0 - cWx) * ppb + cw / 2;
@@ -655,6 +808,8 @@ export function WebCartographerMapViewer({
         ctx.drawImage(entry.img, sx, sy, tileSpanScreen, tileSpanScreen);
       }
     }
+
+    scheduleTileFetch();
 
     // ── Overlays ──────────────────────────────────────────────────────────
     // Painted on a separate canvas stacked above the tile canvas (and
@@ -709,6 +864,9 @@ export function WebCartographerMapViewer({
     return () => {
       if (redrawHandleRef.current != null) {
         cancelAnimationFrame(redrawHandleRef.current);
+      }
+      if (fetchTimeoutRef.current != null) {
+        window.clearTimeout(fetchTimeoutRef.current);
       }
     };
   }, []);
