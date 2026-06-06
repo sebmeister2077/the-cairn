@@ -445,10 +445,44 @@ export function TOPSMapViewPage() {
     //     Backend seed Bases are skipped to avoid duplicating the WC
     //     export.
     const wc = wcLandmarksQuery.data?.data;
-    const fromBackend = (backendLandmarks ?? []).filter(
-      (p) =>
-        p.kind === "Terminus" || p.kind === "Server" || (p.kind === "Base" && p.origin === "user"),
-    );
+    // Backend user Bases that already appear in the WC export (the WC
+    // periodically re-ingests our contributions) would otherwise render
+    // as duplicate pins. Match by normalised label first, then accept
+    // anything within ~150 blocks of a same-named WC base — placement
+    // jitter between in-game submission and the WC re-export can easily
+    // exceed a small grid tolerance.
+    const DUPLICATE_RADIUS_BLOCKS = 200;
+    const DUPLICATE_RADIUS_SQ = DUPLICATE_RADIUS_BLOCKS * DUPLICATE_RADIUS_BLOCKS;
+    const normaliseLabel = (s: string | undefined) =>
+      (s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+    const wcBasesByLabel = new Map<string, Array<{ x: number; z: number }>>();
+    for (const p of wc ?? []) {
+      if (p.kind !== "Base") continue;
+      const label = normaliseLabel(p.label);
+      if (!label) continue;
+      const list = wcBasesByLabel.get(label) ?? [];
+      list.push({ x: p.x, z: p.z });
+      wcBasesByLabel.set(label, list);
+    }
+    const isDuplicateOfWc = (p: WorldPointMarker): boolean => {
+      const label = normaliseLabel(p.label);
+      if (!label) return false;
+      const candidates = wcBasesByLabel.get(label);
+      if (!candidates) return false;
+      for (const c of candidates) {
+        const dx = c.x - p.x;
+        const dz = c.z - p.z;
+        if (dx * dx + dz * dz <= DUPLICATE_RADIUS_SQ) return true;
+      }
+      return false;
+    };
+    const fromBackend = (backendLandmarks ?? []).filter((p) => {
+      if (p.kind === "Terminus" || p.kind === "Server") return true;
+      if (p.kind === "Base" && p.origin === "user") {
+        return !isDuplicateOfWc(p);
+      }
+      return false;
+    });
     const fromWc = (wc ?? []).filter(
       (p) =>
         p.kind === "Base" &&
@@ -933,11 +967,19 @@ export function TOPSMapViewPage() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
   }
 
-  const landmarkSuggestions = useMemo(
-    () =>
-      (allLandmarks ?? []).map((pt) => pt.label?.replace(/\s+/g, " ").trim() ?? "").filter(Boolean),
-    [allLandmarks],
-  );
+  const landmarkSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const pt of allLandmarks ?? []) {
+      const label = pt.label?.replace(/\s+/g, " ").trim() ?? "";
+      if (!label) continue;
+      const key = label.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(label);
+    }
+    return out;
+  }, [allLandmarks]);
 
   function handleLandmarkSelect(name: string) {
     setLandmarkSearch(name);
