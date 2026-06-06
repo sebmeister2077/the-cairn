@@ -67,7 +67,7 @@ export function TunnelScene({
       <directionalLight position={[80, 120, 60]} intensity={0.9} />
       <directionalLight position={[-60, 40, -80]} intensity={0.35} />
 
-      <Grid
+      {/* <Grid
         args={[200, 200]}
         position={[center[0], from.y - 0.5, center[2]]}
         cellSize={1}
@@ -79,7 +79,7 @@ export function TunnelScene({
         fadeDistance={Math.max(80, radius * 4)}
         fadeStrength={1}
         infiniteGrid
-      />
+      /> */}
 
       <TunnelBlocks blocks={visible} />
 
@@ -124,8 +124,12 @@ export function TunnelScene({
 
 function TunnelBlocks({ blocks }: { blocks: Block3[] }) {
   if (blocks.length === 0) return null;
+  // `limit` sizes drei's internal matrix buffer **once on mount** — if
+  // the path later grows past the initial `blocks.length`, the extra
+  // instances silently disappear. Pin to the hard cap so the buffer is
+  // always big enough; `range` still controls how many actually draw.
   return (
-    <Instances limit={blocks.length} range={blocks.length}>
+    <Instances limit={TUNNEL_MAX_BLOCKS} range={blocks.length}>
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
       {blocks.map((b, i) => (
