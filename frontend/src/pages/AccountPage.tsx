@@ -25,7 +25,7 @@ import { MyTranslocatorContributionsCard } from "@/components/account/MyTransloc
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
-import { setStarfieldEnabled, setShowAdvancedMapOptions } from "@/store/slices/mapView";
+import { setStarfieldEnabled, setShowAdvancedMapOptions, setWCTileCacheEnabled } from "@/store/slices/mapView";
 
 export function AccountPage() {
   const { t } = useTranslation();
@@ -34,6 +34,7 @@ export function AccountPage() {
   const dispatch = useAppDispatch();
   const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
   const showAdvancedMapOptions = useReduxState("mapView.showAdvancedMapOptions");
+  const wcTileCacheEnabled = useReduxState("mapView.wcTileCacheEnabled");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -345,6 +346,22 @@ export function AccountPage() {
               id="advanced-map-options-toggle"
               checked={showAdvancedMapOptions}
               onCheckedChange={(v) => dispatch(setShowAdvancedMapOptions(v))}
+            />
+          </div>
+          <Separator className="my-3" />
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <Label htmlFor="wc-tile-cache-toggle">
+                {t("account.appearance.wcTileCacheLabel")}
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                {t("account.appearance.wcTileCacheDescription")}
+              </p>
+            </div>
+            <Switch
+              id="wc-tile-cache-toggle"
+              checked={wcTileCacheEnabled}
+              onCheckedChange={(v) => dispatch(setWCTileCacheEnabled(v))}
             />
           </div>
           <Separator className="my-3" />

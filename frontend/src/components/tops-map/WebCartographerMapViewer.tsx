@@ -14,7 +14,7 @@ import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
-import { registerWCTileServiceWorker } from "@/lib/wcTileCache";
+import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
 import type {
   MapStats,
   RouteOverlay,
@@ -906,15 +906,24 @@ export function WebCartographerMapViewer({
     };
   }, []);
 
-  // Register the WC tile service worker on mount. The SW transparently
-  // caches `<img>` requests for `*/data/world/{z}/{x}_{y}.png` in a
-  // persistent Cache Storage bucket so reloads (and even re-visits days
-  // later) skip the network for already-seen tiles. Cache invalidation
-  // is driven by the page via `notifyWCTileCacheVersion(...)` whenever
-  // the upstream landmarks/translocators `Last-Modified` advances.
+  // Register the WC tile service worker on mount when the user has the
+  // preference enabled (Account → Appearance → "Cache map tiles"). The
+  // SW transparently caches `<img>` requests for
+  // `*/data/world/{z}/{x}_{y}.png` in a persistent Cache Storage bucket
+  // so reloads (and even re-visits days later) skip the network for
+  // already-seen tiles. Cache invalidation is driven by the page via
+  // `notifyWCTileCacheVersion(...)` whenever the upstream
+  // landmarks/translocators `Last-Modified` advances. When the user
+  // turns the toggle off we unregister + wipe so subsequent tile
+  // requests go straight to the network.
+  const wcTileCacheEnabled = useReduxState("mapView.wcTileCacheEnabled");
   useEffect(() => {
-    void registerWCTileServiceWorker();
-  }, []);
+    if (wcTileCacheEnabled) {
+      void registerWCTileServiceWorker();
+    } else {
+      void disableWCTileCache();
+    }
+  }, [wcTileCacheEnabled]);
 
   // ── Smooth camera animation ──────────────────────────────────────────────
   // Used by focusPoint / Reset / Centre / search-landmark navigation so the

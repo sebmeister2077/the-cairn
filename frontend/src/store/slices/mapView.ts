@@ -107,6 +107,15 @@ export interface MapViewState {
      */
     starfieldEnabled: boolean;
     /**
+     * When true, the WebCartographer map viewer registers a service
+     * worker that persistently caches tile PNGs in Cache Storage across
+     * reloads. Cache invalidation is driven by the upstream
+     * landmarks/translocators `Last-Modified`. Default ON — the user can
+     * disable it from Account → Appearance if they'd rather always pull
+     * fresh tiles (or are debugging the network layer).
+     */
+    wcTileCacheEnabled: boolean;
+    /**
      * User's preferred "home" location on the TOPS map. When set, the page
      * uses this as the initial viewport on first paint (instead of spawn
      * 0,0) and exposes a "Jump home" button. Persisted via the root
@@ -177,6 +186,7 @@ export function loadInitialMapViewState(): MapViewState {
         showAdvancedMapOptions: false,
         isFullscreen: false,
         starfieldEnabled: true,
+        wcTileCacheEnabled: true,
         favoriteStartingPosition: null,
         traderStyle: DEFAULT_TRADER_STYLE,
         tlStyle: DEFAULT_TL_STYLE,
@@ -270,6 +280,9 @@ export const mapViewSlice = createSlice({
         setStarfieldEnabled(state, action: PayloadAction<boolean>) {
             state.starfieldEnabled = action.payload;
         },
+        setWCTileCacheEnabled(state, action: PayloadAction<boolean>) {
+            state.wcTileCacheEnabled = action.payload;
+        },
         setFavoriteStartingPosition(
             state,
             action: PayloadAction<{ x: number; z: number; zoom?: number } | null>,
@@ -334,6 +347,7 @@ export const {
     setShowAdvancedMapOptions,
     setShowFullscreen,
     setStarfieldEnabled,
+    setWCTileCacheEnabled,
     setFavoriteStartingPosition,
     clearFavoriteStartingPosition,
     setTraderStyle,

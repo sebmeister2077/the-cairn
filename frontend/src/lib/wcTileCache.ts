@@ -9,6 +9,8 @@
 // URL path and ignores anything that doesn't match the tile pattern.
 
 const SW_PATH = "/wc-tile-sw.js";
+/** Must stay in sync with `CACHE_NAME` inside `public/wc-tile-sw.js`. */
+const CACHE_NAME = "wc-tiles-v1";
 
 let registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
@@ -68,4 +70,39 @@ export function notifyWCTileCacheVersion(version: string): void {
  */
 export function invalidateWCTileCache(): void {
     void postToActiveSW({ type: "WC_INVALIDATE_TILES" });
+}
+
+/**
+ * Unregister the WC tile service worker and drop its cache. Called when
+ * the user disables persistent tile caching from Account → Appearance so
+ * subsequent tile requests go straight to the network (and the browser's
+ * normal HTTP cache, which only honours WC's `max-age=600`). Safe to
+ * call when no SW is registered.
+ */
+export async function disableWCTileCache(): Promise<void> {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return;
+    // Reset our memoised registration promise so a future
+    // `registerWCTileServiceWorker()` (user re-enables the toggle) starts
+    // fresh instead of returning the now-defunct registration.
+    registrationPromise = null;
+    try {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(
+            regs
+                .filter((r) => r.active?.scriptURL.endsWith(SW_PATH))
+                .map((r) => r.unregister()),
+        );
+    } catch (err) {
+        console.warn("WC tile service worker unregister failed", err);
+    }
+    // `caches` is available in window scope too, so we can wipe the
+    // bucket directly without having to message a worker that may have
+    // just been unregistered.
+    if (typeof caches !== "undefined") {
+        try {
+            await caches.delete(CACHE_NAME);
+        } catch (err) {
+            console.warn("WC tile cache delete failed", err);
+        }
+    }
 }

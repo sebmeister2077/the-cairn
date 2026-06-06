@@ -443,12 +443,15 @@ export function TOPSMapViewPage() {
   // different world under the same key.
   const wcTranslocatorsLastModified = wcTranslocatorsQuery.data?.lastModified ?? null;
   const wcLandmarksLastModified = wcLandmarksQuery.data?.lastModified ?? null;
+  const wcTileCacheEnabled = useReduxState("mapView.wcTileCacheEnabled");
   useEffect(() => {
+    if (!wcTileCacheEnabled) return;
     if (!usingWebCartographer || !webCartographerUrl) return;
     if (!wcTranslocatorsLastModified && !wcLandmarksLastModified) return;
     const version = `${webCartographerUrl}|${wcTranslocatorsLastModified ?? ""}|${wcLandmarksLastModified ?? ""}`;
     notifyWCTileCacheVersion(version);
   }, [
+    wcTileCacheEnabled,
     usingWebCartographer,
     webCartographerUrl,
     wcTranslocatorsLastModified,
