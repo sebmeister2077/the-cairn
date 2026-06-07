@@ -15,7 +15,7 @@ export function BlockEditor({ idPrefix, label, value, onChange }: BlockEditorPro
   const { t } = useTranslation();
   return (
     <div className="space-y-1">
-      <div className="text-xs font-medium">{label}</div>
+      {label ? <div className="text-xs font-medium">{label}</div> : null}
       <div className="grid grid-cols-3 gap-2">
         <IntegerField
           id={`${idPrefix}-x`}

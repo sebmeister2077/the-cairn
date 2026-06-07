@@ -106,9 +106,14 @@ function dominantAxis(dx: number, dy: number, dz: number): Axis {
     const ax = Math.abs(dx);
     const ay = Math.abs(dy);
     const az = Math.abs(dz);
-    if (ax >= ay && ax >= az) return "x";
-    if (az >= ay) return "z";
-    return "y";
+    // Never return "y" when there's any horizontal delta: a Y-primary
+    // walker emits 2+ consecutive vertical steps at the same (x,z),
+    // which produces unwalkable ladders in-game. Falling back to the
+    // dominant horizontal axis keeps the climb interleaved with
+    // forward steps even when |dy| > |dx|+|dz|.
+    if (ax === 0 && az === 0) return ay > 0 ? "y" : "x";
+    if (ax >= az) return "x";
+    return "z";
 }
 
 /** Compute a clean integer pattern from `from`/`to`: pick the dominant
@@ -474,21 +479,81 @@ function walkBresenhamHorizontal(c: Cursor, to: Block3, path: Block3[], max: num
     return walkBresenhamCore(c, { x: to.x, y: c.y, z: to.z }, primary, rates, path, max);
 }
 
-/** Auto 3D supercover line — primary = dominant axis; lateral rates
- *  derived from the absolute deltas. */
+/** Auto 3D supercover line. Designed so that whenever it's *physically
+ *  possible* (|dy| ≤ |dx|+|dz|), the resulting path never emits two
+ *  consecutive Y steps at the same (x, z) — i.e. no unwalkable
+ *  2-block-climb ladders.
+ *
+ *  Strategy: treat the horizontal Manhattan |dx|+|dz| as the primary
+ *  step budget; emit a horizontal step every iteration (Bresenham X vs
+ *  Z by dominance) and pair each one with at most one Y step at rate
+ *  `min(1, |dy|/H)`. Any Y left over (only when |dy| > H, which is
+ *  unwalkable anyway) drains as a final straight climb. */
 function walkBresenhamAuto(c: Cursor, to: Block3, path: Block3[], max: number): boolean {
-    const dx = Math.abs(to.x - c.x);
-    const dy = Math.abs(to.y - c.y);
-    const dz = Math.abs(to.z - c.z);
-    if (dx === 0 && dy === 0 && dz === 0) return true;
-    const primary: Axis = dx >= dy && dx >= dz ? "x" : dz >= dy ? "z" : "y";
-    const primaryD = primary === "x" ? dx : primary === "y" ? dy : dz;
-    const rates: Record<Axis, number> = {
-        x: primary === "x" ? 0 : dx / Math.max(1, primaryD),
-        y: primary === "y" ? 0 : dy / Math.max(1, primaryD),
-        z: primary === "z" ? 0 : dz / Math.max(1, primaryD),
+    const dxA = Math.abs(to.x - c.x);
+    const dyA = Math.abs(to.y - c.y);
+    const dzA = Math.abs(to.z - c.z);
+    if (dxA + dyA + dzA === 0) return true;
+    const sgnX = Math.sign(to.x - c.x);
+    const sgnY = Math.sign(to.y - c.y);
+    const sgnZ = Math.sign(to.z - c.z);
+    const H = dxA + dzA;
+    if (H === 0) {
+        while (c.y !== to.y) {
+            c.y += sgnY;
+            if (!emit(path, c, max)) return false;
+        }
+        return true;
+    }
+    const hPrim: Axis = dxA >= dzA ? "x" : "z";
+    const hPrimD = hPrim === "x" ? dxA : dzA;
+    const hSec: Axis = hPrim === "x" ? "z" : "x";
+    const hSecD = hPrim === "x" ? dzA : dxA;
+    const sgnPrim = hPrim === "x" ? sgnX : sgnZ;
+    const sgnSec = hSec === "x" ? sgnX : sgnZ;
+    const secRate = hSecD / Math.max(1, hPrimD);
+    const yRate = Math.min(1, dyA / Math.max(1, H));
+
+    let accSec = 0;
+    let accY = 0;
+    let yLeft = dyA;
+    let hPrimEmitted = 0;
+    let hSecEmitted = 0;
+
+    const tryEmitY = (): boolean => {
+        if (accY >= 1 && yLeft > 0) {
+            c.y += sgnY;
+            yLeft -= 1;
+            if (!emit(path, c, max)) return false;
+            accY -= 1;
+        }
+        return true;
     };
-    return walkBresenhamCore(c, to, primary, rates, path, max);
+
+    while (hPrimEmitted < hPrimD || hSecEmitted < hSecD) {
+        if (hPrimEmitted < hPrimD) {
+            c[hPrim] += sgnPrim;
+            hPrimEmitted += 1;
+            if (!emit(path, c, max)) return false;
+            accY += yRate;
+            if (!tryEmitY()) return false;
+        }
+        accSec += secRate;
+        while (accSec >= 1 && hSecEmitted < hSecD) {
+            c[hSec] += sgnSec;
+            hSecEmitted += 1;
+            if (!emit(path, c, max)) return false;
+            accSec -= 1;
+            accY += yRate;
+            if (!tryEmitY()) return false;
+        }
+    }
+    while (yLeft > 0) {
+        c.y += sgnY;
+        yLeft -= 1;
+        if (!emit(path, c, max)) return false;
+    }
+    return true;
 }
 
 /** User-tunable stepped pattern. Falls back to the dominant axis if
@@ -999,7 +1064,6 @@ export function pathToDirectionTokens(
     const dz = to.z - from.z;
     const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
     const fwdSign = Math.sign(fwdAxis === "x" ? dx : dz) || 1;
-    const rightAxis: Axis = fwdAxis === "x" ? "z" : "x";
     const rightSign = fwdAxis === "x" ? fwdSign : -fwdSign;
 
     const moveToDir = (axis: Axis, sign: number): SequenceDir => {

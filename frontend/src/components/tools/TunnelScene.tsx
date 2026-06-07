@@ -1,15 +1,11 @@
-// The actual three.js scene contents: instanced tunnel blocks, two
-// emissive TL endpoint markers, a dashed straight-line reference, a
-// floor grid, and a small axis gizmo.
-//
-// Kept separate from `TunnelViewer3D` so the controls/camera plumbing
-// stays terse.
+// Three.js scene: per-segment instanced tunnel blocks (color-tinted
+// per branch), one emissive marker per endpoint + an optional junction
+// marker, dashed reference line per segment, and a small axis gizmo.
 
 import { useEffect, useMemo, useRef } from "react";
 import {
   GizmoHelper,
   GizmoViewport,
-  Grid,
   Html,
   Instance,
   Instances,
@@ -19,47 +15,107 @@ import {
 import { useThree } from "@react-three/fiber";
 import { Color, Vector3 } from "three";
 
-import type { Block3 } from "@/lib/tunnel-share";
-import { TUNNEL_MAX_BLOCKS, type PathBlock } from "@/lib/tunnel-pattern";
 import { useTranslation } from "@/lib/i18n";
+import { TUNNEL_MAX_BLOCKS, type PathBlock } from "@/lib/tunnel-pattern";
+import { HUB_ID, type EdgeKey, type MultiSegment, type TLEndpoint } from "@/lib/tunnel-multi";
+import {
+  JUNCTION_COLOR,
+  SEGMENT_BLOCK_FALLBACK,
+  endpointColor,
+} from "@/lib/tunnel-colors";
+import type { Block3 } from "@/lib/tunnel-share";
 
 import { CompassTracker, type CompassRefs } from "./CompassOverlay";
 
 interface TunnelSceneProps {
-  path: PathBlock[];
-  from: Block3;
-  to: Block3;
-  /** Geometric centre of the path bounds; the camera frames around this. */
+  segments: MultiSegment[];
+  endpoints: TLEndpoint[];
+  junction: Block3 | null;
+  /** Highlighted segment (matches PatternCard selection). */
+  selectedEdge: EdgeKey | null;
+  /** Geometric centre of the unioned bounds; the camera frames around this. */
   center: [number, number, number];
-  /** Half-extent of the path bounds; used to choose orbit distance. */
+  /** Half-extent of the unioned bounds; used to choose orbit distance. */
   radius: number;
   compassRefs: CompassRefs;
   /** Bumped whenever the user wants the camera reset to the auto-frame. */
   recenterToken: number;
 }
 
-const BLOCK_COLOR = "#7c7c7c";
-const TL_FROM_COLOR = "#3b82f6";
-const TL_TO_COLOR = "#f97316";
+/** Tint the blocks of a hub branch with the owning endpoint's color;
+ *  for pair / tour segments use a neutral grey so colours don't clash. */
+function segmentTint(seg: MultiSegment, idxByEpId: Map<string, number>): string {
+  if (seg.toId === HUB_ID) {
+    const idx = idxByEpId.get(seg.fromId);
+    return idx !== undefined ? endpointColor(idx) : SEGMENT_BLOCK_FALLBACK;
+  }
+  return SEGMENT_BLOCK_FALLBACK;
+}
 
-/** Cap visible voxels so a 50k-block path doesn't melt the GPU; stats
- *  still reflect the full path. */
-function clampPath(path: PathBlock[]): PathBlock[] {
-  if (path.length <= TUNNEL_MAX_BLOCKS) return path;
-  return path.slice(0, TUNNEL_MAX_BLOCKS);
+/** Brighten + slightly desaturate a hex color for the selected-segment
+ *  highlight. Operates in HSL so the original hue is preserved. */
+function brighten(hex: string, amount = 0.25): string {
+  const m = hex.replace("#", "");
+  const r = parseInt(m.slice(0, 2), 16) / 255;
+  const g = parseInt(m.slice(2, 4), 16) / 255;
+  const b = parseInt(m.slice(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  const nl = Math.min(1, l + amount);
+  const factor = nl / Math.max(0.0001, l);
+  const nr = Math.min(255, Math.round(r * 255 * factor));
+  const ng = Math.min(255, Math.round(g * 255 * factor));
+  const nb = Math.min(255, Math.round(b * 255 * factor));
+  return `#${nr.toString(16).padStart(2, "0")}${ng.toString(16).padStart(2, "0")}${nb.toString(16).padStart(2, "0")}`;
+}
+
+/** Cap merged voxels across all segments so a 50k-block network
+ *  doesn't melt the GPU. Earlier segments get priority; the rest are
+ *  silently truncated. Stats reflect the full path lengths. */
+function capSegmentBlocks(segments: MultiSegment[]): {
+  perSegment: PathBlock[][];
+  truncated: boolean;
+} {
+  let budget = TUNNEL_MAX_BLOCKS;
+  const out: PathBlock[][] = [];
+  let truncated = false;
+  for (const seg of segments) {
+    if (budget <= 0) {
+      out.push([]);
+      truncated = true;
+      continue;
+    }
+    if (seg.path.length <= budget) {
+      out.push(seg.path);
+      budget -= seg.path.length;
+    } else {
+      out.push(seg.path.slice(0, budget));
+      truncated = true;
+      budget = 0;
+    }
+  }
+  return { perSegment: out, truncated };
 }
 
 export function TunnelScene({
-  path,
-  from,
-  to,
+  segments,
+  endpoints,
+  junction,
+  selectedEdge,
   center,
   radius,
   compassRefs,
   recenterToken,
 }: TunnelSceneProps) {
   const { t } = useTranslation();
-  const visible = useMemo(() => clampPath(path), [path]);
+  const idxByEpId = useMemo(() => {
+    const m = new Map<string, number>();
+    endpoints.forEach((e, i) => m.set(e.id, i));
+    return m;
+  }, [endpoints]);
+
+  const { perSegment } = useMemo(() => capSegmentBlocks(segments), [segments]);
 
   return (
     <>
@@ -67,48 +123,59 @@ export function TunnelScene({
       <directionalLight position={[80, 120, 60]} intensity={0.9} />
       <directionalLight position={[-60, 40, -80]} intensity={0.35} />
 
-      {/* <Grid
-        args={[200, 200]}
-        position={[center[0], from.y - 0.5, center[2]]}
-        cellSize={1}
-        cellThickness={0.5}
-        cellColor="#3a3a3a"
-        sectionSize={16}
-        sectionThickness={1}
-        sectionColor="#5a5a5a"
-        fadeDistance={Math.max(80, radius * 4)}
-        fadeStrength={1}
-        infiniteGrid
-      /> */}
+      {segments.map((seg, i) => {
+        const baseColor = segmentTint(seg, idxByEpId);
+        const isSelected = selectedEdge === seg.key;
+        return (
+          <SegmentBlocks
+            key={seg.key}
+            blocks={perSegment[i] ?? []}
+            color={isSelected ? brighten(baseColor, 0.28) : baseColor}
+            emissive={isSelected ? 0.35 : 0}
+          />
+        );
+      })}
 
-      <TunnelBlocks blocks={visible} />
+      {endpoints.map((ep, i) => (
+        <EndpointMarker
+          key={ep.id}
+          position={[ep.coord.x + 0.5, ep.coord.y + 0.5, ep.coord.z + 0.5]}
+          color={endpointColor(i)}
+          label={ep.label?.trim() || t("tools.tunnel.endpointDefaultLabel", { index: i + 1 })}
+          coords={ep.coord}
+          size={1.05}
+        />
+      ))}
 
-      <EndpointMarker
-        position={[from.x + 0.5, from.y + 0.5, from.z + 0.5]}
-        color={TL_FROM_COLOR}
-        label={t("tools.tunnel.startTlMarker")}
-        coords={from}
-      />
-      <EndpointMarker
-        position={[to.x + 0.5, to.y + 0.5, to.z + 0.5]}
-        color={TL_TO_COLOR}
-        label={t("tools.tunnel.endTlMarker")}
-        coords={to}
-      />
+      {junction && (
+        <EndpointMarker
+          position={[junction.x + 0.5, junction.y + 0.5, junction.z + 0.5]}
+          color={JUNCTION_COLOR}
+          label={t("tools.tunnel.hubMarker")}
+          coords={junction}
+          size={1.25}
+        />
+      )}
 
-      <Line
-        points={[
-          [from.x + 0.5, from.y + 0.5, from.z + 0.5],
-          [to.x + 0.5, to.y + 0.5, to.z + 0.5],
-        ]}
-        color="#ffffff"
-        lineWidth={1}
-        dashed
-        dashSize={0.6}
-        gapSize={0.4}
-        transparent
-        opacity={0.55}
-      />
+      {segments.map((seg) => {
+        const isSelected = selectedEdge === seg.key;
+        return (
+          <Line
+            key={`ref-${seg.key}`}
+            points={[
+              [seg.fromCoord.x + 0.5, seg.fromCoord.y + 0.5, seg.fromCoord.z + 0.5],
+              [seg.toCoord.x + 0.5, seg.toCoord.y + 0.5, seg.toCoord.z + 0.5],
+            ]}
+            color={isSelected ? "#fde68a" : "#ffffff"}
+            lineWidth={isSelected ? 2.5 : 1}
+            dashed={!isSelected}
+            dashSize={0.6}
+            gapSize={0.4}
+            transparent
+            opacity={isSelected ? 0.9 : 0.4}
+          />
+        );
+      })}
 
       <CompassTracker refs={compassRefs} />
       <CameraFramer center={center} radius={radius} token={recenterToken} />
@@ -122,10 +189,17 @@ export function TunnelScene({
   );
 }
 
-function TunnelBlocks({ blocks }: { blocks: PathBlock[] }) {
+function SegmentBlocks({
+  blocks,
+  color,
+  emissive = 0,
+}: {
+  blocks: PathBlock[];
+  color: string;
+  emissive?: number;
+}) {
+  const blockColor = useMemo(() => new Color(color), [color]);
   if (blocks.length === 0) return null;
-  // Split full blocks vs. slabs so each group can use a single shared
-  // geometry — `Instances` doesn't allow per-instance scale.
   const fullBlocks: PathBlock[] = [];
   const slabBlocks: PathBlock[] = [];
   for (const b of blocks) {
@@ -135,13 +209,15 @@ function TunnelBlocks({ blocks }: { blocks: PathBlock[] }) {
   return (
     <>
       {fullBlocks.length > 0 && (
-        // `limit` sizes drei's internal matrix buffer **once on mount** — if
-        // the path later grows past the initial `blocks.length`, the extra
-        // instances silently disappear. Pin to the hard cap so the buffer is
-        // always big enough; `range` still controls how many actually draw.
         <Instances limit={TUNNEL_MAX_BLOCKS} range={fullBlocks.length}>
           <boxGeometry args={[1, 1, 1]} />
-          <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
+          <meshStandardMaterial
+            color={blockColor}
+            emissive={blockColor}
+            emissiveIntensity={emissive}
+            roughness={0.85}
+            metalness={0.05}
+          />
           {fullBlocks.map((b, i) => (
             <Instance key={i} position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]} />
           ))}
@@ -150,7 +226,13 @@ function TunnelBlocks({ blocks }: { blocks: PathBlock[] }) {
       {slabBlocks.length > 0 && (
         <Instances limit={TUNNEL_MAX_BLOCKS} range={slabBlocks.length}>
           <boxGeometry args={[1, 0.5, 1]} />
-          <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
+          <meshStandardMaterial
+            color={blockColor}
+            emissive={blockColor}
+            emissiveIntensity={emissive}
+            roughness={0.85}
+            metalness={0.05}
+          />
           {slabBlocks.map((b, i) => (
             <Instance
               key={i}
@@ -168,16 +250,18 @@ function EndpointMarker({
   color,
   label,
   coords,
+  size,
 }: {
   position: [number, number, number];
   color: string;
   label: string;
   coords: Block3;
+  size: number;
 }) {
   return (
     <group position={position}>
       <mesh>
-        <boxGeometry args={[1.05, 1.05, 1.05]} />
+        <boxGeometry args={[size, size, size]} />
         <meshStandardMaterial
           color={color}
           emissive={color}
@@ -197,13 +281,6 @@ function EndpointMarker({
   );
 }
 
-/** Snap the camera to a sensible orbit distance whenever the
- *  recenterToken changes (initial mount, "Recenter" click, or path
- *  bounds change beyond a threshold). Also re-frames the first time
- *  OrbitControls becomes available — without that the initial frame
- *  fires before controls mount, OrbitControls then initialises its
- *  `target` to (0,0,0), and the camera ends up looking at the origin
- *  instead of the path. */
 function CameraFramer({
   center,
   radius,

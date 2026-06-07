@@ -1,11 +1,18 @@
-// Read-only stats panel for the current path.
+// Aggregate + per-segment stats panel for the multi-tunnel network.
+// The aggregate row shows totals across every rendered branch; the
+// disclosure expands a per-segment table.
+
+import { useMemo, useState } from "react";
 
 import { useTranslation } from "@/lib/i18n";
-import type { PathStats } from "@/lib/tunnel-pattern";
+import {
+  HUB_ID,
+  type MultiPathResult,
+  type MultiPathStats,
+  type MultiSegment,
+  type TLEndpoint,
+} from "@/lib/tunnel-multi";
 
-// Sprint speed in Vintage Story (blocks per second). Used to convert
-// block counts into a wall-clock estimate so the "tunnel vs. flying
-// straight" cost is concrete instead of abstract.
 const SPRINT_BLOCKS_PER_SEC = 7;
 
 function formatDuration(seconds: number): string {
@@ -40,15 +47,35 @@ function StatRow({
   );
 }
 
-export function StatsCard({ stats }: { stats: PathStats }) {
+interface StatsCardProps {
+  stats: MultiPathStats;
+  result: MultiPathResult;
+  endpoints: TLEndpoint[];
+}
+
+function segmentLabel(seg: MultiSegment, byId: Map<string, TLEndpoint>, hubLabel: string): string {
+  const aLabel = byId.get(seg.fromId)?.label?.trim() || seg.fromId;
+  const bLabel = seg.toId === HUB_ID ? hubLabel : byId.get(seg.toId)?.label?.trim() || seg.toId;
+  return `${aLabel} → ${bLabel}`;
+}
+
+export function StatsCard({ stats, result, endpoints }: StatsCardProps) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const byId = useMemo(() => new Map(endpoints.map((e) => [e.id, e])), [endpoints]);
+  const hubLabel = t("tools.tunnel.hubMarker");
+
   const fmt = (n: number, digits = 2) => (Number.isFinite(n) ? n.toFixed(digits) : "—");
-  const tunnelSeconds = stats.walkableLength / SPRINT_BLOCKS_PER_SEC;
-  const directSeconds = stats.straightLineBlocks / SPRINT_BLOCKS_PER_SEC;
+  const tunnelSeconds = stats.totalWalkable / SPRINT_BLOCKS_PER_SEC;
+  const directSeconds = stats.totalStraightLine / SPRINT_BLOCKS_PER_SEC;
   const overheadSeconds = Math.max(0, tunnelSeconds - directSeconds);
   const tunnelTime = formatDuration(tunnelSeconds);
   const directTime = formatDuration(directSeconds);
   const overheadTime = formatDuration(overheadSeconds);
+  const showLongest = result.segments.length > 1;
+  const showSlabs = stats.totalSlabs > 0;
+
   return (
     <div className="space-y-1 rounded-md border bg-background p-3">
       <h2 className="text-sm font-semibold">{t("tools.tunnel.sectionStats")}</h2>
@@ -57,16 +84,23 @@ export function StatsCard({ stats }: { stats: PathStats }) {
         value={String(stats.totalBlocks)}
         description={t("tools.tunnel.statTotalBlocksHint")}
       />
-      {stats.slabBlocks > 0 && (
+      {showLongest && (
+        <StatRow
+          label={t("tools.tunnel.statLongestBranch")}
+          value={`${stats.longestSegmentBlocks} ${t("tools.tunnel.unitBlocks")}`}
+          description={t("tools.tunnel.statLongestBranchHint")}
+        />
+      )}
+      {showSlabs && (
         <StatRow
           label={t("tools.tunnel.statSlabBlocks")}
-          value={`${stats.slabBlocks} / ${stats.totalBlocks - stats.slabBlocks}`}
+          value={`${stats.totalSlabs} / ${stats.totalBlocks - stats.totalSlabs}`}
           description={t("tools.tunnel.statSlabBlocksHint")}
         />
       )}
       <StatRow
         label={t("tools.tunnel.statStraightLine")}
-        value={`${fmt(stats.straightLineBlocks, 1)} ${t("tools.tunnel.unitBlocks")}`}
+        value={`${fmt(stats.totalStraightLine, 1)} ${t("tools.tunnel.unitBlocks")}`}
         description={t("tools.tunnel.statStraightLineHint")}
       />
       <StatRow
@@ -77,16 +111,51 @@ export function StatsCard({ stats }: { stats: PathStats }) {
           sprintingSpeed: SPRINT_BLOCKS_PER_SEC,
         })}
       />
-      <StatRow
-        label={t("tools.tunnel.statMaxDeviation")}
-        value={`${fmt(stats.maxDeviation, 2)} ${t("tools.tunnel.unitBlocks")}`}
-        description={t("tools.tunnel.statMaxDeviationHint")}
-      />
-      <StatRow
-        label={t("tools.tunnel.statRmsDeviation")}
-        value={`${fmt(stats.rmsDeviation, 2)} ${t("tools.tunnel.unitBlocks")}`}
-        description={t("tools.tunnel.statRmsDeviationHint")}
-      />
+
+      {result.segments.length > 1 && (
+        <details
+          className="border-t border-border/60 pt-2 group"
+          onToggle={(e) => setOpen(e.currentTarget.open)}
+        >
+          <summary className="cursor-pointer text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground select-none">
+            {t("tools.tunnel.statsBreakdownToggle")}
+          </summary>
+          {open && (
+            <table className="mt-2 w-full text-[11px]">
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th className="text-left font-normal">
+                    {t("tools.tunnel.statsBreakdownSegmentCol")}
+                  </th>
+                  <th className="text-right font-normal">
+                    {t("tools.tunnel.statsBreakdownBlocksCol")}
+                  </th>
+                  <th className="text-right font-normal">
+                    {t("tools.tunnel.statsBreakdownDriftCol")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.segments.map((seg) => {
+                  const segStats = stats.perSegment.get(seg.key);
+                  if (!segStats) return null;
+                  return (
+                    <tr key={seg.key} className="border-t border-border/50">
+                      <td className="py-1 pr-2 truncate">{segmentLabel(seg, byId, hubLabel)}</td>
+                      <td className="py-1 text-right font-mono tabular-nums">
+                        {segStats.totalBlocks}
+                      </td>
+                      <td className="py-1 text-right font-mono tabular-nums">
+                        {fmt(segStats.maxDeviation, 2)}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </details>
+      )}
     </div>
   );
 }

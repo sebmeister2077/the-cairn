@@ -1,31 +1,68 @@
-// 3D viewer for the tunnel tool. This is the heavy module — three.js,
+// 3D viewer for the tunnel tool. Heavy module — three.js,
 // react-three-fiber, drei — so it's lazy-imported by ToolsTunnelPage to
 // keep the main bundle thin. Default-exported so React.lazy works.
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import {
-  pathBounds,
-  TUNNEL_MAX_BLOCKS,
-  type PathBounds,
-  type PathBlock,
-} from "@/lib/tunnel-pattern";
+import { TUNNEL_MAX_BLOCKS } from "@/lib/tunnel-pattern";
+import type { MultiSegment, TLEndpoint, EdgeKey } from "@/lib/tunnel-multi";
 import type { Block3 } from "@/lib/tunnel-share";
 
 import { CompassLabels, useCompassRefs } from "./CompassOverlay";
 import { TunnelScene } from "./TunnelScene";
 
 interface TunnelViewer3DProps {
-  path: PathBlock[];
-  from: Block3;
-  to: Block3;
+  segments: MultiSegment[];
+  endpoints: TLEndpoint[];
+  junction: Block3 | null;
+  selectedEdge: EdgeKey | null;
 }
 
-function boundsCenterRadius(b: PathBounds): {
+interface UnionBounds {
+  min: Block3;
+  max: Block3;
+}
+
+function unionBounds(
+  segments: MultiSegment[],
+  endpoints: TLEndpoint[],
+  junction: Block3 | null,
+): UnionBounds {
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+  const consider = (p: Block3) => {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.y > maxY) maxY = p.y;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z > maxZ) maxZ = p.z;
+  };
+  for (const ep of endpoints) consider(ep.coord);
+  for (const seg of segments) {
+    consider(seg.fromCoord);
+    consider(seg.toCoord);
+    if (seg.path.length > 0) {
+      consider(seg.path[0]);
+      consider(seg.path[seg.path.length - 1]);
+    }
+  }
+  if (junction) consider(junction);
+  if (!Number.isFinite(minX)) {
+    return { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } };
+  }
+  return { min: { x: minX, y: minY, z: minZ }, max: { x: maxX, y: maxY, z: maxZ } };
+}
+
+function boundsCenterRadius(b: UnionBounds): {
   center: [number, number, number];
   radius: number;
 } {
@@ -36,29 +73,35 @@ function boundsCenterRadius(b: PathBounds): {
   return { center: [cx, cy, cz], radius };
 }
 
-function TunnelViewer3D({ path, from, to }: TunnelViewer3DProps) {
+function totalPathBlocks(segments: MultiSegment[]): number {
+  let total = 0;
+  for (const seg of segments) total += seg.path.length;
+  return total;
+}
+
+function TunnelViewer3D({ segments, endpoints, junction, selectedEdge }: TunnelViewer3DProps) {
   const { t } = useTranslation();
   const compassRefs = useCompassRefs();
   const [recenterToken, setRecenterToken] = useState(0);
   const [warningDismissed, setWarningDismissed] = useState(false);
 
-  const bounds = pathBounds(path.length > 0 ? path : [from, to]);
+  const bounds = useMemo(
+    () => unionBounds(segments, endpoints, junction),
+    [segments, endpoints, junction],
+  );
   const { center, radius } = boundsCenterRadius(bounds);
 
-  // Camera framing is deliberately NOT bumped when `from`/`to` change —
-  // the user wants to keep their current view while editing values.
-  // Use the explicit "Recenter" button to snap back.
-
-  const overLimit = path.length > TUNNEL_MAX_BLOCKS;
+  const overLimit = totalPathBlocks(segments) > TUNNEL_MAX_BLOCKS;
 
   return (
     <div className="relative h-full min-h-105 w-full overflow-hidden rounded-md border bg-[#1a1a1a]">
       <Canvas shadows={false} camera={{ fov: 55, near: 0.1, far: 4000 }} dpr={[1, 2]}>
         <color attach="background" args={["#1a1a1a"]} />
         <TunnelScene
-          path={path}
-          from={from}
-          to={to}
+          segments={segments}
+          endpoints={endpoints}
+          junction={junction}
+          selectedEdge={selectedEdge}
           center={center}
           radius={radius}
           compassRefs={compassRefs}
