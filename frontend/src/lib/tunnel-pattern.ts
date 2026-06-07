@@ -17,10 +17,18 @@ export type TunnelMode =
     | "vertical-first"
     | "vertical-last"
     | "stepped"
+    | "even-stairs"
+    | "snug-stairs"
+    | "climb-stairs"
+    | "stairs-climb"
     | "sequence";
 
 export const TUNNEL_MODES: ReadonlyArray<TunnelMode> = [
     "bresenham",
+    "even-stairs",
+    "snug-stairs",
+    "climb-stairs",
+    "stairs-climb",
     "vertical-first",
     "vertical-last",
     "stepped",
@@ -197,6 +205,18 @@ export function generateTunnelPath(
         case "stepped":
             walkStepped(c, innerTo, pattern, path, maxBlocks);
             break;
+        case "even-stairs":
+            walkSnappedStairs(c, innerTo, 8, path, maxBlocks);
+            break;
+        case "snug-stairs":
+            walkSnappedStairs(c, innerTo, 32, path, maxBlocks);
+            break;
+        case "climb-stairs":
+            walkClimbThenStairs(c, innerTo, 32, path, maxBlocks);
+            break;
+        case "stairs-climb":
+            walkStairsThenClimb(c, innerTo, 32, path, maxBlocks);
+            break;
         case "sequence":
             walkSequence(c, innerTo, pattern.sequence, path, maxBlocks);
             break;
@@ -341,6 +361,137 @@ function walkStepped(
         z: primary === "z" ? 0 : pz / denom,
     };
     return walkBresenhamCore(c, to, primary, rates, path, max);
+}
+
+// ---------------------------------------------------------------------------
+// Snapped staircase modes — auto-pick a clean small-integer ratio so the
+// resulting path is one repeating cycle (with a small drain at the end)
+// instead of the irregular multi-phase decomposition Bresenham produces
+// on uneven deltas. The walker reuses `walkBresenhamCore`; only the rates
+// differ.
+// ---------------------------------------------------------------------------
+
+/** Best p/q approximation of `target` (real number) with `q ≤ maxDenom`,
+ *  minimising |p/q − target|. Sign of `target` is preserved on `p`. */
+function bestRationalApprox(target: number, maxDenom: number): { p: number; q: number } {
+    if (!Number.isFinite(target)) return { p: 0, q: 1 };
+    const sign = target < 0 ? -1 : 1;
+    const absT = Math.abs(target);
+    let bestP = 0;
+    let bestQ = 1;
+    let bestErr = absT;
+    for (let q = 1; q <= maxDenom; q++) {
+        const p = Math.round(absT * q);
+        const err = Math.abs(p / q - absT);
+        if (err < bestErr - 1e-12) {
+            bestP = p;
+            bestQ = q;
+            bestErr = err;
+        }
+    }
+    return { p: sign * bestP, q: bestQ };
+}
+
+/** Build per-axis rates from a small-denominator approximation of the
+ *  true lateral/primary ratios, then run the standard Bresenham core.
+ *  The result is one clean repeating cycle of length ≤ `maxDenom`
+ *  primary steps — followed by a short literal drain when the snap
+ *  doesn't land exactly on `to`. */
+function walkSnappedStairs(
+    c: Cursor,
+    to: Block3,
+    maxDenom: number,
+    path: Block3[],
+    max: number,
+): boolean {
+    const dx = to.x - c.x;
+    const dy = to.y - c.y;
+    const dz = to.z - c.z;
+    if (dx === 0 && dy === 0 && dz === 0) return true;
+    const primary = dominantAxis(dx, dy, dz);
+    const primaryDelta = primary === "x" ? dx : primary === "y" ? dy : dz;
+    if (primaryDelta === 0) return walkBresenhamAuto(c, to, path, max);
+
+    const lateralDelta: Record<Axis, number> = { x: dx, y: dy, z: dz };
+    const rates: Record<Axis, number> = { x: 0, y: 0, z: 0 };
+    for (const a of ["x", "y", "z"] as Axis[]) {
+        if (a === primary) continue;
+        const d = lateralDelta[a];
+        if (d === 0) continue;
+        const fit = bestRationalApprox(d / primaryDelta, maxDenom);
+        // Rate magnitude only — sign is handled via `Math.sign(to-c)`
+        // inside `walkBresenhamCore`.
+        rates[a] = Math.abs(fit.p) / Math.max(1, fit.q);
+    }
+    return walkBresenhamCore(c, to, primary, rates, path, max);
+}
+
+/** Emit one Y step paired with one forward step, repeatedly, until Y
+ *  matches `to.y`. When forward has already reached `to[fwdAxis]` the
+ *  paired forward step is skipped (rare — only the last cycle of the
+ *  ramp). */
+function walkClimbPair(c: Cursor, to: Block3, fwdAxis: Axis, path: Block3[], max: number): boolean {
+    if (c.y === to.y) return true;
+    const ySign = Math.sign(to.y - c.y);
+    const fwdSign = Math.sign(to[fwdAxis] - c[fwdAxis]);
+    while (c.y !== to.y) {
+        c.y += ySign;
+        if (!emit(path, c, max)) return false;
+        if (fwdSign !== 0 && c[fwdAxis] !== to[fwdAxis]) {
+            c[fwdAxis] += fwdSign;
+            if (!emit(path, c, max)) return false;
+        }
+    }
+    return true;
+}
+
+/** Climb-first + snapped horizontal stairs. Two clean cycles in the
+ *  breakdown: a `(1U 1F)`-style ramp, then a snug X/Z staircase.
+ *  Easier to read than `vertical-first`, which uses raw Bresenham for
+ *  the flat half and phase-fragments. */
+function walkClimbThenStairs(
+    c: Cursor,
+    to: Block3,
+    maxDenom: number,
+    path: Block3[],
+    max: number,
+): boolean {
+    const dx = to.x - c.x;
+    const dz = to.z - c.z;
+    const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
+    if (!walkClimbPair(c, to, fwdAxis, path, max)) return false;
+    return walkSnappedStairs(c, to, maxDenom, path, max);
+}
+
+/** Snapped horizontal stairs + climb-last. Mirror of
+ *  `walkClimbThenStairs`. Walks the flat half to a point pulled back
+ *  by `|dy|` along the forward axis so the closing ramp lands
+ *  exactly on `to`. */
+function walkStairsThenClimb(
+    c: Cursor,
+    to: Block3,
+    maxDenom: number,
+    path: Block3[],
+    max: number,
+): boolean {
+    const dy = Math.abs(to.y - c.y);
+    if (dy === 0) return walkSnappedStairs(c, to, maxDenom, path, max);
+
+    const dx = to.x - c.x;
+    const dz = to.z - c.z;
+    const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
+    const fwdSign = Math.sign(to[fwdAxis] - c[fwdAxis]);
+    const horizFwd = Math.abs(to[fwdAxis] - c[fwdAxis]);
+    const reserve = Math.min(dy, horizFwd);
+
+    // Intermediate landing point: flat target pulled back along
+    // forward by `reserve` so the closing ramp covers the gap.
+    const mid: Block3 = { x: to.x, y: c.y, z: to.z };
+    if (fwdAxis === "x") mid.x -= reserve * fwdSign;
+    else mid.z -= reserve * fwdSign;
+
+    if (!walkSnappedStairs(c, mid, maxDenom, path, max)) return false;
+    return walkClimbPair(c, to, fwdAxis, path, max);
 }
 
 // ---------------------------------------------------------------------------
@@ -641,3 +792,251 @@ export function pathBounds(path: Block3[]): PathBounds {
 }
 
 export const TUNNEL_MAX_BLOCKS = 5000;
+
+// ---------------------------------------------------------------------------
+// Pattern introspection: turn a generated path back into a sequence-style
+// readout so non-sequence modes are also auditable. Same forward/right
+// resolution as `directionResolver` so the readout matches sequence mode's
+// vocabulary (F/B/L/R/U/D).
+// ---------------------------------------------------------------------------
+
+export interface PathPatternSummary {
+    /** Full RLE'd token list of the path (incl. padding F runs). */
+    tokens: SequenceToken[];
+    /** Tokens before the first detected phase — typically the start
+     *  padding F run, or empty. */
+    leading: SequenceToken[];
+    /** Ordered list of phases the middle of the path was decomposed
+     *  into. A `kind: "cycle"` phase is a sub-sequence that repeats N
+     *  consecutive times; a `kind: "literal"` phase is a contiguous
+     *  stretch with no detectable repeat (a transition between
+     *  cycles). */
+    phases: PatternPhase[];
+    /** Tokens after the last phase — typically the end padding F run. */
+    trailing: SequenceToken[];
+    /** True iff any phase is a cycle (so the breakdown is more than
+     *  just a flat token dump). */
+    hasCycle: boolean;
+}
+
+export type PatternPhase =
+    | { kind: "cycle"; cycle: SequenceToken[]; repeats: number }
+    | { kind: "literal"; tokens: SequenceToken[] };
+
+/** Convert a path into a list of single-block moves expressed as
+ *  forward/right-relative direction letters, then run-length encode
+ *  consecutive identical directions. Forward = dominant horizontal
+ *  axis from→to; right = clockwise-from-above of forward. */
+export function pathToDirectionTokens(
+    path: Block3[],
+    from: Block3,
+    to: Block3,
+): SequenceToken[] {
+    if (path.length < 2) return [];
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
+    const fwdSign = Math.sign(fwdAxis === "x" ? dx : dz) || 1;
+    const rightAxis: Axis = fwdAxis === "x" ? "z" : "x";
+    const rightSign = fwdAxis === "x" ? fwdSign : -fwdSign;
+
+    const moveToDir = (axis: Axis, sign: number): SequenceDir => {
+        if (axis === "y") return sign > 0 ? "U" : "D";
+        if (axis === fwdAxis) return sign === fwdSign ? "F" : "B";
+        return sign === rightSign ? "R" : "L";
+    };
+
+    const out: SequenceToken[] = [];
+    for (let i = 1; i < path.length; i++) {
+        const a = path[i - 1];
+        const b = path[i];
+        let axis: Axis = "x";
+        let sign = 0;
+        if (b.x !== a.x) {
+            axis = "x";
+            sign = b.x - a.x;
+        } else if (b.y !== a.y) {
+            axis = "y";
+            sign = b.y - a.y;
+        } else if (b.z !== a.z) {
+            axis = "z";
+            sign = b.z - a.z;
+        }
+        if (sign === 0) continue;
+        const dir = moveToDir(axis, sign);
+        const last = out[out.length - 1];
+        if (last && last.dir === dir) last.count += 1;
+        else out.push({ dir, count: 1 });
+    }
+    return out;
+}
+
+function tokensEqual(a: SequenceToken[], b: SequenceToken[]): boolean {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+        if (a[i].dir !== b[i].dir || a[i].count !== b[i].count) return false;
+    }
+    return true;
+}
+
+/** Starting at index `start` in `mid`, find the smallest period `p`
+ *  whose prefix repeats consecutively at least twice. Returns the
+ *  cycle and how many copies fit, or null. Smallest-p-first
+ *  maximizes compression and matches what a human would call "the"
+ *  repeating unit (e.g. `(1D 1F)` over `(1D 1F 1D 1F)`).
+ *
+ *  Caps the period at `MAX_CYCLE_LEN` — cycles longer than that are
+ *  visually useless ("here's a 200-token unit repeating twice"), and
+ *  the cap keeps the algorithm O(n × MAX_CYCLE_LEN) instead of O(n²)
+ *  per position. */
+const MAX_CYCLE_LEN = 32;
+function findCycleAt(
+    mid: SequenceToken[],
+    start: number,
+): { cycle: SequenceToken[]; repeats: number } | null {
+    const remaining = mid.length - start;
+    if (remaining < 2) return null;
+    const maxP = Math.min(MAX_CYCLE_LEN, Math.floor(remaining / 2));
+    for (let p = 1; p <= maxP; p++) {
+        const head = mid.slice(start, start + p);
+        let repeats = 1;
+        let i = start + p;
+        while (i + p <= mid.length && tokensEqual(mid.slice(i, i + p), head)) {
+            repeats += 1;
+            i += p;
+        }
+        if (repeats >= 2) {
+            return { cycle: head, repeats };
+        }
+    }
+    return null;
+}
+
+/** Walk `mid` left-to-right, greedily extracting cycle phases. When a
+ *  position has no cycle, accumulate literal tokens until a cycle is
+ *  again found — that literal stretch becomes a transition phase. The
+ *  result is a flat ordered list of `cycle`/`literal` phases that
+ *  exactly reproduces `mid` when concatenated. */
+function detectPhases(mid: SequenceToken[]): PatternPhase[] {
+    const phases: PatternPhase[] = [];
+    let literalStart = -1;
+    let i = 0;
+    const flushLiteral = (endExclusive: number) => {
+        if (literalStart >= 0 && endExclusive > literalStart) {
+            phases.push({ kind: "literal", tokens: mid.slice(literalStart, endExclusive) });
+        }
+        literalStart = -1;
+    };
+    while (i < mid.length) {
+        const found = findCycleAt(mid, i);
+        if (found) {
+            flushLiteral(i);
+            phases.push({ kind: "cycle", cycle: found.cycle, repeats: found.repeats });
+            i += found.cycle.length * found.repeats;
+        } else {
+            if (literalStart < 0) literalStart = i;
+            i += 1;
+        }
+    }
+    flushLiteral(mid.length);
+    return phases;
+}
+
+/** Strip up to 1 leading and/or 1 trailing pure-`F` token (the
+ *  configured straight padding shows up as exactly one F token at
+ *  each end after RLE). Returns the requested split. */
+function splitPadding(
+    tokens: SequenceToken[],
+    stripLead: boolean,
+    stripTrail: boolean,
+): {
+    leading: SequenceToken[];
+    middle: SequenceToken[];
+    trailing: SequenceToken[];
+} {
+    const startIdx = stripLead && tokens.length > 0 && tokens[0].dir === "F" ? 1 : 0;
+    const endIdx =
+        stripTrail && tokens.length - 1 > startIdx && tokens[tokens.length - 1].dir === "F"
+            ? tokens.length - 1
+            : tokens.length;
+    return {
+        leading: tokens.slice(0, startIdx),
+        middle: tokens.slice(startIdx, endIdx),
+        trailing: tokens.slice(endIdx),
+    };
+}
+
+/** Token count "explained" by cycles in a phase list — sum of
+ *  `cycle.length * repeats` across `cycle` phases. Used to pick the
+ *  best padding-strip variant. */
+function phasesExplained(phases: PatternPhase[]): number {
+    let n = 0;
+    for (const p of phases) {
+        if (p.kind === "cycle") n += p.cycle.length * p.repeats;
+    }
+    return n;
+}
+
+/** Decompose the path into leading padding + phase list + trailing
+ *  padding. Each phase is either a repeated cycle or a literal
+ *  transition between cycles. This handles paths that are made of
+ *  multiple consecutive cycles (very common for Bresenham-style modes
+ *  where the integer accumulator transitions between sub-patterns). */
+export function summarizePathPattern(
+    path: Block3[],
+    from: Block3,
+    to: Block3,
+): PathPatternSummary {
+    const tokens = pathToDirectionTokens(path, from, to);
+    if (tokens.length === 0) {
+        return { tokens, leading: [], phases: [], trailing: [], hasCycle: false };
+    }
+
+    // Try all four padding-strip variants; pick the one whose phase
+    // decomposition explains the most tokens via cycles. Ties go to
+    // the variant that strips fewer tokens so we don't hide structure
+    // when there is no padding.
+    let best: {
+        leading: SequenceToken[];
+        phases: PatternPhase[];
+        trailing: SequenceToken[];
+        explained: number;
+        stripped: number;
+    } | null = null;
+
+    for (const stripLead of [false, true]) {
+        for (const stripTrail of [false, true]) {
+            const { leading, middle, trailing } = splitPadding(tokens, stripLead, stripTrail);
+            const phases = detectPhases(middle);
+            const explained = phasesExplained(phases);
+            const stripped = leading.length + trailing.length;
+            if (
+                !best ||
+                explained > best.explained ||
+                (explained === best.explained && stripped < best.stripped)
+            ) {
+                best = { leading, phases, trailing, explained, stripped };
+            }
+        }
+    }
+
+    const chosen = best ?? {
+        leading: [],
+        phases: [{ kind: "literal" as const, tokens }],
+        trailing: [],
+    };
+    const hasCycle = chosen.phases.some((p) => p.kind === "cycle");
+    return {
+        tokens,
+        leading: chosen.leading,
+        phases: chosen.phases,
+        trailing: chosen.trailing,
+        hasCycle,
+    };
+}
+
+/** Render an RLE token list back into the user-facing string format
+ *  (e.g. `[{count:2, dir:"F"}, {count:1, dir:"U"}]` → `"2F 1U"`). */
+export function formatTokens(tokens: SequenceToken[]): string {
+    return tokens.map((t) => `${t.count}${t.dir}`).join(" ");
+}

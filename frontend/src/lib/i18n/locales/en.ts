@@ -1457,10 +1457,14 @@ export const en = {
             z: "Z (N/S)",
             sectionPattern: "Tunnel pattern",
             patternHint:
-                "Direct gives the shortest connected dig. Climb-first/last carves a 45° staircase next to one TL with a flat run in between. Custom lets you define the staircase ratio yourself, or write your own move sequence.",
+                "Direct gives the shortest connected dig. Even/Snug staircase swap a tiny bit of length for a single repeating step pattern that's easier to dig manually. Climb-first/last carves a 45° staircase next to one TL with a flat run in between. Custom lets you define the staircase ratio yourself, or write your own move sequence.",
             modeLabel: "Pattern",
             modes: {
                 bresenham: "Direct (auto)",
+                "even-stairs": "Even staircase",
+                "snug-stairs": "Snug staircase",
+                "climb-stairs": "Climb then stairs",
+                "stairs-climb": "Stairs then climb",
                 "vertical-first": "Climb first (45°)",
                 "vertical-last": "Climb last (45°)",
                 stepped: "Custom steps",
@@ -1469,6 +1473,14 @@ export const en = {
             modeHints: {
                 bresenham:
                     "Auto-balanced 3D path that picks the shortest route between the endpoints.",
+                "even-stairs":
+                    "A simple repeating step pattern (auto). Easy to read in the breakdown and easy to dig manually — but may drift a few blocks off the straight line.",
+                "snug-stairs":
+                    "Like Even staircase, but stays closer to the straight line. The repeating unit may be a bit longer in exchange.",
+                "climb-stairs":
+                    "45° climb out of the start TL first, then a snug horizontal staircase to the end. Two clean phases instead of one messy one.",
+                "stairs-climb":
+                    "Snug horizontal staircase first, then a 45° climb into the end TL. Two clean phases instead of one messy one.",
                 "vertical-first":
                     "45° staircase out of the start TL (one block up paired with one block forward), then flat tunnel to the end.",
                 "vertical-last":
@@ -1480,6 +1492,10 @@ export const en = {
             },
             modeBullets: {
                 bresenham: "shortest auto-balanced 3D path",
+                "even-stairs": "one simple repeating step pattern (may drift a few blocks)",
+                "snug-stairs": "one repeating step pattern, staying closer to the straight line",
+                "climb-stairs": "45° climb at the start, then a snug staircase",
+                "stairs-climb": "snug staircase first, then a 45° climb at the end",
                 "vertical-first": "45° climb out of the start TL, then flat tunnel",
                 "vertical-last": "flat tunnel first, 45° climb into the end TL",
                 stepped: "your own per-axis step ratios (custom staircase)",
@@ -1509,6 +1525,11 @@ export const en = {
             },
             sequenceEmpty: "No valid tokens — falls back to Direct.",
             sequenceParsed: "Parsed:",
+            breakdownToggle: "Show generated pattern",
+            breakdownCycleHint:
+                "Move sequence the path is built from. Padding F runs are dimmed; each repeating phase is in parentheses with its repeat count; amber tokens are transitions between phases or single moves that didn't fit any cycle.",
+            breakdownNoCycleHint:
+                "No clean repeating cycle was detected — the path is irregular at this scale (typical for Direct/Bresenham over uneven deltas).",
             paddingLabel: "Straight padding (blocks)",
             paddingHint:
                 "Keeps the tunnel straight along the forward axis for this many blocks at each TL before the chosen pattern kicks in (and again before reaching the end TL). Applies to every pattern.",

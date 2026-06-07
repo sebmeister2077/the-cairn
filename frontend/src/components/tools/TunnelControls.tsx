@@ -16,6 +16,7 @@ import { StatsCard } from "./StatsCard";
 interface TunnelControlsProps {
   from: Block3;
   to: Block3;
+  path: Block3[];
   mode: TunnelMode;
   pattern: TunnelPattern;
   stats: PathStats;
@@ -32,6 +33,7 @@ interface TunnelControlsProps {
 export function TunnelControls({
   from,
   to,
+  path,
   mode,
   pattern,
   stats,
@@ -66,6 +68,9 @@ export function TunnelControls({
       <PatternCard
         mode={mode}
         pattern={pattern}
+        path={path}
+        from={from}
+        to={to}
         onChangeMode={onChangeMode}
         onChange={onChangePattern}
         onAutoFit={onAutoFit}

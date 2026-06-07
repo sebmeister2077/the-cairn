@@ -88,6 +88,7 @@ export function ToolsTunnelPage() {
         <TunnelControls
           from={from}
           to={to}
+          path={path}
           mode={mode}
           pattern={pattern}
           stats={stats}

@@ -3,7 +3,7 @@
 // radio are only visible in `"stepped"` mode — the other modes derive
 // their geometry directly from the endpoints.
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Wand2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -11,13 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n";
 import type { Axis, TunnelMode, TunnelPattern } from "@/lib/tunnel-pattern";
-import { parseSequenceTokens, TUNNEL_MODES } from "@/lib/tunnel-pattern";
+import {
+  formatTokens,
+  parseSequenceTokens,
+  summarizePathPattern,
+  TUNNEL_MODES,
+} from "@/lib/tunnel-pattern";
+import type { Block3 } from "@/lib/tunnel-share";
 
 import { IntegerField } from "./IntegerField";
 
 interface PatternCardProps {
   mode: TunnelMode;
   pattern: TunnelPattern;
+  path: Block3[];
+  from: Block3;
+  to: Block3;
   onChangeMode: (next: TunnelMode) => void;
   onChange: (next: TunnelPattern) => void;
   onAutoFit: () => void;
@@ -28,6 +37,9 @@ const AXES: Axis[] = ["x", "y", "z"];
 export function PatternCard({
   mode,
   pattern,
+  path,
+  from,
+  to,
   onChangeMode,
   onChange,
   onAutoFit,
@@ -39,6 +51,15 @@ export function PatternCard({
   const parsedTokens = useMemo(
     () => (isSequence ? parseSequenceTokens(pattern.sequence) : []),
     [isSequence, pattern.sequence],
+  );
+
+  const [breakdownOpen, setBreakdownOpen] = useState(false);
+  // Phase detection walks the whole path — only run it when the user
+  // actually opens the disclosure, otherwise we'd recompute on every
+  // slider tick for a (potentially) thousands-long path.
+  const summary = useMemo(
+    () => (breakdownOpen && !isSequence ? summarizePathPattern(path, from, to) : null),
+    [breakdownOpen, isSequence, path, from, to],
   );
 
   return (
@@ -230,6 +251,49 @@ export function PatternCard({
         />
         <p className="text-[10px] text-muted-foreground">{t("tools.tunnel.paddingHint")}</p>
       </div>
+
+      {!isSequence && path.length > 1 && (
+        <details
+          className="border-t border-border/60 pt-2 group"
+          onToggle={(e) => setBreakdownOpen(e.currentTarget.open)}
+        >
+          <summary className="cursor-pointer text-[10px] uppercase tracking-wide text-muted-foreground hover:text-foreground select-none">
+            {t("tools.tunnel.breakdownToggle")}
+          </summary>
+          {summary && summary.tokens.length > 0 && (
+            <div className="mt-2 space-y-1.5 text-[11px]">
+              <div className="font-mono leading-relaxed wrap-break-word max-h-60 overflow-auto">
+                {summary.leading.length > 0 && (
+                  <span className="text-muted-foreground">{formatTokens(summary.leading)} </span>
+                )}
+                {summary.phases.map((phase, i) => (
+                  <span key={i}>
+                    {i > 0 && " "}
+                    {phase.kind === "cycle" ? (
+                      <span className="text-foreground">
+                        ({formatTokens(phase.cycle)})
+                        <span className="text-muted-foreground"> ×{phase.repeats}</span>
+                      </span>
+                    ) : (
+                      <span className="text-amber-600 dark:text-amber-400">
+                        {formatTokens(phase.tokens)}
+                      </span>
+                    )}
+                  </span>
+                ))}
+                {summary.trailing.length > 0 && (
+                  <span className="text-muted-foreground"> {formatTokens(summary.trailing)}</span>
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground">
+                {summary.hasCycle
+                  ? t("tools.tunnel.breakdownCycleHint")
+                  : t("tools.tunnel.breakdownNoCycleHint")}
+              </p>
+            </div>
+          )}
+        </details>
+      )}
     </div>
   );
 }
