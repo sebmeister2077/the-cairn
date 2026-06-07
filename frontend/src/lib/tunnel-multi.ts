@@ -160,9 +160,16 @@ export function pruneSegments(
 // Cost metrics
 // ---------------------------------------------------------------------------
 
-/** Cost of a single segment under a given metric. All metrics use the
- *  real path length (the segment spec affects geometry); the metric
- *  only changes how those per-segment costs are aggregated. */
+/** Cost of a single segment used by the hub/tour optimisers. The base
+ *  is the real path length (segment spec affects geometry). On top of
+ *  that we add a heavy penalty for every "unwalkable" 2-block jump in
+ *  the path — two consecutive Y emissions at the same (x, z) — so the
+ *  solver prefers junction placements that produce climbable tunnels.
+ *
+ *  The penalty is solver-only: `aggregateMultiStats` reads `path.length`
+ *  directly, so user-facing block counts stay accurate. */
+const UNWALKABLE_PENALTY_PER_BLOCK = 1000;
+
 export function segmentCost(
     from: Block3,
     to: Block3,
@@ -171,7 +178,17 @@ export function segmentCost(
 ): number {
     void _metric;
     const path = generateTunnelPath(from, to, spec.pattern, spec.mode);
-    return Math.max(0, path.length - 1);
+    const length = Math.max(0, path.length - 1);
+    let unwalkable = 0;
+    for (let i = 2; i < path.length; i++) {
+        const a = path[i - 2];
+        const b = path[i - 1];
+        const cur = path[i];
+        const prevWasY = b.y !== a.y && b.x === a.x && b.z === a.z;
+        const curIsY = cur.y !== b.y && cur.x === b.x && cur.z === b.z;
+        if (prevWasY && curIsY) unwalkable += 1;
+    }
+    return length + unwalkable * UNWALKABLE_PENALTY_PER_BLOCK;
 }
 
 /** Aggregate a batch of segment costs under the chosen metric.
