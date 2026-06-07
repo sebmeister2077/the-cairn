@@ -8,14 +8,19 @@ import { RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { pathBounds, TUNNEL_MAX_BLOCKS, type PathBounds } from "@/lib/tunnel-pattern";
+import {
+  pathBounds,
+  TUNNEL_MAX_BLOCKS,
+  type PathBounds,
+  type PathBlock,
+} from "@/lib/tunnel-pattern";
 import type { Block3 } from "@/lib/tunnel-share";
 
 import { CompassLabels, useCompassRefs } from "./CompassOverlay";
 import { TunnelScene } from "./TunnelScene";
 
 interface TunnelViewer3DProps {
-  path: Block3[];
+  path: PathBlock[];
   from: Block3;
   to: Block3;
 }

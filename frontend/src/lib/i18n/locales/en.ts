@@ -1535,11 +1535,20 @@ export const en = {
             paddingLabel: "Straight padding (blocks)",
             paddingHint:
                 "Keeps the tunnel straight along the forward axis for this many blocks at each TL before the chosen pattern kicks in (and again before reaching the end TL). Applies to every pattern.",
+            paddingDiagonalLabel: "Diagonal padding (X + Z)",
+            paddingDiagonalHint:
+                "Each padding unit advances one block on X and one on Z instead of going straight on the dominant axis. Two emitted blocks per unit. Falls back to straight if either dx or dz is zero.",
+            useSlabsLabel: "Slab half-steps for climbs",
+            useSlabsHint:
+                "Each Y step becomes a half-step using a bottom slab plus a full block, so a 1-block climb takes 2 forward blocks instead of 1. Easier on the player than a hard 1-block stair, at the cost of a longer tunnel. Disabled when there isn't enough horizontal room for the doubled climb.",
             sectionStats: "Path stats",
             unitBlocks: "blocks",
             statTotalBlocks: "Blocks to dig",
             statTotalBlocksHint:
                 "How many blocks you'd carve out following this exact path (TLs included). Equal to |Δx|+|Δy|+|Δz| for any face-adjacent tunnel — so it doesn't change between modes, only between TL pairs.",
+            statSlabBlocks: "Slabs / full blocks",
+            statSlabBlocksHint:
+                "How many of the dug blocks are slabs (half-height) vs. full blocks. Each Y step costs one slab and one full block when 'Slab half-steps for climbs' is on \u2014 you'll need to bring matching slabs along.",
             statStraightLine: "Straight-line distance",
             statStraightLineHint:
                 "Pure 3D diagonal between the two TLs (as the crow flies). Just for reference — you can't actually dig a diagonal block, every dug block changes one coordinate at a time.",

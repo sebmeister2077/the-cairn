@@ -10,6 +10,17 @@ import type { Block3 } from "./tunnel-share";
 
 export type Axis = "x" | "y" | "z";
 
+/** Marks a path block as a half-height slab instead of a full cube.
+ *  `"top"` = top half of voxel is solid (slab on the upper half);
+ *  `"bottom"` = bottom half of voxel is solid. Affects 3D rendering
+ *  and is reported in stats; the underlying coordinate is unchanged. */
+export type SlabKind = "top" | "bottom";
+
+/** Path entry. Extends `Block3` so existing geometry helpers keep
+ *  working unchanged; the optional `slab` is only set when the user
+ *  enabled `useSlabs` and the block sits at a vertical step. */
+export type PathBlock = Block3 & { slab?: SlabKind };
+
 /** High-level tunnel shape. Only `"stepped"` consumes the per-axis
  *  step counts; only `"sequence"` consumes `sequence` + `padding`. */
 export type TunnelMode =
@@ -64,10 +75,22 @@ export interface TunnelPattern {
     /** Number of straight forward blocks the path stays straight at
      *  each TL before/after the pattern kicks in. */
     padding: number;
+    /** When true, each padding unit advances 1 X and 1 Z (two emitted
+     *  blocks per unit) instead of `padding` blocks along the dominant
+     *  horizontal axis. Falls back to straight when either dx or dz
+     *  is zero. */
+    paddingDiagonal: boolean;
+    /** When true, post-process the generated path: any block that sits
+     *  at a column-vertical step is marked as a half-slab so the 3D
+     *  preview shows a smoother stair. Does not change the block
+     *  positions, only their `slab` flag. */
+    useSlabs: boolean;
 }
 
 export const DEFAULT_SEQUENCE = "1U 1F";
 export const DEFAULT_PADDING = 2;
+export const DEFAULT_PADDING_DIAGONAL = false;
+export const DEFAULT_USE_SLABS = false;
 const MAX_PADDING = 64;
 
 const MAX_STEP = 64;
@@ -99,6 +122,8 @@ export function autoFitPattern(from: Block3, to: Block3): TunnelPattern {
     const base = {
         sequence: DEFAULT_SEQUENCE,
         padding: DEFAULT_PADDING,
+        paddingDiagonal: DEFAULT_PADDING_DIAGONAL,
+        useSlabs: DEFAULT_USE_SLABS,
     };
     if (dx === 0 && dy === 0 && dz === 0) {
         return { stepX: 0, stepY: 0, stepZ: 0, primaryAxis: "x", ...base };
@@ -145,6 +170,8 @@ export function clampPattern(p: TunnelPattern): TunnelPattern {
         primaryAxis: p.primaryAxis,
         sequence: typeof p.sequence === "string" ? p.sequence : DEFAULT_SEQUENCE,
         padding: padCap(p.padding ?? DEFAULT_PADDING),
+        paddingDiagonal: Boolean(p.paddingDiagonal),
+        useSlabs: Boolean(p.useSlabs),
     };
 }
 
@@ -163,8 +190,8 @@ export function generateTunnelPath(
     pattern: TunnelPattern,
     mode: TunnelMode = "bresenham",
     maxBlocks: number = 100_000,
-): Block3[] {
-    const path: Block3[] = [{ x: from.x, y: from.y, z: from.z }];
+): PathBlock[] {
+    const path: PathBlock[] = [{ x: from.x, y: from.y, z: from.z }];
     if (from.x === to.x && from.y === to.y && from.z === to.z) {
         return path;
     }
@@ -177,64 +204,193 @@ export function generateTunnelPath(
     const fwdAxis: Axis = Math.abs(dx) >= Math.abs(dz) && dx !== 0 ? "x" : "z";
     const fwdDelta = to[fwdAxis] - from[fwdAxis];
     const fwdSign = Math.sign(fwdDelta);
+    const xSign = Math.sign(dx);
+    const zSign = Math.sign(dz);
     const padReq = Math.max(0, Math.min(MAX_PADDING, Math.trunc(pattern.padding ?? 0)));
-    // Cap padding so start + end stretches don't overlap and we have
-    // at least one block left for the mode walker.
-    const padding =
-        fwdSign === 0 ? 0 : Math.min(padReq, Math.max(0, Math.floor((Math.abs(fwdDelta) - 1) / 2)));
 
-    // Start padding: pure forward.
-    for (let i = 0; i < padding; i++) {
-        c[fwdAxis] += fwdSign;
-        if (!emit(path, c, maxBlocks)) return path;
+    // Diagonal padding only kicks in when both horizontal axes have
+    // delta — otherwise we'd silently double-pad along the one axis
+    // that does have delta. Cap so start + end together don't overshoot
+    // either axis and at least one walker block remains in between.
+    const useDiagonal = Boolean(pattern.paddingDiagonal) && xSign !== 0 && zSign !== 0;
+    let padding: number;
+    if (useDiagonal) {
+        const cap = Math.max(0, Math.floor((Math.min(Math.abs(dx), Math.abs(dz)) - 1) / 2));
+        padding = Math.min(padReq, cap);
+    } else {
+        padding =
+            fwdSign === 0
+                ? 0
+                : Math.min(padReq, Math.max(0, Math.floor((Math.abs(fwdDelta) - 1) / 2)));
     }
 
-    // Inner target = `to` shifted backward along forward axis so the
-    // mode walker stops short and the tail padding lands on `to`.
+    // Start padding.
+    if (useDiagonal) {
+        for (let i = 0; i < padding; i++) {
+            c.x += xSign;
+            if (!emit(path, c, maxBlocks)) return path;
+            c.z += zSign;
+            if (!emit(path, c, maxBlocks)) return path;
+        }
+    } else {
+        for (let i = 0; i < padding; i++) {
+            c[fwdAxis] += fwdSign;
+            if (!emit(path, c, maxBlocks)) return path;
+        }
+    }
+
+    // Inner target = `to` shifted back so the walker stops short and
+    // the tail padding lands on `to`. With diagonal padding we shift
+    // both horizontal axes; otherwise only the forward axis.
     const innerTo: Block3 = { x: to.x, y: to.y, z: to.z };
-    if (fwdAxis === "x") innerTo.x -= padding * fwdSign;
-    else innerTo.z -= padding * fwdSign;
+    if (useDiagonal) {
+        innerTo.x -= padding * xSign;
+        innerTo.z -= padding * zSign;
+    } else if (fwdAxis === "x") {
+        innerTo.x -= padding * fwdSign;
+    } else {
+        innerTo.z -= padding * fwdSign;
+    }
+
+    // Slab pre-shift. With slabs on, each Y step in the walker output
+    // becomes a slab+full pair consuming 2 forward blocks instead of
+    // 1. To keep the final path landing on `to`, pull the walker's
+    // target back along the forward axis by |dy_inner|; the post-pass
+    // adds those forward blocks back. Only enabled when there's enough
+    // forward room (>= 2×|dy|) so the walker still has space for the
+    // climb portion after the pre-shift.
+    const innerDy = innerTo.y - c.y;
+    const innerFwdSpace = Math.abs(innerTo[fwdAxis] - c[fwdAxis]);
+    const slabShift =
+        pattern.useSlabs &&
+            fwdSign !== 0 &&
+            innerDy !== 0 &&
+            innerFwdSpace >= 2 * Math.abs(innerDy)
+            ? Math.abs(innerDy)
+            : 0;
+    const walkerTarget: Block3 = { x: innerTo.x, y: innerTo.y, z: innerTo.z };
+    if (slabShift > 0) {
+        if (fwdAxis === "x") walkerTarget.x -= slabShift * fwdSign;
+        else walkerTarget.z -= slabShift * fwdSign;
+    }
+
+    const walkerStartIdx = path.length;
 
     switch (mode) {
         case "vertical-first":
-            walkClimb45First(c, innerTo, path, maxBlocks);
+            walkClimb45First(c, walkerTarget, path, maxBlocks);
             break;
         case "vertical-last":
-            walkClimb45Last(c, innerTo, path, maxBlocks);
+            walkClimb45Last(c, walkerTarget, path, maxBlocks);
             break;
         case "stepped":
-            walkStepped(c, innerTo, pattern, path, maxBlocks);
+            walkStepped(c, walkerTarget, pattern, path, maxBlocks);
             break;
         case "even-stairs":
-            walkSnappedStairs(c, innerTo, 8, path, maxBlocks);
+            walkSnappedStairs(c, walkerTarget, 8, path, maxBlocks);
             break;
         case "snug-stairs":
-            walkSnappedStairs(c, innerTo, 32, path, maxBlocks);
+            walkSnappedStairs(c, walkerTarget, 32, path, maxBlocks);
             break;
         case "climb-stairs":
-            walkClimbThenStairs(c, innerTo, 32, path, maxBlocks);
+            walkClimbThenStairs(c, walkerTarget, 32, path, maxBlocks);
             break;
         case "stairs-climb":
-            walkStairsThenClimb(c, innerTo, 32, path, maxBlocks);
+            walkStairsThenClimb(c, walkerTarget, 32, path, maxBlocks);
             break;
         case "sequence":
-            walkSequence(c, innerTo, pattern.sequence, path, maxBlocks);
+            walkSequence(c, walkerTarget, pattern.sequence, path, maxBlocks);
             break;
         case "bresenham":
         default:
-            walkBresenhamAuto(c, innerTo, path, maxBlocks);
+            walkBresenhamAuto(c, walkerTarget, path, maxBlocks);
             break;
     }
 
-    // End padding: pure forward to land on `to`. Defensive: only step
-    // while we're still short of the target so an unexpectedly-long
-    // walker can't push us past.
-    while (c[fwdAxis] !== to[fwdAxis]) {
-        c[fwdAxis] += fwdSign;
-        if (!emit(path, c, maxBlocks)) return path;
+    if (slabShift > 0 && path.length > walkerStartIdx) {
+        applySlabsToWalkerSegment(path, walkerStartIdx, fwdAxis, fwdSign);
+        // Cursor must follow the post-shift end of the walker output
+        // so end padding starts from the correct (shifted) position.
+        const last = path[path.length - 1];
+        c.x = last.x;
+        c.y = last.y;
+        c.z = last.z;
+    }
+
+    // End padding: land on `to`. Defensive: only step while we're
+    // still short of the target so an unexpectedly-long walker can't
+    // push us past. Diagonal mode emits alternating X/Z; straight mode
+    // emits along the forward axis.
+    if (useDiagonal) {
+        while (c.x !== to.x || c.z !== to.z) {
+            if (c.x !== to.x) {
+                c.x += xSign;
+                if (!emit(path, c, maxBlocks)) return path;
+            }
+            if (c.z !== to.z) {
+                c.z += zSign;
+                if (!emit(path, c, maxBlocks)) return path;
+            }
+        }
+    } else {
+        while (c[fwdAxis] !== to[fwdAxis]) {
+            c[fwdAxis] += fwdSign;
+            if (!emit(path, c, maxBlocks)) return path;
+        }
     }
 
     return path;
+}
+
+/** Replace the walker portion of `path` (from `startIdx` onward) so
+ *  every column-vertical step becomes a half-step using a bottom slab.
+ *
+ *  For each pair `(prev, cur)` with `cur.y !== prev.y` and matching
+ *  x/z, the destination block is moved one block forward and marked
+ *  as a bottom slab placed at the *higher* of the two y values. All
+ *  subsequent walker blocks shift forward by the same amount. Net
+ *  effect: 1 Y step now consumes 2 forward blocks (slab + full) and
+ *  the player traverses it as a smooth half-block climb instead of a
+ *  hard 1-block stair. Caller pre-shifts the walker's target so the
+ *  final path still ends where it should.
+ *
+ *  The slab is always `"bottom"` (lower half solid → walking surface
+ *  at y + 0.5). For ascents, the slab sits at `cur.y` and bridges
+ *  full(prev.y) → slab(cur.y) → full(cur.y). For descents, the slab
+ *  sits at `prev.y` and bridges full(prev.y) → slab(prev.y) → full(cur.y). */
+function applySlabsToWalkerSegment(
+    path: PathBlock[],
+    startIdx: number,
+    fwdAxis: Axis,
+    fwdSign: number,
+): void {
+    if (startIdx >= path.length) return;
+    if (startIdx < 1) return; // need a previous block to detect Y steps
+    const original = path.slice(startIdx);
+    path.length = startIdx;
+
+    let prev: PathBlock = path[startIdx - 1];
+    let offset = 0;
+    for (const cur of original) {
+        const isYStep = cur.y !== prev.y && cur.x === prev.x && cur.z === prev.z;
+        if (isYStep) {
+            offset += 1;
+            const slabBlock: PathBlock = {
+                x: cur.x + (fwdAxis === "x" ? offset * fwdSign : 0),
+                y: Math.max(prev.y, cur.y),
+                z: cur.z + (fwdAxis === "z" ? offset * fwdSign : 0),
+                slab: "bottom",
+            };
+            path.push(slabBlock);
+        } else {
+            path.push({
+                x: cur.x + (fwdAxis === "x" ? offset * fwdSign : 0),
+                y: cur.y,
+                z: cur.z + (fwdAxis === "z" ? offset * fwdSign : 0),
+            });
+        }
+        prev = cur;
+    }
 }
 
 interface Cursor {
@@ -690,6 +846,9 @@ export interface PathStats {
     lengthRatio: number;
     maxDeviation: number;
     rmsDeviation: number;
+    /** How many blocks in the path are marked as slabs. Zero unless
+     *  the user enabled `useSlabs`. */
+    slabBlocks: number;
 }
 
 /** Distance from a point to the infinite line passing through a→b in 3D. */
@@ -746,17 +905,19 @@ function computeWalkableLength(path: Block3[]): number {
     return total;
 }
 
-export function pathStats(path: Block3[], from: Block3, to: Block3): PathStats {
+export function pathStats(path: PathBlock[], from: Block3, to: Block3): PathStats {
     const totalBlocks = Math.max(0, path.length - 1);
     const straightLineBlocks = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
     const walkableLength = computeWalkableLength(path);
     const lengthRatio = straightLineBlocks > 0 ? totalBlocks / straightLineBlocks : 0;
     let maxDev = 0;
     let sumSq = 0;
+    let slabBlocks = 0;
     for (const b of path) {
         const d = pointLineDistance(b, from, to);
         if (d > maxDev) maxDev = d;
         sumSq += d * d;
+        if (b.slab) slabBlocks += 1;
     }
     const rms = path.length > 0 ? Math.sqrt(sumSq / path.length) : 0;
     return {
@@ -766,6 +927,7 @@ export function pathStats(path: Block3[], from: Block3, to: Block3): PathStats {
         lengthRatio,
         maxDeviation: maxDev,
         rmsDeviation: rms,
+        slabBlocks,
     };
 }
 

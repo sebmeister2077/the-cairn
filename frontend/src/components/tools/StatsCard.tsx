@@ -57,6 +57,13 @@ export function StatsCard({ stats }: { stats: PathStats }) {
         value={String(stats.totalBlocks)}
         description={t("tools.tunnel.statTotalBlocksHint")}
       />
+      {stats.slabBlocks > 0 && (
+        <StatRow
+          label={t("tools.tunnel.statSlabBlocks")}
+          value={`${stats.slabBlocks} / ${stats.totalBlocks - stats.slabBlocks}`}
+          description={t("tools.tunnel.statSlabBlocksHint")}
+        />
+      )}
       <StatRow
         label={t("tools.tunnel.statStraightLine")}
         value={`${fmt(stats.straightLineBlocks, 1)} ${t("tools.tunnel.unitBlocks")}`}

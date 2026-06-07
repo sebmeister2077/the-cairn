@@ -20,13 +20,13 @@ import { useThree } from "@react-three/fiber";
 import { Color, Vector3 } from "three";
 
 import type { Block3 } from "@/lib/tunnel-share";
-import { TUNNEL_MAX_BLOCKS } from "@/lib/tunnel-pattern";
+import { TUNNEL_MAX_BLOCKS, type PathBlock } from "@/lib/tunnel-pattern";
 import { useTranslation } from "@/lib/i18n";
 
 import { CompassTracker, type CompassRefs } from "./CompassOverlay";
 
 interface TunnelSceneProps {
-  path: Block3[];
+  path: PathBlock[];
   from: Block3;
   to: Block3;
   /** Geometric centre of the path bounds; the camera frames around this. */
@@ -44,7 +44,7 @@ const TL_TO_COLOR = "#f97316";
 
 /** Cap visible voxels so a 50k-block path doesn't melt the GPU; stats
  *  still reflect the full path. */
-function clampPath(path: Block3[]): Block3[] {
+function clampPath(path: PathBlock[]): PathBlock[] {
   if (path.length <= TUNNEL_MAX_BLOCKS) return path;
   return path.slice(0, TUNNEL_MAX_BLOCKS);
 }
@@ -122,20 +122,44 @@ export function TunnelScene({
   );
 }
 
-function TunnelBlocks({ blocks }: { blocks: Block3[] }) {
+function TunnelBlocks({ blocks }: { blocks: PathBlock[] }) {
   if (blocks.length === 0) return null;
-  // `limit` sizes drei's internal matrix buffer **once on mount** — if
-  // the path later grows past the initial `blocks.length`, the extra
-  // instances silently disappear. Pin to the hard cap so the buffer is
-  // always big enough; `range` still controls how many actually draw.
+  // Split full blocks vs. slabs so each group can use a single shared
+  // geometry — `Instances` doesn't allow per-instance scale.
+  const fullBlocks: PathBlock[] = [];
+  const slabBlocks: PathBlock[] = [];
+  for (const b of blocks) {
+    if (b.slab) slabBlocks.push(b);
+    else fullBlocks.push(b);
+  }
   return (
-    <Instances limit={TUNNEL_MAX_BLOCKS} range={blocks.length}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
-      {blocks.map((b, i) => (
-        <Instance key={i} position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]} />
-      ))}
-    </Instances>
+    <>
+      {fullBlocks.length > 0 && (
+        // `limit` sizes drei's internal matrix buffer **once on mount** — if
+        // the path later grows past the initial `blocks.length`, the extra
+        // instances silently disappear. Pin to the hard cap so the buffer is
+        // always big enough; `range` still controls how many actually draw.
+        <Instances limit={TUNNEL_MAX_BLOCKS} range={fullBlocks.length}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
+          {fullBlocks.map((b, i) => (
+            <Instance key={i} position={[b.x + 0.5, b.y + 0.5, b.z + 0.5]} />
+          ))}
+        </Instances>
+      )}
+      {slabBlocks.length > 0 && (
+        <Instances limit={TUNNEL_MAX_BLOCKS} range={slabBlocks.length}>
+          <boxGeometry args={[1, 0.5, 1]} />
+          <meshStandardMaterial color={new Color(BLOCK_COLOR)} roughness={0.85} metalness={0.05} />
+          {slabBlocks.map((b, i) => (
+            <Instance
+              key={i}
+              position={[b.x + 0.5, b.y + (b.slab === "top" ? 0.75 : 0.25), b.z + 0.5]}
+            />
+          ))}
+        </Instances>
+      )}
+    </>
   );
 }
 

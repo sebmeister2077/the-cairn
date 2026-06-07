@@ -9,6 +9,7 @@ import { Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/lib/i18n";
 import type { Axis, TunnelMode, TunnelPattern } from "@/lib/tunnel-pattern";
 import {
@@ -250,6 +251,40 @@ export function PatternCard({
           max={64}
         />
         <p className="text-[10px] text-muted-foreground">{t("tools.tunnel.paddingHint")}</p>
+        <div className="mt-2 flex items-start gap-2 rounded border bg-background px-2 py-1.5 text-xs">
+          <Switch
+            id="tunnel-padding-diagonal"
+            checked={pattern.paddingDiagonal}
+            onCheckedChange={(checked) => onChange({ ...pattern, paddingDiagonal: checked })}
+            className="mt-0.5"
+          />
+          <Label
+            htmlFor="tunnel-padding-diagonal"
+            className="flex-1 cursor-pointer flex-col items-start gap-0.5"
+          >
+            <span className="font-medium">{t("tools.tunnel.paddingDiagonalLabel")}</span>
+            <span className="text-[10px] font-normal text-muted-foreground">
+              {t("tools.tunnel.paddingDiagonalHint")}
+            </span>
+          </Label>
+        </div>
+        <div className="flex items-start gap-2 rounded border bg-background px-2 py-1.5 text-xs">
+          <Switch
+            id="tunnel-use-slabs"
+            checked={pattern.useSlabs}
+            onCheckedChange={(checked) => onChange({ ...pattern, useSlabs: checked })}
+            className="mt-0.5"
+          />
+          <Label
+            htmlFor="tunnel-use-slabs"
+            className="flex-1 cursor-pointer flex-col items-start gap-0.5"
+          >
+            <span className="font-medium">{t("tools.tunnel.useSlabsLabel")}</span>
+            <span className="text-[10px] font-normal text-muted-foreground">
+              {t("tools.tunnel.useSlabsHint")}
+            </span>
+          </Label>
+        </div>
       </div>
 
       {!isSequence && path.length > 1 && (
