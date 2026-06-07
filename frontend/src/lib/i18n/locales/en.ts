@@ -46,6 +46,7 @@ export const en = {
                 general: "General",
                 singleplayer: "Singleplayer",
                 multiplayer: "Multiplayer",
+                tools: "Tools",
                 manage: "Manage",
                 usage: "Usage",
             },
@@ -72,6 +73,7 @@ export const en = {
                 traders: "Traders",
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
+                tunnelPreviewer: "Tunnel Previewer",
             },
             chip: {
                 new: "New",

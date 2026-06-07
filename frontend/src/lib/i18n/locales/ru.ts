@@ -48,6 +48,7 @@ const ru = {
                 general: "Общее",
                 singleplayer: "Одиночная игра",
                 multiplayer: "Мультиплеер",
+                tools: "Инструменты",
                 manage: "Управление",
                 usage: "Использование",
             },
@@ -74,6 +75,7 @@ const ru = {
                 traders: "Торговцы",
                 tlScreenshots: "Скриншоты TL",
                 elkWalkable: "Лосиные тропы",
+                tunnelPreviewer: "Превью туннеля",
             },
             chip: {
                 new: "Новое",

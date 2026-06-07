@@ -70,6 +70,7 @@ const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
   { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
   { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
+  { value: "/tools", labelKey: "app.nav.categories.tools" },
 ] as const;
 
 const ADMIN_CATEGORY = { value: "/manage", labelKey: "app.nav.categories.manage" } as const;
@@ -89,6 +90,9 @@ const NavigationRoutes = {
     ContributeMap: "/multiplayer/contribute-map",
     ContributeTLs: "/multiplayer/contribute-tls",
     ContributeTraders: "/multiplayer/contribute-traders",
+  },
+  Tools: {
+    TunnelPreviewer: "/tools",
   },
   General: {},
   Manage: {
@@ -127,6 +131,7 @@ type StaticNavLabelKey =
   | "app.nav.categories.general"
   | "app.nav.categories.singleplayer"
   | "app.nav.categories.multiplayer"
+  | "app.nav.categories.tools"
   | "app.nav.categories.manage"
   | "app.nav.categories.usage"
   | "app.nav.subtabs.extract"
@@ -151,6 +156,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.traders"
   | "app.nav.subtabs.tlScreenshots"
   | "app.nav.subtabs.elkWalkable"
+  | "app.nav.subtabs.tunnelPreviewer"
   | "app.nav.chip.new";
 const subTabs: Subtabs = {
   "/singleplayer": [
@@ -178,6 +184,7 @@ const subTabs: Subtabs = {
     },
   ],
   "/general": [],
+  "/tools": [{ value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" }],
   "/manage": [
     { value: "/manage/api-keys", labelKey: "app.nav.subtabs.apiKeys" },
     { value: "/manage/users", labelKey: "app.nav.subtabs.users" },
@@ -681,7 +688,7 @@ export function AppContent() {
               </ErrorBoundary>
             }
           />
-          <Route path="/multiplayer" element={<Navigate to="/multiplayer/identify" replace />} />
+          <Route path="/multiplayer" element={<Navigate to="/multiplayer/tops-map" replace />} />
           <Route
             path="/multiplayer/identify"
             element={

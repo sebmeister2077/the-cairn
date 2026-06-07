@@ -7,7 +7,7 @@
 // block-by-block dig path.
 
 import { Suspense, lazy, useEffect, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 
 import { TunnelControls } from "@/components/tools/TunnelControls";
@@ -60,8 +60,6 @@ export function ToolsTunnelPage() {
   );
   const stats = useMemo(() => pathStats(path, from, to), [path, from, to]);
 
-  const noEndpoints = !initial.from && !initial.to;
-
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
       <header className="space-y-2">
@@ -70,19 +68,6 @@ export function ToolsTunnelPage() {
           {t("tools.tunnel.pageDescription")}
         </p>
       </header>
-
-      {noEndpoints && (
-        <div className="rounded border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
-          <div className="font-semibold">{t("tools.tunnel.invalidUrlTitle")}</div>
-          <div className="mt-1">
-            {t("tools.tunnel.invalidUrlBody")}{" "}
-            <Link to="/multiplayer/tops" className="underline">
-              Route planner
-            </Link>
-            .
-          </div>
-        </div>
-      )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,420px)_1fr] lg:items-start">
         <TunnelControls
