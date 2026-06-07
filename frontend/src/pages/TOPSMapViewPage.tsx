@@ -372,6 +372,7 @@ export function TOPSMapViewPage() {
   const climateSubToggle = useAppSelector((s) => s.mapView.climateSubToggle);
   const climateTempVariant = useAppSelector((s) => s.mapView.climateTempVariant);
   const climateThresholdMode = useAppSelector((s) => s.mapView.climateThresholdMode);
+  const climateCropId = useAppSelector((s) => s.mapView.climateCropId);
   const climateCustomMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const climateCustomMax = useAppSelector((s) => s.mapView.climateCustomMax);
   const climateOpacity = useAppSelector((s) => s.mapView.climateOpacity);
@@ -381,6 +382,7 @@ export function TOPSMapViewPage() {
     subToggle: climateSubToggle,
     tempVariant: climateTempVariant,
     thresholdMode: climateThresholdMode,
+    cropId: climateCropId,
     customMin: climateCustomMin,
     customMax: climateCustomMax,
   });

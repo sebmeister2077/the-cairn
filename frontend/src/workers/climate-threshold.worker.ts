@@ -17,14 +17,23 @@ export type ThresholdOp =
     | { kind: "min_ge"; threshold: number }
     | { kind: "max_le"; threshold: number }
     | { kind: "avg_band"; lo: number; hi: number }
-    | { kind: "custom"; lo: number | null; hi: number | null };
+    | { kind: "custom"; lo: number | null; hi: number | null }
+    /** Dual-layer AND mask. Pass iff tempmin (rawBuffer) >= minThreshold
+     *  and tempmax (secondRawBuffer) <= maxThreshold. Requires
+     *  `secondRawBuffer` and `secondDecode` on the request. */
+    | { kind: "crop_band"; minThreshold: number; maxThreshold: number };
 
 export interface ThresholdRequest {
     requestId: number;
     rawBuffer: ArrayBuffer;
+    /** Optional second source raster, used by ops that AND across two
+     *  layers (currently only `crop_band`, where the first buffer is
+     *  tempmin and the second is tempmax). */
+    secondRawBuffer?: ArrayBuffer;
     width: number;
     height: number;
     decode: ThresholdDecode;
+    secondDecode?: ThresholdDecode;
     op: ThresholdOp;
     /** RGB (0..255) for in-range pixels. Alpha is fixed at 255. */
     tintColor: [number, number, number];
@@ -57,16 +66,63 @@ function passes(value: number, op: ThresholdOp): boolean {
             if (op.hi != null && value > op.hi) return false;
             return true;
         }
+        case "crop_band":
+            // Single-layer fallback path is unreachable — `crop_band` is
+            // dispatched via the dual-buffer branch in the message handler.
+            return false;
     }
 }
 
 self.onmessage = (ev: MessageEvent<ThresholdRequest>) => {
-    const { requestId, rawBuffer, width, height, decode, op, tintColor, outsideAlpha } = ev.data;
+    const {
+        requestId,
+        rawBuffer,
+        secondRawBuffer,
+        width,
+        height,
+        decode,
+        secondDecode,
+        op,
+        tintColor,
+        outsideAlpha,
+    } = ev.data;
     const src = new Uint8ClampedArray(rawBuffer);
     const out = new Uint8ClampedArray(width * height * 4);
     const dec = decodeFn(decode);
     const [tr, tg, tb] = tintColor;
     const len = width * height;
+
+    if (op.kind === "crop_band") {
+        if (!secondRawBuffer || !secondDecode) {
+            // Misconfigured request — emit a fully-transparent mask so the
+            // UI shows nothing rather than tinting the whole world.
+            const response: ThresholdResponse = { requestId, rgba: out.buffer };
+            (self as unknown as Worker).postMessage(response, [out.buffer]);
+            return;
+        }
+        const src2 = new Uint8ClampedArray(secondRawBuffer);
+        const dec2 = decodeFn(secondDecode);
+        for (let i = 0; i < len; i++) {
+            const o = i * 4;
+            const vmin = dec(src[o], src[o + 1]);
+            const vmax = dec2(src2[o], src2[o + 1]);
+            if (vmin >= op.minThreshold && vmax <= op.maxThreshold) {
+                out[o] = tr;
+                out[o + 1] = tg;
+                out[o + 2] = tb;
+                out[o + 3] = 255;
+            } else {
+                out[o] = 0;
+                out[o + 1] = 0;
+                out[o + 2] = 0;
+                out[o + 3] = outsideAlpha;
+            }
+        }
+        const response: ThresholdResponse = { requestId, rgba: out.buffer };
+        (self as unknown as Worker).postMessage(response, [out.buffer]);
+        return;
+    }
+
     for (let i = 0; i < len; i++) {
         const o = i * 4;
         const r = src[o];

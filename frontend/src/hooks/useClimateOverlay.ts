@@ -19,7 +19,10 @@ import type {
     ClimateSubToggle,
     ClimateTempVariant,
     ClimateThresholdMode,
+    CropId,
+    CropTolerance,
 } from "@/lib/climate/types";
+import { CROPS } from "@/lib/climate/types";
 
 /** WC world center in absolute climate raster coords. The bundled
  *  raster's `world.json` uses absolute coords (origin = 412 000), but
@@ -33,6 +36,8 @@ export interface UseClimateOverlayParams {
     subToggle: ClimateSubToggle;
     tempVariant: ClimateTempVariant;
     thresholdMode: ClimateThresholdMode;
+    /** Selected crop id when `thresholdMode === "crop"`. */
+    cropId: CropId | null;
     /** Custom-mode lower bound on the active layer's units (°C or 0..1). */
     customMin: number | null;
     /** Custom-mode upper bound on the active layer's units. */
@@ -66,32 +71,34 @@ function resolveActiveKind(
     return tempVariant;
 }
 
-/** Translate a UI threshold mode into a worker op for the active layer. */
+function findCrop(id: CropId | null): CropTolerance | null {
+    if (!id) return null;
+    return CROPS.find((c) => c.id === id) ?? null;
+}
+
+/** Translate a UI threshold mode into a worker op. Crop mode is
+ *  variant-independent: the dual-layer mask always operates on tempmin +
+ *  tempmax, so the user can browse the avg/min/max gradient legend
+ *  without disturbing the active crop selection. */
 function resolveOp(
     mode: ClimateThresholdMode,
-    activeKind: ClimateLayerKind,
+    cropId: CropId | null,
     customMin: number | null,
     customMax: number | null,
 ): ThresholdOp | null {
     if (mode === "none") return null;
-    if (mode === "year_round_5" && activeKind === "tempmin") {
-        return { kind: "min_ge", threshold: 5 };
-    }
-    if (mode === "frost_free_0" && activeKind === "tempmin") {
-        return { kind: "min_ge", threshold: 0 };
-    }
-    if (mode === "tropical_10" && activeKind === "tempmin") {
-        return { kind: "min_ge", threshold: 10 };
-    }
-    if (mode === "temperate_band" && activeKind === "tempavg") {
-        return { kind: "avg_band", lo: 5, hi: 20 };
+    if (mode === "crop") {
+        const crop = findCrop(cropId);
+        if (!crop) return null;
+        return {
+            kind: "crop_band",
+            minThreshold: crop.minTempC,
+            maxThreshold: crop.maxTempC,
+        };
     }
     if (mode === "custom") {
         return { kind: "custom", lo: customMin, hi: customMax };
     }
-    // Mode/variant mismatch (e.g. "year_round_5" while variant = tempavg)
-    // — caller is expected to keep state consistent, but if it drifts,
-    // fall back to plain raster.
     return null;
 }
 
@@ -119,6 +126,8 @@ function runThreshold(
     tintColor: [number, number, number],
     outsideAlpha: number,
     abortFlag: { aborted: boolean },
+    secondBuffer?: ArrayBuffer,
+    secondDecode?: "temp" | "unit",
 ): Promise<Uint8ClampedArray> {
     const requestId = nextRequestId++;
     const worker = getWorker();
@@ -136,17 +145,26 @@ function runThreshold(
         // Clone the raw buffer — the cached source must stay intact for
         // subsequent re-runs (e.g. dragging a custom slider).
         const copy = new Uint8ClampedArray(new Uint8ClampedArray(rawBuffer));
+        const transfer: ArrayBuffer[] = [copy.buffer];
+        let secondCopyBuffer: ArrayBuffer | undefined;
+        if (secondBuffer) {
+            const c2 = new Uint8ClampedArray(new Uint8ClampedArray(secondBuffer));
+            secondCopyBuffer = c2.buffer;
+            transfer.push(secondCopyBuffer);
+        }
         const req: ThresholdRequest = {
             requestId,
             rawBuffer: copy.buffer,
+            secondRawBuffer: secondCopyBuffer,
             width,
             height,
             decode,
+            secondDecode,
             op,
             tintColor,
             outsideAlpha,
         };
-        worker.postMessage(req, [copy.buffer]);
+        worker.postMessage(req, transfer);
     });
 }
 
@@ -155,6 +173,7 @@ export function useClimateOverlay({
     subToggle,
     tempVariant,
     thresholdMode,
+    cropId,
     customMin,
     customMax,
     debounceMs = 200,
@@ -188,8 +207,8 @@ export function useClimateOverlay({
 
     const op = useMemo(
         () =>
-            activeKind ? resolveOp(thresholdMode, activeKind, customMin, customMax) : null,
-        [activeKind, thresholdMode, customMin, customMax],
+            activeKind ? resolveOp(thresholdMode, cropId, customMin, customMax) : null,
+        [activeKind, thresholdMode, cropId, customMin, customMax],
     );
 
     // Debounce custom-mode re-renders so dragging the dual slider doesn't
@@ -248,8 +267,13 @@ export function useClimateOverlay({
         }
 
         // Threshold mode — fetch raw RGBA, run worker, encode result.
-        loadClimateRaw(activeKind)
-            .then((raw) =>
+        // crop_band always operates on tempmin + tempmax regardless of
+        // which variant the user is currently browsing as the legend.
+        const isCrop = debouncedOp.kind === "crop_band";
+        const primary = loadClimateRaw(isCrop ? "tempmin" : activeKind);
+        const secondary = isCrop ? loadClimateRaw("tempmax") : Promise.resolve(null);
+        Promise.all([primary, secondary])
+            .then(([raw, raw2]) =>
                 runThreshold(
                     raw.rgba.buffer as ArrayBuffer,
                     raw.width,
@@ -259,6 +283,8 @@ export function useClimateOverlay({
                     tintColorForKind(activeKind),
                     96,
                     abortFlag,
+                    raw2 ? (raw2.rgba.buffer as ArrayBuffer) : undefined,
+                    raw2 ? raw2.decodeKind : undefined,
                 ).then((rgba) =>
                     encodeRgbaToPngUrl(rgba, raw.width, raw.height).then((url) => ({ url })),
                 ),

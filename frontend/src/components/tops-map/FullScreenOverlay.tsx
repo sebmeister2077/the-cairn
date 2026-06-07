@@ -464,12 +464,7 @@ export function FullscreenControlsOverlay({
             </div>
           </div>
         </div>
-        <div
-          className={cn(
-            !showAdvancedMapOptions && "hidden",
-            !usingWebCartographer && "hidden",
-          )}
-        >
+        <div className={cn(!showAdvancedMapOptions && "hidden", !usingWebCartographer && "hidden")}>
           <ClimateControlsPanel
             layerMeta={climateLayerMeta}
             status={climateStatus}

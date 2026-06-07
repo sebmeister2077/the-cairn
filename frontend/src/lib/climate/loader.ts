@@ -112,11 +112,11 @@ async function decodeRaw(
     const canvas = useOffscreen
         ? new OffscreenCanvas(w, h)
         : (() => {
-              const c = document.createElement("canvas");
-              c.width = w;
-              c.height = h;
-              return c;
-          })();
+            const c = document.createElement("canvas");
+            c.width = w;
+            c.height = h;
+            return c;
+        })();
     const ctx = (canvas as OffscreenCanvas | HTMLCanvasElement).getContext("2d") as
         | OffscreenCanvasRenderingContext2D
         | CanvasRenderingContext2D

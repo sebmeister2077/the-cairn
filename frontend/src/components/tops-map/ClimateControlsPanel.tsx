@@ -7,14 +7,18 @@ import {
   setClimateSubToggle as setClimateSubToggleAction,
   setClimateTempVariant as setClimateTempVariantAction,
   setClimateThresholdMode as setClimateThresholdModeAction,
+  setClimateCropId as setClimateCropIdAction,
   setClimateCustomRange as setClimateCustomRangeAction,
   setClimateOpacity as setClimateOpacityAction,
 } from "@/store/slices/mapView";
-import type {
-  ClimateLayerMeta,
-  ClimateSubToggle,
-  ClimateTempVariant,
-  ClimateThresholdMode,
+import {
+  CROPS,
+  type ClimateLayerMeta,
+  type ClimateSubToggle,
+  type ClimateTempVariant,
+  type ClimateThresholdMode,
+  type CropId,
+  type CropTolerance,
 } from "@/lib/climate/types";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -27,52 +31,54 @@ interface ClimateControlsPanelProps {
   error: string | null;
 }
 
-interface PresetSpec {
-  id: ClimateThresholdMode;
-  /** Variant the preset locks to (for chip-active highlighting). */
-  variant: ClimateTempVariant;
-}
-
-const PRESETS: PresetSpec[] = [
-  { id: "year_round_5", variant: "tempmin" },
-  { id: "frost_free_0", variant: "tempmin" },
-  { id: "tropical_10", variant: "tempmin" },
-  { id: "temperate_band", variant: "tempavg" },
-];
-
-function presetLabel(id: ClimateThresholdMode, t: (k: never) => string): string {
+function cropLabel(id: CropId, t: (k: never) => string): string {
   // Local switch keeps the i18n path literals visible to the type system —
   // `t()` is a strict generic that won't accept a `string` variable.
   // The cast on `t` lets each branch pass its own literal key safely.
   const tt = t as (k: string) => string;
   switch (id) {
-    case "year_round_5":
-      return tt("topsMap.climatePresetYearRound");
-    case "frost_free_0":
-      return tt("topsMap.climatePresetFrostFree");
-    case "tropical_10":
-      return tt("topsMap.climatePresetTropical");
-    case "temperate_band":
-      return tt("topsMap.climatePresetTemperate");
+    case "amaranth":
+      return tt("topsMap.climateCropAmaranth");
+    case "bellpepper":
+      return tt("topsMap.climateCropBellPepper");
+    case "cabbage":
+      return tt("topsMap.climateCropCabbage");
+    case "carrot":
+      return tt("topsMap.climateCropCarrot");
+    case "cassava":
+      return tt("topsMap.climateCropCassava");
+    case "flax":
+      return tt("topsMap.climateCropFlax");
+    case "onion":
+      return tt("topsMap.climateCropOnion");
+    case "parsnip":
+      return tt("topsMap.climateCropParsnip");
+    case "peanut":
+      return tt("topsMap.climateCropPeanut");
+    case "pineapple":
+      return tt("topsMap.climateCropPineapple");
+    case "pumpkin":
+      return tt("topsMap.climateCropPumpkin");
+    case "rice":
+      return tt("topsMap.climateCropRice");
+    case "rye":
+      return tt("topsMap.climateCropRye");
+    case "soybean":
+      return tt("topsMap.climateCropSoybean");
+    case "spelt":
+      return tt("topsMap.climateCropSpelt");
+    case "sunflower":
+      return tt("topsMap.climateCropSunflower");
+    case "turnip":
+      return tt("topsMap.climateCropTurnip");
     default:
       return "";
   }
 }
 
-function presetHint(id: ClimateThresholdMode, t: (k: never) => string): string {
-  const tt = t as (k: string) => string;
-  switch (id) {
-    case "year_round_5":
-      return tt("topsMap.climatePresetYearRoundHint");
-    case "frost_free_0":
-      return tt("topsMap.climatePresetFrostFreeHint");
-    case "tropical_10":
-      return tt("topsMap.climatePresetTropicalHint");
-    case "temperate_band":
-      return tt("topsMap.climatePresetTemperateHint");
-    default:
-      return "";
-  }
+function formatTempRange(crop: CropTolerance): string {
+  const fmt = (n: number) => `${n > 0 ? "+" : ""}${n}\u00B0C`;
+  return `${fmt(crop.minTempC)} \u2026 ${fmt(crop.maxTempC)}`;
 }
 
 function GradientLegend({ meta }: { meta: ClimateLayerMeta }) {
@@ -146,6 +152,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   const subToggle = useAppSelector((s) => s.mapView.climateSubToggle);
   const tempVariant = useAppSelector((s) => s.mapView.climateTempVariant);
   const thresholdMode = useAppSelector((s) => s.mapView.climateThresholdMode);
+  const cropId = useAppSelector((s) => s.mapView.climateCropId);
   const customMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const customMax = useAppSelector((s) => s.mapView.climateCustomMax);
   const opacity = useAppSelector((s) => s.mapView.climateOpacity);
@@ -162,9 +169,12 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
     (next: ClimateThresholdMode) => dispatch(setClimateThresholdModeAction(next)),
     [dispatch],
   );
+  const setCropId = useCallback(
+    (next: CropId | null) => dispatch(setClimateCropIdAction(next)),
+    [dispatch],
+  );
   const setCustomRange = useCallback(
-    (min: number | null, max: number | null) =>
-      dispatch(setClimateCustomRangeAction({ min, max })),
+    (min: number | null, max: number | null) => dispatch(setClimateCustomRangeAction({ min, max })),
     [dispatch],
   );
   const setOpacity = useCallback(
@@ -175,7 +185,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   const enabled = subToggle !== "off";
 
   // Master switch: toggling on defaults to Temperature (most useful for
-  // the crop-friendly preset chips). Toggling off resets to "off".
+  // the crop-friendly chips). Toggling off resets to "off".
   const onMasterToggle = useCallback(
     (next: boolean) => {
       setSubToggle(next ? "temperature" : "off");
@@ -184,24 +194,18 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   );
 
   const isTempMode = subToggle === "temperature";
-  const tempActive = useMemo(
-    () =>
-      isTempMode
-        ? thresholdMode === "year_round_5" ||
-          thresholdMode === "frost_free_0" ||
-          thresholdMode === "tropical_10" ||
-          thresholdMode === "temperate_band"
-        : false,
-    [isTempMode, thresholdMode],
+  const cropActive = thresholdMode === "crop" && cropId != null;
+
+  const toggleCrop = useCallback(
+    (id: CropId) => {
+      // Click the active chip a second time to clear it.
+      setCropId(cropId === id ? null : id);
+    },
+    [cropId, setCropId],
   );
 
-  const togglePreset = useCallback(
-    (id: ClimateThresholdMode) => {
-      // Click the active chip a second time to clear it.
-      setThresholdMode(thresholdMode === id ? "none" : id);
-    },
-    [thresholdMode, setThresholdMode],
-  );
+  // CROPS is already alphabetical by id; keep it as-is for stable ordering.
+  const sortedCrops = useMemo(() => CROPS, []);
 
   return (
     <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur gap-2">
@@ -230,7 +234,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
       >
         <div className="overflow-hidden min-h-0">
           <div className="flex flex-col gap-2 pt-1">
-            <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={t("topsMap.climate")}>
+            <div
+              className="flex flex-wrap gap-1"
+              role="radiogroup"
+              aria-label={t("topsMap.climate")}
+            >
               {(["geoactivity", "rainfall", "temperature"] as ClimateSubToggle[]).map((id) => {
                 const active = subToggle === id;
                 const labelKey =
@@ -268,7 +276,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                   {t("topsMap.climateTemperatureHint")}
                 </p>
                 {/* Variant radio */}
-                <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={t("topsMap.climateTemperatureVariant")}>
+                <div
+                  className="flex flex-wrap gap-1"
+                  role="radiogroup"
+                  aria-label={t("topsMap.climateTemperatureVariant")}
+                >
                   {(["tempavg", "tempmin", "tempmax"] as ClimateTempVariant[]).map((v) => {
                     const active = tempVariant === v;
                     const labelKey =
@@ -285,16 +297,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                         aria-checked={active}
                         onClick={(ev) => {
                           ev.stopPropagation();
+                          // The crop mask is variant-independent (it always
+                          // uses tempmin + tempmax internally), so changing
+                          // which gradient is shown as the legend does NOT
+                          // disturb the selected crop.
                           setTempVariant(v);
-                          // Switching variant out from under a preset would mismatch
-                          // — clear the threshold so the panel state stays consistent.
-                          if (
-                            thresholdMode !== "none" &&
-                            thresholdMode !== "custom" &&
-                            !PRESETS.find((p) => p.id === thresholdMode && p.variant === v)
-                          ) {
-                            setThresholdMode("none");
-                          }
                         }}
                         className={cn(
                           "select-none rounded border px-2 py-0.5 text-[11px] cursor-pointer transition-colors duration-150",
@@ -307,41 +314,56 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                   })}
                 </div>
 
-                {/* Crop preset chips */}
+                {/* Crop chips */}
                 <div className="flex flex-col gap-1">
                   <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {t("topsMap.climatePresets")}
+                    {t("topsMap.climateCropTitle")}
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {PRESETS.map((p) => {
-                      const active = thresholdMode === p.id;
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                    {sortedCrops.map((crop) => {
+                      const active = cropId === crop.id;
+                      const isLinen = crop.kind === "linen";
+                      const label = cropLabel(crop.id, t as never);
+                      const tooltip = `${label} \u2014 ${formatTempRange(crop)}${
+                        isLinen
+                          ? ` (${(t as (k: string) => string)("topsMap.climateCropLinenTag")})`
+                          : ""
+                      }`;
                       return (
                         <button
-                          key={p.id}
+                          key={crop.id}
                           type="button"
                           aria-pressed={active}
                           onClick={(ev) => {
                             ev.stopPropagation();
-                            togglePreset(p.id);
+                            toggleCrop(crop.id);
                           }}
-                          title={presetHint(p.id, t as never)}
+                          title={tooltip}
                           className={cn(
                             "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer transition-colors duration-150",
-                            active
-                              ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
-                              : "bg-background hover:bg-muted",
+                            active && isLinen
+                              ? "bg-sky-600 text-white border-sky-700 hover:bg-sky-700"
+                              : active
+                                ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
+                                : "bg-background hover:bg-muted",
+                            isLinen && !active && "italic",
                           )}
                         >
-                          {presetLabel(p.id, t as never)}
+                          {label}
+                          {isLinen && (
+                            <span className="ml-1 text-[9px] opacity-70 align-middle">
+                              {t("topsMap.climateCropLinenTag")}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
-                    {tempActive && (
+                    {cropActive && (
                       <button
                         type="button"
                         onClick={(ev) => {
                           ev.stopPropagation();
-                          setThresholdMode("none");
+                          setCropId(null);
                         }}
                         className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
                       >
@@ -349,6 +371,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                       </button>
                     )}
                   </div>
+                  {cropActive && (
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {formatTempRange(sortedCrops.find((c) => c.id === cropId) ?? sortedCrops[0])}
+                    </span>
+                  )}
                 </div>
 
                 {/* Custom range */}

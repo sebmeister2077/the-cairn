@@ -19,14 +19,64 @@ export type ClimateSubToggle = "off" | "temperature" | "rainfall" | "geoactivity
 
 export type ClimateTempVariant = "tempavg" | "tempmin" | "tempmax";
 
-/** Threshold mode for the Temperature panel. */
-export type ClimateThresholdMode =
-    | "none"
-    | "year_round_5"
-    | "frost_free_0"
-    | "tropical_10"
-    | "temperate_band"
-    | "custom";
+/** Threshold mode for the Temperature panel.
+ *  - "none":   show the raw temperature gradient (no masking).
+ *  - "crop":   AND-mask between `tempmin >= crop.minTempC` and
+ *              `tempmax <= crop.maxTempC` for the selected `CropId`.
+ *  - "custom": single-layer custom min/max range on the active variant.
+ */
+export type ClimateThresholdMode = "none" | "crop" | "custom";
+
+/** Crops the player can plant. All values are °C tolerances scraped from
+ *  Vintage Story's gameplay data — `minTempC` is where the plant dies of
+ *  cold, `maxTempC` is where it dies of heat. A location supports
+ *  year-round growth iff its annual `tempmin >= minTempC` and its annual
+ *  `tempmax <= maxTempC`. Flax is the only non-food entry (used for linen). */
+export type CropId =
+    | "carrot"
+    | "flax"
+    | "onion"
+    | "spelt"
+    | "turnip"
+    | "parsnip"
+    | "rice"
+    | "rye"
+    | "soybean"
+    | "amaranth"
+    | "bellpepper"
+    | "cassava"
+    | "peanut"
+    | "pineapple"
+    | "sunflower"
+    | "pumpkin"
+    | "cabbage";
+
+export interface CropTolerance {
+    id: CropId;
+    minTempC: number;
+    maxTempC: number;
+    kind: "food" | "linen";
+}
+
+export const CROPS: ReadonlyArray<CropTolerance> = [
+    { id: "amaranth", minTempC: 6, maxTempC: 42, kind: "food" },
+    { id: "bellpepper", minTempC: 8, maxTempC: 34, kind: "food" },
+    { id: "cabbage", minTempC: -5, maxTempC: 35, kind: "food" },
+    { id: "carrot", minTempC: -10, maxTempC: 32, kind: "food" },
+    { id: "cassava", minTempC: 4, maxTempC: 44, kind: "food" },
+    { id: "flax", minTempC: -5, maxTempC: 40, kind: "linen" },
+    { id: "onion", minTempC: -1, maxTempC: 40, kind: "food" },
+    { id: "parsnip", minTempC: -10, maxTempC: 32, kind: "food" },
+    { id: "peanut", minTempC: 10, maxTempC: 42, kind: "food" },
+    { id: "pineapple", minTempC: 6, maxTempC: 48, kind: "food" },
+    { id: "pumpkin", minTempC: -5, maxTempC: 40, kind: "food" },
+    { id: "rice", minTempC: 8, maxTempC: 46, kind: "food" },
+    { id: "rye", minTempC: -12, maxTempC: 27, kind: "food" },
+    { id: "soybean", minTempC: -5, maxTempC: 40, kind: "food" },
+    { id: "spelt", minTempC: -5, maxTempC: 40, kind: "food" },
+    { id: "sunflower", minTempC: -5, maxTempC: 40, kind: "food" },
+    { id: "turnip", minTempC: -5, maxTempC: 27, kind: "food" },
+];
 
 export interface ColorAnchor {
     value: number;

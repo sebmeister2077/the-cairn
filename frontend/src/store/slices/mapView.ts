@@ -15,6 +15,7 @@ import type {
     ClimateSubToggle,
     ClimateTempVariant,
     ClimateThresholdMode,
+    CropId,
 } from "@/lib/climate/types";
 
 const SELECTED_LEVEL_LS = "tops-map-selected-level";
@@ -108,6 +109,10 @@ export interface MapViewState {
     climateTempVariant: ClimateTempVariant;
     /** Active threshold/preset for the Temperature panel. */
     climateThresholdMode: ClimateThresholdMode;
+    /** Selected crop id when `climateThresholdMode === "crop"`. `null` outside
+     *  crop mode. The crop's per-species min/max temps drive a dual-layer
+     *  AND mask (tempmin >= cropMin AND tempmax <= cropMax). */
+    climateCropId: CropId | null;
     /** Custom-mode lower bound (active layer's units, e.g. °C). `null` = unbounded. */
     climateCustomMin: number | null;
     /** Custom-mode upper bound. `null` = unbounded. */
@@ -209,6 +214,7 @@ export function loadInitialMapViewState(): MapViewState {
         climateSubToggle: "off",
         climateTempVariant: "tempavg",
         climateThresholdMode: "none",
+        climateCropId: null,
         climateCustomMin: null,
         climateCustomMax: null,
         climateOpacity: 0.7,
@@ -314,6 +320,7 @@ export const mapViewSlice = createSlice({
             // the next activation starts on a clean raster.
             if (state.climateSubToggle !== "temperature") {
                 state.climateThresholdMode = "none";
+                state.climateCropId = null;
             }
         },
         setClimateTempVariant(state, action: PayloadAction<ClimateTempVariant>) {
@@ -321,16 +328,29 @@ export const mapViewSlice = createSlice({
         },
         setClimateThresholdMode(state, action: PayloadAction<ClimateThresholdMode>) {
             state.climateThresholdMode = action.payload;
-            // Lock the variant to whatever the chosen preset operates on so
-            // the UI and the masking pipeline can't disagree.
-            if (
-                action.payload === "year_round_5" ||
-                action.payload === "frost_free_0" ||
-                action.payload === "tropical_10"
-            ) {
-                state.climateTempVariant = "tempmin";
-            } else if (action.payload === "temperate_band") {
-                state.climateTempVariant = "tempavg";
+            if (action.payload !== "crop") {
+                state.climateCropId = null;
+            }
+        },
+        setClimateCropId(state, action: PayloadAction<CropId | null>) {
+            const nextId = action.payload;
+            state.climateCropId = nextId;
+            if (nextId == null) {
+                // Clearing the crop drops back to the raw temperature
+                // gradient. Don't auto-switch the variant — the user may
+                // have been viewing tempmin/avg/max independently.
+                if (state.climateThresholdMode === "crop") {
+                    state.climateThresholdMode = "none";
+                }
+            } else {
+                state.climateThresholdMode = "crop";
+                // Crop mask is variant-independent (always uses tempmin AND
+                // tempmax internally), so we leave climateTempVariant alone
+                // and let the user freely browse the avg/min/max legend.
+                // Custom inputs are a separate flow; clearing them prevents
+                // "why are my numbers ignored" confusion when toggling back.
+                state.climateCustomMin = null;
+                state.climateCustomMax = null;
             }
         },
         setClimateCustomRange(
@@ -422,6 +442,7 @@ export const {
     setClimateSubToggle,
     setClimateTempVariant,
     setClimateThresholdMode,
+    setClimateCropId,
     setClimateCustomRange,
     setClimateOpacity,
     setShowAdvancedMapOptions,
