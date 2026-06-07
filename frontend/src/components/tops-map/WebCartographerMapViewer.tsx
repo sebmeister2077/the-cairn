@@ -144,6 +144,10 @@ interface WebCartographerMapViewerProps {
   cursorMode?: "default" | "pick";
   onWorldClick?: (x: number, z: number) => void;
   interactionsLocked?: boolean;
+  /** Receives the cursor's centered (TOPS) world coordinate on every
+   *  mousemove, and `null` on mouseleave. Used by overlays (climate
+   *  probe, etc.) that need a live readout. */
+  onHoverCoords?: (coords: { x: number; z: number } | null) => void;
 
   // ── Navigation ──────────────────────────────────────────────────────────
   focusPoint?: { x: number; z: number };
@@ -232,6 +236,7 @@ export function WebCartographerMapViewer({
   cursorMode = "default",
   onWorldClick,
   interactionsLocked = false,
+  onHoverCoords,
   focusPoint,
   focusZoom = 1,
   focusSpanBlocks,
@@ -1163,7 +1168,10 @@ export function WebCartographerMapViewer({
 
       // Hover coord readout.
       const world = unprojectScreen(sx, sy);
-      setHoverCoords({ x: Math.floor(world.x), z: Math.floor(world.z) });
+      const hx = Math.floor(world.x);
+      const hz = Math.floor(world.z);
+      setHoverCoords({ x: hx, z: hz });
+      onHoverCoords?.({ x: hx, z: hz });
 
       // Hover-on-segment hit test in screen space.
       if (projectedSegments.length > 0) {
@@ -1194,7 +1202,7 @@ export function WebCartographerMapViewer({
         setHoveredSegmentIndex(null);
       }
     },
-    [dragging, projectedSegments, unprojectScreen, hoveredSegmentIndex],
+    [dragging, projectedSegments, unprojectScreen, hoveredSegmentIndex, onHoverCoords],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -1205,8 +1213,9 @@ export function WebCartographerMapViewer({
     setDragging(false);
     dragStartRef.current = null;
     setHoverCoords(null);
+    onHoverCoords?.(null);
     setHoveredSegmentIndex(null);
-  }, []);
+  }, [onHoverCoords]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {

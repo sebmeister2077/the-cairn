@@ -102,6 +102,7 @@ import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayL
 import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
+import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
@@ -386,6 +387,17 @@ export function TOPSMapViewPage() {
     customMin: climateCustomMin,
     customMax: climateCustomMax,
   });
+  // Cursor coords (centered TOPS world space) for the climate hover
+  // readout. Mirrored out of WebCartographerMapViewer's internal hover
+  // state via `onHoverCoords`.
+  const [climateHoverCoords, setClimateHoverCoords] = useState<{ x: number; z: number } | null>(
+    null,
+  );
+  const climateSampleAt = climateOverlay.sampleAt;
+  const climateHoverSample = useMemo(() => {
+    if (!climateVisible || !climateHoverCoords) return null;
+    return climateSampleAt(climateHoverCoords.x, climateHoverCoords.z);
+  }, [climateVisible, climateHoverCoords, climateSampleAt]);
 
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
@@ -1990,6 +2002,7 @@ export function TOPSMapViewPage() {
               cursorMode={routePickMode ? "pick" : "default"}
               onWorldClick={handleRouteWorldClick}
               routeOverlay={routeOverlay}
+              onHoverCoords={setClimateHoverCoords}
             />
           ) : (
             <MapViewer
@@ -2061,6 +2074,13 @@ export function TOPSMapViewPage() {
               cursorMode={routePickMode ? "pick" : "default"}
               onWorldClick={handleRouteWorldClick}
               routeOverlay={routeOverlay}
+            />
+          )}
+          {climateVisible && (
+            <ClimateHoverReadout
+              hoverCoords={climateHoverCoords}
+              sample={climateHoverSample}
+              visible={climateVisible}
             />
           )}
           {showTranslocators && selectedTranslocator && (

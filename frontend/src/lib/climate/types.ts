@@ -138,6 +138,16 @@ export interface LoadedClimateColor {
 /** Decoder receives byte values from the raw PNG and returns the scalar value. */
 export type ClimateDecoder = (r: number, g: number) => number;
 
+/** Histogram-derived percentile bounds for the actual pixel distribution.
+ *  Used to contrast-stretch unit-range layers (rainfall, geoactivity)
+ *  whose distribution is heavily skewed and would otherwise render most
+ *  of the world as a near-uniform color in the bundled PNG. */
+export interface LoadedClimatePercentiles {
+    p1: number;
+    p50: number;
+    p99: number;
+}
+
 export interface LoadedClimateRaw {
     kind: ClimateLayerKind;
     rgba: Uint8ClampedArray;
@@ -149,6 +159,8 @@ export interface LoadedClimateRaw {
      *  for cursor probe / non-worker callers. */
     decodeKind: "temp" | "unit";
     decode: ClimateDecoder;
+    /** Computed once per session from the raw image. */
+    percentiles: LoadedClimatePercentiles;
 }
 
 export interface ClimateOverlayBounds {

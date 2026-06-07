@@ -12,6 +12,15 @@
 
 export type ThresholdDecode = "temp" | "unit";
 
+/** RGB triple, components 0..255. */
+export type RgbTriple = [number, number, number];
+
+/** Piecewise-linear gradient stop in the active layer's units (\u00B0C or 0..1). */
+export interface ColorStop {
+    value: number;
+    rgb: RgbTriple;
+}
+
 export type ThresholdOp =
     | { kind: "passthrough" }
     | { kind: "min_ge"; threshold: number }
@@ -21,7 +30,13 @@ export type ThresholdOp =
     /** Dual-layer AND mask. Pass iff tempmin (rawBuffer) >= minThreshold
      *  and tempmax (secondRawBuffer) <= maxThreshold. Requires
      *  `secondRawBuffer` and `secondDecode` on the request. */
-    | { kind: "crop_band"; minThreshold: number; maxThreshold: number };
+    | { kind: "crop_band"; minThreshold: number; maxThreshold: number }
+    /** Render the raw raster as a colorized PNG using a piecewise-linear
+     *  gradient. Used to replace the static (and often poorly-stretched)
+     *  bundled color asset for unit-range layers like geoactivity, where
+     *  the actual data distribution is heavily skewed and the bundled
+     *  color anchors waste most of the visible range on near-zero pixels. */
+    | { kind: "colorize"; stops: ColorStop[] };
 
 export interface ThresholdRequest {
     requestId: number;
@@ -70,7 +85,35 @@ function passes(value: number, op: ThresholdOp): boolean {
             // Single-layer fallback path is unreachable — `crop_band` is
             // dispatched via the dual-buffer branch in the message handler.
             return false;
+        case "colorize":
+            // Same — `colorize` runs in its own branch and never goes
+            // through this filter helper.
+            return false;
     }
+}
+
+/** Find bracketing stops via linear scan (stops are tiny — at most a
+ *  few dozen). Returns `[lo, hi, t]` where `t` is the 0..1 lerp parameter
+ *  between `lo` and `hi`. Out-of-range values clamp to the endpoints. */
+function lerpColor(value: number, stops: ColorStop[]): RgbTriple {
+    if (stops.length === 0) return [0, 0, 0];
+    if (stops.length === 1) return stops[0].rgb;
+    if (value <= stops[0].value) return stops[0].rgb;
+    if (value >= stops[stops.length - 1].value) return stops[stops.length - 1].rgb;
+    for (let i = 1; i < stops.length; i++) {
+        const hi = stops[i];
+        if (value <= hi.value) {
+            const lo = stops[i - 1];
+            const span = hi.value - lo.value;
+            const t = span > 0 ? (value - lo.value) / span : 0;
+            return [
+                Math.round(lo.rgb[0] + (hi.rgb[0] - lo.rgb[0]) * t),
+                Math.round(lo.rgb[1] + (hi.rgb[1] - lo.rgb[1]) * t),
+                Math.round(lo.rgb[2] + (hi.rgb[2] - lo.rgb[2]) * t),
+            ];
+        }
+    }
+    return stops[stops.length - 1].rgb;
 }
 
 self.onmessage = (ev: MessageEvent<ThresholdRequest>) => {
@@ -117,6 +160,22 @@ self.onmessage = (ev: MessageEvent<ThresholdRequest>) => {
                 out[o + 2] = 0;
                 out[o + 3] = outsideAlpha;
             }
+        }
+        const response: ThresholdResponse = { requestId, rgba: out.buffer };
+        (self as unknown as Worker).postMessage(response, [out.buffer]);
+        return;
+    }
+
+    if (op.kind === "colorize") {
+        const stops = op.stops;
+        for (let i = 0; i < len; i++) {
+            const o = i * 4;
+            const v = dec(src[o], src[o + 1]);
+            const rgb = lerpColor(v, stops);
+            out[o] = rgb[0];
+            out[o + 1] = rgb[1];
+            out[o + 2] = rgb[2];
+            out[o + 3] = 255;
         }
         const response: ThresholdResponse = { requestId, rgba: out.buffer };
         (self as unknown as Worker).postMessage(response, [out.buffer]);
