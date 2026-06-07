@@ -33,10 +33,30 @@ import {
 import type { Block3 } from "./tunnel-share";
 
 export type Topology = "pairs" | "tour" | "hub";
-export type CostMetric = "total" | "minimax" | "manhattan";
+// `balanced` is hub-only: minimise the spread (max − min) of branch lengths
+// so every TL ends up at a similar distance from the junction.
+export type CostMetric = "total" | "minimax" //| "balanced";
 
 export const TOPOLOGIES: ReadonlyArray<Topology> = ["pairs", "tour", "hub"];
-export const COST_METRICS: ReadonlyArray<CostMetric> = ["total", "minimax", "manhattan"];
+export const COST_METRICS: ReadonlyArray<CostMetric> = ["total", "minimax"];
+
+/** Cost metrics that are meaningful for the given topology.
+ *  - `pairs` ignores the metric entirely (every enabled edge renders).
+ *  - `tour`  only uses sum vs longest-hop; spread doesn't apply.
+ *  - `hub`   supports all three. */
+export function availableMetricsForTopology(topology: Topology): ReadonlyArray<CostMetric> {
+    if (topology === "pairs") return [];
+    if (topology === "tour") return [];
+    return ["total", "minimax"];
+}
+
+/** Coerce a metric to one that's valid for the given topology, falling
+ *  back to `"total"` when the current pick doesn't apply. */
+export function clampMetricToTopology(metric: CostMetric, topology: Topology): CostMetric {
+    const allowed = availableMetricsForTopology(topology);
+    if (allowed.length === 0) return metric;
+    return allowed.includes(metric) ? metric : "total";
+}
 
 /** A user-defined endpoint. `id` is stable across renders so the
  *  segment registry keys don't break when coords are edited. */
@@ -140,25 +160,25 @@ export function pruneSegments(
 // Cost metrics
 // ---------------------------------------------------------------------------
 
-function manhattan(a: Block3, b: Block3): number {
-    return Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z);
-}
-
-/** Cost of a single segment under a given metric. `total` and `minimax`
- *  use real path length (the segment spec affects geometry); `manhattan`
- *  is closed-form and ignores the spec. */
+/** Cost of a single segment under a given metric. All metrics use the
+ *  real path length (the segment spec affects geometry); the metric
+ *  only changes how those per-segment costs are aggregated. */
 export function segmentCost(
     from: Block3,
     to: Block3,
     spec: SegmentSpec,
-    metric: CostMetric,
+    _metric: CostMetric,
 ): number {
-    if (metric === "manhattan") return manhattan(from, to);
+    void _metric;
     const path = generateTunnelPath(from, to, spec.pattern, spec.mode);
     return Math.max(0, path.length - 1);
 }
 
-/** Aggregate a batch of segment costs under the chosen metric. */
+/** Aggregate a batch of segment costs under the chosen metric.
+ *  - `total`    : sum of costs.
+ *  - `minimax`  : the largest cost.
+ *  - `balanced` : spread (max − min) — hub-only, drives the solver
+ *                 toward placements where every branch is similar. */
 export function aggregateCost(costs: ReadonlyArray<number>, metric: CostMetric): number {
     if (costs.length === 0) return 0;
     if (metric === "minimax") {
@@ -166,6 +186,16 @@ export function aggregateCost(costs: ReadonlyArray<number>, metric: CostMetric):
         for (let i = 1; i < costs.length; i++) if (costs[i] > m) m = costs[i];
         return m;
     }
+    // if (metric === "balanced") {
+    //     let lo = costs[0];
+    //     let hi = costs[0];
+    //     for (let i = 1; i < costs.length; i++) {
+    //         const c = costs[i];
+    //         if (c < lo) lo = c;
+    //         if (c > hi) hi = c;
+    //     }
+    //     return hi - lo;
+    // }
     let sum = 0;
     for (const c of costs) sum += c;
     return sum;

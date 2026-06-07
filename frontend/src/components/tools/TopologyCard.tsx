@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/select";
 import { useTranslation } from "@/lib/i18n";
 import {
-  COST_METRICS,
   MULTI_TUNNEL_SOFT_CAP,
   TOPOLOGIES,
+  availableMetricsForTopology,
   pairwiseEdgeKeys,
   type CostMetric,
   type EdgeKey,
@@ -66,9 +66,12 @@ export function TopologyCard({
 
   const overCap = endpoints.length > MULTI_TUNNEL_SOFT_CAP;
   const showApproxBanner = overCap && (topology === "hub" || topology === "tour");
+  const metricOptions = useMemo(() => availableMetricsForTopology(topology), [topology]);
 
   const labelOf = (ep: TLEndpoint, idx: number) =>
     ep.label?.trim() || t("tools.tunnel.endpointDefaultLabel", { index: idx + 1 });
+
+  if (endpoints.length <= 2) return null;
 
   return (
     <div className="space-y-3 rounded-md border bg-background p-3">
@@ -102,27 +105,31 @@ export function TopologyCard({
       </fieldset>
 
       <div className="space-y-1">
-        <Label
-          htmlFor="tunnel-cost-metric"
-          className="text-[10px] uppercase tracking-wide text-muted-foreground"
-        >
-          {t("tools.tunnel.costMetricLabel")}
-        </Label>
-        <Select value={costMetric} onValueChange={(v) => onChangeCostMetric(v as CostMetric)}>
-          <SelectTrigger id="tunnel-cost-metric" size="sm" className="w-full">
-            <SelectValue>{t(`tools.tunnel.costMetrics.${costMetric}`)}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {COST_METRICS.map((m) => (
-              <SelectItem key={m} value={m}>
-                {t(`tools.tunnel.costMetrics.${m}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <p className="text-[10px] text-muted-foreground">
-          {t(`tools.tunnel.costMetricHints.${costMetric}`)}
-        </p>
+        {metricOptions.length > 0 ? (
+          <>
+            <Label
+              htmlFor="tunnel-cost-metric"
+              className="text-[10px] uppercase tracking-wide text-muted-foreground"
+            >
+              {t("tools.tunnel.costMetricLabel")}
+            </Label>
+            <Select value={costMetric} onValueChange={(v) => onChangeCostMetric(v as CostMetric)}>
+              <SelectTrigger id="tunnel-cost-metric" size="sm" className="w-full">
+                <SelectValue>{t(`tools.tunnel.costMetrics.${costMetric}`)}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {metricOptions.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {t(`tools.tunnel.costMetrics.${m}`)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              {t(`tools.tunnel.costMetricHints.${costMetric}`)}
+            </p>
+          </>
+        ) : null}
       </div>
 
       {showApproxBanner && (

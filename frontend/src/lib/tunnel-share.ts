@@ -1,7 +1,7 @@
 // URL param helpers for the /tools tunnel page.
 //
 // Wire formats supported (the parser tries them in order):
-//   - Multi-endpoint: `/tools?tls=x,y,z;x,y,z;...&topology=hub|tour|pairs&cost=total|minimax|manhattan`
+//   - Multi-endpoint: `/tools?tls=x,y,z;x,y,z;...&topology=hub|tour|pairs&cost=total|minimax|balanced`
 //   - Legacy 2-point: `/tools?from=x,y,z&to=x,y,z`
 //
 // Legacy params remain accepted so existing route-planner deep links
@@ -48,10 +48,11 @@ function parseTlsList(raw: string | null | undefined): Block3[] | null {
 }
 
 export type ShareTopology = "pairs" | "tour" | "hub";
-export type ShareCostMetric = "total" | "minimax" | "manhattan";
+export type ShareCostMetric = "total" | "minimax" //| "balanced";
 
 const TOPOLOGY_VALUES: ReadonlySet<string> = new Set(["pairs", "tour", "hub"]);
-const COST_VALUES: ReadonlySet<string> = new Set(["total", "minimax", "manhattan"]);
+const COST_VALUES: ReadonlySet<string> = new Set(["total", "minimax" //, "balanced"
+]);
 
 function parseTopology(raw: string | null | undefined): ShareTopology | null {
     if (!raw) return null;

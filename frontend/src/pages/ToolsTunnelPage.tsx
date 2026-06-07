@@ -17,6 +17,7 @@ import { useTranslation } from "@/lib/i18n";
 import {
   aggregateMultiStats,
   buildMultiPaths,
+  clampMetricToTopology,
   newEndpointId,
   pairwiseEdgeKeys,
   pruneSegments,
@@ -36,7 +37,7 @@ const DEFAULT_TLS: Block3[] = [
   { x: 0, y: 110, z: 0 },
   { x: 100, y: 110, z: 30 },
 ];
-const DEFAULT_COST: CostMetric = "total";
+const DEFAULT_COST: CostMetric = "minimax";
 
 const VIEWER_SIZE_CLASSES =
   "h-105 sm:h-130 lg:sticky lg:top-4 lg:h-[calc(100vh-6rem)] lg:max-h-215 lg:min-h-160";
@@ -244,7 +245,12 @@ export function ToolsTunnelPage() {
           onRemoveEndpoint={handleRemoveEndpoint}
           onChangeEndpointCoord={handleEndpointCoord}
           onChangeEndpointLabel={handleEndpointLabel}
-          onChangeTopology={setTopology}
+          onChangeTopology={(next) => {
+            setTopology(next);
+            // Keep the cost metric valid for the new topology (e.g.
+            // `balanced` only exists for hub).
+            setCostMetric((prev) => clampMetricToTopology(prev, next));
+          }}
           onChangeCostMetric={setCostMetric}
           onTogglePair={handleTogglePair}
           onEnableAllPairs={handleEnableAllPairs}

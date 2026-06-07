@@ -1479,12 +1479,12 @@ export const en = {
             costMetrics: {
                 total: "Total blocks dug",
                 minimax: "Longest branch (minimax)",
-                manhattan: "Straight-line distance",
+                balanced: "Balanced branches",
             },
             costMetricHints: {
                 total: "Minimise the sum of every branch length. Good when total dig effort is the bottleneck.",
                 minimax: "Minimise the longest single branch. Fairer to every TL — no one branch dominates.",
-                manhattan: "Closed-form, ignores per-segment patterns. Fastest to compute; rough but useful for big networks.",
+                balanced: "Place the hub where every branch ends up a similar length. Best for symmetric stations — may add a few blocks overall.",
             },
             approximationBanner: "Above {cap} endpoints the optimiser uses approximations (NN+2-opt for tour, centroid-only for hub) to stay interactive.",
             junctionLabel: "Junction block",
