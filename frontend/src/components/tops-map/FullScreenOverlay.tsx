@@ -37,7 +37,9 @@ import {
   type TraderType,
 } from "@/lib/trader-types";
 import { HomePositionControls } from "./HomePositionControls";
+import { ClimateControlsPanel } from "./ClimateControlsPanel";
 import type { LegendEntry } from "@/lib/rockstrata/types";
+import type { ClimateLayerMeta } from "@/lib/climate/types";
 import { cn } from "@/lib/utils";
 
 type FullscreenControlsOverlayProps = {
@@ -61,6 +63,11 @@ type FullscreenControlsOverlayProps = {
   onClearHome: () => void;
   /** Rock-strata legend (null while disabled / loading). */
   rockStrataLegend: LegendEntry[] | null;
+  /** Climate active-layer metadata (null while disabled / loading). */
+  climateLayerMeta: ClimateLayerMeta | null;
+  /** Climate overlay status pill (loading / error). */
+  climateStatus: "idle" | "loading" | "ready" | "error";
+  climateError: string | null;
 };
 
 /**
@@ -91,6 +98,9 @@ export function FullscreenControlsOverlay({
   onSaveCurrentAsHome,
   onClearHome,
   rockStrataLegend,
+  climateLayerMeta,
+  climateStatus,
+  climateError,
 }: FullscreenControlsOverlayProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -453,6 +463,18 @@ export function FullscreenControlsOverlay({
               </div>
             </div>
           </div>
+        </div>
+        <div
+          className={cn(
+            !showAdvancedMapOptions && "hidden",
+            !usingWebCartographer && "hidden",
+          )}
+        >
+          <ClimateControlsPanel
+            layerMeta={climateLayerMeta}
+            status={climateStatus}
+            error={climateError}
+          />
         </div>
         <Button
           type="button"

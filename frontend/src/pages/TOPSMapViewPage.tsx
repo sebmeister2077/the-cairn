@@ -101,6 +101,8 @@ import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
 import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayLayer";
 import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
+import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
+import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
@@ -359,6 +361,28 @@ export function TOPSMapViewPage() {
     keepCodes: rockStrataKeepCodes,
     halfBlocks: rockStrataHalfBlocks,
     center: rockStrataCenter,
+  });
+
+  // Climate overlay (WebCartographer-only). Mutually exclusive with the
+  // rock-strata overlay at the slice-reducer level, so we don't need a
+  // separate UI guard — only one of the two raster URLs will be set at
+  // any given time. State lives in the mapView slice and is gated by
+  // `showAdvancedMapOptions` (account preference) so the controls and
+  // hook fetches are suppressed for users who haven't opted in.
+  const climateSubToggle = useAppSelector((s) => s.mapView.climateSubToggle);
+  const climateTempVariant = useAppSelector((s) => s.mapView.climateTempVariant);
+  const climateThresholdMode = useAppSelector((s) => s.mapView.climateThresholdMode);
+  const climateCustomMin = useAppSelector((s) => s.mapView.climateCustomMin);
+  const climateCustomMax = useAppSelector((s) => s.mapView.climateCustomMax);
+  const climateOpacity = useAppSelector((s) => s.mapView.climateOpacity);
+  const climateVisible = climateSubToggle !== "off" && showAdvancedMapOptions;
+  const climateOverlay = useClimateOverlay({
+    enabled: climateVisible,
+    subToggle: climateSubToggle,
+    tempVariant: climateTempVariant,
+    thresholdMode: climateThresholdMode,
+    customMin: climateCustomMin,
+    customMax: climateCustomMax,
   });
 
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
@@ -1936,15 +1960,29 @@ export function TOPSMapViewPage() {
                 ) : null
               }
               overlayRenderAbove={({ imgNatural, stats: wcStats }) =>
-                wcStats && imgNatural.w > 0 && imgNatural.h > 0 && rockStrataVisible ? (
-                  <RockStrataOverlayLayer
-                    bounds={rockStrataOverlay.overlayBounds}
-                    overlayUrl={rockStrataOverlay.overlayUrl}
-                    stats={wcStats}
-                    imageWidth={imgNatural.w}
-                    imageHeight={imgNatural.h}
-                    opacity={rockStrataOpacity}
-                  />
+                wcStats && imgNatural.w > 0 && imgNatural.h > 0 ? (
+                  <>
+                    {rockStrataVisible ? (
+                      <RockStrataOverlayLayer
+                        bounds={rockStrataOverlay.overlayBounds}
+                        overlayUrl={rockStrataOverlay.overlayUrl}
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        opacity={rockStrataOpacity}
+                      />
+                    ) : null}
+                    {climateVisible ? (
+                      <ClimateOverlayLayer
+                        bounds={climateOverlay.overlayBounds}
+                        overlayUrl={climateOverlay.overlayUrl}
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        opacity={climateOpacity}
+                      />
+                    ) : null}
+                  </>
                 ) : null
               }
               cursorMode={routePickMode ? "pick" : "default"}
@@ -2055,6 +2093,9 @@ export function TOPSMapViewPage() {
               onSaveCurrentAsHome={handleSetCurrentAsHome}
               onClearHome={clearFavoriteStartingPosition}
               rockStrataLegend={rockStrataOverlay.legend}
+              climateLayerMeta={climateOverlay.layerMeta}
+              climateStatus={climateOverlay.status}
+              climateError={climateOverlay.error}
             />
           )}
         </div>

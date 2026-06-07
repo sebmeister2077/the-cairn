@@ -11,6 +11,11 @@ import {
     type TLStyle,
     type TraderStyle,
 } from "@/lib/markerStyles";
+import type {
+    ClimateSubToggle,
+    ClimateTempVariant,
+    ClimateThresholdMode,
+} from "@/lib/climate/types";
 
 const SELECTED_LEVEL_LS = "tops-map-selected-level";
 const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
@@ -91,6 +96,24 @@ export interface MapViewState {
     rockStrataHalfBlocks: number;
     /** Rock-strata overlay opacity (0..1). */
     rockStrataOpacity: number;
+    /**
+     * Climate overlay sub-toggle. Mutually exclusive with the rock-strata
+     * overlay (turning either on disables the other). "off" hides the
+     * climate raster entirely; the other variants pick which scalar layer
+     * to render. Only visible in fullscreen + WebCartographer mode + with
+     * `showAdvancedMapOptions` enabled.
+     */
+    climateSubToggle: ClimateSubToggle;
+    /** Which temperature layer to render when `climateSubToggle === "temperature"`. */
+    climateTempVariant: ClimateTempVariant;
+    /** Active threshold/preset for the Temperature panel. */
+    climateThresholdMode: ClimateThresholdMode;
+    /** Custom-mode lower bound (active layer's units, e.g. °C). `null` = unbounded. */
+    climateCustomMin: number | null;
+    /** Custom-mode upper bound. `null` = unbounded. */
+    climateCustomMax: number | null;
+    /** Climate overlay opacity (0..1). */
+    climateOpacity: number;
     /**
      * Account-level preference ("Show additional options on Map") that
      * gates advanced/experimental map controls. When OFF (default), the
@@ -183,6 +206,12 @@ export function loadInitialMapViewState(): MapViewState {
         rockStrataKeepCodes: null,
         rockStrataHalfBlocks: 10000,
         rockStrataOpacity: 0.85,
+        climateSubToggle: "off",
+        climateTempVariant: "tempavg",
+        climateThresholdMode: "none",
+        climateCustomMin: null,
+        climateCustomMax: null,
+        climateOpacity: 0.7,
         showAdvancedMapOptions: false,
         isFullscreen: false,
         starfieldEnabled: true,
@@ -253,6 +282,11 @@ export const mapViewSlice = createSlice({
         },
         setShowRockStrata(state, action: PayloadAction<boolean>) {
             state.showRockStrata = action.payload;
+            // Mutually exclusive with the climate overlay — flipping rock
+            // strata on hides any active climate raster (and vice versa).
+            if (state.showRockStrata) {
+                state.climateSubToggle = "off";
+            }
         },
         setRockStrataKind(state, action: PayloadAction<"rock" | "geo">) {
             state.rockStrataKind = action.payload;
@@ -270,6 +304,47 @@ export const mapViewSlice = createSlice({
             const v = action.payload;
             if (!Number.isFinite(v)) return;
             state.rockStrataOpacity = Math.max(0, Math.min(1, v));
+        },
+        setClimateSubToggle(state, action: PayloadAction<ClimateSubToggle>) {
+            state.climateSubToggle = action.payload;
+            if (state.climateSubToggle !== "off") {
+                state.showRockStrata = false;
+            }
+            // Switching away from Temperature clears any temp-only preset so
+            // the next activation starts on a clean raster.
+            if (state.climateSubToggle !== "temperature") {
+                state.climateThresholdMode = "none";
+            }
+        },
+        setClimateTempVariant(state, action: PayloadAction<ClimateTempVariant>) {
+            state.climateTempVariant = action.payload;
+        },
+        setClimateThresholdMode(state, action: PayloadAction<ClimateThresholdMode>) {
+            state.climateThresholdMode = action.payload;
+            // Lock the variant to whatever the chosen preset operates on so
+            // the UI and the masking pipeline can't disagree.
+            if (
+                action.payload === "year_round_5" ||
+                action.payload === "frost_free_0" ||
+                action.payload === "tropical_10"
+            ) {
+                state.climateTempVariant = "tempmin";
+            } else if (action.payload === "temperate_band") {
+                state.climateTempVariant = "tempavg";
+            }
+        },
+        setClimateCustomRange(
+            state,
+            action: PayloadAction<{ min: number | null; max: number | null }>,
+        ) {
+            const { min, max } = action.payload;
+            state.climateCustomMin = min == null || !Number.isFinite(min) ? null : min;
+            state.climateCustomMax = max == null || !Number.isFinite(max) ? null : max;
+        },
+        setClimateOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.climateOpacity = Math.max(0, Math.min(1, v));
         },
         setShowAdvancedMapOptions(state, action: PayloadAction<boolean>) {
             state.showAdvancedMapOptions = action.payload;
@@ -344,6 +419,11 @@ export const {
     setRockStrataKeepCodes,
     setRockStrataHalfBlocks,
     setRockStrataOpacity,
+    setClimateSubToggle,
+    setClimateTempVariant,
+    setClimateThresholdMode,
+    setClimateCustomRange,
+    setClimateOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,
     setStarfieldEnabled,

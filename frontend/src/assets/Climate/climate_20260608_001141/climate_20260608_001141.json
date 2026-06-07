@@ -1,0 +1,827 @@
+{
+  "seed": 421943594,
+  "center": {
+    "x": 512000,
+    "z": 512000
+  },
+  "halfSizeBlocks": 100000,
+  "outputPx": 2000,
+  "anchorY": 110,
+  "regionSize": 512,
+  "noiseSizeClimate": 16,
+  "blocksPerNoisePx": 32,
+  "worldBox": {
+    "minX": 412000,
+    "minZ": 412000,
+    "maxX": 612000,
+    "maxZ": 612000
+  },
+  "worldConfig": {
+    "polarEquatorDistance": "100000",
+    "globalTemperature": "1",
+    "globalPrecipitation": "1",
+    "startingClimate": "temperate"
+  },
+  "assumptions": [
+    "tempAvg = annual mean temperature at Y=110 (sea level), distToSealevel=0.",
+    "tempMin/tempMax = seasonal extremes only (|latitude| * 65 / 2). Excludes diurnal swing (5..18 °C) and weather noise (~±2 °C).",
+    "Latitude/polar attenuation is already baked into the climate noise byte; we apply it implicitly via the in-game decode.",
+    "Per-pixel altitude cooling is NOT applied (would require terrain heightmap / chunk gen)."
+  ],
+  "layers": [
+    {
+      "layer": "tempavg",
+      "description": "Annual mean temperature at Y=110, °C",
+      "colorPng": "climate_20260608_001141.tempavg.png",
+      "rawPng": "climate_20260608_001141.tempavg.raw.png",
+      "rawDecodeFormula": "tempC = (R*256 + G) / 200 - 100",
+      "colorAnchors": [
+        {
+          "value": -50.0,
+          "hex": "#0000A0"
+        },
+        {
+          "value": -10.0,
+          "hex": "#1030B0"
+        },
+        {
+          "value": -9.0,
+          "hex": "#1E41B7"
+        },
+        {
+          "value": -8.0,
+          "hex": "#2C53BF"
+        },
+        {
+          "value": -7.0,
+          "hex": "#3B64C7"
+        },
+        {
+          "value": -6.0,
+          "hex": "#4976CF"
+        },
+        {
+          "value": -5.0,
+          "hex": "#5888D7"
+        },
+        {
+          "value": -4.0,
+          "hex": "#6699DF"
+        },
+        {
+          "value": -3.0,
+          "hex": "#74ABE7"
+        },
+        {
+          "value": -2.0,
+          "hex": "#83BCEF"
+        },
+        {
+          "value": -1.0,
+          "hex": "#91CEF7"
+        },
+        {
+          "value": 0.0,
+          "hex": "#A0E0FF"
+        },
+        {
+          "value": 1.0,
+          "hex": "#99DEEF"
+        },
+        {
+          "value": 2.0,
+          "hex": "#93DCDF"
+        },
+        {
+          "value": 3.0,
+          "hex": "#8CDBCF"
+        },
+        {
+          "value": 4.0,
+          "hex": "#86D9BF"
+        },
+        {
+          "value": 5.0,
+          "hex": "#80D8AF"
+        },
+        {
+          "value": 6.0,
+          "hex": "#79D69F"
+        },
+        {
+          "value": 7.0,
+          "hex": "#73D48F"
+        },
+        {
+          "value": 8.0,
+          "hex": "#6CD37F"
+        },
+        {
+          "value": 9.0,
+          "hex": "#66D16F"
+        },
+        {
+          "value": 10.0,
+          "hex": "#60D060"
+        },
+        {
+          "value": 11.0,
+          "hex": "#69D15C"
+        },
+        {
+          "value": 12.0,
+          "hex": "#73D359"
+        },
+        {
+          "value": 13.0,
+          "hex": "#7CD456"
+        },
+        {
+          "value": 14.0,
+          "hex": "#86D653"
+        },
+        {
+          "value": 15.0,
+          "hex": "#90D850"
+        },
+        {
+          "value": 16.0,
+          "hex": "#99D94C"
+        },
+        {
+          "value": 17.0,
+          "hex": "#A3DB49"
+        },
+        {
+          "value": 18.0,
+          "hex": "#ACDC46"
+        },
+        {
+          "value": 19.0,
+          "hex": "#B6DE43"
+        },
+        {
+          "value": 20.0,
+          "hex": "#C0E040"
+        },
+        {
+          "value": 21.0,
+          "hex": "#C6D63C"
+        },
+        {
+          "value": 22.0,
+          "hex": "#CCCC39"
+        },
+        {
+          "value": 23.0,
+          "hex": "#D2C336"
+        },
+        {
+          "value": 24.0,
+          "hex": "#D9B933"
+        },
+        {
+          "value": 25.0,
+          "hex": "#DFB030"
+        },
+        {
+          "value": 26.0,
+          "hex": "#E5A62C"
+        },
+        {
+          "value": 27.0,
+          "hex": "#EC9C29"
+        },
+        {
+          "value": 28.0,
+          "hex": "#F29326"
+        },
+        {
+          "value": 29.0,
+          "hex": "#F88923"
+        },
+        {
+          "value": 30.0,
+          "hex": "#FF8020"
+        },
+        {
+          "value": 31.0,
+          "hex": "#F8781E"
+        },
+        {
+          "value": 32.0,
+          "hex": "#F2711D"
+        },
+        {
+          "value": 33.0,
+          "hex": "#EC691C"
+        },
+        {
+          "value": 34.0,
+          "hex": "#E5621B"
+        },
+        {
+          "value": 35.0,
+          "hex": "#DF5A1A"
+        },
+        {
+          "value": 36.0,
+          "hex": "#D95319"
+        },
+        {
+          "value": 37.0,
+          "hex": "#D24B18"
+        },
+        {
+          "value": 38.0,
+          "hex": "#CC4417"
+        },
+        {
+          "value": 39.0,
+          "hex": "#C63C16"
+        },
+        {
+          "value": 40.0,
+          "hex": "#BF3515"
+        },
+        {
+          "value": 41.0,
+          "hex": "#B92D14"
+        },
+        {
+          "value": 42.0,
+          "hex": "#B32613"
+        },
+        {
+          "value": 43.0,
+          "hex": "#AC1E12"
+        },
+        {
+          "value": 44.0,
+          "hex": "#A61711"
+        },
+        {
+          "value": 45.0,
+          "hex": "#A01010"
+        },
+        {
+          "value": 60.0,
+          "hex": "#700000"
+        }
+      ],
+      "stats": {
+        "min": -20.0,
+        "avg": 7.545445,
+        "max": 40.0
+      }
+    },
+    {
+      "layer": "tempmin",
+      "description": "Coldest seasonal temperature at Y=110, °C (no diurnal/weather noise)",
+      "colorPng": "climate_20260608_001141.tempmin.png",
+      "rawPng": "climate_20260608_001141.tempmin.raw.png",
+      "rawDecodeFormula": "tempC = (R*256 + G) / 200 - 100",
+      "colorAnchors": [
+        {
+          "value": -50.0,
+          "hex": "#0000A0"
+        },
+        {
+          "value": -10.0,
+          "hex": "#1030B0"
+        },
+        {
+          "value": -9.0,
+          "hex": "#1E41B7"
+        },
+        {
+          "value": -8.0,
+          "hex": "#2C53BF"
+        },
+        {
+          "value": -7.0,
+          "hex": "#3B64C7"
+        },
+        {
+          "value": -6.0,
+          "hex": "#4976CF"
+        },
+        {
+          "value": -5.0,
+          "hex": "#5888D7"
+        },
+        {
+          "value": -4.0,
+          "hex": "#6699DF"
+        },
+        {
+          "value": -3.0,
+          "hex": "#74ABE7"
+        },
+        {
+          "value": -2.0,
+          "hex": "#83BCEF"
+        },
+        {
+          "value": -1.0,
+          "hex": "#91CEF7"
+        },
+        {
+          "value": 0.0,
+          "hex": "#A0E0FF"
+        },
+        {
+          "value": 1.0,
+          "hex": "#99DEEF"
+        },
+        {
+          "value": 2.0,
+          "hex": "#93DCDF"
+        },
+        {
+          "value": 3.0,
+          "hex": "#8CDBCF"
+        },
+        {
+          "value": 4.0,
+          "hex": "#86D9BF"
+        },
+        {
+          "value": 5.0,
+          "hex": "#80D8AF"
+        },
+        {
+          "value": 6.0,
+          "hex": "#79D69F"
+        },
+        {
+          "value": 7.0,
+          "hex": "#73D48F"
+        },
+        {
+          "value": 8.0,
+          "hex": "#6CD37F"
+        },
+        {
+          "value": 9.0,
+          "hex": "#66D16F"
+        },
+        {
+          "value": 10.0,
+          "hex": "#60D060"
+        },
+        {
+          "value": 11.0,
+          "hex": "#69D15C"
+        },
+        {
+          "value": 12.0,
+          "hex": "#73D359"
+        },
+        {
+          "value": 13.0,
+          "hex": "#7CD456"
+        },
+        {
+          "value": 14.0,
+          "hex": "#86D653"
+        },
+        {
+          "value": 15.0,
+          "hex": "#90D850"
+        },
+        {
+          "value": 16.0,
+          "hex": "#99D94C"
+        },
+        {
+          "value": 17.0,
+          "hex": "#A3DB49"
+        },
+        {
+          "value": 18.0,
+          "hex": "#ACDC46"
+        },
+        {
+          "value": 19.0,
+          "hex": "#B6DE43"
+        },
+        {
+          "value": 20.0,
+          "hex": "#C0E040"
+        },
+        {
+          "value": 21.0,
+          "hex": "#C6D63C"
+        },
+        {
+          "value": 22.0,
+          "hex": "#CCCC39"
+        },
+        {
+          "value": 23.0,
+          "hex": "#D2C336"
+        },
+        {
+          "value": 24.0,
+          "hex": "#D9B933"
+        },
+        {
+          "value": 25.0,
+          "hex": "#DFB030"
+        },
+        {
+          "value": 26.0,
+          "hex": "#E5A62C"
+        },
+        {
+          "value": 27.0,
+          "hex": "#EC9C29"
+        },
+        {
+          "value": 28.0,
+          "hex": "#F29326"
+        },
+        {
+          "value": 29.0,
+          "hex": "#F88923"
+        },
+        {
+          "value": 30.0,
+          "hex": "#FF8020"
+        },
+        {
+          "value": 31.0,
+          "hex": "#F8781E"
+        },
+        {
+          "value": 32.0,
+          "hex": "#F2711D"
+        },
+        {
+          "value": 33.0,
+          "hex": "#EC691C"
+        },
+        {
+          "value": 34.0,
+          "hex": "#E5621B"
+        },
+        {
+          "value": 35.0,
+          "hex": "#DF5A1A"
+        },
+        {
+          "value": 36.0,
+          "hex": "#D95319"
+        },
+        {
+          "value": 37.0,
+          "hex": "#D24B18"
+        },
+        {
+          "value": 38.0,
+          "hex": "#CC4417"
+        },
+        {
+          "value": 39.0,
+          "hex": "#C63C16"
+        },
+        {
+          "value": 40.0,
+          "hex": "#BF3515"
+        },
+        {
+          "value": 41.0,
+          "hex": "#B92D14"
+        },
+        {
+          "value": 42.0,
+          "hex": "#B32613"
+        },
+        {
+          "value": 43.0,
+          "hex": "#AC1E12"
+        },
+        {
+          "value": 44.0,
+          "hex": "#A61711"
+        },
+        {
+          "value": 45.0,
+          "hex": "#A01010"
+        },
+        {
+          "value": 60.0,
+          "hex": "#700000"
+        }
+      ],
+      "stats": {
+        "min": -52.491856,
+        "avg": -8.704555,
+        "max": 39.991856
+      }
+    },
+    {
+      "layer": "tempmax",
+      "description": "Warmest seasonal temperature at Y=110, °C (no diurnal/weather noise)",
+      "colorPng": "climate_20260608_001141.tempmax.png",
+      "rawPng": "climate_20260608_001141.tempmax.raw.png",
+      "rawDecodeFormula": "tempC = (R*256 + G) / 200 - 100",
+      "colorAnchors": [
+        {
+          "value": -50.0,
+          "hex": "#0000A0"
+        },
+        {
+          "value": -10.0,
+          "hex": "#1030B0"
+        },
+        {
+          "value": -9.0,
+          "hex": "#1E41B7"
+        },
+        {
+          "value": -8.0,
+          "hex": "#2C53BF"
+        },
+        {
+          "value": -7.0,
+          "hex": "#3B64C7"
+        },
+        {
+          "value": -6.0,
+          "hex": "#4976CF"
+        },
+        {
+          "value": -5.0,
+          "hex": "#5888D7"
+        },
+        {
+          "value": -4.0,
+          "hex": "#6699DF"
+        },
+        {
+          "value": -3.0,
+          "hex": "#74ABE7"
+        },
+        {
+          "value": -2.0,
+          "hex": "#83BCEF"
+        },
+        {
+          "value": -1.0,
+          "hex": "#91CEF7"
+        },
+        {
+          "value": 0.0,
+          "hex": "#A0E0FF"
+        },
+        {
+          "value": 1.0,
+          "hex": "#99DEEF"
+        },
+        {
+          "value": 2.0,
+          "hex": "#93DCDF"
+        },
+        {
+          "value": 3.0,
+          "hex": "#8CDBCF"
+        },
+        {
+          "value": 4.0,
+          "hex": "#86D9BF"
+        },
+        {
+          "value": 5.0,
+          "hex": "#80D8AF"
+        },
+        {
+          "value": 6.0,
+          "hex": "#79D69F"
+        },
+        {
+          "value": 7.0,
+          "hex": "#73D48F"
+        },
+        {
+          "value": 8.0,
+          "hex": "#6CD37F"
+        },
+        {
+          "value": 9.0,
+          "hex": "#66D16F"
+        },
+        {
+          "value": 10.0,
+          "hex": "#60D060"
+        },
+        {
+          "value": 11.0,
+          "hex": "#69D15C"
+        },
+        {
+          "value": 12.0,
+          "hex": "#73D359"
+        },
+        {
+          "value": 13.0,
+          "hex": "#7CD456"
+        },
+        {
+          "value": 14.0,
+          "hex": "#86D653"
+        },
+        {
+          "value": 15.0,
+          "hex": "#90D850"
+        },
+        {
+          "value": 16.0,
+          "hex": "#99D94C"
+        },
+        {
+          "value": 17.0,
+          "hex": "#A3DB49"
+        },
+        {
+          "value": 18.0,
+          "hex": "#ACDC46"
+        },
+        {
+          "value": 19.0,
+          "hex": "#B6DE43"
+        },
+        {
+          "value": 20.0,
+          "hex": "#C0E040"
+        },
+        {
+          "value": 21.0,
+          "hex": "#C6D63C"
+        },
+        {
+          "value": 22.0,
+          "hex": "#CCCC39"
+        },
+        {
+          "value": 23.0,
+          "hex": "#D2C336"
+        },
+        {
+          "value": 24.0,
+          "hex": "#D9B933"
+        },
+        {
+          "value": 25.0,
+          "hex": "#DFB030"
+        },
+        {
+          "value": 26.0,
+          "hex": "#E5A62C"
+        },
+        {
+          "value": 27.0,
+          "hex": "#EC9C29"
+        },
+        {
+          "value": 28.0,
+          "hex": "#F29326"
+        },
+        {
+          "value": 29.0,
+          "hex": "#F88923"
+        },
+        {
+          "value": 30.0,
+          "hex": "#FF8020"
+        },
+        {
+          "value": 31.0,
+          "hex": "#F8781E"
+        },
+        {
+          "value": 32.0,
+          "hex": "#F2711D"
+        },
+        {
+          "value": 33.0,
+          "hex": "#EC691C"
+        },
+        {
+          "value": 34.0,
+          "hex": "#E5621B"
+        },
+        {
+          "value": 35.0,
+          "hex": "#DF5A1A"
+        },
+        {
+          "value": 36.0,
+          "hex": "#D95319"
+        },
+        {
+          "value": 37.0,
+          "hex": "#D24B18"
+        },
+        {
+          "value": 38.0,
+          "hex": "#CC4417"
+        },
+        {
+          "value": 39.0,
+          "hex": "#C63C16"
+        },
+        {
+          "value": 40.0,
+          "hex": "#BF3515"
+        },
+        {
+          "value": 41.0,
+          "hex": "#B92D14"
+        },
+        {
+          "value": 42.0,
+          "hex": "#B32613"
+        },
+        {
+          "value": 43.0,
+          "hex": "#AC1E12"
+        },
+        {
+          "value": 44.0,
+          "hex": "#A61711"
+        },
+        {
+          "value": 45.0,
+          "hex": "#A01010"
+        },
+        {
+          "value": 60.0,
+          "hex": "#700000"
+        }
+      ],
+      "stats": {
+        "min": 7.746855,
+        "avg": 23.795444,
+        "max": 41.795643
+      }
+    },
+    {
+      "layer": "rainfall",
+      "description": "Worldgen rainfall, 0..1",
+      "colorPng": "climate_20260608_001141.rainfall.png",
+      "rawPng": "climate_20260608_001141.rainfall.raw.png",
+      "rawDecodeFormula": "value = (R*256 + G) / 65535",
+      "colorAnchors": [
+        {
+          "value": 0.0,
+          "hex": "#C09060"
+        },
+        {
+          "value": 0.3,
+          "hex": "#D8C078"
+        },
+        {
+          "value": 0.6,
+          "hex": "#80B070"
+        },
+        {
+          "value": 1.0,
+          "hex": "#206030"
+        }
+      ],
+      "stats": {
+        "min": 0.0,
+        "avg": 0.4981931,
+        "max": 1.0
+      }
+    },
+    {
+      "layer": "geoactivity",
+      "description": "Geologic activity, 0..1",
+      "colorPng": "climate_20260608_001141.geoactivity.png",
+      "rawPng": "climate_20260608_001141.geoactivity.raw.png",
+      "rawDecodeFormula": "value = (R*256 + G) / 65535",
+      "colorAnchors": [
+        {
+          "value": 0.0,
+          "hex": "#202020"
+        },
+        {
+          "value": 0.5,
+          "hex": "#A04020"
+        },
+        {
+          "value": 1.0,
+          "hex": "#FFD040"
+        }
+      ],
+      "stats": {
+        "min": 0.0,
+        "avg": 0.04778007,
+        "max": 1.0
+      }
+    }
+  ]
+}

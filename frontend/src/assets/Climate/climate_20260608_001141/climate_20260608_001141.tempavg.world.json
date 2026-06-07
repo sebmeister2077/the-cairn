@@ -1,0 +1,11 @@
+{
+  "originBlockX": 412000,
+  "originBlockZ": 412000,
+  "blocksPerPixelX": 100.0,
+  "blocksPerPixelZ": 100.0,
+  "widthPx": 2000,
+  "heightPx": 2000,
+  "imagePngRelative": "climate_20260608_001141.tempavg.png",
+  "imageRawPngRelative": "climate_20260608_001141.tempavg.raw.png",
+  "rawDecodeFormula": "tempC = (R*256 + G) / 200 - 100"
+}
