@@ -208,7 +208,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   const sortedCrops = useMemo(() => CROPS, []);
 
   return (
-    <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur gap-2">
+    <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
       {/* Master row */}
       <div
         className="cursor-pointer flex items-center gap-2"
@@ -233,7 +233,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
         aria-hidden={!enabled}
       >
         <div className="overflow-hidden min-h-0">
-          <div className="flex flex-col gap-2 pt-1">
+          <div className="flex flex-col gap-2 pt-2">
             <div
               className="flex flex-wrap gap-1"
               role="radiogroup"
