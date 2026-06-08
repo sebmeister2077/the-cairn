@@ -1297,6 +1297,8 @@ const ru = {
         climateOpacity: "Прозрачность",
         climateReadout: "Под курсором",
         climateReadoutLoading: "Загрузка…",
+        climateReadoutHint: "Наведите на карту для выборки",
+        climateApproxNightLow: "≈ ночью зимой",
         climateCropPass: "Культура подходит",
         climateCropFail: "Вне диапазона",
         totalCount: "всего {count}",

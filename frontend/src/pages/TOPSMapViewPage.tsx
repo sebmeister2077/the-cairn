@@ -2076,13 +2076,6 @@ export function TOPSMapViewPage() {
               routeOverlay={routeOverlay}
             />
           )}
-          {climateVisible && (
-            <ClimateHoverReadout
-              hoverCoords={climateHoverCoords}
-              sample={climateHoverSample}
-              visible={climateVisible}
-            />
-          )}
           {showTranslocators && selectedTranslocator && (
             <SelectedTranslocatorHeader
               selectedTranslocator={selectedTranslocator}
@@ -2092,6 +2085,14 @@ export function TOPSMapViewPage() {
                 handleUnpinTranslocator();
                 setSelectedTranslocator(null);
               }}
+            />
+          )}
+          {isFullscreen && climateVisible && (
+            <ClimateHoverReadout
+              hoverCoords={climateHoverCoords}
+              sample={climateHoverSample}
+              visible={climateVisible}
+              floating
             />
           )}
           {isFullscreen && (

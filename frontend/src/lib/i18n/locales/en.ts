@@ -1318,6 +1318,8 @@ export const en = {
         climateOpacity: "Opacity",
         climateReadout: "At cursor",
         climateReadoutLoading: "Loading…",
+        climateReadoutHint: "Hover the map to sample",
+        climateApproxNightLow: "≈ winter night low",
         climateCropPass: "Crop can grow here",
         climateCropFail: "Outside crop tolerance",
         totalCount: "{count} total",

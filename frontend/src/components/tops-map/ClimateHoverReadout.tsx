@@ -9,6 +9,10 @@ interface ClimateHoverReadoutProps {
   sample: ClimateSampleResult | null;
   /** Whether the climate overlay is visible. The readout is hidden when off. */
   visible: boolean;
+  /** Render as a floating overlay panel pinned to the bottom-left of the
+   *  parent (used in fullscreen mode), instead of the default inline
+   *  block layout used inside the controls column. */
+  floating?: boolean;
 }
 
 function unitForKind(kind: ClimateLayerKind): "C" | "unit" {
@@ -41,25 +45,39 @@ function layerLabel(kind: ClimateLayerKind, t: (k: never) => string): string {
   }
 }
 
-/** Floating climate readout that follows the cursor by sitting in a fixed
- *  corner. Shows the precise sampled value at the cursor's world position
- *  so users can verify the overlay against the in-game `/climate` command.
+/** Approximate diurnal swing applied to estimate an in-game winter-night
+ *  low from the exporter's seasonal `tempmin` value. The exporter
+ *  manifest documents that the raster excludes the diurnal swing
+ *  (5..18 °C). We pick the middle of that range as a one-number
+ *  estimate; it's labeled "approx" in the UI to set expectations. */
+const APPROX_DIURNAL_NIGHT_OFFSET_C = 12;
+
+/** Inline climate readout shown in the controls column. Displays the
+ *  precise sampled value at the cursor's world position so users can
+ *  verify the overlay against the in-game `/climate` command without
+ *  leaving the site.
  */
-export function ClimateHoverReadout({ hoverCoords, sample, visible }: ClimateHoverReadoutProps) {
+export function ClimateHoverReadout({
+  hoverCoords,
+  sample,
+  visible,
+  floating = false,
+}: ClimateHoverReadoutProps) {
   const { t } = useTranslation();
   if (!visible) return null;
-  if (!hoverCoords) return null;
   const tt = t as (k: string) => string;
 
+  const containerClass = floating
+    ? "pointer-events-none absolute left-6 bottom-26 z-20 w-72 max-w-[calc(100vw-3rem)] rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur tabular-nums"
+    : "rounded-md border px-3 py-2 text-xs tabular-nums";
+
   return (
-    <div className="pointer-events-none absolute right-3 bottom-12 z-30 rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur tabular-nums max-w-65">
+    <div className={containerClass}>
       <div className="flex items-center justify-between gap-3 text-[10px] uppercase tracking-wide text-muted-foreground">
         <span>{tt("topsMap.climateReadout")}</span>
-        <span>
-          {hoverCoords.x}, {hoverCoords.z}
-        </span>
+        <span>{hoverCoords ? `${hoverCoords.x}, ${hoverCoords.z}` : "—, —"}</span>
       </div>
-      {sample ? (
+      {hoverCoords && sample ? (
         <>
           <div className="mt-1 flex items-baseline justify-between gap-3">
             <span className="text-muted-foreground">
@@ -69,6 +87,14 @@ export function ClimateHoverReadout({ hoverCoords, sample, visible }: ClimateHov
               {formatValue(sample.primary.kind, sample.primary.value)}
             </span>
           </div>
+          {sample.primary.kind === "tempmin" && (
+            <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
+              <span>{tt("topsMap.climateApproxNightLow")}</span>
+              <span>
+                {formatValue("tempmin", sample.primary.value - APPROX_DIURNAL_NIGHT_OFFSET_C)}
+              </span>
+            </div>
+          )}
           {sample.cropCheck && (
             <div className="mt-1 border-t pt-1 flex flex-col gap-0.5">
               <div className="flex items-baseline justify-between gap-3">
@@ -85,6 +111,12 @@ export function ClimateHoverReadout({ hoverCoords, sample, visible }: ClimateHov
                     {sample.cropCheck.tempmin >= sample.cropCheck.cropMin ? "\u2265" : "<"}{" "}
                     {formatValue("tempmin", sample.cropCheck.cropMin)}
                   </span>
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
+                <span>{tt("topsMap.climateApproxNightLow")}</span>
+                <span>
+                  {formatValue("tempmin", sample.cropCheck.tempmin - APPROX_DIURNAL_NIGHT_OFFSET_C)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-3">
@@ -114,7 +146,9 @@ export function ClimateHoverReadout({ hoverCoords, sample, visible }: ClimateHov
           )}
         </>
       ) : (
-        <div className="mt-1 text-muted-foreground">{tt("topsMap.climateReadoutLoading")}</div>
+        <div className="mt-1 text-muted-foreground">
+          {hoverCoords ? tt("topsMap.climateReadoutLoading") : tt("topsMap.climateReadoutHint")}
+        </div>
       )}
     </div>
   );
