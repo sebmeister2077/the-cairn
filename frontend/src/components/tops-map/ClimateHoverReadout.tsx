@@ -45,12 +45,13 @@ function layerLabel(kind: ClimateLayerKind, t: (k: never) => string): string {
   }
 }
 
-/** Approximate diurnal swing applied to estimate an in-game winter-night
- *  low from the exporter's seasonal `tempmin` value. The exporter
- *  manifest documents that the raster excludes the diurnal swing
- *  (5..18 °C). We pick the middle of that range as a one-number
- *  estimate; it's labeled "approx" in the UI to set expectations. */
-const APPROX_DIURNAL_NIGHT_OFFSET_C = 12;
+/** Approximate diurnal swing applied to estimate in-game extremes from
+ *  the exporter's seasonal `tempmin` / `tempmax` values. The exporter
+ *  manifest documents the diurnal swing as 5..18 °C; in practice the
+ *  effective amplitude users see in temperate biomes sits near the
+ *  bottom of that range, so we use 6 °C as the one-number estimate.
+ *  Both directions are labeled "approx" in the UI to set expectations. */
+const APPROX_DIURNAL_SWING_C = 6;
 
 /** Inline climate readout shown in the controls column. Displays the
  *  precise sampled value at the cursor's world position so users can
@@ -90,9 +91,13 @@ export function ClimateHoverReadout({
           {sample.primary.kind === "tempmin" && (
             <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
               <span>{tt("topsMap.climateApproxNightLow")}</span>
-              <span>
-                {formatValue("tempmin", sample.primary.value - APPROX_DIURNAL_NIGHT_OFFSET_C)}
-              </span>
+              <span>{formatValue("tempmin", sample.primary.value - APPROX_DIURNAL_SWING_C)}</span>
+            </div>
+          )}
+          {sample.primary.kind === "tempmax" && (
+            <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
+              <span>{tt("topsMap.climateApproxDayHigh")}</span>
+              <span>{formatValue("tempmax", sample.primary.value + APPROX_DIURNAL_SWING_C)}</span>
             </div>
           )}
           {sample.cropCheck && (
@@ -116,7 +121,7 @@ export function ClimateHoverReadout({
               <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
                 <span>{tt("topsMap.climateApproxNightLow")}</span>
                 <span>
-                  {formatValue("tempmin", sample.cropCheck.tempmin - APPROX_DIURNAL_NIGHT_OFFSET_C)}
+                  {formatValue("tempmin", sample.cropCheck.tempmin - APPROX_DIURNAL_SWING_C)}
                 </span>
               </div>
               <div className="flex items-baseline justify-between gap-3">
@@ -133,6 +138,12 @@ export function ClimateHoverReadout({
                     {sample.cropCheck.tempmax <= sample.cropCheck.cropMax ? "\u2264" : ">"}{" "}
                     {formatValue("tempmax", sample.cropCheck.cropMax)}
                   </span>
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
+                <span>{tt("topsMap.climateApproxDayHigh")}</span>
+                <span>
+                  {formatValue("tempmax", sample.cropCheck.tempmax + APPROX_DIURNAL_SWING_C)}
                 </span>
               </div>
               <div className="text-[10px] mt-0.5">

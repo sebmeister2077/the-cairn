@@ -1299,6 +1299,7 @@ const ru = {
         climateReadoutLoading: "Загрузка…",
         climateReadoutHint: "Наведите на карту для выборки",
         climateApproxNightLow: "≈ ночью зимой",
+        climateApproxDayHigh: "≈ днём летом",
         climateCropPass: "Культура подходит",
         climateCropFail: "Вне диапазона",
         totalCount: "всего {count}",

@@ -1320,6 +1320,7 @@ export const en = {
         climateReadoutLoading: "Loading…",
         climateReadoutHint: "Hover the map to sample",
         climateApproxNightLow: "≈ winter night low",
+        climateApproxDayHigh: "≈ summer day high",
         climateCropPass: "Crop can grow here",
         climateCropFail: "Outside crop tolerance",
         totalCount: "{count} total",
