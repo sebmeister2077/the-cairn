@@ -156,17 +156,18 @@ function useOverlayFile<T>(
             const expiresAt =
                 Date.now() + Math.max(0, info.expires_in_seconds * 1000 - EXPIRY_GUARD_MS);
 
-            const cached = queryClient.getQueryData<CachedOverlay<T>>([...queryKey]);
-            if (cached && cached.etag === info.etag) {
-                // Underlying file hasn't changed — keep the parsed payload
-                // and just refresh the validity window.
-                return { etag: info.etag, expiresAt, data: cached.data };
-            }
+            // const cached = queryClient.getQueryData<CachedOverlay<T>>([...queryKey]);
+            // if (cached && cached.etag === info.etag) {
+            //     // Underlying file hasn't changed — keep the parsed payload
+            //     // and just refresh the validity window.
+            //     return { etag: info.etag, expiresAt, data: cached.data };
+            // }
 
             const res = await fetch(info.url);
             if (!res.ok) {
                 throw new Error(`Failed to load overlay data (${res.status})`);
             }
+
             const json: unknown = await res.json();
             return { etag: info.etag, expiresAt, data: parse(json) };
         },

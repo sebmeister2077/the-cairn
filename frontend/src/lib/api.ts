@@ -352,21 +352,28 @@ export interface MarkerFileUrlResponse {
     expires_in_seconds: number;
 }
 
+const publicBucketOrigin = import.meta.env.VITE_PUBLIC_BUCKET_ORIGIN?.replace(/\/+$/, "");
+
 /** Get a presigned GET URL for the live landmarks.geojson on R2.
  *  No auth header required to redeem the returned URL — it's self-contained. */
 export async function getLandmarksUrl(): Promise<MarkerFileUrlResponse> {
-    const res = await fetch(`${API_BASE}/landmarks/url`, {
-        headers: authHeaders(),
-    });
-    return (await handleResponse(res)).json();
+    // const res = await fetch(`${API_BASE}/landmarks/url`, {
+    //     headers: authHeaders(),
+    // });
+    // return (await handleResponse(res)).json();
+    return { url: `${publicBucketOrigin}/landmarks.geojson`, etag: "", expires_in_seconds: 0 };
 }
+
 
 /** Get a presigned GET URL for the live translocators.geojson on R2. */
 export async function getTranslocatorsUrl(): Promise<MarkerFileUrlResponse> {
-    const res = await fetch(`${API_BASE}/translocators/url`, {
-        headers: authHeaders(),
-    });
-    return (await handleResponse(res)).json();
+    //     const res = await fetch(`${API_BASE}/translocators/url`, {
+    //         headers: authHeaders(),
+    //     });
+    //     return (await handleResponse(res)).json();
+
+    return { url: `${publicBucketOrigin}/translocators.geojson`, etag: "", expires_in_seconds: 0 };
+
 }
 
 // ---------------------------------------------------------------------------
@@ -383,10 +390,11 @@ export interface ElkWalkableUrlResponse extends MarkerFileUrlResponse {
 }
 
 export async function getElkWalkableUrl(): Promise<ElkWalkableUrlResponse> {
-    const res = await fetch(`${API_BASE}/elk-walkable/url`, {
-        headers: authHeaders(),
-    });
-    return (await handleResponse(res)).json();
+    // const res = await fetch(`${API_BASE}/elk-walkable/url`, {
+    //     headers: authHeaders(),
+    // });
+    // return (await handleResponse(res)).json();
+    return { url: `${publicBucketOrigin}/elk_walkable.json`, etag: "", expires_in_seconds: 0, empty: false };
 }
 
 export interface ElkWalkableSubmitPayload {
@@ -2813,10 +2821,11 @@ export interface TradersUrlResponse {
 }
 
 export async function getTradersUrl(): Promise<TradersUrlResponse> {
-    const res = await fetch(`${API_BASE}/traders/url`, {
-        headers: authHeaders(),
-    });
-    return (await handleResponse(res)).json();
+    // const res = await fetch(`${API_BASE}/traders/url`, {
+    //     headers: authHeaders(),
+    // });
+    // return (await handleResponse(res)).json();
+    return { url: `${publicBucketOrigin}/traders.geojson`, etag: "", expires_in_seconds: 0 };
 }
 
 export interface TraderContributionItem {
