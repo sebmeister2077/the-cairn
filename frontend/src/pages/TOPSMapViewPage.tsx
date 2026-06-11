@@ -1473,9 +1473,9 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
         {!isFullscreen && (
           <>
-            <div className="rounded-lg border bg-muted/30 p-3">
+            {/* <div className="rounded-lg border bg-muted/30 p-3">
               <MapSourceSelector />
-            </div>
+            </div> */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
               {loading && !usingWebCartographer && (
                 <Button disabled>
