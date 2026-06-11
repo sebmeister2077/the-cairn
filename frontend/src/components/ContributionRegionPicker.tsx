@@ -177,6 +177,7 @@ export function ContributionRegionPicker({
       const candidate =
         completed.find((r) => r.max_dimension >= targetMaxDim) ?? completed[completed.length - 1];
       if (!candidate) throw new Error("No completed resolution available");
+
       const info = await queryClient.fetchQuery<TopsMapLevelChunks>({
         queryKey: ["tops-map-level", candidate.level],
         queryFn: () => getTopsMapLevel(candidate.level),

@@ -848,6 +848,7 @@ export function TOPSMapViewPage() {
     // contributed tiles show up on reload.
     refetchOnMount: "always",
     meta: { persist: true },
+    enabled: !usingWebCartographer,
   });
 
   const tileSet = useMemo(() => {
