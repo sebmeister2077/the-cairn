@@ -1,7 +1,13 @@
 import { LOCALE_META, useTranslation, type Locale } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-const OPTIONS = [LOCALE_META.en, LOCALE_META.ru] as const;
+const OPTIONS = [
+  LOCALE_META.en,
+  LOCALE_META.ru,
+  LOCALE_META.nl,
+  LOCALE_META.es,
+  LOCALE_META.fr,
+] as const;
 
 interface LanguageSwitcherProps {
   className?: string;

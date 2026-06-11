@@ -92,7 +92,7 @@ export type ArgsTuple<P extends PathOf<TranslationSchema>> = keyof ArgsForPath<P
     ? []
     : [args: ArgsForPath<P>];
 
-export type Locale = "en" | "ru";
+export type Locale = "en" | "ru" | "nl" | "es" | "fr";
 
 export type TranslationSchema = typeof en;
 export type LocaleDictionary = DeepPartial<WidenLeafStrings<TranslationSchema>>;
