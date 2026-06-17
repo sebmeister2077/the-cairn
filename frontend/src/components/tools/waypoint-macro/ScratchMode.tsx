@@ -1,29 +1,16 @@
 // Generate-from-scratch mode: build a list of commands from templates such as
-// bulk-remove-by-range, add-waypoint, and modify-waypoint.
+// bulk-remove-by-range, remove-one, and a custom command looped over a range.
 
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-import {
-  addatiCommand,
-  buildBulkRemoveCommands,
-  COMMON_WAYPOINT_ICONS,
-  modifyCommand,
-  removeCommand,
-} from "@/lib/waypoint-macro";
+import { buildBulkRemoveCommands, removeCommand } from "@/lib/waypoint-macro";
 import { CommandCatalog } from "./CommandCatalog";
 
-type StepKind = "bulkRemove" | "removeOne" | "add" | "modify";
+type StepKind = "bulkRemove" | "removeOne" | "loop";
 
 interface BulkRemoveStep {
   id: string;
@@ -36,26 +23,18 @@ interface RemoveOneStep {
   kind: "removeOne";
   targetId: number;
 }
-interface AddStep {
+interface LoopStep {
   id: string;
-  kind: "add";
-  icon: string;
-  x: number;
-  y: number;
-  z: number;
-  pinned: boolean;
-  color: string;
-  title: string;
-}
-interface ModifyStep {
-  id: string;
-  kind: "modify";
-  targetId: number;
-  color: string;
-  title: string;
+  kind: "loop";
+  start: number;
+  end: number;
+  template: string;
 }
 
-type Step = BulkRemoveStep | RemoveOneStep | AddStep | ModifyStep;
+type Step = BulkRemoveStep | RemoveOneStep | LoopStep;
+
+/** Max commands a single loop step may emit, as a safety bound. */
+const LOOP_MAX_ITERATIONS = 10000;
 
 let stepSeq = 0;
 function newStepId(): string {
@@ -70,21 +49,23 @@ function makeStep(kind: StepKind): Step {
       return { id, kind, start: 0, end: 99 };
     case "removeOne":
       return { id, kind, targetId: 0 };
-    case "add":
-      return {
-        id,
-        kind,
-        icon: "circle",
-        x: 0,
-        y: 110,
-        z: 0,
-        pinned: false,
-        color: "#FFFFFF",
-        title: "Waypoint",
-      };
-    case "modify":
-      return { id, kind, targetId: 0, color: "#FFFFFF", title: "Waypoint" };
+    case "loop":
+      return { id, kind, start: 0, end: 9, template: "/waypoint remove {i}" };
   }
+}
+
+/** Expand a loop template over [start, end] (inclusive), replacing {i}. */
+function expandLoop(step: LoopStep): string[] {
+  const { start, end, template } = step;
+  if (!Number.isFinite(start) || !Number.isFinite(end)) return [];
+  const step1 = end >= start ? 1 : -1;
+  const count = Math.abs(end - start) + 1;
+  if (count > LOOP_MAX_ITERATIONS) return [];
+  const out: string[] = [];
+  for (let i = start; step1 > 0 ? i <= end : i >= end; i += step1) {
+    out.push(template.replaceAll("{i}", String(i)));
+  }
+  return out;
 }
 
 function stepCommands(step: Step): string[] {
@@ -93,20 +74,8 @@ function stepCommands(step: Step): string[] {
       return buildBulkRemoveCommands(step.start, step.end);
     case "removeOne":
       return [removeCommand(step.targetId)];
-    case "add":
-      return [
-        addatiCommand({
-          name: step.title,
-          x: step.x,
-          y: step.y,
-          z: step.z,
-          color: step.color,
-          icon: step.icon,
-          pinned: step.pinned,
-        }),
-      ];
-    case "modify":
-      return [modifyCommand(step.targetId, step.color, step.title)];
+    case "loop":
+      return expandLoop(step);
   }
 }
 
@@ -145,11 +114,8 @@ export function ScratchMode({ onCommandsChange }: ScratchModeProps) {
             <Button type="button" variant="outline" size="sm" onClick={() => add("removeOne")}>
               <Plus className="size-3.5" /> Remove one
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => add("add")}>
-              <Plus className="size-3.5" /> Add waypoint
-            </Button>
-            <Button type="button" variant="outline" size="sm" onClick={() => add("modify")}>
-              <Plus className="size-3.5" /> Modify waypoint
+            <Button type="button" variant="outline" size="sm" onClick={() => add("loop")}>
+              <Plus className="size-3.5" /> Loop custom command
             </Button>
           </div>
 
@@ -194,10 +160,8 @@ function stepTitle(kind: StepKind): string {
       return "Bulk remove range";
     case "removeOne":
       return "Remove one";
-    case "add":
-      return "Add waypoint";
-    case "modify":
-      return "Modify waypoint";
+    case "loop":
+      return "Loop custom command";
   }
 }
 
@@ -247,84 +211,46 @@ function StepFields({ step, update }: { step: Step; update: (patch: Partial<Step
           />
         </div>
       );
-    case "add":
+    case "loop": {
+      const count = Math.max(0, Math.abs(step.end - step.start) + 1);
+      const tooMany = count > LOOP_MAX_ITERATIONS;
+      const preview = expandLoop(step);
       return (
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
-            <div className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">Icon</Label>
-              <Select value={step.icon} onValueChange={(v) => v && update({ icon: v })}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {COMMON_WAYPOINT_ICONS.map((ic) => (
-                    <SelectItem key={ic} value={ic}>
-                      {ic}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <Num label="X" value={step.x} onChange={(n) => update({ x: n })} />
-            <Num label="Y" value={step.y} onChange={(n) => update({ y: n })} />
-            <Num label="Z" value={step.z} onChange={(n) => update({ z: n })} />
-          </div>
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">Color</Label>
-              <Input
-                className="w-28"
-                value={step.color}
-                placeholder="#FFFFFF"
-                onChange={(e) => update({ color: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-1">
-              <Label className="text-xs text-muted-foreground">Title</Label>
-              <Input
-                className="w-56"
-                value={step.title}
-                onChange={(e) => update({ title: e.target.value })}
-              />
-            </div>
-            <label className="flex items-center gap-1 self-center text-xs text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={step.pinned}
-                onChange={(e) => update({ pinned: e.target.checked })}
-              />
-              Pinned
-            </label>
-          </div>
-        </div>
-      );
-    case "modify":
-      return (
-        <div className="flex flex-wrap items-end gap-3">
-          <Num
-            label="Waypoint id"
-            value={step.targetId}
-            onChange={(n) => update({ targetId: n })}
-          />
-          <div className="grid gap-1">
-            <Label className="text-xs text-muted-foreground">Color</Label>
-            <Input
-              className="w-28"
-              value={step.color}
-              placeholder="#FFFFFF"
-              onChange={(e) => update({ color: e.target.value })}
-            />
+            <Num label="From (i)" value={step.start} onChange={(n) => update({ start: n })} />
+            <Num label="To (i)" value={step.end} onChange={(n) => update({ end: n })} />
+            <p className="self-center text-xs text-muted-foreground">
+              {tooMany
+                ? `Too many iterations (${count}). Max ${LOOP_MAX_ITERATIONS}.`
+                : `Repeats ${count} time(s).`}
+            </p>
           </div>
           <div className="grid gap-1">
-            <Label className="text-xs text-muted-foreground">Title</Label>
+            <Label className="text-xs text-muted-foreground">
+              Command template — use <code className="rounded bg-muted px-1">{"{i}"}</code> for the
+              current number
+            </Label>
             <Input
-              className="w-56"
-              value={step.title}
-              onChange={(e) => update({ title: e.target.value })}
+              className="w-full font-mono"
+              value={step.template}
+              placeholder="/waypoint remove {i}"
+              onChange={(e) => update({ template: e.target.value })}
             />
           </div>
+          {preview.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              e.g. <code className="rounded bg-muted px-1">{preview[0]}</code>
+              {preview.length > 1 && (
+                <>
+                  {" … "}
+                  <code className="rounded bg-muted px-1">{preview[preview.length - 1]}</code>
+                </>
+              )}
+            </p>
+          )}
         </div>
       );
+    }
   }
 }
