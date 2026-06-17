@@ -35,6 +35,7 @@ import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
 import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
 import { ToolsTunnelPage } from "@/pages/ToolsTunnelPage";
+import { ToolsWaypointMacroPage } from "@/pages/ToolsWaypointMacroPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -93,6 +94,7 @@ const NavigationRoutes = {
   },
   Tools: {
     TunnelPreviewer: "/tools",
+    WaypointMacro: "/tools/waypoints",
   },
   General: {},
   Manage: {
@@ -157,6 +159,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.tlScreenshots"
   | "app.nav.subtabs.elkWalkable"
   | "app.nav.subtabs.tunnelPreviewer"
+  | "app.nav.subtabs.waypointMacro"
   | "app.nav.chip.new";
 const subTabs: Subtabs = {
   "/singleplayer": [
@@ -184,7 +187,10 @@ const subTabs: Subtabs = {
     },
   ],
   "/general": [],
-  "/tools": [{ value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" }],
+  "/tools": [
+    { value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" },
+    { value: "/tools/waypoints", labelKey: "app.nav.subtabs.waypointMacro" },
+  ],
   "/manage": [
     { value: "/manage/api-keys", labelKey: "app.nav.subtabs.apiKeys" },
     { value: "/manage/users", labelKey: "app.nav.subtabs.users" },
@@ -325,6 +331,7 @@ export function AppContent() {
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
 
   const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
+  const isToolsPage = activeCategory === "/tools";
 
   useEffect(() => {
     const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
@@ -624,6 +631,7 @@ export function AppContent() {
         className={cn(
           "container mx-auto px-4 py-6 max-w-6xl flex-1 w-full",
           // isTopsPage && "max-w-6xl",
+          isToolsPage && "max-w-8xl",
         )}
       >
         {authRejected && (
@@ -863,6 +871,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
                 <ToolsTunnelPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/tools/waypoints"
+            element={
+              <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
+                <ToolsWaypointMacroPage />
               </ErrorBoundary>
             }
           />

@@ -220,7 +220,7 @@ export function ToolsTunnelPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-12xl space-y-6 px-4 py-8">
       <header className="space-y-2">
         <h1 className="text-2xl font-semibold">{t("tools.tunnel.pageTitle")}</h1>
         <p className="max-w-3xl text-sm text-muted-foreground">

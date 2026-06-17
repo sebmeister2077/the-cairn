@@ -74,6 +74,7 @@ export const en = {
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
                 tunnelPreviewer: "Tunnel Previewer",
+                waypointMacro: "Waypoint Macros",
             },
             chip: {
                 new: "New",
@@ -1485,6 +1486,16 @@ export const en = {
         },
     },
     tools: {
+        waypointMacro: {
+            pageTitle: "Waypoint macro generator",
+            pageDescription:
+                "Build a Vintage Story macro of /waypoint commands. Upload your client-chat.log, import map markers, or craft commands from scratch, then download the macro file.",
+            tabs: {
+                upload: "Upload chat log",
+                import: "Import map data",
+                scratch: "Generate from scratch",
+            },
+        },
         tunnel: {
             pageTitle: "Tunnel & road builder",
             pageDescription:
