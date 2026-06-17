@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileUpload } from "@/components/FileUpload";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useReduxState } from "@/store/hooks";
 import { parseChatLogWaypoints } from "@/lib/tl-parser";
 import { applyFilters, type WaypointFilter } from "@/lib/waypoint-filters";
 import {
@@ -28,7 +30,23 @@ interface UploadModeProps {
   onCommandsChange: (commands: string[]) => void;
 }
 
+// Dev-only sample used by the "Simulate upload" button so admins can exercise
+// the upload flow without a real client-chat.log on hand.
+const SAMPLE_CHAT_LOG = `7.5.2026 11:35:30 [Chat] Welcome to the Official Public Server! @ 0
+7.5.2026 11:35:32 [Chat] Your waypoints: @ 0
+7.5.2026 11:35:32 [Chat] 0: Home at 2246, 121, 12557 #204EA2 spiral @ 0
+7.5.2026 11:35:32 [Chat] 1: Peat at 2092, 119, 13129 #5D3D21 pick @ 0
+7.5.2026 11:35:32 [Chat] 2: Clay at 2107, 118, 13167 #F15A4A rocks @ 0
+7.5.2026 11:35:32 [Chat] 3: Treasure Hunter at 244, 121, 753 #F9D0DC trader @ 0
+7.5.2026 11:35:32 [Chat] 4: 770 57560 at -2912, 139, 51371 #204EA2 spiral @ 0
+7.5.2026 11:35:32 [Chat] 5: -2910 51370 (Home) at 769, 139, 57556 #204EA2 spiral @ 0
+7.5.2026 11:35:32 [Chat] 6: -880 65200 at 892, 136, 57848 #204EA2 spiral @ 0
+7.5.2026 11:35:32 [Chat] 7: 890 57850 (Home) at -877, 110, 65193 #204EA2 spiral @ 0
+`;
+
 export function UploadMode({ onCommandsChange }: UploadModeProps) {
+  const isAdmin = useReduxState("auth.isAdmin");
+  const showDevTools = import.meta.env.DEV && isAdmin;
   const [records, setRecords] = useState<WaypointRecord[]>([]);
   const [parseError, setParseError] = useState<string | null>(null);
   const [filters, setFilters] = useState<WaypointFilter[]>([]);
@@ -91,6 +109,27 @@ export function UploadMode({ onCommandsChange }: UploadModeProps) {
             accept=".log,.txt"
             onChange={handleFile}
           />
+          {showDevTools && (
+            <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-muted/30 p-2">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  handleFile(
+                    new File([SAMPLE_CHAT_LOG], "client-chat.log", {
+                      type: "text/plain",
+                    }),
+                  )
+                }
+              >
+                Simulate upload
+              </Button>
+              <span className="text-xs text-muted-foreground">
+                Dev/admin only — loads a sample client-chat.log.
+              </span>
+            </div>
+          )}
           {parseError && <p className="text-sm text-amber-600">{parseError}</p>}
 
           {records.length > 0 && (
