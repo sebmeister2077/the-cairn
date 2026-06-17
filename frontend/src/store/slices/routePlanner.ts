@@ -279,18 +279,24 @@ export const routePlannerSlice = createSlice({
                 while (next.length < 2) next.push(null);
                 state.players = next.slice(0, 8);
             }
-            if (p.rendezvousObjective !== undefined) {
-                state.rendezvousObjective = p.rendezvousObjective;
-            }
-            if (p.walkSpeed !== undefined) {
-                state.walkSpeed = Math.max(0.5, Math.min(20, p.walkSpeed));
-            }
-            if (p.tlPenaltySeconds !== undefined) {
-                state.tlPenaltySeconds = Math.max(0, Math.min(600, p.tlPenaltySeconds));
-            }
-            if (p.kNeighbors !== undefined) {
-                state.kNeighbors = Math.max(1, Math.min(64, Math.trunc(p.kNeighbors)));
-            }
+            // Like the cost-model knobs, an omitted objective means the
+            // sharer used the default ("minimax"), so reset rather than keep.
+            state.rendezvousObjective = p.rendezvousObjective ?? "minimax";
+            // A share link omits settings that equal their defaults, so an
+            // absent param means "use the default" — not "keep whatever the
+            // recipient currently has". Reset to defaults before applying.
+            state.walkSpeed =
+                p.walkSpeed !== undefined
+                    ? Math.max(0.5, Math.min(20, p.walkSpeed))
+                    : DEFAULT_WALK_SPEED;
+            state.tlPenaltySeconds =
+                p.tlPenaltySeconds !== undefined
+                    ? Math.max(0, Math.min(600, p.tlPenaltySeconds))
+                    : DEFAULT_TL_PENALTY_S;
+            state.kNeighbors =
+                p.kNeighbors !== undefined
+                    ? Math.max(1, Math.min(64, Math.trunc(p.kNeighbors)))
+                    : DEFAULT_K_NEIGHBORS;
             state.isOpen = true;
         },
         setFocusRequest(
