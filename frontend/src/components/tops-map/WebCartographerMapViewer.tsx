@@ -348,6 +348,11 @@ export function WebCartographerMapViewer({
   // ── UI state ─────────────────────────────────────────────────────────────
   const [dragging, setDragging] = useState(false);
   const dragStartRef = useRef<{ x: number; y: number; cwX: number; cwZ: number } | null>(null);
+  // Largest cursor displacement (CSS px) since the most recent mousedown.
+  // Used to suppress an accidental overlay-segment click when the user was
+  // really just panning the map — spawn-dense regions have almost no
+  // empty space to drag from. Reset on each mousedown.
+  const dragMaxDistRef = useRef(0);
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
   // Live cursor world position kept in a ref so the per-frame draw can
@@ -1228,6 +1233,7 @@ export function WebCartographerMapViewer({
       if (cursorModeRef.current === "pick") return;
       cancelFlyAnim();
       setDragging(true);
+      dragMaxDistRef.current = 0;
       dragStartRef.current = {
         x: e.clientX,
         y: e.clientY,
@@ -1249,6 +1255,8 @@ export function WebCartographerMapViewer({
       if (dragging && dragStartRef.current) {
         const dx = e.clientX - dragStartRef.current.x;
         const dy = e.clientY - dragStartRef.current.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > dragMaxDistRef.current) dragMaxDistRef.current = dist;
         const ppb = pixelsPerBlockRef.current;
         setCenterWorldX(dragStartRef.current.cwX - dx / ppb);
         setCenterWorldZ(dragStartRef.current.cwZ - dy / ppb);
@@ -1357,6 +1365,12 @@ export function WebCartographerMapViewer({
       const rect = container.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
+      // Suppress "click" when the gesture was actually a pan. Spawn is so
+      // TL-dense that almost every drag would otherwise pin a random TL.
+      // 4 CSS px matches the browser's own click-vs-drag threshold.
+      const wasDrag = dragMaxDistRef.current > 4;
+      dragMaxDistRef.current = 0;
+      if (wasDrag) return;
       if (cursorModeRef.current === "pick" && onWorldClick) {
         const world = unprojectScreen(sx, sy);
         onWorldClick(Math.floor(world.x), Math.floor(world.z));
