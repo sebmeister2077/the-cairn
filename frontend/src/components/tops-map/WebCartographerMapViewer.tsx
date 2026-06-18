@@ -158,6 +158,20 @@ interface WebCartographerMapViewerProps {
    *  probe, etc.) that need a live readout. */
   onHoverCoords?: (coords: { x: number; z: number } | null) => void;
 
+  /**
+   * Optional cursor-radius cull for the translocator overlay. When set,
+   * only TLs whose `tlId` is in `alwaysShowTLIds` OR with at least one
+   * endpoint within `radiusBlocks` world blocks of the mouse cursor are
+   * drawn. When the cursor is outside the map, only the always-show set
+   * renders. Drawing a soft circle outline at the cursor visualises the
+   * active radius. Pure render-time cull — the parent is free to keep
+   * passing the full segment list for stable memos and hit-testing.
+   */
+  radiusFilter?: {
+    radiusBlocks: number;
+    alwaysShowTLIds: ReadonlySet<string>;
+  } | null;
+
   // ── Navigation ──────────────────────────────────────────────────────────
   focusPoint?: { x: number; z: number };
   focusZoom?: number;
@@ -241,6 +255,7 @@ export function WebCartographerMapViewer({
   highlightedSegment,
   highlightedSegments,
   segmentColors,
+  radiusFilter = null,
   onOverlaySegmentClick,
   onOverlaySegmentRightClick,
   cursorMode = "default",
@@ -335,6 +350,21 @@ export function WebCartographerMapViewer({
   const dragStartRef = useRef<{ x: number; y: number; cwX: number; cwZ: number } | null>(null);
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  // Live cursor world position kept in a ref so the per-frame draw can
+  // read it without forcing the projectedSegments memo to re-run on every
+  // mousemove. Set to `null` whenever the cursor is outside the canvas.
+  const cursorWorldRef = useRef<{ x: number; z: number } | null>(null);
+  // Mirror the radiusFilter prop into a ref so the draw routine can
+  // consult the latest value without becoming a memo dep.
+  const radiusFilterRef = useRef<typeof radiusFilter>(radiusFilter);
+  useEffect(() => {
+    radiusFilterRef.current = radiusFilter;
+    // Filter on/off transitions need an immediate redraw so the visible
+    // set updates without waiting for the next mousemove.
+    drawRef.current?.();
+    scheduleRedraw();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [radiusFilter]);
   const interactionsLockedRef = useRef(interactionsLocked);
   const cursorModeRef = useRef(cursorMode);
   useEffect(() => {
@@ -550,6 +580,7 @@ export function WebCartographerMapViewer({
         y1: number;
         x2: number;
         y2: number;
+        tlId: string;
         kind?: "default" | "user";
         color?: string;
       }>;
@@ -559,6 +590,7 @@ export function WebCartographerMapViewer({
       y1: number;
       x2: number;
       y2: number;
+      tlId: string;
       kind?: "default" | "user";
       color?: string;
     }> = [];
@@ -566,8 +598,9 @@ export function WebCartographerMapViewer({
       const a = projectWorld(s.x1, s.z1);
       const b = projectWorld(s.x2, s.z2);
       if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-      const color = segmentColors?.get(`${s.x1},${s.z1},${s.x2},${s.z2}`);
-      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: s.kind, color });
+      const tlId = `${s.x1},${s.z1},${s.x2},${s.z2}`;
+      const color = segmentColors?.get(tlId);
+      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, tlId, kind: s.kind, color });
     }
     return out;
   }, [overlaySegments, projectWorld, segmentColors]);
@@ -872,6 +905,27 @@ export function WebCartographerMapViewer({
     // projected* memos handle the world → screen conversion), so no
     // `ctx.translate / scale` is needed. Line widths and radii are
     // therefore quoted directly in screen pixels.
+    const activeRadiusFilter = radiusFilterRef.current;
+    let radiusCull: {
+      cursorX: number;
+      cursorY: number;
+      radiusScreen: number;
+      alwaysShowTLIds: ReadonlySet<string>;
+    } | null = null;
+    if (activeRadiusFilter) {
+      const cursor = cursorWorldRef.current;
+      const radiusScreen = activeRadiusFilter.radiusBlocks * ppb;
+      // When the cursor is outside the canvas we still want to cull —
+      // place the centre off-screen so only `alwaysShowTLIds` survive.
+      const cursorX = cursor ? (cursor.x - cWx) * ppb + cw / 2 : -1e9;
+      const cursorY = cursor ? (cursor.z - cWz) * ppb + ch / 2 : -1e9;
+      radiusCull = {
+        cursorX,
+        cursorY,
+        radiusScreen,
+        alwaysShowTLIds: activeRadiusFilter.alwaysShowTLIds,
+      };
+    }
     drawOverlaysScreenSpace(octx, {
       segments: projectedSegments,
       points: projectedPoints,
@@ -882,7 +936,28 @@ export function WebCartographerMapViewer({
       tlStyle,
       traderStyle,
       terminusStyle,
+      radiusCull,
     });
+
+    // Subtle outline showing the active radius. Drawn after the TL
+    // overlays so it sits above the lines/dots; only when the cursor is
+    // actually over the canvas (the off-screen sentinel above would
+    // otherwise paint a circle at -1e9, but that's culled by the canvas
+    // anyway — we skip drawing for clarity).
+    if (radiusCull && cursorWorldRef.current) {
+      octx.save();
+      octx.beginPath();
+      octx.arc(radiusCull.cursorX, radiusCull.cursorY, radiusCull.radiusScreen, 0, Math.PI * 2);
+      octx.lineWidth = 1.5;
+      octx.strokeStyle = "rgba(255, 255, 255, 0.55)";
+      octx.setLineDash([6, 4]);
+      octx.stroke();
+      octx.setLineDash([]);
+      octx.lineWidth = 1;
+      octx.strokeStyle = "rgba(15, 23, 42, 0.45)";
+      octx.stroke();
+      octx.restore();
+    }
 
     // ── Hover-point labels ────────────────────────────────────────────────
     if (projectedPoints.length > 0) {
@@ -1184,16 +1259,52 @@ export function WebCartographerMapViewer({
       const hx = Math.floor(world.x);
       const hz = Math.floor(world.z);
       setHoverCoords({ x: hx, z: hz });
+      cursorWorldRef.current = { x: world.x, z: world.z };
       onHoverCoords?.({ x: hx, z: hz });
+      // When the radius cull is active, the visible TL set depends on the
+      // cursor position — redraw every mousemove so the filter follows.
+      if (radiusFilterRef.current) scheduleRedraw();
 
       // Hover-on-segment hit test in screen space.
       if (projectedSegments.length > 0) {
         const threshold = 8;
         const thresholdSq = threshold * threshold;
+        // When the radius cull is active, segments outside the radius (and
+        // not in alwaysShow) are not drawn — make hovering them a no-op
+        // too, so the cursor doesn't snap to invisible lines.
+        const filt = radiusFilterRef.current;
+        const cur = cursorWorldRef.current;
+        const ppb = pixelsPerBlockRef.current;
+        const radSqScreen = filt ? (filt.radiusBlocks * ppb) ** 2 : 0;
+        const curScreen = cur
+          ? {
+              x:
+                (cur.x - centerWorldXRef.current) * ppb +
+                (containerRef.current?.clientWidth ?? 0) / 2,
+              y:
+                (cur.z - centerWorldZRef.current) * ppb +
+                (containerRef.current?.clientHeight ?? 0) / 2,
+            }
+          : null;
         let best = -1;
         let bestDistSq = Infinity;
         for (let i = 0; i < projectedSegments.length; i++) {
           const seg = projectedSegments[i];
+          if (filt && curScreen) {
+            if (!filt.alwaysShowTLIds.has(seg.tlId)) {
+              const dx1 = seg.x1 - curScreen.x;
+              const dy1 = seg.y1 - curScreen.y;
+              const dx2 = seg.x2 - curScreen.x;
+              const dy2 = seg.y2 - curScreen.y;
+              if (dx1 * dx1 + dy1 * dy1 > radSqScreen && dx2 * dx2 + dy2 * dy2 > radSqScreen) {
+                continue;
+              }
+            }
+          } else if (filt && !filt.alwaysShowTLIds.has(seg.tlId)) {
+            // Cursor is outside the canvas / no live cursor — only
+            // alwaysShow TLs are drawn, so only those are hoverable.
+            continue;
+          }
           const abx = seg.x2 - seg.x1;
           const aby = seg.y2 - seg.y1;
           const apx = sx - seg.x1;
@@ -1215,7 +1326,14 @@ export function WebCartographerMapViewer({
         setHoveredSegmentIndex(null);
       }
     },
-    [dragging, projectedSegments, unprojectScreen, hoveredSegmentIndex, onHoverCoords],
+    [
+      dragging,
+      projectedSegments,
+      unprojectScreen,
+      hoveredSegmentIndex,
+      onHoverCoords,
+      scheduleRedraw,
+    ],
   );
 
   const handleMouseUp = useCallback(() => {
@@ -1226,9 +1344,11 @@ export function WebCartographerMapViewer({
     setDragging(false);
     dragStartRef.current = null;
     setHoverCoords(null);
+    cursorWorldRef.current = null;
     onHoverCoords?.(null);
     setHoveredSegmentIndex(null);
-  }, [onHoverCoords]);
+    if (radiusFilterRef.current) scheduleRedraw();
+  }, [onHoverCoords, scheduleRedraw]);
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -1465,6 +1585,9 @@ interface OverlayDrawArgs {
     y1: number;
     x2: number;
     y2: number;
+    /** Canonical TL id (`${x1},${z1},${x2},${z2}`) used by the radius
+     *  cull's `alwaysShowTLIds` lookup. */
+    tlId: string;
     kind?: "default" | "user";
     /** Optional per-segment color override (hex like `#a855f7`). When set,
      *  the segment skips the default purple/blue pass and is drawn with this
@@ -1485,6 +1608,19 @@ interface OverlayDrawArgs {
   tlStyle: string;
   traderStyle: string;
   terminusStyle: string;
+  /**
+   * Optional cursor-radius cull. When non-null, segments whose `tlId`
+   * is not in `alwaysShowTLIds` AND whose endpoints are both farther
+   * than `radiusScreen` (screen px) from `(cursorX, cursorY)` are
+   * skipped entirely (no line, no glow, no portal dots, no hover/
+   * highlight outline).
+   */
+  radiusCull?: {
+    cursorX: number;
+    cursorY: number;
+    radiusScreen: number;
+    alwaysShowTLIds: ReadonlySet<string>;
+  } | null;
 }
 
 /**
@@ -1510,9 +1646,31 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     tlStyle,
     traderStyle,
     terminusStyle,
+    radiusCull,
   } = args;
 
   if (segments.length === 0 && points.length === 0 && !route) return;
+
+  // Pre-compute the cursor-radius cull set: segments whose `tlId` is not
+  // in `alwaysShowTLIds` and whose endpoints are both outside the radius
+  // get skipped in every pass below (line/glow/hover/highlight/dots).
+  let cullSkipIndices: Set<number> | null = null;
+  if (radiusCull && segments.length > 0) {
+    cullSkipIndices = new Set<number>();
+    const { cursorX, cursorY, radiusScreen, alwaysShowTLIds } = radiusCull;
+    const radSq = radiusScreen * radiusScreen;
+    for (let i = 0; i < segments.length; i++) {
+      const s = segments[i];
+      if (alwaysShowTLIds.has(s.tlId)) continue;
+      const dx1 = s.x1 - cursorX;
+      const dy1 = s.y1 - cursorY;
+      if (dx1 * dx1 + dy1 * dy1 <= radSq) continue;
+      const dx2 = s.x2 - cursorX;
+      const dy2 = s.y2 - cursorY;
+      if (dx2 * dx2 + dy2 * dy2 <= radSq) continue;
+      cullSkipIndices.add(i);
+    }
+  }
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -1536,6 +1694,7 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     const colorBuckets = new Map<string, typeof segments>();
     for (let i = 0; i < segments.length; i++) {
       if (routeTLBaseSkipIndices.has(i)) continue;
+      if (cullSkipIndices?.has(i)) continue;
       const s = segments[i];
       if (s.color) {
         let bucket = colorBuckets.get(s.color);
@@ -1572,7 +1731,11 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
       drawPass(segs, rgbaFromHex(hex, 0.95), rgbaFromHex(hex, 0.45));
     }
 
-    if (hoveredSegmentIndex !== null && segments[hoveredSegmentIndex]) {
+    if (
+      hoveredSegmentIndex !== null &&
+      segments[hoveredSegmentIndex] &&
+      !cullSkipIndices?.has(hoveredSegmentIndex)
+    ) {
       const s = segments[hoveredSegmentIndex];
       ctx.strokeStyle = hoverLineColor;
       ctx.lineWidth = baseWidth * 1.6;
@@ -1587,6 +1750,7 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
       ctx.beginPath();
       for (const idx of highlightedSegmentIndices) {
         if (idx === hoveredSegmentIndex) continue;
+        if (cullSkipIndices?.has(idx)) continue;
         const s = segments[idx];
         if (!s) continue;
         ctx.moveTo(s.x1, s.y1);

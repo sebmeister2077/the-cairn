@@ -2,6 +2,7 @@ import { Layers, Minimize2, Search, Waypoints } from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
+import { Slider } from "../ui/slider";
 import { Combobox } from "../ui/combobox";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import { useCallback, useMemo, useState } from "react";
@@ -20,6 +21,8 @@ import {
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
+  setShowTLsInRadius as setShowTLsInRadiusAction,
+  setTLRadiusBlocks as setTLRadiusBlocksAction,
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { formatDuration } from "@/lib/format-duration";
@@ -194,6 +197,19 @@ export function FullscreenControlsOverlay({
     (next?: boolean) => dispatch(toggleShowRecentlyAddedAction(next)),
     [dispatch],
   );
+  // Cursor-radius cull for the TL overlay — keeps the page snappy when
+  // 4000+ TL pairs are visible by only drawing TLs near the mouse plus
+  // any TLs that belong to active / being-edited groupings.
+  const showTLsInRadius = useAppSelector((s) => s.mapView.showTLsInRadius);
+  const tlRadiusBlocks = useAppSelector((s) => s.mapView.tlRadiusBlocks);
+  const setShowTLsInRadius = useCallback(
+    (next: boolean) => dispatch(setShowTLsInRadiusAction(next)),
+    [dispatch],
+  );
+  const setTLRadiusBlocks = useCallback(
+    (next: number) => dispatch(setTLRadiusBlocksAction(next)),
+    [dispatch],
+  );
   // Route planner state — the open button mirrors the non-fullscreen one
   // so users can summon the planner sheet without leaving fullscreen.
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
@@ -272,6 +288,55 @@ export function FullscreenControlsOverlay({
           <span className="ml-auto text-xs text-muted-foreground select-none">
             {recentTLCount.toLocaleString()}
           </span>
+        </div>
+        <div
+          className={cn(
+            "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+            {
+              "opacity-50": !showTranslocators,
+            },
+          )}
+        >
+          <div
+            onClick={() => showTranslocators && setShowTLsInRadius(!showTLsInRadius)}
+            className={cn("flex items-center gap-2", {
+              "cursor-pointer": showTranslocators,
+            })}
+          >
+            <Switch
+              disabled={!showTranslocators}
+              checked={showTLsInRadius}
+              aria-label={t("topsMap.showTLsInRadius")}
+            />
+            <Label
+              className={cn("text-xs leading-tight", {
+                "cursor-pointer": showTranslocators,
+              })}
+            >
+              {t("topsMap.showTLsInRadiusTitle")}
+              <span className="block text-[10px] text-muted-foreground">
+                {t("topsMap.showTLsInRadiusSubtitle")}
+              </span>
+            </Label>
+          </div>
+          {showTLsInRadius && showTranslocators && (
+            <div className="flex flex-col gap-1 pl-6">
+              <div className="flex items-center justify-between text-xs">
+                <Label className="text-xs">{t("topsMap.tlRadiusBlocks")}</Label>
+                <span className="font-medium text-foreground tabular-nums">
+                  {tlRadiusBlocks.toLocaleString()} {t("topsMap.blocks")}
+                </span>
+              </div>
+              <Slider
+                value={tlRadiusBlocks}
+                min={100}
+                max={5000}
+                step={50}
+                onValueChange={setTLRadiusBlocks}
+                aria-label={t("topsMap.tlRadiusBlocks")}
+              />
+            </div>
+          )}
         </div>
         <div
           onClick={() => setShowLandmarks(!showLandmarks)}

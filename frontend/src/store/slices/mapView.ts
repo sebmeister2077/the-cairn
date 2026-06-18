@@ -81,6 +81,17 @@ export interface MapViewState {
     traderTypeFilter: string[];
     showRecentlyAdded: boolean;
     /**
+     * When true, the WC map viewer only renders translocators whose
+     * endpoints are within {@link tlRadiusBlocks} world blocks of the
+     * mouse cursor. TLs that are part of an active grouping (highlight
+     * or filter mode) and TLs of the grouping currently being edited
+     * are always rendered regardless of this filter. Pure render-time
+     * cull — lets the page stay responsive with thousands of TL pairs.
+     */
+    showTLsInRadius: boolean;
+    /** Radius (world blocks) used by {@link showTLsInRadius}. */
+    tlRadiusBlocks: number;
+    /**
      * When true, render a translucent "oceans" raster background behind
      * the Tops map tiles so users can see roughly where oceans exist in
      * still-unexplored regions. Asset is shipped from the frontend bundle
@@ -205,6 +216,8 @@ export function loadInitialMapViewState(): MapViewState {
         showTraders: false,
         traderTypeFilter: [],
         showRecentlyAdded: false,
+        showTLsInRadius: false,
+        tlRadiusBlocks: 1000,
         showOceans: false,
         showRockStrata: false,
         rockStrataKind: "rock",
@@ -282,6 +295,14 @@ export const mapViewSlice = createSlice({
             } else {
                 state.showRecentlyAdded = !state.showRecentlyAdded;
             }
+        },
+        setShowTLsInRadius(state, action: PayloadAction<boolean>) {
+            state.showTLsInRadius = action.payload;
+        },
+        setTLRadiusBlocks(state, action: PayloadAction<number>) {
+            const v = Math.round(action.payload);
+            if (!Number.isFinite(v)) return;
+            state.tlRadiusBlocks = Math.max(50, Math.min(20000, v));
         },
         setShowOceans(state, action: PayloadAction<boolean>) {
             state.showOceans = action.payload;
@@ -433,6 +454,8 @@ export const {
     setTraderTypeFilter,
     toggleTraderTypeFilter,
     toggleShowRecentlyAdded,
+    setShowTLsInRadius,
+    setTLRadiusBlocks,
     setShowOceans,
     setShowRockStrata,
     setRockStrataKind,

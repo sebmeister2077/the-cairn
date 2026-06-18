@@ -422,6 +422,12 @@ export function TOPSMapViewPage() {
     [dispatch],
   );
 
+  // Cursor-radius cull preference \u2014 when on, the WC viewer only renders
+  // TLs near the mouse plus any TLs in active / being-edited groupings.
+  // Lets the page stay snappy with thousands of TL pairs visible.
+  const showTLsInRadius = useAppSelector((s) => s.mapView.showTLsInRadius);
+  const tlRadiusBlocks = useAppSelector((s) => s.mapView.tlRadiusBlocks);
+
   const [selectedTranslocator, setSelectedTranslocator] = useState<WorldLineSegment | null>(null);
   // When pinned, the displayed TL info stays put even if the user left-clicks
   // empty space. Cleared by clicking the pin icon, or by clicking any other TL
@@ -1328,6 +1334,34 @@ export function TOPSMapViewPage() {
     return map.size > 0 ? map : undefined;
   }, [editingGrouping, groupingsViewMode, activeGroupingIds, groupingsStore.groupings]);
 
+  // Cursor-radius filter passed into the WC map viewer. When active, the
+  // viewer culls drawn TLs to those within `tlRadiusBlocks` of the mouse,
+  // plus any TLs whose canonical id is in `alwaysShowTLIds`. Always-show
+  // covers (a) all members of active groupings while in highlight / filter
+  // mode and (b) every member of the grouping currently being edited \u2014
+  // so users keep clear sight of their selections regardless of where
+  // the cursor is. In "all" mode with no editing grouping the set is
+  // empty and the cursor radius is the only gate.
+  const radiusFilter = useMemo(() => {
+    if (!showTLsInRadius) return null;
+    if (!showTranslocators) return null;
+    const ids = new Set<string>();
+    if (groupingsViewMode === "highlight" || groupingsViewMode === "filter") {
+      for (const id of activeTLIdSet) ids.add(id);
+    }
+    if (editingGrouping) {
+      for (const id of editingGrouping.tlIds) ids.add(id);
+    }
+    return { radiusBlocks: tlRadiusBlocks, alwaysShowTLIds: ids };
+  }, [
+    showTLsInRadius,
+    showTranslocators,
+    tlRadiusBlocks,
+    groupingsViewMode,
+    activeTLIdSet,
+    editingGrouping,
+  ]);
+
   // ---------------------------------------------------------------------
   // Route planner integration
   // ---------------------------------------------------------------------
@@ -1988,6 +2022,7 @@ export function TOPSMapViewPage() {
               }
               highlightedSegments={highlightedTranslocatorSegments}
               segmentColors={groupingSegmentColors}
+              radiusFilter={radiusFilter}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
               initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
