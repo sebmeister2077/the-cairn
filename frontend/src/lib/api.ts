@@ -3633,3 +3633,335 @@ export const publicRoadWorkers = {
     },
 };
 
+// ---------------------------------------------------------------------------
+// Community Groupings Library
+//
+// Mirrors backend/app/routes/grouping_library.py. Every endpoint 404s when the
+// `grouping_library_enabled` feature flag is OFF, so callers should treat a 404
+// as "feature unavailable" rather than an error.
+// ---------------------------------------------------------------------------
+
+export type GroupingLibrarySort = "popular" | "installs" | "recent" | "official";
+
+/** The viewer's install state for a grouping, when installed. */
+export interface LibraryViewerInstall {
+    mode: "fork" | "subscribe";
+    forked_from_version: number | null;
+    synced_version: number | null;
+}
+
+/** A grouping "card" as returned by browse / detail / mine endpoints. */
+export interface LibraryGroupingCard {
+    id: string;
+    content_type: string;
+    name: string;
+    description: string | null;
+    color: string | null;
+    tags: string[];
+    tl_count: number;
+    /** Present on detail / mine responses; omitted from browse list rows. */
+    tlIds?: string[];
+    author: string | null;
+    author_api_key_id: string | null;
+    author_reputation: number;
+    is_official: boolean;
+    status: string;
+    version: number;
+    install_count: number;
+    upvote_count: number;
+    viewer_voted: boolean;
+    viewer_subscribed: boolean;
+    viewer_install: LibraryViewerInstall | null;
+    created_at: string | null;
+    updated_at: string | null;
+    last_edited_at: string | null;
+}
+
+export interface LibraryBrowseResult {
+    items: LibraryGroupingCard[];
+    total: number;
+    page: number;
+    page_size: number;
+}
+
+/** A single version row as returned by the history list. */
+export interface LibraryHistoryEntry {
+    version: number;
+    name: string;
+    change_note: string | null;
+    tl_count: number;
+    editor: string | null;
+    created_at: string | null;
+}
+
+/** A full version snapshot (includes the TL ids) for fork-from-history. */
+export interface LibraryVersionSnapshot {
+    version: number;
+    name: string;
+    description: string | null;
+    color: string | null;
+    tags: string[];
+    tlIds: string[];
+    created_at: string | null;
+}
+
+export interface LibrarySubscription {
+    id: string;
+    name: string;
+    description: string | null;
+    color: string | null;
+    tags: string[];
+    tlIds: string[];
+    author: string | null;
+    head_version: number;
+    synced_version: number | null;
+    status: string;
+    has_update: boolean;
+}
+
+export interface UserReputation {
+    api_key_id: string;
+    display_name: string | null;
+    reputation_score: number;
+    published_count: number;
+    total_upvotes_received: number;
+    total_installs_received: number;
+    official_count: number;
+    updated_at?: string | null;
+}
+
+export interface LibraryInstallResult {
+    ok: boolean;
+    mode: "fork" | "subscribe";
+    grouping: {
+        libraryId: string;
+        name: string;
+        description: string | null;
+        color: string | null;
+        tags: string[];
+        tlIds: string[];
+        author: string | null;
+        version: number;
+    };
+}
+
+export interface PublishGroupingPayload {
+    name: string;
+    description?: string | null;
+    color?: string | null;
+    tlIds: string[];
+    tags?: string[];
+}
+
+export interface EditGroupingPayload {
+    name?: string;
+    description?: string | null;
+    color?: string | null;
+    tlIds?: string[];
+    tags?: string[];
+    changeNote?: string;
+}
+
+export const groupingLibrary = {
+    async browse(
+        opts: {
+            q?: string;
+            tag?: string;
+            sort?: GroupingLibrarySort;
+            officialOnly?: boolean;
+            page?: number;
+            pageSize?: number;
+        } = {},
+        signal?: AbortSignal,
+    ): Promise<LibraryBrowseResult> {
+        const params = new URLSearchParams();
+        if (opts.q) params.set("q", opts.q);
+        if (opts.tag) params.set("tag", opts.tag);
+        if (opts.sort) params.set("sort", opts.sort);
+        if (opts.officialOnly) params.set("official_only", "true");
+        if (opts.page != null) params.set("page", String(opts.page));
+        if (opts.pageSize != null) params.set("page_size", String(opts.pageSize));
+        const qs = params.toString();
+        const res = await fetch(`${API_BASE}/groupings/library${qs ? `?${qs}` : ""}`, {
+            headers: authHeaders(),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async get(id: string, signal?: AbortSignal): Promise<LibraryGroupingCard> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}`, {
+            headers: authHeaders(),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async history(id: string, signal?: AbortSignal): Promise<{ items: LibraryHistoryEntry[] }> {
+        const res = await fetch(
+            `${API_BASE}/groupings/library/${encodeURIComponent(id)}/history`,
+            { headers: authHeaders(), signal },
+        );
+        return (await handleResponse(res)).json();
+    },
+
+    async version(id: string, version: number, signal?: AbortSignal): Promise<LibraryVersionSnapshot> {
+        const res = await fetch(
+            `${API_BASE}/groupings/library/${encodeURIComponent(id)}/versions/${version}`,
+            { headers: authHeaders(), signal },
+        );
+        return (await handleResponse(res)).json();
+    },
+
+    async mine(signal?: AbortSignal): Promise<{ items: LibraryGroupingCard[] }> {
+        const res = await fetch(`${API_BASE}/groupings/library/mine`, {
+            headers: authHeaders(),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async subscriptions(signal?: AbortSignal): Promise<{ items: LibrarySubscription[] }> {
+        const res = await fetch(`${API_BASE}/groupings/library/subscriptions`, {
+            headers: authHeaders(),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async userReputation(apiKeyId: string, signal?: AbortSignal): Promise<UserReputation> {
+        const res = await fetch(
+            `${API_BASE}/users/${encodeURIComponent(apiKeyId)}/reputation`,
+            { headers: authHeaders(), signal },
+        );
+        return (await handleResponse(res)).json();
+    },
+
+    async publish(payload: PublishGroupingPayload): Promise<LibraryGroupingCard> {
+        const res = await fetch(`${API_BASE}/groupings/library`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async edit(id: string, payload: EditGroupingPayload): Promise<LibraryGroupingCard> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}`, {
+            method: "PATCH",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async unpublish(id: string): Promise<{ ok: boolean }> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}`, {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async upvote(id: string): Promise<LibraryGroupingCard> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}/vote`, {
+            method: "POST",
+            headers: authHeaders(),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async removeUpvote(id: string): Promise<LibraryGroupingCard> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}/vote`, {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async install(
+        id: string,
+        mode: "fork" | "subscribe",
+        version?: number,
+    ): Promise<LibraryInstallResult> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}/install`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ mode, version }),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async uninstall(id: string): Promise<{ ok: boolean }> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}/install`, {
+            method: "DELETE",
+            headers: authHeaders(),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async report(
+        id: string,
+        reason: string,
+        details?: string,
+    ): Promise<{ ok: boolean }> {
+        const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}/report`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ reason, details }),
+        });
+        return (await handleResponse(res)).json();
+    },
+};
+
+export interface AdminGroupingReport {
+    id: number;
+    grouping_id: string;
+    grouping_name: string | null;
+    grouping_status: string | null;
+    reason: string;
+    details: string | null;
+    reporter: string | null;
+    created_at: string | null;
+}
+
+export const adminGroupingLibrary = {
+    async reports(signal?: AbortSignal): Promise<{ items: AdminGroupingReport[] }> {
+        const res = await fetch(`${API_BASE}/admin/groupings/reports`, {
+            headers: authHeaders(),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async remove(id: string, reason?: string): Promise<{ ok: boolean }> {
+        const res = await fetch(`${API_BASE}/admin/groupings/${encodeURIComponent(id)}/remove`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ reason }),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async setOfficial(id: string, official: boolean): Promise<{ ok: boolean }> {
+        const res = await fetch(`${API_BASE}/admin/groupings/${encodeURIComponent(id)}/official`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ official }),
+        });
+        return (await handleResponse(res)).json();
+    },
+
+    async resolveReport(reportId: number, dismiss: boolean): Promise<{ ok: boolean }> {
+        const res = await fetch(
+            `${API_BASE}/admin/groupings/reports/${reportId}/resolve`,
+            {
+                method: "POST",
+                headers: authHeaders({ "Content-Type": "application/json" }),
+                body: JSON.stringify({ dismiss }),
+            },
+        );
+        return (await handleResponse(res)).json();
+    },
+};
+

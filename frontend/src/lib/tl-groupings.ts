@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setGroupings as setGroupingsAction } from "@/store/slices/tlGroupings";
 
@@ -24,6 +24,24 @@ export interface TLGrouping {
     tlIds: TLId[];
     createdAt: number;
     updatedAt: number;
+    /**
+     * Provenance for groupings that came from the community library. Absent for
+     * purely local groupings. When `mode` is `"subscribe"` the grouping is kept
+     * in sync with the published head and edited read-only; `"fork"` copies are
+     * fully editable and detached from upstream.
+     */
+    source?: {
+        libraryId: string;
+        author?: string;
+        version: number;
+        mode: "fork" | "subscribe";
+    };
+    /**
+     * Set when the user has published *this* local grouping to the library, so
+     * the drawer can offer "Publish update" instead of creating a duplicate.
+     * Holds the library id of the user's own published entry.
+     */
+    publishedId?: string;
 }
 
 interface PersistedShape {
@@ -89,6 +107,18 @@ function isFiniteNumber(x: unknown): x is number {
 function isTLGrouping(value: unknown): value is TLGrouping {
     if (!value || typeof value !== "object") return false;
     const g = value as Record<string, unknown>;
+    if (g.source !== undefined) {
+        if (!g.source || typeof g.source !== "object") return false;
+        const s = g.source as Record<string, unknown>;
+        if (
+            typeof s.libraryId !== "string" ||
+            typeof s.version !== "number" ||
+            (s.mode !== "fork" && s.mode !== "subscribe") ||
+            (s.author !== undefined && typeof s.author !== "string")
+        ) {
+            return false;
+        }
+    }
     return (
         typeof g.id === "string" &&
         typeof g.name === "string" &&
@@ -96,7 +126,8 @@ function isTLGrouping(value: unknown): value is TLGrouping {
         g.tlIds.every((id) => typeof id === "string") &&
         isFiniteNumber(g.createdAt) &&
         isFiniteNumber(g.updatedAt) &&
-        (g.color === undefined || typeof g.color === "string")
+        (g.color === undefined || typeof g.color === "string") &&
+        (g.publishedId === undefined || typeof g.publishedId === "string")
     );
 }
 
@@ -191,9 +222,20 @@ function uniqueIds(ids: TLId[]): TLId[] {
     return Array.from(new Set(ids));
 }
 
+/** Shape returned by the library install endpoints for a single grouping. */
+export interface LibraryGroupingPayload {
+    libraryId: string;
+    name: string;
+    color?: string | null;
+    tlIds: TLId[];
+    author?: string | null;
+    version: number;
+    mode: "fork" | "subscribe";
+}
+
 export interface UseTLGroupingsResult {
     groupings: TLGrouping[];
-    createGrouping: (name: string, opts?: { color?: string; tlIds?: TLId[] }) => TLGrouping;
+    createGrouping: (name: string, opts?: { color?: string; tlIds?: TLId[]; source?: TLGrouping["source"] }) => TLGrouping;
     renameGrouping: (id: string, name: string) => void;
     deleteGrouping: (id: string) => void;
     setColor: (id: string, color: string | undefined) => void;
@@ -205,6 +247,23 @@ export interface UseTLGroupingsResult {
     importJSON: (json: string, mode: "replace" | "merge") => { ok: true; count: number } | { ok: false; error: string };
     /** Returns the JSON string for the user to download. */
     exportJSON: () => string;
+    /**
+     * Install a grouping pulled from the community library. A `fork` always
+     * creates a fresh editable copy; a `subscribe` reuses the existing local
+     * grouping for the same `libraryId` if present (so re-subscribing updates
+     * in place) and is otherwise appended. Returns the resulting grouping.
+     */
+    installLibraryGrouping: (payload: LibraryGroupingPayload) => TLGrouping;
+    /**
+     * Refresh a subscribed grouping to a newer upstream snapshot. No-op when no
+     * local subscription matches `libraryId`.
+     */
+    syncSubscribedGrouping: (
+        libraryId: string,
+        snapshot: { name: string; color?: string | null; tlIds: TLId[]; version: number; author?: string | null },
+    ) => void;
+    /** Record that a local grouping was published by the user (stores the library id). */
+    markPublished: (groupingId: string, libraryId: string | undefined) => void;
 }
 
 /**
@@ -256,6 +315,7 @@ export function useTLGroupings(): UseTLGroupingsResult {
                 tlIds: uniqueIds(opts?.tlIds ?? []),
                 createdAt: now,
                 updatedAt: now,
+                ...(opts?.source ? { source: opts.source } : {}),
             };
             update((prev) => [...prev, grouping]);
             return grouping;
@@ -365,6 +425,90 @@ export function useTLGroupings(): UseTLGroupingsResult {
         return serializeForExport(groupings);
     }, [groupings]);
 
+    const installLibraryGrouping = useCallback<UseTLGroupingsResult["installLibraryGrouping"]>(
+        (payload) => {
+            const now = Date.now();
+            const source: TLGrouping["source"] = {
+                libraryId: payload.libraryId,
+                version: payload.version,
+                mode: payload.mode,
+                ...(payload.author ? { author: payload.author } : {}),
+            };
+            const built: TLGrouping = {
+                id: generateId(),
+                name: payload.name.trim() || "Untitled grouping",
+                color: payload.color ?? undefined,
+                tlIds: uniqueIds(payload.tlIds),
+                createdAt: now,
+                updatedAt: now,
+                source,
+            };
+            if (payload.mode === "subscribe") {
+                update((prev) => {
+                    const existingIdx = prev.findIndex(
+                        (g) => g.source?.mode === "subscribe" && g.source.libraryId === payload.libraryId,
+                    );
+                    if (existingIdx >= 0) {
+                        const existing = prev[existingIdx];
+                        const merged: TLGrouping = {
+                            ...existing,
+                            name: built.name,
+                            color: built.color,
+                            tlIds: built.tlIds,
+                            updatedAt: now,
+                            source,
+                        };
+                        built.id = existing.id;
+                        const next = [...prev];
+                        next[existingIdx] = merged;
+                        return next;
+                    }
+                    return [...prev, built];
+                });
+            } else {
+                update((prev) => [...prev, built]);
+            }
+            return built;
+        },
+        [update],
+    );
+
+    const syncSubscribedGrouping = useCallback<UseTLGroupingsResult["syncSubscribedGrouping"]>(
+        (libraryId, snapshot) => {
+            update((prev) =>
+                prev.map((g) => {
+                    if (g.source?.mode !== "subscribe" || g.source.libraryId !== libraryId) return g;
+                    return {
+                        ...g,
+                        name: snapshot.name.trim() || g.name,
+                        color: snapshot.color ?? undefined,
+                        tlIds: uniqueIds(snapshot.tlIds),
+                        updatedAt: Date.now(),
+                        source: {
+                            ...g.source,
+                            version: snapshot.version,
+                            ...(snapshot.author ? { author: snapshot.author } : {}),
+                        },
+                    };
+                }),
+            );
+        },
+        [update],
+    );
+
+    const markPublished = useCallback<UseTLGroupingsResult["markPublished"]>(
+        (groupingId, libraryId) => {
+            update((prev) =>
+                prev.map((g) =>
+                    g.id === groupingId
+                        ? { ...g, publishedId: libraryId, updatedAt: Date.now() }
+                        : g,
+                ),
+            );
+        },
+        [update],
+    );
+
     return {
         groupings,
         createGrouping,
@@ -376,5 +520,8 @@ export function useTLGroupings(): UseTLGroupingsResult {
         toggleTL,
         importJSON,
         exportJSON,
+        installLibraryGrouping,
+        syncSubscribedGrouping,
+        markPublished,
     };
 }

@@ -166,6 +166,19 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
       },
     ],
   },
+  {
+    id: "grouping-library",
+    label: "TL grouping library",
+    description:
+      "Community sharing of TOPS-map translocator groupings (publish / browse / fork / subscribe). Numeric caps live in the Quotas & rate limits section above.",
+    flags: [
+      {
+        key: "grouping_library_enabled",
+        title: "Grouping library",
+        help: "ON = the community grouping library endpoints are live and the TOPS map exposes Browse / Publish UI. OFF = all /api/groupings/library endpoints return 404 and the frontend hides the library buttons. Numeric caps (publish daily cap, max TLs, max tags) are configured in the Quotas & rate limits section.",
+      },
+    ],
+  },
 ];
 
 export function AdminFeatureFlagsPage() {

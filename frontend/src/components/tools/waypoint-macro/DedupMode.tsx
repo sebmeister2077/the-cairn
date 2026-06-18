@@ -94,10 +94,7 @@ export function DedupMode({ onCommandsChange }: DedupModeProps) {
     }
   }
 
-  const clusters = useMemo(
-    () => findDuplicateClusters(records, config),
-    [records, config],
-  );
+  const clusters = useMemo(() => findDuplicateClusters(records, config), [records, config]);
 
   // Whenever the detected clusters change (new file or changed criteria) reset
   // the selection to the sensible default: keep the first member of each group.
@@ -105,10 +102,7 @@ export function DedupMode({ onCommandsChange }: DedupModeProps) {
     setDeleteIds(defaultDeletionIds(clusters));
   }, [clusters]);
 
-  const commands = useMemo(
-    () => buildRemoveByIdsCommands([...deleteIds]),
-    [deleteIds],
-  );
+  const commands = useMemo(() => buildRemoveByIdsCommands([...deleteIds]), [deleteIds]);
 
   useEffect(() => onCommandsChange(commands), [commands, onCommandsChange]);
 
@@ -144,9 +138,7 @@ export function DedupMode({ onCommandsChange }: DedupModeProps) {
                 variant="secondary"
                 size="sm"
                 onClick={() =>
-                  handleFile(
-                    new File([SAMPLE_CHAT_LOG], "client-chat.log", { type: "text/plain" }),
-                  )
+                  handleFile(new File([SAMPLE_CHAT_LOG], "client-chat.log", { type: "text/plain" }))
                 }
               >
                 Simulate upload
@@ -252,9 +244,7 @@ export function DedupMode({ onCommandsChange }: DedupModeProps) {
                                 disabled={m.id === undefined}
                                 onCheckedChange={() => m.id !== undefined && toggleDelete(m.id)}
                                 aria-label={
-                                  flagged
-                                    ? `Keep waypoint ${m.name}`
-                                    : `Delete waypoint ${m.name}`
+                                  flagged ? `Keep waypoint ${m.name}` : `Delete waypoint ${m.name}`
                                 }
                               />
                               <span className="w-8 shrink-0 tabular-nums text-xs text-muted-foreground">

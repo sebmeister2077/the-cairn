@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -259,6 +260,51 @@ async def require_active_user(
         raise HTTPException(status_code=403, detail="Account has been deleted")
 
     return {"key": x_api_key, "user": user, "info": info}
+
+
+# Minimum account age (seconds) before a user may publish to the groupings
+# library. Cheap spam deterrent that also makes attribution + reputation
+# meaningful. See plans/global-groupings-library-plan.prompt.md.
+PUBLISHER_MIN_ACCOUNT_AGE_SECONDS = 24 * 60 * 60
+
+
+async def require_publisher(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+) -> dict:
+    """FastAPI dependency for publishing community content (groupings library).
+
+    Builds on :func:`require_active_user` and additionally requires the account
+    to be at least :data:`PUBLISHER_MIN_ACCOUNT_AGE_SECONDS` old. Admin keys
+    bypass the age gate. Returns the same ``{key, user, info}`` shape.
+
+    Raises 403 with ``{"code": "account_too_new"}`` when the account exists but
+    is younger than the threshold.
+    """
+    ctx = await require_active_user(request, x_api_key)
+    if ctx["info"].get("is_admin"):
+        return ctx
+    user = ctx["user"]
+    joined_at = user.get("joined_at") if user else None
+    if joined_at is None:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "account_too_new", "message": "Account is too new to publish"},
+        )
+    now = datetime.now(timezone.utc)
+    if joined_at.tzinfo is None:
+        joined_at = joined_at.replace(tzinfo=timezone.utc)
+    age_seconds = (now - joined_at).total_seconds()
+    if age_seconds < PUBLISHER_MIN_ACCOUNT_AGE_SECONDS:
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "account_too_new",
+                "message": "Your account must be at least 1 day old to publish.",
+            },
+        )
+    return ctx
+
 
 
 # ---------------------------------------------------------------------------

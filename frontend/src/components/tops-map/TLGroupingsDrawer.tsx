@@ -1,8 +1,9 @@
 import { useMemo, useRef, useState } from "react";
-import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Globe, Pencil, Plus, Share2, Trash2, Upload } from "lucide-react";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -28,7 +29,11 @@ import {
   type TLGrouping,
   type UseTLGroupingsResult,
 } from "@/lib/tl-groupings";
+import { useGroupingSubscriptions } from "@/hooks/useGroupingLibrary";
+import { useAppSelector } from "@/store/hooks";
 import { Trans, useTranslation } from "@/lib/i18n";
+import { GroupingLibraryDialog } from "./library/GroupingLibraryDialog";
+import { PublishGroupingDialog } from "./library/PublishGroupingDialog";
 
 export type TLGroupingsViewMode = "all" | "filter" | "highlight";
 
@@ -72,12 +77,28 @@ export function TLGroupingsDrawer({
   const { t } = useTranslation();
   const { groupings, createGrouping, renameGrouping, deleteGrouping, importJSON } = store;
 
+  const isAdmin = useAppSelector((s) => s.auth.isAdmin);
+  const apiKey = useAppSelector((s) => s.auth.apiKey);
+  const signedIn = Boolean(apiKey);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TLGrouping | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
+
+  // Community library dialog + per-grouping publish dialog state.
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [publishTarget, setPublishTarget] = useState<TLGrouping | null>(null);
+
+  // Surface a badge on the library button when any subscribed grouping has an
+  // upstream update. Only queried while signed in.
+  const subscriptions = useGroupingSubscriptions(signedIn && open);
+  const updateCount = useMemo(
+    () => (subscriptions.data ?? []).filter((s) => s.has_update).length,
+    [subscriptions.data],
+  );
 
   // Set of canonical TLIds present in the currently-loaded geojson, used to
   // surface "(N missing)" indicators when a grouping references TLs that no
@@ -210,6 +231,22 @@ export function TLGroupingsDrawer({
           </div>
           {importError && <p className="text-xs text-destructive">{importError}</p>}
 
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="relative"
+            onClick={() => setLibraryOpen(true)}
+          >
+            <Globe className="size-4 mr-1" />
+            {t("topsMap.groupingsDrawer.library.browse")}
+            {updateCount > 0 && (
+              <Badge className="ml-2" variant="default">
+                {updateCount}
+              </Badge>
+            )}
+          </Button>
+
           <div className="flex-1 overflow-y-auto -mx-4 px-4">
             {groupings.length === 0 && (
               <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -269,8 +306,38 @@ export function TLGroupingsDrawer({
                             ? ` (${t("topsMap.groupingsDrawer.missingCount", { count: missing })})`
                             : ""}
                         </p>
+                        {g.source?.mode === "subscribe" && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("topsMap.groupingsDrawer.library.installedSubscribe")}
+                          </p>
+                        )}
+                        {g.source?.mode === "fork" && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("topsMap.groupingsDrawer.library.installedFork")}
+                          </p>
+                        )}
+                        {!g.source && g.publishedId && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {t("topsMap.groupingsDrawer.library.publishedIndicator")}
+                          </p>
+                        )}
                       </div>
                       <div className="flex items-center gap-1">
+                        {signedIn && g.source?.mode !== "subscribe" && (
+                          <Button
+                            type="button"
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setPublishTarget(g)}
+                            title={
+                              g.publishedId
+                                ? t("topsMap.groupingsDrawer.library.publishUpdate")
+                                : t("topsMap.groupingsDrawer.library.publish")
+                            }
+                          >
+                            <Share2 className="size-4" />
+                          </Button>
+                        )}
                         <Button
                           type="button"
                           size="icon-sm"
@@ -353,6 +420,26 @@ export function TLGroupingsDrawer({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GroupingLibraryDialog
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        store={store}
+        isAdmin={isAdmin}
+      />
+
+      <PublishGroupingDialog
+        open={publishTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) setPublishTarget(null);
+        }}
+        grouping={publishTarget}
+        editLibraryId={publishTarget?.publishedId}
+        onPublished={(libraryId) => {
+          if (publishTarget) store.markPublished(publishTarget.id, libraryId);
+          setPublishTarget(null);
+        }}
+      />
     </>
   );
 }

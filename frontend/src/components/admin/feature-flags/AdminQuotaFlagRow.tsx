@@ -104,6 +104,33 @@ export const QUOTA_FLAGS: QuotaFlagSpec[] = [
     min: 0,
     max: 365,
   },
+  {
+    key: "grouping_library_publish_daily_cap",
+    label: "Grouping library publish daily cap",
+    help: "Per-user max new groupings published to the community library per rolling 24h window. Admins bypass.",
+    unit: "per 24h",
+    defaultValue: 5,
+    min: 0,
+    max: 100,
+  },
+  {
+    key: "grouping_library_max_tls",
+    label: "Grouping library max TLs",
+    help: "Max number of translocators allowed in a single published grouping.",
+    unit: "items",
+    defaultValue: 500,
+    min: 1,
+    max: 5000,
+  },
+  {
+    key: "grouping_library_max_tags",
+    label: "Grouping library max tags",
+    help: "Max number of tags allowed on a published grouping.",
+    unit: "tags",
+    defaultValue: 5,
+    min: 0,
+    max: 20,
+  },
 ];
 export function QuotaFlagRow({
   spec,

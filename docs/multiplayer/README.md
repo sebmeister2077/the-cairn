@@ -14,6 +14,7 @@ This folder is the operational reference. Other pages explain what each frontend
 | [Contribute](./contribute.md) | Upload pipeline, validation, preview, cooldown rules, approval/merge, withdraw/reject, archive, audit trail |
 | [Translocator screenshot flow](./translocator-screenshot-flow.md) | Screenshot-based TL contribution: presigned upload, EXIF strip, RapidOCR, ORB+RANSAC minimap match, admin review |
 | [TOPS Map](./tops-map.md) | The shared community map — multi-resolution chunked cache, presigned URLs, partial regeneration, overlays |
+| [Groupings Library](./groupings-library.md) | Community sharing of TL groupings — publish, fork/subscribe, upvotes, tags, reputation, version history, moderation |
 | [Storage & data flow](./storage-and-data-flow.md) | Where each blob lives (R2 vs Supabase vs game client), why it's split that way |
 
 ## Quick mental model

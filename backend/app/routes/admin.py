@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from ..auth import require_admin
 from ..core import database as db
 from ..core import generation_tracker, r2_storage
+from ..core import grouping_library_db
 from ..core.mapdb import RESOLUTION_LEVELS
 from ..tasks.generate_map_levels import (
     activate_pending_version,
@@ -75,11 +76,13 @@ async def pending_counts(_: str = Depends(require_admin)) -> dict:
             "map_contributions": 0,
             "landmark_renames": 0,
             "translocator_screenshots": 0,
+            "grouping_reports": 0,
         }
     return {
         "map_contributions": db.count_pending_contributions(),
         "landmark_renames": db.count_landmark_edit_requests("pending"),
         "translocator_screenshots": db.count_tl_screenshot_requests("pending"),
+        "grouping_reports": grouping_library_db.count_open_reports(),
     }
 
 

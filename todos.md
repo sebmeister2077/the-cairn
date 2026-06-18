@@ -24,7 +24,7 @@
 -[x] Add Guide for landmarks (what they are, how to use them, etc.)
 
 
-- add a global library for groupings
+- [x] add a global library for groupings
 - Possibility of improving marking TL links as elk friendly
 
 
