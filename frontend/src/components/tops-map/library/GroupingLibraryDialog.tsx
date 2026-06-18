@@ -415,6 +415,25 @@ function CardHeader({ card }: { card: LibraryGroupingCard }) {
         <span>·</span>
         <span>{t("topsMap.groupingsDrawer.library.upvotes", { count: card.upvote_count })}</span>
       </div>
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        {card.created_at && (
+          <span>
+            {t("topsMap.groupingsDrawer.library.publishedOn", {
+              date: new Date(card.created_at).toLocaleDateString(),
+            })}
+          </span>
+        )}
+        {card.last_edited_at && card.last_edited_at !== card.created_at && (
+          <>
+            <span>·</span>
+            <span>
+              {t("topsMap.groupingsDrawer.library.updatedOn", {
+                date: new Date(card.last_edited_at).toLocaleDateString(),
+              })}
+            </span>
+          </>
+        )}
+      </div>
       {card.tags.length > 0 && (
         <div className="mt-1 flex flex-wrap gap-1">
           {card.tags.map((tag) => (

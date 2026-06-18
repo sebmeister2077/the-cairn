@@ -1399,6 +1399,8 @@ const es = {
                 "tls": "{count} TLs",
                 "installs": "{count} instalaciones",
                 "upvotes": "{count} votos a favor",
+                "publishedOn": "Publicado el {date}",
+                "updatedOn": "Actualizado el {date}",
                 "fork": "Bifurcar",
                 "forkHint": "Copiar a tus agrupaciones locales — totalmente editable, desconectado de actualizaciones.",
                 "subscribe": "Suscribirse",

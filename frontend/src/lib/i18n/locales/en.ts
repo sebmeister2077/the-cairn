@@ -1494,6 +1494,8 @@ export const en = {
                 tls: "{count} TLs",
                 installs: "{count} installs",
                 upvotes: "{count} upvotes",
+                publishedOn: "Published {date}",
+                updatedOn: "Updated {date}",
                 fork: "Fork",
                 forkHint: "Copy into your local groupings — fully editable, detached from updates.",
                 subscribe: "Subscribe",

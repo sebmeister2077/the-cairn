@@ -1400,6 +1400,8 @@ const fr = {
                 "tls": "{count} TLs",
                 "installs": "{count} installations",
                 "upvotes": "{count} votes positifs",
+                "publishedOn": "Publié le {date}",
+                "updatedOn": "Mis à jour le {date}",
                 "fork": "Forker",
                 "forkHint": "Copier dans vos regroupements locaux — entièrement modifiable, indépendant des mises à jour.",
                 "subscribe": "S'abonner",
