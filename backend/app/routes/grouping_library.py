@@ -228,16 +228,18 @@ async def browse_library(
 
 
 @router.get("/groupings/library/mine")
-async def my_library(ctx: dict = Depends(require_active_user)) -> dict:
+async def my_library(request: Request,
+    info: dict = Depends(verify_api_key_info)) -> dict:
     _ensure_enabled()
-    kid = _key_id_for(ctx["key"])
+    kid = _viewer_key_id(request.headers.get("X-API-Key"))
     return {"items": lib.list_mine(kid)}
 
 
 @router.get("/groupings/library/subscriptions")
-async def my_subscriptions(ctx: dict = Depends(require_active_user)) -> dict:
+async def my_subscriptions(request: Request,
+    info: dict = Depends(verify_api_key_info)) -> dict:
     _ensure_enabled()
-    kid = _key_id_for(ctx["key"])
+    kid = _viewer_key_id(request.headers.get("X-API-Key"))
     return {"items": lib.list_subscriptions(kid)}
 
 
@@ -388,9 +390,16 @@ async def remove_upvote(grouping_id: str, ctx: dict = Depends(require_active_use
 
 
 @router.post("/groupings/library/{grouping_id}/install")
-async def install(grouping_id: str, body: InstallBody, ctx: dict = Depends(require_active_user)) -> dict:
+async def install(
+    grouping_id: str,
+    body: InstallBody,
+    request: Request,
+) -> dict:
     _ensure_enabled()
-    kid = _key_id_for(ctx["key"])
+    # Forking and subscribing are open to anonymous viewers — they just won't
+    # have their install counted toward popularity or tracked server-side for
+    # update notifications. Authenticated users still get a recorded install.
+    kid = _viewer_key_id(request.headers.get("X-API-Key"))
     head = lib.get_head(grouping_id)
     if head is None or head.get("status") != "published":
         raise HTTPException(status_code=404, detail="Grouping not found")
@@ -401,10 +410,11 @@ async def install(grouping_id: str, body: InstallBody, ctx: dict = Depends(requi
         snap = lib.get_version(grouping_id, version)
         if snap is None:
             raise HTTPException(status_code=404, detail="Version not found")
-        lib.record_install(
-            grouping_id=grouping_id, api_key_id=kid, mode="fork",
-            forked_from_version=version,
-        )
+        if kid:
+            lib.record_install(
+                grouping_id=grouping_id, api_key_id=kid, mode="fork",
+                forked_from_version=version,
+            )
         return {
             "ok": True,
             "mode": "fork",
@@ -421,10 +431,11 @@ async def install(grouping_id: str, body: InstallBody, ctx: dict = Depends(requi
         }
 
     # subscribe
-    lib.record_install(
-        grouping_id=grouping_id, api_key_id=kid, mode="subscribe",
-        synced_version=head_version,
-    )
+    if kid:
+        lib.record_install(
+            grouping_id=grouping_id, api_key_id=kid, mode="subscribe",
+            synced_version=head_version,
+        )
     return {
         "ok": True,
         "mode": "subscribe",
