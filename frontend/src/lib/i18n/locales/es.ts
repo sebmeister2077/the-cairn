@@ -1347,6 +1347,7 @@ const es = {
             "empty": "Aún no hay agrupaciones. Crea una y haz clic en los TLs en el mapa para agregarlos.",
             "activateGrouping": "Activar agrupación {name}",
             "clickToRename": "Haz clic para renombrar",
+            "pickColor": "Elige un color para este grupo",
             "tlCount": {
                 "one": "{count} TL",
                 "few": "{count} TLs",

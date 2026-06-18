@@ -1348,6 +1348,7 @@ const fr = {
             "empty": "Aucun regroupement pour le moment. Créez-en un et cliquez sur les TLs sur la carte pour les ajouter.",
             "activateGrouping": "Activer le regroupement {name}",
             "clickToRename": "Cliquez pour renommer",
+            "pickColor": "Choisissez une couleur pour ce groupe",
             "tlCount": {
                 "one": "{count} TL",
                 "few": "{count} TLs",

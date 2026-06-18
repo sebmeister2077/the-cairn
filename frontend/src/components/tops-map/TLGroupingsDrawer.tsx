@@ -1,10 +1,9 @@
 import { useMemo, useRef, useState } from "react";
-import { Download, Globe, Pencil, Plus, Share2, Trash2, Upload } from "lucide-react";
+import { Download, Globe, Plus, Upload } from "lucide-react";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
@@ -34,6 +33,7 @@ import { useAppSelector } from "@/store/hooks";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { GroupingLibraryDialog } from "./library/GroupingLibraryDialog";
 import { PublishGroupingDialog } from "./library/PublishGroupingDialog";
+import { TLGroupingListItem } from "./TLGroupingListItem";
 
 export type TLGroupingsViewMode = "all" | "filter" | "highlight";
 
@@ -75,7 +75,7 @@ export function TLGroupingsDrawer({
   onStopEditing,
 }: TLGroupingsDrawerProps) {
   const { t } = useTranslation();
-  const { groupings, createGrouping, renameGrouping, deleteGrouping, importJSON } = store;
+  const { groupings, createGrouping, renameGrouping, deleteGrouping, importJSON, setColor } = store;
 
   const isAdmin = useAppSelector((s) => s.auth.isAdmin);
   const apiKey = useAppSelector((s) => s.auth.apiKey);
@@ -85,8 +85,6 @@ export function TLGroupingsDrawer({
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<TLGrouping | null>(null);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameDraft, setRenameDraft] = useState("");
 
   // Community library dialog + per-grouping publish dialog state.
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -152,17 +150,6 @@ export function TLGroupingsDrawer({
     const result = importJSON(pendingImport, mode);
     setPendingImport(null);
     if (!result.ok) setImportError(t("topsMap.groupingsDrawer.invalidImport"));
-  }
-
-  function startRename(g: TLGrouping) {
-    setRenamingId(g.id);
-    setRenameDraft(g.name);
-  }
-
-  function commitRename() {
-    if (renamingId) renameGrouping(renamingId, renameDraft);
-    setRenamingId(null);
-    setRenameDraft("");
   }
 
   return (
@@ -255,116 +242,23 @@ export function TLGroupingsDrawer({
             )}
 
             <ul className="flex flex-col gap-2">
-              {groupings.map((g) => {
-                const isActive = activeGroupingIds.has(g.id);
-                const isEditing = editingGroupingId === g.id;
-                const total = g.tlIds.length;
-                const missing = g.tlIds.filter((id) => !loadedTLIdSet.has(id)).length;
-                return (
-                  <li
-                    key={g.id}
-                    className={`rounded-md border p-2 transition-colors ${
-                      isEditing ? "border-primary bg-primary/5" : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-2">
-                      <Checkbox
-                        className="mt-1.5 cursor-pointer"
-                        checked={isActive}
-                        onCheckedChange={() => onToggleActive(g.id)}
-                        aria-label={t("topsMap.groupingsDrawer.activateGrouping", { name: g.name })}
-                      />
-                      <div className="flex-1 min-w-0">
-                        {renamingId === g.id ? (
-                          <input
-                            autoFocus
-                            value={renameDraft}
-                            onChange={(e) => setRenameDraft(e.target.value)}
-                            onBlur={commitRename}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") commitRename();
-                              if (e.key === "Escape") {
-                                setRenamingId(null);
-                                setRenameDraft("");
-                              }
-                            }}
-                            className="block w-full bg-transparent font-medium outline-none border-b border-primary focus:outline-none"
-                          />
-                        ) : (
-                          <button
-                            type="button"
-                            className="block w-full truncate text-left font-medium hover:underline"
-                            onClick={() => startRename(g)}
-                            title={t("topsMap.groupingsDrawer.clickToRename")}
-                          >
-                            {g.name}
-                          </button>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {t("topsMap.groupingsDrawer.tlCount", { count: total })}
-                          {missing > 0
-                            ? ` (${t("topsMap.groupingsDrawer.missingCount", { count: missing })})`
-                            : ""}
-                        </p>
-                        {g.source?.mode === "subscribe" && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {t("topsMap.groupingsDrawer.library.installedSubscribe")}
-                          </p>
-                        )}
-                        {g.source?.mode === "fork" && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {t("topsMap.groupingsDrawer.library.installedFork")}
-                          </p>
-                        )}
-                        {!g.source && g.publishedId && (
-                          <p className="text-[11px] text-muted-foreground">
-                            {t("topsMap.groupingsDrawer.library.publishedIndicator")}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {signedIn && g.source?.mode !== "subscribe" && (
-                          <Button
-                            type="button"
-                            size="icon-sm"
-                            variant="ghost"
-                            onClick={() => setPublishTarget(g)}
-                            title={
-                              g.publishedId
-                                ? t("topsMap.groupingsDrawer.library.publishUpdate")
-                                : t("topsMap.groupingsDrawer.library.publish")
-                            }
-                          >
-                            <Share2 className="size-4" />
-                          </Button>
-                        )}
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant={isEditing ? "default" : "ghost"}
-                          onClick={() => (isEditing ? onStopEditing() : onStartEditing(g.id))}
-                          title={
-                            isEditing
-                              ? t("topsMap.groupingsDrawer.stopEditing")
-                              : t("topsMap.groupingsDrawer.editTls")
-                          }
-                        >
-                          <Pencil className="size-4" />
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon-sm"
-                          variant="ghost"
-                          onClick={() => setConfirmDelete(g)}
-                          title={t("topsMap.groupingsDrawer.deleteGrouping")}
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
+              {groupings.map((g) => (
+                <TLGroupingListItem
+                  key={g.id}
+                  grouping={g}
+                  isActive={activeGroupingIds.has(g.id)}
+                  isEditing={editingGroupingId === g.id}
+                  loadedTLIdSet={loadedTLIdSet}
+                  signedIn={signedIn}
+                  onToggleActive={onToggleActive}
+                  onStartEditing={onStartEditing}
+                  onStopEditing={onStopEditing}
+                  onRename={renameGrouping}
+                  onSetColor={setColor}
+                  onRequestDelete={setConfirmDelete}
+                  onRequestPublish={setPublishTarget}
+                />
+              ))}
             </ul>
           </div>
 

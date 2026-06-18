@@ -137,6 +137,15 @@ interface WebCartographerMapViewerProps {
   routeOverlay?: RouteOverlay | null;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
+  /**
+   * Optional per-segment color override keyed by canonical TL id
+   * (`${x1},${z1},${x2},${z2}` — see `tlIdFor`). When a key is present, the
+   * matching segment is drawn with that color (and a derived translucent
+   * glow) instead of the default purple/blue. Used by the favorites "Only
+   * selected" view to surface per-grouping colors and a shared-white for
+   * TLs that belong to multiple active groupings.
+   */
+  segmentColors?: Map<string, string>;
 
   // ── Interaction ─────────────────────────────────────────────────────────
   onOverlaySegmentClick?: (segment: WorldLineSegment | null) => void;
@@ -231,6 +240,7 @@ export function WebCartographerMapViewer({
   routeOverlay = null,
   highlightedSegment,
   highlightedSegments,
+  segmentColors,
   onOverlaySegmentClick,
   onOverlaySegmentRightClick,
   cursorMode = "default",
@@ -541,6 +551,7 @@ export function WebCartographerMapViewer({
         x2: number;
         y2: number;
         kind?: "default" | "user";
+        color?: string;
       }>;
     }
     const out: Array<{
@@ -549,15 +560,17 @@ export function WebCartographerMapViewer({
       x2: number;
       y2: number;
       kind?: "default" | "user";
+      color?: string;
     }> = [];
     for (const s of overlaySegments) {
       const a = projectWorld(s.x1, s.z1);
       const b = projectWorld(s.x2, s.z2);
       if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: s.kind });
+      const color = segmentColors?.get(`${s.x1},${s.z1},${s.x2},${s.z2}`);
+      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y, kind: s.kind, color });
     }
     return out;
-  }, [overlaySegments, projectWorld]);
+  }, [overlaySegments, projectWorld, segmentColors]);
 
   const projectedPoints = useMemo(() => {
     if (!overlayPoints || overlayPoints.length === 0) {
@@ -1423,8 +1436,41 @@ export function WebCartographerMapViewer({
 // Overlay drawing helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Parse a `#rgb` / `#rrggbb` string into an `rgba(r, g, b, alpha)` literal.
+ *  Falls back to white on malformed input rather than throwing — bad colors
+ *  shouldn't blank the canvas. */
+function rgbaFromHex(hex: string, alpha: number): string {
+  const h = hex.startsWith("#") ? hex.slice(1) : hex;
+  let r = 255;
+  let g = 255;
+  let b = 255;
+  if (h.length === 3) {
+    r = parseInt(h[0] + h[0], 16);
+    g = parseInt(h[1] + h[1], 16);
+    b = parseInt(h[2] + h[2], 16);
+  } else if (h.length === 6) {
+    r = parseInt(h.slice(0, 2), 16);
+    g = parseInt(h.slice(2, 4), 16);
+    b = parseInt(h.slice(4, 6), 16);
+  }
+  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+    r = g = b = 255;
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 interface OverlayDrawArgs {
-  segments: Array<{ x1: number; y1: number; x2: number; y2: number; kind?: "default" | "user" }>;
+  segments: Array<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    kind?: "default" | "user";
+    /** Optional per-segment color override (hex like `#a855f7`). When set,
+     *  the segment skips the default purple/blue pass and is drawn with this
+     *  color (and a derived translucent glow) instead. */
+    color?: string;
+  }>;
   points: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
   route: {
     tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
@@ -1486,10 +1532,19 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
   if (segments.length > 0) {
     const defaultSegs: typeof segments = [];
     const userSegs: typeof segments = [];
+    /** Per-color buckets for `color`-overridden segments. */
+    const colorBuckets = new Map<string, typeof segments>();
     for (let i = 0; i < segments.length; i++) {
       if (routeTLBaseSkipIndices.has(i)) continue;
       const s = segments[i];
-      if (s.kind === "user") userSegs.push(s);
+      if (s.color) {
+        let bucket = colorBuckets.get(s.color);
+        if (!bucket) {
+          bucket = [];
+          colorBuckets.set(s.color, bucket);
+        }
+        bucket.push(s);
+      } else if (s.kind === "user") userSegs.push(s);
       else defaultSegs.push(s);
     }
     const drawPass = (segs: typeof segments, line: string, glow: string) => {
@@ -1513,6 +1568,9 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     };
     drawPass(defaultSegs, baseLineColor, glowColor);
     drawPass(userSegs, userLineColor, userGlowColor);
+    for (const [hex, segs] of colorBuckets) {
+      drawPass(segs, rgbaFromHex(hex, 0.95), rgbaFromHex(hex, 0.45));
+    }
 
     if (hoveredSegmentIndex !== null && segments[hoveredSegmentIndex]) {
       const s = segments[hoveredSegmentIndex];
@@ -1548,6 +1606,13 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     for (const s of userSegs) {
       drawTLEndpoint(ctx, s.x1, s.y1, 1, tlStyle as never, userPortalOuter);
       drawTLEndpoint(ctx, s.x2, s.y2, 1, tlStyle as never, userPortalOuter);
+    }
+    for (const [hex, segs] of colorBuckets) {
+      const dot = rgbaFromHex(hex, 0.95);
+      for (const s of segs) {
+        drawTLEndpoint(ctx, s.x1, s.y1, 1, tlStyle as never, dot);
+        drawTLEndpoint(ctx, s.x2, s.y2, 1, tlStyle as never, dot);
+      }
     }
   }
 

@@ -1417,6 +1417,7 @@ const ru = {
             empty: "Групп пока нет. Создайте группу и нажимайте TL на карте, чтобы добавить их.",
             activateGrouping: "Активировать группу {name}",
             clickToRename: "Нажмите, чтобы переименовать",
+            pickColor: "Выберите цвет для этой группы",
             tlCount: {
                 one: "{count} TL",
                 few: "{count} TL",

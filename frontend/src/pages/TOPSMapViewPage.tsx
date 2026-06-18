@@ -1297,6 +1297,37 @@ export function TOPSMapViewPage() {
     visibleTranslocatorSegments != null &&
     visibleTranslocatorSegments.length !== translocatorSegments.length;
 
+  // Per-TL color override map for "Only selected" mode. When a TL belongs to
+  // exactly one active grouping, it inherits that grouping's saved color. TLs
+  // that appear in two or more active groupings render as white so it's
+  // visually obvious they're shared. Only computed in `filter` mode — the
+  // other modes leave segment colors untouched.
+  const groupingSegmentColors = useMemo(() => {
+    if (editingGrouping) return undefined;
+    if (groupingsViewMode !== "filter") return undefined;
+    if (activeGroupingIds.size === 0) return undefined;
+    const idCounts = new Map<string, number>();
+    for (const g of groupingsStore.groupings) {
+      if (!activeGroupingIds.has(g.id)) continue;
+      for (const id of g.tlIds) {
+        idCounts.set(id, (idCounts.get(id) ?? 0) + 1);
+      }
+    }
+    const map = new Map<string, string>();
+    for (const [id, count] of idCounts) {
+      if (count >= 2) map.set(id, "#ffffff");
+    }
+    for (const g of groupingsStore.groupings) {
+      if (!activeGroupingIds.has(g.id)) continue;
+      if (!g.color) continue;
+      for (const id of g.tlIds) {
+        if (map.has(id)) continue; // shared TLs stay white
+        map.set(id, g.color);
+      }
+    }
+    return map.size > 0 ? map : undefined;
+  }, [editingGrouping, groupingsViewMode, activeGroupingIds, groupingsStore.groupings]);
+
   // ---------------------------------------------------------------------
   // Route planner integration
   // ---------------------------------------------------------------------
@@ -1956,6 +1987,7 @@ export function TOPSMapViewPage() {
                   : undefined
               }
               highlightedSegments={highlightedTranslocatorSegments}
+              segmentColors={groupingSegmentColors}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
               initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}
@@ -2026,6 +2058,7 @@ export function TOPSMapViewPage() {
                   : undefined
               }
               highlightedSegments={highlightedTranslocatorSegments}
+              segmentColors={groupingSegmentColors}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
               enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}

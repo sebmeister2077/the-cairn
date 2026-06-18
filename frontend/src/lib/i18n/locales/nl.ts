@@ -1441,6 +1441,7 @@ const nl = {
             empty: "Nog geen groeperingen. Maak er een en klik TL's op de kaart om ze toe te voegen.",
             activateGrouping: "Groepering {name} activeren",
             clickToRename: "Klik om te hernoemen",
+            pickColor: "Kies een kleur voor deze groepering",
             tlCount: {
                 one: "{count} TL",
                 few: "{count} TL's",

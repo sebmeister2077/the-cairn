@@ -1439,6 +1439,7 @@ export const en = {
             empty: "No groupings yet. Create one and click TLs on the map to add them.",
             activateGrouping: "Activate grouping {name}",
             clickToRename: "Click to rename",
+            pickColor: "Pick a color for this grouping",
             tlCount: {
                 one: "{count} TL",
                 few: "{count} TLs",

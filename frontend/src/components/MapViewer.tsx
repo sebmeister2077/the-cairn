@@ -17,6 +17,29 @@ const BUTTON_ZOOM_FACTOR = 1.75;
 // reveals empty edges before the next render lands.
 const TILE_OVERSCAN_PX = 256;
 
+/** Parse a `#rgb` / `#rrggbb` string into an `rgba(r, g, b, alpha)` literal.
+ *  Falls back to white on malformed input rather than throwing — bad colors
+ *  shouldn't blank the canvas. */
+function rgbaFromHex(hex: string, alpha: number): string {
+  const h = hex.startsWith("#") ? hex.slice(1) : hex;
+  let r = 255;
+  let g = 255;
+  let b = 255;
+  if (h.length === 3) {
+    r = parseInt(h[0] + h[0], 16);
+    g = parseInt(h[1] + h[1], 16);
+    b = parseInt(h[2] + h[2], 16);
+  } else if (h.length === 6) {
+    r = parseInt(h.slice(0, 2), 16);
+    g = parseInt(h.slice(2, 4), 16);
+    b = parseInt(h.slice(4, 6), 16);
+  }
+  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+    r = g = b = 255;
+  }
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export type MapStats = {
   pieces: number;
   size_mb: number;
@@ -213,6 +236,13 @@ interface MapViewerProps {
    */
   highlightedSegments?: WorldLineSegment[];
   /**
+   * Optional per-segment color override keyed by canonical TL id
+   * (`${x1},${z1},${x2},${z2}`). When a key is present, the matching segment
+   * is drawn with that color (and a derived translucent glow) instead of the
+   * default purple/blue. Used by the favorites "Only selected" view.
+   */
+  segmentColors?: Map<string, string>;
+  /**
    * When set to a new object, the viewer pans and zooms to that world coordinate.
    * Pass a new object reference each time to trigger navigation.
    */
@@ -351,6 +381,7 @@ export function MapViewer({
   onOverlaySegmentRightClick,
   highlightedSegment,
   highlightedSegments,
+  segmentColors,
   focusPoint,
   focusZoom = 4,
   focusSpanBlocks,
@@ -504,6 +535,7 @@ export function MapViewer({
         x2: number;
         y2: number;
         kind?: "default" | "user";
+        color?: string;
       }>;
     }
 
@@ -516,6 +548,7 @@ export function MapViewer({
       x2: number;
       y2: number;
       kind?: "default" | "user";
+      color?: string;
     }> = [];
     for (const seg of overlaySegments) {
       const x1 = toImgX(seg.x1);
@@ -523,11 +556,12 @@ export function MapViewer({
       const x2 = toImgX(seg.x2);
       const y2 = toImgY(seg.z2);
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
-      projected.push({ x1, y1, x2, y2, kind: seg.kind });
+      const color = segmentColors?.get(`${seg.x1},${seg.z1},${seg.x2},${seg.z2}`);
+      projected.push({ x1, y1, x2, y2, kind: seg.kind, color });
     }
 
     return projected;
-  }, [imgNatural.h, imgNatural.w, overlaySegments, stats]);
+  }, [imgNatural.h, imgNatural.w, overlaySegments, stats, segmentColors]);
 
   // Indices within `overlaySegments` (and therefore `projectedOverlaySegments`,
   // which is built in the same order with entries skipped only for non-finite
@@ -1021,10 +1055,20 @@ export function MapViewer({
       // below — layering both colours would obscure the route highlight.
       const defaultSegs: typeof projectedOverlaySegments = [];
       const userSegs: typeof projectedOverlaySegments = [];
+      // Per-color buckets for `color`-overridden segments. Keyed by the raw
+      // hex string so colors that round-trip from the picker stay grouped.
+      const colorBuckets = new Map<string, typeof projectedOverlaySegments>();
       for (let i = 0; i < projectedOverlaySegments.length; i++) {
         if (routeTLBaseSkipIndices.has(i)) continue;
         const seg = projectedOverlaySegments[i];
-        if (seg.kind === "user") userSegs.push(seg);
+        if (seg.color) {
+          let bucket = colorBuckets.get(seg.color);
+          if (!bucket) {
+            bucket = [];
+            colorBuckets.set(seg.color, bucket);
+          }
+          bucket.push(seg);
+        } else if (seg.kind === "user") userSegs.push(seg);
         else defaultSegs.push(seg);
       }
 
@@ -1051,6 +1095,9 @@ export function MapViewer({
 
       drawLinePass(defaultSegs, baseLineColor, glowColor);
       drawLinePass(userSegs, userLineColor, userGlowColor);
+      for (const [hex, segs] of colorBuckets) {
+        drawLinePass(segs, rgbaFromHex(hex, 0.95), rgbaFromHex(hex, 0.45));
+      }
 
       if (hoveredOverlayIndex !== null && projectedOverlaySegments[hoveredOverlayIndex]) {
         const seg = projectedOverlaySegments[hoveredOverlayIndex];
@@ -1093,6 +1140,9 @@ export function MapViewer({
       void innerRadius;
       drawPortalDots(defaultSegs, portalOuter);
       drawPortalDots(userSegs, userPortalOuter);
+      for (const [hex, segs] of colorBuckets) {
+        drawPortalDots(segs, rgbaFromHex(hex, 0.95));
+      }
     }
 
     if (projectedOverlayPoints.length > 0) {
