@@ -165,15 +165,22 @@ export function PublishGroupingDialog({
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </div>
-          <div className="grid grid-cols-[auto_1fr] items-center gap-2">
-            <Label htmlFor="publish-color">{t("topsMap.groupingsDrawer.library.colorLabel")}</Label>
-            <input
-              id="publish-color"
-              type="color"
-              value={color || "#a855f7"}
-              onChange={(e) => setColor(e.target.value)}
-              className="h-8 w-12 cursor-pointer rounded border border-input bg-transparent"
-            />
+          <div className="grid gap-1.5">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="publish-color">
+                {t("topsMap.groupingsDrawer.library.colorLabel")}
+              </Label>
+              <input
+                id="publish-color"
+                type="color"
+                value={color || "#a855f7"}
+                onChange={(e) => setColor(e.target.value)}
+                className="h-8 w-12 cursor-pointer rounded border border-input bg-transparent"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {t("topsMap.groupingsDrawer.library.colorHint")}
+            </p>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="publish-tags">{t("topsMap.groupingsDrawer.library.tagsLabel")}</Label>

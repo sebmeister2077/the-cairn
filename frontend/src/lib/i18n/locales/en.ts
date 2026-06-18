@@ -1522,7 +1522,9 @@ export const en = {
                 nameLabel: "Name",
                 descriptionLabel: "Description",
                 descriptionPlaceholder: "What is this grouping for? (optional)",
-                colorLabel: "Color",
+                colorLabel: "Library color",
+                colorHint:
+                    "Used only for this grouping's card in the community library — it does not change the translocator colors on your map.",
                 tagsLabel: "Tags",
                 tagsPlaceholder: "Comma-separated, e.g. main-roads, north",
                 changeNoteLabel: "Change note",
