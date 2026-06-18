@@ -51,7 +51,10 @@ async function fetchElkWalkable(): Promise<ElkWalkableQueryResult> {
             empty: true,
         };
     }
-    const res = await fetch(info.url);
+    // Revalidate against R2 (If-None-Match) instead of serving the stale
+    // HTTP-cached body for the full Cache-Control max-age — otherwise an
+    // updated bucket object isn't seen until a hard reload.
+    const res = await fetch(info.url, { cache: "no-cache" });
     if (!res.ok) {
         throw new Error(`Failed to load elk-walkable file (${res.status})`);
     }

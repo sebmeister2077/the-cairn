@@ -163,7 +163,13 @@ function useOverlayFile<T>(
             //     return { etag: info.etag, expiresAt, data: cached.data };
             // }
 
-            const res = await fetch(info.url);
+            // `cache: "no-cache"` forces a conditional request (If-None-Match)
+            // against R2 on every load. Without it the browser's HTTP cache
+            // serves the stale body for the full Cache-Control max-age and an
+            // updated bucket object (new ETag) isn't seen until a hard reload.
+            // R2 answers 304 when unchanged, so the bytes are only re-downloaded
+            // when the file actually changed.
+            const res = await fetch(info.url, { cache: "no-cache" });
             if (!res.ok) {
                 throw new Error(`Failed to load overlay data (${res.status})`);
             }
@@ -271,7 +277,10 @@ export function useTradersOverlay(): UseQueryResult<CachedOverlay<TraderMarker[]
             if (cached && etag && cached.etag === etag) {
                 return { etag, expiresAt, data: cached.data };
             }
-            const res = await fetch(info.url);
+            // Revalidate against R2 (If-None-Match) so an updated bucket
+            // object is picked up without a hard reload. See the landmarks/
+            // translocators path above for the rationale.
+            const res = await fetch(info.url, { cache: "no-cache" });
             if (!res.ok) {
                 throw new Error(`Failed to load traders overlay (${res.status})`);
             }
