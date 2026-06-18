@@ -11,9 +11,10 @@ import type { MacroMeta } from "@/lib/waypoint-macro";
 import { UploadMode } from "@/components/tools/waypoint-macro/UploadMode";
 import { ImportMode } from "@/components/tools/waypoint-macro/ImportMode";
 import { ScratchMode } from "@/components/tools/waypoint-macro/ScratchMode";
+import { DedupMode } from "@/components/tools/waypoint-macro/DedupMode";
 import { OutputPanel } from "@/components/tools/waypoint-macro/OutputPanel";
 
-type Mode = "upload" | "import" | "scratch";
+type Mode = "upload" | "import" | "scratch" | "dedup";
 
 export function ToolsWaypointMacroPage() {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ export function ToolsWaypointMacroPage() {
         <TabsList variant="line">
           <TabsTrigger value="upload">{t("tools.waypointMacro.tabs.upload")}</TabsTrigger>
           <TabsTrigger value="import">{t("tools.waypointMacro.tabs.import")}</TabsTrigger>
+          <TabsTrigger value="dedup">{t("tools.waypointMacro.tabs.dedup")}</TabsTrigger>
           <TabsTrigger value="scratch">{t("tools.waypointMacro.tabs.scratch")}</TabsTrigger>
         </TabsList>
       </Tabs>
@@ -48,6 +50,7 @@ export function ToolsWaypointMacroPage() {
         <div>
           {mode === "upload" && <UploadMode onCommandsChange={setCommands} />}
           {mode === "import" && <ImportMode onCommandsChange={setCommands} />}
+          {mode === "dedup" && <DedupMode onCommandsChange={setCommands} />}
           {mode === "scratch" && <ScratchMode onCommandsChange={setCommands} />}
         </div>
         <div className="lg:sticky lg:top-4 lg:self-start">

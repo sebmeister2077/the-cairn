@@ -1493,6 +1493,7 @@ export const en = {
             tabs: {
                 upload: "Upload chat log",
                 import: "Import map data",
+                dedup: "Find duplicates",
                 scratch: "Generate from scratch",
             },
         },
