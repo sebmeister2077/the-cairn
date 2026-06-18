@@ -23,6 +23,7 @@ import {
     type LibraryBrowseResult,
     type LibraryGroupingCard,
     type LibrarySubscription,
+    type PopularTag,
     type PublishGroupingPayload,
 } from "@/lib/api";
 import { useAppSelector } from "@/store/hooks";
@@ -105,7 +106,8 @@ export function useGroupingLibraryActions() {
         onSuccess: invalidateAll,
     });
     const unpublish = useMutation({
-        mutationFn: (id: string) => groupingLibrary.unpublish(id),
+        mutationFn: ({ id, successorId }: { id: string; successorId?: string }) =>
+            groupingLibrary.unpublish(id, { successorId }),
         onSuccess: invalidateAll,
     });
     const upvote = useMutation({
@@ -144,7 +146,8 @@ export function useGroupingLibraryActions() {
         () => ({
             publish: (payload: PublishGroupingPayload) => publish.mutateAsync(payload),
             edit: (id: string, payload: EditGroupingPayload) => edit.mutateAsync({ id, payload }),
-            unpublish: (id: string) => unpublish.mutateAsync(id),
+            unpublish: (id: string, successorId?: string) =>
+                unpublish.mutateAsync({ id, successorId }),
             setUpvote: (id: string, on: boolean) => upvote.mutateAsync({ id, on }),
             install: (id: string, mode: "fork" | "subscribe", version?: number) =>
                 install.mutateAsync({ id, mode, version }),
@@ -160,6 +163,22 @@ export function useGroupingLibraryActions() {
         }),
         [publish, edit, unpublish, upvote, install, uninstall, report, adminRemove, adminSetOfficial, invalidateAll],
     );
+}
+
+/**
+ * Most-used tags across the library, optionally filtered by a prefix. Drives
+ * the publish dialog's tag autocomplete so users converge on a canonical
+ * vocabulary.
+ */
+export function usePopularTags(q: string, enabled = true) {
+    return useQuery<PopularTag[]>({
+        queryKey: [...GROUPING_LIBRARY_KEY, "popular-tags", q.trim().toLowerCase()],
+        queryFn: async ({ signal }) =>
+            (await groupingLibrary.popularTags(q.trim() || undefined, signal)).items,
+        enabled,
+        retry: (count, err) => !isNotFound(err) && count < 2,
+        staleTime: 60_000,
+    });
 }
 
 /** Admin-only: open reports queue + moderation actions. */

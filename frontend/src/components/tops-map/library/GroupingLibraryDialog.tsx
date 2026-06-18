@@ -561,11 +561,23 @@ interface MineCardRowProps {
 function MineCardRow({ card, onEdit, onUnpublish, onHistory }: MineCardRowProps) {
   const { t } = useTranslation();
   const [confirmUnpublish, setConfirmUnpublish] = useState(false);
+  const isDeprecated = card.status === "deprecated";
   return (
     <li className="rounded-md border p-2.5">
       <CardHeader card={card} />
+      {isDeprecated && (
+        <div className="mt-1.5 flex items-center gap-1.5">
+          <Badge variant="outline" className="gap-1 border-amber-500/60 text-amber-600">
+            <TriangleAlert className="size-3" />
+            {t("topsMap.groupingsDrawer.library.deprecated")}
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            {t("topsMap.groupingsDrawer.library.deprecatedHint")}
+          </span>
+        </div>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <Button size="sm" variant="outline" onClick={onEdit}>
+        <Button size="sm" variant="outline" onClick={onEdit} disabled={isDeprecated}>
           {t("topsMap.groupingsDrawer.library.publishUpdate")}
         </Button>
         <Button
@@ -576,15 +588,17 @@ function MineCardRow({ card, onEdit, onUnpublish, onHistory }: MineCardRowProps)
         >
           <History className="size-4" />
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-destructive"
-          onClick={() => setConfirmUnpublish(true)}
-        >
-          <Trash2 className="size-3.5 mr-1" />
-          {t("topsMap.groupingsDrawer.library.unpublish")}
-        </Button>
+        {!isDeprecated && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-destructive"
+            onClick={() => setConfirmUnpublish(true)}
+          >
+            <Trash2 className="size-3.5 mr-1" />
+            {t("topsMap.groupingsDrawer.library.unpublish")}
+          </Button>
+        )}
       </div>
       <ConfirmDialog
         open={confirmUnpublish}
@@ -618,6 +632,7 @@ interface SubscriptionRowProps {
 
 function SubscriptionRow({ sub, onSync, onUnsubscribe, onHistory }: SubscriptionRowProps) {
   const { t } = useTranslation();
+  const isDeprecated = sub.status === "deprecated";
   return (
     <li className="rounded-md border p-2.5">
       <div className="flex items-center gap-2">
@@ -628,7 +643,13 @@ function SubscriptionRow({ sub, onSync, onUnsubscribe, onHistory }: Subscription
           />
         )}
         <span className="truncate font-medium">{sub.name}</span>
-        {sub.has_update && (
+        {isDeprecated && (
+          <Badge variant="outline" className="gap-1 border-amber-500/60 text-amber-600">
+            <TriangleAlert className="size-3" />
+            {t("topsMap.groupingsDrawer.library.deprecated")}
+          </Badge>
+        )}
+        {!isDeprecated && sub.has_update && (
           <Badge variant="default" className="gap-1">
             <TriangleAlert className="size-3" />
             {t("topsMap.groupingsDrawer.library.updateAvailable", {
@@ -644,18 +665,29 @@ function SubscriptionRow({ sub, onSync, onUnsubscribe, onHistory }: Subscription
         {" · "}
         {t("topsMap.groupingsDrawer.library.tls", { count: sub.tlIds.length })}
       </p>
+      {isDeprecated && (
+        <p className="mt-1 text-xs text-muted-foreground">
+          {t("topsMap.groupingsDrawer.library.deprecatedHint")}
+          {sub.successor_id ? (
+            <>
+              {" — "}
+              {t("topsMap.groupingsDrawer.library.successorAvailable")}
+            </>
+          ) : null}
+        </p>
+      )}
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {sub.has_update ? (
+        {!isDeprecated && sub.has_update ? (
           <Button size="sm" onClick={() => void onSync()}>
             <RefreshCw className="size-3.5 mr-1" />
             {t("topsMap.groupingsDrawer.library.syncNow")}
           </Button>
-        ) : (
+        ) : !isDeprecated ? (
           <Badge variant="secondary" className="gap-1">
             <Check className="size-3" />
             {t("topsMap.groupingsDrawer.library.synced")}
           </Badge>
-        )}
+        ) : null}
         <Button
           size="icon-sm"
           variant="ghost"

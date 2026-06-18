@@ -3665,7 +3665,11 @@ export interface LibraryGroupingCard {
     author_api_key_id: string | null;
     author_reputation: number;
     is_official: boolean;
+    /** "published" | "deprecated" | "removed" — callers should treat "deprecated"
+     *  as read-only-but-still-installed. */
     status: string;
+    /** When the grouping is deprecated, points at a replacement library id. */
+    successor_id?: string | null;
     version: number;
     install_count: number;
     upvote_count: number;
@@ -3715,7 +3719,10 @@ export interface LibrarySubscription {
     author: string | null;
     head_version: number;
     synced_version: number | null;
+    /** "published" | "deprecated" | "removed". */
     status: string;
+    /** Set when the publisher retired the grouping in favour of another. */
+    successor_id?: string | null;
     has_update: boolean;
 }
 
@@ -3751,6 +3758,8 @@ export interface PublishGroupingPayload {
     color?: string | null;
     tlIds: string[];
     tags?: string[];
+    /** Bypass the per-author duplicate-tlIds check. */
+    allowDuplicate?: boolean;
 }
 
 export interface EditGroupingPayload {
@@ -3760,6 +3769,13 @@ export interface EditGroupingPayload {
     tlIds?: string[];
     tags?: string[];
     changeNote?: string;
+    allowDuplicate?: boolean;
+}
+
+/** A {tag, count} entry from the popular-tags autocomplete endpoint. */
+export interface PopularTag {
+    tag: string;
+    count: number;
 }
 
 export const groupingLibrary = {
@@ -3855,11 +3871,26 @@ export const groupingLibrary = {
         return (await handleResponse(res)).json();
     },
 
-    async unpublish(id: string): Promise<{ ok: boolean }> {
+    async unpublish(
+        id: string,
+        opts: { successorId?: string } = {},
+    ): Promise<{ ok: boolean; status?: string; successor_id?: string | null }> {
         const res = await fetch(`${API_BASE}/groupings/library/${encodeURIComponent(id)}`, {
             method: "DELETE",
-            headers: authHeaders(),
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ successorId: opts.successorId ?? null }),
         });
+        return (await handleResponse(res)).json();
+    },
+
+    async popularTags(q?: string, signal?: AbortSignal): Promise<{ items: PopularTag[] }> {
+        const params = new URLSearchParams();
+        if (q) params.set("q", q);
+        const qs = params.toString();
+        const res = await fetch(
+            `${API_BASE}/groupings/library/tags/popular${qs ? `?${qs}` : ""}`,
+            { headers: authHeaders(), signal },
+        );
         return (await handleResponse(res)).json();
     },
 

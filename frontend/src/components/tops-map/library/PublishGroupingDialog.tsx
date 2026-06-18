@@ -16,6 +16,8 @@ import { useTranslation } from "@/lib/i18n";
 import type { TLGrouping } from "@/lib/tl-groupings";
 import { useGroupingLibraryActions } from "@/hooks/useGroupingLibrary";
 
+import { TagInput } from "./TagInput";
+
 interface PublishGroupingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,17 +33,18 @@ interface PublishGroupingDialogProps {
   onPublished?: (libraryId: string, version: number) => void;
 }
 
-function splitTags(raw: string): string[] {
-  return raw
-    .split(",")
-    .map((t) => t.trim().toLowerCase())
-    .filter(Boolean);
+interface DuplicateConflict {
+  id: string;
+  name: string;
 }
+
+const MAX_TAGS = 5;
 
 /**
  * Form dialog to publish a local grouping to the community library, or to push
  * an update to one the user already owns. Surfaces the backend's structured
- * error codes (account too new, daily caps) as friendly inline messages.
+ * error codes (account too new, daily caps, duplicate-tlIds 409) as friendly
+ * inline UI.
  */
 export function PublishGroupingDialog({
   open,
@@ -57,19 +60,21 @@ export function PublishGroupingDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("");
-  const [tags, setTags] = useState("");
+  const [tagList, setTagList] = useState<string[]>([]);
   const [changeNote, setChangeNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [duplicate, setDuplicate] = useState<DuplicateConflict | null>(null);
 
   useEffect(() => {
     if (open && grouping) {
       setName(grouping.name);
       setColor(grouping.color ?? "");
       setDescription("");
-      setTags("");
+      setTagList([]);
       setChangeNote("");
       setError(null);
+      setDuplicate(null);
     }
   }, [open, grouping]);
 
@@ -88,12 +93,22 @@ export function PublishGroupingDialog({
     return t("common.unknownError");
   }
 
-  async function handleSubmit() {
+  /** Pull `{id, name}` out of a 409 duplicate-payload response, if present. */
+  function extractDuplicate(err: unknown): DuplicateConflict | null {
+    if (!(err instanceof ApiError) || err.status !== 409) return null;
+    if (err.code !== "duplicate_payload") return null;
+    const detail = err.detail as { existing?: { id?: unknown; name?: unknown } } | undefined;
+    const ex = detail?.existing;
+    if (!ex || typeof ex.id !== "string" || typeof ex.name !== "string") return null;
+    return { id: ex.id, name: ex.name };
+  }
+
+  async function submit(allowDuplicate: boolean) {
     if (!grouping) return;
     setBusy(true);
     setError(null);
+    setDuplicate(null);
     try {
-      const tagList = splitTags(tags);
       const colorValue = color.trim() || null;
       if (isEdit && editLibraryId) {
         const card = await actions.edit(editLibraryId, {
@@ -103,6 +118,7 @@ export function PublishGroupingDialog({
           tlIds: grouping.tlIds,
           tags: tagList,
           changeNote: changeNote.trim() || undefined,
+          allowDuplicate,
         });
         onPublished?.(card.id, card.version);
       } else {
@@ -112,12 +128,18 @@ export function PublishGroupingDialog({
           color: colorValue,
           tlIds: grouping.tlIds,
           tags: tagList,
+          allowDuplicate,
         });
         onPublished?.(card.id, card.version);
       }
       onOpenChange(false);
     } catch (err) {
-      setError(mapError(err));
+      const dup = extractDuplicate(err);
+      if (dup) {
+        setDuplicate(dup);
+      } else {
+        setError(mapError(err));
+      }
     } finally {
       setBusy(false);
     }
@@ -184,12 +206,16 @@ export function PublishGroupingDialog({
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="publish-tags">{t("topsMap.groupingsDrawer.library.tagsLabel")}</Label>
-            <Input
+            <TagInput
               id="publish-tags"
-              value={tags}
-              placeholder={t("topsMap.groupingsDrawer.library.tagsPlaceholder")}
-              onChange={(e) => setTags(e.target.value)}
+              value={tagList}
+              onChange={setTagList}
+              max={MAX_TAGS}
+              disabled={busy}
             />
+            <p className="text-xs text-muted-foreground">
+              {t("topsMap.groupingsDrawer.library.tagsHint", { max: MAX_TAGS })}
+            </p>
           </div>
           {isEdit && (
             <div className="grid gap-1.5">
@@ -208,6 +234,18 @@ export function PublishGroupingDialog({
           <p className="text-xs text-muted-foreground">
             {t("topsMap.groupingsDrawer.library.tls", { count: tlCount })}
           </p>
+          {duplicate && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-2.5 text-sm">
+              <p className="font-medium">
+                {t("topsMap.groupingsDrawer.library.duplicatePayloadTitle")}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t("topsMap.groupingsDrawer.library.duplicatePayload", {
+                  name: duplicate.name,
+                })}
+              </p>
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
@@ -215,13 +253,23 @@ export function PublishGroupingDialog({
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={busy}>
             {t("topsMap.groupingsDrawer.cancel")}
           </Button>
-          <Button size="sm" onClick={handleSubmit} disabled={busy || !name.trim() || tlCount === 0}>
-            {busy
-              ? t("topsMap.groupingsDrawer.library.publishing")
-              : isEdit
-                ? t("topsMap.groupingsDrawer.library.updateConfirm")
-                : t("topsMap.groupingsDrawer.library.publishConfirm")}
-          </Button>
+          {duplicate ? (
+            <Button size="sm" variant="secondary" onClick={() => void submit(true)} disabled={busy}>
+              {t("topsMap.groupingsDrawer.library.duplicatePayloadPublishAnyway")}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => void submit(false)}
+              disabled={busy || !name.trim() || tlCount === 0}
+            >
+              {busy
+                ? t("topsMap.groupingsDrawer.library.publishing")
+                : isEdit
+                  ? t("topsMap.groupingsDrawer.library.updateConfirm")
+                  : t("topsMap.groupingsDrawer.library.publishConfirm")}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

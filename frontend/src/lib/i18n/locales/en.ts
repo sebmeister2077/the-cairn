@@ -1526,7 +1526,10 @@ export const en = {
                 colorHint:
                     "Used only for this grouping's card in the community library — it does not change the translocator colors on your map.",
                 tagsLabel: "Tags",
-                tagsPlaceholder: "Comma-separated, e.g. main-roads, north",
+                tagsPlaceholder: "Type a tag and press Enter — try \"elk\", \"spawn\", \"trade\"",
+                tagsHint: "Up to {max} tags. Suggestions reuse popular library tags.",
+                tagsAddSuggestion: "Suggested",
+                tagsRemove: "Remove tag",
                 changeNoteLabel: "Change note",
                 changeNotePlaceholder: "What changed? (optional)",
                 publishConfirm: "Publish",
@@ -1536,6 +1539,11 @@ export const en = {
                 editCapHit: "You can only edit a published grouping once per day. Try again later.",
                 publishCapHit: "You've reached today's publish limit. Try again tomorrow.",
                 emptyGrouping: "Add at least one translocator before publishing.",
+                duplicatePayloadTitle: "You already have one of these",
+                duplicatePayload:
+                    "<strong>{name}</strong> in your library has the exact same translocators. Update it instead?",
+                duplicatePayloadOpenExisting: "Edit existing",
+                duplicatePayloadPublishAnyway: "Publish a copy anyway",
                 historyTitle: "Version history",
                 historyDescription: "Every published edit is kept. Fork any version into your groupings.",
                 version: "v{version}",
@@ -1562,6 +1570,11 @@ export const en = {
                 unpublishTitle: "Unpublish grouping?",
                 unpublishDescription:
                     "<strong>{name}</strong> will be removed from the library. Your local copy stays. This lowers your reputation.",
+                deprecated: "Deprecated",
+                deprecatedHint:
+                    "Retired by the publisher. Existing subscribers can keep using it; it's hidden from browse.",
+                successorAvailable: "A replacement grouping is available",
+                openSuccessor: "Open replacement",
                 adminRemove: "Remove",
                 adminRemoveTitle: "Remove grouping?",
                 adminRemoveDescription:

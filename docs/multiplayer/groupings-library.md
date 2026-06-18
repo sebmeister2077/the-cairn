@@ -8,6 +8,7 @@
 > Backend routes: [backend/app/routes/grouping_library.py](../../backend/app/routes/grouping_library.py)
 > Backend CRUD: [backend/app/core/grouping_library_db.py](../../backend/app/core/grouping_library_db.py)
 > Migration: [backend/alembic/versions/0025_grouping_library.py](../../backend/alembic/versions/0025_grouping_library.py)
+> Migration: [backend/alembic/versions/0026_grouping_library_dedup.py](../../backend/alembic/versions/0026_grouping_library_dedup.py)
 > Plan: [plans/global-groupings-library-plan.prompt.md](../../plans/global-groupings-library-plan.prompt.md)
 
 ## What it is
@@ -56,18 +57,17 @@ convention so a re-key never orphans rows. Display names are resolved **live** v
 
 | Table | Purpose |
 |-------|---------|
-| `shared_groupings` | The **head** (current) row per published grouping. `payload` JSONB = `{version, tlIds}`; `tags` JSONB is a string array. Denormalised `install_count` / `upvote_count`. `status` ∈ `published \| removed \| hidden`. |
+| `shared_groupings` | The **head** (current) row per published grouping. `payload` JSONB = `{version, tlIds}`; `tags` JSONB is a string array. Denormalised `install_count` / `upvote_count`. `status` ∈ `published \| deprecated \| removed \| hidden`. `payload_hash` is a SHA-256 of the sorted `tlIds` for duplicate-publish detection (migration 0026). `successor_id` points at a replacement grouping when an author retires this one (migration 0026). |
 | `shared_grouping_versions` | **Append-only history** — one snapshot row per publish/edit. `UNIQUE(grouping_id, version)`. Enables view-history and fork-any-version. |
 | `shared_grouping_votes` | One upvote per user. `PK(grouping_id, voter_api_key_id)`. |
-| `shared_grouping_installs` | One row per user who forked/subscribed. `mode` ∈ `fork \| subscribe`; `forked_from_version` (fork) / `synced_version` (subscribe). `install_count` = distinct rows. |
+| `shared_grouping_installs` | One row per user who forked/subscribed. `mode` ∈ `fork \| subscribe`; `forked_from_version` (fork) / `synced_version` (subscribe). `install_count` = distinct rows. Indexed by `(api_key_id, mode)` so the per-user subscriptions endpoint is a single index lookup. |
 | `shared_grouping_reports` | Post-moderation queue. `status` ∈ `open \| resolved \| dismissed`. |
 | `user_reputation` | Cached per-author activity score so browse cards can show a reputation badge without a heavy aggregate. |
 
 ### Reputation score
 
-A small activity-derived integer, recomputed synchronously whenever a relevant event happens
-(publish, edit, vote, install, takedown). The formula lives in code so it can be retuned without a
-migration:
+A small activity-derived integer cached in `user_reputation`. The formula lives in code so it can
+be retuned without a migration:
 
 ```
 reputation_score = published_count * 2
@@ -75,6 +75,19 @@ reputation_score = published_count * 2
                  + total_installs_received * 1
                  + official_count * 25
 ```
+
+`published_count` includes both `published` and `deprecated` groupings: voluntary retirement does
+*not* lower an author's standing, while admin takedowns (`status='removed'`) do.
+
+Updates are split into two paths so the UI feels snappy:
+
+- **Hot paths** (vote, unvote, fork, subscribe, uninstall) apply a cheap **delta** to the cached
+  row inside the same transaction. The button responds the moment the row is written, no SUM
+  aggregate needed.
+- **Slow paths** (publish, edit, unpublish, admin takedown, official toggle) schedule a full
+  `recompute_reputation` aggregate via FastAPI `BackgroundTasks`, so the response returns
+  immediately and the canonical score reconciles after the user has already seen the success
+  state.
 
 The frontend maps the score to a tier label (Newcomer / Contributor / Trusted / Expert) in
 `ReputationBadge`.
@@ -92,6 +105,22 @@ Other guards on publish:
   `check_scoped_rate_limit`.
 - Validation: name/description length, max tags (`grouping_library_max_tags`, default 5), max TLs
   per grouping (`grouping_library_max_tls`, default 500), tag sanitisation, member dedupe.
+- **Duplicate-payload detection.** Each grouping stores a SHA-256 of its sorted `tlIds`
+  (`payload_hash`). On `POST /api/groupings/library` the server checks whether the same author
+  already has a *published* grouping with the same TL set, and if so returns `409` with code
+  `duplicate_payload` and `{existing: {id, name}}`. The publish dialog catches this and offers
+  "Edit existing" or "Publish a copy anyway" (which retries with `allowDuplicate: true`). PATCH
+  performs the same check, ignoring the row being edited. This keeps the library tidy without
+  relying solely on the daily cap.
+
+### Tag vocabulary & autocomplete
+
+Tags are normalised at the API boundary (lower-cased, trimmed, deduped, regex-validated) and the
+publish dialog uses a chip-based input with an autocomplete dropdown backed by
+`GET /api/groupings/library/tags/popular?q=`. Matching is a case-insensitive prefix scan over the
+GIN-indexed `tags` JSONB across published rows, returned as `[{tag, count}]`. Users converge on
+canonical tags ("elk-friendly" once, not "elk" / "Elk" / "elk friendly") which makes the
+`tag` filter on browse meaningful.
 
 ### The once-per-day edit cap
 
@@ -156,6 +185,21 @@ The library is **post-moderated**: groupings go live immediately, and abuse is h
 - Every admin action is written to `admin_audit_log` (`grouping.remove`, `grouping.official`,
   `grouping.report.resolve`), consistent with the rest of the admin surface.
 
+### Owner unpublish vs admin takedown
+
+There are now **two** ways a grouping can leave the library, with very different effects on
+subscribers:
+
+- **Owner unpublish** (`DELETE /api/groupings/library/{id}`) flips the row to `status='deprecated'`.
+  Existing subscribers and forkers can still load + sync the grouping (so their local copy doesn't
+  silently break) but it disappears from `browse`. The DELETE body accepts an optional
+  `successorId` pointing at another published grouping; the subscriptions endpoint surfaces it so
+  clients can prompt the user to re-subscribe to the replacement. Voluntary retirement does *not*
+  lower the author's reputation.
+- **Admin takedown** (`POST /api/admin/groupings/{id}/remove`) flips the row to
+  `status='removed'`, hides it everywhere, auto-resolves open reports, and lowers the author's
+  reputation. This is the only path that hard-removes a grouping from end users' subscriptions.
+
 ## API surface
 
 ### Read
@@ -168,15 +212,16 @@ The library is **post-moderated**: groupings go live immediately, and abuse is h
 | `GET /api/groupings/library/{id}/versions/{version}` | A specific past snapshot |
 | `GET /api/groupings/library/mine` | Viewer's published groupings |
 | `GET /api/groupings/library/subscriptions` | Viewer's subscriptions + which have a newer version |
+| `GET /api/groupings/library/tags/popular?q=` | Most-used tags (autocomplete source) |
 | `GET /api/users/{api_key_id}/reputation` | Public reputation summary |
 
 ### User write (`require_publisher`)
 
 | Method & path | Effect |
 |---------------|--------|
-| `POST /api/groupings/library` | Publish (writes head + v1) |
-| `PATCH /api/groupings/library/{id}` | Owner/admin edit (1/day cap, bumps version + snapshot) |
-| `DELETE /api/groupings/library/{id}` | Owner unpublish (status=removed) |
+| `POST /api/groupings/library` | Publish (writes head + v1). Returns `409 duplicate_payload` if the author already published this TL set; pass `allowDuplicate: true` to override. |
+| `PATCH /api/groupings/library/{id}` | Owner/admin edit (1/day cap, bumps version + snapshot). Same duplicate check as POST when `tlIds` is changed. |
+| `DELETE /api/groupings/library/{id}` | Owner unpublish — soft-retires to `status='deprecated'`. Body accepts optional `{successorId}`. |
 | `POST` / `DELETE /api/groupings/library/{id}/vote` | Upvote / remove upvote |
 | `POST /api/groupings/library/{id}/install` | Fork (`{mode:"fork", version?}`) or subscribe |
 | `DELETE /api/groupings/library/{id}/install` | Uninstall / unsubscribe |
@@ -205,8 +250,10 @@ The library is **post-moderated**: groupings go live immediately, and abuse is h
 - TL identity is a coordinate tuple, so a grouping can drift if the canonical
   `translocators.geojson` is edited upstream. We surface a "missing" count rather than silently
   pruning members, so the user notices without losing data.
-- Reputation is recomputed synchronously on each activity. That's fine at the current scale; if it
-  ever gets hot it can move to a periodic batch job without changing the public shape.
+- Reputation hot-paths (vote, install) apply a delta inline; slow paths (publish, edit, takedown)
+  schedule a full recompute via `BackgroundTasks`. Background-task failures don't roll back the
+  primary write — the cached score is eventually consistent, not strictly correct, until the next
+  successful recompute.
 - Out of scope for v1: comments/discussion, author profile pages, collaborative multi-maintainer
   groupings, URL-token shares, and landmark/waypoint collections (the schema's `content_type` field
   is ready for the latter, but only `tl_grouping` is wired today).

@@ -18,7 +18,7 @@ import logging
 import re
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..auth import (
@@ -74,6 +74,10 @@ class PublishBody(BaseModel):
     color: Optional[str] = Field(default=None, max_length=16)
     tlIds: List[str] = Field(default_factory=list)
     tags: List[str] = Field(default_factory=list)
+    # When True the publish endpoint will skip the per-author duplicate
+    # check (used by the frontend after the user has explicitly confirmed
+    # they want a second copy of an existing grouping).
+    allowDuplicate: bool = False
 
 
 class EditBody(BaseModel):
@@ -83,11 +87,18 @@ class EditBody(BaseModel):
     tlIds: Optional[List[str]] = None
     tags: Optional[List[str]] = None
     changeNote: Optional[str] = Field(default=None, max_length=_CHANGE_NOTE_MAX)
+    allowDuplicate: bool = False
 
 
 class InstallBody(BaseModel):
     mode: str = Field(..., pattern="^(fork|subscribe)$")
     version: Optional[int] = Field(default=None, ge=1)
+
+
+class UnpublishBody(BaseModel):
+    # Optional pointer to a replacement grouping. When set, subscribers see
+    # ``successor_id`` on their subscription and can re-subscribe there.
+    successorId: Optional[str] = Field(default=None, max_length=64)
 
 
 class ReportBody(BaseModel):
@@ -291,12 +302,33 @@ async def user_reputation(
     return lib.get_reputation(api_key_id)
 
 
+@router.get("/groupings/library/tags/popular")
+async def popular_tags(
+    q: Optional[str] = None,
+    limit: int = 20,
+    info: dict = Depends(verify_api_key_info),
+) -> dict:
+    """Autocomplete source for the publish dialog tag input.
+
+    Returns the most-used tags across published groupings (optionally
+    filtered by a case-insensitive prefix). The frontend renders these as a
+    dropdown so users converge on a canonical vocabulary instead of
+    fragmenting it ("elk" vs "Elk" vs "elk-friendly").
+    """
+    _ensure_enabled()
+    return {"items": lib.popular_tags(q=q, limit=max(1, min(limit, 50)))}
+
+
 # ---------------------------------------------------------------------------
 # User write endpoints
 # ---------------------------------------------------------------------------
 
 @router.post("/groupings/library")
-async def publish(body: PublishBody, ctx: dict = Depends(require_publisher)) -> dict:
+async def publish(
+    body: PublishBody,
+    background_tasks: BackgroundTasks,
+    ctx: dict = Depends(require_publisher),
+) -> dict:
     _ensure_enabled()
     api_key = ctx["key"]
     cap = feature_flags.get_int(_PUBLISH_CAP_FLAG, _PUBLISH_CAP_DEFAULT)
@@ -308,6 +340,19 @@ async def publish(body: PublishBody, ctx: dict = Depends(require_publisher)) -> 
     tl_ids = _validated_payload(body.tlIds)
     tags = _clean_tags(body.tags, feature_flags.get_int(_MAX_TAGS_FLAG, _MAX_TAGS_DEFAULT))
     kid = _key_id_for(api_key)
+
+    if not body.allowDuplicate:
+        existing = lib.find_duplicate_for_author(kid, tl_ids)
+        if existing is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "duplicate_payload",
+                    "message": "You already have a published grouping with these translocators.",
+                    "existing": existing,
+                },
+            )
+
     head = lib.publish_grouping(
         author_api_key_id=kid,
         name=name,
@@ -316,11 +361,20 @@ async def publish(body: PublishBody, ctx: dict = Depends(require_publisher)) -> 
         tl_ids=tl_ids,
         tags=tags,
     )
+    # ``publish_grouping`` already ran a synchronous recompute (so the
+    # response below shows fresh stats), but we also schedule a no-op safety
+    # net to keep the formula consistent if any concurrent vote slipped in.
+    background_tasks.add_task(lib.recompute_reputation, kid)
     return lib.get_head(head["id"], viewer_api_key_id=kid)
 
 
 @router.patch("/groupings/library/{grouping_id}")
-async def edit(grouping_id: str, body: EditBody, ctx: dict = Depends(require_publisher)) -> dict:
+async def edit(
+    grouping_id: str,
+    body: EditBody,
+    background_tasks: BackgroundTasks,
+    ctx: dict = Depends(require_publisher),
+) -> dict:
     _ensure_enabled()
     api_key = ctx["key"]
     kid = _key_id_for(api_key)
@@ -341,6 +395,17 @@ async def edit(grouping_id: str, body: EditBody, ctx: dict = Depends(require_pub
         if body.tags is not None
         else None
     )
+    if tl_ids is not None and not body.allowDuplicate:
+        existing = lib.find_duplicate_for_author(kid, tl_ids, exclude_id=grouping_id)
+        if existing is not None:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "duplicate_payload",
+                    "message": "You already have another published grouping with these translocators.",
+                    "existing": existing,
+                },
+            )
     updated = lib.edit_grouping(
         grouping_id=grouping_id,
         editor_api_key_id=kid,
@@ -353,39 +418,71 @@ async def edit(grouping_id: str, body: EditBody, ctx: dict = Depends(require_pub
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="Grouping not found")
+    background_tasks.add_task(lib.recompute_reputation, kid)
     return lib.get_head(grouping_id, viewer_api_key_id=kid)
 
 
 @router.delete("/groupings/library/{grouping_id}")
-async def unpublish(grouping_id: str, ctx: dict = Depends(require_active_user)) -> dict:
+async def unpublish(
+    grouping_id: str,
+    body: Optional[UnpublishBody] = None,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
     _ensure_enabled()
     api_key = ctx["key"]
     kid = _key_id_for(api_key)
-    owner = lib.get_owner_id(grouping_id)
-    if owner is None:
+    head = lib.get_head(grouping_id)
+    if head is None:
         raise HTTPException(status_code=404, detail="Grouping not found")
+    owner = head.get("author_api_key_id")
     if owner != kid and not is_admin_key(api_key):
         raise HTTPException(status_code=403, detail="You do not own this grouping")
-    lib.unpublish_grouping(grouping_id=grouping_id, actor_api_key_id=kid)
-    return {"ok": True}
+    successor_id = body.successorId.strip() if body and body.successorId else None
+    if successor_id:
+        # Validate the successor exists and is itself published; ignore
+        # silently otherwise so a stale id doesn't block retirement.
+        succ = lib.get_head(successor_id)
+        if succ is None or succ.get("status") != "published":
+            successor_id = None
+    lib.unpublish_grouping(
+        grouping_id=grouping_id,
+        actor_api_key_id=kid,
+        successor_id=successor_id,
+    )
+    return {"ok": True, "status": "deprecated", "successor_id": successor_id}
 
 
 @router.post("/groupings/library/{grouping_id}/vote")
-async def upvote(grouping_id: str, ctx: dict = Depends(require_active_user)) -> dict:
+async def upvote(
+    grouping_id: str,
+    background_tasks: BackgroundTasks,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
     _ensure_enabled()
     kid = _key_id_for(ctx["key"])
     head = lib.get_head(grouping_id)
     if head is None or head.get("status") != "published":
         raise HTTPException(status_code=404, detail="Grouping not found")
-    lib.add_vote(grouping_id, kid)
+    author = lib.add_vote(grouping_id, kid)
+    if author:
+        # Full aggregate runs after we've already returned, so the click
+        # feels instant. The inline delta inside add_vote already kept the
+        # cached score roughly correct in the meantime.
+        background_tasks.add_task(lib.recompute_reputation, author)
     return lib.get_head(grouping_id, viewer_api_key_id=kid)
 
 
 @router.delete("/groupings/library/{grouping_id}/vote")
-async def remove_upvote(grouping_id: str, ctx: dict = Depends(require_active_user)) -> dict:
+async def remove_upvote(
+    grouping_id: str,
+    background_tasks: BackgroundTasks,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
     _ensure_enabled()
     kid = _key_id_for(ctx["key"])
-    lib.remove_vote(grouping_id, kid)
+    author = lib.remove_vote(grouping_id, kid)
+    if author:
+        background_tasks.add_task(lib.recompute_reputation, author)
     return lib.get_head(grouping_id, viewer_api_key_id=kid)
 
 
@@ -394,6 +491,7 @@ async def install(
     grouping_id: str,
     body: InstallBody,
     request: Request,
+    background_tasks: BackgroundTasks,
 ) -> dict:
     _ensure_enabled()
     # Forking and subscribing are open to anonymous viewers — they just won't
@@ -401,7 +499,9 @@ async def install(
     # update notifications. Authenticated users still get a recorded install.
     kid = _viewer_key_id(request.headers.get("X-API-Key"))
     head = lib.get_head(grouping_id)
-    if head is None or head.get("status") != "published":
+    # Allow installing deprecated groupings (so existing subscribers can
+    # re-sync), but not removed ones.
+    if head is None or head.get("status") not in ("published", "deprecated"):
         raise HTTPException(status_code=404, detail="Grouping not found")
     head_version = int(head["version"])
 
@@ -411,10 +511,12 @@ async def install(
         if snap is None:
             raise HTTPException(status_code=404, detail="Version not found")
         if kid:
-            lib.record_install(
+            inserted, author = lib.record_install(
                 grouping_id=grouping_id, api_key_id=kid, mode="fork",
                 forked_from_version=version,
             )
+            if inserted and author:
+                background_tasks.add_task(lib.recompute_reputation, author)
         return {
             "ok": True,
             "mode": "fork",
@@ -432,10 +534,12 @@ async def install(
 
     # subscribe
     if kid:
-        lib.record_install(
+        inserted, author = lib.record_install(
             grouping_id=grouping_id, api_key_id=kid, mode="subscribe",
             synced_version=head_version,
         )
+        if inserted and author:
+            background_tasks.add_task(lib.recompute_reputation, author)
     return {
         "ok": True,
         "mode": "subscribe",
@@ -453,10 +557,16 @@ async def install(
 
 
 @router.delete("/groupings/library/{grouping_id}/install")
-async def uninstall(grouping_id: str, ctx: dict = Depends(require_active_user)) -> dict:
+async def uninstall(
+    grouping_id: str,
+    background_tasks: BackgroundTasks,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
     _ensure_enabled()
     kid = _key_id_for(ctx["key"])
-    lib.remove_install(grouping_id, kid)
+    author = lib.remove_install(grouping_id, kid)
+    if author:
+        background_tasks.add_task(lib.recompute_reputation, author)
     return {"ok": True}
 
 
@@ -494,6 +604,7 @@ async def admin_reports(admin_key: str = Depends(require_admin)) -> dict:
 async def admin_remove_grouping(
     grouping_id: str,
     body: AdminRemoveBody,
+    background_tasks: BackgroundTasks,
     admin_key: str = Depends(require_admin),
 ) -> dict:
     admin_kid = _key_id_for(admin_key)
@@ -501,6 +612,7 @@ async def admin_remove_grouping(
     author = lib.admin_remove(grouping_id, admin_api_key_id=admin_kid, reason=reason)
     if author is None:
         raise HTTPException(status_code=404, detail="Grouping not found or already removed")
+    background_tasks.add_task(lib.recompute_reputation, author)
     accounts_db.audit_log(admin_key, "grouping.remove", target=grouping_id,
                           metadata={"reason": reason})
     return {"ok": True}
@@ -510,11 +622,14 @@ async def admin_remove_grouping(
 async def admin_set_official(
     grouping_id: str,
     body: AdminOfficialBody,
+    background_tasks: BackgroundTasks,
     admin_key: str = Depends(require_admin),
 ) -> dict:
     author = lib.set_official(grouping_id, is_official=body.official)
     if author is None and lib.get_head(grouping_id) is None:
         raise HTTPException(status_code=404, detail="Grouping not found")
+    if author:
+        background_tasks.add_task(lib.recompute_reputation, author)
     accounts_db.audit_log(admin_key, "grouping.official", target=grouping_id,
                           metadata={"official": body.official})
     return {"ok": True}

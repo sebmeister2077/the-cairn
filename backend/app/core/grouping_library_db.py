@@ -17,6 +17,7 @@ Conventions (mirrors ``saved_routes_db`` / ``accounts_db``):
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import uuid
@@ -48,6 +49,18 @@ def _score(published: int, upvotes: int, installs: int, official: int) -> int:
         + installs * _REP_W_INSTALLS
         + official * _REP_W_OFFICIAL
     )
+
+
+def _payload_hash(tl_ids: List[str]) -> str:
+    """Stable content hash of a grouping's TL set.
+
+    Sorted + JSON-encoded so insertion order doesn't matter; matches the
+    backfill in alembic ``0026_grouping_library_dedup``.
+    """
+    normalized = sorted(str(t) for t in tl_ids)
+    return hashlib.sha256(
+        json.dumps(normalized, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +99,7 @@ def _card_from_row(row: dict, *, viewer_voted: bool = False,
         "author_reputation": int(row.get("author_reputation") or 0),
         "is_official": bool(row.get("is_official")),
         "status": row.get("status"),
+        "successor_id": row.get("successor_id"),
         "version": int(row.get("version") or 1),
         "tl_count": _tl_count(row.get("payload")),
         "install_count": int(row.get("install_count") or 0),
@@ -102,6 +116,39 @@ def _card_from_row(row: dict, *, viewer_voted: bool = False,
 # ---------------------------------------------------------------------------
 # Publish / edit / unpublish
 # ---------------------------------------------------------------------------
+
+def find_duplicate_for_author(
+    author_api_key_id: str,
+    tl_ids: List[str],
+    *,
+    exclude_id: Optional[str] = None,
+) -> Optional[dict]:
+    """Return ``{id, name}`` of an existing *published* grouping owned by the
+    same author with the same TL set, or ``None``.
+
+    Used by the publish/edit endpoints to surface a friendly conflict
+    response ("you already have a grouping with these TLs") instead of
+    silently letting authors spam near-identical entries past the daily cap.
+    """
+    if not db.is_available():
+        return None
+    digest = _payload_hash(tl_ids)
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, name FROM shared_groupings
+                    WHERE author_api_key_id = %s
+                      AND payload_hash = %s
+                      AND status = 'published'
+                      AND (%s::text IS NULL OR id <> %s)
+                    LIMIT 1""",
+                (author_api_key_id, digest, exclude_id, exclude_id),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return {"id": row["id"], "name": row["name"]}
+
 
 def publish_grouping(
     *,
@@ -120,16 +167,18 @@ def publish_grouping(
     payload = {"version": 1, "tlIds": tl_ids}
     payload_json = json.dumps(payload)
     tags_json = json.dumps(tags)
+    payload_hash = _payload_hash(tl_ids)
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """INSERT INTO shared_groupings
                        (id, content_type, name, description, color, payload,
-                        tags, author_api_key_id, version, last_edited_at)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, now())
+                        tags, author_api_key_id, version, last_edited_at,
+                        payload_hash)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, now(), %s)
                    RETURNING *""",
                 (gid, content_type, name, description, color, payload_json,
-                 tags_json, author_api_key_id),
+                 tags_json, author_api_key_id, payload_hash),
             )
             head = dict(cur.fetchone())
             cur.execute(
@@ -140,7 +189,8 @@ def publish_grouping(
                 (gid, name, description, color, payload_json, tags_json,
                  author_api_key_id, "Initial publish"),
             )
-    recompute_reputation(author_api_key_id)
+    # Reputation recompute is scheduled by the route handler via FastAPI
+    # ``BackgroundTasks`` so the publish response returns immediately.
     return head
 
 
@@ -185,15 +235,16 @@ def edit_grouping(
             new_tags = tags if tags is not None else (head.get("tags") or [])
             payload_json = json.dumps(new_payload)
             tags_json = json.dumps(new_tags)
+            new_hash = _payload_hash(new_payload["tlIds"])
             cur.execute(
                 """UPDATE shared_groupings
                        SET name = %s, description = %s, color = %s, payload = %s,
                            tags = %s, version = %s, last_edited_at = now(),
-                           updated_at = now()
+                           updated_at = now(), payload_hash = %s
                      WHERE id = %s
                    RETURNING *""",
                 (new_name, new_desc, new_color, payload_json, tags_json,
-                 new_version, grouping_id),
+                 new_version, new_hash, grouping_id),
             )
             updated = dict(cur.fetchone())
             cur.execute(
@@ -204,29 +255,56 @@ def edit_grouping(
                 (grouping_id, new_version, new_name, new_desc, new_color,
                  payload_json, tags_json, editor_api_key_id, change_note),
             )
-    author = updated.get("author_api_key_id")
-    if author:
-        recompute_reputation(author)
+    # Reputation recompute is scheduled by the route handler via
+    # ``BackgroundTasks`` (cheap counters are already reflected on the row).
     return updated
 
 
-def unpublish_grouping(*, grouping_id: str, actor_api_key_id: str) -> bool:
-    """Owner unpublish — soft-remove (status='removed'). Returns True on change."""
+def unpublish_grouping(
+    *,
+    grouping_id: str,
+    actor_api_key_id: str,
+    successor_id: Optional[str] = None,
+) -> bool:
+    """Owner unpublish — soft-retire to ``status='deprecated'``.
+
+    Existing forks/subscriptions keep working (the row stays readable so
+    ``list_subscriptions`` can still surface it), but the grouping no longer
+    appears in ``browse``. An optional ``successor_id`` points subscribers
+    at the replacement grouping. Hard removal stays an admin action via
+    :func:`admin_remove`.
+
+    Returns ``True`` if the row transitioned to ``deprecated``.
+    """
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE shared_groupings
-                       SET status = 'removed', removed_at = now(),
-                           removed_by = %s, updated_at = now()
+                       SET status = 'deprecated', successor_id = %s,
+                           updated_at = now()
                      WHERE id = %s AND status = 'published'""",
-                (actor_api_key_id, grouping_id),
+                (successor_id, grouping_id),
             )
             changed = cur.rowcount > 0
-    if changed:
-        recompute_reputation(actor_api_key_id)
+    # Reputation recompute is scheduled by the caller via ``BackgroundTasks``.
     return changed
+
+
+def set_successor(grouping_id: str, successor_id: Optional[str]) -> bool:
+    """Set or clear the ``successor_id`` pointer (e.g. after a deprecation)."""
+    if not db.is_available():
+        raise RuntimeError("Database not configured")
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE shared_groupings
+                       SET successor_id = %s, updated_at = now()
+                     WHERE id = %s""",
+                (successor_id, grouping_id),
+            )
+            return cur.rowcount > 0
 
 
 # ---------------------------------------------------------------------------
@@ -460,7 +538,7 @@ def list_subscriptions(api_key_id: str) -> List[dict]:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """SELECT g.id, g.name, g.description, g.color, g.payload, g.tags,
-                          g.version AS head_version, g.status,
+                          g.version AS head_version, g.status, g.successor_id,
                           i.synced_version,
                           u.display_name AS author_display_name
                      FROM shared_grouping_installs i
@@ -484,6 +562,7 @@ def list_subscriptions(api_key_id: str) -> List[dict]:
             "head_version": int(r["head_version"]),
             "synced_version": int(r["synced_version"]) if r.get("synced_version") is not None else None,
             "status": r.get("status"),
+            "successor_id": r.get("successor_id"),
             "has_update": (
                 r.get("synced_version") is not None
                 and int(r["head_version"]) > int(r["synced_version"])
@@ -492,11 +571,87 @@ def list_subscriptions(api_key_id: str) -> List[dict]:
     return out
 
 
+def popular_tags(*, q: Optional[str] = None, limit: int = 20) -> List[dict]:
+    """Return the most-used tags across published groupings, optionally
+    filtered by a case-insensitive prefix. Powers the publish dialog's tag
+    autocomplete so users converge on a canonical vocabulary.
+
+    Returns ``[{tag, count}]`` ordered by descending usage.
+    """
+    if not db.is_available():
+        return []
+    prefix = (q or "").strip().lower()
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT tag, COUNT(*)::int AS n
+                     FROM shared_groupings g,
+                          jsonb_array_elements_text(
+                              COALESCE(g.tags, '[]'::jsonb)
+                          ) AS tag
+                    WHERE g.status = 'published'
+                      AND (%s = '' OR tag ILIKE %s || '%%')
+                    GROUP BY tag
+                    ORDER BY n DESC, tag ASC
+                    LIMIT %s""",
+                (prefix, prefix, max(1, min(limit, 100))),
+            )
+            rows = cur.fetchall()
+    return [{"tag": r["tag"], "count": int(r["n"])} for r in rows]
+
+
 # ---------------------------------------------------------------------------
 # Votes
 # ---------------------------------------------------------------------------
 
-def add_vote(grouping_id: str, voter_api_key_id: str) -> bool:
+def _bump_reputation_delta(
+    cur,
+    api_key_id: str,
+    *,
+    score_delta: int = 0,
+    upvotes_delta: int = 0,
+    installs_delta: int = 0,
+) -> None:
+    """Apply a small delta to the cached ``user_reputation`` row in-place.
+
+    Cheap alternative to a full ``recompute_reputation`` aggregate — used on
+    high-frequency hot paths (vote/unvote, install/uninstall) so the user
+    perceives the response as snappy. ``cur`` must already be inside the
+    same transaction so the delta is part of the same write.
+    """
+    cur.execute(
+        """UPDATE user_reputation
+               SET reputation_score = GREATEST(reputation_score + %s, 0),
+                   total_upvotes_received = GREATEST(total_upvotes_received + %s, 0),
+                   total_installs_received = GREATEST(total_installs_received + %s, 0),
+                   updated_at = now()
+             WHERE api_key_id = %s""",
+        (score_delta, upvotes_delta, installs_delta, api_key_id),
+    )
+    if cur.rowcount == 0:
+        # No cached row yet — seed one with zeros and apply the delta. The
+        # next full recompute will reconcile any drift.
+        cur.execute(
+            """INSERT INTO user_reputation
+                   (api_key_id, reputation_score, published_count,
+                    total_upvotes_received, total_installs_received,
+                    official_count)
+               VALUES (%s, GREATEST(%s, 0), 0, GREATEST(%s, 0),
+                       GREATEST(%s, 0), 0)
+               ON CONFLICT (api_key_id) DO NOTHING""",
+            (api_key_id, score_delta, upvotes_delta, installs_delta),
+        )
+
+
+def add_vote(grouping_id: str, voter_api_key_id: str) -> Optional[str]:
+    """Insert a vote and bump counters.
+
+    Returns the author's ``api_key_id`` (or ``None``) when a new vote was
+    recorded so the caller can schedule a deferred reputation recompute via
+    FastAPI ``BackgroundTasks``. We *also* apply a cheap delta-update to the
+    cached ``user_reputation`` row inline so the next page load already shows
+    the new score without waiting on a SUM aggregate.
+    """
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
@@ -508,7 +663,7 @@ def add_vote(grouping_id: str, voter_api_key_id: str) -> bool:
                 (grouping_id, voter_api_key_id),
             )
             if cur.rowcount == 0:
-                return False
+                return None
             cur.execute(
                 "UPDATE shared_groupings SET upvote_count = upvote_count + 1 WHERE id = %s "
                 "RETURNING author_api_key_id",
@@ -516,12 +671,15 @@ def add_vote(grouping_id: str, voter_api_key_id: str) -> bool:
             )
             row = cur.fetchone()
             author = row[0] if row else None
-    if author:
-        recompute_reputation(author)
-    return True
+            if author:
+                _bump_reputation_delta(
+                    cur, author, score_delta=_REP_W_UPVOTES, upvotes_delta=1
+                )
+    return author
 
 
-def remove_vote(grouping_id: str, voter_api_key_id: str) -> bool:
+def remove_vote(grouping_id: str, voter_api_key_id: str) -> Optional[str]:
+    """Remove a vote and decrement counters. Returns the author id (or None)."""
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
@@ -531,7 +689,7 @@ def remove_vote(grouping_id: str, voter_api_key_id: str) -> bool:
                 (grouping_id, voter_api_key_id),
             )
             if cur.rowcount == 0:
-                return False
+                return None
             cur.execute(
                 "UPDATE shared_groupings SET upvote_count = GREATEST(upvote_count - 1, 0) "
                 "WHERE id = %s RETURNING author_api_key_id",
@@ -539,9 +697,11 @@ def remove_vote(grouping_id: str, voter_api_key_id: str) -> bool:
             )
             row = cur.fetchone()
             author = row[0] if row else None
-    if author:
-        recompute_reputation(author)
-    return True
+            if author:
+                _bump_reputation_delta(
+                    cur, author, score_delta=-_REP_W_UPVOTES, upvotes_delta=-1
+                )
+    return author
 
 
 # ---------------------------------------------------------------------------
@@ -555,9 +715,15 @@ def record_install(
     mode: str,
     forked_from_version: Optional[int] = None,
     synced_version: Optional[int] = None,
-) -> bool:
-    """Upsert an install row. Returns True if a new row was created (so the
-    caller bumps ``install_count`` only once per distinct user)."""
+) -> Tuple[bool, Optional[str]]:
+    """Upsert an install row.
+
+    Returns ``(inserted, author_api_key_id)`` — ``inserted`` is ``True`` only
+    when a brand-new row was created (so callers bump ``install_count`` once
+    per distinct user). ``author_api_key_id`` is returned (when known) so the
+    route handler can schedule a deferred full reputation recompute. The
+    cheap delta-update to ``user_reputation`` is applied inline.
+    """
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
@@ -575,7 +741,7 @@ def record_install(
                 (grouping_id, api_key_id, mode, forked_from_version, synced_version),
             )
             inserted = bool(cur.fetchone()[0])
-            author = None
+            author: Optional[str] = None
             if inserted:
                 cur.execute(
                     "UPDATE shared_groupings SET install_count = install_count + 1 "
@@ -584,12 +750,14 @@ def record_install(
                 )
                 row = cur.fetchone()
                 author = row[0] if row else None
-    if inserted and author:
-        recompute_reputation(author)
-    return inserted
+                if author:
+                    _bump_reputation_delta(
+                        cur, author, score_delta=_REP_W_INSTALLS, installs_delta=1
+                    )
+    return inserted, author
 
 
-def remove_install(grouping_id: str, api_key_id: str) -> bool:
+def remove_install(grouping_id: str, api_key_id: str) -> Optional[str]:
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
@@ -599,7 +767,7 @@ def remove_install(grouping_id: str, api_key_id: str) -> bool:
                 (grouping_id, api_key_id),
             )
             if cur.rowcount == 0:
-                return False
+                return None
             cur.execute(
                 "UPDATE shared_groupings SET install_count = GREATEST(install_count - 1, 0) "
                 "WHERE id = %s RETURNING author_api_key_id",
@@ -607,9 +775,11 @@ def remove_install(grouping_id: str, api_key_id: str) -> bool:
             )
             row = cur.fetchone()
             author = row[0] if row else None
-    if author:
-        recompute_reputation(author)
-    return True
+            if author:
+                _bump_reputation_delta(
+                    cur, author, score_delta=-_REP_W_INSTALLS, installs_delta=-1
+                )
+    return author
 
 
 def update_synced_version(grouping_id: str, api_key_id: str, version: int) -> None:
@@ -725,8 +895,7 @@ def admin_remove(grouping_id: str, *, admin_api_key_id: str, reason: Optional[st
                 (admin_api_key_id, grouping_id),
             )
             author = row[0] if row else None
-    if author:
-        recompute_reputation(author)
+    # Reputation recompute is scheduled by the caller via ``BackgroundTasks``.
     return author
 
 
@@ -743,8 +912,6 @@ def set_official(grouping_id: str, *, is_official: bool) -> Optional[str]:
             )
             row = cur.fetchone()
             author = row[0] if row else None
-    if author:
-        recompute_reputation(author)
     return author
 
 
@@ -755,8 +922,9 @@ def set_official(grouping_id: str, *, is_official: bool) -> Optional[str]:
 def recompute_reputation(api_key_id: str) -> dict:
     """Recompute and upsert the cached reputation aggregate for an author.
 
-    Only ``published`` groupings count toward the score so a takedown /
-    unpublish correctly lowers the author's standing.
+    Counts both ``published`` and ``deprecated`` groupings: voluntary retire
+    via :func:`unpublish_grouping` doesn't penalise an author's reputation,
+    while admin takedowns (``status='removed'``) do drop their score.
     """
     if not db.is_available():
         return {}
@@ -769,7 +937,8 @@ def recompute_reputation(api_key_id: str) -> dict:
                        COALESCE(SUM(install_count), 0)::int AS installs,
                        COALESCE(SUM(CASE WHEN is_official THEN 1 ELSE 0 END), 0)::int AS official
                      FROM shared_groupings
-                    WHERE author_api_key_id = %s AND status = 'published'""",
+                    WHERE author_api_key_id = %s
+                      AND status IN ('published', 'deprecated')""",
                 (api_key_id,),
             )
             row = cur.fetchone() or (0, 0, 0, 0)
