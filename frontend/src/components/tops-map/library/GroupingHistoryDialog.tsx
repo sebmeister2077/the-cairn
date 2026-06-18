@@ -106,6 +106,11 @@ export function GroupingHistoryDialog({
                         count: entry.tl_count,
                       })}
                       {entry.editor ? ` · ${entry.editor}` : ""}
+                      {entry.created_at
+                        ? ` · ${t("topsMap.groupingsDrawer.library.publishedOn", {
+                            date: new Date(entry.created_at).toLocaleDateString(),
+                          })}`
+                        : ""}
                     </p>
                     <p className="mt-0.5 text-xs italic text-muted-foreground">
                       {entry.change_note || t("topsMap.groupingsDrawer.library.noChangeNote")}
