@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,10 +12,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError } from "@/lib/api";
+import { ApiError, groupingLibrary } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n";
 import type { TLGrouping } from "@/lib/tl-groupings";
-import { useGroupingLibraryActions } from "@/hooks/useGroupingLibrary";
+import { GROUPING_LIBRARY_KEY, useGroupingLibraryActions } from "@/hooks/useGroupingLibrary";
 
 import { TagInput } from "./TagInput";
 
@@ -66,17 +67,46 @@ export function PublishGroupingDialog({
   const [busy, setBusy] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicateConflict | null>(null);
 
+  // In edit mode, fetch the existing published card so we can prefill
+  // description / tags / color (the local TLGrouping doesn't store those
+  // fields). Cached and shared with other library views.
+  const cardQuery = useQuery({
+    queryKey: [...GROUPING_LIBRARY_KEY, "card", editLibraryId],
+    queryFn: ({ signal }) => groupingLibrary.get(editLibraryId as string, signal),
+    enabled: open && Boolean(editLibraryId),
+    staleTime: 60_000,
+  });
+
+  // One-shot guard so the prefill from the fetched card doesn't clobber
+  // user edits after the first successful seed in this open cycle.
+  const cardSeededRef = useRef(false);
+
   useEffect(() => {
-    if (open && grouping) {
-      setName(grouping.name);
-      setColor(grouping.color ?? "");
-      setDescription("");
-      setTagList([]);
-      setChangeNote("");
-      setError(null);
-      setDuplicate(null);
+    if (!open) {
+      cardSeededRef.current = false;
+      return;
     }
+    if (!grouping) return;
+    setName(grouping.name);
+    setColor(grouping.color ?? "");
+    setDescription("");
+    setTagList([]);
+    setChangeNote("");
+    setError(null);
+    setDuplicate(null);
   }, [open, grouping]);
+
+  useEffect(() => {
+    if (!open || !isEdit) return;
+    if (cardSeededRef.current) return;
+    const card = cardQuery.data;
+    if (!card) return;
+    cardSeededRef.current = true;
+    setName(card.name);
+    setColor(card.color ?? "");
+    setDescription(card.description ?? "");
+    setTagList(card.tags ?? []);
+  }, [open, isEdit, cardQuery.data]);
 
   function mapError(err: unknown): string {
     if (err instanceof ApiError) {
