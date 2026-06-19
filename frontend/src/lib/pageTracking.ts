@@ -33,6 +33,8 @@ const KNOWN_ROUTES: string[] = [
     "/manage/translocators",
     "/manage/traders",
     "/manage/tl-screenshots",
+    "/tools",
+    "/tools/waypoints",
     "/usage",
     "/account",
     "/general",
