@@ -31,12 +31,12 @@ export interface PreviewWalkSegment {
     /** Visual state, mirrors the same vocabulary the route overlay uses
      *  for walk legs so the page can recolour without re-classifying. */
     elkState:
-        | "not-attestable"
-        | "unconfirmed"
-        | "confirmed"
-        | "confirmed-by-me"
-        | "pending-attest"
-        | "pending-unattest";
+    | "not-attestable"
+    | "unconfirmed"
+    | "confirmed"
+    | "confirmed-by-me"
+    | "pending-attest"
+    | "pending-unattest";
 }
 
 export interface MarkElkDialogSnapshot {

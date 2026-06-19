@@ -36,6 +36,7 @@ QUOTA_FLAG_LIMITS: dict[str, tuple[int, int]] = {
     "translocators_dedupe_radius": (200, 2_000),
     "translocator_screenshots_max_pending": (90, 1_000),
     "map_contribution_cooldown_days": (7, 365),
+    "elk_walkable_snapshot_interval_days": (14, 365),
 }
 
 

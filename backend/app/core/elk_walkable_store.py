@@ -25,16 +25,18 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import copy
 import json
 import logging
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Iterable, List, Optional, Tuple
 
 from fastapi import HTTPException
 
 from . import database as db
+from . import feature_flags as ff
 from . import r2_storage
 
 
@@ -42,6 +44,16 @@ logger = logging.getLogger("uvicorn.error")
 
 CURRENT_VERSION = 1
 _LOCK_RESOURCE = "elk_walkable"
+
+# Snapshot cadence. The store keeps a rolling pre-mutation snapshot of
+# ``elk_walkable.json`` in R2 so admins can roll back catastrophic
+# damage, but the per-row audit log is the real source of truth for
+# replaying individual edits. We reuse the most recent snapshot until
+# this many days have elapsed since it was written; admins can override
+# the interval via the ``elk_walkable_snapshot_interval_days`` feature
+# flag (numeric value_int; 0 forces a snapshot every mutation).
+_SNAPSHOT_INTERVAL_FLAG = "elk_walkable_snapshot_interval_days"
+_SNAPSHOT_INTERVAL_DEFAULT_DAYS = 14
 
 _inproc_lock = asyncio.Lock()
 
@@ -177,6 +189,71 @@ def _write_snapshot(current: dict, change_id: str) -> str:
     return key
 
 
+def _latest_snapshot_key() -> Optional[str]:
+    """Return the lexicographically newest existing snapshot R2 key, or None.
+
+    Snapshot keys embed an ISO-8601 UTC timestamp so reverse-sorted
+    order matches chronological order.
+    """
+    prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
+    try:
+        keys = r2_storage.list_keys_with_prefix(prefix)
+    except Exception:
+        logger.exception("elk_walkable: snapshot listing failed")
+        return None
+    if not keys:
+        return None
+    keys.sort(reverse=True)
+    return keys[0]
+
+
+def _parse_snapshot_key_ts(key: str) -> Optional[datetime]:
+    """Recover the UTC timestamp encoded in a snapshot R2 key.
+
+    Mirrors :func:`r2_storage.elk_walkable_snapshot_key` which munges the
+    ISO timestamp by stripping ``:`` and rewriting ``+`` as ``Z`` so the
+    key is safe to use as a filename.
+    """
+    prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
+    if not key.startswith(prefix) or not key.endswith(".json"):
+        return None
+    body = key[len(prefix):-len(".json")]
+    # ``change_id`` is a 32-char uuid hex with no dashes; safe_ts does
+    # contain dashes (in the date part) so rsplit once.
+    safe_ts, _, _change_id = body.rpartition("-")
+    if not safe_ts:
+        return None
+    for fmt in ("%Y-%m-%dT%H%M%S.%fZ%H%M", "%Y-%m-%dT%H%M%SZ%H%M"):
+        try:
+            return datetime.strptime(safe_ts, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
+
+
+def _snapshot_interval() -> timedelta:
+    days = ff.get_int(_SNAPSHOT_INTERVAL_FLAG, _SNAPSHOT_INTERVAL_DEFAULT_DAYS)
+    return timedelta(days=max(0, days))
+
+
+def _resolve_snapshot_key(pre_mutation: dict, change_id: str) -> str:
+    """Reuse the most recent snapshot if it's still inside the configured
+    interval; otherwise upload a fresh snapshot of ``pre_mutation``.
+
+    The audit row ``snapshot_key`` references the baseline from which
+    the chain of audits up to (and including) the row can be replayed.
+    """
+    interval = _snapshot_interval()
+    latest_key = _latest_snapshot_key()
+    if latest_key and interval.total_seconds() > 0:
+        latest_ts = _parse_snapshot_key_ts(latest_key)
+        if latest_ts is not None:
+            age = datetime.now(timezone.utc) - latest_ts
+            if age < interval:
+                return latest_key
+    return _write_snapshot(pre_mutation, change_id)
+
+
 def list_snapshots(limit: int = 200) -> List[dict]:
     prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
     try:
@@ -283,9 +360,13 @@ def apply_changes(
         unattest_keys.append((k, r))
 
     data = load_live()
+    # Deep-copy the pre-mutation state up-front so we can defer the
+    # snapshot upload until we know there are actual changes to persist
+    # and the configured interval has elapsed. Mutations below happen on
+    # the edge dicts inside ``data``.
+    pre_mutation = copy.deepcopy(data)
     by_key = _edges_by_key(data)
     change_id = uuid.uuid4().hex
-    snapshot_key = _write_snapshot(data, change_id)
     now_iso = _now_iso()
 
     applied: List[dict] = []
@@ -343,10 +424,10 @@ def apply_changes(
         applied.append({"key": k, "action": "unattest"})
 
     if not applied:
-        # No-op batch: still wrote a snapshot but that's harmless.
+        # No-op batch: nothing to persist, no snapshot needed.
         return {
             "change_id": change_id,
-            "snapshot_key": snapshot_key,
+            "snapshot_key": None,
             "applied": [],
             "audit_ids": [],
         }
@@ -354,6 +435,7 @@ def apply_changes(
     data["edges"] = sorted(by_key.values(), key=lambda e: e["key"])
     data["version"] = CURRENT_VERSION
     _save_live(data)
+    snapshot_key = _resolve_snapshot_key(pre_mutation, change_id)
 
     audit_ids: List[int] = []
     for change in applied:
@@ -405,9 +487,9 @@ def revert_audit_row(
         )
 
     data = load_live()
+    pre_mutation = copy.deepcopy(data)
     by_key = _edges_by_key(data)
     change_id = uuid.uuid4().hex
-    snapshot_key = _write_snapshot(data, change_id)
 
     edge_key = row["edge_key"]
     before_state = row.get("before_payload")
@@ -422,6 +504,7 @@ def revert_audit_row(
 
     data["edges"] = sorted(by_key.values(), key=lambda e: e["key"])
     _save_live(data)
+    snapshot_key = _resolve_snapshot_key(pre_mutation, change_id)
 
     audit_id_new = db.insert_elk_walkable_audit(
         change_id=change_id,
@@ -474,10 +557,13 @@ def restore_snapshot(
 
     current = load_live()
     change_id = uuid.uuid4().hex
-    pre_restore_snapshot_key = _write_snapshot(current, change_id)
 
     restored["version"] = CURRENT_VERSION
     _save_live(restored)
+    # Restore is destructive and unique, but we still honour the same
+    # cadence: with the default 14-day interval the latest snapshot is
+    # already a viable rollback target.
+    pre_restore_snapshot_key = _resolve_snapshot_key(current, change_id)
 
     audit_id_new = db.insert_elk_walkable_audit(
         change_id=change_id,
