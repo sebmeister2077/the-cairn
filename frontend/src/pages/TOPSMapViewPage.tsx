@@ -1989,18 +1989,6 @@ export function TOPSMapViewPage() {
           </>
         )}
         <div className={isFullscreen ? "absolute inset-0" : "relative"}>
-          {isFullscreen && hasMap && (
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={handleOpenGoToDialog}
-              className="absolute right-3 top-3 z-20 shadow"
-            >
-              <Search className="size-4 mr-1" />
-              {t("topsMap.goToCoordinate")}
-            </Button>
-          )}
           {usingWebCartographer ? (
             <WebCartographerMapViewer
               baseUrl={webCartographerUrl}
@@ -2184,6 +2172,7 @@ export function TOPSMapViewPage() {
               onJumpHome={handleJumpHome}
               onSaveCurrentAsHome={handleSetCurrentAsHome}
               onClearHome={clearFavoriteStartingPosition}
+              onOpenGoToDialog={handleOpenGoToDialog}
               rockStrataLegend={rockStrataOverlay.legend}
               climateLayerMeta={climateOverlay.layerMeta}
               climateStatus={climateOverlay.status}

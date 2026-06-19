@@ -64,6 +64,7 @@ type FullscreenControlsOverlayProps = {
   onJumpHome: () => void;
   onSaveCurrentAsHome: () => void;
   onClearHome: () => void;
+  onOpenGoToDialog: () => void;
   /** Rock-strata legend (null while disabled / loading). */
   rockStrataLegend: LegendEntry[] | null;
   /** Climate active-layer metadata (null while disabled / loading). */
@@ -100,6 +101,7 @@ export function FullscreenControlsOverlay({
   onJumpHome,
   onSaveCurrentAsHome,
   onClearHome,
+  onOpenGoToDialog,
   rockStrataLegend,
   climateLayerMeta,
   climateStatus,
@@ -226,13 +228,12 @@ export function FullscreenControlsOverlay({
       <div className="pointer-events-auto absolute top-16 left-6  flex items-center gap-2">
         <Button
           type="button"
-          variant="secondary"
-          size="sm"
+          variant="default"
           onClick={() => setIsFullscreen(false)}
           title={t("topsMap.exitFullscreen")}
-          className="shadow-md"
+          className="shadow-lg ring-2 ring-primary/40 ring-offset-2 ring-offset-background font-semibold"
         >
-          <Minimize2 className="size-4 mr-1" />
+          <Minimize2 className="size-5 mr-1.5" />
           {t("topsMap.exitFullscreen")}
         </Button>
         <HomePositionControls
@@ -243,6 +244,17 @@ export function FullscreenControlsOverlay({
           onClear={onClearHome}
           compact
         />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onOpenGoToDialog}
+          title={t("topsMap.jumpToCoordinateShortcut")}
+          className="shadow-md"
+        >
+          <Search className="size-4 mr-1" />
+          {t("topsMap.goToCoordinate")}
+        </Button>
       </div>
 
       {/* Top-right: stacked toggles + groupings. */}
