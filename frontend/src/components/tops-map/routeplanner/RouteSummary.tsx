@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Copy,
   Crosshair,
+  Flag,
   Footprints,
   Info,
   Loader2,
@@ -56,6 +57,7 @@ import {
   type EdgeEndpointRef,
   type WalkLegElkState,
 } from "@/lib/elk-walkable";
+import { ReportElkEdgeDialog } from "./ReportElkEdgeDialog";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
   addRoutePlayer,
@@ -210,6 +212,11 @@ export function RouteSummary({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  // Report-this-edge dialog: only rendered when the user clicks the
+  // Flag button on a confirmed walk row. State lives at the summary
+  // level so the dialog survives leg-list re-renders.
+  const [reportEdge, setReportEdge] = useState<{ key: string; label: string } | null>(null);
+
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
       {/* Hero ETA — the headline answer to "how long will this take?".
@@ -315,6 +322,23 @@ export function RouteSummary({
                   <PawPrint className="h-3 w-3" />
                 </Button>
               )}
+              {leg.kind === "walk" &&
+                edgeRef &&
+                elk &&
+                (elkState === "confirmed" || elkState === "confirmed-by-me") && (
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    className="h-6 w-6 shrink-0 text-current opacity-70 hover:opacity-100"
+                    onClick={() =>
+                      setReportEdge({ key: edgeRef.key, label: describeLeg(leg, i, t) })
+                    }
+                    title={t("topsMap.reportElkEdge.title")}
+                    aria-label={t("topsMap.reportElkEdge.title")}
+                  >
+                    <Flag className="h-3 w-3" />
+                  </Button>
+                )}
               {tunnelEndpoints && (
                 <Button
                   size="icon-sm"
@@ -347,6 +371,15 @@ export function RouteSummary({
           );
         })}
       </ol>
+
+      <ReportElkEdgeDialog
+        open={reportEdge != null}
+        onOpenChange={(v) => {
+          if (!v) setReportEdge(null);
+        }}
+        edgeKey={reportEdge?.key ?? null}
+        edgeLabel={reportEdge?.label}
+      />
     </div>
   );
 }

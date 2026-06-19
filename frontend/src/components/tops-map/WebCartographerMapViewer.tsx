@@ -632,12 +632,19 @@ export function WebCartographerMapViewer({
       if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
       tlSegs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
     }
-    const walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    const walkLegs: Array<{
+      key?: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+    }> = [];
     for (const leg of routeOverlay.walkLegs) {
       const a = projectWorld(leg.from.x, leg.from.z);
       const b = projectWorld(leg.to.x, leg.to.z);
       if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-      walkLegs.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+      walkLegs.push({ key: leg.key, x1: a.x, y1: a.y, x2: b.x, y2: b.y, elkState: leg.elkState });
     }
     const pin = (p: { x: number; z: number } | null | undefined) => {
       if (!p) return null;
@@ -650,7 +657,14 @@ export function WebCartographerMapViewer({
       tlIdSet.add(`${s.x1},${s.z1},${s.x2},${s.z2}`);
       tlIdSet.add(`${s.x2},${s.z2},${s.x1},${s.z1}`);
     }
-    return { tlSegs, walkLegs, from: pin(routeOverlay.from), to: pin(routeOverlay.to), tlIdSet };
+    return {
+      tlSegs,
+      walkLegs,
+      from: pin(routeOverlay.from),
+      to: pin(routeOverlay.to),
+      tlIdSet,
+      focusedWalkLegKey: routeOverlay.focusedWalkLegKey ?? null,
+    };
   }, [routeOverlay, projectWorld]);
 
   const highlightedSegmentIndices = useMemo(() => {
@@ -991,6 +1005,21 @@ export function WebCartographerMapViewer({
     traderStyle,
     terminusStyle,
   ]);
+
+  // Continuous redraw while a focused walk leg exists, so its pulsing
+  // highlight animates. The draw itself derives phase from
+  // `performance.now()`, so we just need to keep scheduling frames.
+  useEffect(() => {
+    const key = projectedRoute?.focusedWalkLegKey;
+    if (!key) return;
+    let raf = 0;
+    const tick = () => {
+      scheduleRedraw();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [projectedRoute?.focusedWalkLegKey, scheduleRedraw]);
 
   // Cleanup any pending rAF on unmount.
   useEffect(() => {
@@ -1611,10 +1640,18 @@ interface OverlayDrawArgs {
   points: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
   route: {
     tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
-    walkLegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
+    walkLegs: Array<{
+      key?: string;
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+    }>;
     from: { x: number; y: number } | null;
     to: { x: number; y: number } | null;
     tlIdSet: Set<string>;
+    focusedWalkLegKey?: string | null;
   } | null;
   hoveredSegmentIndex: number | null;
   highlightedSegmentIndices: Set<number>;
@@ -1910,6 +1947,38 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
       }
       ctx.stroke();
       ctx.setLineDash([]);
+
+      // Pulsing focused-leg highlight — mirrors the highlight in
+      // MapViewer.tsx so a user-selected edge stands out in both viewers.
+      if (route.focusedWalkLegKey) {
+        const focused = route.walkLegs.find((l) => l.key === route.focusedWalkLegKey);
+        if (focused) {
+          const phase = (Math.sin((performance.now() / 1000) * 1.2 * Math.PI * 2) + 1) / 2;
+          ctx.save();
+          ctx.lineCap = "round";
+          ctx.strokeStyle = `rgba(250, 204, 21, ${(0.35 + phase * 0.45).toFixed(3)})`;
+          ctx.lineWidth = walkW * (3.8 + phase * 2.6);
+          ctx.beginPath();
+          ctx.moveTo(focused.x1, focused.y1);
+          ctx.lineTo(focused.x2, focused.y2);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(254, 240, 138, 0.95)";
+          ctx.lineWidth = walkW * 1.4;
+          ctx.beginPath();
+          ctx.moveTo(focused.x1, focused.y1);
+          ctx.lineTo(focused.x2, focused.y2);
+          ctx.stroke();
+          const ringR = 4.5 + phase * 3.5;
+          ctx.strokeStyle = `rgba(250, 204, 21, ${(0.55 + phase * 0.4).toFixed(3)})`;
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.arc(focused.x1, focused.y1, ringR, 0, Math.PI * 2);
+          ctx.moveTo(focused.x2 + ringR, focused.y2);
+          ctx.arc(focused.x2, focused.y2, ringR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
     }
     if (route.tlSegs.length > 0) {
       const routeBase = 2.8;

@@ -85,8 +85,12 @@ export interface RouteOverlay {
   tlSegments: WorldLineSegment[];
   /** Walk legs as world-space `[from, to]` pairs, drawn dashed. The
    *  optional `elkState` recolours the segment to communicate community
-   *  attestation status (see `WalkLegElkState` in lib/elk-walkable.ts). */
+   *  attestation status (see `WalkLegElkState` in lib/elk-walkable.ts).
+   *  `key` is an opaque per-leg identifier; the leg matching
+   *  `focusedWalkLegKey` is drawn with an animated pulsing halo so the
+   *  user can spot the currently-selected walk at a glance. */
   walkLegs: Array<{
+    key?: string;
     from: { x: number; z: number };
     to: { x: number; z: number };
     elkState?:
@@ -101,6 +105,8 @@ export interface RouteOverlay {
   from?: { x: number; z: number } | null;
   /** Destination pin (red). */
   to?: { x: number; z: number } | null;
+  /** When set, the matching walk leg renders with an animated highlight. */
+  focusedWalkLegKey?: string | null;
 }
 
 export interface WorldPointMarker {
@@ -437,6 +443,11 @@ export function MapViewer({
     }
   }, []);
 
+  // Monotonic tick used to redraw the canvas every frame while a focused
+  // walk leg exists, so its highlight can pulse. Held outside the main
+  // overlay-effect deps as a setState-on-rAF value.
+  const [pulseTick, setPulseTick] = useState(0);
+
   /**
    * Smoothly interpolate (pan, zoom) toward a target using an eased rAF
    * loop. Reused by the focusPoint effect, the Reset and Center buttons,
@@ -614,6 +625,7 @@ export function MapViewer({
       tlSegs.push({ x1, y1, x2, y2 });
     }
     const walkLegs: Array<{
+      key?: string;
       x1: number;
       y1: number;
       x2: number;
@@ -626,7 +638,7 @@ export function MapViewer({
       const x2 = toImgX(leg.to.x);
       const y2 = toImgY(leg.to.z);
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
-      walkLegs.push({ x1, y1, x2, y2, elkState: leg.elkState });
+      walkLegs.push({ key: leg.key, x1, y1, x2, y2, elkState: leg.elkState });
     }
     const projectPin = (p: { x: number; z: number } | null | undefined) => {
       if (!p) return null;
@@ -648,6 +660,7 @@ export function MapViewer({
       from: projectPin(routeOverlay.from),
       to: projectPin(routeOverlay.to),
       tlIdSet,
+      focusedWalkLegKey: routeOverlay.focusedWalkLegKey ?? null,
     };
   }, [imgNatural.h, imgNatural.w, routeOverlay, stats]);
 
@@ -1323,6 +1336,48 @@ export function MapViewer({
           ctx.stroke();
         }
         ctx.setLineDash([]);
+
+        // 1b. Focused walk leg: bright pulsing halo + endpoint rings so the
+        //     user can immediately see which edge was "Jumped to" from the
+        //     dialog. Phase is driven by `pulseTick` (an rAF-driven state).
+        const focusKey = projectedRouteOverlay.focusedWalkLegKey;
+        if (focusKey) {
+          const focused = projectedRouteOverlay.walkLegs.find((l) => l.key === focusKey);
+          if (focused) {
+            // 1.2 Hz pulse, 0..1 sinusoidal.
+            const phase = (Math.sin((performance.now() / 1000) * 1.2 * Math.PI * 2) + 1) / 2;
+            const haloWidth = walkLineWidth * (3.8 + phase * 2.6);
+            const haloAlpha = 0.35 + phase * 0.45;
+            ctx.save();
+            ctx.lineCap = "round";
+            // Outer glow.
+            ctx.strokeStyle = `rgba(250, 204, 21, ${haloAlpha.toFixed(3)})`;
+            ctx.lineWidth = haloWidth;
+            ctx.beginPath();
+            ctx.moveTo(focused.x1, focused.y1);
+            ctx.lineTo(focused.x2, focused.y2);
+            ctx.stroke();
+            // Solid core stroke on top so the leg itself reads as bright,
+            // not just glowy.
+            ctx.strokeStyle = "rgba(254, 240, 138, 0.95)";
+            ctx.lineWidth = Math.max(1.2, walkLineWidth * 1.4);
+            ctx.beginPath();
+            ctx.moveTo(focused.x1, focused.y1);
+            ctx.lineTo(focused.x2, focused.y2);
+            ctx.stroke();
+            // Pulsing endpoint rings — gives both TL endpoints a visible
+            // anchor that's hard to miss even when the leg is short.
+            const ringR = Math.max(3, (4.5 + phase * 3.5) / Math.max(zoom, 0.1));
+            ctx.strokeStyle = `rgba(250, 204, 21, ${(0.55 + phase * 0.4).toFixed(3)})`;
+            ctx.lineWidth = Math.max(1, 1.8 / Math.max(zoom, 0.1));
+            ctx.beginPath();
+            ctx.arc(focused.x1, focused.y1, ringR, 0, Math.PI * 2);
+            ctx.moveTo(focused.x2 + ringR, focused.y2);
+            ctx.arc(focused.x2, focused.y2, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
       }
 
       // 2. Route TL segments: emerald with subtle glow + bright portal dots.
@@ -1422,7 +1477,23 @@ export function MapViewer({
     traderStyle,
     tlStyle,
     terminusStyle,
+    pulseTick,
   ]);
+
+  // rAF loop: only runs while a walk leg is focused. Bumps `pulseTick`
+  // every frame so the overlay-draw effect re-runs and the highlight
+  // pulses. Stops on key clear / unmount to avoid burning CPU.
+  useEffect(() => {
+    const key = projectedRouteOverlay?.focusedWalkLegKey;
+    if (!key) return;
+    let raf = 0;
+    const step = () => {
+      setPulseTick((t) => (t + 1) % 1_000_000);
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [projectedRouteOverlay?.focusedWalkLegKey]);
 
   // Screen-space labels canvas — drawn at container resolution so text is always crisp.
   useEffect(() => {

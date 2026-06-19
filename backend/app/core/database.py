@@ -3273,6 +3273,147 @@ def list_elk_walkable_audit(
 
 
 # ---------------------------------------------------------------------------
+# Elk-walkable reports CRUD (user-flagged wrongly-attested edges)
+# ---------------------------------------------------------------------------
+
+def find_open_elk_walkable_report(
+    *, edge_key: str, reporter_api_key_id: Optional[str]
+) -> Optional[int]:
+    """Return the id of the caller's open report for ``edge_key``, if any.
+
+    Used to surface 409 Conflict when the same user tries to re-report the
+    same edge while a previous report is still in the queue.
+    """
+    if not reporter_api_key_id:
+        return None
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT id FROM elk_walkable_reports
+                    WHERE edge_key = %s
+                      AND reporter_api_key_id = %s
+                      AND status = 'open'
+                    ORDER BY created_at DESC
+                    LIMIT 1""",
+                (edge_key, reporter_api_key_id),
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else None
+
+
+def insert_elk_walkable_report(
+    *,
+    edge_key: str,
+    reporter_api_key_id: Optional[str],
+    reporter_display_name: Optional[str],
+    reason: str,
+    details: Optional[str],
+) -> int:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO elk_walkable_reports
+                       (edge_key, reporter_api_key_id, reporter_display_name,
+                        reason, details)
+                   VALUES (%s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    edge_key,
+                    reporter_api_key_id,
+                    reporter_display_name,
+                    reason,
+                    details,
+                ),
+            )
+            return int(cur.fetchone()[0])
+
+
+def list_elk_walkable_reports(
+    *,
+    status: Optional[str] = None,
+    edge_key: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    where: List[str] = []
+    params: list = []
+    if status:
+        where.append("status = %s")
+        params.append(status)
+    if edge_key:
+        where.append("edge_key = %s")
+        params.append(edge_key)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    params.extend([int(limit), int(offset)])
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT id, edge_key, reporter_api_key_id,
+                           reporter_display_name, reason, details, status,
+                           created_at, resolved_at, resolved_by_api_key_id,
+                           resolution_note
+                     FROM elk_walkable_reports
+                     {where_sql}
+                     ORDER BY created_at DESC
+                     LIMIT %s OFFSET %s""",
+                params,
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_elk_walkable_report(report_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, edge_key, reporter_api_key_id,
+                          reporter_display_name, reason, details, status,
+                          created_at, resolved_at, resolved_by_api_key_id,
+                          resolution_note
+                     FROM elk_walkable_reports
+                    WHERE id = %s""",
+                (int(report_id),),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def count_open_elk_walkable_reports() -> int:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM elk_walkable_reports WHERE status = 'open'"
+            )
+            return int(cur.fetchone()[0])
+
+
+def resolve_elk_walkable_report(
+    report_id: int,
+    *,
+    resolver_api_key_id: Optional[str],
+    new_status: str,
+    note: Optional[str],
+) -> bool:
+    """Transition a report from ``open`` to ``dismissed`` or ``resolved``.
+
+    Returns False when no row was updated (already resolved / not found).
+    """
+    if new_status not in ("dismissed", "resolved"):
+        raise ValueError(f"invalid status: {new_status}")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE elk_walkable_reports
+                       SET status = %s,
+                           resolved_at = now(),
+                           resolved_by_api_key_id = %s,
+                           resolution_note = %s
+                     WHERE id = %s AND status = 'open'""",
+                (new_status, resolver_api_key_id, note, int(report_id)),
+            )
+            return cur.rowcount > 0
+
+
+# ---------------------------------------------------------------------------
 # Traders audit CRUD (user-contributed Traders)
 # ---------------------------------------------------------------------------
 

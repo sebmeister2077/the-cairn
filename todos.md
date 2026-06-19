@@ -25,7 +25,7 @@
 
 
 - [x] add a global library for groupings
-- Possibility of improving marking TL links as elk friendly
+- [x] Improving marking TL links as elk friendly, either with manual linking or with batch marking (mark a whole TL group as elk friendly)
 
 
 

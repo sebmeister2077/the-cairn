@@ -29,10 +29,12 @@ import {
   type UseTLGroupingsResult,
 } from "@/lib/tl-groupings";
 import { useGroupingSubscriptions } from "@/hooks/useGroupingLibrary";
-import { useAppSelector } from "@/store/hooks";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { consumeDialogStateSnapshot } from "@/store/slices/topsMapPreview";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { GroupingLibraryDialog } from "./library/GroupingLibraryDialog";
 import { PublishGroupingDialog } from "./library/PublishGroupingDialog";
+import { MarkGroupingElkDialog } from "./MarkGroupingElkDialog";
 import { TLGroupingListItem } from "./TLGroupingListItem";
 
 export type TLGroupingsViewMode = "all" | "filter" | "highlight";
@@ -77,6 +79,7 @@ export function TLGroupingsDrawer({
   const { t } = useTranslation();
   const { groupings, createGrouping, renameGrouping, deleteGrouping, importJSON, setColor } = store;
 
+  const dispatch = useAppDispatch();
   const isAdmin = useAppSelector((s) => s.auth.isAdmin);
   const apiKey = useAppSelector((s) => s.auth.apiKey);
   const signedIn = Boolean(apiKey);
@@ -89,6 +92,26 @@ export function TLGroupingsDrawer({
   // Community library dialog + per-grouping publish dialog state.
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [publishTarget, setPublishTarget] = useState<TLGrouping | null>(null);
+  // Per-grouping bulk-attest-elk dialog state.
+  const [markElkTarget, setMarkElkTarget] = useState<TLGrouping | null>(null);
+
+  // The bulk-attest dialog can hand off to a fullscreen "preview mode"
+  // that lives in TOPSMapViewPage. While preview is active we want the
+  // dialog unmounted (so the map is unobstructed); when preview exits
+  // the slice still carries the grouping id we should re-open the
+  // dialog for, plus the snapshot the dialog will re-hydrate from. We
+  // derive the effective target instead of mirroring it into local
+  // state so React doesn't see a setState-in-effect cascade.
+  const previewActive = useAppSelector((s) => s.topsMapPreview.active);
+  const previewGroupingId = useAppSelector((s) => s.topsMapPreview.groupingId);
+  const effectiveMarkElkTarget: TLGrouping | null = useMemo(() => {
+    if (previewActive) return null;
+    if (previewGroupingId) {
+      const found = groupings.find((g) => g.id === previewGroupingId);
+      if (found) return found;
+    }
+    return markElkTarget;
+  }, [previewActive, previewGroupingId, markElkTarget, groupings]);
 
   // Surface a badge on the library button when any subscribed grouping has an
   // upstream update. Only queried while signed in.
@@ -250,6 +273,7 @@ export function TLGroupingsDrawer({
                   isEditing={editingGroupingId === g.id}
                   loadedTLIdSet={loadedTLIdSet}
                   signedIn={signedIn}
+                  allSegments={allSegments}
                   onToggleActive={onToggleActive}
                   onStartEditing={onStartEditing}
                   onStopEditing={onStopEditing}
@@ -257,6 +281,7 @@ export function TLGroupingsDrawer({
                   onSetColor={setColor}
                   onRequestDelete={setConfirmDelete}
                   onRequestPublish={setPublishTarget}
+                  onRequestMarkElk={setMarkElkTarget}
                 />
               ))}
             </ul>
@@ -333,6 +358,22 @@ export function TLGroupingsDrawer({
           if (publishTarget) store.markPublished(publishTarget.id, libraryId);
           setPublishTarget(null);
         }}
+      />
+
+      <MarkGroupingElkDialog
+        open={effectiveMarkElkTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            setMarkElkTarget(null);
+            // Defensive: if the user cancels the dialog before the
+            // mount-side consume effect fires (e.g. preview was just
+            // exited), drop the snapshot here too so the dialog
+            // doesn't immediately re-mount via the derived target.
+            dispatch(consumeDialogStateSnapshot());
+          }
+        }}
+        grouping={effectiveMarkElkTarget}
+        allSegments={allSegments}
       />
     </>
   );

@@ -1,11 +1,14 @@
-import { useEffect, useRef, useState } from "react";
-import { Pencil, Share2, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PawPrint, Pencil, Share2, Trash2 } from "lucide-react";
 import { useDebounceCallback } from "@react-hook/debounce";
 
+import type { WorldLineSegment } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TLGrouping } from "@/lib/tl-groupings";
 import { useTranslation } from "@/lib/i18n";
+import { classifyGroupingEdges, enumerateGroupingEdges } from "@/lib/elk-grouping";
+import { useAppSelector } from "@/store/hooks";
 
 /** How long to wait after the last color-picker change before propagating
  *  the new color to the store. The native `<input type="color">` fires
@@ -23,6 +26,9 @@ interface TLGroupingListItemProps {
    * longer exist. */
   loadedTLIdSet: ReadonlySet<string>;
   signedIn: boolean;
+  /** All TL segments currently on the map. Needed to enumerate the
+   *  grouping's walk edges for the "Mark elk-friendly" counter + dialog. */
+  allSegments: WorldLineSegment[];
 
   onToggleActive: (id: string) => void;
   onStartEditing: (id: string) => void;
@@ -31,6 +37,7 @@ interface TLGroupingListItemProps {
   onSetColor: (id: string, color: string | undefined) => void;
   onRequestDelete: (g: TLGrouping) => void;
   onRequestPublish: (g: TLGrouping) => void;
+  onRequestMarkElk: (g: TLGrouping) => void;
 }
 
 /** Default color used in the picker when a grouping has no saved color yet.
@@ -48,6 +55,7 @@ export function TLGroupingListItem({
   isEditing,
   loadedTLIdSet,
   signedIn,
+  allSegments,
   onToggleActive,
   onStartEditing,
   onStopEditing,
@@ -55,6 +63,7 @@ export function TLGroupingListItem({
   onSetColor,
   onRequestDelete,
   onRequestPublish,
+  onRequestMarkElk,
 }: TLGroupingListItemProps) {
   const { t } = useTranslation();
   const [renaming, setRenaming] = useState(false);
@@ -77,6 +86,41 @@ export function TLGroupingListItem({
 
   const total = g.tlIds.length;
   const missing = g.tlIds.filter((id) => !loadedTLIdSet.has(id)).length;
+
+  // Live elk-friendly counters for this grouping. Cheap to recompute —
+  // each grouping has at most a few dozen TLs and the K-NN graph stays
+  // small. Recomputes whenever the grouping membership, loaded segments,
+  // confirmed edge set, or planner cost-model changes.
+  const confirmedEdges = useAppSelector((s) => s.elkWalkable.edges);
+  const pendingAttest = useAppSelector((s) => s.elkWalkable.pendingAttest);
+  const pendingUnattest = useAppSelector((s) => s.elkWalkable.pendingUnattest);
+  const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
+  const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
+  const elkSummary = useMemo(() => {
+    if (allSegments.length === 0 || g.tlIds.length < 2) return null;
+    const { edges } = enumerateGroupingEdges(g, allSegments, { kNeighbors, walkSpeed });
+    if (edges.length === 0) return null;
+    const pendingAttestKeys = new Set(pendingAttest.map((p) => p.key));
+    const pendingUnattestKeys = new Set(pendingUnattest.map((p) => p.key));
+    const { summary } = classifyGroupingEdges(
+      edges,
+      confirmedEdges,
+      pendingAttestKeys,
+      pendingUnattestKeys,
+      null,
+    );
+    return summary;
+  }, [g, allSegments, confirmedEdges, pendingAttest, pendingUnattest, kNeighbors, walkSpeed]);
+  const elkAllDone =
+    elkSummary != null && elkSummary.total > 0 && elkSummary.unconfirmed === 0;
+  const elkTitle = elkSummary == null
+    ? t("topsMap.groupingsDrawer.elk.notEnoughTls")
+    : elkAllDone
+      ? t("topsMap.groupingsDrawer.elk.allDone", { total: elkSummary.total })
+      : t("topsMap.groupingsDrawer.elk.progress", {
+          confirmed: elkSummary.confirmed,
+          total: elkSummary.total,
+        });
 
   function handleColorChange(next: string) {
     setColorDraft(next);
@@ -188,6 +232,19 @@ export function TLGroupingListItem({
               <Share2 className="size-4" />
             </Button>
           )}
+          <Button
+            type="button"
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => onRequestMarkElk(g)}
+            disabled={elkSummary == null}
+            title={elkTitle}
+            aria-label={elkTitle}
+          >
+            <PawPrint
+              className={`size-4 ${elkAllDone ? "text-emerald-600" : ""}`}
+            />
+          </Button>
           <Button
             type="button"
             size="icon-sm"

@@ -13,10 +13,14 @@ import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminListElkWalkableAudit,
+  adminListElkWalkableReports,
   adminListElkWalkableSnapshots,
+  adminResolveElkWalkableReport,
   adminRestoreElkWalkableSnapshot,
   adminRevertElkWalkableAudit,
   type AdminElkWalkableAuditEntry,
+  type AdminElkWalkableReport,
+  type AdminResolveElkReportAction,
 } from "@/lib/api";
 import { ELK_WALKABLE_QUERY_KEY } from "@/hooks/useElkWalkable";
 import { formatTimestamp } from "@/lib/utils";
@@ -24,11 +28,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ChevronLeft, ChevronRight, Loader2, RotateCcw, Undo2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  ShieldX,
+  Undo2,
+} from "lucide-react";
 
 const AUDIT_KEY = ["admin-elk-walkable-audit"] as const;
 const SNAPSHOTS_KEY = ["admin-elk-walkable-snapshots"] as const;
+const REPORTS_KEY = ["admin-elk-walkable-reports"] as const;
 const AUDIT_PAGE_SIZE = 25;
+const REPORTS_PAGE_SIZE = 25;
 const SNAPSHOT_LIMIT = 200;
 
 const REVERTIBLE_ACTIONS = new Set(["attest", "unattest"]);
@@ -51,6 +66,7 @@ export function AdminElkWalkablePage() {
         </p>
       </div>
 
+      <ElkReportsCard />
       <ElkAuditCard />
       <ElkSnapshotsCard />
     </div>
@@ -343,4 +359,259 @@ function SimplePager({
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Reports queue
+// ---------------------------------------------------------------------------
+
+const REASON_LABEL: Record<AdminElkWalkableReport["reason"], string> = {
+  not_walkable: "Not walkable",
+  dangerous_terrain: "Dangerous terrain",
+  incorrect_endpoints: "Wrong endpoints",
+  other: "Other",
+};
+
+function ElkReportsCard() {
+  const queryClient = useQueryClient();
+  const [statusFilter, setStatusFilter] = useState<
+    "open" | "resolved" | "dismissed" | "all"
+  >("open");
+  const [page, setPage] = useState(0);
+  const [resolveTarget, setResolveTarget] = useState<
+    { report: AdminElkWalkableReport; action: AdminResolveElkReportAction } | null
+  >(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: [...REPORTS_KEY, statusFilter, page],
+    queryFn: () =>
+      adminListElkWalkableReports({
+        status: statusFilter,
+        limit: REPORTS_PAGE_SIZE,
+        offset: page * REPORTS_PAGE_SIZE,
+      }),
+    placeholderData: keepPreviousData,
+  });
+
+  const resolveMut = useMutation({
+    mutationFn: ({
+      report,
+      action,
+    }: {
+      report: AdminElkWalkableReport;
+      action: AdminResolveElkReportAction;
+    }) => adminResolveElkWalkableReport(report.id, action),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: REPORTS_KEY });
+      queryClient.invalidateQueries({ queryKey: AUDIT_KEY });
+      queryClient.invalidateQueries({ queryKey: SNAPSHOTS_KEY });
+      queryClient.invalidateQueries({ queryKey: ELK_WALKABLE_QUERY_KEY });
+      setResolveTarget(null);
+    },
+  });
+
+  const rows = data?.reports ?? [];
+  const hasNext = rows.length === REPORTS_PAGE_SIZE;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Flag className="size-4 text-amber-600" />
+          Reports
+          {data && (
+            <Badge variant={data.open_total > 0 ? "destructive" : "secondary"}>
+              {data.open_total} open
+            </Badge>
+          )}
+        </CardTitle>
+        <div className="flex items-center gap-1 text-xs">
+          {(["open", "resolved", "dismissed", "all"] as const).map((s) => (
+            <Button
+              key={s}
+              type="button"
+              size="sm"
+              variant={statusFilter === s ? "default" : "ghost"}
+              onClick={() => {
+                setStatusFilter(s);
+                setPage(0);
+              }}
+            >
+              {s}
+            </Button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {isLoading && (
+          <div className="flex justify-center py-6">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+        {error && (
+          <p className="text-sm text-destructive">{(error as Error).message}</p>
+        )}
+        {data && rows.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            No {statusFilter === "all" ? "" : statusFilter} reports.
+          </p>
+        )}
+        <div className="divide-y rounded-md border">
+          {rows.map((row) => (
+            <ElkReportRow
+              key={row.id}
+              row={row}
+              busy={
+                resolveMut.isPending &&
+                resolveTarget?.report.id === row.id
+              }
+              onDismiss={() => setResolveTarget({ report: row, action: "dismiss" })}
+              onRemove={() =>
+                setResolveTarget({ report: row, action: "remove_attestations" })
+              }
+            />
+          ))}
+        </div>
+        {resolveMut.error && (
+          <p className="text-sm text-destructive">
+            Failed: {(resolveMut.error as Error).message}
+          </p>
+        )}
+        <SimplePager
+          page={page}
+          onPageChange={setPage}
+          hasNext={hasNext}
+          rangeLabel={`${rows.length} on this page`}
+        />
+      </CardContent>
+
+      <ConfirmDialog
+        open={resolveTarget != null}
+        title={
+          resolveTarget?.action === "dismiss"
+            ? "Dismiss report?"
+            : "Remove all attestations?"
+        }
+        description={
+          resolveTarget ? (
+            <div className="space-y-1 text-sm">
+              <div>
+                Edge:{" "}
+                <code className="break-all text-xs">
+                  {resolveTarget.report.edge_key}
+                </code>
+              </div>
+              <div>
+                Reason:{" "}
+                <Badge variant="outline">
+                  {REASON_LABEL[resolveTarget.report.reason]}
+                </Badge>
+              </div>
+              {resolveTarget.report.details && (
+                <div className="rounded-md bg-muted/30 px-2 py-1 text-xs">
+                  {resolveTarget.report.details}
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground">
+                {resolveTarget.action === "dismiss"
+                  ? "Marks the report dismissed. The edge stays elk-friendly."
+                  : "Removes the edge entirely (all attestations stripped). Reversible via the audit log."}
+              </div>
+            </div>
+          ) : null
+        }
+        confirmLabel={
+          resolveTarget?.action === "dismiss" ? "Dismiss" : "Remove attestations"
+        }
+        variant={resolveTarget?.action === "dismiss" ? "default" : "destructive"}
+        loading={resolveMut.isPending}
+        onConfirm={() =>
+          resolveTarget &&
+          resolveMut.mutate({
+            report: resolveTarget.report,
+            action: resolveTarget.action,
+          })
+        }
+        onCancel={() => {
+          if (!resolveMut.isPending) setResolveTarget(null);
+        }}
+      />
+    </Card>
+  );
+}
+
+function ElkReportRow({
+  row,
+  busy,
+  onDismiss,
+  onRemove,
+}: {
+  row: AdminElkWalkableReport;
+  busy: boolean;
+  onDismiss: () => void;
+  onRemove: () => void;
+}) {
+  const isOpen = row.status === "open";
+  return (
+    <div className="min-w-0 space-y-1 px-3 py-2 text-xs">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <Badge variant={statusBadgeVariant(row.status)}>{row.status}</Badge>
+        <Badge variant="outline">{REASON_LABEL[row.reason]}</Badge>
+        <span className="text-muted-foreground">by</span>
+        <span className="font-medium">
+          {row.reporter_display_name || row.reporter_api_key_id || "—"}
+        </span>
+        <span className="ml-auto whitespace-nowrap text-muted-foreground">
+          {formatTimestamp(row.created_at)}
+        </span>
+      </div>
+      <div className="break-all font-mono text-[11px] text-muted-foreground">
+        {row.edge_key}
+      </div>
+      {row.details && (
+        <div className="rounded bg-muted/30 px-2 py-1 text-[11px]">
+          {row.details}
+        </div>
+      )}
+      {row.resolution_note && (
+        <div className="text-[11px] text-muted-foreground">
+          Note: {row.resolution_note}
+        </div>
+      )}
+      {isOpen && (
+        <div className="flex items-center justify-end gap-1 pt-1">
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={onDismiss}
+            disabled={busy}
+            title="Dismiss this report (keeps the edge elk-friendly)"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+            Dismiss
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="destructive"
+            onClick={onRemove}
+            disabled={busy}
+            title="Remove every attestation for this edge"
+          >
+            {busy ? <Loader2 className="size-4 animate-spin" /> : <ShieldX className="size-4" />}
+            Remove
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function statusBadgeVariant(
+  status: AdminElkWalkableReport["status"],
+): "default" | "secondary" | "destructive" | "outline" {
+  if (status === "open") return "destructive";
+  if (status === "dismissed") return "secondary";
+  return "outline";
 }

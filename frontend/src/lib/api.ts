@@ -421,6 +421,41 @@ export async function submitElkWalkable(
 }
 
 // ---------------------------------------------------------------------------
+// Elk-walkable reports (user-facing)
+// ---------------------------------------------------------------------------
+
+export type ElkWalkableReportReason =
+    | "not_walkable"
+    | "dangerous_terrain"
+    | "incorrect_endpoints"
+    | "other";
+
+export interface ElkWalkableReportPayload {
+    reason: ElkWalkableReportReason;
+    details?: string;
+}
+
+export interface ElkWalkableReportSubmitResult {
+    report_id: number;
+    status: "open";
+}
+
+export async function submitElkWalkableReport(
+    edgeKey: string,
+    payload: ElkWalkableReportPayload,
+): Promise<ElkWalkableReportSubmitResult> {
+    const res = await fetch(
+        `${API_BASE}/elk-walkable/edges/${encodeURIComponent(edgeKey)}/report`,
+        {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Admin: elk-walkable audit + snapshots
 // ---------------------------------------------------------------------------
 
@@ -504,6 +539,73 @@ export async function adminRestoreElkWalkableSnapshot(
         headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ snapshot_key: snapshotKey }),
     });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Admin: elk-walkable reports queue
+// ---------------------------------------------------------------------------
+
+export interface AdminElkWalkableReport {
+    id: number;
+    edge_key: string;
+    reporter_api_key_id: string | null;
+    reporter_display_name: string | null;
+    reason: ElkWalkableReportReason;
+    details: string | null;
+    status: "open" | "resolved" | "dismissed";
+    created_at: string;
+    resolved_at: string | null;
+    resolved_by_api_key_id: string | null;
+    resolution_note: string | null;
+}
+
+export async function adminListElkWalkableReports(
+    opts: {
+        status?: "open" | "resolved" | "dismissed" | "all";
+        edge_key?: string;
+        limit?: number;
+        offset?: number;
+    } = {},
+): Promise<{
+    reports: AdminElkWalkableReport[];
+    limit: number;
+    offset: number;
+    open_total: number;
+}> {
+    const params = new URLSearchParams();
+    if (opts.status && opts.status !== "all") params.set("status", opts.status);
+    if (opts.edge_key) params.set("edge_key", opts.edge_key);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(
+        `${API_BASE}/admin/elk-walkable/reports${qs ? `?${qs}` : ""}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export type AdminResolveElkReportAction = "dismiss" | "remove_attestations";
+
+export async function adminResolveElkWalkableReport(
+    reportId: number,
+    action: AdminResolveElkReportAction,
+    note?: string,
+): Promise<{
+    report_id: number;
+    status: "dismissed" | "resolved";
+    audit_id: number | null;
+    removed_attesters: number;
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/elk-walkable/reports/${encodeURIComponent(String(reportId))}/resolve`,
+        {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ action, note: note ?? null }),
+        },
+    );
     return (await handleResponse(res)).json();
 }
 

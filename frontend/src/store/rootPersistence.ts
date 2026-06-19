@@ -50,6 +50,8 @@ export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
     // The contribute-TLs page is a one-shot upload flow and stores parsed
     // chat-log data plus transient UI state — both should reset on reload.
     "contributeTLs",
+    // Preview mode is a purely transient UI state.
+    "topsMapPreview",
     // NOTE: `routePlanner` is intentionally NOT blacklisted — we want to
     // persist the user's cost-model preferences (walk speed, TL penalty,
     // kNeighbors) across reloads. Transient fields (endpoints, computed

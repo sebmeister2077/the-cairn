@@ -39,6 +39,15 @@ _DAILY_CAP_DEFAULT = 100
 _RATE_SCOPE = "elk-walkable-submit"
 _RATE_WINDOW = 86400  # 24 hours
 
+# Reports — separate feature flag + tighter hourly limit. Reports are
+# cheap to file but should not be a DoS vector against the admin queue,
+# so we cap at 5/h per key and 100/day to back-stop bots.
+_REPORTS_FLAG_KEY = "elk_walkable_reports_enabled"
+_REPORTS_HOURLY_SCOPE = "elk-walkable-report-hour"
+_REPORTS_DAILY_SCOPE = "elk-walkable-report-day"
+_REPORTS_HOURLY_LIMIT = 5
+_REPORTS_DAILY_LIMIT = 100
+
 # Defensive batch cap. The UI lets the user accumulate draft entries
 # locally and submit them all at once; this guard rejects obviously
 # malformed payloads without burning a write.
@@ -77,6 +86,11 @@ class ElkWalkableSubmitBody(BaseModel):
     attest: List[EdgeRef] = Field(default_factory=list)
     unattest: List[EdgeRef] = Field(default_factory=list)
     note: Optional[str] = Field(default=None, max_length=_NOTE_MAX_LEN)
+
+
+class ElkWalkableReportBody(BaseModel):
+    reason: str = Field(..., min_length=1, max_length=64)
+    details: Optional[str] = Field(default=None, max_length=500)
 
 
 # ---------------------------------------------------------------------------
@@ -245,3 +259,48 @@ async def my_elk_walkable_contributions(
             ),
         })
     return {"contributions": out}
+
+
+# ---------------------------------------------------------------------------
+# Reports — user flags a wrongly-confirmed elk-walkable edge
+# ---------------------------------------------------------------------------
+
+@router.post("/elk-walkable/edges/{edge_key:path}/report")
+async def report_elk_walkable_edge(
+    edge_key: str,
+    payload: ElkWalkableReportBody,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
+    """File a report against a confirmed elk-walkable edge.
+
+    The path takes the canonical ``"tl_id:ep|tl_id:ep"`` edge key. The
+    frontend should ``encodeURIComponent`` it; FastAPI's ``:path``
+    converter decodes once.
+    """
+    if not feature_flags.is_feature_enabled_default(_REPORTS_FLAG_KEY, True):
+        raise HTTPException(status_code=503, detail=_FLAG_OFF_DETAIL)
+
+    user = _require_account_user(ctx)
+
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    if not is_admin:
+        check_scoped_rate_limit(
+            ctx["key"], _REPORTS_HOURLY_SCOPE, _REPORTS_HOURLY_LIMIT, 3600
+        )
+        check_scoped_rate_limit(
+            ctx["key"], _REPORTS_DAILY_SCOPE, _REPORTS_DAILY_LIMIT, 86400
+        )
+
+    api_key_id = _ctx_api_key_id(ctx)
+    display_name = user.get("display_name") or "Anonymous"
+
+    result = await asyncio.to_thread(
+        elk_walkable_store.submit_report,
+        edge_key=edge_key,
+        reporter_api_key_id=api_key_id,
+        reporter_display_name=display_name,
+        reason=payload.reason,
+        details=payload.details,
+    )
+    return result
+

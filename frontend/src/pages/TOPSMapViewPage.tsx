@@ -94,7 +94,9 @@ import {
   setRoutePlayer,
   setRouteTo,
   hydrateRoutePlannerFromShare,
+  setRouteFocusRequest,
 } from "@/store/slices/routePlanner";
+import { exitPreview as exitPreviewAction } from "@/store/slices/topsMapPreview";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
@@ -1481,6 +1483,92 @@ export function TOPSMapViewPage() {
     selfUserId,
   ]);
 
+  // ---------------------------------------------------------------
+  // Bulk-attest-elk PREVIEW MODE
+  //
+  // The MarkGroupingElkDialog can hand control off to a fullscreen-ish
+  // preview that hides every other overlay layer and renders only the
+  // walks of one TL grouping. The slice carries the precomputed
+  // segments + an optional focus key (Jump-to per row); we fly to that
+  // edge's midpoint via the existing `routeFocusRequest` channel so we
+  // don't reinvent the camera mechanism.
+  const previewActive = useAppSelector((s) => s.topsMapPreview.active);
+  const previewSegments = useAppSelector((s) => s.topsMapPreview.segments);
+  const previewFocusEdgeKey = useAppSelector((s) => s.topsMapPreview.focusEdgeKey);
+  const previewGroupingId = useAppSelector((s) => s.topsMapPreview.groupingId);
+
+  // The grouping's member TLs are rendered alongside the walk edges in
+  // preview mode so the user can see which translocators the walks are
+  // connecting. Every other TL is hidden to keep the focus on the grouping.
+  const previewGroupingSegments = useMemo(() => {
+    if (!previewActive || !previewGroupingId) return undefined;
+    const grouping = groupingsStore.groupings.find((g) => g.id === previewGroupingId);
+    if (!grouping) return undefined;
+    const memberSet = new Set(grouping.tlIds);
+    return translocatorSegments.filter((seg) => memberSet.has(tlIdFor(seg)));
+  }, [previewActive, previewGroupingId, groupingsStore.groupings, translocatorSegments]);
+
+  useEffect(() => {
+    if (!previewActive || previewSegments.length === 0) return;
+    let cx = 0;
+    let cz = 0;
+    let span = 0;
+    if (previewFocusEdgeKey) {
+      const e = previewSegments.find((s) => s.key === previewFocusEdgeKey);
+      if (!e) return;
+      cx = (e.fromX + e.toX) / 2;
+      cz = (e.fromZ + e.toZ) / 2;
+      // 2x the longer axis + ~150b of padding keeps both endpoints
+      // and a bit of context inside the viewport.
+      span = Math.max(Math.abs(e.fromX - e.toX), Math.abs(e.fromZ - e.toZ)) * 2 + 150;
+    } else {
+      let minX = Infinity;
+      let minZ = Infinity;
+      let maxX = -Infinity;
+      let maxZ = -Infinity;
+      for (const e of previewSegments) {
+        minX = Math.min(minX, e.fromX, e.toX);
+        minZ = Math.min(minZ, e.fromZ, e.toZ);
+        maxX = Math.max(maxX, e.fromX, e.toX);
+        maxZ = Math.max(maxZ, e.fromZ, e.toZ);
+      }
+      cx = (minX + maxX) / 2;
+      cz = (minZ + maxZ) / 2;
+      span = Math.max(maxX - minX, maxZ - minZ) * 1.4 + 150;
+    }
+    if (Number.isFinite(cx) && Number.isFinite(cz) && Number.isFinite(span)) {
+      dispatch(setRouteFocusRequest({ x: cx, z: cz, spanBlocks: Math.max(span, 200) }));
+    }
+  }, [previewActive, previewFocusEdgeKey, previewSegments, dispatch]);
+
+  // Preview-aware overlay overrides. Every layer that can occlude the
+  // walk preview is force-empty while preview is active; the route
+  // overlay is replaced with one that contains *only* the preview
+  // walks so MapViewer's existing dashed-polyline path renders them.
+  // The grouping's member TLs are still drawn (and highlighted) so the
+  // walks have a visible context to attach to.
+  const finalOverlaySegments = previewActive
+    ? previewGroupingSegments
+    : visibleTranslocatorSegments;
+  const finalOverlayPoints = previewActive ? [] : landmarkPoints;
+  const finalHighlightedSegments = previewActive
+    ? previewGroupingSegments
+    : highlightedTranslocatorSegments;
+  const finalRouteOverlay: RouteOverlay | null = previewActive
+    ? {
+        tlSegments: [],
+        walkLegs: previewSegments.map((s) => ({
+          key: s.key,
+          from: { x: s.fromX, z: s.fromZ },
+          to: { x: s.toX, z: s.toZ },
+          elkState: s.elkState,
+        })),
+        from: null,
+        to: null,
+        focusedWalkLegKey: previewFocusEdgeKey,
+      }
+    : routeOverlay;
+
   // Click-on-map endpoint capture. Writes to the slot indicated by
   // `pickMode`, then clears pick mode so a single click ends the gesture.
   // `pickMode` is either `"from"` / `"to"` (route mode) or the string
@@ -1989,6 +2077,20 @@ export function TOPSMapViewPage() {
           </>
         )}
         <div className={isFullscreen ? "absolute inset-0" : "relative"}>
+          {previewActive && (
+            <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                className="pointer-events-auto gap-1.5 shadow-lg"
+                onClick={() => dispatch(exitPreviewAction())}
+              >
+                <X className="size-4" />
+                {t("topsMap.markGroupingElk.exitPreview")}
+              </Button>
+            </div>
+          )}
           {usingWebCartographer ? (
             <WebCartographerMapViewer
               baseUrl={webCartographerUrl}
@@ -1997,8 +2099,8 @@ export function TOPSMapViewPage() {
               showTLLegend={showTranslocators}
               showFullscreenControl
               starfield={starfieldEnabled}
-              overlaySegments={visibleTranslocatorSegments}
-              overlayPoints={landmarkPoints}
+              overlaySegments={finalOverlaySegments}
+              overlayPoints={finalOverlayPoints}
               onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
               onOverlaySegmentRightClick={
                 showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
@@ -2008,7 +2110,7 @@ export function TOPSMapViewPage() {
                   ? selectedTranslocator
                   : undefined
               }
-              highlightedSegments={highlightedTranslocatorSegments}
+              highlightedSegments={finalHighlightedSegments}
               segmentColors={groupingSegmentColors}
               radiusFilter={radiusFilter}
               focusPoint={landmarkFocusPoint}
@@ -2057,7 +2159,7 @@ export function TOPSMapViewPage() {
               }
               cursorMode={routePickMode ? "pick" : "default"}
               onWorldClick={handleRouteWorldClick}
-              routeOverlay={routeOverlay}
+              routeOverlay={finalRouteOverlay}
               onHoverCoords={setClimateHoverCoords}
             />
           ) : (
@@ -2069,8 +2171,8 @@ export function TOPSMapViewPage() {
               showTLLegend={showTranslocators}
               showFullscreenControl
               starfield={starfieldEnabled}
-              overlaySegments={visibleTranslocatorSegments}
-              overlayPoints={landmarkPoints}
+              overlaySegments={finalOverlaySegments}
+              overlayPoints={finalOverlayPoints}
               onOverlaySegmentClick={showTranslocators ? handleTranslocatorClick : undefined}
               onOverlaySegmentRightClick={
                 showTranslocators && !editingGrouping ? handleTranslocatorRightClick : undefined
@@ -2080,7 +2182,7 @@ export function TOPSMapViewPage() {
                   ? selectedTranslocator
                   : undefined
               }
-              highlightedSegments={highlightedTranslocatorSegments}
+              highlightedSegments={finalHighlightedSegments}
               segmentColors={groupingSegmentColors}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
@@ -2130,7 +2232,7 @@ export function TOPSMapViewPage() {
               }
               cursorMode={routePickMode ? "pick" : "default"}
               onWorldClick={handleRouteWorldClick}
-              routeOverlay={routeOverlay}
+              routeOverlay={finalRouteOverlay}
             />
           )}
           {showTranslocators && selectedTranslocator && (

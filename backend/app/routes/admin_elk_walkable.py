@@ -105,3 +105,55 @@ async def restore_snapshot(
             actor_display_name=_ADMIN_DISPLAY_NAME,
         )
     return result
+
+
+# ---------------------------------------------------------------------------
+# Reports queue
+# ---------------------------------------------------------------------------
+
+@router.get("/reports")
+async def list_reports(
+    api_key: str = Depends(require_admin),
+    status: Optional[str] = Query("open"),
+    edge_key: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> dict:
+    rows = await asyncio.to_thread(
+        elk_walkable_store.list_reports,
+        status=status,
+        edge_key=edge_key,
+        limit=limit,
+        offset=offset,
+    )
+    open_count = await asyncio.to_thread(db.count_open_elk_walkable_reports)
+    return {
+        "reports": rows,
+        "limit": limit,
+        "offset": offset,
+        "open_total": open_count,
+    }
+
+
+class ResolveReportBody(BaseModel):
+    action: str  # "dismiss" | "remove_attestations"
+    note: Optional[str] = None
+
+
+@router.post("/reports/{report_id}/resolve")
+async def resolve_report(
+    report_id: int,
+    payload: ResolveReportBody,
+    api_key: str = Depends(require_admin),
+) -> dict:
+    async with elk_walkable_store.elk_walkable_write_lock("report_resolution"):
+        result = await asyncio.to_thread(
+            elk_walkable_store.resolve_report,
+            report_id,
+            admin_api_key_id=None,
+            admin_display_name=_ADMIN_DISPLAY_NAME,
+            action=payload.action,
+            note=payload.note,
+        )
+    return result
+

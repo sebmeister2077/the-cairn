@@ -498,3 +498,253 @@ def restore_snapshot(
         "audit_id": audit_id_new,
         "restored_from": snapshot_key,
     }
+
+
+# ---------------------------------------------------------------------------
+# Reports (user-flagged wrongly-attested edges)
+# ---------------------------------------------------------------------------
+
+# Validation enum for the user-supplied "why is this edge wrong?" field.
+# Kept tight on purpose so the admin queue doesn't accumulate free-form
+# garbage; ``other`` exists as the escape hatch.
+VALID_REPORT_REASONS = (
+    "not_walkable",
+    "dangerous_terrain",
+    "incorrect_endpoints",
+    "other",
+)
+
+_REPORT_DETAILS_MAX_LEN = 500
+
+
+def submit_report(
+    *,
+    edge_key: str,
+    reporter_api_key_id: Optional[str],
+    reporter_display_name: Optional[str],
+    reason: str,
+    details: Optional[str],
+) -> dict:
+    """Insert a user-flagged report against a confirmed elk-walkable edge.
+
+    Validates: ``reason`` against the enum, ``edge_key`` exists in the
+    live JSON file (404 otherwise), and that the same reporter has no
+    other open report for this edge (409 otherwise — the existing report
+    id is returned in the detail body so the UI can deep-link).
+    """
+    if reason not in VALID_REPORT_REASONS:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_reason",
+                "message": f"reason must be one of {list(VALID_REPORT_REASONS)}",
+            },
+        )
+
+    trimmed: Optional[str] = None
+    if details is not None:
+        trimmed = details.strip()
+        if len(trimmed) > _REPORT_DETAILS_MAX_LEN:
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "details_too_long",
+                    "message": f"details must be \u2264 {_REPORT_DETAILS_MAX_LEN} chars",
+                },
+            )
+        if not trimmed:
+            trimmed = None
+
+    # Existence check against the live file. ``edges`` is small enough
+    # (a few hundred entries) that a linear scan is fine.
+    data = load_live()
+    if not any(e.get("key") == edge_key for e in (data.get("edges") or [])):
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "edge_not_found",
+                "message": "That edge is not currently in the elk-walkable set.",
+            },
+        )
+
+    existing_id = db.find_open_elk_walkable_report(
+        edge_key=edge_key, reporter_api_key_id=reporter_api_key_id
+    )
+    if existing_id is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "duplicate_open_report",
+                "message": "You already have an open report for this edge.",
+                "existing_report_id": existing_id,
+            },
+        )
+
+    report_id = db.insert_elk_walkable_report(
+        edge_key=edge_key,
+        reporter_api_key_id=reporter_api_key_id,
+        reporter_display_name=reporter_display_name,
+        reason=reason,
+        details=trimmed,
+    )
+    return {"report_id": report_id, "status": "open"}
+
+
+def list_reports(
+    *,
+    status: Optional[str] = "open",
+    edge_key: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> List[dict]:
+    """Admin queue lookup. Returns reports newest-first."""
+    rows = db.list_elk_walkable_reports(
+        status=status, edge_key=edge_key, limit=limit, offset=offset
+    )
+    out: List[dict] = []
+    for r in rows:
+        created = r.get("created_at")
+        resolved = r.get("resolved_at")
+        out.append({
+            "id": int(r["id"]),
+            "edge_key": r["edge_key"],
+            "reporter_api_key_id": r.get("reporter_api_key_id"),
+            "reporter_display_name": r.get("reporter_display_name"),
+            "reason": r["reason"],
+            "details": r.get("details"),
+            "status": r["status"],
+            "created_at": created.isoformat() if hasattr(created, "isoformat") else created,
+            "resolved_at": resolved.isoformat() if hasattr(resolved, "isoformat") else resolved,
+            "resolved_by_api_key_id": r.get("resolved_by_api_key_id"),
+            "resolution_note": r.get("resolution_note"),
+        })
+    return out
+
+
+def remove_all_attestations(
+    edge_key: str,
+    *,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    note: Optional[str] = None,
+) -> dict:
+    """Strip every attester from ``edge_key`` and drop the edge.
+
+    Used by the admin "resolve report → remove attestations" path. Behaves
+    like ``apply_changes`` but doesn't require the actor to be on the
+    attestation list. Writes one ``report_resolution`` audit row with the
+    pre-mutation edge state in ``before_payload`` so a later admin can
+    revert the removal via the existing audit-revert flow.
+
+    Caller must hold :func:`elk_walkable_write_lock`.
+    """
+    data = load_live()
+    by_key = _edges_by_key(data)
+    prev = by_key.get(edge_key)
+    if prev is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "edge_not_found",
+                "message": "Edge is not in the live elk-walkable set.",
+            },
+        )
+
+    change_id = uuid.uuid4().hex
+    snapshot_key = _write_snapshot(data, change_id)
+
+    before_payload = json.loads(json.dumps(prev))
+    by_key.pop(edge_key, None)
+    data["edges"] = sorted(by_key.values(), key=lambda e: e["key"])
+    data["version"] = CURRENT_VERSION
+    _save_live(data)
+
+    after_payload: dict = {"removed": True}
+    if note:
+        after_payload["note"] = note
+    audit_id = db.insert_elk_walkable_audit(
+        change_id=change_id,
+        action="report_resolution",
+        edge_key=edge_key,
+        actor_api_key_id=actor_api_key_id,
+        actor_display_name=actor_display_name,
+        before_payload=before_payload,
+        after_payload=after_payload,
+        snapshot_key=snapshot_key,
+    )
+    return {
+        "change_id": change_id,
+        "snapshot_key": snapshot_key,
+        "audit_id": audit_id,
+        "removed_attesters": len(before_payload.get("attested_by") or []),
+    }
+
+
+def resolve_report(
+    report_id: int,
+    *,
+    admin_api_key_id: Optional[str],
+    admin_display_name: Optional[str],
+    action: str,
+    note: Optional[str] = None,
+) -> dict:
+    """Transition an open report. ``action`` is ``dismiss`` or ``remove_attestations``.
+
+    ``remove_attestations`` strips every attester from the edge via
+    :func:`remove_all_attestations` (caller must hold the write lock) and
+    tags the resulting audit row so the action is traceable from both
+    the report row and the audit log.
+    """
+    if action not in ("dismiss", "remove_attestations"):
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": "invalid_action",
+                "message": "action must be 'dismiss' or 'remove_attestations'",
+            },
+        )
+    report = db.get_elk_walkable_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="report not found")
+    if report["status"] != "open":
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "already_resolved",
+                "message": f"report is already {report['status']}",
+            },
+        )
+
+    audit_id: Optional[int] = None
+    removed_attesters = 0
+    if action == "remove_attestations":
+        result = remove_all_attestations(
+            report["edge_key"],
+            actor_api_key_id=admin_api_key_id,
+            actor_display_name=admin_display_name,
+            note=note or f"report_id={report_id}",
+        )
+        audit_id = result["audit_id"]
+        removed_attesters = result["removed_attesters"]
+
+    new_status = "dismissed" if action == "dismiss" else "resolved"
+    updated = db.resolve_elk_walkable_report(
+        report_id,
+        resolver_api_key_id=admin_api_key_id,
+        new_status=new_status,
+        note=note,
+    )
+    if not updated:
+        # Race lost — someone resolved it between get + update.
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "already_resolved", "message": "report was just resolved"},
+        )
+
+    return {
+        "report_id": report_id,
+        "status": new_status,
+        "audit_id": audit_id,
+        "removed_attesters": removed_attesters,
+    }
+
