@@ -18,6 +18,7 @@ interface ComboboxProps {
    * floating fullscreen panel) and the default downward list would be clipped.
    */
   dropUp?: boolean;
+  autoComplete?: "on" | "off";
 }
 
 function Combobox({
@@ -30,6 +31,7 @@ function Combobox({
   id,
   className,
   dropUp = false,
+  autoComplete = "off",
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [activeIndex, setActiveIndex] = React.useState(-1);
@@ -101,6 +103,7 @@ function Combobox({
       <input
         id={id}
         type="text"
+        autoComplete={autoComplete}
         role="combobox"
         aria-expanded={open}
         aria-autocomplete="list"

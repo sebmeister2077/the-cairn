@@ -2217,6 +2217,7 @@ export function TOPSMapViewPage() {
                   <Input
                     id="goto-x"
                     inputMode="decimal"
+                    autoComplete="off"
                     placeholder={t("topsMap.examplePositiveCoordinate")}
                     value={goToXInput}
                     onChange={(e) => {
@@ -2231,6 +2232,7 @@ export function TOPSMapViewPage() {
                   <Input
                     id="goto-z"
                     inputMode="decimal"
+                    autoComplete="off"
                     placeholder={t("topsMap.exampleNegativeCoordinate")}
                     value={goToZInput}
                     onChange={(e) => {
