@@ -903,6 +903,23 @@ def list_backup_objects() -> list:
     return out
 
 
+def latest_object_under_prefix(prefix: str):
+    """Return ``(key, LastModified)`` of the newest object under ``prefix``,
+    or ``None`` if the prefix is empty. Uses S3 LastModified so callers
+    don't have to encode/parse timestamps in their keys.
+    """
+    latest = None
+    paginator = _get_client().get_paginator("list_objects_v2")
+    for page in paginator.paginate(Bucket=_bucket(), Prefix=prefix):
+        for obj in page.get("Contents", []) or []:
+            lm = obj.get("LastModified")
+            if lm is None:
+                continue
+            if latest is None or lm > latest[1]:
+                latest = (obj["Key"], lm)
+    return latest
+
+
 def tops_map_cache_key(max_dimension: int = TOPS_MAP_CACHE_DIM) -> str:
     return f"cache/tops-map-{max_dimension}.png"
 

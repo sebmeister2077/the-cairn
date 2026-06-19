@@ -248,6 +248,26 @@ function ElkSnapshotsCard() {
 
   const snapshots = data?.snapshots ?? [];
 
+  function extractTimestampFromKey(key?: string): number | null {
+    if (!key) return null;
+    // Example key: elk_walkable/snapshots/2026-06-19T164224.547627Z0000-c2d9c728061c41878f726b219f95e7c0.json
+    const match = key.match(/snapshots\/([0-9TZ\.\-]+)Z[0-9a-f\-]+\.json$/);
+    if (!match) return null;
+
+    // Extract the 6 numbers after the T
+    const timeSectionMatch = match[1].match(/T(\d{2})(\d{2})(\d{2})\.(\d{6})/);
+    if (!timeSectionMatch) return null;
+    const timestampStr = match[1]
+      .replace(
+        timeSectionMatch[0],
+        ` ${timeSectionMatch[1]}:${timeSectionMatch[2]}:${timeSectionMatch[3]}.${timeSectionMatch[4]}`,
+      )
+      .replace("T", " ")
+      .replace("Z", " UTC");
+    const timestamp = Date.parse(timestampStr);
+    return isNaN(timestamp) ? null : timestamp;
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -265,8 +285,13 @@ function ElkSnapshotsCard() {
         )}
         <div className="divide-y border rounded-md">
           {snapshots.map((snap) => (
-            <div key={snap.key} className="flex min-w-0 items-center gap-2 px-3 py-2 text-xs">
+            <div key={snap.key} className="flex min-w-0 items-start gap-2 px-3 py-2 text-xs">
               <code className="min-w-0 flex-1 break-all font-mono text-[11px]">{snap.key}</code>
+              {/* Date */}
+              <span className="whitespace-nowrap text-muted-foreground">
+                {formatTimestamp(extractTimestampFromKey(snap.key))}
+              </span>
+
               <Button
                 type="button"
                 size="sm"
@@ -374,13 +399,14 @@ const REASON_LABEL: Record<AdminElkWalkableReport["reason"], string> = {
 
 function ElkReportsCard() {
   const queryClient = useQueryClient();
-  const [statusFilter, setStatusFilter] = useState<
-    "open" | "resolved" | "dismissed" | "all"
-  >("open");
+  const [statusFilter, setStatusFilter] = useState<"open" | "resolved" | "dismissed" | "all">(
+    "open",
+  );
   const [page, setPage] = useState(0);
-  const [resolveTarget, setResolveTarget] = useState<
-    { report: AdminElkWalkableReport; action: AdminResolveElkReportAction } | null
-  >(null);
+  const [resolveTarget, setResolveTarget] = useState<{
+    report: AdminElkWalkableReport;
+    action: AdminResolveElkReportAction;
+  } | null>(null);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [...REPORTS_KEY, statusFilter, page],
@@ -448,9 +474,7 @@ function ElkReportsCard() {
             <Loader2 className="size-5 animate-spin text-muted-foreground" />
           </div>
         )}
-        {error && (
-          <p className="text-sm text-destructive">{(error as Error).message}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
         {data && rows.length === 0 && (
           <p className="text-sm text-muted-foreground">
             No {statusFilter === "all" ? "" : statusFilter} reports.
@@ -461,21 +485,14 @@ function ElkReportsCard() {
             <ElkReportRow
               key={row.id}
               row={row}
-              busy={
-                resolveMut.isPending &&
-                resolveTarget?.report.id === row.id
-              }
+              busy={resolveMut.isPending && resolveTarget?.report.id === row.id}
               onDismiss={() => setResolveTarget({ report: row, action: "dismiss" })}
-              onRemove={() =>
-                setResolveTarget({ report: row, action: "remove_attestations" })
-              }
+              onRemove={() => setResolveTarget({ report: row, action: "remove_attestations" })}
             />
           ))}
         </div>
         {resolveMut.error && (
-          <p className="text-sm text-destructive">
-            Failed: {(resolveMut.error as Error).message}
-          </p>
+          <p className="text-sm text-destructive">Failed: {(resolveMut.error as Error).message}</p>
         )}
         <SimplePager
           page={page}
@@ -487,25 +504,15 @@ function ElkReportsCard() {
 
       <ConfirmDialog
         open={resolveTarget != null}
-        title={
-          resolveTarget?.action === "dismiss"
-            ? "Dismiss report?"
-            : "Remove all attestations?"
-        }
+        title={resolveTarget?.action === "dismiss" ? "Dismiss report?" : "Remove all attestations?"}
         description={
           resolveTarget ? (
             <div className="space-y-1 text-sm">
               <div>
-                Edge:{" "}
-                <code className="break-all text-xs">
-                  {resolveTarget.report.edge_key}
-                </code>
+                Edge: <code className="break-all text-xs">{resolveTarget.report.edge_key}</code>
               </div>
               <div>
-                Reason:{" "}
-                <Badge variant="outline">
-                  {REASON_LABEL[resolveTarget.report.reason]}
-                </Badge>
+                Reason: <Badge variant="outline">{REASON_LABEL[resolveTarget.report.reason]}</Badge>
               </div>
               {resolveTarget.report.details && (
                 <div className="rounded-md bg-muted/30 px-2 py-1 text-xs">
@@ -520,9 +527,7 @@ function ElkReportsCard() {
             </div>
           ) : null
         }
-        confirmLabel={
-          resolveTarget?.action === "dismiss" ? "Dismiss" : "Remove attestations"
-        }
+        confirmLabel={resolveTarget?.action === "dismiss" ? "Dismiss" : "Remove attestations"}
         variant={resolveTarget?.action === "dismiss" ? "default" : "destructive"}
         loading={resolveMut.isPending}
         onConfirm={() =>
@@ -565,18 +570,12 @@ function ElkReportRow({
           {formatTimestamp(row.created_at)}
         </span>
       </div>
-      <div className="break-all font-mono text-[11px] text-muted-foreground">
-        {row.edge_key}
-      </div>
+      <div className="break-all font-mono text-[11px] text-muted-foreground">{row.edge_key}</div>
       {row.details && (
-        <div className="rounded bg-muted/30 px-2 py-1 text-[11px]">
-          {row.details}
-        </div>
+        <div className="rounded bg-muted/30 px-2 py-1 text-[11px]">{row.details}</div>
       )}
       {row.resolution_note && (
-        <div className="text-[11px] text-muted-foreground">
-          Note: {row.resolution_note}
-        </div>
+        <div className="text-[11px] text-muted-foreground">Note: {row.resolution_note}</div>
       )}
       {isOpen && (
         <div className="flex items-center justify-end gap-1 pt-1">
@@ -588,7 +587,11 @@ function ElkReportRow({
             disabled={busy}
             title="Dismiss this report (keeps the edge elk-friendly)"
           >
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <ShieldCheck className="size-4" />
+            )}
             Dismiss
           </Button>
           <Button

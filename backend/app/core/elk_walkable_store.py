@@ -189,46 +189,19 @@ def _write_snapshot(current: dict, change_id: str) -> str:
     return key
 
 
-def _latest_snapshot_key() -> Optional[str]:
-    """Return the lexicographically newest existing snapshot R2 key, or None.
+def _latest_snapshot_with_mtime() -> Optional[Tuple[str, datetime]]:
+    """Return the (key, LastModified) of the newest snapshot, or None.
 
-    Snapshot keys embed an ISO-8601 UTC timestamp so reverse-sorted
-    order matches chronological order.
+    Uses R2's ``LastModified`` rather than parsing the key so the freshness
+    check is robust to any future changes in the key format.
     """
-    prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
     try:
-        keys = r2_storage.list_keys_with_prefix(prefix)
+        return r2_storage.latest_object_under_prefix(
+            r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
+        )
     except Exception:
-        logger.exception("elk_walkable: snapshot listing failed")
+        logger.exception("elk_walkable: snapshot freshness probe failed")
         return None
-    if not keys:
-        return None
-    keys.sort(reverse=True)
-    return keys[0]
-
-
-def _parse_snapshot_key_ts(key: str) -> Optional[datetime]:
-    """Recover the UTC timestamp encoded in a snapshot R2 key.
-
-    Mirrors :func:`r2_storage.elk_walkable_snapshot_key` which munges the
-    ISO timestamp by stripping ``:`` and rewriting ``+`` as ``Z`` so the
-    key is safe to use as a filename.
-    """
-    prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
-    if not key.startswith(prefix) or not key.endswith(".json"):
-        return None
-    body = key[len(prefix):-len(".json")]
-    # ``change_id`` is a 32-char uuid hex with no dashes; safe_ts does
-    # contain dashes (in the date part) so rsplit once.
-    safe_ts, _, _change_id = body.rpartition("-")
-    if not safe_ts:
-        return None
-    for fmt in ("%Y-%m-%dT%H%M%S.%fZ%H%M", "%Y-%m-%dT%H%M%SZ%H%M"):
-        try:
-            return datetime.strptime(safe_ts, fmt).replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-    return None
 
 
 def _snapshot_interval() -> timedelta:
@@ -236,22 +209,32 @@ def _snapshot_interval() -> timedelta:
     return timedelta(days=max(0, days))
 
 
-def _resolve_snapshot_key(pre_mutation: dict, change_id: str) -> str:
+def _resolve_snapshot_key(pre_mutation: dict, change_id: str) -> Optional[str]:
     """Reuse the most recent snapshot if it's still inside the configured
     interval; otherwise upload a fresh snapshot of ``pre_mutation``.
 
-    The audit row ``snapshot_key`` references the baseline from which
-    the chain of audits up to (and including) the row can be replayed.
+    Returns ``None`` if no snapshot is available and uploading a fresh one
+    failed. The caller MUST treat the audit row as the primary record and
+    continue persisting it even when this returns ``None`` so a transient
+    R2 hiccup never silently drops the audit trail.
     """
     interval = _snapshot_interval()
-    latest_key = _latest_snapshot_key()
-    if latest_key and interval.total_seconds() > 0:
-        latest_ts = _parse_snapshot_key_ts(latest_key)
-        if latest_ts is not None:
-            age = datetime.now(timezone.utc) - latest_ts
-            if age < interval:
-                return latest_key
-    return _write_snapshot(pre_mutation, change_id)
+    if interval.total_seconds() > 0:
+        latest = _latest_snapshot_with_mtime()
+        if latest is not None:
+            _key, last_modified = latest
+            now = datetime.now(timezone.utc)
+            # Normalise naive -> UTC just in case the SDK gave back a
+            # tz-naive timestamp in some edge case.
+            if last_modified.tzinfo is None:
+                last_modified = last_modified.replace(tzinfo=timezone.utc)
+            if now - last_modified < interval:
+                return _key
+    try:
+        return _write_snapshot(pre_mutation, change_id)
+    except Exception:
+        logger.exception("elk_walkable: failed to upload pre-mutation snapshot")
+        return None
 
 
 def list_snapshots(limit: int = 200) -> List[dict]:

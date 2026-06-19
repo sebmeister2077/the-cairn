@@ -11,9 +11,9 @@ export function formatBytes(n: number): string {
   return `${(n / (1024 * 1024)).toFixed(2)} MiB`;
 }
 
-export function formatTimestamp(s: string | null | undefined): string {
+export function formatTimestamp(s: string | number | null | undefined): string {
   if (!s) return "—";
   const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
+  if (Number.isNaN(d.getTime())) return s.toString();
   return d.toLocaleString();
 }
