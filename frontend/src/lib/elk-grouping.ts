@@ -55,11 +55,11 @@ export interface EnumerateGroupingEdgesOptions {
 }
 
 /** Default cap on the walkable distance between two TL endpoints inside
- *  a grouping. ~400 blocks is the rough "I'd walk this rather than warp"
+ *  a grouping. ~800 blocks is the rough "I'd walk this rather than warp"
  *  threshold and matches the slider default exposed in the UI. */
-export const DEFAULT_MAX_WALK_BLOCKS = 400;
+export const DEFAULT_MAX_WALK_BLOCKS = 800;
 export const MIN_MAX_WALK_BLOCKS = 10;
-export const MAX_MAX_WALK_BLOCKS = 1500;
+export const MAX_MAX_WALK_BLOCKS = 1900;
 
 /**
  * Walk-edge enumeration for a single grouping.
