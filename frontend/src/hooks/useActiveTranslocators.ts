@@ -30,7 +30,7 @@ export interface ActiveTranslocators {
 export function useActiveTranslocators(): ActiveTranslocators {
     const mapSource = useAppSelector((s) => s.mapView.mapSource);
     const webCartographerUrl = useAppSelector((s) => s.mapView.webCartographerUrl);
-    const usingWebCartographer = mapSource === "webcartographer";
+    const usingWebCartographer = true;// mapSource === "webcartographer";
 
     const backendQuery = useTranslocatorsOverlay();
     const wcQuery = useWebCartographerTranslocators(webCartographerUrl, usingWebCartographer);

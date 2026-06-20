@@ -214,7 +214,7 @@ export function TOPSMapViewPage() {
   // Tile imagery flag: only the Cairn source has resolution levels and a
   // per-level fetch lifecycle. The WebCartographer path is a thin static
   // tile pyramid loaded directly from the configured remote host.
-  const usingWebCartographer = mapSource === "webcartographer";
+  const usingWebCartographer = true; // mapSource === "webcartographer";
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the
