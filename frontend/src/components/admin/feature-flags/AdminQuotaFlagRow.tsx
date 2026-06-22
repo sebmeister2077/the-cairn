@@ -114,6 +114,15 @@ export const QUOTA_FLAGS: QuotaFlagSpec[] = [
     max: 100,
   },
   {
+    key: "grouping_library_edit_daily_cap",
+    label: "Grouping library edit daily cap",
+    help: "Max edits per published grouping per rolling 24h window. Discourages edit spam while letting authors iterate. Admins bypass.",
+    unit: "per 24h",
+    defaultValue: 10,
+    min: 0,
+    max: 100,
+  },
+  {
     key: "grouping_library_max_tls",
     label: "Grouping library max TLs",
     help: "Max number of translocators allowed in a single published grouping.",

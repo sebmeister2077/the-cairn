@@ -16,8 +16,8 @@
      <config:config-item config:name="ViewId" config:type="string">view1</config:config-item>
      <config:config-item-map-named config:name="Tables">
       <config:config-item-map-entry config:name="Prices">
-       <config:config-item config:name="CursorPositionX" config:type="int">13</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">9</config:config-item>
+       <config:config-item config:name="CursorPositionX" config:type="int">11</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">5</config:config-item>
        <config:config-item config:name="ActiveSplitRange" config:type="short">2</config:config-item>
        <config:config-item config:name="PositionLeft" config:type="int">0</config:config-item>
        <config:config-item config:name="PositionRight" config:type="int">0</config:config-item>
@@ -89,9 +89,9 @@
    <config:config-item config:name="IsSnapToRaster" config:type="boolean">false</config:config-item>
    <config:config-item config:name="LinkUpdateMode" config:type="short">3</config:config-item>
    <config:config-item config:name="LoadReadonly" config:type="boolean">false</config:config-item>
-   <config:config-item config:name="PrinterName" config:type="string"/>
+   <config:config-item config:name="PrinterName" config:type="string">Foxit Reader PDF Printer</config:config-item>
    <config:config-item config:name="PrinterPaperFromSetup" config:type="boolean">false</config:config-item>
-   <config:config-item config:name="PrinterSetup" config:type="base64Binary"/>
+   <config:config-item config:name="PrinterSetup" config:type="base64Binary">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</config:config-item>
    <config:config-item config:name="RasterIsVisible" config:type="boolean">false</config:config-item>
    <config:config-item config:name="RasterResolutionX" config:type="int">1270</config:config-item>
    <config:config-item config:name="RasterResolutionY" config:type="int">1270</config:config-item>
@@ -136,7 +136,7 @@
   </style:default-style>
   <style:default-style style:family="graphic">
    <style:graphic-properties svg:stroke-color="#3465a4" draw:fill-color="#729fcf" fo:wrap-option="no-wrap" draw:shadow-offset-x="0.1181in" draw:shadow-offset-y="0.1181in" style:writing-mode="page"/>
-   <style:paragraph-properties style:text-autospace="ideograph-alpha" style:punctuation-wrap="simple" style:line-break="strict" style:font-independent-line-spacing="false">
+   <style:paragraph-properties style:text-autospace="ideograph-alpha" style:punctuation-wrap="simple" style:line-break="strict" loext:tab-stop-distance="0in" style:font-independent-line-spacing="false">
     <style:tab-stops/>
    </style:paragraph-properties>
    <style:text-properties style:use-window-font-color="true" loext:opacity="0%" fo:font-family="&apos;Liberation Serif&apos;" style:font-family-generic="roman" style:font-pitch="variable" fo:font-size="12pt" fo:language="en" fo:country="US" style:letter-kerning="true" style:font-family-asian="&apos;Segoe UI&apos;" style:font-family-generic-asian="system" style:font-pitch-asian="variable" style:font-size-asian="12pt" style:language-asian="zh" style:country-asian="CN" style:font-family-complex="Tahoma" style:font-family-generic-complex="system" style:font-pitch-complex="variable" style:font-size-complex="12pt" style:language-complex="hi" style:country-complex="IN"/>
@@ -439,7 +439,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-06-21">00/00/0000</text:date>, <text:time>00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-06-21">00/00/0000</text:date>, <text:time style:data-style-name="N2" text:time-value="18:14:15.380438600">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>

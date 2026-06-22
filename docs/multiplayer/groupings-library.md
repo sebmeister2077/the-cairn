@@ -122,16 +122,18 @@ GIN-indexed `tags` JSONB across published rows, returned as `[{tag, count}]`. Us
 canonical tags ("elk-friendly" once, not "elk" / "Elk" / "elk friendly") which makes the
 `tag` filter on browse meaningful.
 
-### The once-per-day edit cap
+### The daily edit cap
 
-A published grouping can be **changed at most once every 24 hours**, enforced per grouping with
-`check_scoped_rate_limit(key, f"grouping-edit:{id}", 1, 86400)`. Admins bypass it. This:
+A published grouping can be **changed at most N times every 24 hours** (default 10), enforced
+per grouping with
+`check_scoped_rate_limit(key, f"grouping-edit:{id}", N, 86400)`. The cap is tunable via the
+`grouping_library_edit_daily_cap` feature flag; admins bypass it. This:
 
 - keeps subscribers stable (no churn from rapid-fire edits),
 - discourages vandalism, and
-- makes each version-history entry a deliberate, meaningful update rather than spam.
+- still lets authors iterate while polishing a fresh publish.
 
-A second edit inside the window returns `429`. The drawer surfaces the cooldown so users know when
+Exceeding the cap returns `429`. The drawer surfaces the cooldown so users know when
 they can next edit.
 
 ## Versioning & forking history
@@ -155,7 +157,7 @@ A subscribe creates a **read-only** local grouping tagged with
 `source = { libraryId, author, version, mode: "subscribe" }`. On page/app load the frontend calls
 `GET /api/groupings/library/subscriptions`, and for any subscription whose head `version` is newer
 than the locally synced one it replaces the local payload and shows an "updated to vN" toast.
-Because of the 1-edit/day cap, these updates are infrequent and predictable.
+Because of the daily edit cap, these updates are infrequent and predictable.
 
 Forks, by contrast, are normal editable local groupings tagged `source.mode = "fork"` — they never
 auto-update.
@@ -220,7 +222,7 @@ subscribers:
 | Method & path | Effect |
 |---------------|--------|
 | `POST /api/groupings/library` | Publish (writes head + v1). Returns `409 duplicate_payload` if the author already published this TL set; pass `allowDuplicate: true` to override. |
-| `PATCH /api/groupings/library/{id}` | Owner/admin edit (1/day cap, bumps version + snapshot). Same duplicate check as POST when `tlIds` is changed. |
+| `PATCH /api/groupings/library/{id}` | Owner/admin edit (daily cap, bumps version + snapshot). Same duplicate check as POST when `tlIds` is changed. |
 | `DELETE /api/groupings/library/{id}` | Owner unpublish — soft-retires to `status='deprecated'`. Body accepts optional `{successorId}`. |
 | `POST` / `DELETE /api/groupings/library/{id}/vote` | Upvote / remove upvote |
 | `POST /api/groupings/library/{id}/install` | Fork (`{mode:"fork", version?}`) or subscribe |
@@ -242,6 +244,7 @@ subscribers:
 |------|------|---------|--------|
 | `grouping_library_enabled` | bool | OFF | Kill switch — endpoints 404 + UI hidden when off |
 | `grouping_library_publish_daily_cap` | int | 5 | Max publishes per key per 24h |
+| `grouping_library_edit_daily_cap` | int | 10 | Max edits per grouping per 24h |
 | `grouping_library_max_tls` | int | 500 | Max TLs per grouping |
 | `grouping_library_max_tags` | int | 5 | Max tags per grouping |
 

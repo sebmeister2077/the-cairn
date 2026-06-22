@@ -141,6 +141,8 @@ import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/route-share";
+import { GoToDialog } from "@/components/tops-map-viewer/GoToDialog";
+import { ExitPreviewButton } from "@/components/tops-map-viewer/ExitPreviewButton";
 
 const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from
@@ -2077,20 +2079,7 @@ export function TOPSMapViewPage() {
           </>
         )}
         <div className={isFullscreen ? "absolute inset-0" : "relative"}>
-          {previewActive && (
-            <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
-              <Button
-                type="button"
-                size="sm"
-                variant="default"
-                className="pointer-events-auto gap-1.5 shadow-lg"
-                onClick={() => dispatch(exitPreviewAction())}
-              >
-                <X className="size-4" />
-                {t("topsMap.markGroupingElk.exitPreview")}
-              </Button>
-            </div>
-          )}
+          {previewActive && <ExitPreviewButton />}
           {usingWebCartographer ? (
             <WebCartographerMapViewer
               baseUrl={webCartographerUrl}
@@ -2306,72 +2295,18 @@ export function TOPSMapViewPage() {
             state={resourcesOverlay}
           />
         )} */}
-        <Dialog open={goToDialogOpen} onOpenChange={setGoToDialogOpen}>
-          <DialogContent className="sm:max-w-md" showCloseButton>
-            <DialogHeader>
-              <DialogTitle>{t("topsMap.goToCoordinate")}</DialogTitle>
-              <DialogDescription>{t("topsMap.goToCoordinateDescription")}</DialogDescription>
-            </DialogHeader>
-            <form className="grid gap-3" onSubmit={handleGoToSubmit}>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor="goto-x">X</Label>
-                  <Input
-                    id="goto-x"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder={t("topsMap.examplePositiveCoordinate")}
-                    value={goToXInput}
-                    onChange={(e) => {
-                      setGoToXInput(e.target.value);
-                      if (goToError) setGoToError(null);
-                    }}
-                    autoFocus
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="goto-z">Z</Label>
-                  <Input
-                    id="goto-z"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    placeholder={t("topsMap.exampleNegativeCoordinate")}
-                    value={goToZInput}
-                    onChange={(e) => {
-                      setGoToZInput(e.target.value);
-                      if (goToError) setGoToError(null);
-                    }}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{t("topsMap.currentCenterPrefilled")}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2"
-                  onClick={() => {
-                    const view = lastViewportRef.current;
-                    if (!view) return;
-                    setGoToXInput(String(Math.round(view.centerWorldX)));
-                    setGoToZInput(String(Math.round(view.centerWorldZ)));
-                    setGoToError(null);
-                  }}
-                >
-                  {t("topsMap.useCurrentCenter")}
-                </Button>
-              </div>
-              {goToError && <p className="text-sm text-destructive">{goToError}</p>}
-              <DialogFooter className="mx-0 mb-0 border-0 bg-transparent p-0 pt-1">
-                <Button type="button" variant="outline" onClick={() => setGoToDialogOpen(false)}>
-                  {t("topsMap.cancel")}
-                </Button>
-                <Button type="submit">{t("topsMap.goToCoordinate")}</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <GoToDialog
+          open={goToDialogOpen}
+          onOpenChange={setGoToDialogOpen}
+          goToError={goToError}
+          goToXInput={goToXInput}
+          goToZInput={goToZInput}
+          setGoToXInput={setGoToXInput}
+          setGoToZInput={setGoToZInput}
+          handleGoToSubmit={handleGoToSubmit}
+          lastViewportRef={lastViewportRef}
+          setGoToError={setGoToError}
+        />
       </CardContent>
     </Card>
   );

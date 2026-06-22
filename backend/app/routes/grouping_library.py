@@ -41,6 +41,8 @@ router = APIRouter(tags=["grouping-library"])
 _FLAG_KEY = "grouping_library_enabled"
 _PUBLISH_CAP_FLAG = "grouping_library_publish_daily_cap"
 _PUBLISH_CAP_DEFAULT = 5
+_EDIT_CAP_FLAG = "grouping_library_edit_daily_cap"
+_EDIT_CAP_DEFAULT = 10
 _MAX_TLS_FLAG = "grouping_library_max_tls"
 _MAX_TLS_DEFAULT = 500
 _MAX_TAGS_FLAG = "grouping_library_max_tags"
@@ -385,9 +387,11 @@ async def edit(
     if owner != kid and not is_admin:
         raise HTTPException(status_code=403, detail="You do not own this grouping")
 
-    # Once-per-day edit cap (admins bypass).
+    # Per-grouping daily edit cap (admins bypass). Tunable via the
+    # ``grouping_library_edit_daily_cap`` feature flag.
     if not is_admin:
-        check_scoped_rate_limit(api_key, f"grouping-edit:{grouping_id}", 1, _DAY)
+        edit_cap = feature_flags.get_int(_EDIT_CAP_FLAG, _EDIT_CAP_DEFAULT)
+        check_scoped_rate_limit(api_key, f"grouping-edit:{grouping_id}", edit_cap, _DAY)
 
     tl_ids = _validated_payload(body.tlIds) if body.tlIds is not None else None
     tags = (
