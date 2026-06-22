@@ -267,6 +267,23 @@ export const en = {
                 unexpectedError: "Unexpected error during passkey ceremony.",
             },
         },
+        clearCache: {
+            title: "Clear local cache",
+            description:
+                "Wipe site preferences and cached data stored in this browser. Useful after a bug fix when stale local state keeps misbehaving. Your API key, admin session, and contributor flags are preserved so you stay signed in.",
+            groupingsWarning:
+                "Heads up: your TL groupings live only in this browser. Export them from the <link>TOPS map page</link> first (Groupings drawer -> Export) if you want to keep them.",
+            clearedItems:
+                "Cleared: TL groupings, route planner preferences, map view settings, cached server responses, and other local UI state.",
+            clearButton: "Clear local cache",
+            confirmTitle: "Clear local cache?",
+            confirmDescription:
+                "This removes cached site data from this browser, including your TL groupings, route planner preferences, map view settings, and cached server responses. Your API key and admin session are preserved.",
+            confirmReminder:
+                "If you have TL groupings you want to keep, cancel and export them from the TOPS map page first - they cannot be recovered after this.",
+            confirmButton: "Clear cache",
+            cancel: "Cancel",
+        },
         dangerZone: {
             title: "Danger zone",
             description:

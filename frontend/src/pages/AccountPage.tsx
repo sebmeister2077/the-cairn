@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { NavLink } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Download, Eye, EyeOff, Copy } from "lucide-react";
+import { Loader2, RefreshCw, Download, Eye, EyeOff, Copy, Eraser } from "lucide-react";
 import {
   getMyAccountSafe,
   updateMyAccount,
@@ -20,6 +21,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
@@ -30,6 +39,33 @@ import {
   setShowAdvancedMapOptions,
   setWCTileCacheEnabled,
 } from "@/store/slices/mapView";
+
+// localStorage keys preserved when the user clicks "Clear local cache":
+// the API key and the cached auth flags / passkey session that keep them
+// signed in. Everything else (redux envelope, persisted React Query cache,
+// TL groupings, route planner prefs, etc.) is dropped.
+const LOCAL_CACHE_PRESERVE_KEYS: ReadonlySet<string> = new Set([
+  "api_key",
+  "is_admin",
+  "can_contribute",
+  "admin_session",
+  "admin_session_expires",
+]);
+
+function clearLocalCacheExceptAuth() {
+  try {
+    const keys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k) keys.push(k);
+    }
+    for (const k of keys) {
+      if (!LOCAL_CACHE_PRESERVE_KEYS.has(k)) localStorage.removeItem(k);
+    }
+  } catch {
+    // ignore — storage may be unavailable / quota-locked
+  }
+}
 
 export function AccountPage() {
   const { t } = useTranslation();
@@ -42,6 +78,7 @@ export function AccountPage() {
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
+  const [clearCacheOpen, setClearCacheOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery<AccountMeResponse>({
     queryKey: ["account-me", apiKey ?? ""],
@@ -465,6 +502,63 @@ export function AccountPage() {
       {/* Admin-only: passkey 2FA management. Renders nothing for non-admins
           or when the server has WebAuthn unconfigured. */}
       {data?.is_admin && <AdminPasskeyPanel />}
+
+      {/* Local cache reset. Useful when a deployed bug fix needs users to
+          drop stale browser state (redux envelope, persisted React Query
+          cache, route planner prefs, TL groupings, etc.) without losing
+          their API key / admin session. */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">{t("account.clearCache.title")}</CardTitle>
+          <CardDescription>{t("account.clearCache.description")}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            <Trans
+              path="account.clearCache.groupingsWarning"
+              components={{
+                link: (
+                  <NavLink
+                    to="/multiplayer/tops-map"
+                    className="underline underline-offset-2 hover:text-foreground"
+                  />
+                ),
+              }}
+            />
+          </p>
+          <p className="text-xs text-muted-foreground">{t("account.clearCache.clearedItems")}</p>
+          <Button variant="outline" size="sm" onClick={() => setClearCacheOpen(true)}>
+            <Eraser className="size-3" />
+            {t("account.clearCache.clearButton")}
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Dialog open={clearCacheOpen} onOpenChange={setClearCacheOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("account.clearCache.confirmTitle")}</DialogTitle>
+            <DialogDescription>{t("account.clearCache.confirmDescription")}</DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-destructive">{t("account.clearCache.confirmReminder")}</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearCacheOpen(false)}>
+              {t("account.clearCache.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                clearLocalCacheExceptAuth();
+                queryClient.clear();
+                window.location.href = "/";
+              }}
+            >
+              <Eraser className="size-4" />
+              {t("account.clearCache.confirmButton")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Danger zone */}
       <Card className="border-destructive/50">
