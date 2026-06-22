@@ -1305,6 +1305,9 @@ export const en = {
         rockStrataSelectAll: "All",
         rockStrataClearAll: "None",
         climate: "Climate",
+        climateUnverified: "unverified",
+        climateUnverifiedTooltip:
+            "Climate values shown here haven't been confirmed against in-game readings yet — treat them as approximate.",
         climateGeoActivity: "Geologic activity",
         climateRainfall: "Rainfall",
         climateTemperature: "Temperature",

@@ -1,7 +1,10 @@
 import { useCallback, useMemo } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setClimateSubToggle as setClimateSubToggleAction,
@@ -216,6 +219,23 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
       >
         <Switch checked={enabled} aria-label={t("topsMap.climate")} />
         <Label className="cursor-pointer">{t("topsMap.climate")}</Label>
+        {enabled && (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Badge
+                  variant="outline"
+                  onClick={(ev) => ev.stopPropagation()}
+                  className="gap-1 border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300 cursor-help"
+                >
+                  <AlertTriangle className="size-3" />
+                  {t("topsMap.climateUnverified")}
+                </Badge>
+              }
+            />
+            <TooltipContent>{t("topsMap.climateUnverifiedTooltip")}</TooltipContent>
+          </Tooltip>
+        )}
         {status === "loading" && enabled && (
           <span className="text-xs text-muted-foreground ml-1">…</span>
         )}
