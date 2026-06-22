@@ -1,0 +1,15 @@
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\bin\Release\net10.0\findstorm.exe
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\bin\Release\net10.0\findstorm.deps.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\bin\Release\net10.0\findstorm.runtimeconfig.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\bin\Release\net10.0\findstorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\bin\Release\net10.0\findstorm.pdb
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.AssemblyInfoInputs.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.AssemblyInfo.cs
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.csproj.CoreCompileInputs.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.sourcelink.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\refint\findstorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.pdb
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\findstorm.genruntimeconfig.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tmp\findstorm\obj\Release\net10.0\ref\findstorm.dll

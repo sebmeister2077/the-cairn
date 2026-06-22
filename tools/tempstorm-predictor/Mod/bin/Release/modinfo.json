@@ -1,0 +1,14 @@
+{
+  "type": "code",
+  "modid": "deterministictempstorm",
+  "name": "Deterministic Temporal Storm",
+  "description": "Forces temporal storm scheduling to be deterministic from the world seed. Matches predictions from tools/tempstorm-predictor/Cli.",
+  "authors": ["sebas"],
+  "version": "1.0.0",
+  "side": "Server",
+  "networkVersion": "1.0.0",
+  "dependencies": {
+    "game": "1.22.0",
+    "survival": ""
+  }
+}

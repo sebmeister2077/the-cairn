@@ -1,0 +1,14 @@
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\bin\Release\modinfo.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\bin\Release\DeterministicTempStorm.deps.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\bin\Release\DeterministicTempStorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\bin\Release\DeterministicTempStorm.pdb
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.csproj.AssemblyReference.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.AssemblyInfoInputs.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.AssemblyInfo.cs
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.csproj.CoreCompileInputs.cache
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.sourcelink.json
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\refint\DeterministicTempStorm.dll
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\DeterministicTempStorm.pdb
+C:\Users\Sebas\source\repos\extract-VS-waypoints\tools\tempstorm-predictor\Mod\obj\Release\ref\DeterministicTempStorm.dll
