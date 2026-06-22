@@ -265,8 +265,18 @@ export function GroupingLibraryDialog({
                       key={card.id}
                       card={card}
                       onEdit={() => setEditCard(card)}
-                      onUnpublish={() => {
-                        void actions.unpublish(card.id);
+                      onUnpublish={async () => {
+                        await actions.unpublish(card.id);
+                        // Drop the local -> library-id link on any local
+                        // grouping that pointed at this row. Otherwise the
+                        // publish dialog still treats it as an "edit" and
+                        // PATCHes a deprecated row (404 "Grouping not
+                        // found"), leaving the user unable to re-publish.
+                        for (const g of store.groupings) {
+                          if (g.publishedId === card.id) {
+                            store.markPublished(g.id, undefined);
+                          }
+                        }
                       }}
                       onHistory={() => {
                         setHistoryId(card.id);
