@@ -37,6 +37,21 @@ export interface WebCartographerOverlayPayload<T> {
     lastModified: string | null;
 }
 
+/**
+ * Thrown when an upstream WC geojson fetch fails. The numeric `status`
+ * lets callers (e.g. the page-level "official WC host appears down"
+ * modal) distinguish a proxy-bubbled 502/504 from other errors without
+ * string-matching the message.
+ */
+export class WebCartographerOverlayError extends Error {
+    readonly status: number;
+    constructor(status: number, message: string) {
+        super(message);
+        this.name = "WebCartographerOverlayError";
+        this.status = status;
+    }
+}
+
 function normaliseBaseUrl(url: string): string {
     return url.trim().replace(/\/+$/, "");
 }
@@ -45,16 +60,25 @@ async function fetchGeoJson<T>(
     baseUrl: string,
     kind: "translocators" | "landmarks",
     parse: (json: unknown) => T,
+    direct: boolean,
 ): Promise<WebCartographerOverlayPayload<T>> {
-    const proxied = `${API_BASE}/webcartographer/geojson?base_url=${encodeURIComponent(baseUrl)}&kind=${kind}`;
-    const res = await fetch(proxied);
+    // Direct mode talks straight to the WC host (works for the Cairn
+    // backup mirror, which sends CORS headers). Proxy mode goes through
+    // our backend for hosts that don't expose CORS (the official TOPS WC).
+    const target = direct
+        ? `${baseUrl}/data/geojson/${kind}.geojson`
+        : `${API_BASE}/webcartographer/geojson?base_url=${encodeURIComponent(baseUrl)}&kind=${kind}`;
+    const res = await fetch(target);
     if (!res.ok) {
         // 404 is normal for hosts that haven't exported structures; treat as
         // empty rather than surfacing an error to the UI. The backend also
         // collapses upstream 404s to an empty FeatureCollection, so this
         // branch mostly catches proxy-side errors.
         if (res.status === 404) return { data: parse({ features: [] }), lastModified: null };
-        throw new Error(`WebCartographer overlay fetch failed (${res.status})`);
+        throw new WebCartographerOverlayError(
+            res.status,
+            `WebCartographer overlay fetch failed (${res.status})`,
+        );
     }
     const json: unknown = await res.json();
     return { data: parse(json), lastModified: res.headers.get("Last-Modified") };
@@ -63,17 +87,21 @@ async function fetchGeoJson<T>(
 export function useWebCartographerTranslocators(
     baseUrl: string,
     enabled: boolean,
+    direct: boolean = false,
 ): UseQueryResult<WebCartographerOverlayPayload<WorldLineSegment[]>> {
     const normalised = normaliseBaseUrl(baseUrl);
     const queryClient = useQueryClient();
-    const queryKey = ["overlay", "wc-translocators", normalised];
+    // Include `direct` in the cache key so flipping between proxy/CORS
+    // modes for the same host doesn't share entries (they may diverge,
+    // e.g. if the backup mirror is a stale snapshot).
+    const queryKey = ["overlay", "wc-translocators", normalised, direct ? "direct" : "proxy"];
     return useQuery<WebCartographerOverlayPayload<WorldLineSegment[]>>({
         queryKey,
         queryFn: async () => {
             const previous = queryClient.getQueryData<
                 WebCartographerOverlayPayload<WorldLineSegment[]>
             >(queryKey);
-            const next = await fetchGeoJson(normalised, "translocators", parseTranslocators);
+            const next = await fetchGeoJson(normalised, "translocators", parseTranslocators, direct);
             // Prefer the cached Last-Modified if the upstream omitted one
             // on this refetch, so the cutoff stays stable across visits.
             if (!next.lastModified && previous?.lastModified) {
@@ -92,17 +120,18 @@ export function useWebCartographerTranslocators(
 export function useWebCartographerLandmarks(
     baseUrl: string,
     enabled: boolean,
+    direct: boolean = false,
 ): UseQueryResult<WebCartographerOverlayPayload<WorldPointMarker[]>> {
     const normalised = normaliseBaseUrl(baseUrl);
     const queryClient = useQueryClient();
-    const queryKey = ["overlay", "wc-landmarks", normalised];
+    const queryKey = ["overlay", "wc-landmarks", normalised, direct ? "direct" : "proxy"];
     return useQuery<WebCartographerOverlayPayload<WorldPointMarker[]>>({
         queryKey,
         queryFn: async () => {
             const previous = queryClient.getQueryData<
                 WebCartographerOverlayPayload<WorldPointMarker[]>
             >(queryKey);
-            const next = await fetchGeoJson(normalised, "landmarks", parseLandmarks);
+            const next = await fetchGeoJson(normalised, "landmarks", parseLandmarks, direct);
             if (!next.lastModified && previous?.lastModified) {
                 return { ...next, lastModified: previous.lastModified };
             }

@@ -117,8 +117,12 @@ const TILE_FADE_MS = 280;
 
 interface WebCartographerMapViewerProps {
   /** WC host (with or without trailing slash). Tiles served at
-   * `${baseUrl}/data/world/{z}/{x}_{y}.png`. */
+   * `${baseUrl}/data/world/{z}/{x}_{y}.${tileFormat}`. */
   baseUrl: string;
+  /** Tile image extension served by the host. Stock WebCartographer uses
+   * `png`; the translocator.moe mirror serves the same pyramid as `webp`.
+   * Defaults to `png` when omitted. */
+  tileFormat?: "png" | "webp";
 
   // ── Visual / layout ─────────────────────────────────────────────────────
   height?: string;
@@ -240,6 +244,7 @@ interface WebCartographerMapViewerProps {
  */
 export function WebCartographerMapViewer({
   baseUrl,
+  tileFormat,
   alt = "Map",
   height = "70vh",
   bordered = true,
@@ -275,6 +280,15 @@ export function WebCartographerMapViewer({
 }: WebCartographerMapViewerProps) {
   const { t } = useTranslation();
   const normalisedUrl = useMemo(() => normaliseBaseUrl(baseUrl), [baseUrl]);
+  const tileExt: "png" | "webp" = tileFormat ?? "png";
+  // Mirror through a ref so the stable `requestTile` callback (deps: [])
+  // always reads the latest extension. Without this, switching from the
+  // default PNG host to the translocator.moe WebP mirror at runtime would
+  // keep requesting `.png` because the closure captured the initial value.
+  const tileExtRef = useRef<"png" | "webp">(tileExt);
+  useEffect(() => {
+    tileExtRef.current = tileExt;
+  }, [tileExt]);
 
   const dispatch = useAppDispatch();
   const isFullscreen = useReduxState("mapView.isFullscreen");
@@ -295,16 +309,23 @@ export function WebCartographerMapViewer({
   // rock-strata raster) between them, so it covers the terrain tiles
   // but stays beneath translocators / landmarks / traders.
   const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
-  const tileCacheRef = useRef<{ baseUrl: string; cache: Map<string, TileEntry> }>({
+  const tileCacheRef = useRef<{
+    baseUrl: string;
+    tileExt: "png" | "webp";
+    cache: Map<string, TileEntry>;
+  }>({
     baseUrl: normalisedUrl,
+    tileExt,
     cache: new Map(),
   });
-  if (tileCacheRef.current.baseUrl !== normalisedUrl) {
-    // Host change: abandon old images (browser GCs them) and start fresh.
+  if (tileCacheRef.current.baseUrl !== normalisedUrl || tileCacheRef.current.tileExt !== tileExt) {
+    // Host or tile-format change: abandon old images (browser GCs them)
+    // and start fresh so we don't serve stale `.png` blobs for a host
+    // that now wants `.webp` (or vice versa).
     for (const entry of tileCacheRef.current.cache.values()) {
       if (entry.img) entry.img.src = "";
     }
-    tileCacheRef.current = { baseUrl: normalisedUrl, cache: new Map() };
+    tileCacheRef.current = { baseUrl: normalisedUrl, tileExt, cache: new Map() };
   }
 
   /** Triggers a canvas redraw on the next animation frame. */
@@ -435,7 +456,7 @@ export function WebCartographerMapViewer({
         // and retrying would be a perpetual storm of 404s.
         scheduleRedraw();
       };
-      img.src = `${tileCacheRef.current.baseUrl}/data/world/${z}/${cx}_${cy}.png`;
+      img.src = `${tileCacheRef.current.baseUrl}/data/world/${z}/${cx}_${cy}.${tileExtRef.current}`;
       cache.set(key, entry);
 
       // LRU eviction: drop oldest entries when over budget. Abort in-flight

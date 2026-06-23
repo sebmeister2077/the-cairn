@@ -37,6 +37,14 @@ _KIND_TO_PATH: dict[str, str] = {
 _EMPTY_FEATURE_COLLECTION = {"type": "FeatureCollection", "features": []}
 _REQUEST_TIMEOUT_S = 20.0
 _MAX_BYTES = 32 * 1024 * 1024  # 32 MiB cap on upstream response.
+# WC hosts sit behind Cloudflare / generic WAFs that 403/502 the default
+# ``Python-urllib/<ver>`` user agent. Mimic a real browser so the upstream
+# treats us like any other client — we're acting as a CORS proxy on the
+# user's behalf, not as a scraper.
+_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 CairnMapProxy/1.0"
+)
 
 
 @router.get("/webcartographer/geojson")
@@ -53,7 +61,11 @@ def fetch_webcartographer_geojson(
 
     req = urllib.request.Request(
         target,
-        headers={"Accept": "application/geo+json, application/json"},
+        headers={
+            "Accept": "application/geo+json, application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+            "User-Agent": _USER_AGENT,
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=_REQUEST_TIMEOUT_S) as resp:  # noqa: S310 - scheme validated above
@@ -66,13 +78,16 @@ def fetch_webcartographer_geojson(
                 _EMPTY_FEATURE_COLLECTION,
                 headers={"Cache-Control": "public, max-age=300"},
             )
-        logger.warning("WC geojson fetch failed: %s %s", e.code, target)
+        logger.warning("WC geojson fetch failed: HTTP %s for %s", e.code, target)
         raise HTTPException(status_code=502, detail=f"upstream returned {e.code}")
     except urllib.error.URLError as e:
-        logger.warning("WC geojson fetch error: %s %s", e.reason, target)
+        logger.warning("WC geojson fetch error: %r for %s", e.reason, target)
         raise HTTPException(status_code=502, detail="upstream unreachable")
     except TimeoutError:
         raise HTTPException(status_code=504, detail="upstream timed out")
+    except Exception as e:  # noqa: BLE001 - we explicitly want to log + 502 the fallthrough
+        logger.exception("WC geojson fetch unexpected error for %s: %s", target, e)
+        raise HTTPException(status_code=502, detail="upstream fetch failed")
 
     if len(raw) > _MAX_BYTES:
         raise HTTPException(status_code=502, detail="upstream geojson too large")

@@ -26,7 +26,7 @@ const VERSION_DB = "wc-tile-sw";
 const VERSION_STORE = "kv";
 const VERSION_KEY = "version";
 
-const TILE_RE = /\/data\/world\/\d+\/\d+_\d+\.png(?:\?.*)?$/;
+const TILE_RE = /\/data\/world\/\d+\/\d+_\d+\.(?:png|webp)(?:\?.*)?$/;
 
 self.addEventListener("install", () => {
   // Take over the page on first load instead of waiting for the next

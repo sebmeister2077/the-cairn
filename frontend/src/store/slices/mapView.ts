@@ -26,21 +26,77 @@ const SHOW_TRANSLOCATORS_LS = "tops-map-show-translocators";
 const STARFIELD_ENABLED_LS = "tops-map-starfield-enabled";
 const MAP_SOURCE_LS = "tops-map-source";
 const WC_URL_LS = "tops-map-webcartographer-url";
+/**
+ * Wall-clock ms timestamp after which the "official WC host appears down"
+ * modal is allowed to surface again. Written when the user picks the
+ * "Don't ask for 10 minutes" option in {@link WCOfficialDownDialog}.
+ */
+export const WC_DOWN_SNOOZE_UNTIL_LS = "tops-map-wc-down-snooze-until";
+/** Snooze window for the WC-down modal, in milliseconds. */
+export const WC_DOWN_SNOOZE_MS = 10 * 60 * 1000;
 
 export type TLGroupingsViewMode = "all" | "highlight" | "filter";
 
 /**
  * Which tile source backs the TOPS map viewer.
- *  - "cairn":            our own pre-rendered TOPS chunks (default).
- *  - "webcartographer":  an external WebCartographer-style XYZ tile host
- *                        (e.g. https://tops-map.translocator.moe). Tile
- *                        imagery only; all overlays (TLs/landmarks/traders/
- *                        oceans) still come from our database.
+ *  - "webcartographer":  the official WebCartographer-style host (default;
+ *                        currently https://map.tops.vintagestory.at). Geojson
+ *                        is fetched through our `/api/webcartographer/geojson`
+ *                        proxy because the upstream lacks CORS.
+ *  - "cairn":            our own "Cairn backup" mirror served from the public
+ *                        bucket origin. Identical WC tile + geojson layout,
+ *                        but with CORS enabled so the frontend can fetch
+ *                        geojson directly without the proxy hop.
  */
 export type MapSource = "cairn" | "webcartographer";
 
 /** Default WebCartographer host used when the user has not entered a URL. */
 export const DEFAULT_WEBCARTOGRAPHER_URL = "https://map.tops.vintagestory.at";
+
+/**
+ * Base URL for the Cairn-hosted backup mirror of the official WC export.
+ * Only honoured when the operator explicitly sets `VITE_CAIRN_BACKUP_MAP_URL`
+ * to a host that actually serves the WC tile pyramid + geojson with CORS.
+ *
+ * Note: `VITE_PUBLIC_BUCKET_ORIGIN` is intentionally NOT consulted here —
+ * that origin hosts unrelated assets (landmarks/translocators/traders
+ * geojson, climate maps, etc.) and does not expose a WC tile pyramid, so
+ * treating it as a Cairn backup would point the viewer at 404s.
+ *
+ * Empty string when the env var is unset: the dedicated Cairn tab stays
+ * disabled and the "Switch to backup" recovery flow instead swaps the WC
+ * host URL to {@link FALLBACK_BACKUP_WC_URL} (see TOPSMapViewPage).
+ */
+export const CAIRN_BACKUP_MAP_URL: string =
+    import.meta.env.VITE_CAIRN_BACKUP_MAP_URL?.replace(/\/+$/, "") ?? "";
+
+/**
+ * Known-good alternative WebCartographer host the "Switch to backup" flow
+ * falls back to when no Cairn-hosted mirror is configured. Still goes
+ * through the `/api/webcartographer/geojson` proxy (no CORS on this host),
+ * but its tile pyramid is independent from the official one, so it
+ * keeps the viewer functional during a primary-host outage.
+ */
+export const FALLBACK_BACKUP_WC_URL = "https://tops-map.translocator.moe";
+
+/** Tile image format served by a WC-style host. */
+export type WCTileFormat = "png" | "webp";
+
+/**
+ * Pick the tile image extension for a WC host. Stock WebCartographer
+ * exports PNG, but the translocator.moe mirror serves the same pyramid
+ * as WebP — sniff the hostname so the viewer requests the right URL
+ * without per-tile probing.
+ */
+export function inferWCTileFormat(baseUrl: string): WCTileFormat {
+    try {
+        const host = new URL(baseUrl).hostname.toLowerCase();
+        if (host.endsWith("translocator.moe")) return "webp";
+    } catch {
+        // Malformed URL — fall through to the safe PNG default.
+    }
+    return "png";
+}
 
 /**
  * ISO-8601 timestamp of the last known refresh of the external
@@ -58,8 +114,8 @@ export const TOPS_MAP_LAST_UPDATE = "2026-05-29T00:00:00Z";
 
 /** Built-in preset hosts shown in the source selector dropdown. */
 export const WEBCARTOGRAPHER_PRESETS: Array<{ label: string; url: string, disabled?: boolean }> = [
-    // { label: "Translocator.moe", url: "https://tops-map.translocator.moe" },
     { label: "TOPS", url: "https://map.tops.vintagestory.at" },
+    { label: "Translocator.moe (backup)", url: "https://tops-map.translocator.moe" },
     { label: "Old TOPS", url: "https://map.oldtops.vintagestory.at", disabled: true },
 ];
 
@@ -194,9 +250,8 @@ function readActive(): string[] {
 }
 
 function readMapSource(): MapSource {
-    // Cairn map is disabled; always use WebCartographer regardless of any
-    // previously-persisted preference.
-    return "webcartographer";
+    const raw = lsRead(MAP_SOURCE_LS);
+    return raw === "cairn" || raw === "webcartographer" ? raw : "webcartographer";
 }
 
 function readWebCartographerUrl(): string {
@@ -435,8 +490,12 @@ export const mapViewSlice = createSlice({
             const next = action.payload.mapView as Partial<MapViewState> | undefined;
             if (!next) return state;
             const merged = { ...state, ...next };
-            // Cairn map is disabled; coerce any persisted value forward.
-            if (merged.mapSource !== "webcartographer") merged.mapSource = "webcartographer";
+            // Coerce any unknown persisted MapSource value (e.g. an older
+            // build that stored a renamed/removed variant) back to the
+            // default so downstream code can rely on the union exhaustively.
+            if (merged.mapSource !== "cairn" && merged.mapSource !== "webcartographer") {
+                merged.mapSource = "webcartographer";
+            }
             return merged;
         });
     },

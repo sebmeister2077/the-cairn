@@ -29,6 +29,13 @@ import {
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
   setFavoriteStartingPosition as setFavoriteStartingPositionAction,
   clearFavoriteStartingPosition as clearFavoriteStartingPositionAction,
+  setMapSource as setMapSourceAction,
+  setWebCartographerUrl as setWebCartographerUrlAction,
+  CAIRN_BACKUP_MAP_URL,
+  FALLBACK_BACKUP_WC_URL,
+  WC_DOWN_SNOOZE_UNTIL_LS,
+  WC_DOWN_SNOOZE_MS,
+  inferWCTileFormat,
 } from "@/store/slices/mapView";
 import { stitchChunksToBlob } from "@/lib/stitch-chunks";
 import {
@@ -118,6 +125,7 @@ import {
 import {
   useWebCartographerLandmarks,
   useWebCartographerTranslocators,
+  WebCartographerOverlayError,
 } from "@/hooks/useWebCartographerOverlays";
 import { notifyWCTileCacheVersion } from "@/lib/wcTileCache";
 import {
@@ -137,6 +145,7 @@ import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverl
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
+import { WCOfficialDownDialog } from "@/components/tops-map/WCOfficialDownDialog";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
@@ -217,6 +226,17 @@ export function TOPSMapViewPage() {
   // per-level fetch lifecycle. The WebCartographer path is a thin static
   // tile pyramid loaded directly from the configured remote host.
   const usingWebCartographer = true; // mapSource === "webcartographer";
+  // Both `webcartographer` and `cairn` route through the WC viewer; only
+  // the base URL and the geojson fetch path (proxied vs direct CORS)
+  // differ. The Cairn backup mirror lives on our public bucket, which
+  // already serves the live landmarks/translocators/traders geojson with
+  // permissive CORS, so we can `fetch()` it without the backend proxy.
+  const usingCairnBackup = mapSource === "cairn" && CAIRN_BACKUP_MAP_URL.length > 0;
+  const effectiveWcUrl = usingCairnBackup ? CAIRN_BACKUP_MAP_URL : webCartographerUrl;
+  // Stock WC exports PNG; the translocator.moe mirror serves WebP. The
+  // viewer picks the right extension when building tile URLs so both
+  // hosts work without per-tile probing.
+  const effectiveTileFormat = useMemo(() => inferWCTileFormat(effectiveWcUrl), [effectiveWcUrl]);
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the
@@ -477,10 +497,15 @@ export function TOPSMapViewPage() {
   // usually exports only a single "Spawn" Server landmark). Traders always
   // come from the backend regardless of map source.
   const wcTranslocatorsQuery = useWebCartographerTranslocators(
-    webCartographerUrl,
+    effectiveWcUrl,
     usingWebCartographer,
+    usingCairnBackup,
   );
-  const wcLandmarksQuery = useWebCartographerLandmarks(webCartographerUrl, usingWebCartographer);
+  const wcLandmarksQuery = useWebCartographerLandmarks(
+    effectiveWcUrl,
+    usingWebCartographer,
+    usingCairnBackup,
+  );
   // Notify the WC tile service worker whenever the upstream content
   // version changes. We treat the combined `Last-Modified` of the
   // landmarks + translocators exports as a proxy for "the WC server
@@ -494,17 +519,81 @@ export function TOPSMapViewPage() {
   const wcTileCacheEnabled = useReduxState("mapView.wcTileCacheEnabled");
   useEffect(() => {
     if (!wcTileCacheEnabled) return;
-    if (!usingWebCartographer || !webCartographerUrl) return;
+    if (!usingWebCartographer || !effectiveWcUrl) return;
     if (!wcTranslocatorsLastModified && !wcLandmarksLastModified) return;
-    const version = `${webCartographerUrl}|${wcTranslocatorsLastModified ?? ""}|${wcLandmarksLastModified ?? ""}`;
+    const version = `${effectiveWcUrl}|${wcTranslocatorsLastModified ?? ""}|${wcLandmarksLastModified ?? ""}`;
     notifyWCTileCacheVersion(version);
   }, [
     wcTileCacheEnabled,
     usingWebCartographer,
-    webCartographerUrl,
+    effectiveWcUrl,
     wcTranslocatorsLastModified,
     wcLandmarksLastModified,
   ]);
+
+  // ── "Official WebCartographer is down" prompt ────────────────────────────
+  // When the proxied geojson fetch bubbles a 5xx from the upstream host,
+  // surface a modal offering to swap to the Cairn backup mirror. Snooze
+  // state is persisted to localStorage so a brief outage doesn't keep
+  // re-nagging the user after a soft refresh.
+  const [wcDownOpen, setWcDownOpen] = useState(false);
+  const wcUpstreamStatus = useMemo<number | null>(() => {
+    if (mapSource !== "webcartographer") return null;
+    for (const q of [wcTranslocatorsQuery, wcLandmarksQuery]) {
+      const err = q.error;
+      if (err instanceof WebCartographerOverlayError && err.status >= 500) {
+        return err.status;
+      }
+    }
+    return null;
+  }, [mapSource, wcTranslocatorsQuery, wcLandmarksQuery]);
+  useEffect(() => {
+    if (wcUpstreamStatus == null) {
+      setWcDownOpen(false);
+      return;
+    }
+    let snoozedUntil = 0;
+    try {
+      const raw = window.localStorage.getItem(WC_DOWN_SNOOZE_UNTIL_LS);
+      const n = raw ? Number(raw) : 0;
+      if (Number.isFinite(n)) snoozedUntil = n;
+    } catch {
+      // localStorage can throw in private-mode Safari etc. — fail open.
+    }
+    if (Date.now() < snoozedUntil) return;
+    setWcDownOpen(true);
+  }, [wcUpstreamStatus]);
+  const handleSwitchToBackup = useCallback(() => {
+    if (CAIRN_BACKUP_MAP_URL.length > 0) {
+      // Dedicated Cairn mirror is configured — swap to that tab so the
+      // overlay hooks pick up the direct-CORS fetch path.
+      dispatch(setMapSourceAction("cairn"));
+    } else {
+      // No Cairn host configured: fall back to the public translocator.moe
+      // mirror via the proxy. Stay on the WebCartographer tab so the
+      // overlay hooks keep going through `/api/webcartographer/geojson`
+      // (translocator.moe doesn't expose CORS, so a direct fetch would
+      // fail). The viewer infers the WebP tile extension from the
+      // hostname automatically.
+      dispatch(setMapSourceAction("webcartographer"));
+      dispatch(setWebCartographerUrlAction(FALLBACK_BACKUP_WC_URL));
+    }
+    setWcDownOpen(false);
+    try {
+      window.localStorage.removeItem(WC_DOWN_SNOOZE_UNTIL_LS);
+    } catch {
+      /* ignore */
+    }
+  }, [dispatch]);
+  const handleSnoozeWcDown = useCallback(() => {
+    setWcDownOpen(false);
+    try {
+      window.localStorage.setItem(WC_DOWN_SNOOZE_UNTIL_LS, String(Date.now() + WC_DOWN_SNOOZE_MS));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   const backendLandmarks = landmarksQuery.data?.data;
   const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
     if (!usingWebCartographer) return backendLandmarks;
@@ -1628,9 +1717,9 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
         {!isFullscreen && (
           <>
-            {/* <div className="rounded-lg border bg-muted/30 p-3">
+            <div className="rounded-lg border bg-muted/30 p-3">
               <MapSourceSelector />
-            </div> */}
+            </div>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
               {loading && !usingWebCartographer && (
                 <Button disabled>
@@ -2082,7 +2171,8 @@ export function TOPSMapViewPage() {
           {previewActive && <ExitPreviewButton />}
           {usingWebCartographer ? (
             <WebCartographerMapViewer
-              baseUrl={webCartographerUrl}
+              baseUrl={effectiveWcUrl}
+              tileFormat={effectiveTileFormat}
               alt="TOPS global server map"
               height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
               showTLLegend={showTranslocators}
@@ -2306,6 +2396,17 @@ export function TOPSMapViewPage() {
           handleGoToSubmit={handleGoToSubmit}
           lastViewportRef={lastViewportRef}
           setGoToError={setGoToError}
+        />
+        <WCOfficialDownDialog
+          open={wcDownOpen}
+          onOpenChange={setWcDownOpen}
+          onSwitchToBackup={handleSwitchToBackup}
+          onSnooze={handleSnoozeWcDown}
+          backupAvailable={
+            CAIRN_BACKUP_MAP_URL.length > 0 || webCartographerUrl !== FALLBACK_BACKUP_WC_URL
+          }
+          backupKind={CAIRN_BACKUP_MAP_URL.length > 0 ? "cairn" : "alternate-host"}
+          statusCode={wcUpstreamStatus}
         />
       </CardContent>
     </Card>

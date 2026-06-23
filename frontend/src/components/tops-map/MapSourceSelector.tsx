@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, MapPinned } from "lucide-react";
+import { Globe, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import {
+  CAIRN_BACKUP_MAP_URL,
   DEFAULT_WEBCARTOGRAPHER_URL,
   WEBCARTOGRAPHER_PRESETS,
   setMapSource,
@@ -31,12 +32,12 @@ interface MapSourceSelectorProps {
 /**
  * Source picker for the TOPS map viewer.
  *
- * Lets the user choose between our own ("cairn") pre-rendered tiles and an
- * external WebCartographer-style host (such as
- * https://tops-map.translocator.moe). When the WebCartographer source is
- * picked the URL is editable, with one-click presets for the publicly known
- * hosts. All overlays (TLs, traders, landmarks, oceans) keep coming from
- * our database — only the base map imagery swaps.
+ * Lets the user choose between the official WebCartographer host
+ * (https://map.tops.vintagestory.at by default, with editable URL + presets
+ * for known mirrors) and the "Cairn backup map" — a CORS-enabled mirror
+ * served from our own public bucket with the same WC tile/geojson layout.
+ * Both tabs render via the same `WebCartographerMapViewer`; only the base
+ * URL and geojson fetch path (proxied vs direct) differ.
  *
  * State lives on the `mapView` slice so the choice persists across reloads.
  */
@@ -67,18 +68,22 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
     <div className={cn("flex flex-col gap-3", className)}>
       <Tabs value={mapSource} onValueChange={(v) => handleSourceChange(v as MapSource)}>
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger
-            value="cairn"
-            disabled
-            className="flex items-center gap-1.5"
-            title="Cairn map is temporarily disabled"
-          >
-            <MapPinned className="size-3.5" />
-            Cairn map
-          </TabsTrigger>
           <TabsTrigger value="webcartographer" className="flex items-center gap-1.5">
             <Globe className="size-3.5" />
             WebCartographer
+          </TabsTrigger>
+          <TabsTrigger
+            value="cairn"
+            className="flex items-center gap-1.5"
+            disabled={!CAIRN_BACKUP_MAP_URL}
+            title={
+              CAIRN_BACKUP_MAP_URL
+                ? "Cairn-hosted backup mirror of the WC export"
+                : "Cairn backup map is not configured in this build"
+            }
+          >
+            <LifeBuoy className="size-3.5" />
+            Cairn backup map
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -122,14 +127,15 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
               <Input
                 id="wc-url"
                 value={draftUrl}
-                onChange={(e) => setDraftUrl(e.target.value)}
-                onBlur={() => commitUrl(draftUrl)}
+                readOnly
+                // onChange={(e) => setDraftUrl(e.target.value)}
+                // onBlur={() => commitUrl(draftUrl)}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
+                  // if (e.key === "Enter") {
+                  //   e.currentTarget.blur();
+                  // }
                 }}
-                placeholder="https://tops-map.translocator.moe"
+                placeholder="https://map.tops.vintagestory.at"
                 spellCheck={false}
                 autoComplete="off"
                 className="h-8 font-mono text-xs"
@@ -138,8 +144,9 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
                 type="button"
                 size="sm"
                 variant="secondary"
-                onClick={() => commitUrl(draftUrl)}
-                disabled={draftUrl.trim() === storedUrl}
+                disabled
+                // onClick={() => commitUrl(draftUrl)}
+                // disabled={draftUrl.trim() === storedUrl}
               >
                 Apply
               </Button>
@@ -148,12 +155,24 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
               <p className="text-[11px] text-muted-foreground">
                 Tiles are loaded directly from <code>{storedUrl}</code>
                 <span className="font-mono">
-                  /data/world/&#123;z&#125;/&#123;x&#125;_&#123;y&#125;.png
+                  /data/world/&#123;z&#125;/&#123;x&#125;_&#123;y&#125;.&#123;png|webp&#125;
                 </span>
                 .
               </p>
             )}
           </div>
+        </div>
+      )}
+
+      {mapSource === "cairn" && !compact && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-xs text-muted-foreground">
+            Mirror of the WC export hosted on our own infrastructure with CORS enabled, so
+            translocators and landmarks are fetched directly without the backend proxy.
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Source: <code>{CAIRN_BACKUP_MAP_URL || "(not configured)"}</code>
+          </p>
         </div>
       )}
     </div>
