@@ -217,6 +217,15 @@ export function RouteSummary({
   // level so the dialog survives leg-list re-renders.
   const [reportEdge, setReportEdge] = useState<{ key: string; label: string } | null>(null);
 
+  // Track the last leg the user zoomed to so we can softly pulse that
+  // row — long routes scroll out of view and users forget which entry
+  // they just located. Reset when the underlying route changes so the
+  // highlight never refers to a leg from a stale alternative.
+  const [locatedIndex, setLocatedIndex] = useState<number | null>(null);
+  useEffect(() => {
+    setLocatedIndex(null);
+  }, [route]);
+
   return (
     <div className="space-y-2 rounded-md border bg-background p-3">
       {/* Hero ETA — the headline answer to "how long will this take?".
@@ -288,7 +297,7 @@ export function RouteSummary({
               ? "flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100"
               : ELK_STATE_ROW_CLASSES[elkState];
           return (
-            <li key={i} className={rowClass}>
+            <li key={i} className={cn(rowClass, locatedIndex === i && "route-leg-located")}>
               <span className="flex-1 truncate">{describeLeg(leg, i, t)}</span>
               {leg.kind === "walk" && leg.penaltySeconds ? (
                 <span
@@ -357,7 +366,10 @@ export function RouteSummary({
                 size="icon-sm"
                 variant="ghost"
                 className="h-6 w-6 shrink-0 text-current opacity-70 hover:opacity-100"
-                onClick={() => onLocate({ x: midX, z: midZ, spanBlocks })}
+                onClick={() => {
+                  setLocatedIndex(i);
+                  onLocate({ x: midX, z: midZ, spanBlocks });
+                }}
                 title={
                   leg.kind === "tl"
                     ? t("routePlanner.showTlPairOnMap")
