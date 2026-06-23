@@ -1482,6 +1482,10 @@ const nl = {
                     official: "Officieel",
                 },
                 officialOnly: "Alleen officieel",
+                totalCount: {
+                    one: "{count} groepering",
+                    other: "{count} groeperingen",
+                },
                 tabs: {
                     browse: "Bladeren",
                     mine: "Mijn gepubliceerde",

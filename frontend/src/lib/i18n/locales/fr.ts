@@ -1386,6 +1386,10 @@ const fr = {
                     "official": "Officiels"
                 },
                 "officialOnly": "Officiels uniquement",
+                "totalCount": {
+                    "one": "{count} groupement",
+                    "other": "{count} groupements"
+                },
                 "tabs": {
                     "browse": "Parcourir",
                     "mine": "Mes publications",

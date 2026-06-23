@@ -1458,6 +1458,12 @@ const ru = {
                     official: "Официальные",
                 },
                 officialOnly: "Только официальные",
+                totalCount: {
+                    one: "{count} группировка",
+                    few: "{count} группировки",
+                    many: "{count} группировок",
+                    other: "{count} группировки",
+                },
                 tabs: {
                     browse: "Обзор",
                     mine: "Мои публикации",

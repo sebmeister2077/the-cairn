@@ -1385,6 +1385,10 @@ const es = {
                     "official": "Oficiales"
                 },
                 "officialOnly": "Solo oficiales",
+                "totalCount": {
+                    "one": "{count} agrupación",
+                    "other": "{count} agrupaciones"
+                },
                 "tabs": {
                     "browse": "Explorar",
                     "mine": "Mis publicadas",

@@ -1504,6 +1504,12 @@ export const en = {
                     official: "Official",
                 },
                 officialOnly: "Official only",
+                totalCount: {
+                    one: "{count} grouping",
+                    few: "{count} groupings",
+                    many: "{count} groupings",
+                    other: "{count} groupings",
+                },
                 tabs: {
                     browse: "Browse",
                     mine: "My published",
