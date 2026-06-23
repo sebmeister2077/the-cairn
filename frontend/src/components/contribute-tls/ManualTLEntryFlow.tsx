@@ -14,7 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Trash2, CheckCircle2 } from "lucide-react";
+import { Loader2, Trash2, CheckCircle2, Clipboard, ClipboardCheck } from "lucide-react";
 import { ApiError, contributeTLsManual } from "@/lib/api";
 import { MaintenanceChip } from "@/components/MaintenanceChip";
 import { TRANSLOCATORS_QUERY_KEY } from "@/hooks/useOverlayData";
@@ -105,7 +105,9 @@ export function ManualTLEntryFlow() {
   const [submitResult, setSubmitResult] = useState<{
     accepted: number;
     skipped_existing: number;
+    commands: string[];
   } | null>(null);
+  const [copiedIndexes, setCopiedIndexes] = useState<number[]>([]);
 
   const ready = useMemo(() => candidates.filter(isReady), [candidates]);
 
@@ -132,7 +134,16 @@ export function ManualTLEntryFlow() {
       setSubmitResult({
         accepted: result.accepted,
         skipped_existing: result.skipped_existing ?? 0,
+        commands: ready.flatMap((c) => {
+          const y1 = Number.isFinite(c.y1) ? c.y1 : 1;
+          const y2 = Number.isFinite(c.y2) ? c.y2 : 1;
+          return [
+            `/waypoint addati spiral ${c.x1} ${y1} ${c.z1} false purple TL to ${c.x2} ${c.z2}`,
+            `/waypoint addati spiral ${c.x2} ${y2} ${c.z2} false purple TL to ${c.x1} ${c.z1}`,
+          ];
+        }),
       });
+      setCopiedIndexes([]);
       setCandidates([blankCandidate()]);
       queryClient.invalidateQueries({ queryKey: TRANSLOCATORS_QUERY_KEY });
     } catch (e: unknown) {
@@ -153,6 +164,23 @@ export function ManualTLEntryFlow() {
       setSubmitting(false);
     }
   }, [ready, queryClient, t]);
+
+  const handleCopyCommand = useCallback(
+    async (index: number) => {
+      const cmd = submitResult?.commands[index];
+      if (!cmd) return;
+      try {
+        await navigator.clipboard.writeText(cmd);
+        setCopiedIndexes((arr) => [...arr, index]);
+        // window.setTimeout(() => {
+        //   setCopiedIndexes((cur) => (cur[0] === index ? [] : cur));
+        // }, 2000);
+      } catch {
+        // Clipboard write can fail in insecure contexts; ignore.
+      }
+    },
+    [submitResult],
+  );
 
   return (
     <Card>
@@ -248,7 +276,7 @@ export function ManualTLEntryFlow() {
           </p>
         )}
         {submitResult && (
-          <div className="rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm">
+          <div className="rounded-md border border-green-500/40 bg-green-500/10 p-3 text-sm space-y-2">
             <div className="flex items-center gap-2 font-medium text-green-700 dark:text-green-300">
               <CheckCircle2 className="h-4 w-4" />
               {t("contributeTLsPage.manual.submitted", {
@@ -257,11 +285,50 @@ export function ManualTLEntryFlow() {
               })}
             </div>
             {submitResult.skipped_existing > 0 && (
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {t("contributeTLsPage.manual.skippedExisting", {
                   count: submitResult.skipped_existing,
                 })}
               </p>
+            )}
+            {submitResult.commands.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium">
+                  {t("contributeTLsPage.manual.waypointCommandsTitle")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t("contributeTLsPage.manual.waypointCommandsHelp")}
+                </p>
+                <ul className="space-y-1">
+                  {submitResult.commands.map((cmd, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 rounded border bg-background p-1.5"
+                    >
+                      <code className="flex-1 overflow-x-auto whitespace-nowrap text-xs">
+                        {cmd}
+                      </code>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCopyCommand(i)}
+                        aria-label={
+                          copiedIndexes.includes(i)
+                            ? t("contributeTLsPage.manual.copied")
+                            : t("contributeTLsPage.manual.copyCommand")
+                        }
+                      >
+                        {copiedIndexes.includes(i) ? (
+                          <ClipboardCheck className="size-4" />
+                        ) : (
+                          <Clipboard className="size-4" />
+                        )}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}

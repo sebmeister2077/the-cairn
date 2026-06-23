@@ -752,6 +752,11 @@ export const en = {
             rateLimited:
                 "You've reached the daily limit for manual TL submissions. Please try again later.",
             submitFailed: "Failed to submit translocators",
+            waypointCommandsTitle: "In-game waypoint commands",
+            waypointCommandsHelp:
+                "Paste each command into the in-game chat to add a spiral waypoint at each endpoint. Y defaults to 1 when not provided — adjust in-game if needed.",
+            copyCommand: "Copy",
+            copied: "Copied!",
         },
         chatLogUpload: {
             title: "Upload your client-chat.log",
