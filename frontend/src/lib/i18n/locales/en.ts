@@ -1582,6 +1582,9 @@ export const en = {
                     "<strong>{name}</strong> in your library has the exact same translocators. Update it instead?",
                 duplicatePayloadOpenExisting: "Edit existing",
                 duplicatePayloadPublishAnyway: "Publish a copy anyway",
+                originalMissingTitle: "Original entry no longer exists",
+                originalMissing:
+                    "The published version of this grouping was removed from the library. Submitting will publish it again as a new entry.",
                 historyTitle: "Version history",
                 historyDescription: "Every published edit is kept. Fork any version into your groupings.",
                 version: "v{version}",

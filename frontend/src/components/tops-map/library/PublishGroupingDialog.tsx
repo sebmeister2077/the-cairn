@@ -66,16 +66,24 @@ export function PublishGroupingDialog({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [duplicate, setDuplicate] = useState<DuplicateConflict | null>(null);
+  // Set when the library entry referenced by `editLibraryId` no longer exists
+  // (deleted by the publisher, an admin, or wiped from the DB). We fall back
+  // to a fresh publish so the user isn't stranded with a stale `publishedId`.
+  const [originalMissing, setOriginalMissing] = useState(false);
 
   // In edit mode, fetch the existing published card so we can prefill
   // description / tags / color (the local TLGrouping doesn't store those
-  // fields). Cached and shared with other library views.
+  // fields). Cached and shared with other library views. Don't retry on 404 —
+  // that's the "library entry gone" signal we want to surface immediately.
   const cardQuery = useQuery({
     queryKey: [...GROUPING_LIBRARY_KEY, "card", editLibraryId],
     queryFn: ({ signal }) => groupingLibrary.get(editLibraryId as string, signal),
     enabled: open && Boolean(editLibraryId),
     staleTime: 60_000,
+    retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
   });
+
+  const effectiveEdit = isEdit && !originalMissing;
 
   // One-shot guard so the prefill from the fetched card doesn't clobber
   // user edits after the first successful seed in this open cycle.
@@ -94,6 +102,7 @@ export function PublishGroupingDialog({
     setChangeNote("");
     setError(null);
     setDuplicate(null);
+    setOriginalMissing(false);
   }, [open, grouping]);
 
   useEffect(() => {
@@ -108,12 +117,22 @@ export function PublishGroupingDialog({
     setTagList(card.tags ?? []);
   }, [open, isEdit, cardQuery.data]);
 
+  // The published entry was deleted server-side. Switch to publish-new mode
+  // so the user can re-share their local copy instead of hitting 404 forever.
+  useEffect(() => {
+    if (!open || !isEdit) return;
+    const err = cardQuery.error;
+    if (err instanceof ApiError && err.status === 404) {
+      setOriginalMissing(true);
+    }
+  }, [open, isEdit, cardQuery.error]);
+
   function mapError(err: unknown): string {
     if (err instanceof ApiError) {
       if (err.code === "account_too_new") return t("topsMap.groupingsDrawer.library.accountTooNew");
       if (err.code === "empty_grouping") return t("topsMap.groupingsDrawer.library.emptyGrouping");
       if (err.status === 429) {
-        return isEdit
+        return effectiveEdit
           ? t("topsMap.groupingsDrawer.library.editCapHit")
           : t("topsMap.groupingsDrawer.library.publishCapHit");
       }
@@ -140,28 +159,35 @@ export function PublishGroupingDialog({
     setDuplicate(null);
     try {
       const colorValue = color.trim() || null;
-      if (isEdit && editLibraryId) {
-        const card = await actions.edit(editLibraryId, {
-          name: name.trim(),
-          description: description.trim() || null,
-          color: colorValue,
-          tlIds: grouping.tlIds,
-          tags: tagList,
-          changeNote: changeNote.trim() || undefined,
-          allowDuplicate,
-        });
-        onPublished?.(card.id, card.version);
+      const basePayload = {
+        name: name.trim(),
+        description: description.trim() || null,
+        color: colorValue,
+        tlIds: grouping.tlIds,
+        tags: tagList,
+        allowDuplicate,
+      };
+      let card;
+      if (effectiveEdit && editLibraryId) {
+        try {
+          card = await actions.edit(editLibraryId, {
+            ...basePayload,
+            changeNote: changeNote.trim() || undefined,
+          });
+        } catch (err) {
+          // The library entry was deleted between the dialog opening and
+          // submit. Fall back to a fresh publish so the user isn't stuck.
+          if (err instanceof ApiError && err.status === 404) {
+            setOriginalMissing(true);
+            card = await actions.publish(basePayload);
+          } else {
+            throw err;
+          }
+        }
       } else {
-        const card = await actions.publish({
-          name: name.trim(),
-          description: description.trim() || null,
-          color: colorValue,
-          tlIds: grouping.tlIds,
-          tags: tagList,
-          allowDuplicate,
-        });
-        onPublished?.(card.id, card.version);
+        card = await actions.publish(basePayload);
       }
+      onPublished?.(card.id, card.version);
       onOpenChange(false);
     } catch (err) {
       const dup = extractDuplicate(err);
@@ -182,12 +208,12 @@ export function PublishGroupingDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isEdit
+            {effectiveEdit
               ? t("topsMap.groupingsDrawer.library.editTitle")
               : t("topsMap.groupingsDrawer.library.publishTitle")}
           </DialogTitle>
           <DialogDescription>
-            {isEdit
+            {effectiveEdit
               ? t("topsMap.groupingsDrawer.library.editDescription")
               : t("topsMap.groupingsDrawer.library.publishDescription")}
           </DialogDescription>
@@ -247,7 +273,7 @@ export function PublishGroupingDialog({
               {t("topsMap.groupingsDrawer.library.tagsHint", { max: MAX_TAGS })}
             </p>
           </div>
-          {isEdit && (
+          {effectiveEdit && (
             <div className="grid gap-1.5">
               <Label htmlFor="publish-note">
                 {t("topsMap.groupingsDrawer.library.changeNoteLabel")}
@@ -259,6 +285,16 @@ export function PublishGroupingDialog({
                 placeholder={t("topsMap.groupingsDrawer.library.changeNotePlaceholder")}
                 onChange={(e) => setChangeNote(e.target.value)}
               />
+            </div>
+          )}
+          {originalMissing && (
+            <div className="rounded-md border border-amber-500/50 bg-amber-500/10 p-2.5 text-sm">
+              <p className="font-medium">
+                {t("topsMap.groupingsDrawer.library.originalMissingTitle")}
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                {t("topsMap.groupingsDrawer.library.originalMissing")}
+              </p>
             </div>
           )}
           <p className="text-xs text-muted-foreground">
@@ -295,7 +331,7 @@ export function PublishGroupingDialog({
             >
               {busy
                 ? t("topsMap.groupingsDrawer.library.publishing")
-                : isEdit
+                : effectiveEdit
                   ? t("topsMap.groupingsDrawer.library.updateConfirm")
                   : t("topsMap.groupingsDrawer.library.publishConfirm")}
             </Button>
