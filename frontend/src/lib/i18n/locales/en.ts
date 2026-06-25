@@ -1532,6 +1532,8 @@ export const en = {
                 upvotes: "{count} upvotes",
                 publishedOn: "Published {date}",
                 updatedOn: "Updated {date}",
+                showMore: "Show more",
+                showLess: "Show less",
                 fork: "Fork",
                 forkHint: "Copy into your local groupings — fully editable, detached from updates.",
                 subscribe: "Subscribe",

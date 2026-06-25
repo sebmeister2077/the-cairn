@@ -4,7 +4,7 @@
  <office:meta>
     <meta:generator>LibreOffice/26.2.1.2$Windows_X86_64 LibreOffice_project/620$Build-2</meta:generator>
     <dc:title>Rock pricing model — Aged variants (seed 421943594)</dc:title>
-  <dc:date>2026-06-21T16:43:03.313247900</dc:date><meta:editing-duration>PT57M54S</meta:editing-duration><meta:editing-cycles>4</meta:editing-cycles><meta:document-statistic meta:table-count="2" meta:cell-count="270" meta:object-count="0"/></office:meta>
+  <dc:date>2026-06-24T22:03:14.244589500</dc:date><meta:editing-duration>PT1H1M56S</meta:editing-duration><meta:editing-cycles>5</meta:editing-cycles><meta:document-statistic meta:table-count="2" meta:cell-count="270" meta:object-count="0"/></office:meta>
  <office:settings>
   <config:config-item-set config:name="ooo:view-settings">
    <config:config-item config:name="VisibleAreaTop" config:type="int">0</config:config-item>
@@ -16,8 +16,8 @@
      <config:config-item config:name="ViewId" config:type="string">view1</config:config-item>
      <config:config-item-map-named config:name="Tables">
       <config:config-item-map-entry config:name="Prices">
-       <config:config-item config:name="CursorPositionX" config:type="int">11</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">5</config:config-item>
+       <config:config-item config:name="CursorPositionX" config:type="int">1</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">28</config:config-item>
        <config:config-item config:name="ActiveSplitRange" config:type="short">2</config:config-item>
        <config:config-item config:name="PositionLeft" config:type="int">0</config:config-item>
        <config:config-item config:name="PositionRight" config:type="int">0</config:config-item>
@@ -247,59 +247,59 @@
   </loext:theme>
  </office:styles>
  <office:automatic-styles>
-  <style:style style:name="co1" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="2.7398in"/>
-  </style:style>
-  <style:style style:name="co2" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.7465in"/>
-  </style:style>
-  <style:style style:name="co3" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.7827in"/>
-  </style:style>
-  <style:style style:name="co4" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.9016in"/>
-  </style:style>
-  <style:style style:name="co5" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.8661in"/>
-  </style:style>
-  <style:style style:name="co6" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.8898in"/>
-  </style:style>
-  <style:style style:name="co7" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.1402in"/>
-  </style:style>
-  <style:style style:name="co8" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.9972in"/>
-  </style:style>
-  <style:style style:name="co9" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.961in"/>
-  </style:style>
-  <style:style style:name="co10" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.2709in"/>
-  </style:style>
-  <style:style style:name="co11" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.1283in"/>
-  </style:style>
-  <style:style style:name="co12" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.0925in"/>
-  </style:style>
-  <style:style style:name="co13" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.889in"/>
-  </style:style>
-  <style:style style:name="co14" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.6146in"/>
-  </style:style>
-  <style:style style:name="co15" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.3654in"/>
-  </style:style>
-  <style:style style:name="co16" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="3.1665in"/>
-  </style:style>
-  <style:style style:name="co17" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="3.3917in"/>
-  </style:style>
   <style:style style:name="co18" style:family="table-column">
    <style:table-column-properties fo:break-before="auto" style:column-width="1.7717in"/>
+  </style:style>
+  <style:style style:name="co2" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="2.7398in"/>
+  </style:style>
+  <style:style style:name="co3" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.7465in"/>
+  </style:style>
+  <style:style style:name="co4" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.7827in"/>
+  </style:style>
+  <style:style style:name="co5" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.9016in"/>
+  </style:style>
+  <style:style style:name="co6" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.8661in"/>
+  </style:style>
+  <style:style style:name="co7" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.8898in"/>
+  </style:style>
+  <style:style style:name="co8" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.1402in"/>
+  </style:style>
+  <style:style style:name="co9" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.9972in"/>
+  </style:style>
+  <style:style style:name="co10" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.961in"/>
+  </style:style>
+  <style:style style:name="co11" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.2709in"/>
+  </style:style>
+  <style:style style:name="co12" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.1283in"/>
+  </style:style>
+  <style:style style:name="co13" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.0925in"/>
+  </style:style>
+  <style:style style:name="co14" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.889in"/>
+  </style:style>
+  <style:style style:name="co15" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.6146in"/>
+  </style:style>
+  <style:style style:name="co16" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.3654in"/>
+  </style:style>
+  <style:style style:name="co17" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="3.1665in"/>
+  </style:style>
+  <style:style style:name="co19" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="3.3917in"/>
   </style:style>
   <style:style style:name="ro1" style:family="table-row">
    <style:table-row-properties style:row-height="0.2409in" fo:break-before="auto" style:use-optimal-row-height="true"/>
@@ -338,14 +338,20 @@
   <number:text-style style:name="N100">
    <number:text-content/>
   </number:text-style>
+  <style:style style:name="config-key" style:family="table-cell" style:parent-style-name="Default">
+   <style:text-properties fo:font-weight="bold"/>
+  </style:style>
   <style:style style:name="title" style:family="table-cell" style:parent-style-name="Default">
+   <style:text-properties fo:font-size="14pt" fo:font-weight="bold"/>
+  </style:style>
+  <style:style style:name="ce3" style:family="table-cell" style:parent-style-name="Default">
    <style:text-properties fo:font-size="14pt" fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="section" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#bdd7ee"/>
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
-  <style:style style:name="config-key" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce6" style:family="table-cell" style:parent-style-name="Default">
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="header" style:family="table-cell" style:parent-style-name="Default">
@@ -357,15 +363,36 @@
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
    <style:text-properties fo:font-size="12pt" style:font-size-asian="12pt" style:font-size-complex="12pt"/>
   </style:style>
+  <style:style style:name="ce9" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#dee6ef" style:text-align-source="fix" style:repeat-content="false"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+   <style:text-properties fo:font-size="12pt" style:font-size-asian="12pt" style:font-size-complex="12pt"/>
+  </style:style>
   <style:style style:name="config-val" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N4">
    <style:table-cell-properties fo:background-color="#fff2cc"/>
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="pct-cell" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N11"/>
+  <style:style style:name="ce20" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#dee6ef"/>
+  </style:style>
   <style:style style:name="num-cell" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N3"/>
+  <style:style style:name="ce22" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N3">
+   <style:table-cell-properties fo:background-color="#dee6ef"/>
+  </style:style>
+  <style:style style:name="ce23" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N11">
+   <style:table-cell-properties fo:background-color="#dee6ef"/>
+  </style:style>
   <style:style style:name="num2-cell" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N4"/>
+  <style:style style:name="ce25" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N4">
+   <style:table-cell-properties fo:background-color="#dee6ef"/>
+  </style:style>
   <style:style style:name="ce10" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N3">
    <style:table-cell-properties fo:background-color="#c6e0b4"/>
+   <style:text-properties fo:font-weight="bold"/>
+  </style:style>
+  <style:style style:name="ce27" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N3">
+   <style:table-cell-properties fo:background-color="#dee6ef"/>
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="price-cell" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N3">
@@ -439,7 +466,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-06-21">00/00/0000</text:date>, <text:time style:data-style-name="N2" text:time-value="18:14:15.380438600">00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-06-24">00/00/0000</text:date>, <text:time style:data-style-name="N2" text:time-value="21:59:11.548185700">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>
@@ -455,19 +482,18 @@
   <office:spreadsheet>
    <table:calculation-settings table:case-sensitive="false" table:automatic-find-labels="false" table:use-regular-expressions="false" table:use-wildcards="true"/>
    <table:table table:name="Prices" table:style-name="ta1">
-    <table:table-column table:style-name="co1" table:default-cell-style-name="ce5"/>
-    <table:table-column table:style-name="co2" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co3" table:default-cell-style-name="num-cell"/>
+    <table:table-column table:style-name="co2" table:default-cell-style-name="ce5"/>
+    <table:table-column table:style-name="co3" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co4" table:default-cell-style-name="num-cell"/>
-    <table:table-column table:style-name="co5" table:default-cell-style-name="pct-cell"/>
-    <table:table-column table:style-name="co6" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co5" table:default-cell-style-name="num-cell"/>
+    <table:table-column table:style-name="co6" table:default-cell-style-name="pct-cell"/>
     <table:table-column table:style-name="co7" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co8" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co9" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co10" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co11" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co12" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co10" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co13" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co11" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co12" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co13" table:default-cell-style-name="Default"/>
@@ -475,8 +501,9 @@
     <table:table-column table:style-name="co15" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co16" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co17" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co19" table:default-cell-style-name="Default"/>
     <table:table-row table:style-name="ro1">
-     <table:table-cell table:style-name="title" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce3" office:value-type="string" calcext:value-type="string">
       <text:p>Rock pricing model — Aged variants (based on tops seed)</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -503,7 +530,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Base price (Aged Granite Ashlar)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
@@ -516,7 +543,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Igneous boost multiplier</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
@@ -533,7 +560,7 @@
      <table:table-cell table:number-columns-repeated="13"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Polished multiplier (× ashlar)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
@@ -546,7 +573,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Cracked/Cobbled multiplier (× ashlar)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="8" calcext:value-type="float">
@@ -559,7 +586,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Granite boosted % (auto)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="pct-cell" table:formula="of:=VLOOKUP(&quot;rock-granite&quot;;[.A13:.E25];5;0)" office:value-type="percentage" office:value="0.428733889619667" calcext:value-type="percentage">
@@ -1023,49 +1050,49 @@
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
     <table:table-row table:style-name="ro4">
-     <table:table-cell office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce9" office:value-type="string" calcext:value-type="string">
       <text:p>rock-granite</text:p>
      </table:table-cell>
-     <table:table-cell office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce20" office:value-type="string" calcext:value-type="string">
       <text:p>Y</text:p>
      </table:table-cell>
-     <table:table-cell office:value-type="float" office:value="1049943" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" office:value-type="float" office:value="1049943" calcext:value-type="float">
       <text:p>1,049,943</text:p>
      </table:table-cell>
-     <table:table-cell table:formula="of:=[.C20]*IF([.B20]=&quot;Y&quot;;[.$B$5];1)" office:value-type="float" office:value="3149829" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=[.C20]*IF([.B20]=&quot;Y&quot;;[.$B$5];1)" office:value-type="float" office:value="3149829" calcext:value-type="float">
       <text:p>3,149,829</text:p>
      </table:table-cell>
-     <table:table-cell table:formula="of:=[.D20]/SUM([.$D$13:.$D$25])" office:value-type="percentage" office:value="0.428733889619667" calcext:value-type="percentage">
+     <table:table-cell table:style-name="ce23" table:formula="of:=[.D20]/SUM([.$D$13:.$D$25])" office:value-type="percentage" office:value="0.428733889619667" calcext:value-type="percentage">
       <text:p>42.87%</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E20]=0;0;[.$B$8]/[.E20])" office:value-type="float" office:value="1" calcext:value-type="float">
+     <table:table-cell table:style-name="ce25" table:formula="of:=IF([.E20]=0;0;[.$B$8]/[.E20])" office:value-type="float" office:value="1" calcext:value-type="float">
       <text:p>1.00</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F20];0)" office:value-type="float" office:value="3" calcext:value-type="float">
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*[.F20];0)" office:value-type="float" office:value="3" calcext:value-type="float">
       <text:p>3</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F20]);0)" office:value-type="float" office:value="3" calcext:value-type="float">
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*SQRT([.F20]);0)" office:value-type="float" office:value="3" calcext:value-type="float">
       <text:p>3</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))));0)" office:value-type="float" office:value="3" calcext:value-type="float">
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))));0)" office:value-type="float" office:value="3" calcext:value-type="float">
       <text:p>3</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
       <text:p>9</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
       <text:p>9</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
       <text:p>9</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
       <text:p>24</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
       <text:p>24</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
       <text:p>24</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
@@ -1317,7 +1344,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Total</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1336,7 +1363,7 @@
    <table:table table:name="How to use" table:style-name="ta1">
     <table:table-column table:style-name="co18" table:number-columns-repeated="2" table:default-cell-style-name="Default"/>
     <table:table-row table:style-name="ro1">
-     <table:table-cell table:style-name="title" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce3" office:value-type="string" calcext:value-type="string">
       <text:p>How to use this sheet</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1372,7 +1399,7 @@
      <table:table-cell table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Curve definitions (let r = granite_boosted% / rock_boosted%)</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1405,7 +1432,7 @@
      <table:table-cell table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="config-key" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
       <text:p>Variants</text:p>
      </table:table-cell>
      <table:table-cell/>

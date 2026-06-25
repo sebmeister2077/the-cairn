@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -5,6 +6,7 @@ import { type LibraryGroupingCard } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n";
 
 import { ReputationBadge } from "./ReputationBadge";
+import { ExpandableDescription } from "./ExpandableDescription";
 
 export function GroupingCardHeader({ card }: { card: LibraryGroupingCard }) {
   const { t } = useTranslation();
@@ -25,9 +27,7 @@ export function GroupingCardHeader({ card }: { card: LibraryGroupingCard }) {
           </Badge>
         )}
       </div>
-      {card.description && (
-        <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{card.description}</p>
-      )}
+      {card.description && <ExpandableDescription text={card.description} />}
       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>
           {t("topsMap.groupingsDrawer.library.by", {

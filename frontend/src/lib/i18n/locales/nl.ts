@@ -1501,6 +1501,8 @@ const nl = {
                 tls: "{count} TL's",
                 installs: "{count} installaties",
                 upvotes: "{count} stemmen",
+                showMore: "Meer tonen",
+                showLess: "Minder tonen",
                 fork: "Forken",
                 forkHint:
                     "Kopieer naar je lokale groeperingen — volledig bewerkbaar, losgekoppeld van updates.",
