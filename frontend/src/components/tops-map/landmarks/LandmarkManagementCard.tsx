@@ -13,7 +13,7 @@
  *   The pending list refreshes so the user sees their submission.
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Loader2, MapPin, Pencil, Plus, UserPlus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -21,8 +21,10 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import {
+  deleteLandmark,
   getLandmarksUrl,
   getMyAccountSafe,
   listMyLandmarkEditRequests,
@@ -116,6 +118,7 @@ function SignedInCard({
   const queryClient = useQueryClient();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isEditing, setIsEditing] = useState<LandmarkFeature | null>(null);
+  const [isDeleting, setIsDeleting] = useState<LandmarkFeature | null>(null);
   const [browseQuery, setBrowseQuery] = useState("");
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
 
@@ -145,6 +148,14 @@ function SignedInCard({
     queryClient.invalidateQueries({ queryKey: landmarkQueries.editRequest.queryKey });
     onLandmarksChanged();
   };
+
+  const deleteMut = useMutation({
+    mutationFn: (id: string) => deleteLandmark(id),
+    onSuccess: () => {
+      setIsDeleting(null);
+      refreshAll();
+    },
+  });
 
   return (
     <>
@@ -211,6 +222,7 @@ function SignedInCard({
                   feature={feat}
                   ownedByMe
                   onEdit={() => setIsEditing(feat)}
+                  onDelete={() => setIsDeleting(feat)}
                 />
               ))}
 
@@ -246,6 +258,11 @@ function SignedInCard({
                     feature={feat}
                     ownedByMe={!!userId && feat.properties?.added_by_user_id === userId}
                     onEdit={() => setIsEditing(feat)}
+                    onDelete={
+                      !!userId && feat.properties?.added_by_user_id === userId
+                        ? () => setIsDeleting(feat)
+                        : undefined
+                    }
                   />
                 ))}
                 <p className="text-muted-foreground text-[10px]">
@@ -276,6 +293,37 @@ function SignedInCard({
           }}
         />
       )}
+      <ConfirmDialog
+        open={!!isDeleting}
+        title={t("topsMap.landmarksCard.deleteConfirmTitle")}
+        description={
+          isDeleting ? (
+            <>
+              {t("topsMap.landmarksCard.deleteConfirmBody", {
+                label: isDeleting.properties.label || "",
+              })}
+              {deleteMut.error && (
+                <p className="mt-2 text-destructive">
+                  {t("topsMap.landmarksCard.deleteFailed", {
+                    message: (deleteMut.error as Error).message,
+                  })}
+                </p>
+              )}
+            </>
+          ) : undefined
+        }
+        confirmLabel={t("topsMap.landmarksCard.deleteConfirm")}
+        cancelLabel={t("topsMap.cancel")}
+        variant="destructive"
+        loading={deleteMut.isPending}
+        onConfirm={() => {
+          if (isDeleting) deleteMut.mutate(isDeleting.properties.id);
+        }}
+        onCancel={() => {
+          deleteMut.reset();
+          setIsDeleting(null);
+        }}
+      />
     </>
   );
 }

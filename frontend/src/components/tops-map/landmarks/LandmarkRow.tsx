@@ -1,17 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { LandmarkEditRequest, LandmarkFeature } from "@/lib/api";
-import { Pencil } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
+import { Pencil, Trash2 } from "lucide-react";
 
 export function LandmarkRow({
   feature,
   ownedByMe,
   onEdit,
+  onDelete,
 }: {
   feature: LandmarkFeature;
   ownedByMe: boolean;
   onEdit: () => void;
+  onDelete?: () => void;
 }) {
+  const { t } = useTranslation();
   const [x, z] = feature.geometry.coordinates;
   const y = feature.properties.z;
   const label = feature.properties.label || "(no label)";
@@ -29,9 +33,22 @@ export function LandmarkRow({
           )}
         </div>
       </div>
-      <Button size="sm" variant="ghost" onClick={onEdit} title="Rename">
-        <Pencil className="size-3" />
-      </Button>
+      <div className="flex items-center gap-1">
+        <Button size="sm" variant="ghost" onClick={onEdit} title="Rename">
+          <Pencil className="size-3" />
+        </Button>
+        {ownedByMe && onDelete && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onDelete}
+            title={t("topsMap.landmarksCard.delete")}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="size-3" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

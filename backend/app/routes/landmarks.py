@@ -445,6 +445,71 @@ async def rename_landmark(
         return {"applied": False, "edit_request": _serialise_edit_request(request_row)}
 
 
+@router.delete("/landmarks/{landmark_id}")
+async def delete_own_landmark(
+    landmark_id: str,
+    ctx: dict = Depends(require_active_user),
+) -> dict:
+    """Owner-only hard delete.
+
+    Mirrors the admin delete in [admin_landmarks.py] but requires the caller
+    to own the landmark (``properties.added_by_user_id`` matches). Admins
+    must use the admin endpoint to delete seeded / other-user landmarks.
+
+    Any pending rename requests for this landmark are auto-rejected so the
+    admin queue stays clean.
+    """
+    user = _require_account_user(ctx)
+    api_key_id = _ctx_api_key_id(ctx)
+    user_id = str(user["id"]) if user.get("id") is not None else None
+    display_name = user.get("display_name") or "Anonymous"
+
+    async with landmarks_write_lock("delete_own"):
+        data = await asyncio.to_thread(_load_landmarks_file)
+        feature = _find_feature(data, landmark_id)
+        if feature is None:
+            raise HTTPException(status_code=404, detail="landmark not found")
+        owner_id = (feature.get("properties") or {}).get("added_by_user_id")
+        if not owner_id or not user_id or str(owner_id) != user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="you can only delete landmarks you added",
+            )
+        data["features"] = [
+            f for f in data["features"]
+            if (f.get("properties") or {}).get("id") != landmark_id
+        ]
+        await asyncio.to_thread(_save_landmarks_file, data)
+        await asyncio.to_thread(
+            db.insert_landmark_audit,
+            landmark_id=landmark_id,
+            action="delete_own",
+            actor_api_key_id=api_key_id,
+            actor_display_name=display_name,
+            before_payload=feature,
+        )
+
+        # Auto-reject any still-pending rename requests for this landmark so
+        # the admin queue doesn't carry stale items referring to a feature
+        # that no longer exists.
+        pending = await asyncio.to_thread(
+            db.list_landmark_edit_requests,
+            status="pending",
+            landmark_id=landmark_id,
+            limit=500,
+        )
+        for req in pending:
+            await asyncio.to_thread(
+                db.resolve_landmark_edit_request,
+                req["id"],
+                new_status="rejected",
+                reviewed_by_api_key_id=api_key_id,
+                review_note="Landmark deleted by owner",
+            )
+
+    return {"deleted": landmark_id, "feature": feature}
+
+
 @router.get("/landmarks/my-edit-requests")
 async def list_my_edit_requests(
     ctx: dict = Depends(require_active_user),

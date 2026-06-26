@@ -1393,6 +1393,12 @@ export const en = {
             searchByLabel: "Search by label...",
             noMatches: "No matches.",
             reviewNotice: "Renames on landmarks you didn't add are queued for admin review.",
+            delete: "Delete",
+            deleteConfirmTitle: "Delete landmark?",
+            deleteConfirmBody:
+                "\"{label}\" will be removed from the map for everyone. This cannot be undone.",
+            deleteConfirm: "Delete",
+            deleteFailed: "Failed to delete landmark: {message}",
         },
         landmarkDialogs: {
             add: {

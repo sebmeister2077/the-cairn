@@ -1027,6 +1027,16 @@ export async function listMyLandmarkEditRequests(
     return (await handleResponse(res)).json();
 }
 
+export async function deleteLandmark(
+    landmarkId: string,
+): Promise<{ deleted: string; feature: LandmarkFeature }> {
+    const res = await fetch(`${API_BASE}/landmarks/${encodeURIComponent(landmarkId)}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 // ---------------------------------------------------------------------------
 // Admin landmarks endpoints
 // ---------------------------------------------------------------------------
