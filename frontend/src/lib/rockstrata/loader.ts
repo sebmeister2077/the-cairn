@@ -2,6 +2,7 @@ import rockmapPngUrl from "@/assets/RockStrata/rockmap_20260603_194847.png?url";
 import rockmapMetaJson from "@/assets/RockStrata/rockmap_20260603_194847.json";
 import rockmapWorldJson from "@/assets/RockStrata/rockmap_20260603_194847.world.json";
 
+import { decodePng } from "./png";
 import type {
     LoadedRockMap,
     RockMapMeta,
@@ -35,30 +36,18 @@ export function getLayerLegend(kind: RockStrataLayerKind) {
 const cache = new Map<RockStrataLayerKind, Promise<LoadedRockMap>>();
 
 async function decode(triplet: BundledTriplet, kind: RockStrataLayerKind): Promise<LoadedRockMap> {
-    const blob = await fetch(triplet.pngUrl).then((r) => {
+    // Decode the PNG directly from its bytes rather than via a canvas.
+    // Anti-fingerprinting browsers (LibreWolf / Firefox
+    // `privacy.resistFingerprinting`) randomize `getImageData` readback
+    // unless a fresh user gesture is present — that noise was the source of
+    // the "random colors" overlay bug. `decodePng` never touches a canvas.
+    const buffer = await fetch(triplet.pngUrl).then((r) => {
         if (!r.ok) throw new Error(`Failed to fetch rockstrata PNG (${r.status})`);
-        return r.blob();
+        return r.arrayBuffer();
     });
-    const bitmap = await createImageBitmap(blob);
-    const w = bitmap.width;
-    const h = bitmap.height;
-    const canvas =
-        typeof OffscreenCanvas !== "undefined"
-            ? new OffscreenCanvas(w, h)
-            : (() => {
-                const c = document.createElement("canvas");
-                c.width = w;
-                c.height = h;
-                return c;
-            })();
-    const ctx = (canvas as OffscreenCanvas).getContext("2d") as
-        | OffscreenCanvasRenderingContext2D
-        | CanvasRenderingContext2D
-        | null;
-    if (!ctx) throw new Error("Could not acquire 2D context for rockstrata PNG");
-    ctx.drawImage(bitmap as unknown as CanvasImageSource, 0, 0);
-    const imageData = (ctx as CanvasRenderingContext2D).getImageData(0, 0, w, h);
-    bitmap.close?.();
+    const decoded = await decodePng(buffer);
+    const w = decoded.width;
+    const h = decoded.height;
 
     // Detect duplicate hexcolors across legend entries — the mod hashes
     // unknown blocks to a color, so two distinct codes can collide and
@@ -79,7 +68,7 @@ async function decode(triplet: BundledTriplet, kind: RockStrataLayerKind): Promi
 
     return {
         layerKind: kind,
-        rgba: imageData.data,
+        rgba: decoded.rgba,
         width: w,
         height: h,
         meta: triplet.meta,

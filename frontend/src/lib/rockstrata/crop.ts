@@ -1,4 +1,5 @@
 import type { RockMapWorld } from "./types";
+import { encodePngUrl } from "./png";
 
 export interface CropResult {
     rgba: Uint8ClampedArray;
@@ -70,38 +71,9 @@ export async function encodeRgbaToPngUrl(
     width: number,
     height: number,
 ): Promise<string> {
-    if (width <= 0 || height <= 0) {
-        // Empty crop — return a tiny transparent PNG so consumers don't
-        // need to special-case it.
-        const c = document.createElement("canvas");
-        c.width = 1;
-        c.height = 1;
-        const blob = await new Promise<Blob>((resolve, reject) =>
-            c.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"),
-        );
-        return URL.createObjectURL(blob);
-    }
-    const useOffscreen = typeof OffscreenCanvas !== "undefined";
-    if (useOffscreen) {
-        const canvas = new OffscreenCanvas(width, height);
-        const ctx = canvas.getContext("2d");
-        if (!ctx) throw new Error("OffscreenCanvas 2D context unavailable");
-        const imageData = ctx.createImageData(width, height);
-        imageData.data.set(rgba);
-        ctx.putImageData(imageData, 0, 0);
-        const blob = await canvas.convertToBlob({ type: "image/png" });
-        return URL.createObjectURL(blob);
-    }
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas 2D context unavailable");
-    const imageData = ctx.createImageData(width, height);
-    imageData.data.set(rgba);
-    ctx.putImageData(imageData, 0, 0);
-    const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/png"),
-    );
-    return URL.createObjectURL(blob);
+    // Encode without a canvas: `toBlob`/`convertToBlob` are randomized by
+    // anti-fingerprinting browsers (LibreWolf / Firefox
+    // `privacy.resistFingerprinting`) the same way `getImageData` is, which
+    // would re-introduce the "random colors" bug on the output side.
+    return encodePngUrl(rgba, width, height);
 }
