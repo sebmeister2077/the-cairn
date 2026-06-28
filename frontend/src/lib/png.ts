@@ -1,5 +1,5 @@
 /**
- * Canvas-free PNG decode/encode for the rock-strata overlay.
+ * Canvas-free PNG decode/encode for map overlays (rock-strata, climate).
  *
  * Browsers with anti-fingerprinting protections (LibreWolf / Firefox
  * `privacy.resistFingerprinting`) randomize all canvas readback APIs —

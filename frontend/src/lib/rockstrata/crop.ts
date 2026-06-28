@@ -1,5 +1,5 @@
 import type { RockMapWorld } from "./types";
-import { encodePngUrl } from "./png";
+import { encodePngUrl } from "../png";
 
 export interface CropResult {
     rgba: Uint8ClampedArray;

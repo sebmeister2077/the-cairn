@@ -21,6 +21,7 @@ import geoactivityRawPngUrl from "@/assets/Climate/climate_20260608_001141/clima
 import geoactivityWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.geoactivity.world.json";
 
 import { decodeKindFor, decoderFor } from "./decode";
+import { decodePng } from "../png";
 import type {
     ClimateLayerKind,
     ClimateLayerMeta,
@@ -102,38 +103,27 @@ async function decodeRaw(
     triplet: BundledClimateLayer,
     kind: ClimateLayerKind,
 ): Promise<LoadedClimateRaw> {
-    const blob = await fetch(triplet.rawPngUrl).then((r) => {
+    // Decode the raw data PNG straight from its bytes. Going through a
+    // canvas (`getImageData`) is unreliable under anti-fingerprinting
+    // browsers (LibreWolf / Firefox `privacy.resistFingerprinting`), which
+    // randomize the readback — that corrupted the encoded R/G channels and
+    // produced both the "random colors" overlay and the wildly wrong
+    // hover-sampled temperatures. `decodePng` never touches a canvas.
+    const buffer = await fetch(triplet.rawPngUrl).then((r) => {
         if (!r.ok) throw new Error(`Failed to fetch climate raw PNG (${r.status})`);
-        return r.blob();
+        return r.arrayBuffer();
     });
-    const bitmap = await createImageBitmap(blob);
-    const w = bitmap.width;
-    const h = bitmap.height;
-    const useOffscreen = typeof OffscreenCanvas !== "undefined";
-    const canvas = useOffscreen
-        ? new OffscreenCanvas(w, h)
-        : (() => {
-            const c = document.createElement("canvas");
-            c.width = w;
-            c.height = h;
-            return c;
-        })();
-    const ctx = (canvas as OffscreenCanvas | HTMLCanvasElement).getContext("2d") as
-        | OffscreenCanvasRenderingContext2D
-        | CanvasRenderingContext2D
-        | null;
-    if (!ctx) throw new Error("Could not acquire 2D context for climate raw PNG");
-    ctx.drawImage(bitmap as unknown as CanvasImageSource, 0, 0);
-    const imageData = (ctx as CanvasRenderingContext2D).getImageData(0, 0, w, h);
-    bitmap.close?.();
+    const decoded = await decodePng(buffer);
+    const w = decoded.width;
+    const h = decoded.height;
 
     const decode = decoderFor(kind);
     const decodeKind = decodeKindFor(kind);
-    const percentiles = computePercentiles(imageData.data, decode, decodeKind);
+    const percentiles = computePercentiles(decoded.rgba, decode, decodeKind);
 
     return {
         kind,
-        rgba: imageData.data,
+        rgba: decoded.rgba,
         width: w,
         height: h,
         world: triplet.world,

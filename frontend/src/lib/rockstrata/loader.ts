@@ -2,7 +2,7 @@ import rockmapPngUrl from "@/assets/RockStrata/rockmap_20260603_194847.png?url";
 import rockmapMetaJson from "@/assets/RockStrata/rockmap_20260603_194847.json";
 import rockmapWorldJson from "@/assets/RockStrata/rockmap_20260603_194847.world.json";
 
-import { decodePng } from "./png";
+import { decodePng } from "../png";
 import type {
     LoadedRockMap,
     RockMapMeta,
