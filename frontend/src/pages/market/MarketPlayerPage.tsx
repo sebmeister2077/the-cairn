@@ -22,58 +22,59 @@ export function MarketPlayerPage() {
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
-  const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent } = useMemo(() => {
-    const all = data ?? [];
-    const asSeller = all.filter((l) => l.sellerUid === decodedUid);
-    const asBuyer = all.filter((l) => l.buyerUid === decodedUid && l.sold);
-    const name =
-      asSeller.find((l) => l.sellerName)?.sellerName ??
-      asBuyer.find((l) => l.buyerName)?.buyerName ??
-      decodedUid;
+  const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent } =
+    useMemo(() => {
+      const all = data ?? [];
+      const asSeller = all.filter((l) => l.sellerUid === decodedUid);
+      const asBuyer = all.filter((l) => l.buyerUid === decodedUid && l.sold);
+      const name =
+        asSeller.find((l) => l.sellerName)?.sellerName ??
+        asBuyer.find((l) => l.buyerName)?.buyerName ??
+        decodedUid;
 
-    const revenue = asSeller
-      .filter((l) => l.sold)
-      .reduce((s, l) => s + l.price - (l.traderCut || 0), 0);
-    const spent = asBuyer.reduce((s, l) => s + l.price, 0);
+      const revenue = asSeller
+        .filter((l) => l.sold)
+        .reduce((s, l) => s + l.price - (l.traderCut || 0), 0);
+      const spent = asBuyer.reduce((s, l) => s + l.price, 0);
 
-    const itemCounts = new Map<string, number>();
-    for (const l of asSeller) itemCounts.set(l.name, (itemCounts.get(l.name) ?? 0) + 1);
-    const favItems = [...itemCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const itemCounts = new Map<string, number>();
+      for (const l of asSeller) itemCounts.set(l.name, (itemCounts.get(l.name) ?? 0) + 1);
+      const favItems = [...itemCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-    const buyCounts = new Map<string, number>();
-    for (const l of asBuyer) buyCounts.set(l.name, (buyCounts.get(l.name) ?? 0) + 1);
-    const favBuyItems = [...buyCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const buyCounts = new Map<string, number>();
+      for (const l of asBuyer) buyCounts.set(l.name, (buyCounts.get(l.name) ?? 0) + 1);
+      const favBuyItems = [...buyCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-    // Greedily cluster seller positions so respawned auctioneers (same stall,
-    // coords off by a few blocks) collapse into a single location. Each cluster
-    // is represented by the running centroid of its members.
-    const clusters: { cx: number; cz: number; sx: number; sz: number; count: number }[] = [];
-    for (const l of asSeller) {
-      if (!l.srcX && !l.srcZ) continue;
-      let target = null;
-      for (const c of clusters) {
-        if (Math.hypot(c.cx - l.srcX, c.cz - l.srcZ) <= LOCATION_CLUSTER_RADIUS) {
-          target = c;
-          break;
+      // Greedily cluster seller positions so respawned auctioneers (same stall,
+      // coords off by a few blocks) collapse into a single location. Each cluster
+      // is represented by the running centroid of its members.
+      const clusters: { cx: number; cz: number; sx: number; sz: number; count: number }[] = [];
+      for (const l of asSeller) {
+        if (!l.srcX && !l.srcZ) continue;
+        let target = null;
+        for (const c of clusters) {
+          if (Math.hypot(c.cx - l.srcX, c.cz - l.srcZ) <= LOCATION_CLUSTER_RADIUS) {
+            target = c;
+            break;
+          }
+        }
+        if (target) {
+          target.sx += l.srcX;
+          target.sz += l.srcZ;
+          target.count += 1;
+          target.cx = target.sx / target.count;
+          target.cz = target.sz / target.count;
+        } else {
+          clusters.push({ cx: l.srcX, cz: l.srcZ, sx: l.srcX, sz: l.srcZ, count: 1 });
         }
       }
-      if (target) {
-        target.sx += l.srcX;
-        target.sz += l.srcZ;
-        target.count += 1;
-        target.cx = target.sx / target.count;
-        target.cz = target.sz / target.count;
-      } else {
-        clusters.push({ cx: l.srcX, cz: l.srcZ, sx: l.srcX, sz: l.srcZ, count: 1 });
-      }
-    }
-    const locations = clusters
-      .map((c) => ({ x: Math.round(c.cx), z: Math.round(c.cz), count: c.count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
+      const locations = clusters
+        .map((c) => ({ x: Math.round(c.cx), z: Math.round(c.cz), count: c.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 6);
 
-    return { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent };
-  }, [data, decodedUid]);
+      return { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent };
+    }, [data, decodedUid]);
 
   // Newest first by in-game posting time (matches the Game date column).
   const sortedSellerListings = useMemo(

@@ -96,8 +96,7 @@ export function MarketItemPage() {
 
   // Newest first by in-game posting time (matches the Game date column).
   const sortedListings = useMemo(
-    () =>
-      [...itemListings].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
+    () => [...itemListings].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
     [itemListings],
   );
 
@@ -204,9 +203,7 @@ export function MarketItemPage() {
                 : "—"
           }
           hint={
-            perUnitUseful
-              ? "Median of sold listings"
-              : "Sold in stacks — median sold stack price"
+            perUnitUseful ? "Median of sold listings" : "Sold in stacks — median sold stack price"
           }
         />
         <StatCard label="Units sold" value={stat.unitsSold} />

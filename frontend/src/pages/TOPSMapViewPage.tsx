@@ -24,6 +24,7 @@ import {
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
   setRockStrataHalfBlocks as setRockStrataHalfBlocksAction,
   setRockStrataOpacity as setRockStrataOpacityAction,
+  setAuctionHeatmapOpacity as setAuctionHeatmapOpacityAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
   setShowFullscreen as setShowFullscreenAction,
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
@@ -287,7 +288,7 @@ export function TOPSMapViewPage() {
   const { data: auctionSummary } = useAuctionSummary({ enabled: auctionActive });
   const showAuctionSell = auctionLayer === "sell" || auctionLayer === "both";
   const showAuctionBuy = auctionLayer === "buy" || auctionLayer === "both";
-  const [auctionOpacity, setAuctionOpacity] = useState(0.75);
+  const auctionOpacity = useAppSelector((s) => s.mapView.auctionHeatmapOpacity);
 
   // Single helper that merges param changes into the existing search string.
   // and replaces the history entry (so panning doesn't fill back-button
@@ -310,6 +311,10 @@ export function TOPSMapViewPage() {
   );
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const setAuctionOpacity = useCallback(
+    (next: number) => dispatch(setAuctionHeatmapOpacityAction(next)),
+    [dispatch],
+  );
   // One-shot rehydrate of a shared route-planner link. Runs in an effect
   // (not during render) so the dispatch and the URL strip don't race
   // with other mount-time effects that read/write `searchParams`. The

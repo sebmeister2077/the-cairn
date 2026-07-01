@@ -187,6 +187,13 @@ export interface MapViewState {
     /** Climate overlay opacity (0..1). */
     climateOpacity: number;
     /**
+     * Auction House "trade density" heatmap overlay intensity (0..1).
+     * Drives the overlay opacity via the Intensity slider in
+     * {@link AuctionHeatmapControl}. Persisted so the chosen intensity
+     * survives reloads.
+     */
+    auctionHeatmapOpacity: number;
+    /**
      * Account-level preference ("Show additional options on Map") that
      * gates advanced/experimental map controls. When OFF (default), the
      * fullscreen Oceans toggle is hidden and the Oceans overlay image is
@@ -286,6 +293,7 @@ export function loadInitialMapViewState(): MapViewState {
         climateCustomMin: null,
         climateCustomMax: null,
         climateOpacity: 0.7,
+        auctionHeatmapOpacity: 0.75,
         showAdvancedMapOptions: false,
         isFullscreen: false,
         starfieldEnabled: true,
@@ -442,6 +450,11 @@ export const mapViewSlice = createSlice({
             if (!Number.isFinite(v)) return;
             state.climateOpacity = Math.max(0, Math.min(1, v));
         },
+        setAuctionHeatmapOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.auctionHeatmapOpacity = Math.max(0, Math.min(1, v));
+        },
         setShowAdvancedMapOptions(state, action: PayloadAction<boolean>) {
             state.showAdvancedMapOptions = action.payload;
         },
@@ -527,6 +540,7 @@ export const {
     setClimateCropId,
     setClimateCustomRange,
     setClimateOpacity,
+    setAuctionHeatmapOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,
     setStarfieldEnabled,
