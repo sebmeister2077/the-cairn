@@ -69,6 +69,21 @@ export const DEFAULT_WALK_SPEED = 7;
 export const DEFAULT_TL_PENALTY_S = 15;
 export const DEFAULT_K_NEIGHBORS = 8;
 export const DEFAULT_K_NEIGHBORS_VIRTUAL = 24;
+
+/** Half-width (in blocks) of the square area around spawn (world origin
+ *  0,0) that admins have claimed. No tunnels can be dug inside it, so any
+ *  TL endpoint that falls within this square is treated as a dead end:
+ *  the planner wires no walk edges to or from it, leaving it reachable
+ *  only via its own TL edge. This is a Chebyshev (square) test, not a
+ *  circle — e.g. (499, 499) counts as inside. */
+export const SPAWN_CLAIM_RADIUS = 500;
+
+/** True when (x, z) lies within the admin-claimed square around spawn.
+ *  Uses `<=` so an endpoint sitting exactly on the 500-block boundary is
+ *  still considered claimed. */
+export function isWithinSpawnClaim(x: number, z: number): boolean {
+    return Math.abs(x) <= SPAWN_CLAIM_RADIUS && Math.abs(z) <= SPAWN_CLAIM_RADIUS;
+}
 /** Surface-ish baseline. Endpoints at/above this y level pay only the
  *  small fixed minimum overhead; endpoints below pay proportionally more. */
 export const DEFAULT_ELK_DEPTH_BASELINE_Y = 110;
@@ -350,6 +365,14 @@ export function buildTLGraph(
 
     const kd = buildKD(xs, zs);
 
+    // Endpoints inside the admin-claimed square around spawn are dead
+    // ends: no tunnel can be dug to or from them, so we wire no walk
+    // edges touching them (their TL edge below still connects the pair).
+    const claimed = new Uint8Array(numNodes);
+    for (let i = 0; i < numNodes; i++) {
+        claimed[i] = isWithinSpawnClaim(xs[i], zs[i]) ? 1 : 0;
+    }
+
     // First pass: gather all (u, v, seconds, kindTlIdx, penalty) records
     // in plain JS arrays so we don't need to know the per-node degree
     // ahead of time. Second pass converts to CSR.
@@ -418,13 +441,15 @@ export function buildTLGraph(
      *  pass below doesn't double-wire any K-NN neighbours we already saw. */
     const seenWalkEdges = elkSet ? new Set<string>() : null;
     for (let i = 0; i < numNodes; i++) {
+        // Claimed-zone endpoints are dead ends — no outgoing walk edges.
+        if (claimed[i] === 1) continue;
         const partner = i ^ 1;
         const nn = knn(
             kd,
             xs[i],
             zs[i],
             opts.kNeighbors + 1,
-            (idx) => idx === i || idx === partner,
+            (idx) => idx === i || idx === partner || claimed[idx] === 1,
         );
         for (const { idx, d2 } of nn) {
             const baseSeconds = Math.sqrt(d2) / speed;
@@ -484,6 +509,9 @@ export function buildTLGraph(
             for (const aIdx of aEndpoints.filter((idx) => (idx & 1) === a.ep)) {
                 for (const bIdx of bEndpoints.filter((idx) => (idx & 1) === b.ep)) {
                     if (aIdx === bIdx) continue;
+                    // A confirmed elk edge can't override a claimed-zone
+                    // dead end — you still can't dig the tunnel there.
+                    if (claimed[aIdx] === 1 || claimed[bIdx] === 1) continue;
                     const seenKey = `${Math.min(aIdx, bIdx)}|${Math.max(aIdx, bIdx)}`;
                     if (seenWalkEdges?.has(seenKey)) continue;
                     seenWalkEdges?.add(seenKey);
@@ -610,6 +638,10 @@ function augmentForQuery(
     const linkVirtual = (virtualIdx: number, vx: number, vz: number) => {
         const nn = knn(graph.kd, vx, vz, k);
         for (const { idx, d2 } of nn) {
+            // Skip claimed-zone endpoints: they're dead ends with no
+            // buildable tunnel, so a virtual Start/Dest can't reach the
+            // network through them.
+            if (isWithinSpawnClaim(graph.xs[idx], graph.zs[idx])) continue;
             const seconds = Math.sqrt(d2) / speed;
             appendEdge(virtualIdx, idx, seconds);
             // Reverse direction so endpoints can reach virtuals too.
