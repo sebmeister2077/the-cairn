@@ -14,6 +14,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
+import {
+  VirtualListingsTable,
+  formatListingDate,
+  formatGameDate,
+  type ListingColumn,
+} from "./VirtualListingsTable";
 
 /** Build a price-per-unit histogram plus a fitted log-normal density curve. */
 function buildHistogram(prices: number[], bins = 24) {
@@ -77,6 +83,83 @@ export function MarketItemPage() {
   );
   const hist = useMemo(() => buildHistogram(soldPpu), [soldPpu]);
 
+  // Some items are only ever sold as full stacks, so the per-unit median can
+  // round down to 0 (e.g. 1 gear for a stack of 64). In that case fall back to
+  // the median *stack* price so the "Fair price" card stays meaningful.
+  const medianStackPrice = useMemo(() => {
+    const prices = itemListings
+      .filter((l) => l.sold)
+      .map((l) => l.price)
+      .sort((a, b) => a - b);
+    return prices.length ? prices[Math.floor(prices.length / 2)] : 0;
+  }, [itemListings]);
+
+  // Newest first by in-game posting time (matches the Game date column).
+  const sortedListings = useMemo(
+    () =>
+      [...itemListings].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
+    [itemListings],
+  );
+
+  const columns = useMemo<ListingColumn[]>(
+    () => [
+      {
+        key: "date",
+        header: "Game date",
+        width: "6.5rem",
+        cell: (l) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
+          >
+            {formatGameDate(l.postedTotalHours)}
+          </span>
+        ),
+      },
+      {
+        key: "price",
+        header: "Price",
+        width: "6rem",
+        align: "right",
+        cell: (l) => l.price.toLocaleString(),
+      },
+      {
+        key: "qty",
+        header: "Qty",
+        width: "3.5rem",
+        align: "right",
+        cell: (l) => `×${l.qty}`,
+      },
+      {
+        key: "seller",
+        header: "Seller",
+        width: "minmax(6rem,1fr)",
+        cell: (l) =>
+          l.sellerUid ? (
+            <Link
+              to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
+              className="text-xs hover:underline"
+            >
+              {l.sellerName ?? "—"}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">{l.sellerName ?? "—"}</span>
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: "5rem",
+        cell: (l) => (
+          <span className="text-xs text-muted-foreground">
+            {l.sold ? "sold" : l.state.toLowerCase()}
+          </span>
+        ),
+      },
+    ],
+    [],
+  );
+
   if (listingsQ.isLoading || summaryQ.isLoading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
@@ -96,6 +179,7 @@ export function MarketItemPage() {
   }
 
   const ps = stat.priceStats;
+  const perUnitUseful = ps != null && ps.median >= 1;
 
   return (
     <div className="space-y-5">
@@ -111,9 +195,19 @@ export function MarketItemPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
-          label="Fair price / unit"
-          value={ps ? formatGears(ps.median) : "—"}
-          hint="Median of sold listings"
+          label={perUnitUseful ? "Fair price / unit" : "Fair price / stack"}
+          value={
+            perUnitUseful
+              ? formatGears(ps!.median)
+              : medianStackPrice
+                ? formatGears(medianStackPrice)
+                : "—"
+          }
+          hint={
+            perUnitUseful
+              ? "Median of sold listings"
+              : "Sold in stacks — median sold stack price"
+          }
         />
         <StatCard label="Units sold" value={stat.unitsSold} />
         <StatCard
@@ -167,22 +261,7 @@ export function MarketItemPage() {
 
       <div>
         <h2 className="text-lg font-semibold mb-2">Recent listings ({itemListings.length})</h2>
-        <div className="rounded-md border divide-y max-h-96 overflow-auto">
-          {itemListings.slice(0, 100).map((l) => (
-            <div
-              key={l.auctionId}
-              className="flex items-center justify-between px-3 py-1.5 text-sm"
-            >
-              <span className="tabular-nums">
-                {l.price.toLocaleString()} gears
-                <span className="text-muted-foreground"> · ×{l.qty}</span>
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {l.sellerName ?? "—"} · {l.sold ? "sold" : l.state.toLowerCase()}
-              </span>
-            </div>
-          ))}
-        </div>
+        <VirtualListingsTable listings={sortedListings} columns={columns} />
       </div>
     </div>
   );

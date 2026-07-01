@@ -2,16 +2,19 @@ import { useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useAuctionListings, formatGears } from "@/lib/auction";
+import {
+  VirtualListingsTable,
+  formatListingDate,
+  formatGameDate,
+  type ListingColumn,
+} from "./VirtualListingsTable";
+
+// Auctioneer entities respawn a few blocks off (with a new entity id) after a
+// culling event, so the same physical stall shows up under slightly different
+// coordinates. Merge seller positions within this radius (blocks) into one.
+const LOCATION_CLUSTER_RADIUS = 12;
 
 export function MarketPlayerPage() {
   const { uid } = useParams<{ uid: string }>();
@@ -19,7 +22,7 @@ export function MarketPlayerPage() {
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
-  const { name, asSeller, asBuyer, favItems, locations, revenue, spent } = useMemo(() => {
+  const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent } = useMemo(() => {
     const all = data ?? [];
     const asSeller = all.filter((l) => l.sellerUid === decodedUid);
     const asBuyer = all.filter((l) => l.buyerUid === decodedUid && l.sold);
@@ -37,21 +40,100 @@ export function MarketPlayerPage() {
     for (const l of asSeller) itemCounts.set(l.name, (itemCounts.get(l.name) ?? 0) + 1);
     const favItems = [...itemCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
 
-    const locSet = new Map<string, { x: number; z: number; count: number }>();
+    const buyCounts = new Map<string, number>();
+    for (const l of asBuyer) buyCounts.set(l.name, (buyCounts.get(l.name) ?? 0) + 1);
+    const favBuyItems = [...buyCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+
+    // Greedily cluster seller positions so respawned auctioneers (same stall,
+    // coords off by a few blocks) collapse into a single location. Each cluster
+    // is represented by the running centroid of its members.
+    const clusters: { cx: number; cz: number; sx: number; sz: number; count: number }[] = [];
     for (const l of asSeller) {
-      if (l.srcX || l.srcZ) {
-        const x = Math.round(l.srcX);
-        const z = Math.round(l.srcZ);
-        const key = `${x}, ${z}`;
-        const prev = locSet.get(key);
-        if (prev) prev.count += 1;
-        else locSet.set(key, { x, z, count: 1 });
+      if (!l.srcX && !l.srcZ) continue;
+      let target = null;
+      for (const c of clusters) {
+        if (Math.hypot(c.cx - l.srcX, c.cz - l.srcZ) <= LOCATION_CLUSTER_RADIUS) {
+          target = c;
+          break;
+        }
+      }
+      if (target) {
+        target.sx += l.srcX;
+        target.sz += l.srcZ;
+        target.count += 1;
+        target.cx = target.sx / target.count;
+        target.cz = target.sz / target.count;
+      } else {
+        clusters.push({ cx: l.srcX, cz: l.srcZ, sx: l.srcX, sz: l.srcZ, count: 1 });
       }
     }
-    const locations = [...locSet.values()].sort((a, b) => b.count - a.count).slice(0, 6);
+    const locations = clusters
+      .map((c) => ({ x: Math.round(c.cx), z: Math.round(c.cz), count: c.count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6);
 
-    return { name, asSeller, asBuyer, favItems, locations, revenue, spent };
+    return { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent };
   }, [data, decodedUid]);
+
+  // Newest first by in-game posting time (matches the Game date column).
+  const sortedSellerListings = useMemo(
+    () => [...asSeller].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
+    [asSeller],
+  );
+
+  const columns = useMemo<ListingColumn[]>(
+    () => [
+      {
+        key: "item",
+        header: "Item",
+        width: "minmax(8rem,1fr)",
+        cell: (l) => (
+          <Link to={`/market/items/${l.itemId}`} className="hover:underline">
+            {l.name}
+          </Link>
+        ),
+      },
+      {
+        key: "price",
+        header: "Price",
+        width: "6rem",
+        align: "right",
+        cell: (l) => l.price.toLocaleString(),
+      },
+      {
+        key: "qty",
+        header: "Qty",
+        width: "3.5rem",
+        align: "right",
+        cell: (l) => l.qty,
+      },
+      {
+        key: "date",
+        header: "Game date",
+        width: "6.5rem",
+        cell: (l) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
+          >
+            {formatGameDate(l.postedTotalHours)}
+          </span>
+        ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: "5rem",
+        cell: (l) =>
+          l.sold ? (
+            <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>
+          ) : (
+            <Badge variant="outline">{l.state}</Badge>
+          ),
+      },
+    ],
+    [],
+  );
 
   if (isLoading) {
     return (
@@ -90,18 +172,33 @@ export function MarketPlayerPage() {
         <StatCard label="Sell-through" value={`${(sellThrough * 100).toFixed(0)}%`} />
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <h2 className="font-semibold mb-2">Favorite items to sell</h2>
           <div className="rounded-md border divide-y">
             {favItems.map(([itemName, count]) => (
               <div key={itemName} className="flex justify-between px-3 py-1.5 text-sm">
-                <span>{itemName}</span>
+                <span className="truncate">{itemName}</span>
                 <Badge variant="secondary">{count}</Badge>
               </div>
             ))}
             {favItems.length === 0 && (
               <p className="text-sm text-muted-foreground px-3 py-2">No sales.</p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <h2 className="font-semibold mb-2">Favorite items to buy</h2>
+          <div className="rounded-md border divide-y">
+            {favBuyItems.map(([itemName, count]) => (
+              <div key={itemName} className="flex justify-between px-3 py-1.5 text-sm">
+                <span className="truncate">{itemName}</span>
+                <Badge variant="secondary">{count}</Badge>
+              </div>
+            ))}
+            {favBuyItems.length === 0 && (
+              <p className="text-sm text-muted-foreground px-3 py-2">No purchases.</p>
             )}
           </div>
         </div>
@@ -131,40 +228,7 @@ export function MarketPlayerPage() {
 
       <div>
         <h2 className="font-semibold mb-2">Listings ({asSeller.length})</h2>
-        <div className="rounded-md border overflow-auto max-h-96">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Price</TableHead>
-                <TableHead className="text-right">Qty</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {asSeller.slice(0, 100).map((l) => (
-                <TableRow key={l.auctionId}>
-                  <TableCell>
-                    <Link to={`/market/items/${l.itemId}`} className="hover:underline">
-                      {l.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {l.price.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{l.qty}</TableCell>
-                  <TableCell>
-                    {l.sold ? (
-                      <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>
-                    ) : (
-                      <Badge variant="outline">{l.state}</Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+        <VirtualListingsTable listings={sortedSellerListings} columns={columns} />
       </div>
     </div>
   );
