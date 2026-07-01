@@ -45,6 +45,21 @@ export interface PriceStats {
     mean: number;
 }
 
+/**
+ * Recent-vs-older price movement for an item's per-unit sold price. `null`
+ * when there aren't enough dated sales to judge a trend.
+ */
+export interface PriceTrend {
+    /** "up" / "down" past an ±8% dead-band, else "flat". */
+    direction: "up" | "down" | "flat";
+    /** Signed percentage change of recent median vs older median. */
+    changePct: number;
+    recentMedian: number;
+    olderMedian: number;
+    recentCount: number;
+    olderCount: number;
+}
+
 export interface ItemStat {
     itemId: number;
     name: string;
@@ -56,6 +71,7 @@ export interface ItemStat {
     unitsSold: number;
     gearsTraded: number;
     priceStats: PriceStats | null;
+    trend: PriceTrend | null;
 }
 
 export interface SellerLeader {

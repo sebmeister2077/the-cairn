@@ -256,6 +256,54 @@ def price_stats(prices: List[float]) -> Dict[str, float]:
     }
 
 
+def _sale_time_key(r: Dict[str, Any]) -> str:
+    """Best wall-clock timestamp for ordering a sale by recency. ISO-8601
+    strings compare correctly lexicographically, so no parsing needed."""
+    return r.get("lastObservedUtc") or r.get("observedUtc") or ""
+
+
+def price_trend(sold_recs: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Flag whether an item's per-unit price is trending up, down, or holding
+    steady by comparing the most-recent sales against older ones.
+
+    Uses real-world observation time (not in-game hours) so it reacts to live
+    market shifts — e.g. a game update that makes an item rarer and pushes its
+    price up. Returns ``None`` when there aren't enough dated sales on both
+    sides to make a non-noisy call.
+    """
+    dated = [r for r in sold_recs if _sale_time_key(r)]
+    # Need a reasonable sample so the indicator doesn't flip-flop on 1-2 sales.
+    if len(dated) < 8:
+        return None
+    dated.sort(key=_sale_time_key)
+    # Recent window = most-recent third of sales (min 3); older = the rest.
+    recent_n = max(3, len(dated) // 3)
+    recent = dated[-recent_n:]
+    older = dated[:-recent_n]
+    if len(older) < 3:
+        return None
+    recent_med = percentile(sorted(r["pricePerUnit"] for r in recent), 0.50)
+    older_med = percentile(sorted(r["pricePerUnit"] for r in older), 0.50)
+    if older_med <= 0:
+        return None
+    change = (recent_med - older_med) / older_med
+    # ±8% dead-band so small wobbles read as "steady".
+    if change > 0.08:
+        direction = "up"
+    elif change < -0.08:
+        direction = "down"
+    else:
+        direction = "flat"
+    return {
+        "direction": direction,
+        "changePct": round(change * 100, 1),
+        "recentMedian": round(recent_med, 3),
+        "olderMedian": round(older_med, 3),
+        "recentCount": len(recent),
+        "olderCount": len(older),
+    }
+
+
 # --------------------------------------------------------------------------- #
 # Deduplication
 # --------------------------------------------------------------------------- #
@@ -413,6 +461,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "unitsSold": sum(r["qty"] for r in sold_recs),
                 "gearsTraded": sum(r["price"] for r in sold_recs),
                 "priceStats": price_stats(ppu_sold) if ppu_sold else None,
+                "trend": price_trend(sold_recs),
             }
         )
     item_stats.sort(key=lambda x: x["gearsTraded"], reverse=True)

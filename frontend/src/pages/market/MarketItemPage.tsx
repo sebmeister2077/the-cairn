@@ -14,6 +14,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
+import type { PriceTrend } from "@/models/auction";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -83,6 +84,33 @@ function buildHistogram(prices: number[], bins = 24) {
   const medianIdx = Math.min(bins - 1, Math.max(0, Math.floor((median - min) / width)));
   const medianBucket = bars[medianIdx]?.bucket ?? round(median);
   return { bars, median, p25, p75, medianBucket };
+}
+
+/** Small colored pill showing whether the recent price is trending up/down. */
+function TrendBadge({ trend }: { trend: PriceTrend }) {
+  const { direction, changePct } = trend;
+  const up = direction === "up";
+  const down = direction === "down";
+  const cls = up
+    ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
+    : down
+      ? "bg-red-500/15 text-red-600 border-red-500/30"
+      : "bg-muted text-muted-foreground border-input";
+  const arrow = up ? "▲" : down ? "▼" : "→";
+  const sign = changePct > 0 ? "+" : "";
+  const label = direction === "flat" ? "Stable price" : `${sign}${changePct}% recently`;
+  const title =
+    `Recent ${trend.recentCount} sales: median ${trend.recentMedian}/unit · ` +
+    `older ${trend.olderCount} sales: median ${trend.olderMedian}/unit.`;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+      title={title}
+    >
+      <span aria-hidden>{arrow}</span>
+      {label}
+    </span>
+  );
 }
 
 export function MarketItemPage() {
@@ -217,7 +245,10 @@ export function MarketItemPage() {
         <Link to="/market/listings" className="text-sm text-primary hover:underline">
           ← Listings
         </Link>
-        <h1 className="text-2xl font-semibold">{stat.name}</h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="text-2xl font-semibold">{stat.name}</h1>
+          {stat.trend && <TrendBadge trend={stat.trend} />}
+        </div>
         <p className="text-sm text-muted-foreground">
           {stat.category} · #{stat.itemId}
         </p>
@@ -286,6 +317,15 @@ export function MarketItemPage() {
                     }}
                   />
                   <Tooltip
+                    contentStyle={{
+                      fontSize: 12,
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 6,
+                    }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
                     labelFormatter={(label) =>
                       `≈ ${Number(label).toLocaleString()} gears / ${perUnitUseful ? "unit" : "stack"}`
                     }
