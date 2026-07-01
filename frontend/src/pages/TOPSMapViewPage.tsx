@@ -107,6 +107,12 @@ import { exitPreview as exitPreviewAction } from "@/store/slices/topsMapPreview"
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
+import { AuctionHeatmapOverlayLayer } from "@/components/tops-map/AuctionHeatmapOverlayLayer";
+import {
+  AuctionHeatmapControl,
+  type AuctionLayer,
+} from "@/components/tops-map/AuctionHeatmapControl";
+import { useAuctionSummary } from "@/lib/auction";
 import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayLayer";
 import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
@@ -267,7 +273,23 @@ export function TOPSMapViewPage() {
   }
   const initialUrlParams = initialUrlParamsRef.current;
 
-  // Single helper that merges param changes into the existing search string
+  // Auction "trade density" heatmap overlay. Seeded from a `?auction=`
+  // deep-link (sell|buy|both|1) so the Auction House "Trade Map" tab can
+  // hand off into the full pan/zoom/route-planner map experience. Defaults
+  // to off for regular TOPS users so nothing extra loads.
+  const [auctionLayer, setAuctionLayer] = useState<AuctionLayer>(() => {
+    const a = new URLSearchParams(window.location.search).get("auction");
+    if (a === "sell" || a === "buy" || a === "both") return a;
+    if (a === "1" || a === "true") return "both";
+    return "off";
+  });
+  const auctionActive = auctionLayer !== "off";
+  const { data: auctionSummary } = useAuctionSummary({ enabled: auctionActive });
+  const showAuctionSell = auctionLayer === "sell" || auctionLayer === "both";
+  const showAuctionBuy = auctionLayer === "buy" || auctionLayer === "both";
+  const [auctionOpacity, setAuctionOpacity] = useState(0.75);
+
+  // Single helper that merges param changes into the existing search string.
   // and replaces the history entry (so panning doesn't fill back-button
   // history). Wrapped in useCallback so it's stable for downstream effects.
   const updateUrlParams = useCallback(
@@ -2093,6 +2115,12 @@ export function TOPSMapViewPage() {
                 </div>
               </div>
             )}
+            <AuctionHeatmapControl
+              layer={auctionLayer}
+              onLayerChange={setAuctionLayer}
+              opacity={auctionOpacity}
+              onOpacityChange={setAuctionOpacity}
+            />
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
             {showAdvancedMapOptions && (
               <RockStrataLegendPanel
@@ -2233,6 +2261,32 @@ export function TOPSMapViewPage() {
                         opacity={climateOpacity}
                       />
                     ) : null}
+                    {auctionActive && auctionSummary ? (
+                      <>
+                        {showAuctionBuy ? (
+                          <AuctionHeatmapOverlayLayer
+                            stats={wcStats}
+                            imageWidth={imgNatural.w}
+                            imageHeight={imgNatural.h}
+                            bins={auctionSummary.buyHeatmap}
+                            binSize={auctionSummary.heatmapBin}
+                            variant="buy"
+                            opacity={auctionOpacity}
+                          />
+                        ) : null}
+                        {showAuctionSell ? (
+                          <AuctionHeatmapOverlayLayer
+                            stats={wcStats}
+                            imageWidth={imgNatural.w}
+                            imageHeight={imgNatural.h}
+                            bins={auctionSummary.sellHeatmap}
+                            binSize={auctionSummary.heatmapBin}
+                            variant="sell"
+                            opacity={auctionOpacity}
+                          />
+                        ) : null}
+                      </>
+                    ) : null}
                   </>
                 ) : null
               }
@@ -2306,6 +2360,32 @@ export function TOPSMapViewPage() {
                         selectedDeposit={selectedDeposit}
                       />
                     ) : null}
+                    {auctionActive && auctionSummary ? (
+                      <>
+                        {showAuctionBuy ? (
+                          <AuctionHeatmapOverlayLayer
+                            stats={stats}
+                            imageWidth={tileSet.imageWidth}
+                            imageHeight={tileSet.imageHeight}
+                            bins={auctionSummary.buyHeatmap}
+                            binSize={auctionSummary.heatmapBin}
+                            variant="buy"
+                            opacity={auctionOpacity}
+                          />
+                        ) : null}
+                        {showAuctionSell ? (
+                          <AuctionHeatmapOverlayLayer
+                            stats={stats}
+                            imageWidth={tileSet.imageWidth}
+                            imageHeight={tileSet.imageHeight}
+                            bins={auctionSummary.sellHeatmap}
+                            binSize={auctionSummary.heatmapBin}
+                            variant="sell"
+                            opacity={auctionOpacity}
+                          />
+                        ) : null}
+                      </>
+                    ) : null}
                   </>
                 ) : null
               }
@@ -2354,6 +2434,10 @@ export function TOPSMapViewPage() {
               onSaveCurrentAsHome={handleSetCurrentAsHome}
               onClearHome={clearFavoriteStartingPosition}
               onOpenGoToDialog={handleOpenGoToDialog}
+              auctionLayer={auctionLayer}
+              onAuctionLayerChange={setAuctionLayer}
+              auctionOpacity={auctionOpacity}
+              onAuctionOpacityChange={setAuctionOpacity}
               rockStrataLegend={rockStrataOverlay.legend}
               climateLayerMeta={climateOverlay.layerMeta}
               climateStatus={climateOverlay.status}

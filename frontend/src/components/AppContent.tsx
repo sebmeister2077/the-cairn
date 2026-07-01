@@ -36,6 +36,12 @@ import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
 import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
 import { ToolsTunnelPage } from "@/pages/ToolsTunnelPage";
 import { ToolsWaypointMacroPage } from "@/pages/ToolsWaypointMacroPage";
+import { MarketOverviewPage } from "@/pages/market/MarketOverviewPage";
+import { MarketListingsPage } from "@/pages/market/MarketListingsPage";
+import { MarketItemPage } from "@/pages/market/MarketItemPage";
+import { MarketLeaderboardsPage } from "@/pages/market/MarketLeaderboardsPage";
+import { MarketPlayerPage } from "@/pages/market/MarketPlayerPage";
+import { MarketMapPage } from "@/pages/market/MarketMapPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -71,6 +77,7 @@ const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
   { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
   { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
+  { value: "/market", labelKey: "app.nav.categories.market" },
   { value: "/tools", labelKey: "app.nav.categories.tools" },
 ] as const;
 
@@ -95,6 +102,12 @@ const NavigationRoutes = {
   Tools: {
     TunnelPreviewer: "/tools",
     WaypointMacro: "/tools/waypoints",
+  },
+  Market: {
+    Overview: "/market",
+    Listings: "/market/listings",
+    Leaderboards: "/market/leaderboards",
+    Map: "/market/map",
   },
   General: {},
   Manage: {
@@ -160,6 +173,10 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.elkWalkable"
   | "app.nav.subtabs.tunnelPreviewer"
   | "app.nav.subtabs.waypointMacro"
+  | "app.nav.subtabs.marketOverview"
+  | "app.nav.subtabs.marketListings"
+  | "app.nav.subtabs.marketLeaderboards"
+  | "app.nav.subtabs.marketMap"
   | "app.nav.chip.new";
 const subTabs: Subtabs = {
   "/singleplayer": [
@@ -187,6 +204,12 @@ const subTabs: Subtabs = {
     },
   ],
   "/general": [],
+  "/market": [
+    { value: "/market", labelKey: "app.nav.subtabs.marketOverview" },
+    { value: "/market/listings", labelKey: "app.nav.subtabs.marketListings" },
+    { value: "/market/leaderboards", labelKey: "app.nav.subtabs.marketLeaderboards" },
+    { value: "/market/map", labelKey: "app.nav.subtabs.marketMap" },
+  ],
   "/tools": [
     { value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" },
     { value: "/tools/waypoints", labelKey: "app.nav.subtabs.waypointMacro" },
@@ -879,6 +902,54 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
                 <ToolsWaypointMacroPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketOverviewPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/listings"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketListingsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/leaderboards"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketLeaderboardsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/map"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketMapPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/items/:itemId"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketItemPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/players/:uid"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketPlayerPage />
               </ErrorBoundary>
             }
           />

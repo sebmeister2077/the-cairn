@@ -41,6 +41,7 @@ import {
 } from "@/lib/trader-types";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
+import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapControl";
 import type { LegendEntry } from "@/lib/rockstrata/types";
 import type { ClimateLayerMeta } from "@/lib/climate/types";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,10 @@ type FullscreenControlsOverlayProps = {
   onSaveCurrentAsHome: () => void;
   onClearHome: () => void;
   onOpenGoToDialog: () => void;
+  auctionLayer: AuctionLayer;
+  onAuctionLayerChange: (next: AuctionLayer) => void;
+  auctionOpacity: number;
+  onAuctionOpacityChange: (next: number) => void;
   /** Rock-strata legend (null while disabled / loading). */
   rockStrataLegend: LegendEntry[] | null;
   /** Climate active-layer metadata (null while disabled / loading). */
@@ -102,6 +107,10 @@ export function FullscreenControlsOverlay({
   onSaveCurrentAsHome,
   onClearHome,
   onOpenGoToDialog,
+  auctionLayer,
+  onAuctionLayerChange,
+  auctionOpacity,
+  onAuctionOpacityChange,
   rockStrataLegend,
   climateLayerMeta,
   climateStatus,
@@ -447,6 +456,13 @@ export function FullscreenControlsOverlay({
             </div>
           </div>
         </div>
+        <AuctionHeatmapControl
+          variant="fullscreen"
+          layer={auctionLayer}
+          onLayerChange={onAuctionLayerChange}
+          opacity={auctionOpacity}
+          onOpacityChange={onAuctionOpacityChange}
+        />
         <div
           onClick={() => setShowOceans(!showOceans)}
           className={cn(

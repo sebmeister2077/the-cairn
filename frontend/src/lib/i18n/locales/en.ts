@@ -49,6 +49,7 @@ export const en = {
                 tools: "Tools",
                 manage: "Manage",
                 usage: "Usage",
+                market: "Auction House",
             },
             subtabs: {
                 extract: "Extract",
@@ -75,6 +76,10 @@ export const en = {
                 elkWalkable: "Elk-walkable",
                 tunnelPreviewer: "Tunnel Previewer",
                 waypointMacro: "Waypoint Macros",
+                marketOverview: "Overview",
+                marketListings: "Listings",
+                marketLeaderboards: "Leaderboards",
+                marketMap: "Trade Map",
             },
             chip: {
                 new: "New",
