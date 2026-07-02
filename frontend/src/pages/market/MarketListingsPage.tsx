@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Download } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -8,10 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
 import { useAuctionListings, useCurrentGameHours } from "@/lib/auction";
+import auctionsCsvUrl from "@/assets/Auction/auctions.csv?url";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
 import { formatGameDate, formatListingDate, ListingStateBadge } from "./VirtualListingsTable";
@@ -48,11 +50,21 @@ export function MarketListingsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold">Auction Listings</h1>
-        <p className="text-sm text-muted-foreground">
-          {rows.length.toLocaleString()} of {data.length.toLocaleString()} listings
-        </p>
+        <div className="flex items-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            {rows.length.toLocaleString()} of {data.length.toLocaleString()} listings
+          </p>
+          <a
+            href={auctionsCsvUrl}
+            download="auctions.csv"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            <Download />
+            Download CSV
+          </a>
+        </div>
       </div>
 
       <MarketFilterBar categories={categories} />
