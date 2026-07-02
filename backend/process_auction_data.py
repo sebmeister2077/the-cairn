@@ -612,6 +612,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "biggestSales": [
             {
                 "auctionId": r["auctionId"],
+                "itemId": r["itemId"],
                 "name": r["name"],
                 "price": r["price"],
                 "qty": r["qty"],

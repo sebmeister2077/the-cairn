@@ -141,8 +141,10 @@ export function MarketLeaderboardsPage() {
                 {data.biggestSales.slice(0, 15).map((s) => (
                   <TableRow key={s.auctionId}>
                     <TableCell>
-                      <span className="font-medium">{s.name}</span>
-                      <span className="text-muted-foreground text-xs"> ×{s.qty}</span>
+                      <Link to={`/market/items/${s.itemId}`} className="hover:underline">
+                        <span className="font-medium">{s.name}</span>
+                        <span className="text-muted-foreground text-xs"> ×{s.qty}</span>
+                      </Link>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {formatGears(s.price)}

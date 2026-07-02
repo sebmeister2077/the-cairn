@@ -105,6 +105,7 @@ export interface BuyerLeader {
 export interface BiggestSale {
     auctionId: number;
     name: string;
+    itemId: number;
     price: number;
     qty: number;
     sellerName: string | null;

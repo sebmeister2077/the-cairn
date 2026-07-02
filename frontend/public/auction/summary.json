@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-02T11:22:34.816102+00:00",
+  "generatedUtc": "2026-07-02T11:50:27.911506+00:00",
   "totals": {
     "totalAuctions": 10308,
     "activeListings": 697,
@@ -22572,6 +22572,7 @@
   "biggestSales": [
     {
       "auctionId": 60714,
+      "itemId": 2004,
       "name": "Ingot gold",
       "price": 600.0,
       "qty": 16,
@@ -22580,6 +22581,7 @@
     },
     {
       "auctionId": 29562,
+      "itemId": 4274,
       "name": "Clothes upperbodyover temptress",
       "price": 525.0,
       "qty": 1,
@@ -22588,6 +22590,7 @@
     },
     {
       "auctionId": 30727,
+      "itemId": 3217,
       "name": "Randomizer normal",
       "price": 500.0,
       "qty": 1,
@@ -22596,6 +22599,7 @@
     },
     {
       "auctionId": 57477,
+      "itemId": 4246,
       "name": "Clothes upperbody forlorn tunic",
       "price": 455.0,
       "qty": 1,
@@ -22604,6 +22608,7 @@
     },
     {
       "auctionId": 62107,
+      "itemId": 4188,
       "name": "Clothes shoulder royal fur",
       "price": 455.0,
       "qty": 1,
@@ -22612,6 +22617,7 @@
     },
     {
       "auctionId": 62781,
+      "itemId": 2004,
       "name": "Ingot gold",
       "price": 370.0,
       "qty": 8,
@@ -22620,6 +22626,7 @@
     },
     {
       "auctionId": 56828,
+      "itemId": 4083,
       "name": "Clothes lowerbody rotwalker",
       "price": 333.0,
       "qty": 1,
@@ -22628,6 +22635,7 @@
     },
     {
       "auctionId": 56830,
+      "itemId": 4118,
       "name": "Clothes neck pillory",
       "price": 333.0,
       "qty": 1,
@@ -22636,6 +22644,7 @@
     },
     {
       "auctionId": 59716,
+      "itemId": 4000,
       "name": "Clothes head gold coronet",
       "price": 325.0,
       "qty": 1,
@@ -22644,6 +22653,7 @@
     },
     {
       "auctionId": 22953,
+      "itemId": 2152,
       "name": "Clutter devastation",
       "price": 299.0,
       "qty": 1,
@@ -22652,6 +22662,7 @@
     },
     {
       "auctionId": 50930,
+      "itemId": 4289,
       "name": "Clothes upperbodyover rotwalker",
       "price": 299.0,
       "qty": 1,
@@ -22660,6 +22671,7 @@
     },
     {
       "auctionId": 65572,
+      "itemId": 2004,
       "name": "Ingot gold",
       "price": 299.0,
       "qty": 10,
@@ -22668,6 +22680,7 @@
     },
     {
       "auctionId": 43961,
+      "itemId": 1823,
       "name": "Storagevessel chains",
       "price": 275.0,
       "qty": 1,
@@ -22676,6 +22689,7 @@
     },
     {
       "auctionId": 50667,
+      "itemId": 4020,
       "name": "Clothes head rotwalker",
       "price": 256.0,
       "qty": 1,
@@ -22684,6 +22698,7 @@
     },
     {
       "auctionId": 48973,
+      "itemId": 3921,
       "name": "Clothes foot rotwalker",
       "price": 255.0,
       "qty": 1,
@@ -22692,6 +22707,7 @@
     },
     {
       "auctionId": 55586,
+      "itemId": 4325,
       "name": "Clothes waist prince waistband",
       "price": 255.0,
       "qty": 1,
@@ -22700,6 +22716,7 @@
     },
     {
       "auctionId": 23417,
+      "itemId": 2656,
       "name": "Stone meteorite iron",
       "price": 250.0,
       "qty": 64,
@@ -22708,6 +22725,7 @@
     },
     {
       "auctionId": 43505,
+      "itemId": 3373,
       "name": "Hoovedwearables face face14",
       "price": 234.0,
       "qty": 1,
@@ -22716,6 +22734,7 @@
     },
     {
       "auctionId": 47318,
+      "itemId": 3868,
       "name": "Clothes face cat",
       "price": 234.0,
       "qty": 1,
@@ -22724,6 +22743,7 @@
     },
     {
       "auctionId": 43605,
+      "itemId": 3238,
       "name": "Chandelier candle0",
       "price": 225.0,
       "qty": 10,
@@ -22732,6 +22752,7 @@
     },
     {
       "auctionId": 28426,
+      "itemId": 4305,
       "name": "Clothes upperbodyover cerise embroidered reindeer herder coat",
       "price": 222.0,
       "qty": 1,
@@ -22740,6 +22761,7 @@
     },
     {
       "auctionId": 49907,
+      "itemId": 2123,
       "name": "Nugget nativegold",
       "price": 222.0,
       "qty": 128,
@@ -22748,6 +22770,7 @@
     },
     {
       "auctionId": 49908,
+      "itemId": 2123,
       "name": "Nugget nativegold",
       "price": 222.0,
       "qty": 128,
@@ -22756,6 +22779,7 @@
     },
     {
       "auctionId": 49909,
+      "itemId": 2123,
       "name": "Nugget nativegold",
       "price": 222.0,
       "qty": 128,
@@ -22764,6 +22788,7 @@
     },
     {
       "auctionId": 35026,
+      "itemId": 3689,
       "name": "Attachingplant sparsemold",
       "price": 220.0,
       "qty": 1,
@@ -22772,6 +22797,7 @@
     },
     {
       "auctionId": 7969,
+      "itemId": 14057,
       "name": "Clutter",
       "price": 200.0,
       "qty": 1,
@@ -22780,6 +22806,7 @@
     },
     {
       "auctionId": 29549,
+      "itemId": 2023,
       "name": "Leather sturdy plain",
       "price": 200.0,
       "qty": 23,
@@ -22788,6 +22815,7 @@
     },
     {
       "auctionId": 50042,
+      "itemId": 3174,
       "name": "Bladehead falx steel",
       "price": 200.0,
       "qty": 1,
@@ -22796,6 +22824,7 @@
     },
     {
       "auctionId": 55146,
+      "itemId": 4202,
       "name": "Clothes upperbody hidetunic",
       "price": 200.0,
       "qty": 1,
@@ -22804,6 +22833,7 @@
     },
     {
       "auctionId": 61004,
+      "itemId": 3238,
       "name": "Chandelier candle0",
       "price": 200.0,
       "qty": 10,
@@ -22812,6 +22842,7 @@
     },
     {
       "auctionId": 61858,
+      "itemId": 648,
       "name": "Chiseledblock",
       "price": 200.0,
       "qty": 1,
@@ -22820,6 +22851,7 @@
     },
     {
       "auctionId": 61859,
+      "itemId": 648,
       "name": "Chiseledblock",
       "price": 200.0,
       "qty": 1,
@@ -22828,6 +22860,7 @@
     },
     {
       "auctionId": 22703,
+      "itemId": 4125,
       "name": "Clothes neck teardrop amulet",
       "price": 199.0,
       "qty": 1,
@@ -22836,6 +22869,7 @@
     },
     {
       "auctionId": 18761,
+      "itemId": 13665,
       "name": "Bellows large north",
       "price": 195.0,
       "qty": 1,
@@ -22844,6 +22878,7 @@
     },
     {
       "auctionId": 33903,
+      "itemId": 2011,
       "name": "Ingot silver",
       "price": 190.0,
       "qty": 16,
@@ -22852,6 +22887,7 @@
     },
     {
       "auctionId": 49910,
+      "itemId": 2123,
       "name": "Nugget nativegold",
       "price": 186.0,
       "qty": 98,
@@ -22860,6 +22896,7 @@
     },
     {
       "auctionId": 50017,
+      "itemId": 1852,
       "name": "Storagevessel void",
       "price": 185.0,
       "qty": 1,
@@ -22868,6 +22905,7 @@
     },
     {
       "auctionId": 25993,
+      "itemId": 14057,
       "name": "Clutter",
       "price": 175.0,
       "qty": 1,
@@ -22876,6 +22914,7 @@
     },
     {
       "auctionId": 47313,
+      "itemId": 4307,
       "name": "Clothes waist regalwrap",
       "price": 175.0,
       "qty": 1,
@@ -22884,6 +22923,7 @@
     },
     {
       "auctionId": 22655,
+      "itemId": 4190,
       "name": "Clothes shoulder noble fur collar",
       "price": 174.0,
       "qty": 1,
@@ -22892,6 +22932,7 @@
     },
     {
       "auctionId": 64467,
+      "itemId": 2809,
       "name": "Treeseed purpleheart",
       "price": 174.0,
       "qty": 11,
@@ -22900,6 +22941,7 @@
     },
     {
       "auctionId": 21914,
+      "itemId": 4239,
       "name": "Clothes upperbody marketeer",
       "price": 167.0,
       "qty": 1,
@@ -22908,6 +22950,7 @@
     },
     {
       "auctionId": 11358,
+      "itemId": 2045,
       "name": "Metalbit gold",
       "price": 160.0,
       "qty": 128,
@@ -22916,6 +22959,7 @@
     },
     {
       "auctionId": 45691,
+      "itemId": 2011,
       "name": "Ingot silver",
       "price": 160.0,
       "qty": 16,
@@ -22924,6 +22968,7 @@
     },
     {
       "auctionId": 25982,
+      "itemId": 4261,
       "name": "Clothes upperbody noble shirt",
       "price": 155.0,
       "qty": 1,
@@ -22932,6 +22977,7 @@
     },
     {
       "auctionId": 51565,
+      "itemId": 2023,
       "name": "Leather sturdy plain",
       "price": 155.0,
       "qty": 23,
@@ -22940,6 +22986,7 @@
     },
     {
       "auctionId": 61712,
+      "itemId": 1852,
       "name": "Storagevessel void",
       "price": 155.0,
       "qty": 1,
@@ -22948,6 +22995,7 @@
     },
     {
       "auctionId": 61005,
+      "itemId": 1834,
       "name": "Storagevessel motheaten",
       "price": 155.0,
       "qty": 1,
@@ -22956,6 +23004,7 @@
     },
     {
       "auctionId": 9114,
+      "itemId": 3300,
       "name": "Door 1x3heavy aged",
       "price": 150.0,
       "qty": 2,
@@ -22964,6 +23013,7 @@
     },
     {
       "auctionId": 9433,
+      "itemId": 3300,
       "name": "Door 1x3heavy aged",
       "price": 150.0,
       "qty": 2,
