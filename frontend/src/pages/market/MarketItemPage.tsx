@@ -31,6 +31,25 @@ import {
   type ListingColumn,
 } from "./VirtualListingsTable";
 
+/** Convert an in-game "hours to sell" figure into real-world elapsed time.
+ * Vintage Story runs at 1 in-game hour ≈ 2 real minutes, so real minutes =
+ * gameHours * 2. The result is formatted into the largest sensible unit. */
+function formatRealTimeToSell(gameHours: number) {
+  const realMinutes = gameHours * 2;
+  if (realMinutes < 1) return "<1 min";
+  if (realMinutes < 60) return `${Math.round(realMinutes)} min`;
+  const realHours = realMinutes / 60;
+  if (realHours < 24) {
+    const h = Math.floor(realHours);
+    const m = Math.round(realMinutes - h * 60);
+    return m ? `${h} h ${m} min` : `${h} h`;
+  }
+  const days = realHours / 24;
+  const d = Math.floor(days);
+  const h = Math.round(realHours - d * 24);
+  return h ? `${d} d ${h} h` : `${d} d`;
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 function percentileSorted(sorted: number[], p: number) {
   if (sorted.length === 0) return 0;
@@ -361,7 +380,8 @@ export function MarketItemPage() {
         />
         <StatCard
           label="Median time to sell"
-          value={stat?.medianTimeToSell != null ? `${Math.round(stat.medianTimeToSell)} h` : "—"}
+          value={stat?.medianTimeToSell != null ? formatRealTimeToSell(stat.medianTimeToSell) : "—"}
+          hint="Real-world time (1 in-game hour ≈ 2 real minutes)"
         />
       </div>
 
