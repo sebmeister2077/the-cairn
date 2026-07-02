@@ -47,6 +47,12 @@ from typing import Any, Dict, List, Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_INPUT = REPO_ROOT / "frontend" / "src" / "assets" / "Auction" / "auction-events.jsonl"
 DEFAULT_ITEM_MAP = REPO_ROOT / "backend" / "auction_item_map.json"
+# Game registry mapping numeric item/block ids to their codes (split into
+# "Items" and "Blocks"). Exported from the server; used to resolve human
+# readable names when an explicit item map entry is missing.
+DEFAULT_REGISTRY = (
+    REPO_ROOT / "frontend" / "src" / "assets" / "Auction" / "registry-tops.vintagestory.at.json"
+)
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "frontend" / "public" / "auction"
 
 # States that mean the auction actually sold.
@@ -200,27 +206,69 @@ def load_item_map(path: Path) -> Dict[str, Dict[str, str]]:
     return {str(k): v for k, v in data.items()}
 
 
+def load_registry(path: Path) -> Dict[str, Dict[str, str]]:
+    """Load the game registry (id -> code) keyed by class type.
+
+    Returns ``{"Item": {"<id>": code, ...}, "Block": {...}}`` with string keys
+    so lookups match the decoded ``classType`` ("Item"/"Block"). Item and block
+    ids share the same numeric space, so they must be kept in separate maps and
+    disambiguated by class type.
+    """
+    if not path.exists():
+        print(f"[warn] registry not found at {path} — item names will fall back to ids")
+        return {"Item": {}, "Block": {}}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "Item": {str(k): v for k, v in (data.get("Items") or {}).items()},
+        "Block": {str(k): v for k, v in (data.get("Blocks") or {}).items()},
+    }
+
+
 def _category_from_code(code: str) -> str:
     # e.g. "game:ingot-copper" -> "ingot"; "game:drygrass" -> "drygrass".
     tail = code.split(":", 1)[-1]
     return tail.split("-", 1)[0] or "misc"
 
 
+def humanize_code(code: str) -> str:
+    """Turn a bare item code into a readable display name.
+
+    e.g. "game:ingot-copper" -> "Ingot copper"; "blade-falx-iron" ->
+    "Blade falx iron". Not the exact in-game lang string (which we don't have),
+    but far more useful than a numeric id.
+    """
+    tail = code.split(":", 1)[-1]
+    words = tail.replace("_", "-").split("-")
+    words = [w for w in words if w]
+    if not words:
+        return code
+    text = " ".join(words)
+    return text[:1].upper() + text[1:]
+
+
 def resolve_item(
-    stack: Dict[str, Any], item_map: Dict[str, Dict[str, str]]
+    stack: Dict[str, Any],
+    item_map: Dict[str, Dict[str, str]],
+    registry: Dict[str, Dict[str, str]],
 ) -> Dict[str, Any]:
     item_id = stack["itemId"]
+    class_type = stack["classType"]
     key = str(item_id)
     mapped = item_map.get(key, {})
-    code = mapped.get("code")
-    name = mapped.get("name") or (code.split(":", 1)[-1] if code else f"#{item_id}")
+    # Prefer an explicit item map entry, otherwise fall back to the registry
+    # code for this id within its class type (Item vs Block).
+    code = mapped.get("code") or registry.get(class_type, {}).get(key)
+    name = (
+        mapped.get("name")
+        or (humanize_code(code) if code else f"#{item_id}")
+    )
     category = mapped.get("category") or (_category_from_code(code) if code else "unknown")
     return {
         "itemId": item_id,
         "name": name,
         "code": code,
         "category": category,
-        "classType": stack["classType"],
+        "classType": class_type,
     }
 
 
@@ -363,7 +411,9 @@ def flag_spam(records: List[Dict[str, Any]]) -> None:
 # Main transform
 # --------------------------------------------------------------------------- #
 def build_records(
-    rows: List[Dict[str, Any]], item_map: Dict[str, Dict[str, str]]
+    rows: List[Dict[str, Any]],
+    item_map: Dict[str, Dict[str, str]],
+    registry: Dict[str, Dict[str, str]],
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     records: List[Dict[str, Any]] = []
     items_catalog: Dict[str, Dict[str, Any]] = {}
@@ -372,7 +422,7 @@ def build_records(
         stack = decode_itemstack(row.get("Item", {}).get("RawHex"))
         if stack is None:
             continue
-        item = resolve_item(stack, item_map)
+        item = resolve_item(stack, item_map, registry)
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
@@ -583,6 +633,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     ap.add_argument("--item-map", type=Path, default=DEFAULT_ITEM_MAP)
+    ap.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = ap.parse_args()
 
@@ -595,7 +646,11 @@ def main() -> None:
     print(f"  {len(deduped):,} unique auctions after dedup")
 
     item_map = load_item_map(args.item_map)
-    records, items_catalog = build_records(deduped, item_map)
+    registry = load_registry(args.registry)
+    print(
+        f"  registry: {len(registry['Item']):,} items, {len(registry['Block']):,} blocks"
+    )
+    records, items_catalog = build_records(deduped, item_map, registry)
     print(f"  {len(records):,} decoded records, {len(items_catalog):,} distinct items")
 
     summary = build_summary(records)

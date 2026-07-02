@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ComposedChart,
@@ -12,6 +12,13 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
@@ -113,11 +120,23 @@ function TrendBadge({ trend }: { trend: PriceTrend }) {
   );
 }
 
+/** Selectable histogram resolutions. More bins = smaller price step, which
+ * resolves tight clusters when an item has big price swings. */
+const BIN_OPTIONS = [
+  { label: "Coarse", bins: 12 },
+  { label: "Standard", bins: 24 },
+  { label: "Fine", bins: 48 },
+  { label: "Ultra-fine", bins: 96 },
+] as const;
+
 export function MarketItemPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const id = Number(itemId);
   const listingsQ = useAuctionListings();
   const summaryQ = useAuctionSummary();
+
+  // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
+  const [bins, setBins] = useState(24);
 
   const itemListings = useMemo(
     () => (listingsQ.data ?? []).filter((l) => l.itemId === id),
@@ -147,7 +166,7 @@ export function MarketItemPage() {
   // below 1 gear the per-unit view isn't useful, so we fall back to stacks.
   const perUnitUseful = (stat?.priceStats?.median ?? 0) >= 1;
   const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
-  const hist = useMemo(() => buildHistogram(chartPrices), [chartPrices]);
+  const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
 
   const medianStackPrice = useMemo(() => {
     const prices = [...soldStackPrices].sort((a, b) => a - b);
@@ -282,16 +301,33 @@ export function MarketItemPage() {
       {ps && (
         <Card>
           <CardContent className="py-4">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <h2 className="font-semibold">
                 {perUnitUseful
                   ? "Price-per-unit distribution (sold)"
                   : "Price-per-stack distribution (sold)"}
               </h2>
-              <span className="text-xs text-muted-foreground">
-                p25 {hist.p25.toLocaleString()} · median {hist.median.toLocaleString()} · p75{" "}
-                {hist.p75.toLocaleString()}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-muted-foreground">
+                  p25 {hist.p25.toLocaleString()} · median {hist.median.toLocaleString()} · p75{" "}
+                  {hist.p75.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted-foreground">Detail</span>
+                  <Select value={String(bins)} onValueChange={(v) => setBins(Number(v))}>
+                    <SelectTrigger className="h-7 w-30 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BIN_OPTIONS.map((o) => (
+                        <SelectItem key={o.bins} value={String(o.bins)}>
+                          {o.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
