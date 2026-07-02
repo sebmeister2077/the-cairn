@@ -295,7 +295,7 @@ export function MarketItemPage() {
       </div>
     );
   }
-  if (!stat || itemListings.length === 0) {
+  if (itemListings.length === 0) {
     return (
       <div className="py-12 text-center space-y-2">
         <p className="text-muted-foreground">No data for this item.</p>
@@ -306,7 +306,12 @@ export function MarketItemPage() {
     );
   }
 
-  const ps = stat.priceStats;
+  const ps = stat?.priceStats;
+  // `stat` only exists for items with at least one non-spam listing. Items whose
+  // listings are all spam/expired still have raw listings to show, so fall back
+  // to the first listing for the name/category header.
+  const displayName = stat?.name ?? itemListings[0]?.name ?? `#${id}`;
+  const displayCategory = stat?.category ?? itemListings[0]?.category ?? "unknown";
 
   return (
     <div className="space-y-5">
@@ -315,12 +320,12 @@ export function MarketItemPage() {
           ← Listings
         </Link>
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold">{stat.name}</h1>
-          {stat.trend && (
+          <h1 className="text-2xl font-semibold">{displayName}</h1>
+          {stat?.trend && (
             <TrendBadge trend={stat.trend} perUnit={perUnitUseful} stackSize={medianStackSize} />
           )}
           <a
-            href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(stat.name)}`}
+            href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 rounded-full border border-input px-2 py-0.5 text-xs font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
@@ -331,7 +336,7 @@ export function MarketItemPage() {
           </a>
         </div>
         <p className="text-sm text-muted-foreground">
-          {stat.category} · #{stat.itemId}
+          {displayCategory} · #{id}
         </p>
       </div>
 
@@ -349,14 +354,14 @@ export function MarketItemPage() {
             perUnitUseful ? "Median of sold listings" : "Sold in stacks — median sold stack price"
           }
         />
-        <StatCard label="Units sold" value={stat.unitsSold} />
+        <StatCard label="Units sold" value={stat?.unitsSold ?? 0} />
         <StatCard
           label="Sell-through"
-          value={stat.sellThrough != null ? `${(stat.sellThrough * 100).toFixed(0)}%` : "—"}
+          value={stat?.sellThrough != null ? `${(stat.sellThrough * 100).toFixed(0)}%` : "—"}
         />
         <StatCard
           label="Median time to sell"
-          value={stat.medianTimeToSell != null ? `${Math.round(stat.medianTimeToSell)} h` : "—"}
+          value={stat?.medianTimeToSell != null ? `${Math.round(stat.medianTimeToSell)} h` : "—"}
         />
       </div>
 
