@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { ExternalLink } from "lucide-react";
 import {
   ComposedChart,
   Bar,
@@ -267,6 +268,16 @@ export function MarketItemPage() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{stat.name}</h1>
           {stat.trend && <TrendBadge trend={stat.trend} />}
+          <a
+            href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(stat.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 rounded-full border border-input px-2 py-0.5 text-xs font-medium text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            title="Look up this item on the Vintage Story Wiki"
+          >
+            <ExternalLink className="h-3 w-3" aria-hidden />
+            Wiki
+          </a>
         </div>
         <p className="text-sm text-muted-foreground">
           {stat.category} · #{stat.itemId}
