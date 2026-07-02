@@ -297,11 +297,23 @@ export function MarketItemPage() {
         key: "status",
         header: "Status",
         width: "5rem",
-        cell: (l) => (
-          <span className="text-xs text-muted-foreground">
-            {l.sold ? "sold" : l.state.toLowerCase()}
-          </span>
-        ),
+        cell: (l) => {
+          // Coalesce for data generated before verdictObserved existed.
+          const verdictObserved = l.verdictObserved ?? l.state !== "Active";
+          const unconfirmed = !l.sold && !verdictObserved;
+          return (
+            <span
+              className="text-xs text-muted-foreground"
+              title={
+                unconfirmed
+                  ? "Final outcome never recorded — last observed state, not a confirmed live listing"
+                  : undefined
+              }
+            >
+              {l.sold ? "sold" : unconfirmed ? "active?" : l.state.toLowerCase()}
+            </span>
+          );
+        },
       },
     ],
     [],

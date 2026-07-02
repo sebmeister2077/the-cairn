@@ -8,26 +8,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
-import { useAuctionListings } from "@/lib/auction";
-import type { AuctionListing } from "@/models/auction";
+import { useAuctionListings, useCurrentGameHours } from "@/lib/auction";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
-import { formatGameDate, formatListingDate } from "./VirtualListingsTable";
+import { formatGameDate, formatListingDate, ListingStateBadge } from "./VirtualListingsTable";
 
 const PAGE_SIZE = 100;
 
-function StateBadge({ l }: { l: AuctionListing }) {
-  if (l.sold) return <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>;
-  if (l.state === "Active") return <Badge variant="secondary">Active</Badge>;
-  return <Badge variant="outline">Expired</Badge>;
-}
-
 export function MarketListingsPage() {
   const { data, isLoading, isError } = useAuctionListings();
+  const currentGameHours = useCurrentGameHours();
   const filters = useAppSelector((s) => s.auctionFilters);
   const rows = useFilteredListings(data, filters);
   const [page, setPage] = useState(0);
@@ -104,7 +97,7 @@ export function MarketListingsPage() {
                 </TableCell>
                 <TableCell className="text-right tabular-nums">{l.qty}</TableCell>
                 <TableCell>
-                  <StateBadge l={l} />
+                  <ListingStateBadge listing={l} currentGameHours={currentGameHours} />
                 </TableCell>
                 <TableCell className="text-xs truncate max-w-[120px]">
                   {l.sellerUid ? (

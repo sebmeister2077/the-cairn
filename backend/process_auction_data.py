@@ -461,6 +461,11 @@ def build_records(
                 "traderCut": row.get("TraderCut") or 0,
                 "state": state,
                 "sold": sold,
+                # Whether we ever captured a *terminal* verdict for this auction.
+                # False means the listing is only known as "Active" because it
+                # stopped being observed before selling/expiring — so its state is
+                # a last-known guess, not a confirmed live listing.
+                "verdictObserved": state in TERMINAL_STATES,
                 "delivered": delivered,
                 "sellerName": row.get("SellerName"),
                 "sellerUid": row.get("SellerUid"),
@@ -624,7 +629,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     size_kb = path.stat().st_size / 1024
     print(f"  wrote {path.relative_to(REPO_ROOT)}  ({size_kb:,.1f} KB)")
 

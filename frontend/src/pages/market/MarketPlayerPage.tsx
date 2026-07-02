@@ -3,11 +3,12 @@ import { useParams, Link } from "react-router-dom";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { useAuctionListings, formatGears } from "@/lib/auction";
+import { useAuctionListings, useCurrentGameHours, formatGears } from "@/lib/auction";
 import {
   VirtualListingsTable,
   formatListingDate,
   formatGameDate,
+  ListingStateBadge,
   type ListingColumn,
 } from "./VirtualListingsTable";
 
@@ -19,6 +20,7 @@ const LOCATION_CLUSTER_RADIUS = 12;
 export function MarketPlayerPage() {
   const { uid } = useParams<{ uid: string }>();
   const { data, isLoading } = useAuctionListings();
+  const currentGameHours = useCurrentGameHours();
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
@@ -137,15 +139,10 @@ export function MarketPlayerPage() {
         key: "status",
         header: "Status",
         width: "5rem",
-        cell: (l) =>
-          l.sold ? (
-            <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>
-          ) : (
-            <Badge variant="outline">{l.state}</Badge>
-          ),
+        cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
       },
     ],
-    [],
+    [currentGameHours],
   );
 
   if (isLoading) {

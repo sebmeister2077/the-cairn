@@ -5,7 +5,75 @@
 import { useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AuctionListing } from "@/models/auction";
+import { getCurrentGameHours, getLatestObservedUtc } from "@/lib/auction";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+
+/**
+ * Status badge for an auction listing, shared across the market pages.
+ *
+ * "Active" is only shown when the listing is genuinely still on the board: it
+ * appeared in the most recent capture sweep of the live Auction House AND its
+ * listing duration hasn't elapsed. A listing last seen "Active" that either
+ * dropped out of the latest sweep (not observed since) or whose duration is now
+ * due is definitely no longer visible in-game, so it renders as "Removed".
+ *
+ * `currentGameHours` is the estimated current in-game clock (see
+ * `useCurrentGameHours`); it defaults to the module-cached value so callers that
+ * don't thread it still get a best-effort result.
+ */
+export function ListingStateBadge({
+  listing,
+  currentGameHours,
+}: {
+  listing: AuctionListing;
+  currentGameHours?: number;
+}) {
+  if (listing.sold) {
+    return <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>;
+  }
+  // Fall back to the state when older data predates the verdictObserved field:
+  // a terminal state (Expired) is inherently a recorded verdict.
+  const verdictObserved = listing.verdictObserved ?? listing.state !== "Active";
+  if (!verdictObserved) {
+    // Last seen "Active", but that alone doesn't mean it's still listed. Two
+    // signals prove it's gone: its duration has elapsed, or it fell out of the
+    // most recent capture sweep of the live board (not observed since).
+    const now = currentGameHours ?? getCurrentGameHours();
+    const expired = listing.expireTotalHours != null && now > 0 && listing.expireTotalHours < now;
+    const latest = getLatestObservedUtc();
+    const observedInLatestSweep =
+      latest && listing.lastObservedUtc ? listing.lastObservedUtc >= latest : null;
+
+    // Genuinely live: present in the latest sweep and not yet due.
+    if (observedInLatestSweep === true && !expired) {
+      return <Badge variant="outline">Active</Badge>;
+    }
+    // Definitely gone: dropped from the latest sweep, or duration elapsed.
+    if (observedInLatestSweep === false || expired) {
+      return (
+        <Badge
+          variant="secondary"
+          className="border border-dashed border-muted-foreground/40"
+          title="No longer listed on the Auction House — it dropped out of the latest capture or its listing duration has elapsed"
+        >
+          Removed
+        </Badge>
+      );
+    }
+    // Can't tell (no sweep/clock reference available) — keep it unconfirmed.
+    return (
+      <Badge
+        variant="secondary"
+        className="border border-dashed border-muted-foreground/40"
+        title="Final outcome never recorded — this is the last observed state, not a confirmed live listing"
+      >
+        Active?
+      </Badge>
+    );
+  }
+  return <Badge variant="outline">{listing.state}</Badge>;
+}
 
 export interface ListingColumn {
   key: string;

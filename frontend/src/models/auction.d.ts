@@ -16,6 +16,13 @@ export interface AuctionListing {
     traderCut: number;
     state: "Active" | "Sold" | "SoldRetrieved" | "Expired";
     sold: boolean;
+    /**
+     * True once a terminal verdict (sold / retrieved / expired) was actually
+     * observed. False means the listing is only known as "Active" because it
+     * stopped being observed before it resolved — a last-known state, not a
+     * confirmed live listing.
+     */
+    verdictObserved: boolean;
     delivered: boolean;
     spam: boolean;
     sellerName: string | null;
@@ -29,6 +36,12 @@ export interface AuctionListing {
     tradeDistance: number | null;
     timeToSellHours: number | null;
     postedTotalHours: number | null;
+    /**
+     * In-game total hours at which the auction lapses. Together with the
+     * current in-game clock (estimated from the newest posting) this tells
+     * whether an unconfirmed "Active" listing has since expired.
+     */
+    expireTotalHours: number | null;
     observedUtc: string | null;
     lastObservedUtc: string | null;
 }
