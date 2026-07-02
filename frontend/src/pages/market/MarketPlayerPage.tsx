@@ -37,13 +37,25 @@ export function MarketPlayerPage() {
         .reduce((s, l) => s + l.price - (l.traderCut || 0), 0);
       const spent = asBuyer.reduce((s, l) => s + l.price, 0);
 
-      const itemCounts = new Map<string, number>();
-      for (const l of asSeller) itemCounts.set(l.name, (itemCounts.get(l.name) ?? 0) + 1);
-      const favItems = [...itemCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const itemCounts = new Map<number, { name: string; count: number }>();
+      for (const l of asSeller) {
+        const prev = itemCounts.get(l.itemId);
+        itemCounts.set(l.itemId, { name: l.name, count: (prev?.count ?? 0) + 1 });
+      }
+      const favItems = [...itemCounts.entries()]
+        .map(([itemId, v]) => ({ itemId, name: v.name, count: v.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
 
-      const buyCounts = new Map<string, number>();
-      for (const l of asBuyer) buyCounts.set(l.name, (buyCounts.get(l.name) ?? 0) + 1);
-      const favBuyItems = [...buyCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const buyCounts = new Map<number, { name: string; count: number }>();
+      for (const l of asBuyer) {
+        const prev = buyCounts.get(l.itemId);
+        buyCounts.set(l.itemId, { name: l.name, count: (prev?.count ?? 0) + 1 });
+      }
+      const favBuyItems = [...buyCounts.entries()]
+        .map(([itemId, v]) => ({ itemId, name: v.name, count: v.count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
 
       // Greedily cluster seller positions so respawned auctioneers (same stall,
       // coords off by a few blocks) collapse into a single location. Each cluster
@@ -177,11 +189,16 @@ export function MarketPlayerPage() {
         <div>
           <h2 className="font-semibold mb-2">Favorite items to sell</h2>
           <div className="rounded-md border divide-y">
-            {favItems.map(([itemName, count]) => (
-              <div key={itemName} className="flex justify-between px-3 py-1.5 text-sm">
-                <span className="truncate">{itemName}</span>
-                <Badge variant="secondary">{count}</Badge>
-              </div>
+            {favItems.map((it) => (
+              <Link
+                key={it.itemId}
+                to={`/market/items/${it.itemId}`}
+                className="flex justify-between px-3 py-1.5 text-sm hover:bg-accent/50 transition-colors"
+                title="Open item page"
+              >
+                <span className="truncate text-primary hover:underline">{it.name}</span>
+                <Badge variant="secondary">{it.count}</Badge>
+              </Link>
             ))}
             {favItems.length === 0 && (
               <p className="text-sm text-muted-foreground px-3 py-2">No sales.</p>
@@ -192,11 +209,16 @@ export function MarketPlayerPage() {
         <div>
           <h2 className="font-semibold mb-2">Favorite items to buy</h2>
           <div className="rounded-md border divide-y">
-            {favBuyItems.map(([itemName, count]) => (
-              <div key={itemName} className="flex justify-between px-3 py-1.5 text-sm">
-                <span className="truncate">{itemName}</span>
-                <Badge variant="secondary">{count}</Badge>
-              </div>
+            {favBuyItems.map((it) => (
+              <Link
+                key={it.itemId}
+                to={`/market/items/${it.itemId}`}
+                className="flex justify-between px-3 py-1.5 text-sm hover:bg-accent/50 transition-colors"
+                title="Open item page"
+              >
+                <span className="truncate text-primary hover:underline">{it.name}</span>
+                <Badge variant="secondary">{it.count}</Badge>
+              </Link>
             ))}
             {favBuyItems.length === 0 && (
               <p className="text-sm text-muted-foreground px-3 py-2">No purchases.</p>
