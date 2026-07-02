@@ -19,7 +19,7 @@ import { formatGameDate, formatListingDate, ListingStateBadge } from "./VirtualL
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {
-  const { data, isLoading, isError } = useAuctionListings();
+  const { data, isPending, isError } = useAuctionListings();
   const currentGameHours = useCurrentGameHours();
   const filters = useAppSelector((s) => s.auctionFilters);
   const rows = useFilteredListings(data, filters);
@@ -35,7 +35,7 @@ export function MarketListingsPage() {
   const clampedPage = Math.min(page, pageCount - 1);
   const pageRows = rows.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
         <Spinner /> Loading market data…

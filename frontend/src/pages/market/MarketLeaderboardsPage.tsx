@@ -12,9 +12,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
 
 export function MarketLeaderboardsPage() {
-  const { data, isLoading, isError } = useAuctionSummary();
+  const { data, isPending, isError } = useAuctionSummary();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
         <Spinner /> Loading…

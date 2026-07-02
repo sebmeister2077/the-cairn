@@ -11,9 +11,9 @@ import { useAuctionSummary } from "@/lib/auction";
  * lists the busiest auction locations as one-click map links.
  */
 export function MarketMapPage() {
-  const { data, isLoading, isError } = useAuctionSummary();
+  const { data, isPending, isError } = useAuctionSummary();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
         <Spinner /> Loading…

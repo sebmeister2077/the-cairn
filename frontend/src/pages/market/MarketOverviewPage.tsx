@@ -22,9 +22,9 @@ function FreshnessBanner({ generatedUtc }: { generatedUtc: string }) {
 }
 
 export function MarketOverviewPage() {
-  const { data, isLoading, isError } = useAuctionSummary();
+  const { data, isPending, isError } = useAuctionSummary();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
         <Spinner /> Loading market data…
