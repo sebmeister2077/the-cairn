@@ -243,7 +243,11 @@ export function MarketItemPage() {
 
   const medianStackPrice = useMemo(() => {
     const prices = [...soldStackPrices].sort((a, b) => a - b);
-    return prices.length ? prices[Math.floor(prices.length / 2)] : 0;
+    // Use the same interpolated median as the histogram (`buildHistogram`) so
+    // the "Fair price / stack" card and the green median line on the chart
+    // always agree. A naive `prices[floor(n/2)]` picks the upper-middle sample
+    // for even-sized sets, which disagreed with the chart's true median.
+    return percentileSorted(prices, 0.5);
   }, [soldStackPrices]);
 
   // Newest first by in-game posting time (matches the Game date column).
