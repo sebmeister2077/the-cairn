@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { AuctionListing } from "@/models/auction";
+import { deriveListingStatus } from "@/lib/auction";
 import type { AuctionFilters } from "@/store/slices/auctionFilters";
 
 /** Apply the current filter/sort state to the raw listings array. */
@@ -21,9 +22,19 @@ export function filterListings(
         if (f.excludeSpam && l.spam) return false;
         if (f.category && l.category !== f.category) return false;
         if (f.deliveredOnly && !l.delivered) return false;
-        if (f.state === "sold" && !l.sold) return false;
-        if (f.state === "active" && l.state !== "Active") return false;
-        if (f.state === "expired" && l.state !== "Expired") return false;
+        // Match against the derived, display-level status so the filter agrees
+        // with the status badge (e.g. an "Active"-state row that dropped off the
+        // board renders — and filters — as "Removed", not "Active").
+        if (f.state !== "all") {
+            const status = deriveListingStatus(l);
+            if (f.state === "sold" && status !== "sold") return false;
+            // Treat unconfirmed ("Active?") listings as active — they were last
+            // seen live and we have no signal that they were removed.
+            if (f.state === "active" && status !== "active" && status !== "unconfirmed")
+                return false;
+            if (f.state === "expired" && status !== "expired") return false;
+            if (f.state === "removed" && status !== "removed") return false;
+        }
         if (priceMin != null && !Number.isNaN(priceMin) && l.price < priceMin) return false;
         if (priceMax != null && !Number.isNaN(priceMax) && l.price > priceMax) return false;
         if (excluded.size) {

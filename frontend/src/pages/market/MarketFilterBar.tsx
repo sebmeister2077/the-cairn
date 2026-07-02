@@ -24,6 +24,7 @@ const STATE_LABELS: Record<string, string> = {
   all: "All",
   sold: "Sold",
   active: "Active",
+  removed: "Removed",
   expired: "Expired",
 };
 
@@ -88,6 +89,7 @@ export function MarketFilterBar({ categories }: { categories: string[] }) {
             <SelectItem value="all">All</SelectItem>
             <SelectItem value="sold">Sold</SelectItem>
             <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="removed">Removed</SelectItem>
             <SelectItem value="expired">Expired</SelectItem>
           </SelectContent>
         </Select>

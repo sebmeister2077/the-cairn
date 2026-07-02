@@ -5,7 +5,7 @@
 import { useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AuctionListing } from "@/models/auction";
-import { getCurrentGameHours, getLatestObservedUtc } from "@/lib/auction";
+import { deriveListingStatus } from "@/lib/auction";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -29,28 +29,13 @@ export function ListingStateBadge({
   listing: AuctionListing;
   currentGameHours?: number;
 }) {
-  if (listing.sold) {
-    return <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>;
-  }
-  // Fall back to the state when older data predates the verdictObserved field:
-  // a terminal state (Expired) is inherently a recorded verdict.
-  const verdictObserved = listing.verdictObserved ?? listing.state !== "Active";
-  if (!verdictObserved) {
-    // Last seen "Active", but that alone doesn't mean it's still listed. Two
-    // signals prove it's gone: its duration has elapsed, or it fell out of the
-    // most recent capture sweep of the live board (not observed since).
-    const now = currentGameHours ?? getCurrentGameHours();
-    const expired = listing.expireTotalHours != null && now > 0 && listing.expireTotalHours < now;
-    const latest = getLatestObservedUtc();
-    const observedInLatestSweep =
-      latest && listing.lastObservedUtc ? listing.lastObservedUtc >= latest : null;
-
-    // Genuinely live: present in the latest sweep and not yet due.
-    if (observedInLatestSweep === true && !expired) {
+  const status = deriveListingStatus(listing, currentGameHours);
+  switch (status) {
+    case "sold":
+      return <Badge className="bg-emerald-600 hover:bg-emerald-600">Sold</Badge>;
+    case "active":
       return <Badge variant="outline">Active</Badge>;
-    }
-    // Definitely gone: dropped from the latest sweep, or duration elapsed.
-    if (observedInLatestSweep === false || expired) {
+    case "removed":
       return (
         <Badge
           variant="secondary"
@@ -60,19 +45,20 @@ export function ListingStateBadge({
           Removed
         </Badge>
       );
-    }
-    // Can't tell (no sweep/clock reference available) — keep it unconfirmed.
-    return (
-      <Badge
-        variant="secondary"
-        className="border border-dashed border-muted-foreground/40"
-        title="Final outcome never recorded — this is the last observed state, not a confirmed live listing"
-      >
-        Active?
-      </Badge>
-    );
+    case "unconfirmed":
+      return (
+        <Badge
+          variant="secondary"
+          className="border border-dashed border-muted-foreground/40"
+          title="Final outcome never recorded — this is the last observed state, not a confirmed live listing"
+        >
+          Active?
+        </Badge>
+      );
+    case "expired":
+    default:
+      return <Badge variant="outline">{listing.state}</Badge>;
   }
-  return <Badge variant="outline">{listing.state}</Badge>;
 }
 
 export interface ListingColumn {

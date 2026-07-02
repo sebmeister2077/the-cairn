@@ -8,7 +8,7 @@ import { hydrateRoot } from "../rootActions";
 
 const FILTERS_LS = "auction_filters_v1";
 
-export type AuctionStateFilter = "all" | "sold" | "active" | "expired";
+export type AuctionStateFilter = "all" | "sold" | "active" | "removed" | "expired";
 export type AuctionSortKey =
     | "date"
     | "price"
