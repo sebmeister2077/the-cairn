@@ -24,6 +24,8 @@ export interface AuctionFilters {
     state: AuctionStateFilter;
     deliveredOnly: boolean;
     excludeSpam: boolean;
+    /** Comma-separated buyer/seller names to hide from the listings. */
+    excludePlayers: string;
     sort: AuctionSortKey;
     sortDir: "asc" | "desc";
 }
@@ -36,6 +38,7 @@ export const DEFAULT_AUCTION_FILTERS: AuctionFilters = {
     state: "all",
     deliveredOnly: false,
     excludeSpam: true,
+    excludePlayers: "",
     sort: "date",
     sortDir: "desc",
 };

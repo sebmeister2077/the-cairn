@@ -10,6 +10,12 @@ export function filterListings(
     const q = f.q.trim().toLowerCase();
     const priceMin = f.priceMin === "" ? null : Number(f.priceMin);
     const priceMax = f.priceMax === "" ? null : Number(f.priceMax);
+    const excluded = new Set(
+        (f.excludePlayers ?? "")
+            .split(",")
+            .map((n) => n.trim().toLowerCase())
+            .filter(Boolean),
+    );
 
     const rows = listings.filter((l) => {
         if (f.excludeSpam && l.spam) return false;
@@ -20,6 +26,11 @@ export function filterListings(
         if (f.state === "expired" && l.state !== "Expired") return false;
         if (priceMin != null && !Number.isNaN(priceMin) && l.price < priceMin) return false;
         if (priceMax != null && !Number.isNaN(priceMax) && l.price > priceMax) return false;
+        if (excluded.size) {
+            const seller = l.sellerName?.toLowerCase();
+            const buyer = l.buyerName?.toLowerCase();
+            if ((seller && excluded.has(seller)) || (buyer && excluded.has(buyer))) return false;
+        }
         if (q) {
             const hay = `${l.name} ${l.sellerName ?? ""} ${l.buyerName ?? ""}`.toLowerCase();
             if (!hay.includes(q)) return false;
@@ -46,7 +57,7 @@ export function filterListings(
             case "date":
             default:
                 cmp =
-                    (a.lastObservedUtc ?? "").localeCompare(b.lastObservedUtc ?? "") ||
+                    (a.postedTotalHours ?? 0) - (b.postedTotalHours ?? 0) ||
                     a.auctionId - b.auctionId;
                 break;
         }

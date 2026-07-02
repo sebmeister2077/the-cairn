@@ -1,13 +1,13 @@
 import { useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Info } from "lucide-react";
 import {
   ComposedChart,
   Bar,
   Line,
   XAxis,
   YAxis,
-  Tooltip,
+  Tooltip as ChartTooltip,
   ReferenceLine,
   ResponsiveContainer,
 } from "recharts";
@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
@@ -95,7 +96,15 @@ function buildHistogram(prices: number[], bins = 24) {
 }
 
 /** Small colored pill showing whether the recent price is trending up/down. */
-function TrendBadge({ trend }: { trend: PriceTrend }) {
+function TrendBadge({
+  trend,
+  perUnit,
+  stackSize,
+}: {
+  trend: PriceTrend;
+  perUnit: boolean;
+  stackSize: number;
+}) {
   const { direction, changePct } = trend;
   const up = direction === "up";
   const down = direction === "down";
@@ -107,16 +116,46 @@ function TrendBadge({ trend }: { trend: PriceTrend }) {
   const arrow = up ? "▲" : down ? "▼" : "→";
   const sign = changePct > 0 ? "+" : "";
   const label = direction === "flat" ? "Stable price" : `${sign}${changePct}% recently`;
-  const title =
-    `Recent ${trend.recentCount} sales: median ${trend.recentMedian}/unit · ` +
-    `older ${trend.olderCount} sales: median ${trend.olderMedian}/unit.`;
+  // The trend medians are per-unit (server-side). When the page is stack-priced
+  // the per-unit figures round below 1 gear and read poorly (e.g. 0.703/unit),
+  // so scale them to whole-stack prices to match the rest of the page. The
+  // percentage change is a ratio, so it's unaffected by the scaling.
+  const unit = perUnit ? "unit" : "stack";
+  const scale = perUnit ? 1 : stackSize || 1;
+  const fmt = (m: number) => (m * scale).toLocaleString(undefined, { maximumFractionDigits: 2 });
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
-      title={title}
     >
       <span aria-hidden>{arrow}</span>
       {label}
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              type="button"
+              aria-label="How is the price trend calculated?"
+              className="inline-flex cursor-help items-center opacity-70 hover:opacity-100"
+            >
+              <Info className="size-3" />
+            </button>
+          }
+        />
+        <TooltipContent className="max-w-xs">
+          <div className="space-y-1.5 text-left">
+            <p>
+              Compares this item&apos;s recent sale prices against older ones to show whether
+              it&apos;s getting more expensive (▲), cheaper (▼), or holding steady (→).
+            </p>
+            <p>
+              Timeframe: the most recent third of recorded sales (by real-world time) vs. the rest —
+              here the latest {trend.recentCount} sales (median {fmt(trend.recentMedian)}/{unit})
+              against the {trend.olderCount} older sales (median {fmt(trend.olderMedian)}/{unit}).
+            </p>
+            <p>Changes within ±8% are treated as “Stable price”.</p>
+          </div>
+        </TooltipContent>
+      </Tooltip>
     </span>
   );
 }
@@ -173,6 +212,16 @@ export function MarketItemPage() {
     const prices = [...soldStackPrices].sort((a, b) => a - b);
     return prices.length ? prices[Math.floor(prices.length / 2)] : 0;
   }, [soldStackPrices]);
+
+  // Typical stack size of sold listings, used to present the (per-unit) price
+  // trend in whole-stack terms when the page is stack-priced.
+  const medianStackSize = useMemo(() => {
+    const sizes = itemListings
+      .filter((l) => l.sold)
+      .map((l) => l.qty)
+      .sort((a, b) => a - b);
+    return sizes.length ? sizes[Math.floor(sizes.length / 2)] : 1;
+  }, [itemListings]);
 
   // Newest first by in-game posting time (matches the Game date column).
   const sortedListings = useMemo(
@@ -267,7 +316,9 @@ export function MarketItemPage() {
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{stat.name}</h1>
-          {stat.trend && <TrendBadge trend={stat.trend} />}
+          {stat.trend && (
+            <TrendBadge trend={stat.trend} perUnit={perUnitUseful} stackSize={medianStackSize} />
+          )}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(stat.name)}`}
             target="_blank"
@@ -363,7 +414,7 @@ export function MarketItemPage() {
                       fontSize: 11,
                     }}
                   />
-                  <Tooltip
+                  <ChartTooltip
                     contentStyle={{
                       fontSize: 12,
                       background: "hsl(var(--popover))",

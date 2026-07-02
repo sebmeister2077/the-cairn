@@ -16,6 +16,7 @@ import { useAuctionListings } from "@/lib/auction";
 import type { AuctionListing } from "@/models/auction";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
+import { formatGameDate, formatListingDate } from "./VirtualListingsTable";
 
 const PAGE_SIZE = 100;
 
@@ -68,6 +69,7 @@ export function MarketListingsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Item</TableHead>
+              <TableHead>Game date</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">/ unit</TableHead>
               <TableHead className="text-right">Qty</TableHead>
@@ -89,6 +91,11 @@ export function MarketListingsPage() {
                     {l.name}
                   </Link>
                 </TableCell>
+                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                  <span title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}>
+                    {formatGameDate(l.postedTotalHours)}
+                  </span>
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {l.price.toLocaleString()}
                 </TableCell>
@@ -101,7 +108,10 @@ export function MarketListingsPage() {
                 </TableCell>
                 <TableCell className="text-xs truncate max-w-[120px]">
                   {l.sellerUid ? (
-                    <Link to={`/market/players/${encodeURIComponent(l.sellerUid)}`} className="hover:underline">
+                    <Link
+                      to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
+                      className="hover:underline"
+                    >
                       {l.sellerName ?? "—"}
                     </Link>
                   ) : (
@@ -110,7 +120,10 @@ export function MarketListingsPage() {
                 </TableCell>
                 <TableCell className="text-xs truncate max-w-[120px]">
                   {l.buyerUid ? (
-                    <Link to={`/market/players/${encodeURIComponent(l.buyerUid)}`} className="hover:underline">
+                    <Link
+                      to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
+                      className="hover:underline"
+                    >
                       {l.buyerName ?? "—"}
                     </Link>
                   ) : (
@@ -122,7 +135,7 @@ export function MarketListingsPage() {
             ))}
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No listings match your filters.
                 </TableCell>
               </TableRow>

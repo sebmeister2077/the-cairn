@@ -115,6 +115,17 @@ export function MarketFilterBar({ categories }: { categories: string[] }) {
       </div>
 
       <div className="flex flex-col gap-1">
+        <Label className="text-xs text-muted-foreground">Exclude players</Label>
+        <Input
+          value={f.excludePlayers ?? ""}
+          placeholder="Seller/buyer names, comma-separated"
+          className="h-9 w-56"
+          title="Hide listings from these buyers or sellers (comma-separated, exact names)"
+          onChange={(e) => dispatch(patchAuctionFilters({ excludePlayers: e.target.value }))}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
         <Label className="text-xs text-muted-foreground">Sort by</Label>
         <div className="flex items-center gap-1">
           <Select
