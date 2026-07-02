@@ -248,6 +248,7 @@ def humanize_code(code: str) -> str:
 
 def resolve_item(
     stack: Dict[str, Any],
+    raw_item: Dict[str, Any],
     item_map: Dict[str, Dict[str, str]],
     registry: Dict[str, Dict[str, str]],
 ) -> Dict[str, Any]:
@@ -255,11 +256,16 @@ def resolve_item(
     class_type = stack["classType"]
     key = str(item_id)
     mapped = item_map.get(key, {})
-    # Prefer an explicit item map entry, otherwise fall back to the registry
-    # code for this id within its class type (Item vs Block).
-    code = mapped.get("code") or registry.get(class_type, {}).get(key)
+    # Each auction event now ships the item's human-readable display name and
+    # code (Item.Name / Item.Code), so prefer those. Fall back to an explicit
+    # item map entry, then the game registry code for this id within its class
+    # type (Item vs Block), and finally a humanised code / raw id.
+    event_name = (raw_item.get("Name") or "").strip() or None
+    event_code = (raw_item.get("Code") or "").strip() or None
+    code = event_code or mapped.get("code") or registry.get(class_type, {}).get(key)
     name = (
-        mapped.get("name")
+        event_name
+        or mapped.get("name")
         or (humanize_code(code) if code else f"#{item_id}")
     )
     category = mapped.get("category") or (_category_from_code(code) if code else "unknown")
@@ -422,7 +428,7 @@ def build_records(
         stack = decode_itemstack(row.get("Item", {}).get("RawHex"))
         if stack is None:
             continue
-        item = resolve_item(stack, item_map, registry)
+        item = resolve_item(stack, row.get("Item") or {}, item_map, registry)
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
