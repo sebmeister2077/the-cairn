@@ -221,16 +221,6 @@ export function MarketItemPage() {
     () => itemListings.filter((l) => l.sold).map((l) => l.price),
     [itemListings],
   );
-  // `priceStats.median` is the per-unit median computed server-side. When it's
-  // below 1 gear the per-unit view isn't useful, so we fall back to stacks.
-  const perUnitUseful = (stat?.priceStats?.median ?? 0) >= 1;
-  const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
-  const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
-
-  const medianStackPrice = useMemo(() => {
-    const prices = [...soldStackPrices].sort((a, b) => a - b);
-    return prices.length ? prices[Math.floor(prices.length / 2)] : 0;
-  }, [soldStackPrices]);
 
   // Typical stack size of sold listings, used to present the (per-unit) price
   // trend in whole-stack terms when the page is stack-priced.
@@ -241,6 +231,20 @@ export function MarketItemPage() {
       .sort((a, b) => a - b);
     return sizes.length ? sizes[Math.floor(sizes.length / 2)] : 1;
   }, [itemListings]);
+
+  // `priceStats.median` is the per-unit median computed server-side. When it
+  // drops below 2 gears per unit the per-unit view rounds poorly, so we fall
+  // back to whole-stack prices — but only when we actually know the item's
+  // stack size (a stack of more than one), since otherwise there's nothing to
+  // convert to.
+  const perUnitUseful = (stat?.priceStats?.median ?? 0) >= 2 || medianStackSize <= 1;
+  const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
+  const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
+
+  const medianStackPrice = useMemo(() => {
+    const prices = [...soldStackPrices].sort((a, b) => a - b);
+    return prices.length ? prices[Math.floor(prices.length / 2)] : 0;
+  }, [soldStackPrices]);
 
   // Newest first by in-game posting time (matches the Game date column).
   const sortedListings = useMemo(
@@ -393,7 +397,7 @@ export function MarketItemPage() {
         <StatCard
           label="Median time to sell"
           value={stat?.medianTimeToSell != null ? formatRealTimeToSell(stat.medianTimeToSell) : "—"}
-          hint="Real-world time (1 in-game hour ≈ 2 real minutes)"
+          hint="Real-world time"
         />
       </div>
 
