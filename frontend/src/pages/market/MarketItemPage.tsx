@@ -226,32 +226,37 @@ export function MarketItemPage() {
     [windowListings],
   );
 
+  // Representative full-stack size for the item: the largest stack we've seen
+  // sold. Listings can be posted in partial stacks (e.g. 16 of a 64-stack item),
+  // so the raw listing price mixes different quantities and can't be compared
+  // directly. We normalize everything to this size to get a comparable
+  // "per stack" price and to scale the (per-unit) trend into whole-stack terms.
+  const stackSize = useMemo(() => {
+    let max = 1;
+    for (const l of windowListings) {
+      if (l.sold && l.qty > max) max = l.qty;
+    }
+    return max;
+  }, [windowListings]);
+
   // Some items are only ever sold as full stacks, so the per-unit median can
   // round down to below 1 gear (e.g. 28 gears for a stack of 32). In that case
   // we treat the item as "stack-priced": the "Fair price" card and the chart
   // below both switch to whole-stack prices so the numbers stay meaningful and
   // the histogram shows a real spread instead of everything collapsing onto
-  // 0 / 1 per-unit buckets.
+  // 0 / 1 per-unit buckets. Each listing is normalized to the full stack size
+  // (per-unit price × stack size), so partial-stack listings (e.g. a half-stack
+  // sold for less) don't drag the per-stack figure below its true value.
   const soldStackPrices = useMemo(
-    () => windowListings.filter((l) => l.sold).map((l) => l.price),
-    [windowListings],
+    () => windowListings.filter((l) => l.sold).map((l) => l.pricePerUnit * stackSize),
+    [windowListings, stackSize],
   );
-
-  // Typical stack size of sold listings, used to present the (per-unit) price
-  // trend in whole-stack terms when the page is stack-priced.
-  const medianStackSize = useMemo(() => {
-    const sizes = windowListings
-      .filter((l) => l.sold)
-      .map((l) => l.qty)
-      .sort((a, b) => a - b);
-    return sizes.length ? sizes[Math.floor(sizes.length / 2)] : 1;
-  }, [windowListings]);
 
   // `priceStats.median` is the per-unit median (windowed). When it drops below 2
   // gears per unit the per-unit view rounds poorly, so we fall back to whole-
   // stack prices — but only when we actually know the item's stack size (a stack
   // of more than one), since otherwise there's nothing to convert to.
-  const perUnitUseful = (insight?.priceStats?.median ?? 0) >= 2 || medianStackSize <= 1;
+  const perUnitUseful = (insight?.priceStats?.median ?? 0) >= 2 || stackSize <= 1;
   const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
   const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
 
@@ -451,7 +456,7 @@ export function MarketItemPage() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
           {trend && (
-            <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={medianStackSize} />
+            <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
           )}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
@@ -498,7 +503,9 @@ export function MarketItemPage() {
                 : "—"
           }
           hint={
-            perUnitUseful ? "Median of sold listings" : "Sold in stacks — median sold stack price"
+            perUnitUseful
+              ? "Median of sold listings"
+              : `Median sold price, normalized to a full stack of ${stackSize}`
           }
         />
         <StatCard label="Units sold" value={insight?.unitsSold ?? 0} />

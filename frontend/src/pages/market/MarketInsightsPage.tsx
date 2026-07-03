@@ -132,14 +132,21 @@ function DemandCell({ row }: { row: InsightsRow }) {
   return (
     <span className="inline-flex items-center gap-1">
       <Hint label={`Demand score ${row.demandScore}/100 (volume + speed + sell-through)`}>
-        <Badge variant={tier === "low" ? "outline" : "default"} className={cls}>
+        <Badge
+          variant={tier === "low" ? "outline" : "default"}
+          className={cn("w-18 justify-center", cls)}
+        >
           {tier === "hot" ? <Flame className="size-3" /> : null}
           {label}
         </Badge>
       </Hint>
-      {row.shortage ? (
-        <TriangleAlert className="size-3.5 text-amber-500" aria-label="Shortage" />
-      ) : null}
+      <span className="inline-flex w-3.5 justify-center">
+        {row.shortage ? (
+          <Hint label="Shortage — strong demand with little stock left">
+            <TriangleAlert className="size-3.5 text-amber-500" aria-label="Shortage" />
+          </Hint>
+        ) : null}
+      </span>
     </span>
   );
 }
