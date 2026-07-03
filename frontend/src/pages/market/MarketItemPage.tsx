@@ -23,9 +23,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { StatCard } from "@/components/usage/StatCard";
-import { useAuctionListings, formatGears, formatRealTimeToSell, percentileSorted } from "@/lib/auction";
+import {
+  useAuctionListings,
+  formatGears,
+  formatRealTimeToSell,
+  percentileSorted,
+} from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import {
   VirtualListingsTable,
@@ -125,23 +130,23 @@ function TrendBadge({
   const fmt = (m: number) => (m * scale).toLocaleString(undefined, { maximumFractionDigits: 2 });
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium ${cls}`}
     >
       <span aria-hidden>{arrow}</span>
       {label}
-      <Tooltip>
-        <TooltipTrigger
+      <Popover>
+        <PopoverTrigger
           render={
             <button
               type="button"
               aria-label="How is the price trend calculated?"
-              className="inline-flex cursor-help items-center opacity-70 hover:opacity-100"
+              className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             >
-              <Info className="size-3" />
+              <Info className="size-4" />
             </button>
           }
         />
-        <TooltipContent className="max-w-xs">
+        <PopoverContent className="max-w-xs">
           <div className="space-y-1.5 text-left">
             <p>
               Compares this item&apos;s recent sale prices against older ones to show whether
@@ -154,8 +159,8 @@ function TrendBadge({
             </p>
             <p>Changes within ±8% are treated as “Stable price”.</p>
           </div>
-        </TooltipContent>
-      </Tooltip>
+        </PopoverContent>
+      </Popover>
     </span>
   );
 }
@@ -207,7 +212,10 @@ export function MarketItemPage() {
   // row. Composite demand/liquidity scores aren't meaningful for one item and
   // aren't shown here.
   const insight = useMemo(
-    () => (itemListings.length ? computeMarketInsights(itemListings, windowDays).rows[0] ?? null : null),
+    () =>
+      itemListings.length
+        ? (computeMarketInsights(itemListings, windowDays).rows[0] ?? null)
+        : null,
     [itemListings, windowDays],
   );
 
@@ -353,7 +361,9 @@ export function MarketItemPage() {
               {l.buyerName ?? "—"}
             </Link>
           ) : (
-            <span className="text-xs text-muted-foreground">{l.sold ? (l.buyerName ?? "—") : "—"}</span>
+            <span className="text-xs text-muted-foreground">
+              {l.sold ? (l.buyerName ?? "—") : "—"}
+            </span>
           ),
       },
       {
@@ -362,7 +372,10 @@ export function MarketItemPage() {
         width: "minmax(5.5rem,0.9fr)",
         align: "right",
         cell: (l) => (
-          <span className="text-xs text-muted-foreground" title="Real-world time from posting to sale">
+          <span
+            className="text-xs text-muted-foreground"
+            title="Real-world time from posting to sale"
+          >
             {l.sold && l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
           </span>
         ),
@@ -469,9 +482,7 @@ export function MarketItemPage() {
             {w.label}
           </Button>
         ))}
-        <span className="ml-1 text-xs text-muted-foreground">
-          1 real day ≈ 1 in-game month
-        </span>
+        <span className="ml-1 text-xs text-muted-foreground">1 real day ≈ 1 in-game month</span>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -679,7 +690,9 @@ export function MarketItemPage() {
                     tick={{ fontSize: 11 }}
                     allowDecimals={false}
                     width={48}
-                    tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                    tickFormatter={(v: number) =>
+                      v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
+                    }
                   />
                   <ChartTooltip
                     contentStyle={{
@@ -714,10 +727,7 @@ export function MarketItemPage() {
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-semibold">Recent listings ({sortedListings.length})</h2>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={soldOnly}
-              onCheckedChange={(v) => setSoldOnly(v === true)}
-            />
+            <Checkbox checked={soldOnly} onCheckedChange={(v) => setSoldOnly(v === true)} />
             Sold only
           </label>
         </div>

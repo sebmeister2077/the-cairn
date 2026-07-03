@@ -1,10 +1,16 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { useAuctionListings, useCurrentGameHours, formatGears, formatRealTimeToSell } from "@/lib/auction";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  useAuctionListings,
+  useCurrentGameHours,
+  formatGears,
+  formatRealTimeToSell,
+} from "@/lib/auction";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -24,6 +30,8 @@ export function MarketPlayerPage() {
   const currentGameHours = useCurrentGameHours();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [sellerSoldOnly, setSellerSoldOnly] = useState(false);
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
@@ -94,16 +102,16 @@ export function MarketPlayerPage() {
     }, [data, decodedUid]);
 
   // Newest first by in-game posting time (matches the Game date column).
-  const sortedSellerListings = useMemo(
-    () => [...asSeller].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
-    [asSeller],
-  );
+  const sortedSellerListings = useMemo(() => {
+    const base = sellerSoldOnly ? asSeller.filter((l) => l.sold) : asSeller;
+    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
+  }, [asSeller, sellerSoldOnly]);
 
   // Purchases (this player as buyer), newest first.
-  const sortedBuyerListings = useMemo(
-    () => [...asBuyer].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
-    [asBuyer],
-  );
+  const sortedBuyerListings = useMemo(() => {
+    const base = asBuyer;
+    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
+  }, [asBuyer]);
 
   const columns = useMemo<ListingColumn[]>(
     () => [
@@ -157,8 +165,24 @@ export function MarketPlayerPage() {
               {l.buyerName ?? "—"}
             </Link>
           ) : (
-            <span className="text-xs text-muted-foreground">{l.sold ? (l.buyerName ?? "—") : "—"}</span>
+            <span className="text-xs text-muted-foreground">
+              {l.sold ? (l.buyerName ?? "—") : "—"}
+            </span>
           ),
+      },
+      {
+        key: "soldIn",
+        header: "Sold in",
+        width: "minmax(5.5rem,0.9fr)",
+        align: "right",
+        cell: (l) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title="Real-world time from posting to sale"
+          >
+            {l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
+          </span>
+        ),
       },
       {
         key: "status",
@@ -232,7 +256,10 @@ export function MarketPlayerPage() {
         width: "minmax(5.5rem,0.9fr)",
         align: "right",
         cell: (l) => (
-          <span className="text-xs text-muted-foreground" title="Real-world time from posting to sale">
+          <span
+            className="text-xs text-muted-foreground"
+            title="Real-world time from posting to sale"
+          >
             {l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
           </span>
         ),
@@ -360,7 +387,16 @@ export function MarketPlayerPage() {
       </div>
 
       <div>
-        <h2 className="font-semibold mb-2">Listings ({asSeller.length})</h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Listings ({asSeller.length})</h2>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={sellerSoldOnly}
+              onCheckedChange={(v) => setSellerSoldOnly(v === true)}
+            />
+            Sold only
+          </label>
+        </div>
         <VirtualListingsTable listings={sortedSellerListings} columns={columns} />
       </div>
 
