@@ -1,8 +1,9 @@
-// Simple searchable index of every item on the market. Backed by the small,
-// precomputed `summary.json` (`itemStats`) so it loads without pulling the
-// large `listings.json` payload. Each row links through to the item page.
+// Simple searchable index of every item on the market. The master list is the
+// full item catalog (`items.json`), enriched with trade metrics from the
+// precomputed `summary.json` (`itemStats`) where available — so every item is
+// listed, even ones with no (non-spam) sales yet. Each row links to the item page.
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
 import {
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
@@ -23,15 +25,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuctionSummary, formatGears } from "@/lib/auction";
-import type { ItemStat } from "@/models/auction";
+import { useAuctionSummary, useItemCatalog, formatGears } from "@/lib/auction";
+import {
+  useItemSearch,
+  patchItemSearch,
+  resetItemSearch,
+  isDefaultItemSearch,
+  ALL_CATEGORIES,
+  type ItemSort,
+} from "./useItemSearch";
 
-// Sentinel for "no category" — base-ui Select can't hold an empty-string value.
-const ALL_CATEGORIES = "__all__";
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
 const MAX_ROWS = 250;
 
-type SortKey = "gears" | "sold" | "listings" | "name";
+type SortKey = ItemSort;
 
 const SORT_LABELS: Record<SortKey, string> = {
   gears: "Gears traded",
@@ -40,49 +47,96 @@ const SORT_LABELS: Record<SortKey, string> = {
   name: "Name",
 };
 
-function sortItems(rows: ItemStat[], key: SortKey): ItemStat[] {
+interface SearchRow {
+  itemId: number;
+  name: string;
+  category: string;
+  listings: number;
+  unitsSold: number;
+  gearsTraded: number;
+  median: number | null;
+}
+
+function sortRows(rows: SearchRow[], key: SortKey): SearchRow[] {
   const sorted = [...rows];
   switch (key) {
     case "name":
       sorted.sort((a, b) => a.name.localeCompare(b.name));
       break;
     case "sold":
-      sorted.sort((a, b) => b.unitsSold - a.unitsSold);
+      sorted.sort((a, b) => b.unitsSold - a.unitsSold || a.name.localeCompare(b.name));
       break;
     case "listings":
-      sorted.sort((a, b) => b.listings - a.listings);
+      sorted.sort((a, b) => b.listings - a.listings || a.name.localeCompare(b.name));
       break;
     case "gears":
     default:
-      sorted.sort((a, b) => b.gearsTraded - a.gearsTraded);
+      sorted.sort((a, b) => b.gearsTraded - a.gearsTraded || a.name.localeCompare(b.name));
       break;
   }
   return sorted;
 }
 
-export function MarketItemsPage() {
-  const { data, isPending, isError } = useAuctionSummary();
-  const [q, setQ] = useState("");
-  const [category, setCategory] = useState<string>(ALL_CATEGORIES);
-  const [sort, setSort] = useState<SortKey>("gears");
+/** Whole-number display, or "—" when zero/absent. */
+function num(n: number): string {
+  return n ? n.toLocaleString() : "—";
+}
 
-  const categories = useMemo(() => {
-    if (!data) return [];
-    return Array.from(new Set(data.itemStats.map((it) => it.category)))
-      .sort()
-      .map((c) => ({ value: c, label: c }));
-  }, [data]);
+export function MarketItemsPage() {
+  const catalogQ = useItemCatalog();
+  const summaryQ = useAuctionSummary();
+  const search = useItemSearch();
+  const { q, category, sort } = search;
+
+  // Master list: every catalog item, enriched with stats where we have them.
+  const rows = useMemo<SearchRow[]>(() => {
+    const catalog = catalogQ.data;
+    if (!catalog) return [];
+    const statsById = new Map(
+      (summaryQ.data?.itemStats ?? []).map((it) => [it.itemId, it] as const),
+    );
+    return Object.entries(catalog).map(([idStr, entry]) => {
+      const itemId = Number(idStr);
+      const st = statsById.get(itemId);
+      return {
+        itemId,
+        name: entry.name,
+        category: entry.category,
+        listings: st?.listings ?? 0,
+        unitsSold: st?.unitsSold ?? 0,
+        gearsTraded: st?.gearsTraded ?? 0,
+        median: st?.priceStats?.median ?? null,
+      };
+    });
+  }, [catalogQ.data, summaryQ.data]);
+
+  const categories = useMemo(
+    () =>
+      Array.from(new Set(rows.map((r) => r.category)))
+        .sort()
+        .map((c) => ({ value: c, label: c })),
+    [rows],
+  );
 
   const results = useMemo(() => {
-    if (!data) return [];
     const needle = q.trim().toLowerCase();
-    const filtered = data.itemStats.filter((it) => {
-      if (category !== ALL_CATEGORIES && it.category !== category) return false;
-      if (needle && !it.name.toLowerCase().includes(needle)) return false;
+    const filtered = rows.filter((r) => {
+      if (category !== ALL_CATEGORIES && r.category !== category) return false;
+      // Match the item name OR its category, so a search like "tapestry" surfaces
+      // every grouped tapestry (named "Ambush", "Rot", …) not just a literal name.
+      if (
+        needle &&
+        !r.name.toLowerCase().includes(needle) &&
+        !r.category.toLowerCase().includes(needle)
+      )
+        return false;
       return true;
     });
-    return sortItems(filtered, sort);
-  }, [data, q, category, sort]);
+    return sortRows(filtered, sort);
+  }, [rows, q, category, sort]);
+
+  const isPending = catalogQ.isPending || summaryQ.isPending;
+  const isError = catalogQ.isError || summaryQ.isError;
 
   if (isPending) {
     return (
@@ -91,8 +145,8 @@ export function MarketItemsPage() {
       </div>
     );
   }
-  if (isError || !data) {
-    return <p className="text-destructive py-12 text-center">Failed to load market summary.</p>;
+  if (isError || !catalogQ.data) {
+    return <p className="text-destructive py-12 text-center">Failed to load market data.</p>;
   }
 
   const shown = results.slice(0, MAX_ROWS);
@@ -102,7 +156,7 @@ export function MarketItemsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Item Search</h1>
         <p className="text-sm text-muted-foreground">
-          Search {data.itemStats.length.toLocaleString()} items traded on the Auction House.
+          Search {rows.length.toLocaleString()} items traded on the Auction House.
         </p>
       </div>
 
@@ -116,14 +170,17 @@ export function MarketItemsPage() {
               placeholder="Item name…"
               className="h-9 w-64 pl-8"
               autoFocus
-              onChange={(e) => setQ(e.target.value)}
+              onChange={(e) => patchItemSearch({ q: e.target.value })}
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Category</Label>
-          <Select value={category} onValueChange={(v) => setCategory(v ?? ALL_CATEGORIES)}>
+          <Select
+            value={category}
+            onValueChange={(v) => patchItemSearch({ category: v ?? ALL_CATEGORIES })}
+          >
             <SelectTrigger className="h-9 w-44">
               <SelectValue>
                 {(value) => categories.find((c) => c.value === value)?.label ?? "All categories"}
@@ -142,7 +199,10 @@ export function MarketItemsPage() {
 
         <div className="flex flex-col gap-1">
           <Label className="text-xs text-muted-foreground">Sort by</Label>
-          <Select value={sort} onValueChange={(v) => setSort((v as SortKey) ?? "gears")}>
+          <Select
+            value={sort}
+            onValueChange={(v) => patchItemSearch({ sort: (v as SortKey) ?? "gears" })}
+          >
             <SelectTrigger className="h-9 w-40">
               <SelectValue>
                 {(value) => SORT_LABELS[value as SortKey] ?? SORT_LABELS.gears}
@@ -158,10 +218,21 @@ export function MarketItemsPage() {
           </Select>
         </div>
 
-        <p className="ml-auto text-sm text-muted-foreground">
-          {results.length.toLocaleString()} match{results.length === 1 ? "" : "es"}
-          {results.length > MAX_ROWS ? ` · showing ${MAX_ROWS}` : ""}
-        </p>
+        <div className="ml-auto flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-9"
+            disabled={isDefaultItemSearch(search)}
+            onClick={resetItemSearch}
+          >
+            Reset
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            {results.length.toLocaleString()} match{results.length === 1 ? "" : "es"}
+            {results.length > MAX_ROWS ? ` · showing ${MAX_ROWS}` : ""}
+          </p>
+        </div>
       </div>
 
       <div className="rounded-md border overflow-auto">
@@ -186,16 +257,12 @@ export function MarketItemsPage() {
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{it.category}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {it.priceStats ? formatGears(it.priceStats.median) : "—"}
+                  {it.median != null ? formatGears(it.median) : "—"}
                 </TableCell>
+                <TableCell className="text-right tabular-nums">{num(it.unitsSold)}</TableCell>
+                <TableCell className="text-right tabular-nums">{num(it.listings)}</TableCell>
                 <TableCell className="text-right tabular-nums">
-                  {it.unitsSold.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {it.listings.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {formatGears(it.gearsTraded)}
+                  {it.gearsTraded ? formatGears(it.gearsTraded) : "—"}
                 </TableCell>
               </TableRow>
             ))}

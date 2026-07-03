@@ -291,69 +291,80 @@ def resolve_item(
 
 
 # --------------------------------------------------------------------------- #
-# Clutter variant splitting
+# Type-variant splitting (clutter, tapestry)
 # --------------------------------------------------------------------------- #
-# In-game "clutter" is a single block (one item id) whose actual object is stored
-# in the stack's `type` attribute (e.g. "toy7", "pile-cloth2",
-# "chains/chain-ceiling-hook"). The market treats them all as one "Clutter" item,
-# which hides that they're really dozens of distinct objects. We split them into
-# grouped items keyed by the variant's base name (the `type` with any trailing
-# number stripped, e.g. "toy7" -> "toy"), so all "toy" clutter aggregates under a
-# single "Toy" item while each listing still carries its exact variant ("toy7").
+# Some in-game objects are a single block id whose actual object lives in the
+# stack's `type` attribute:
+#   * "clutter"  — e.g. "toy7", "pile-cloth2", "chains/chain-ceiling-hook".
+#   * "tapestry" — e.g. "ambush1", "rotbeast11", "schematic-c-bloody2" (big
+#                  tapestries are split into numbered pieces of one artwork).
+# The market treats each as one item ("Clutter" / "Tapestry"), hiding that
+# they're really dozens of distinct objects. We split them into grouped items
+# keyed by the variant's base name (the `type` with any trailing number stripped,
+# e.g. "toy7" -> "toy", "ambush3" -> "ambush", "rotbeast11" -> "rotbeast"), so
+# every piece of the same object aggregates under one item (a single median
+# price) while each listing still carries its exact variant ("toy7", "ambush3").
 #
-# Grouped clutter needs a stable, collision-free numeric id (the whole explorer
-# is keyed by numeric itemId). Real item/block ids are small (< ~15k), so we map
-# each base name into a high range via a stable hash, probing on the rare clash.
-CLUTTER_ID_BASE = 90_000_000
-_clutter_synth_ids: Dict[str, int] = {}
-_clutter_used_ids: set = set()
+# A grouped item needs a stable, collision-free numeric id (the whole explorer is
+# keyed by numeric itemId). Real item/block ids are small (< ~15k), so we map each
+# group into a high range via a stable hash, probing on the rare clash. Groups are
+# namespaced by category so a clutter and a tapestry base of the same spelling can
+# never merge into one item.
+SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry"}
+VARIANT_ID_BASE = 90_000_000
+_variant_synth_ids: Dict[str, int] = {}
+_variant_used_ids: set = set()
 
 
-def _clutter_base(variant: str) -> str:
-    """Group key for a clutter variant: the `type` string with any trailing
-    number stripped (e.g. "toy7" -> "toy", "fence/iron/empty1" ->
-    "fence/iron/empty"). Falls back to the raw variant if stripping empties it."""
+def _variant_base(variant: str) -> str:
+    """Group key for a type variant: the `type` string with any trailing number
+    stripped (e.g. "toy7" -> "toy", "rotbeast11" -> "rotbeast",
+    "fence/iron/empty1" -> "fence/iron/empty"). Falls back to the raw variant if
+    stripping empties it."""
     base = re.sub(r"\d+$", "", variant).rstrip("-_/")
     return base or variant
 
 
-def _humanize_clutter(base: str) -> str:
-    """Readable display name for a clutter group (e.g. "pile-cloth" ->
+def _humanize_variant(base: str) -> str:
+    """Readable display name for a variant group (e.g. "pile-cloth" ->
     "Pile cloth", "chains/chain-ceiling-hook" -> "Chains chain ceiling hook")."""
     words = [w for w in re.split(r"[\-_/]+", base) if w]
     text = " ".join(words) if words else base
     return text[:1].upper() + text[1:]
 
 
-def _clutter_synth_id(base: str) -> int:
-    """Stable synthetic numeric id for a clutter group, well outside the real
-    id range and de-duplicated so two groups never share an id."""
-    sid = _clutter_synth_ids.get(base)
+def _variant_synth_id(key: str) -> int:
+    """Stable synthetic numeric id for a variant group, well outside the real id
+    range and de-duplicated so two groups never share an id. `key` is namespaced
+    by category (e.g. "tapestry:ambush")."""
+    sid = _variant_synth_ids.get(key)
     if sid is not None:
         return sid
-    sid = CLUTTER_ID_BASE + (zlib.crc32(base.encode("utf-8")) % 9_000_000)
-    while sid in _clutter_used_ids:
+    sid = VARIANT_ID_BASE + (zlib.crc32(key.encode("utf-8")) % 9_000_000)
+    while sid in _variant_used_ids:
         sid += 1
-    _clutter_synth_ids[base] = sid
-    _clutter_used_ids.add(sid)
+    _variant_synth_ids[key] = sid
+    _variant_used_ids.add(sid)
     return sid
 
 
-def clutter_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optional[Tuple[int, str, str]]:
-    """If this is a clutter block whose real object lives in `attrs.type`, return
-    ``(synthetic_item_id, group_display_name, variant_label)``; else ``None``.
+def type_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optional[Tuple[int, str, str]]:
+    """If this item is a clutter/tapestry block whose real object lives in
+    `attrs.type`, return ``(synthetic_item_id, group_display_name,
+    variant_label)``; else ``None``.
 
-    Generic-clutter fallbacks that already resolve to their own id (e.g.
+    Generic fallbacks that already resolve to their own id (e.g. clutter
     "art/bottle", "skull/humanoid" with no `type` attribute) are left untouched.
     """
-    if item.get("category") != "clutter" or not attrs:
+    category = item.get("category")
+    if category not in SPLIT_TYPE_CATEGORIES or not attrs:
         return None
     variant = attrs.get("type")
     if not isinstance(variant, str) or not variant.strip():
         return None
     variant = variant.strip()
-    base = _clutter_base(variant)
-    return _clutter_synth_id(base), _humanize_clutter(base), variant
+    base = _variant_base(variant)
+    return _variant_synth_id(f"{category}:{base}"), _humanize_variant(base), variant
 
 
 # --------------------------------------------------------------------------- #
@@ -509,11 +520,11 @@ def build_records(
         item = resolve_item(stack, row.get("Item") or {}, item_map, registry)
         attrs = stack["attributes"] or None
 
-        # Clutter is one block id hiding dozens of distinct objects (the real one
-        # is in `attrs.type`). Split it into per-object groups so each aggregates
-        # separately, while the listing keeps its exact variant label.
+        # Clutter and tapestry are one block id hiding many distinct objects (the
+        # real one is in `attrs.type`). Split them into per-object groups so each
+        # aggregates separately, while the listing keeps its exact variant label.
         variant = None
-        cv = clutter_variant(item, attrs)
+        cv = type_variant(item, attrs)
         if cv is not None:
             item["itemId"], item["name"], variant = cv
 

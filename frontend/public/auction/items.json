@@ -155,7 +155,7 @@
     "code": "clothes-upperbody-tattered-linen-shirt",
     "classType": "Item"
   },
-  "90423790": {
+  "95057948": {
     "name": "Toy",
     "category": "clutter",
     "code": "clutter",
@@ -179,7 +179,7 @@
     "code": "gear-temporal",
     "classType": "Item"
   },
-  "92474828": {
+  "90199786": {
     "name": "Washboard",
     "category": "clutter",
     "code": "clutter",
@@ -227,7 +227,7 @@
     "code": "metal-parts",
     "classType": "Block"
   },
-  "92861228": {
+  "96161818": {
     "name": "Pile cloth",
     "category": "clutter",
     "code": "clutter",
@@ -335,13 +335,13 @@
     "code": "painting-lastday-north",
     "classType": "Block"
   },
-  "2053": {
-    "name": "Tapestry",
+  "93102549": {
+    "name": "Schematic c bloody",
     "category": "tapestry",
     "code": "tapestry-north",
     "classType": "Block"
   },
-  "98964511": {
+  "95637689": {
     "name": "Armillary",
     "category": "clutter",
     "code": "clutter",
@@ -359,13 +359,25 @@
     "code": "armor-body-antique-blackguard-broken",
     "classType": "Item"
   },
+  "92639904": {
+    "name": "Ambush",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
+  "95084120": {
+    "name": "Themorning",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
   "1453": {
     "name": "Blue clay",
     "category": "clay",
     "code": "clay-blue",
     "classType": "Item"
   },
-  "98880339": {
+  "90441375": {
     "name": "Pile weapon",
     "category": "clutter",
     "code": "clutter",
@@ -407,7 +419,7 @@
     "code": "jonasparts-tank02",
     "classType": "Item"
   },
-  "91706436": {
+  "94735484": {
     "name": "Machine",
     "category": "clutter",
     "code": "clutter",
@@ -449,7 +461,7 @@
     "code": "crystalizedore-rich-bismuthinite-granite",
     "classType": "Item"
   },
-  "90651803": {
+  "94140293": {
     "name": "Abacus",
     "category": "clutter",
     "code": "clutter",
@@ -473,13 +485,13 @@
     "code": "clutter-skull/humanoid",
     "classType": "Item"
   },
-  "90302181": {
+  "95586287": {
     "name": "Chains chain ceiling hook",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "90554512": {
+  "97863418": {
     "name": "Chains chain double ceiling manacles",
     "category": "clutter",
     "code": "clutter",
@@ -611,6 +623,12 @@
     "code": "ore-quartz",
     "classType": "Item"
   },
+  "93585444": {
+    "name": "Temporality",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
   "2608": {
     "name": "Resin",
     "category": "resin",
@@ -689,6 +707,12 @@
     "code": "backpack-sturdy",
     "classType": "Item"
   },
+  "96206865": {
+    "name": "Forlorn",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
   "3878": {
     "name": "Marketeer mask",
     "category": "clothes",
@@ -713,7 +737,7 @@
     "code": "agedstonebricks-slate",
     "classType": "Block"
   },
-  "94727448": {
+  "91941704": {
     "name": "Chains chain double end manacles",
     "category": "clutter",
     "code": "clutter",
@@ -1205,7 +1229,7 @@
     "code": "glass-violet",
     "classType": "Block"
   },
-  "98890638": {
+  "94532440": {
     "name": "Table noble single",
     "category": "clutter",
     "code": "clutter",
@@ -1355,7 +1379,7 @@
     "code": "anvil-steel",
     "classType": "Block"
   },
-  "92941147": {
+  "97054397": {
     "name": "Music box",
     "category": "clutter",
     "code": "clutter",
@@ -1427,7 +1451,7 @@
     "code": "clothes-foot-blackguard-shoes",
     "classType": "Item"
   },
-  "91058770": {
+  "97785428": {
     "name": "Fence iron empty",
     "category": "clutter",
     "code": "clutter",
@@ -1583,7 +1607,7 @@
     "code": "clothes-lowerbody-workmans-gown",
     "classType": "Item"
   },
-  "95420128": {
+  "91837208": {
     "name": "Brazier",
     "category": "clutter",
     "code": "clutter",
@@ -1613,7 +1637,7 @@
     "code": "clothes-arm-large-silver-bracelets",
     "classType": "Item"
   },
-  "92807183": {
+  "95846905": {
     "name": "Tank glass",
     "category": "clutter",
     "code": "clutter",
@@ -1625,7 +1649,7 @@
     "code": "fruittree-cutting",
     "classType": "Block"
   },
-  "94440380": {
+  "93245044": {
     "name": "Book big open",
     "category": "clutter",
     "code": "clutter",
@@ -1691,7 +1715,7 @@
     "code": "dirtygravel-wetdark-cracked",
     "classType": "Block"
   },
-  "90444308": {
+  "92386766": {
     "name": "Globe",
     "category": "clutter",
     "code": "clutter",
@@ -1720,6 +1744,12 @@
     "category": "clothes",
     "code": "clothes-foot-worn-leather-boots",
     "classType": "Item"
+  },
+  "98486029": {
+    "name": "Schematic c",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
   },
   "4117": {
     "name": "Lunula",
@@ -1799,19 +1829,19 @@
     "code": "clothes-waist-merchant-belt",
     "classType": "Item"
   },
-  "93449723": {
+  "94236593": {
     "name": "Bookshelves bookstand book closed",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "94717129": {
+  "90685212": {
     "name": "Bookshelves large book closed",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "92396520": {
+  "92632685": {
     "name": "Tobias lantern",
     "category": "clutter",
     "code": "clutter",
@@ -1841,13 +1871,13 @@
     "code": "clothes-lowerbody-jailor-pants",
     "classType": "Item"
   },
-  "98503138": {
+  "94825786": {
     "name": "Pile tobias gadgets",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "91465223": {
+  "93281780": {
     "name": "Bookshelves large book open",
     "category": "clutter",
     "code": "clutter",
@@ -1877,7 +1907,7 @@
     "code": "ore-rich-quartz_nativegold-andesite",
     "classType": "Item"
   },
-  "91265004": {
+  "95186022": {
     "name": "Bookshelves bookpile aged",
     "category": "clutter",
     "code": "clutter",
@@ -1888,6 +1918,12 @@
     "category": "beeswax",
     "code": "beeswax",
     "classType": "Item"
+  },
+  "96445091": {
+    "name": "Return",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
   },
   "2005": {
     "name": "Iron ingot",
@@ -1949,6 +1985,12 @@
     "code": "gem-diamond-rough",
     "classType": "Item"
   },
+  "90765016": {
+    "name": "Eidolon",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
   "1634": {
     "name": "Crystalizedore rich nativecopper granite",
     "category": "crystalizedore",
@@ -1961,7 +2003,7 @@
     "code": "linen-normal-down",
     "classType": "Block"
   },
-  "91146734": {
+  "95186781": {
     "name": "Bookshelves scrollrack full",
     "category": "clutter",
     "code": "clutter",
@@ -1997,7 +2039,7 @@
     "code": "hoovedwearables-face-face14",
     "classType": "Item"
   },
-  "92119791": {
+  "98014634": {
     "name": "Lantern ground",
     "category": "clutter",
     "code": "clutter",
@@ -2009,7 +2051,7 @@
     "code": "clothes-lowerbody-dirty-linen-trousers",
     "classType": "Item"
   },
-  "92504357": {
+  "97642835": {
     "name": "Pile tools",
     "category": "clutter",
     "code": "clutter",
@@ -2039,7 +2081,7 @@
     "code": "ore-medium-chromite-andesite",
     "classType": "Item"
   },
-  "92431953": {
+  "91926234": {
     "name": "Bookshelves large book standing",
     "category": "clutter",
     "code": "clutter",
@@ -2057,7 +2099,7 @@
     "code": "tuningcylinder-2",
     "classType": "Item"
   },
-  "90649336": {
+  "94734056": {
     "name": "Lecturn book open",
     "category": "clutter",
     "code": "clutter",
@@ -2105,7 +2147,7 @@
     "code": "clothes-lowerbody-lackey-breeches",
     "classType": "Item"
   },
-  "92540659": {
+  "92719065": {
     "name": "Pile pottery",
     "category": "clutter",
     "code": "clutter",
@@ -2129,7 +2171,7 @@
     "code": "carvedlog-acacia-aged-bottom-fancy-ud",
     "classType": "Block"
   },
-  "91613353": {
+  "94633603": {
     "name": "Anvil broken",
     "category": "clutter",
     "code": "clutter",
@@ -2139,6 +2181,12 @@
     "name": "Scorched narrow planks",
     "category": "burnedplanks",
     "code": "burnedplanks-narrow-scorched-ud",
+    "classType": "Block"
+  },
+  "96167487": {
+    "name": "Rotbeast",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "4203": {
@@ -2219,7 +2267,7 @@
     "code": "storagevessel-motheaten",
     "classType": "Block"
   },
-  "98923450": {
+  "95180748": {
     "name": "Tool knife",
     "category": "clutter",
     "code": "clutter",
@@ -2423,7 +2471,7 @@
     "code": "ore-medium-pentlandite-granite",
     "classType": "Item"
   },
-  "92466151": {
+  "98648055": {
     "name": "Chandelier ruined",
     "category": "clutter",
     "code": "clutter",
@@ -2543,7 +2591,7 @@
     "code": "clothes-lowerbody-jester",
     "classType": "Item"
   },
-  "91581338": {
+  "95368914": {
     "name": "Lecturn empty",
     "category": "clutter",
     "code": "clutter",
@@ -2561,7 +2609,7 @@
     "code": "crystalizedore-poor-magnetite-andesite",
     "classType": "Item"
   },
-  "96691732": {
+  "91098706": {
     "name": "Chains chain end",
     "category": "clutter",
     "code": "clutter",
@@ -2741,25 +2789,25 @@
     "code": "ore-bituminouscoal-limestone",
     "classType": "Block"
   },
-  "90964843": {
+  "96088752": {
     "name": "Crate crate small junk",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93618636": {
+  "94488678": {
     "name": "Lantern wall",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "90579576": {
+  "98346432": {
     "name": "Wallhook single mask",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "90407514": {
+  "95330954": {
     "name": "Pottery container",
     "category": "clutter",
     "code": "clutter",
@@ -2771,13 +2819,13 @@
     "code": "crackedstonebricks-andesite",
     "classType": "Block"
   },
-  "93261365": {
+  "97851517": {
     "name": "Fence iron ew",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "92289669": {
+  "90497725": {
     "name": "Alidade",
     "category": "clutter",
     "code": "clutter",
@@ -3011,13 +3059,13 @@
     "code": "hay-aged-ud",
     "classType": "Block"
   },
-  "92423437": {
+  "97519837": {
     "name": "Candlestubs bunch",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "97806249": {
+  "92440079": {
     "name": "Pile drafting instrument",
     "category": "clutter",
     "code": "clutter",
@@ -3093,6 +3141,12 @@
     "name": "Storagevessel rutile",
     "category": "storagevessel",
     "code": "storagevessel-rutile",
+    "classType": "Block"
+  },
+  "93235941": {
+    "name": "Tempstorm",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "819": {
@@ -3173,13 +3227,13 @@
     "code": "ore-bountiful-quartz_nativegold-andesite",
     "classType": "Item"
   },
-  "94612264": {
+  "97197293": {
     "name": "Lecturn ruined",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "95294894": {
+  "92585813": {
     "name": "Bookshelves lecturn aged book open tall",
     "category": "clutter",
     "code": "clutter",
@@ -3197,13 +3251,13 @@
     "code": "brickslabs-four-brown-down-free",
     "classType": "Block"
   },
-  "92747800": {
+  "93791188": {
     "name": "Pile flasks",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "94612697": {
+  "97038447": {
     "name": "Tank metal",
     "category": "clutter",
     "code": "clutter",
@@ -3263,7 +3317,7 @@
     "code": "ore-rich-nativecopper-andesite",
     "classType": "Item"
   },
-  "91798325": {
+  "96507201": {
     "name": "Bookshelves lecturn aged empty",
     "category": "clutter",
     "code": "clutter",
@@ -3341,7 +3395,7 @@
     "code": "crystal-olivine-small3-up",
     "classType": "Block"
   },
-  "97267605": {
+  "95214169": {
     "name": "Locust lamp",
     "category": "clutter",
     "code": "clutter",
@@ -3437,7 +3491,7 @@
     "code": "axehead-steel",
     "classType": "Item"
   },
-  "94612150": {
+  "97914490": {
     "name": "Golem skull",
     "category": "clutter",
     "code": "clutter",
@@ -3449,7 +3503,7 @@
     "code": "crystal-amethyst-small2-up",
     "classType": "Block"
   },
-  "92789432": {
+  "90300980": {
     "name": "Tool shovel",
     "category": "clutter",
     "code": "clutter",
@@ -3473,28 +3527,34 @@
     "code": "hay-normal-ud",
     "classType": "Block"
   },
-  "91906486": {
+  "92342830": {
     "name": "Banner aged red top",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "92758464": {
+  "93801268": {
     "name": "Banner aged red segment",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "95246648": {
+  "96180323": {
     "name": "Banner aged red bottom",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "95637848": {
+  "98710342": {
     "name": "Pulley",
     "category": "clutter",
     "code": "clutter",
+    "classType": "Block"
+  },
+  "95174107": {
+    "name": "Seraphim",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "1088": {
@@ -3509,7 +3569,7 @@
     "code": "jonasframes-gearbox01",
     "classType": "Item"
   },
-  "91827697": {
+  "97633218": {
     "name": "Chains manacles floor",
     "category": "clutter",
     "code": "clutter",
@@ -3629,7 +3689,7 @@
     "code": "blade-falx-tinbronze",
     "classType": "Item"
   },
-  "93592186": {
+  "91517321": {
     "name": "Table long with accessories",
     "category": "clutter",
     "code": "clutter",
@@ -3647,7 +3707,7 @@
     "code": "ore-anthracite-chert",
     "classType": "Block"
   },
-  "91418131": {
+  "94597599": {
     "name": "Locust full",
     "category": "clutter",
     "code": "clutter",
@@ -3659,19 +3719,19 @@
     "code": "hide-scraped-medium",
     "classType": "Item"
   },
-  "96548812": {
+  "96841146": {
     "name": "Table long",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "91876100": {
+  "94675730": {
     "name": "Hazmat rack ruined",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93755827": {
+  "98171257": {
     "name": "Crate crate small stacked",
     "category": "clutter",
     "code": "clutter",
@@ -3687,6 +3747,12 @@
     "name": "Aged polished cobbled rock (Granite)",
     "category": "polishedrockold",
     "code": "polishedrockold-cobbled-granite",
+    "classType": "Block"
+  },
+  "91097254": {
+    "name": "Rot",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "741": {
@@ -3707,13 +3773,13 @@
     "code": "clothes-face-acrobat",
     "classType": "Item"
   },
-  "97076108": {
+  "96775224": {
     "name": "Chains manacles ceiling",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "95874625": {
+  "90855157": {
     "name": "Chains chain double end",
     "category": "clutter",
     "code": "clutter",
@@ -3737,7 +3803,7 @@
     "code": "clothes-upperbody-minstrel-shirt",
     "classType": "Item"
   },
-  "97750746": {
+  "98363074": {
     "name": "Chains hook ceiling",
     "category": "clutter",
     "code": "clutter",
@@ -3977,7 +4043,7 @@
     "code": "polishedrockold-full-sandstone",
     "classType": "Block"
   },
-  "98772314": {
+  "95679409": {
     "name": "Bookrow bookrow",
     "category": "clutter",
     "code": "clutter",
@@ -4067,13 +4133,13 @@
     "code": "nugget-nativesilver",
     "classType": "Item"
   },
-  "96816688": {
+  "97956739": {
     "name": "Bookshelves large book pile",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "94683176": {
+  "95547428": {
     "name": "Tool hammer",
     "category": "clutter",
     "code": "clutter",
@@ -4115,7 +4181,7 @@
     "code": "clothes-lowerbody-emeraldreindeerherder",
     "classType": "Item"
   },
-  "90679654": {
+  "94742584": {
     "name": "Bucket",
     "category": "clutter",
     "code": "clutter",
@@ -4151,16 +4217,22 @@
     "code": "clothes-emblem-silver-brooch",
     "classType": "Item"
   },
-  "94088586": {
+  "96673132": {
     "name": "Astrolabe",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "98889512": {
+  "94624592": {
     "name": "Chains chain ceiling",
     "category": "clutter",
     "code": "clutter",
+    "classType": "Block"
+  },
+  "94207585": {
+    "name": "Rickbat",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "3866": {
@@ -4385,7 +4457,7 @@
     "code": "clothes-face-glasses-clockmaker",
     "classType": "Item"
   },
-  "96018894": {
+  "92517608": {
     "name": "Equi dial",
     "category": "clutter",
     "code": "clutter",
@@ -4463,7 +4535,7 @@
     "code": "ore-medium-cassiterite-granite",
     "classType": "Item"
   },
-  "95038098": {
+  "91953666": {
     "name": "Candlestub single",
     "category": "clutter",
     "code": "clutter",
@@ -4499,19 +4571,19 @@
     "code": "crystalizedore-poor-chromite-granite",
     "classType": "Item"
   },
-  "95113272": {
+  "90030483": {
     "name": "Coffin rot open",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93034790": {
+  "96525773": {
     "name": "Coffin rot ajar",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93354504": {
+  "95272514": {
     "name": "Fancy bed stitched ruined",
     "category": "clutter",
     "code": "clutter",
@@ -4547,7 +4619,7 @@
     "code": "clothes-upperbody-noble-shirt",
     "classType": "Item"
   },
-  "91305489": {
+  "98638141": {
     "name": "Tool axe",
     "category": "clutter",
     "code": "clutter",
@@ -4583,7 +4655,7 @@
     "code": "inkandquill",
     "classType": "Item"
   },
-  "91927176": {
+  "92085092": {
     "name": "Tool hoe",
     "category": "clutter",
     "code": "clutter",
@@ -4607,13 +4679,13 @@
     "code": "crackedstonebricks-bauxite",
     "classType": "Block"
   },
-  "92739917": {
+  "94597131": {
     "name": "Pottery utensils",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93585724": {
+  "94004119": {
     "name": "Book big closed",
     "category": "clutter",
     "code": "clutter",
@@ -4715,7 +4787,7 @@
     "code": "knife-stiletto-ruined",
     "classType": "Item"
   },
-  "95849191": {
+  "92154751": {
     "name": "Lecturn book closed",
     "category": "clutter",
     "code": "clutter",
@@ -4739,7 +4811,7 @@
     "code": "clothes-shoulder-jord-robe",
     "classType": "Item"
   },
-  "95439714": {
+  "93945988": {
     "name": "Mech part",
     "category": "clutter",
     "code": "clutter",
@@ -5039,13 +5111,13 @@
     "code": "clothes-head-alchemist",
     "classType": "Item"
   },
-  "97245218": {
+  "94066666": {
     "name": "Fence iron sw",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "92258981": {
+  "90154272": {
     "name": "Fence iron nsw",
     "category": "clutter",
     "code": "clutter",
@@ -5147,7 +5219,7 @@
     "code": "armor-legs-antique-forlorn-broken",
     "classType": "Item"
   },
-  "97712558": {
+  "96381928": {
     "name": "Jonas lamp floor",
     "category": "clutter",
     "code": "clutter",
@@ -5177,7 +5249,7 @@
     "code": "clothes-upperbodyover-travelers-earthrobe",
     "classType": "Item"
   },
-  "94722901": {
+  "96772589": {
     "name": "Crate large clothing",
     "category": "clutter",
     "code": "clutter",
@@ -5207,13 +5279,13 @@
     "code": "sawblade-steel",
     "classType": "Item"
   },
-  "95138929": {
+  "91718407": {
     "name": "Tool spear",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "96720479": {
+  "95033395": {
     "name": "Tool saw",
     "category": "clutter",
     "code": "clutter",
@@ -5237,7 +5309,7 @@
     "code": "resonator-north",
     "classType": "Block"
   },
-  "91399489": {
+  "95531458": {
     "name": "Bookshelves lectern large book closed",
     "category": "clutter",
     "code": "clutter",
@@ -5261,7 +5333,7 @@
     "code": "clothes-foot-soldier-boots",
     "classType": "Item"
   },
-  "94584075": {
+  "96427809": {
     "name": "Diptych dial",
     "category": "clutter",
     "code": "clutter",
@@ -5381,7 +5453,7 @@
     "code": "clothes-lowerbody-miner",
     "classType": "Item"
   },
-  "95786342": {
+  "94978083": {
     "name": "Bed bed ruined",
     "category": "clutter",
     "code": "clutter",
@@ -5435,19 +5507,19 @@
     "code": "clothes-arm-silver-bracelet",
     "classType": "Item"
   },
-  "95693351": {
+  "97751181": {
     "name": "Bookshelves lecturn aged book closed",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "94203906": {
+  "96461492": {
     "name": "Golem foot",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "98768442": {
+  "94334204": {
     "name": "Mechanics ruined",
     "category": "clutter",
     "code": "clutter",
@@ -5459,7 +5531,7 @@
     "code": "ore-graphite",
     "classType": "Item"
   },
-  "97270616": {
+  "92010478": {
     "name": "Table aged",
     "category": "clutter",
     "code": "clutter",
@@ -5471,7 +5543,7 @@
     "code": "fruit-breadfruit",
     "classType": "Item"
   },
-  "92071813": {
+  "94056093": {
     "name": "Crate medium toybox",
     "category": "clutter",
     "code": "clutter",
@@ -5501,13 +5573,13 @@
     "code": "ore-sulfur",
     "classType": "Item"
   },
-  "98839056": {
+  "95008200": {
     "name": "Bookshelves bookstand aged book closed",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "96145121": {
+  "93627159": {
     "name": "Dryingrack",
     "category": "clutter",
     "code": "clutter",
@@ -5609,13 +5681,13 @@
     "code": "hide-pelt-fox-arctic",
     "classType": "Item"
   },
-  "93794313": {
+  "92528645": {
     "name": "Pottery art",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "93354381": {
+  "92469158": {
     "name": "Bed short green",
     "category": "clutter",
     "code": "clutter",
@@ -5651,7 +5723,7 @@
     "code": "ingot-silver",
     "classType": "Item"
   },
-  "93443573": {
+  "97795223": {
     "name": "Bookshelves bookstand aged book opened large",
     "category": "clutter",
     "code": "clutter",
@@ -5669,19 +5741,19 @@
     "code": "clothes-head-crown-byzantine",
     "classType": "Item"
   },
-  "91060255": {
+  "91064676": {
     "name": "Banner sunsmall blue segment",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "91236692": {
+  "94255143": {
     "name": "Banner sunsmall blue bottom",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "97277993": {
+  "90167935": {
     "name": "Table metal1 cloth",
     "category": "clutter",
     "code": "clutter",
@@ -5729,7 +5801,7 @@
     "code": "clothes-head-furhattail-raccoon-common",
     "classType": "Item"
   },
-  "91207236": {
+  "93494994": {
     "name": "Pile lab equipment",
     "category": "clutter",
     "code": "clutter",
@@ -5807,19 +5879,19 @@
     "code": "clothes-upperbody-scribe",
     "classType": "Item"
   },
-  "93566379": {
+  "98801741": {
     "name": "Crate crate large oldore",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "92498076": {
+  "96571724": {
     "name": "Crate large tools",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "90688280": {
+  "90333931": {
     "name": "Table long with cloth green",
     "category": "clutter",
     "code": "clutter",
@@ -5847,6 +5919,12 @@
     "name": "Aged polished cobbled rock (Sandstone)",
     "category": "polishedrockold",
     "code": "polishedrockold-cobbled-sandstone",
+    "classType": "Block"
+  },
+  "95784314": {
+    "name": "Nightfall",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "831": {
@@ -5921,7 +5999,7 @@
     "code": "clothes-lowerbody-acrobat",
     "classType": "Item"
   },
-  "97802754": {
+  "97905513": {
     "name": "Toolrack locust",
     "category": "clutter",
     "code": "clutter",
@@ -6065,7 +6143,7 @@
     "code": "ore-rich-galena-sandstone",
     "classType": "Item"
   },
-  "92477052": {
+  "97016655": {
     "name": "Chains chain end hook",
     "category": "clutter",
     "code": "clutter",
@@ -6215,10 +6293,16 @@
     "code": "planks-aged-ud",
     "classType": "Block"
   },
-  "92420333": {
+  "96520161": {
     "name": "Tool scythe",
     "category": "clutter",
     "code": "clutter",
+    "classType": "Block"
+  },
+  "95615982": {
+    "name": "Schematic d",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "3115": {
@@ -6329,6 +6413,12 @@
     "code": "club-morningstar-ruined",
     "classType": "Item"
   },
+  "93058169": {
+    "name": "Blackguard",
+    "category": "tapestry",
+    "code": "tapestry-north",
+    "classType": "Block"
+  },
   "1636": {
     "name": "Crystalizedore medium quartz nativegold granite",
     "category": "crystalizedore",
@@ -6425,7 +6515,7 @@
     "code": "ore-medium-quartz_nativesilver-basalt",
     "classType": "Item"
   },
-  "95395096": {
+  "98208786": {
     "name": "Bed short stitched ruined",
     "category": "clutter",
     "code": "clutter",
@@ -6791,7 +6881,7 @@
     "code": "clothes-foot-ruralhunter",
     "classType": "Item"
   },
-  "95215150": {
+  "97318799": {
     "name": "Table long with cloth blue",
     "category": "clutter",
     "code": "clutter",
@@ -6809,10 +6899,16 @@
     "code": "seeds-onion",
     "classType": "Item"
   },
-  "95261456": {
+  "94327866": {
     "name": "Block tackle",
     "category": "clutter",
     "code": "clutter",
+    "classType": "Block"
+  },
+  "95147849": {
+    "name": "Salvation",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "11153": {
@@ -7361,19 +7457,19 @@
     "code": "hide-raw-bear-panda-complete",
     "classType": "Item"
   },
-  "91113669": {
+  "90602351": {
     "name": "Fence iron w",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "96744518": {
+  "94447216": {
     "name": "Gravestone",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "94369055": {
+  "95090860": {
     "name": "Pile woodworkingtools",
     "category": "clutter",
     "code": "clutter",
@@ -7403,10 +7499,16 @@
     "code": "crystalizedore-rich-sphalerite-shale",
     "classType": "Item"
   },
-  "93423687": {
+  "90925549": {
     "name": "Locust limbs",
     "category": "clutter",
     "code": "clutter",
+    "classType": "Block"
+  },
+  "94621156": {
+    "name": "Holy",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "2907": {
@@ -7469,7 +7571,7 @@
     "code": "drystonefence-chalk-ew-free",
     "classType": "Block"
   },
-  "93104694": {
+  "94983200": {
     "name": "Chains chain floor",
     "category": "clutter",
     "code": "clutter",
@@ -7571,7 +7673,7 @@
     "code": "ore-rich-malachite-limestone",
     "classType": "Item"
   },
-  "93276498": {
+  "93962666": {
     "name": "Chains chain section",
     "category": "clutter",
     "code": "clutter",
@@ -7703,7 +7805,7 @@
     "code": "antler-ibexnub-06",
     "classType": "Item"
   },
-  "97711034": {
+  "95847606": {
     "name": "Rubble wood",
     "category": "clutter",
     "code": "clutter",
@@ -7733,7 +7835,7 @@
     "code": "shovelhead-steel",
     "classType": "Item"
   },
-  "91355286": {
+  "98384046": {
     "name": "Wallhook single suit",
     "category": "clutter",
     "code": "clutter",
@@ -7763,13 +7865,13 @@
     "code": "sand-chalk",
     "classType": "Block"
   },
-  "94685388": {
+  "95416831": {
     "name": "Fancy bed old drapes closed",
     "category": "clutter",
     "code": "clutter",
     "classType": "Block"
   },
-  "95401014": {
+  "91768334": {
     "name": "Bed bed fancy ruined",
     "category": "clutter",
     "code": "clutter",
@@ -7979,7 +8081,7 @@
     "code": "fruitingbushcutting-blackcurrant-free",
     "classType": "Block"
   },
-  "92204880": {
+  "91960954": {
     "name": "Pile medical",
     "category": "clutter",
     "code": "clutter",
@@ -8345,7 +8447,7 @@
     "code": "ingot-copper",
     "classType": "Item"
   },
-  "91426910": {
+  "90757958": {
     "name": "Bed bed straw small",
     "category": "clutter",
     "code": "clutter",
@@ -8399,7 +8501,7 @@
     "code": "clothes-shoulder-scribe",
     "classType": "Item"
   },
-  "94175855": {
+  "98130217": {
     "name": "Bellowsagedsmall",
     "category": "clutter",
     "code": "clutter",
@@ -8633,7 +8735,7 @@
     "code": "ore-medium-sphalerite-sandstone",
     "classType": "Item"
   },
-  "94143570": {
+  "96674025": {
     "name": "Table long with cloth purple",
     "category": "clutter",
     "code": "clutter",
@@ -8723,7 +8825,7 @@
     "code": "clothes-head-capotain",
     "classType": "Item"
   },
-  "91037558": {
+  "94303982": {
     "name": "Crate large pottery",
     "category": "clutter",
     "code": "clutter",
@@ -8735,7 +8837,7 @@
     "code": "clothes-head-emeraldreindeerherder",
     "classType": "Item"
   },
-  "94502894": {
+  "94320324": {
     "name": "Bloomerybase",
     "category": "clutter",
     "code": "clutter",
@@ -8765,7 +8867,7 @@
     "code": "ore-bituminouscoal-chalk",
     "classType": "Block"
   },
-  "92704495": {
+  "90643431": {
     "name": "Coatrack full",
     "category": "clutter",
     "code": "clutter",
@@ -8789,7 +8891,7 @@
     "code": "seeds-pineapple",
     "classType": "Item"
   },
-  "95432616": {
+  "94014192": {
     "name": "Firepit cold normal",
     "category": "clutter",
     "code": "clutter",
@@ -8873,7 +8975,7 @@
     "code": "rock-chalk",
     "classType": "Block"
   },
-  "96009011": {
+  "95112536": {
     "name": "Fence iron nesw",
     "category": "clutter",
     "code": "clutter",
@@ -8927,7 +9029,7 @@
     "code": "ore-medium-pentlandite-andesite",
     "classType": "Item"
   },
-  "98901214": {
+  "94120810": {
     "name": "Jars",
     "category": "clutter",
     "code": "clutter",
@@ -8963,7 +9065,7 @@
     "code": "knife-generic-tinbronze",
     "classType": "Item"
   },
-  "97013377": {
+  "95801229": {
     "name": "Locust body",
     "category": "clutter",
     "code": "clutter",
@@ -8987,7 +9089,7 @@
     "code": "clothes-shoulder-peasent-kaftan",
     "classType": "Item"
   },
-  "92221678": {
+  "98234461": {
     "name": "Chains chain double section",
     "category": "clutter",
     "code": "clutter",
@@ -9119,7 +9221,7 @@
     "code": "ore-bountiful-quartz_nativegold-sandstone",
     "classType": "Item"
   },
-  "90185197": {
+  "96159513": {
     "name": "Tobias ceilinglamp lamp",
     "category": "clutter",
     "code": "clutter",
@@ -9191,7 +9293,7 @@
     "code": "clothes-upperbodyover-hunter-coat",
     "classType": "Item"
   },
-  "98762279": {
+  "93096065": {
     "name": "Crate crate medium books",
     "category": "clutter",
     "code": "clutter",
@@ -9245,7 +9347,7 @@
     "code": "rock-peridotite",
     "classType": "Block"
   },
-  "91709254": {
+  "92714686": {
     "name": "Chains manacles wall",
     "category": "clutter",
     "code": "clutter",
@@ -9375,6 +9477,12 @@
     "name": "Rift ward",
     "category": "riftward",
     "code": "riftward",
+    "classType": "Block"
+  },
+  "93352161": {
+    "name": "Schematic a",
+    "category": "tapestry",
+    "code": "tapestry-north",
     "classType": "Block"
   },
   "3880": {
@@ -9815,7 +9923,7 @@
     "code": "clothes-upperbodyover-quilteddoublet",
     "classType": "Item"
   },
-  "92866487": {
+  "90431901": {
     "name": "Carcass tiny",
     "category": "clutter",
     "code": "clutter",

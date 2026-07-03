@@ -13,12 +13,21 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   patchAuctionFilters,
   resetAuctionFilters,
+  DEFAULT_AUCTION_FILTERS,
+  type AuctionFilters,
   type AuctionSortKey,
   type AuctionStateFilter,
 } from "@/store/slices/auctionFilters";
 
 // Sentinel for "no category" — base-ui Select can't hold an empty-string value.
 const ALL_CATEGORIES = "__all__";
+
+/** Whether the filters equal the defaults, so a reset would be a no-op. */
+function isDefaultFilters(f: AuctionFilters): boolean {
+  return (Object.keys(DEFAULT_AUCTION_FILTERS) as (keyof AuctionFilters)[]).every(
+    (k) => f[k] === DEFAULT_AUCTION_FILTERS[k],
+  );
+}
 
 const STATE_LABELS: Record<string, string> = {
   all: "All",
@@ -179,6 +188,7 @@ export function MarketFilterBar({ categories }: { categories: string[] }) {
         variant="ghost"
         size="sm"
         className="h-9 ml-auto"
+        disabled={isDefaultFilters(f)}
         onClick={() => dispatch(resetAuctionFilters())}
       >
         Reset

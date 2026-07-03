@@ -82,6 +82,15 @@ export function listingLabel(l: { variant?: string | null; name: string }): stri
     return l.variant || l.name;
 }
 
+/**
+ * Group base for a clutter/tapestry variant code: the `type` with any trailing
+ * number stripped (e.g. "toy7" -> "toy", "ambush3" -> "ambush",
+ * "rotbeast11" -> "rotbeast"). Mirrors the backend's `_variant_base`.
+ */
+export function variantBase(variant: string): string {
+    return variant.replace(/\d+$/, "").replace(/[-_/]+$/, "") || variant;
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 export function percentileSorted(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

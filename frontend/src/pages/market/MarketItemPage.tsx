@@ -31,8 +31,10 @@ import {
   formatGears,
   formatRealTimeToSell,
   percentileSorted,
+  variantBase,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
+import { getTapestryImage } from "./tapestryImages";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -324,6 +326,13 @@ export function MarketItemPage() {
     [itemListings],
   );
 
+  // Tapestries aren't in the survival handbook/wiki, so we ship prepared artwork
+  // and show it on the item page. All pieces of one tapestry share a type base.
+  const tapestryImage = useMemo(() => {
+    if (itemListings[0]?.category !== "tapestry" || variantCodes.length === 0) return null;
+    return getTapestryImage(variantBase(variantCodes[0]));
+  }, [itemListings, variantCodes]);
+
   const columns = useMemo<ListingColumn[]>(
     () => [
       ...(hasVariants
@@ -513,6 +522,20 @@ export function MarketItemPage() {
           </div>
         )}
       </div>
+
+      {tapestryImage && (
+        <figure className="w-fit rounded-md border bg-muted/30 p-3">
+          <img
+            src={tapestryImage}
+            alt={`${displayName} tapestry`}
+            className="max-h-80 w-auto max-w-full rounded object-contain"
+            loading="lazy"
+          />
+          <figcaption className="mt-2 text-xs text-muted-foreground">
+            In-game tapestry artwork (assembled from all pieces)
+          </figcaption>
+        </figure>
+      )}
 
       {/* Time-range window (shared with the Insights page) */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
