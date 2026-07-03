@@ -8,7 +8,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMarketWindow } from "./useMarketWindow";
-import { ArrowDownRight, ArrowUpRight, Flame, Minus, TriangleAlert } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, ExternalLink, Flame, Minus, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
@@ -200,6 +200,8 @@ interface GlossaryEntry {
   what: string;
   /** How to read the number/badge you see. */
   read: string;
+  /** Optional “learn more” link (e.g. Wikipedia for the underlying metric). */
+  link?: { label: string; href: string };
 }
 
 const COLUMN_GLOSSARY: GlossaryEntry[] = [
@@ -252,6 +254,10 @@ const COLUMN_GLOSSARY: GlossaryEntry[] = [
     term: "Sellers",
     what: "How concentrated supply is among sellers (HHI).",
     read: "Competitive = many sellers · Concentrated / Monopoly = one or few control supply, so prices are easier to swing.",
+    link: {
+      label: "About HHI",
+      href: "https://en.wikipedia.org/wiki/Herfindahl%E2%80%93Hirschman_index",
+    },
   },
   {
     term: "Delivery +",
@@ -285,6 +291,17 @@ function ColumnGlossary() {
             <div className="font-medium">{g.term}</div>
             <p className="text-muted-foreground">{g.what}</p>
             <p className="mt-0.5 text-xs text-muted-foreground/80">{g.read}</p>
+            {g.link ? (
+              <a
+                href={g.link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-0.5 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                {g.link.label}
+                <ExternalLink className="size-3" aria-hidden />
+              </a>
+            ) : null}
           </div>
         ))}
       </div>
