@@ -455,9 +455,7 @@ export function MarketItemPage() {
         </button>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          {trend && (
-            <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
-          )}
+          {trend && <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
             target="_blank"

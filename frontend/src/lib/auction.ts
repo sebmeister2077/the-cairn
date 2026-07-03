@@ -62,6 +62,7 @@ export function useItemCatalog() {
 
 /** Format a Rusty Gears amount for display. */
 export function formatGears(n: number): string {
+    if (n < 1) return `${n.toFixed(2)}⚙`;
     return `${Math.round(n).toLocaleString()}⚙`;
 }
 
