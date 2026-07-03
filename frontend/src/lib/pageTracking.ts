@@ -35,6 +35,12 @@ const KNOWN_ROUTES: string[] = [
     "/manage/tl-screenshots",
     "/tools",
     "/tools/waypoints",
+    "/market",
+    "/market/listings",
+    "/market/insights",
+    "/market/converter",
+    "/market/leaderboards",
+    "/market/map",
     "/usage",
     "/account",
     "/general",
@@ -46,6 +52,8 @@ const KNOWN_ROUTES: string[] = [
 // Dynamic routes: regex → template.
 const DYNAMIC_ROUTES: Array<{ re: RegExp; template: string }> = [
     { re: /^\/blog\/[^/]+$/, template: "/blog/:slug" },
+    { re: /^\/market\/items\/[^/]+$/, template: "/market/items/:itemId" },
+    { re: /^\/market\/players\/[^/]+$/, template: "/market/players/:uid" },
 ];
 
 const REDIRECT_MAP: Record<string, string> = {
