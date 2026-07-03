@@ -529,7 +529,7 @@ export function AppContent() {
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background overflow-x-clip">
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <a
