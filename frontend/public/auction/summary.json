@@ -1,17 +1,17 @@
 {
-  "generatedUtc": "2026-07-03T20:57:18.443741+00:00",
+  "generatedUtc": "2026-07-03T22:15:32.973531+00:00",
   "totals": {
-    "totalAuctions": 11028,
-    "activeListings": 620,
-    "soldCount": 2291,
-    "expiredCount": 8117,
-    "gearsTraded": 63910.0,
-    "feesPaid": 6365,
-    "uniqueSellers": 328,
+    "totalAuctions": 11117,
+    "activeListings": 625,
+    "soldCount": 2326,
+    "expiredCount": 8166,
+    "gearsTraded": 64426.0,
+    "feesPaid": 6419,
+    "uniqueSellers": 330,
     "uniqueBuyers": 305,
     "uniqueItems": 1397,
-    "sellThrough": 0.22,
-    "spamFiltered": 5347
+    "sellThrough": 0.222,
+    "spamFiltered": 5355
   },
   "itemStats": [
     {
@@ -78,19 +78,19 @@
       "itemId": 2608,
       "name": "Resin",
       "category": "resin",
-      "listings": 96,
-      "soldCount": 72,
-      "sellThrough": 0.758,
-      "medianTimeToSell": 122.52,
-      "unitsSold": 2032,
-      "gearsTraded": 1702.0,
+      "listings": 98,
+      "soldCount": 73,
+      "sellThrough": 0.76,
+      "medianTimeToSell": 122.48,
+      "unitsSold": 2064,
+      "gearsTraded": 1734.0,
       "priceStats": {
-        "count": 72,
+        "count": 73,
         "min": 0.312,
         "p10": 0.35,
         "p25": 0.62,
         "median": 0.89,
-        "p75": 1.01,
+        "p75": 1.0,
         "p90": 1.09,
         "max": 1.25,
         "mean": 0.82
@@ -101,7 +101,7 @@
         "recentMedian": 0.781,
         "olderMedian": 0.889,
         "recentCount": 24,
-        "olderCount": 48
+        "olderCount": 49
       }
     },
     {
@@ -199,29 +199,29 @@
       "name": "Chiseled Block",
       "category": "chiseledblock",
       "listings": 79,
-      "soldCount": 12,
-      "sellThrough": 0.164,
-      "medianTimeToSell": 810.05,
-      "unitsSold": 334,
-      "gearsTraded": 941.0,
+      "soldCount": 13,
+      "sellThrough": 0.176,
+      "medianTimeToSell": 810.0,
+      "unitsSold": 335,
+      "gearsTraded": 1041.0,
       "priceStats": {
-        "count": 12,
+        "count": 13,
         "min": 0.375,
         "p10": 0.38,
         "p25": 0.38,
-        "median": 22.25,
-        "p75": 90.0,
-        "p90": 195.0,
+        "median": 35.0,
+        "p75": 100.0,
+        "p90": 190.0,
         "max": 200.0,
-        "mean": 59.75
+        "mean": 62.85
       },
       "trend": {
         "direction": "up",
-        "changePct": 13.2,
-        "recentMedian": 25.188,
-        "olderMedian": 22.25,
+        "changePct": 531.6,
+        "recentMedian": 60.0,
+        "olderMedian": 9.5,
         "recentCount": 4,
-        "olderCount": 8
+        "olderCount": 9
       }
     },
     {
@@ -251,9 +251,9 @@
       "itemId": 2022,
       "name": "Leather",
       "category": "leather",
-      "listings": 93,
+      "listings": 95,
       "soldCount": 41,
-      "sellThrough": 0.621,
+      "sellThrough": 0.569,
       "medianTimeToSell": 323.58,
       "unitsSold": 2206,
       "gearsTraded": 871.0,
@@ -281,9 +281,9 @@
       "itemId": 2011,
       "name": "Silver ingot",
       "category": "ingot",
-      "listings": 26,
+      "listings": 28,
       "soldCount": 7,
-      "sellThrough": 0.304,
+      "sellThrough": 0.259,
       "medianTimeToSell": 201.65,
       "unitsSold": 96,
       "gearsTraded": 867.0,
@@ -406,8 +406,8 @@
       },
       "trend": {
         "direction": "up",
-        "changePct": 20.2,
-        "recentMedian": 0.375,
+        "changePct": 40.2,
+        "recentMedian": 0.438,
         "olderMedian": 0.312,
         "recentCount": 10,
         "olderCount": 22
@@ -444,6 +444,36 @@
       }
     },
     {
+      "itemId": 3035,
+      "name": "Steel pickaxe",
+      "category": "pickaxe",
+      "listings": 42,
+      "soldCount": 27,
+      "sellThrough": 0.73,
+      "medianTimeToSell": 47.04,
+      "unitsSold": 27,
+      "gearsTraded": 599.0,
+      "priceStats": {
+        "count": 27,
+        "min": 1.0,
+        "p10": 5.8,
+        "p25": 15.0,
+        "median": 28.0,
+        "p75": 30.0,
+        "p90": 30.0,
+        "max": 35.0,
+        "mean": 22.19
+      },
+      "trend": {
+        "direction": "down",
+        "changePct": -47.4,
+        "recentMedian": 15.0,
+        "olderMedian": 28.5,
+        "recentCount": 9,
+        "olderCount": 18
+      }
+    },
+    {
       "itemId": 3645,
       "name": "Aged torch holder",
       "category": "torchholder",
@@ -477,9 +507,9 @@
       "itemId": 2053,
       "name": "Tapestry",
       "category": "tapestry",
-      "listings": 72,
+      "listings": 74,
       "soldCount": 17,
-      "sellThrough": 0.236,
+      "sellThrough": 0.233,
       "medianTimeToSell": 440.08,
       "unitsSold": 17,
       "gearsTraded": 577.0,
@@ -501,36 +531,6 @@
         "olderMedian": 13.5,
         "recentCount": 5,
         "olderCount": 12
-      }
-    },
-    {
-      "itemId": 3035,
-      "name": "Steel pickaxe",
-      "category": "pickaxe",
-      "listings": 38,
-      "soldCount": 24,
-      "sellThrough": 0.706,
-      "medianTimeToSell": 76.6,
-      "unitsSold": 24,
-      "gearsTraded": 554.0,
-      "priceStats": {
-        "count": 24,
-        "min": 1.0,
-        "p10": 3.4,
-        "p25": 15.0,
-        "median": 28.0,
-        "p75": 30.0,
-        "p90": 30.0,
-        "max": 35.0,
-        "mean": 23.08
-      },
-      "trend": {
-        "direction": "down",
-        "changePct": -46.4,
-        "recentMedian": 15.0,
-        "olderMedian": 28.0,
-        "recentCount": 8,
-        "olderCount": 16
       }
     },
     {
@@ -560,9 +560,9 @@
       "itemId": 3237,
       "name": "Steel pickaxe head",
       "category": "pickaxehead",
-      "listings": 39,
+      "listings": 41,
       "soldCount": 19,
-      "sellThrough": 0.633,
+      "sellThrough": 0.594,
       "medianTimeToSell": 309.43,
       "unitsSold": 19,
       "gearsTraded": 540.0,
@@ -668,7 +668,7 @@
       "category": "linen",
       "listings": 86,
       "soldCount": 18,
-      "sellThrough": 0.273,
+      "sellThrough": 0.265,
       "medianTimeToSell": 293.21,
       "unitsSold": 1152,
       "gearsTraded": 512.0,
@@ -789,13 +789,13 @@
       "name": "Fruittree cutting",
       "category": "fruittree",
       "listings": 119,
-      "soldCount": 34,
-      "sellThrough": 0.327,
+      "soldCount": 35,
+      "sellThrough": 0.324,
       "medianTimeToSell": 556.79,
-      "unitsSold": 527,
-      "gearsTraded": 470.0,
+      "unitsSold": 543,
+      "gearsTraded": 482.0,
       "priceStats": {
-        "count": 34,
+        "count": 35,
         "min": 0.267,
         "p10": 0.5,
         "p25": 0.5,
@@ -811,7 +811,7 @@
         "recentMedian": 1.0,
         "olderMedian": 0.5,
         "recentCount": 11,
-        "olderCount": 23
+        "olderCount": 24
       }
     },
     {
@@ -889,7 +889,7 @@
       "category": "rock",
       "listings": 36,
       "soldCount": 34,
-      "sellThrough": 1.0,
+      "sellThrough": 0.944,
       "medianTimeToSell": 52.99,
       "unitsSold": 2176,
       "gearsTraded": 448.0,
@@ -917,22 +917,22 @@
       "itemId": 1434,
       "name": "Beeswax",
       "category": "beeswax",
-      "listings": 78,
-      "soldCount": 22,
-      "sellThrough": 0.293,
-      "medianTimeToSell": 612.58,
-      "unitsSold": 935,
-      "gearsTraded": 438.0,
+      "listings": 79,
+      "soldCount": 23,
+      "sellThrough": 0.303,
+      "medianTimeToSell": 532.4,
+      "unitsSold": 967,
+      "gearsTraded": 445.0,
       "priceStats": {
-        "count": 22,
-        "min": 0.281,
+        "count": 23,
+        "min": 0.219,
         "p10": 0.28,
         "p25": 0.4,
         "median": 0.4,
         "p75": 0.5,
         "p90": 0.62,
         "max": 0.816,
-        "mean": 0.46
+        "mean": 0.45
       },
       "trend": {
         "direction": "up",
@@ -940,7 +940,7 @@
         "recentMedian": 0.469,
         "olderMedian": 0.4,
         "recentCount": 7,
-        "olderCount": 15
+        "olderCount": 16
       }
     },
     {
@@ -1020,6 +1020,36 @@
       "trend": null
     },
     {
+      "itemId": 3093,
+      "name": "Steel shovel",
+      "category": "shovel",
+      "listings": 30,
+      "soldCount": 19,
+      "sellThrough": 0.76,
+      "medianTimeToSell": 178.18,
+      "unitsSold": 19,
+      "gearsTraded": 388.0,
+      "priceStats": {
+        "count": 19,
+        "min": 1.0,
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 15.0,
+        "p75": 29.5,
+        "p90": 30.0,
+        "max": 32.0,
+        "mean": 20.42
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 100.0,
+        "recentMedian": 30.0,
+        "olderMedian": 15.0,
+        "recentCount": 6,
+        "olderCount": 13
+      }
+    },
+    {
       "itemId": 4000,
       "name": "Gold coronet",
       "category": "clothes",
@@ -1041,36 +1071,6 @@
         "mean": 187.5
       },
       "trend": null
-    },
-    {
-      "itemId": 3093,
-      "name": "Steel shovel",
-      "category": "shovel",
-      "listings": 26,
-      "soldCount": 17,
-      "sellThrough": 0.739,
-      "medianTimeToSell": 178.19,
-      "unitsSold": 17,
-      "gearsTraded": 358.0,
-      "priceStats": {
-        "count": 17,
-        "min": 1.0,
-        "p10": 15.0,
-        "p25": 15.0,
-        "median": 15.0,
-        "p75": 30.0,
-        "p90": 30.0,
-        "max": 32.0,
-        "mean": 21.06
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 100.0,
-        "recentMedian": 30.0,
-        "olderMedian": 15.0,
-        "recentCount": 5,
-        "olderCount": 12
-      }
     },
     {
       "itemId": 1999,
@@ -1177,6 +1177,29 @@
         "recentCount": 3,
         "olderCount": 7
       }
+    },
+    {
+      "itemId": 3174,
+      "name": "Steel falx head",
+      "category": "bladehead",
+      "listings": 17,
+      "soldCount": 6,
+      "sellThrough": 0.462,
+      "medianTimeToSell": 721.67,
+      "unitsSold": 6,
+      "gearsTraded": 345.0,
+      "priceStats": {
+        "count": 6,
+        "min": 25.0,
+        "p10": 25.0,
+        "p25": 25.0,
+        "median": 30.0,
+        "p75": 35.0,
+        "p90": 117.5,
+        "max": 200.0,
+        "mean": 57.5
+      },
+      "trend": null
     },
     {
       "itemId": 3370,
@@ -1324,29 +1347,6 @@
       }
     },
     {
-      "itemId": 3174,
-      "name": "Steel falx head",
-      "category": "bladehead",
-      "listings": 15,
-      "soldCount": 5,
-      "sellThrough": 0.455,
-      "medianTimeToSell": 721.67,
-      "unitsSold": 5,
-      "gearsTraded": 320.0,
-      "priceStats": {
-        "count": 5,
-        "min": 25.0,
-        "p10": 25.0,
-        "p25": 25.0,
-        "median": 35.0,
-        "p75": 35.0,
-        "p90": 134.0,
-        "max": 200.0,
-        "mean": 64.0
-      },
-      "trend": null
-    },
-    {
       "itemId": 1223,
       "name": "Gold rod",
       "category": "rod",
@@ -1465,7 +1465,7 @@
       "itemId": 13705,
       "name": "Chest",
       "category": "chest",
-      "listings": 132,
+      "listings": 133,
       "soldCount": 30,
       "sellThrough": 0.242,
       "medianTimeToSell": 388.03,
@@ -1513,6 +1513,36 @@
         "mean": 1.01
       },
       "trend": null
+    },
+    {
+      "itemId": 900,
+      "name": "Cured redmeat",
+      "category": "redmeat",
+      "listings": 84,
+      "soldCount": 48,
+      "sellThrough": 0.658,
+      "medianTimeToSell": 314.22,
+      "unitsSold": 3072,
+      "gearsTraded": 276.0,
+      "priceStats": {
+        "count": 48,
+        "min": 0.047,
+        "p10": 0.05,
+        "p25": 0.09,
+        "median": 0.09,
+        "p75": 0.1,
+        "p90": 0.11,
+        "max": 0.125,
+        "mean": 0.09
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 0.094,
+        "olderMedian": 0.094,
+        "recentCount": 16,
+        "olderCount": 32
+      }
     },
     {
       "itemId": 2544,
@@ -1775,36 +1805,6 @@
       "trend": null
     },
     {
-      "itemId": 900,
-      "name": "Cured redmeat",
-      "category": "redmeat",
-      "listings": 84,
-      "soldCount": 41,
-      "sellThrough": 0.621,
-      "medianTimeToSell": 326.92,
-      "unitsSold": 2624,
-      "gearsTraded": 233.0,
-      "priceStats": {
-        "count": 41,
-        "min": 0.047,
-        "p10": 0.05,
-        "p25": 0.08,
-        "median": 0.09,
-        "p75": 0.11,
-        "p90": 0.12,
-        "max": 0.125,
-        "mean": 0.09
-      },
-      "trend": {
-        "direction": "down",
-        "changePct": -17.0,
-        "recentMedian": 0.078,
-        "olderMedian": 0.094,
-        "recentCount": 13,
-        "olderCount": 28
-      }
-    },
-    {
       "itemId": 1473,
       "name": "Compost",
       "category": "compost",
@@ -2040,6 +2040,36 @@
       }
     },
     {
+      "itemId": 12786,
+      "name": "Very aged wooden planks",
+      "category": "planks",
+      "listings": 191,
+      "soldCount": 29,
+      "sellThrough": 0.157,
+      "medianTimeToSell": 327.41,
+      "unitsSold": 914,
+      "gearsTraded": 214.0,
+      "priceStats": {
+        "count": 29,
+        "min": 0.125,
+        "p10": 0.12,
+        "p25": 0.16,
+        "median": 0.22,
+        "p75": 0.22,
+        "p90": 0.34,
+        "max": 0.812,
+        "mean": 0.24
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 69.0,
+        "recentMedian": 0.344,
+        "olderMedian": 0.204,
+        "recentCount": 9,
+        "olderCount": 20
+      }
+    },
+    {
       "itemId": 2627,
       "name": "Peanut seeds",
       "category": "seeds",
@@ -2067,36 +2097,6 @@
         "olderMedian": 4.571,
         "recentCount": 3,
         "olderCount": 7
-      }
-    },
-    {
-      "itemId": 12786,
-      "name": "Very aged wooden planks",
-      "category": "planks",
-      "listings": 191,
-      "soldCount": 28,
-      "sellThrough": 0.152,
-      "medianTimeToSell": 327.41,
-      "unitsSold": 892,
-      "gearsTraded": 203.0,
-      "priceStats": {
-        "count": 28,
-        "min": 0.125,
-        "p10": 0.12,
-        "p25": 0.16,
-        "median": 0.22,
-        "p75": 0.22,
-        "p90": 0.34,
-        "max": 0.812,
-        "mean": 0.23
-      },
-      "trend": {
-        "direction": "flat",
-        "changePct": 0.0,
-        "recentMedian": 0.219,
-        "olderMedian": 0.219,
-        "recentCount": 9,
-        "olderCount": 19
       }
     },
     {
@@ -2179,7 +2179,7 @@
       "itemId": 4239,
       "name": "Marketeer shirt",
       "category": "clothes",
-      "listings": 9,
+      "listings": 10,
       "soldCount": 3,
       "sellThrough": 0.333,
       "medianTimeToSell": 272.85,
@@ -2314,6 +2314,36 @@
       "trend": null
     },
     {
+      "itemId": 3779,
+      "name": "Blackguard cuirass (Broken)",
+      "category": "armor",
+      "listings": 29,
+      "soldCount": 11,
+      "sellThrough": 0.379,
+      "medianTimeToSell": 127.9,
+      "unitsSold": 11,
+      "gearsTraded": 183.0,
+      "priceStats": {
+        "count": 11,
+        "min": 5.0,
+        "p10": 9.0,
+        "p25": 11.0,
+        "median": 13.0,
+        "p75": 20.5,
+        "p90": 26.0,
+        "max": 40.0,
+        "mean": 16.64
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 75.0,
+        "recentMedian": 21.0,
+        "olderMedian": 12.0,
+        "recentCount": 3,
+        "olderCount": 8
+      }
+    },
+    {
       "itemId": 11151,
       "name": "Halite rock",
       "category": "rock",
@@ -2411,6 +2441,66 @@
         "mean": 1.38
       },
       "trend": null
+    },
+    {
+      "itemId": 2878,
+      "name": "Steel axe",
+      "category": "axe",
+      "listings": 25,
+      "soldCount": 8,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 535.28,
+      "unitsSold": 8,
+      "gearsTraded": 180.0,
+      "priceStats": {
+        "count": 8,
+        "min": 15.0,
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 24.0,
+        "p75": 28.25,
+        "p90": 29.3,
+        "max": 30.0,
+        "mean": 22.5
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 93.3,
+        "recentMedian": 29.0,
+        "olderMedian": 15.0,
+        "recentCount": 3,
+        "olderCount": 5
+      }
+    },
+    {
+      "itemId": 1119,
+      "name": "Parchment",
+      "category": "paper",
+      "listings": 99,
+      "soldCount": 21,
+      "sellThrough": 0.323,
+      "medianTimeToSell": 192.98,
+      "unitsSold": 159,
+      "gearsTraded": 180.0,
+      "priceStats": {
+        "count": 21,
+        "min": 0.062,
+        "p10": 0.78,
+        "p25": 3.0,
+        "median": 3.0,
+        "p75": 10.0,
+        "p90": 10.0,
+        "max": 10.0,
+        "mean": 4.53
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 3.0,
+        "olderMedian": 3.0,
+        "recentCount": 7,
+        "olderCount": 14
+      }
     },
     {
       "itemId": 4261,
@@ -2528,40 +2618,10 @@
       "trend": null
     },
     {
-      "itemId": 1119,
-      "name": "Parchment",
-      "category": "paper",
-      "listings": 79,
-      "soldCount": 19,
-      "sellThrough": 0.302,
-      "medianTimeToSell": 261.86,
-      "unitsSold": 157,
-      "gearsTraded": 174.0,
-      "priceStats": {
-        "count": 19,
-        "min": 0.062,
-        "p10": 0.77,
-        "p25": 1.89,
-        "median": 3.0,
-        "p75": 10.0,
-        "p90": 10.0,
-        "max": 10.0,
-        "mean": 4.69
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 116.7,
-        "recentMedian": 6.5,
-        "olderMedian": 3.0,
-        "recentCount": 6,
-        "olderCount": 13
-      }
-    },
-    {
       "itemId": 2809,
       "name": "Purpleheart seed",
       "category": "treeseed",
-      "listings": 3,
+      "listings": 4,
       "soldCount": 1,
       "sellThrough": 0.333,
       "medianTimeToSell": 1012.59,
@@ -2579,36 +2639,6 @@
         "mean": 15.82
       },
       "trend": null
-    },
-    {
-      "itemId": 3779,
-      "name": "Blackguard cuirass (Broken)",
-      "category": "armor",
-      "listings": 28,
-      "soldCount": 10,
-      "sellThrough": 0.357,
-      "medianTimeToSell": 205.52,
-      "unitsSold": 10,
-      "gearsTraded": 170.0,
-      "priceStats": {
-        "count": 10,
-        "min": 5.0,
-        "p10": 8.6,
-        "p25": 10.5,
-        "median": 13.5,
-        "p75": 20.75,
-        "p90": 27.4,
-        "max": 40.0,
-        "mean": 17.0
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 75.0,
-        "recentMedian": 21.0,
-        "olderMedian": 12.0,
-        "recentCount": 3,
-        "olderCount": 7
-      }
     },
     {
       "itemId": 3374,
@@ -2630,29 +2660,6 @@
         "p90": 117.0,
         "max": 125.0,
         "mean": 85.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 2878,
-      "name": "Steel axe",
-      "category": "axe",
-      "listings": 21,
-      "soldCount": 7,
-      "sellThrough": 0.467,
-      "medianTimeToSell": 535.28,
-      "unitsSold": 7,
-      "gearsTraded": 165.0,
-      "priceStats": {
-        "count": 7,
-        "min": 15.0,
-        "p10": 15.0,
-        "p25": 17.5,
-        "median": 28.0,
-        "p75": 28.5,
-        "p90": 29.4,
-        "max": 30.0,
-        "mean": 23.57
       },
       "trend": null
     },
@@ -2812,7 +2819,7 @@
       "itemId": 3861,
       "name": "Forlorn Hope veil",
       "category": "clothes",
-      "listings": 5,
+      "listings": 6,
       "soldCount": 2,
       "sellThrough": 0.4,
       "medianTimeToSell": 425.35,
@@ -3044,6 +3051,36 @@
         "mean": 0.75
       },
       "trend": null
+    },
+    {
+      "itemId": 4372,
+      "name": "Human skull",
+      "category": "clutter",
+      "listings": 36,
+      "soldCount": 9,
+      "sellThrough": 0.257,
+      "medianTimeToSell": 323.96,
+      "unitsSold": 49,
+      "gearsTraded": 131.0,
+      "priceStats": {
+        "count": 9,
+        "min": 0.8,
+        "p10": 1.23,
+        "p25": 1.88,
+        "median": 2.75,
+        "p75": 4.0,
+        "p90": 4.0,
+        "max": 4.0,
+        "mean": 2.75
+      },
+      "trend": {
+        "direction": "down",
+        "changePct": -57.3,
+        "recentMedian": 1.333,
+        "olderMedian": 3.125,
+        "recentCount": 3,
+        "olderCount": 6
+      }
     },
     {
       "itemId": 4001,
@@ -3290,29 +3327,6 @@
       "trend": null
     },
     {
-      "itemId": 4372,
-      "name": "Human skull",
-      "category": "clutter",
-      "listings": 36,
-      "soldCount": 7,
-      "sellThrough": 0.212,
-      "medianTimeToSell": 667.7,
-      "unitsSold": 41,
-      "gearsTraded": 123.0,
-      "priceStats": {
-        "count": 7,
-        "min": 1.875,
-        "p10": 2.25,
-        "p25": 2.62,
-        "median": 3.5,
-        "p75": 4.0,
-        "p90": 4.0,
-        "max": 4.0,
-        "mean": 3.23
-      },
-      "trend": null
-    },
-    {
       "itemId": 3369,
       "name": "Elk medallion (Cross)",
       "category": "hoovedwearables",
@@ -3523,7 +3537,7 @@
       "itemId": 3568,
       "name": "Rosary",
       "category": "clothes",
-      "listings": 22,
+      "listings": 23,
       "soldCount": 5,
       "sellThrough": 0.25,
       "medianTimeToSell": 524.03,
@@ -4113,17 +4127,17 @@
       "name": "Halite stone",
       "category": "stone",
       "listings": 25,
-      "soldCount": 14,
-      "sellThrough": 0.609,
-      "medianTimeToSell": 384.54,
-      "unitsSold": 896,
-      "gearsTraded": 85.0,
+      "soldCount": 15,
+      "sellThrough": 0.625,
+      "medianTimeToSell": 299.28,
+      "unitsSold": 960,
+      "gearsTraded": 90.0,
       "priceStats": {
-        "count": 14,
+        "count": 15,
         "min": 0.047,
         "p10": 0.05,
-        "p25": 0.05,
-        "median": 0.12,
+        "p25": 0.06,
+        "median": 0.11,
         "p75": 0.12,
         "p90": 0.12,
         "max": 0.125,
@@ -4134,9 +4148,55 @@
         "changePct": -62.4,
         "recentMedian": 0.047,
         "olderMedian": 0.125,
-        "recentCount": 4,
+        "recentCount": 5,
         "olderCount": 10
       }
+    },
+    {
+      "itemId": 2996,
+      "name": "Steel knife",
+      "category": "knife",
+      "listings": 13,
+      "soldCount": 4,
+      "sellThrough": 0.571,
+      "medianTimeToSell": 418.22,
+      "unitsSold": 4,
+      "gearsTraded": 88.0,
+      "priceStats": {
+        "count": 4,
+        "min": 15.0,
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 21.5,
+        "p75": 28.5,
+        "p90": 29.4,
+        "max": 30.0,
+        "mean": 22.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 4874,
+      "name": "Chest",
+      "category": "stationarybasket",
+      "listings": 4,
+      "soldCount": 4,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 16.43,
+      "unitsSold": 4,
+      "gearsTraded": 88.0,
+      "priceStats": {
+        "count": 4,
+        "min": 10.0,
+        "p10": 10.0,
+        "p25": 10.0,
+        "median": 22.0,
+        "p75": 34.0,
+        "p90": 34.0,
+        "max": 34.0,
+        "mean": 22.0
+      },
+      "trend": null
     },
     {
       "itemId": 3045,
@@ -4257,7 +4317,7 @@
       "itemId": 12369,
       "name": "Fancy aged carved acacia log (Middle)",
       "category": "carvedlog",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 6,
       "sellThrough": 0.462,
       "medianTimeToSell": 285.11,
@@ -4731,7 +4791,7 @@
       "itemId": 1451,
       "name": "Charcoal",
       "category": "charcoal",
-      "listings": 19,
+      "listings": 20,
       "soldCount": 10,
       "sellThrough": 0.526,
       "medianTimeToSell": 183.07,
@@ -4758,25 +4818,25 @@
       }
     },
     {
-      "itemId": 2996,
-      "name": "Steel knife",
-      "category": "knife",
+      "itemId": 2963,
+      "name": "Steel hammer",
+      "category": "hammer",
       "listings": 9,
-      "soldCount": 3,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 418.22,
-      "unitsSold": 3,
+      "soldCount": 4,
+      "sellThrough": 0.571,
+      "medianTimeToSell": 56.14,
+      "unitsSold": 4,
       "gearsTraded": 73.0,
       "priceStats": {
-        "count": 3,
+        "count": 4,
         "min": 15.0,
-        "p10": 17.6,
-        "p25": 21.5,
-        "median": 28.0,
-        "p75": 29.0,
-        "p90": 29.6,
-        "max": 30.0,
-        "mean": 24.33
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 15.0,
+        "p75": 18.25,
+        "p90": 24.1,
+        "max": 28.0,
+        "mean": 18.25
       },
       "trend": null
     },
@@ -4899,7 +4959,7 @@
       "itemId": 12368,
       "name": "Fancy aged carved acacia log (Bottom)",
       "category": "carvedlog",
-      "listings": 10,
+      "listings": 11,
       "soldCount": 5,
       "sellThrough": 0.5,
       "medianTimeToSell": 207.21,
@@ -4915,29 +4975,6 @@
         "p90": 18.0,
         "max": 20.0,
         "mean": 13.8
-      },
-      "trend": null
-    },
-    {
-      "itemId": 4874,
-      "name": "Chest",
-      "category": "stationarybasket",
-      "listings": 2,
-      "soldCount": 2,
-      "sellThrough": 1.0,
-      "medianTimeToSell": 4.21,
-      "unitsSold": 2,
-      "gearsTraded": 68.0,
-      "priceStats": {
-        "count": 2,
-        "min": 34.0,
-        "p10": 34.0,
-        "p25": 34.0,
-        "median": 34.0,
-        "p75": 34.0,
-        "p90": 34.0,
-        "max": 34.0,
-        "mean": 34.0
       },
       "trend": null
     },
@@ -5340,6 +5377,29 @@
       "trend": null
     },
     {
+      "itemId": 1228,
+      "name": "Cupronickel rod",
+      "category": "rod",
+      "listings": 3,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 80.46,
+      "unitsSold": 16,
+      "gearsTraded": 60.0,
+      "priceStats": {
+        "count": 1,
+        "min": 3.75,
+        "p10": 3.75,
+        "p25": 3.75,
+        "median": 3.75,
+        "p75": 3.75,
+        "p90": 3.75,
+        "max": 3.75,
+        "mean": 3.75
+      },
+      "trend": null
+    },
+    {
       "itemId": 3358,
       "name": "Warm woolen saddle blanket",
       "category": "hoovedwearables",
@@ -5573,7 +5633,7 @@
       "itemId": 4117,
       "name": "Lunula",
       "category": "clothes",
-      "listings": 3,
+      "listings": 4,
       "soldCount": 1,
       "sellThrough": 0.333,
       "medianTimeToSell": 274.39,
@@ -6355,7 +6415,7 @@
       "itemId": 3048,
       "name": "Shield metal",
       "category": "shield",
-      "listings": 17,
+      "listings": 18,
       "soldCount": 4,
       "sellThrough": 0.25,
       "medianTimeToSell": 204.63,
@@ -6493,9 +6553,9 @@
       "itemId": 931,
       "name": "Jonas part (Flux gap connector)",
       "category": "jonasparts",
-      "listings": 12,
+      "listings": 13,
       "soldCount": 5,
-      "sellThrough": 0.417,
+      "sellThrough": 0.385,
       "medianTimeToSell": 255.15,
       "unitsSold": 20,
       "gearsTraded": 42.0,
@@ -6863,7 +6923,7 @@
       "category": "feather",
       "listings": 28,
       "soldCount": 8,
-      "sellThrough": 0.308,
+      "sellThrough": 0.286,
       "medianTimeToSell": 403.54,
       "unitsSold": 1024,
       "gearsTraded": 39.0,
@@ -6944,9 +7004,9 @@
       "itemId": 933,
       "name": "Jonas part (Temporal alignment node)",
       "category": "jonasparts",
-      "listings": 15,
+      "listings": 16,
       "soldCount": 4,
-      "sellThrough": 0.286,
+      "sellThrough": 0.267,
       "medianTimeToSell": 239.21,
       "unitsSold": 5,
       "gearsTraded": 37.0,
@@ -7328,6 +7388,29 @@
         "p90": 2.91,
         "max": 2.909,
         "mean": 2.91
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1252,
+      "name": "Powdered sulfur",
+      "category": "powder",
+      "listings": 3,
+      "soldCount": 2,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 773.08,
+      "unitsSold": 128,
+      "gearsTraded": 32.0,
+      "priceStats": {
+        "count": 2,
+        "min": 0.25,
+        "p10": 0.25,
+        "p25": 0.25,
+        "median": 0.25,
+        "p75": 0.25,
+        "p90": 0.25,
+        "max": 0.25,
+        "mean": 0.25
       },
       "trend": null
     },
@@ -7956,9 +8039,9 @@
       "itemId": 935,
       "name": "Jonas part (Inverted refraction cylinder)",
       "category": "jonasparts",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 5,
-      "sellThrough": 0.385,
+      "sellThrough": 0.357,
       "medianTimeToSell": 254.37,
       "unitsSold": 5,
       "gearsTraded": 29.0,
@@ -7972,29 +8055,6 @@
         "p90": 9.8,
         "max": 11.0,
         "mean": 5.8
-      },
-      "trend": null
-    },
-    {
-      "itemId": 2963,
-      "name": "Steel hammer",
-      "category": "hammer",
-      "listings": 5,
-      "soldCount": 1,
-      "sellThrough": 0.25,
-      "medianTimeToSell": 507.31,
-      "unitsSold": 1,
-      "gearsTraded": 28.0,
-      "priceStats": {
-        "count": 1,
-        "min": 28.0,
-        "p10": 28.0,
-        "p25": 28.0,
-        "median": 28.0,
-        "p75": 28.0,
-        "p90": 28.0,
-        "max": 28.0,
-        "mean": 28.0
       },
       "trend": null
     },
@@ -8142,7 +8202,7 @@
       "category": "agedstonebricks",
       "listings": 24,
       "soldCount": 1,
-      "sellThrough": 0.045,
+      "sellThrough": 0.042,
       "medianTimeToSell": 145.07,
       "unitsSold": 64,
       "gearsTraded": 25.0,
@@ -8462,9 +8522,9 @@
       "itemId": 929,
       "name": "Jonas sub-assembly (A difference gear assembly)",
       "category": "jonasframes",
-      "listings": 12,
+      "listings": 13,
       "soldCount": 3,
-      "sellThrough": 0.273,
+      "sellThrough": 0.25,
       "medianTimeToSell": 119.06,
       "unitsSold": 18,
       "gearsTraded": 24.0,
@@ -9106,7 +9166,7 @@
       "itemId": 4111,
       "name": "Jailor pants",
       "category": "clothes",
-      "listings": 9,
+      "listings": 10,
       "soldCount": 1,
       "sellThrough": 0.125,
       "medianTimeToSell": 425.73,
@@ -9175,9 +9235,9 @@
       "itemId": 926,
       "name": "Jonas sub-assembly (Finely balanced oscillator)",
       "category": "jonasframes",
-      "listings": 10,
+      "listings": 11,
       "soldCount": 3,
-      "sellThrough": 0.3,
+      "sellThrough": 0.273,
       "medianTimeToSell": 240.52,
       "unitsSold": 3,
       "gearsTraded": 20.0,
@@ -9773,9 +9833,9 @@
       "itemId": 936,
       "name": "Jonas part (Alternate injection valve )",
       "category": "jonasparts",
-      "listings": 12,
+      "listings": 13,
       "soldCount": 2,
-      "sellThrough": 0.182,
+      "sellThrough": 0.167,
       "medianTimeToSell": 864.21,
       "unitsSold": 2,
       "gearsTraded": 19.0,
@@ -9888,9 +9948,9 @@
       "itemId": 924,
       "name": "Jonas sub-assembly (Consumately crafted gearbox)",
       "category": "jonasframes",
-      "listings": 8,
+      "listings": 9,
       "soldCount": 2,
-      "sellThrough": 0.286,
+      "sellThrough": 0.25,
       "medianTimeToSell": 863.66,
       "unitsSold": 3,
       "gearsTraded": 18.0,
@@ -10141,9 +10201,9 @@
       "itemId": 3429,
       "name": "Metal parts",
       "category": "metal",
-      "listings": 25,
+      "listings": 26,
       "soldCount": 2,
-      "sellThrough": 0.08,
+      "sellThrough": 0.077,
       "medianTimeToSell": 833.24,
       "unitsSold": 32,
       "gearsTraded": 16.0,
@@ -10463,29 +10523,6 @@
         "p90": 13.6,
         "max": 15.0,
         "mean": 8.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1252,
-      "name": "Powdered sulfur",
-      "category": "powder",
-      "listings": 2,
-      "soldCount": 1,
-      "sellThrough": 1.0,
-      "medianTimeToSell": 773.08,
-      "unitsSold": 64,
-      "gearsTraded": 16.0,
-      "priceStats": {
-        "count": 1,
-        "min": 0.25,
-        "p10": 0.25,
-        "p25": 0.25,
-        "median": 0.25,
-        "p75": 0.25,
-        "p90": 0.25,
-        "max": 0.25,
-        "mean": 0.25
       },
       "trend": null
     },
@@ -10953,9 +10990,9 @@
       "itemId": 925,
       "name": "Jonas sub-assembly (Eccentric gearbox)",
       "category": "jonasframes",
-      "listings": 12,
+      "listings": 13,
       "soldCount": 3,
-      "sellThrough": 0.25,
+      "sellThrough": 0.231,
       "medianTimeToSell": 771.67,
       "unitsSold": 3,
       "gearsTraded": 14.0,
@@ -11045,7 +11082,7 @@
       "itemId": 3599,
       "name": "Acrobat bracelet",
       "category": "clothes",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 2,
       "sellThrough": 0.167,
       "medianTimeToSell": 296.75,
@@ -11275,9 +11312,9 @@
       "itemId": 928,
       "name": "Jonas sub-assembly (A complex joint)",
       "category": "jonasframes",
-      "listings": 9,
+      "listings": 10,
       "soldCount": 2,
-      "sellThrough": 0.222,
+      "sellThrough": 0.2,
       "medianTimeToSell": 255.33,
       "unitsSold": 2,
       "gearsTraded": 12.0,
@@ -11344,9 +11381,9 @@
       "itemId": 932,
       "name": "Jonas part (Dual valence emitter)",
       "category": "jonasparts",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 2,
-      "sellThrough": 0.154,
+      "sellThrough": 0.143,
       "medianTimeToSell": 863.72,
       "unitsSold": 6,
       "gearsTraded": 12.0,
@@ -11613,6 +11650,29 @@
         "p90": 11.0,
         "max": 11.0,
         "mean": 11.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2800,
+      "name": "Pine seed",
+      "category": "treeseed",
+      "listings": 4,
+      "soldCount": 2,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 773.8,
+      "unitsSold": 128,
+      "gearsTraded": 11.0,
+      "priceStats": {
+        "count": 2,
+        "min": 0.078,
+        "p10": 0.08,
+        "p25": 0.08,
+        "median": 0.09,
+        "p75": 0.09,
+        "p90": 0.09,
+        "max": 0.094,
+        "mean": 0.09
       },
       "trend": null
     },
@@ -12956,7 +13016,7 @@
       "category": "fruit",
       "listings": 25,
       "soldCount": 2,
-      "sellThrough": 0.154,
+      "sellThrough": 0.118,
       "medianTimeToSell": 687.21,
       "unitsSold": 128,
       "gearsTraded": 8.0,
@@ -13821,29 +13881,6 @@
         "p90": 5.0,
         "max": 5.0,
         "mean": 5.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 2800,
-      "name": "Pine seed",
-      "category": "treeseed",
-      "listings": 3,
-      "soldCount": 1,
-      "sellThrough": 0.333,
-      "medianTimeToSell": 773.8,
-      "unitsSold": 64,
-      "gearsTraded": 5.0,
-      "priceStats": {
-        "count": 1,
-        "min": 0.078,
-        "p10": 0.08,
-        "p25": 0.08,
-        "median": 0.08,
-        "p75": 0.08,
-        "p90": 0.08,
-        "max": 0.078,
-        "mean": 0.08
       },
       "trend": null
     },
@@ -14978,9 +15015,9 @@
       "itemId": 1897,
       "name": "Rusty gear",
       "category": "gear",
-      "listings": 6,
+      "listings": 7,
       "soldCount": 2,
-      "sellThrough": 0.333,
+      "sellThrough": 0.286,
       "medianTimeToSell": 729.52,
       "unitsSold": 2,
       "gearsTraded": 2.0,
@@ -15189,6 +15226,29 @@
       "soldCount": 1,
       "sellThrough": 0.111,
       "medianTimeToSell": 749.59,
+      "unitsSold": 1,
+      "gearsTraded": 2.0,
+      "priceStats": {
+        "count": 1,
+        "min": 2.0,
+        "p10": 2.0,
+        "p25": 2.0,
+        "median": 2.0,
+        "p75": 2.0,
+        "p90": 2.0,
+        "max": 2.0,
+        "mean": 2.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 3970,
+      "name": "Survivor gloves",
+      "category": "clothes",
+      "listings": 5,
+      "soldCount": 1,
+      "sellThrough": 0.2,
+      "medianTimeToSell": 65.88,
       "unitsSold": 1,
       "gearsTraded": 2.0,
       "priceStats": {
@@ -18969,19 +19029,6 @@
       "trend": null
     },
     {
-      "itemId": 3970,
-      "name": "Survivor gloves",
-      "category": "clothes",
-      "listings": 4,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 8117,
       "name": "Aged polished cobbled rock (Basalt)",
       "category": "polishedrockold",
@@ -20051,7 +20098,7 @@
       "itemId": 4294,
       "name": "Marketeer tunic",
       "category": "clothes",
-      "listings": 8,
+      "listings": 10,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -21117,7 +21164,7 @@
       "itemId": 3911,
       "name": "Acrobat anklets",
       "category": "clothes",
-      "listings": 6,
+      "listings": 7,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -22001,7 +22048,7 @@
       "itemId": 3841,
       "name": "Blass clasp",
       "category": "clothes",
-      "listings": 2,
+      "listings": 3,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -22275,19 +22322,6 @@
       "name": "Illuminal divergence manifold",
       "category": "tobtlocatorpart",
       "listings": 1,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 1228,
-      "name": "Cupronickel rod",
-      "category": "rod",
-      "listings": 2,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -24016,7 +24050,7 @@
       "itemId": 3869,
       "name": "Festive cat mask",
       "category": "clothes",
-      "listings": 3,
+      "listings": 4,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -24967,7 +25001,7 @@
       "category": "brickcourse",
       "listings": 2,
       "soldCount": 0,
-      "sellThrough": null,
+      "sellThrough": 0.0,
       "medianTimeToSell": null,
       "unitsSold": 0,
       "gearsTraded": 0,
@@ -24980,7 +25014,7 @@
       "category": "ore",
       "listings": 1,
       "soldCount": 0,
-      "sellThrough": null,
+      "sellThrough": 0.0,
       "medianTimeToSell": null,
       "unitsSold": 0,
       "gearsTraded": 0,
@@ -25148,8 +25182,8 @@
     {
       "uid": "5z6wfGC8cu00vxoWaMwNJucZ",
       "name": "Yoma22k",
-      "revenue": 16738.0,
-      "sold": 408,
+      "revenue": 16759.0,
+      "sold": 410,
       "listed": 5039
     },
     {
@@ -25213,7 +25247,7 @@
       "name": "myworld8",
       "revenue": 895.0,
       "sold": 31,
-      "listed": 84
+      "listed": 87
     },
     {
       "uid": "V8rhuQUCVX0tkIjwu2EnE3f6",
@@ -25230,6 +25264,13 @@
       "listed": 475
     },
     {
+      "uid": "Y7N1SqP7WyMvpQ9WoDfXvoeY",
+      "name": "The_Saturn",
+      "revenue": 836.0,
+      "sold": 50,
+      "listed": 59
+    },
+    {
       "uid": "a7T80541KkHHz2nDlw73+VtS",
       "name": "rFossa",
       "revenue": 829.0,
@@ -25237,11 +25278,11 @@
       "listed": 103
     },
     {
-      "uid": "Y7N1SqP7WyMvpQ9WoDfXvoeY",
-      "name": "The_Saturn",
-      "revenue": 818.0,
-      "sold": 48,
-      "listed": 57
+      "uid": "2CSpTcWCnwaswcnAtqP/Kfzj",
+      "name": "Vesanus",
+      "revenue": 714.0,
+      "sold": 50,
+      "listed": 180
     },
     {
       "uid": "bqEKLdNg+zV6pyMPkdFVBCA/",
@@ -25249,13 +25290,6 @@
       "revenue": 712.0,
       "sold": 17,
       "listed": 28
-    },
-    {
-      "uid": "2CSpTcWCnwaswcnAtqP/Kfzj",
-      "name": "Vesanus",
-      "revenue": 707.0,
-      "sold": 49,
-      "listed": 180
     },
     {
       "uid": "d0H4SVzpuLCSnLT8BDtObxeo",
@@ -25281,9 +25315,16 @@
     {
       "uid": "QMQjKskhIumg2R2aL7ZdKasP",
       "name": "dirtgrubs",
-      "revenue": 583.0,
-      "sold": 78,
+      "revenue": 615.0,
+      "sold": 84,
       "listed": 135
+    },
+    {
+      "uid": "Cpn+KEJU0ZBvpuvvlNofJYzG",
+      "name": "oo7sk8punk",
+      "revenue": 606.0,
+      "sold": 43,
+      "listed": 72
     },
     {
       "uid": "zjkWh9B0cS4Pe7WLzUUAlhe3",
@@ -25314,13 +25355,6 @@
       "listed": 28
     },
     {
-      "uid": "Cpn+KEJU0ZBvpuvvlNofJYzG",
-      "name": "oo7sk8punk",
-      "revenue": 438.0,
-      "sold": 31,
-      "listed": 50
-    },
-    {
       "uid": "st3m/rVkqN66lNl/jn10Flts",
       "name": "rainbowspeed321",
       "revenue": 433.0,
@@ -25342,6 +25376,13 @@
       "listed": 15
     },
     {
+      "uid": "NEVxySlzv4qDPJEPEqP9nFbc",
+      "name": "Raistrind",
+      "revenue": 328.0,
+      "sold": 9,
+      "listed": 16
+    },
+    {
       "uid": "V8HasWTdaqUtElOR00SP0M+h",
       "name": "_Blackguard_",
       "revenue": 320.0,
@@ -25360,7 +25401,7 @@
       "name": "snakeslayer541",
       "revenue": 310.0,
       "sold": 11,
-      "listed": 68
+      "listed": 81
     },
     {
       "uid": "m5CztL+aHYinOQC0E6oyz43y",
@@ -25398,6 +25439,13 @@
       "listed": 99
     },
     {
+      "uid": "n5knehkf086KghOuRWCpHeLL",
+      "name": "GuildedChaser",
+      "revenue": 248.0,
+      "sold": 10,
+      "listed": 14
+    },
+    {
       "uid": "TfLcdS0Zk9dKvzj5AdhbP+he",
       "name": "flamescape",
       "revenue": 243.0,
@@ -25412,18 +25460,11 @@
       "listed": 135
     },
     {
-      "uid": "NEVxySlzv4qDPJEPEqP9nFbc",
-      "name": "Raistrind",
-      "revenue": 238.0,
-      "sold": 8,
-      "listed": 16
-    },
-    {
-      "uid": "n5knehkf086KghOuRWCpHeLL",
-      "name": "GuildedChaser",
-      "revenue": 235.0,
-      "sold": 8,
-      "listed": 9
+      "uid": "2nINquxqeBJIcw0k/Bhm6J6T",
+      "name": "XDead_MasterX",
+      "revenue": 237.0,
+      "sold": 9,
+      "listed": 40
     },
     {
       "uid": "WW1xzfM8kopDnjvz8LXadlJA",
@@ -25470,8 +25511,8 @@
     {
       "uid": "8HiKIvP+unltwdLr5mqGr/oF",
       "name": "morall",
-      "revenue": 201.0,
-      "sold": 12,
+      "revenue": 205.0,
+      "sold": 13,
       "listed": 34
     },
     {
@@ -25487,13 +25528,6 @@
       "revenue": 189.0,
       "sold": 5,
       "listed": 44
-    },
-    {
-      "uid": "UrTSQ5y4uX8w24tfPDi2Pr3C",
-      "name": "CobuLight",
-      "revenue": 180.0,
-      "sold": 1,
-      "listed": 1
     }
   ],
   "topBuyers": [
@@ -25512,14 +25546,14 @@
     {
       "uid": "7EfZF+PKbVaooLLxGW27ftPv",
       "name": "lris",
-      "spent": 4037.0,
-      "bought": 116
+      "spent": 4062.0,
+      "bought": 117
     },
     {
       "uid": "5z6wfGC8cu00vxoWaMwNJucZ",
       "name": "Yoma22k",
-      "spent": 3062.0,
-      "bought": 145
+      "spent": 3122.0,
+      "bought": 146
     },
     {
       "uid": "mAX1z/TOXIlfTJ96uAWc7ogE",
@@ -26314,7 +26348,7 @@
     {
       "x": 1024,
       "z": 0,
-      "count": 32
+      "count": 44
     },
     {
       "x": -5120,
@@ -26334,7 +26368,7 @@
     {
       "x": -2048,
       "z": -1024,
-      "count": 96
+      "count": 98
     },
     {
       "x": 3584,
@@ -26459,7 +26493,7 @@
     {
       "x": -19456,
       "z": 3584,
-      "count": 27
+      "count": 28
     },
     {
       "x": 3072,
@@ -26559,7 +26593,7 @@
     {
       "x": 1536,
       "z": -4608,
-      "count": 81
+      "count": 87
     },
     {
       "x": 35328,
@@ -26584,7 +26618,7 @@
     {
       "x": 0,
       "z": 37888,
-      "count": 37
+      "count": 38
     },
     {
       "x": 40448,
@@ -26614,7 +26648,7 @@
     {
       "x": -512,
       "z": 1024,
-      "count": 31
+      "count": 33
     },
     {
       "x": -2048,
@@ -26719,7 +26753,7 @@
     {
       "x": 2048,
       "z": 12288,
-      "count": 10
+      "count": 13
     },
     {
       "x": -3584,
@@ -28229,7 +28263,7 @@
     {
       "x": -2048,
       "z": 16384,
-      "count": 2
+      "count": 3
     },
     {
       "x": 18432,
@@ -28374,7 +28408,7 @@
     {
       "x": 6656,
       "z": 20480,
-      "count": 5
+      "count": 7
     },
     {
       "x": -7168,
@@ -28419,7 +28453,7 @@
     {
       "x": 4096,
       "z": -6144,
-      "count": 6
+      "count": 7
     },
     {
       "x": 12288,
@@ -28534,7 +28568,7 @@
     {
       "x": 42496,
       "z": 48640,
-      "count": 7
+      "count": 9
     },
     {
       "x": 41984,
@@ -28569,6 +28603,11 @@
     {
       "x": -2560,
       "z": -2560,
+      "count": 2
+    },
+    {
+      "x": -11264,
+      "z": -6656,
       "count": 2
     }
   ],
@@ -29106,7 +29145,7 @@
     {
       "x": 0,
       "z": -512,
-      "count": 3
+      "count": 5
     },
     {
       "x": -75776,
@@ -29221,7 +29260,7 @@
     {
       "x": 2560,
       "z": 5632,
-      "count": 34
+      "count": 35
     },
     {
       "x": 512,
@@ -29301,7 +29340,7 @@
     {
       "x": 5120,
       "z": 19968,
-      "count": 10
+      "count": 12
     },
     {
       "x": 32256,
@@ -29356,12 +29395,12 @@
     {
       "x": -512,
       "z": 2048,
-      "count": 4
+      "count": 5
     },
     {
       "x": -512,
       "z": -512,
-      "count": 24
+      "count": 26
     },
     {
       "x": 1024,
@@ -29446,7 +29485,7 @@
     {
       "x": 2048,
       "z": 6144,
-      "count": 2
+      "count": 4
     },
     {
       "x": 23552,
@@ -29496,7 +29535,7 @@
     {
       "x": 12288,
       "z": 27648,
-      "count": 7
+      "count": 8
     },
     {
       "x": 53760,
@@ -29506,7 +29545,7 @@
     {
       "x": 41472,
       "z": 43008,
-      "count": 2
+      "count": 3
     },
     {
       "x": 0,
@@ -29896,7 +29935,7 @@
     {
       "x": 5632,
       "z": -4608,
-      "count": 3
+      "count": 6
     },
     {
       "x": 35328,
@@ -29911,7 +29950,7 @@
     {
       "x": 6656,
       "z": 20480,
-      "count": 2
+      "count": 3
     },
     {
       "x": -20992,
@@ -30021,7 +30060,7 @@
     {
       "x": 0,
       "z": -4096,
-      "count": 1
+      "count": 2
     },
     {
       "x": 0,
@@ -30091,7 +30130,7 @@
     {
       "x": 41984,
       "z": 26624,
-      "count": 3
+      "count": 17
     },
     {
       "x": -4096,
@@ -30131,7 +30170,7 @@
     {
       "x": 1024,
       "z": 5632,
-      "count": 3
+      "count": 6
     },
     {
       "x": 11776,
@@ -30192,6 +30231,11 @@
       "x": -16896,
       "z": 2560,
       "count": 1
+    },
+    {
+      "x": 7680,
+      "z": 20480,
+      "count": 1
     }
   ],
   "auctioneers": [
@@ -30201,19 +30245,19 @@
       "listings": 418
     },
     {
+      "x": -8,
+      "z": 1272,
+      "listings": 264
+    },
+    {
       "x": 13176,
       "z": 27168,
       "listings": 246
     },
     {
-      "x": -8,
-      "z": 1272,
-      "listings": 244
-    },
-    {
       "x": -1712,
       "z": -880,
-      "listings": 221
+      "listings": 223
     },
     {
       "x": 112,
@@ -30258,7 +30302,7 @@
     {
       "x": -4992,
       "z": 64,
-      "listings": 96
+      "listings": 99
     },
     {
       "x": 1984,
@@ -30268,6 +30312,11 @@
     {
       "x": 712,
       "z": -288,
+      "listings": 90
+    },
+    {
+      "x": 34544,
+      "z": 34640,
       "listings": 90
     },
     {
@@ -30293,11 +30342,6 @@
     {
       "x": -15616,
       "z": -16872,
-      "listings": 73
-    },
-    {
-      "x": 34544,
-      "z": 34640,
       "listings": 73
     },
     {
@@ -30376,6 +30420,11 @@
       "listings": 48
     },
     {
+      "x": -496,
+      "z": -280,
+      "listings": 48
+    },
+    {
       "x": -8856,
       "z": -1944,
       "listings": 47
@@ -30384,6 +30433,16 @@
       "x": 42128,
       "z": 45768,
       "listings": 47
+    },
+    {
+      "x": 2336,
+      "z": 12600,
+      "listings": 46
+    },
+    {
+      "x": 1424,
+      "z": 448,
+      "listings": 46
     },
     {
       "x": -3632,
@@ -30424,11 +30483,6 @@
       "x": 54256,
       "z": 48080,
       "listings": 43
-    },
-    {
-      "x": 2336,
-      "z": 12600,
-      "listings": 42
     },
     {
       "x": 29336,
@@ -30519,11 +30573,6 @@
       "x": 45544,
       "z": 35984,
       "listings": 36
-    },
-    {
-      "x": -496,
-      "z": -280,
-      "listings": 35
     },
     {
       "x": 6368,
@@ -30719,11 +30768,6 @@
       "x": 9344,
       "z": 88088,
       "listings": 25
-    },
-    {
-      "x": 1424,
-      "z": 448,
-      "listings": 24
     },
     {
       "x": 14280,
