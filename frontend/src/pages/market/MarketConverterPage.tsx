@@ -627,7 +627,9 @@ export function MarketConverterPage() {
           <span className="text-sm text-muted-foreground">Price basis:</span>
           <Select value={basis} onValueChange={(v) => setBasis(v as PriceBasis)}>
             <SelectTrigger size="sm" className="w-44">
-              <SelectValue />
+              <SelectValue>
+                {(value) => BASIS_OPTIONS.find((o) => o.value === value)?.label ?? value}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {BASIS_OPTIONS.map((o) => (
