@@ -120,8 +120,12 @@ export function MarketPlayerPage() {
         header: "Item",
         width: "minmax(8rem,1fr)",
         cell: (l) => (
-          <Link to={`/market/items/${l.itemId}`} className="hover:underline">
-            {l.name}
+          <Link
+            to={`/market/items/${l.itemId}`}
+            className="hover:underline"
+            title={l.variant ? l.name : undefined}
+          >
+            {l.variant || l.name}
           </Link>
         ),
       },
@@ -202,8 +206,12 @@ export function MarketPlayerPage() {
         header: "Item",
         width: "minmax(8rem,1fr)",
         cell: (l) => (
-          <Link to={`/market/items/${l.itemId}`} className="hover:underline">
-            {l.name}
+          <Link
+            to={`/market/items/${l.itemId}`}
+            className="hover:underline"
+            title={l.variant ? l.name : undefined}
+          >
+            {l.variant || l.name}
           </Link>
         ),
       },

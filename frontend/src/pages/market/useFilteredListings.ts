@@ -43,7 +43,8 @@ export function filterListings(
             if ((seller && excluded.has(seller)) || (buyer && excluded.has(buyer))) return false;
         }
         if (q) {
-            const hay = `${l.name} ${l.sellerName ?? ""} ${l.buyerName ?? ""}`.toLowerCase();
+            const hay =
+                `${l.name} ${l.variant ?? ""} ${l.sellerName ?? ""} ${l.buyerName ?? ""}`.toLowerCase();
             if (!hay.includes(q)) return false;
         }
         return true;

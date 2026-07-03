@@ -15,6 +15,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -308,8 +309,37 @@ export function MarketItemPage() {
     return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
   }, [windowListings, soldOnly]);
 
+  // Grouped clutter items (e.g. "Toy") bundle many distinct objects; when this
+  // item is one of them, surface each listing's exact variant ("toy7") so the
+  // specific object is visible even though they aggregate under one item.
+  const hasVariants = useMemo(() => itemListings.some((l) => l.variant), [itemListings]);
+
+  // Distinct in-game clutter codes (attrs.type) covered by this grouped item, so
+  // the item page can spell out exactly which objects it represents.
+  const variantCodes = useMemo(
+    () =>
+      Array.from(new Set(itemListings.map((l) => l.variant).filter((v): v is string => !!v))).sort(
+        (a, b) => a.localeCompare(b, undefined, { numeric: true }),
+      ),
+    [itemListings],
+  );
+
   const columns = useMemo<ListingColumn[]>(
     () => [
+      ...(hasVariants
+        ? [
+            {
+              key: "variant",
+              header: "Variant",
+              width: "minmax(6rem,1fr)",
+              cell: (l) => (
+                <span className="text-xs font-medium" title="In-game clutter object">
+                  {l.variant ?? "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
       {
         key: "date",
         header: "Game date",
@@ -408,7 +438,7 @@ export function MarketItemPage() {
         },
       },
     ],
-    [],
+    [hasVariants],
   );
 
   if (listingsQ.isLoading) {
@@ -470,6 +500,18 @@ export function MarketItemPage() {
         <p className="text-sm text-muted-foreground">
           {displayCategory} · #{id}
         </p>
+        {variantCodes.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">
+              {variantCodes.length > 1 ? "Game codes:" : "Game code:"}
+            </span>
+            {variantCodes.map((c) => (
+              <Badge key={c} variant="secondary" className="font-mono text-xs font-normal">
+                {c}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Time-range window (shared with the Insights page) */}

@@ -142,7 +142,7 @@ export function MarketLeaderboardsPage() {
                   <TableRow key={s.auctionId}>
                     <TableCell>
                       <Link to={`/market/items/${s.itemId}`} className="hover:underline">
-                        <span className="font-medium">{s.name}</span>
+                        <span className="font-medium">{s.variant || s.name}</span>
                         <span className="text-muted-foreground text-xs"> ×{s.qty}</span>
                       </Link>
                     </TableCell>

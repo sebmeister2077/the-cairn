@@ -91,9 +91,9 @@ export function MarketListingsPage() {
                   <Link
                     to={`/market/items/${l.itemId}`}
                     className="hover:underline"
-                    title={l.category}
+                    title={l.variant ? `${l.name} · ${l.category}` : l.category}
                   >
-                    {l.name}
+                    {l.variant || l.name}
                   </Link>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">

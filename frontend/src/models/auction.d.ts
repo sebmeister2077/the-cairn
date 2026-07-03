@@ -7,6 +7,13 @@ export interface AuctionListing {
     auctionId: number;
     itemId: number;
     name: string;
+    /**
+     * The exact clutter object for this listing (e.g. "toy7"). Clutter is one
+     * block id hiding dozens of distinct objects; the backend groups them under
+     * a base item (e.g. "Toy") but each listing keeps its precise variant here.
+     * Null for non-clutter items and generic clutter without a `type` attr.
+     */
+    variant?: string | null;
     category: string;
     classType: "Item" | "Block";
     attrs: Record<string, unknown> | null;
@@ -105,6 +112,8 @@ export interface BuyerLeader {
 export interface BiggestSale {
     auctionId: number;
     name: string;
+    /** Exact clutter variant (e.g. "toy7"), when the sale was a clutter object. */
+    variant?: string | null;
     itemId: number;
     price: number;
     qty: number;

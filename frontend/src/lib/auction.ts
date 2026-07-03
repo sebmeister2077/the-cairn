@@ -40,6 +40,12 @@ export function useAuctionListings() {
             return data;
         },
         ...STATIC_QUERY,
+        // The listings payload is ~13 MB — far larger than the localStorage
+        // quota — so it must NOT be dehydrated into storage (attempting to
+        // serialise it on every cache change is slow and throws QuotaExceeded).
+        // The in-memory cache + the browser's HTTP cache already make reloads
+        // fast; only the small summary/items artifacts opt into persistence.
+        meta: undefined,
     });
 }
 
@@ -64,6 +70,16 @@ export function useItemCatalog() {
 export function formatGears(n: number): string {
     if (n < 1) return `${n.toFixed(2)}⚙`;
     return `${Math.round(n).toLocaleString()}⚙`;
+}
+
+/**
+ * Label for a single listing row. Clutter items are grouped under a base item
+ * (e.g. "Toy"), but an individual listing shows its exact variant (e.g. "toy7")
+ * so the specific object is visible on the board. Non-clutter listings fall back
+ * to the item name.
+ */
+export function listingLabel(l: { variant?: string | null; name: string }): string {
+    return l.variant || l.name;
 }
 
 /** Linear-interpolated percentile over an already-sorted ascending array. */

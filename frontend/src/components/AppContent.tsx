@@ -41,6 +41,7 @@ import { MarketConverterPage } from "@/pages/market/MarketConverterPage";
 import { MarketListingsPage } from "@/pages/market/MarketListingsPage";
 import { MarketInsightsPage } from "@/pages/market/MarketInsightsPage";
 import { MarketItemPage } from "@/pages/market/MarketItemPage";
+import { MarketItemsPage } from "@/pages/market/MarketItemsPage";
 import { MarketLeaderboardsPage } from "@/pages/market/MarketLeaderboardsPage";
 import { MarketPlayerPage } from "@/pages/market/MarketPlayerPage";
 import { MarketMapPage } from "@/pages/market/MarketMapPage";
@@ -108,6 +109,7 @@ const NavigationRoutes = {
   Market: {
     Overview: "/market",
     Listings: "/market/listings",
+    Items: "/market/items",
     Insights: "/market/insights",
     Converter: "/market/converter",
     Leaderboards: "/market/leaderboards",
@@ -212,6 +214,7 @@ const subTabs: Subtabs = {
   "/market": [
     { value: "/market", labelKey: "app.nav.subtabs.marketOverview" },
     { value: "/market/listings", labelKey: "app.nav.subtabs.marketListings" },
+    { value: "/market/items", labelKey: "app.nav.subtabs.marketItems" },
     { value: "/market/insights", labelKey: "app.nav.subtabs.marketInsights" },
     { value: "/market/converter", labelKey: "app.nav.subtabs.marketConverter" },
     { value: "/market/leaderboards", labelKey: "app.nav.subtabs.marketLeaderboards" },
@@ -957,6 +960,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketMapPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/items"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketItemsPage />
               </ErrorBoundary>
             }
           />

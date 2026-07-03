@@ -35,7 +35,9 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import struct
+import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -207,20 +209,26 @@ def load_item_map(path: Path) -> Dict[str, Dict[str, str]]:
 
 
 def load_registry(path: Path) -> Dict[str, Dict[str, str]]:
-    """Load the game registry (id -> code) keyed by class type.
+    """Load the game registry keyed by class type.
 
-    Returns ``{"Item": {"<id>": code, ...}, "Block": {...}}`` with string keys
-    so lookups match the decoded ``classType`` ("Item"/"Block"). Item and block
-    ids share the same numeric space, so they must be kept in separate maps and
-    disambiguated by class type.
+    Returns ``{"Item": {"<id>": code}, "Block": {...}, "ItemNames": {"<id>":
+    name}, "BlockNames": {...}}`` with string keys so lookups match the decoded
+    ``classType`` ("Item"/"Block"). Item and block ids share the same numeric
+    space, so they must be kept in separate maps and disambiguated by class type.
+
+    The ``*Names`` maps carry the game's proper localized display names (e.g.
+    "Sturdy leather"); the code maps are the fallback used to derive a category
+    and a humanized name when no proper name exists.
     """
     if not path.exists():
         print(f"[warn] registry not found at {path} — item names will fall back to ids")
-        return {"Item": {}, "Block": {}}
+        return {"Item": {}, "Block": {}, "ItemNames": {}, "BlockNames": {}}
     data = json.loads(path.read_text(encoding="utf-8"))
     return {
         "Item": {str(k): v for k, v in (data.get("Items") or {}).items()},
         "Block": {str(k): v for k, v in (data.get("Blocks") or {}).items()},
+        "ItemNames": {str(k): v for k, v in (data.get("ItemNames") or {}).items()},
+        "BlockNames": {str(k): v for k, v in (data.get("BlockNames") or {}).items()},
     }
 
 
@@ -263,9 +271,13 @@ def resolve_item(
     event_name = (raw_item.get("Name") or "").strip() or None
     event_code = (raw_item.get("Code") or "").strip() or None
     code = event_code or mapped.get("code") or registry.get(class_type, {}).get(key)
+    # The registry's proper localized display name (e.g. "Sturdy leather"),
+    # preferred over a name humanized from the raw code ("Leather sturdy plain").
+    registry_name = registry.get(f"{class_type}Names", {}).get(key)
     name = (
         event_name
         or mapped.get("name")
+        or registry_name
         or (humanize_code(code) if code else f"#{item_id}")
     )
     category = mapped.get("category") or (_category_from_code(code) if code else "unknown")
@@ -276,6 +288,72 @@ def resolve_item(
         "category": category,
         "classType": class_type,
     }
+
+
+# --------------------------------------------------------------------------- #
+# Clutter variant splitting
+# --------------------------------------------------------------------------- #
+# In-game "clutter" is a single block (one item id) whose actual object is stored
+# in the stack's `type` attribute (e.g. "toy7", "pile-cloth2",
+# "chains/chain-ceiling-hook"). The market treats them all as one "Clutter" item,
+# which hides that they're really dozens of distinct objects. We split them into
+# grouped items keyed by the variant's base name (the `type` with any trailing
+# number stripped, e.g. "toy7" -> "toy"), so all "toy" clutter aggregates under a
+# single "Toy" item while each listing still carries its exact variant ("toy7").
+#
+# Grouped clutter needs a stable, collision-free numeric id (the whole explorer
+# is keyed by numeric itemId). Real item/block ids are small (< ~15k), so we map
+# each base name into a high range via a stable hash, probing on the rare clash.
+CLUTTER_ID_BASE = 90_000_000
+_clutter_synth_ids: Dict[str, int] = {}
+_clutter_used_ids: set = set()
+
+
+def _clutter_base(variant: str) -> str:
+    """Group key for a clutter variant: the `type` string with any trailing
+    number stripped (e.g. "toy7" -> "toy", "fence/iron/empty1" ->
+    "fence/iron/empty"). Falls back to the raw variant if stripping empties it."""
+    base = re.sub(r"\d+$", "", variant).rstrip("-_/")
+    return base or variant
+
+
+def _humanize_clutter(base: str) -> str:
+    """Readable display name for a clutter group (e.g. "pile-cloth" ->
+    "Pile cloth", "chains/chain-ceiling-hook" -> "Chains chain ceiling hook")."""
+    words = [w for w in re.split(r"[\-_/]+", base) if w]
+    text = " ".join(words) if words else base
+    return text[:1].upper() + text[1:]
+
+
+def _clutter_synth_id(base: str) -> int:
+    """Stable synthetic numeric id for a clutter group, well outside the real
+    id range and de-duplicated so two groups never share an id."""
+    sid = _clutter_synth_ids.get(base)
+    if sid is not None:
+        return sid
+    sid = CLUTTER_ID_BASE + (zlib.crc32(base.encode("utf-8")) % 9_000_000)
+    while sid in _clutter_used_ids:
+        sid += 1
+    _clutter_synth_ids[base] = sid
+    _clutter_used_ids.add(sid)
+    return sid
+
+
+def clutter_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optional[Tuple[int, str, str]]:
+    """If this is a clutter block whose real object lives in `attrs.type`, return
+    ``(synthetic_item_id, group_display_name, variant_label)``; else ``None``.
+
+    Generic-clutter fallbacks that already resolve to their own id (e.g.
+    "art/bottle", "skull/humanoid" with no `type` attribute) are left untouched.
+    """
+    if item.get("category") != "clutter" or not attrs:
+        return None
+    variant = attrs.get("type")
+    if not isinstance(variant, str) or not variant.strip():
+        return None
+    variant = variant.strip()
+    base = _clutter_base(variant)
+    return _clutter_synth_id(base), _humanize_clutter(base), variant
 
 
 # --------------------------------------------------------------------------- #
@@ -429,6 +507,16 @@ def build_records(
         if stack is None:
             continue
         item = resolve_item(stack, row.get("Item") or {}, item_map, registry)
+        attrs = stack["attributes"] or None
+
+        # Clutter is one block id hiding dozens of distinct objects (the real one
+        # is in `attrs.type`). Split it into per-object groups so each aggregates
+        # separately, while the listing keeps its exact variant label.
+        variant = None
+        cv = clutter_variant(item, attrs)
+        if cv is not None:
+            item["itemId"], item["name"], variant = cv
+
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
@@ -460,7 +548,10 @@ def build_records(
                 "name": item["name"],
                 "category": item["category"],
                 "classType": item["classType"],
-                "attrs": stack["attributes"] or None,
+                # Exact clutter object for this listing (e.g. "toy7"); null for
+                # non-clutter items and generic clutter without a `type` attr.
+                "variant": variant,
+                "attrs": attrs,
                 "price": price,
                 "qty": stack_size,
                 "pricePerUnit": round(price / stack_size, 3) if stack_size else price,
@@ -620,6 +711,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "auctionId": r["auctionId"],
                 "itemId": r["itemId"],
                 "name": r["name"],
+                "variant": r.get("variant"),
                 "price": r["price"],
                 "qty": r["qty"],
                 "sellerName": r["sellerName"],
