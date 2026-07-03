@@ -37,6 +37,7 @@ import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
 import { ToolsTunnelPage } from "@/pages/ToolsTunnelPage";
 import { ToolsWaypointMacroPage } from "@/pages/ToolsWaypointMacroPage";
 import { MarketOverviewPage } from "@/pages/market/MarketOverviewPage";
+import { MarketConverterPage } from "@/pages/market/MarketConverterPage";
 import { MarketListingsPage } from "@/pages/market/MarketListingsPage";
 import { MarketInsightsPage } from "@/pages/market/MarketInsightsPage";
 import { MarketItemPage } from "@/pages/market/MarketItemPage";
@@ -108,6 +109,7 @@ const NavigationRoutes = {
     Overview: "/market",
     Listings: "/market/listings",
     Insights: "/market/insights",
+    Converter: "/market/converter",
     Leaderboards: "/market/leaderboards",
     Map: "/market/map",
   },
@@ -177,6 +179,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.waypointMacro"
   | "app.nav.subtabs.marketOverview"
   | "app.nav.subtabs.marketListings"
+  | "app.nav.subtabs.marketConverter"
   | "app.nav.subtabs.marketLeaderboards"
   | "app.nav.subtabs.marketMap"
   | "app.nav.chip.new";
@@ -210,6 +213,7 @@ const subTabs: Subtabs = {
     { value: "/market", labelKey: "app.nav.subtabs.marketOverview" },
     { value: "/market/listings", labelKey: "app.nav.subtabs.marketListings" },
     { value: "/market/insights", labelKey: "app.nav.subtabs.marketInsights" },
+    { value: "/market/converter", labelKey: "app.nav.subtabs.marketConverter" },
     { value: "/market/leaderboards", labelKey: "app.nav.subtabs.marketLeaderboards" },
     { value: "/market/map", labelKey: "app.nav.subtabs.marketMap" },
   ],
@@ -929,6 +933,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketInsightsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/converter"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketConverterPage />
               </ErrorBoundary>
             }
           />

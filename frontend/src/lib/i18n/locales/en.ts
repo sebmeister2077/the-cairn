@@ -79,6 +79,7 @@ export const en = {
                 marketOverview: "Overview",
                 marketListings: "Listings",
                 marketInsights: "Insights",
+                marketConverter: "Converter",
                 marketLeaderboards: "Leaderboards",
                 marketMap: "Trade Map",
             },

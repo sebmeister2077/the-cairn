@@ -143,7 +143,7 @@ function liquidityTierFor(score: number): LiquidityTier {
     return "low";
 }
 
-function confidenceFor(soldCount: number): ConfidenceTier {
+export function confidenceFor(soldCount: number): ConfidenceTier {
     if (soldCount >= 20) return "high";
     if (soldCount >= 5) return "medium";
     return "low";
