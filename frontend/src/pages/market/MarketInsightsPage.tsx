@@ -723,15 +723,19 @@ export function MarketInsightsPage() {
             No sales recorded in this window.
           </p>
         ) : (
-          <ScreenerTable
-            rows={rows}
-            columns={columns}
-            rowKey={(r) => r.itemId}
-            defaultSortKey="volume"
-            defaultSortDir="desc"
-            minWidth="1180px"
-            onRowClick={(r) => navigate(`/market/items/${r.itemId}`)}
-          />
+          // Break out of the centered page container so the wide screener can
+          // use the full viewport width (minus a little breathing room).
+          <div className="mx-[calc(50%-50vw)] px-4 sm:px-6 lg:px-8">
+            <ScreenerTable
+              rows={rows}
+              columns={columns}
+              rowKey={(r) => r.itemId}
+              defaultSortKey="volume"
+              defaultSortDir="desc"
+              minWidth="1180px"
+              onRowClick={(r) => navigate(`/market/items/${r.itemId}`)}
+            />
+          </div>
         )}
       </div>
     </div>
