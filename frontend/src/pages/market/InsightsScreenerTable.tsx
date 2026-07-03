@@ -3,9 +3,10 @@
 // `AuctionListing`) but is generic over the row type and adds click-to-sort
 // headers, since the insights screener can list hundreds of items.
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface ScreenerColumn<T> {
@@ -101,11 +102,9 @@ export function ScreenerTable<T>({
           >
             {columns.map((c) => {
               const active = sortKey === c.key;
-              return (
+              const header = (
                 <button
-                  key={c.key}
                   type="button"
-                  title={c.title}
                   onClick={() => toggleSort(c)}
                   className={cn(
                     "flex min-w-0 items-center gap-1",
@@ -127,6 +126,14 @@ export function ScreenerTable<T>({
                     )
                   ) : null}
                 </button>
+              );
+              return c.title ? (
+                <Tooltip key={c.key}>
+                  <TooltipTrigger render={header} />
+                  <TooltipContent>{c.title}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <Fragment key={c.key}>{header}</Fragment>
               );
             })}
           </div>

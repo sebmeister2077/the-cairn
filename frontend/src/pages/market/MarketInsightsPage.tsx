@@ -5,10 +5,17 @@
 // `useMarketInsights`). Listing dates are shown in the in-game calendar; time to
 // sell is shown in real-world time.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMarketWindow } from "./useMarketWindow";
-import { ArrowDownRight, ArrowUpRight, ExternalLink, Flame, Minus, TriangleAlert } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ExternalLink,
+  Flame,
+  Minus,
+  TriangleAlert,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +28,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatCard } from "@/components/usage/StatCard";
 import {
   useAuctionListings,
@@ -49,6 +57,20 @@ function volumeDisplay(r: InsightsRow, mode: VolumeMode) {
 // --------------------------------------------------------------------------- //
 // Badge helpers
 // --------------------------------------------------------------------------- //
+
+/** Wraps a cell in the app's Tooltip so we never fall back to the native
+ *  browser `title` tooltip. */
+function Hint({ label, children }: { label: ReactNode; children: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={<span className="inline-flex items-center gap-1.5" />}>
+        {children}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function VolatilityBadge({ row }: { row: InsightsRow }) {
   if (!row.volatilityTier || row.dispersionCV == null) return DASH;
   const cls =
@@ -64,9 +86,9 @@ function VolatilityBadge({ row }: { row: InsightsRow }) {
         ? "Moderate"
         : "Volatile";
   return (
-    <Badge className={cls} title={`Dispersion CV ${(row.dispersionCV * 100).toFixed(0)}%`}>
-      {label}
-    </Badge>
+    <Hint label={`Dispersion CV ${(row.dispersionCV * 100).toFixed(0)}%`}>
+      <Badge className={cls}>{label}</Badge>
+    </Hint>
   );
 }
 
@@ -109,14 +131,12 @@ function DemandCell({ row }: { row: InsightsRow }) {
     tier === "hot" ? "Hot" : tier === "high" ? "High" : tier === "normal" ? "Normal" : "Low";
   return (
     <span className="inline-flex items-center gap-1">
-      <Badge
-        variant={tier === "low" ? "outline" : "default"}
-        className={cls}
-        title={`Demand score ${row.demandScore}/100 (volume + speed + sell-through)`}
-      >
-        {tier === "hot" ? <Flame className="size-3" /> : null}
-        {label}
-      </Badge>
+      <Hint label={`Demand score ${row.demandScore}/100 (volume + speed + sell-through)`}>
+        <Badge variant={tier === "low" ? "outline" : "default"} className={cls}>
+          {tier === "hot" ? <Flame className="size-3" /> : null}
+          {label}
+        </Badge>
+      </Hint>
       {row.shortage ? (
         <TriangleAlert className="size-3.5 text-amber-500" aria-label="Shortage" />
       ) : null}
@@ -142,12 +162,9 @@ function ConcentrationBadge({ row }: { row: InsightsRow }) {
           ? "Concentrated"
           : "Monopoly";
   return (
-    <Badge
-      className={cls}
-      title={`HHI ${(row.hhi * 100).toFixed(0)}% · ${row.sellerCount} seller(s)`}
-    >
-      {label}
-    </Badge>
+    <Hint label={`HHI ${(row.hhi * 100).toFixed(0)}% · ${row.sellerCount} seller(s)`}>
+      <Badge className={cls}>{label}</Badge>
+    </Hint>
   );
 }
 
@@ -156,13 +173,14 @@ function ConfidenceBadge({ row }: { row: InsightsRow }) {
   const variant =
     row.confidence === "high" ? "outline" : row.confidence === "medium" ? "secondary" : "outline";
   return (
-    <Badge
-      variant={variant}
-      className={cn(row.confidence === "low" && "border-dashed text-muted-foreground")}
-      title={`${row.soldCount} sold — statistical confidence`}
-    >
-      {label}
-    </Badge>
+    <Hint label={`${row.soldCount} sold — statistical confidence`}>
+      <Badge
+        variant={variant}
+        className={cn(row.confidence === "low" && "border-dashed text-muted-foreground")}
+      >
+        {label}
+      </Badge>
+    </Hint>
   );
 }
 
@@ -175,18 +193,16 @@ function RecencyCell({ row }: { row: InsightsRow }) {
       : tier === "cooling"
         ? "bg-amber-500"
         : "bg-muted-foreground";
-  return (
-    <span
-      className="inline-flex items-center gap-1.5"
-      title={
-        row.daysSinceLastSale != null
-          ? `Last sale ~${row.daysSinceLastSale.toFixed(1)} real days ago`
-          : undefined
-      }
-    >
+  const content = (
+    <span className="inline-flex items-center gap-1.5">
       <span className={cn("size-2 rounded-full", dot)} />
       {formatGameDate(row.lastSaleGameHours)}
     </span>
+  );
+  return row.daysSinceLastSale != null ? (
+    <Hint label={`Last sale ~${row.daysSinceLastSale.toFixed(1)} real days ago`}>{content}</Hint>
+  ) : (
+    content
   );
 }
 
@@ -582,9 +598,9 @@ export function MarketInsightsPage() {
             <span>
               {(r.dealScore * 100).toFixed(0)}%
               {r.dealsAvailable > 0 ? (
-                <span className="ml-1 text-emerald-600" title="Active listings below fair price">
-                  ·{r.dealsAvailable}
-                </span>
+                <Hint label="Active listings below fair price">
+                  <span className="ml-1 text-emerald-600">·{r.dealsAvailable}</span>
+                </Hint>
               ) : null}
             </span>
           ) : (
