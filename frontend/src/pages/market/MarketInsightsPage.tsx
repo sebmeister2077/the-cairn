@@ -13,6 +13,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { StatCard } from "@/components/usage/StatCard";
 import {
   useAuctionListings,
@@ -287,6 +295,12 @@ function ColumnGlossary() {
 // --------------------------------------------------------------------------- //
 // Highlight cards
 // --------------------------------------------------------------------------- //
+
+// How many items each highlight card shows inline, and the max it keeps for the
+// "show all" popup.
+const HIGHLIGHT_PREVIEW = 5;
+const HIGHLIGHT_MAX = 25;
+
 interface Highlight {
   title: string;
   hint: string;
@@ -301,6 +315,25 @@ function HighlightCard({
   highlight: Highlight;
   onSelect: (itemId: number) => void;
 }) {
+  const preview = highlight.rows.slice(0, HIGHLIGHT_PREVIEW);
+  const hasMore = highlight.rows.length > HIGHLIGHT_PREVIEW;
+
+  const renderRow = (r: InsightsRow, i: number) => (
+    <li key={r.itemId}>
+      <button
+        type="button"
+        onClick={() => onSelect(r.itemId)}
+        className="flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left text-sm hover:bg-muted/50"
+      >
+        <span className="min-w-0 truncate">
+          <span className="mr-1 text-muted-foreground tabular-nums">{i + 1}.</span>
+          {r.name}
+        </span>
+        <span className="shrink-0 tabular-nums text-muted-foreground">{highlight.value(r)}</span>
+      </button>
+    </li>
+  );
+
   return (
     <Card className="h-full">
       <CardContent className="py-4">
@@ -309,25 +342,33 @@ function HighlightCard({
         {highlight.rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Not enough data.</p>
         ) : (
-          <ol className="space-y-1">
-            {highlight.rows.map((r, i) => (
-              <li key={r.itemId}>
-                <button
-                  type="button"
-                  onClick={() => onSelect(r.itemId)}
-                  className="flex w-full items-center justify-between gap-2 rounded px-1 py-0.5 text-left text-sm hover:bg-muted/50"
+          <>
+            <ol className="space-y-1">{preview.map(renderRow)}</ol>
+            {hasMore ? (
+              <Dialog>
+                <DialogTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 h-7 w-full text-xs text-muted-foreground"
+                    />
+                  }
                 >
-                  <span className="min-w-0 truncate">
-                    <span className="mr-1 text-muted-foreground tabular-nums">{i + 1}.</span>
-                    {r.name}
-                  </span>
-                  <span className="shrink-0 tabular-nums text-muted-foreground">
-                    {highlight.value(r)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ol>
+                  Show all {highlight.rows.length}
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{highlight.title}</DialogTitle>
+                    <DialogDescription>{highlight.hint}</DialogDescription>
+                  </DialogHeader>
+                  <ol className="max-h-[60vh] space-y-1 overflow-y-auto">
+                    {highlight.rows.map(renderRow)}
+                  </ol>
+                </DialogContent>
+              </Dialog>
+            ) : null}
+          </>
         )}
       </CardContent>
     </Card>
@@ -365,12 +406,12 @@ export function MarketInsightsPage() {
       [...withConfidence]
         .filter((r) => r.dispersionCV != null)
         .sort((a, b) => (a.dispersionCV! - b.dispersionCV!) * dir)
-        .slice(0, 5);
+        .slice(0, HIGHLIGHT_MAX);
     const top = <K,>(pool: InsightsRow[], val: (r: InsightsRow) => K | null, dir: 1 | -1) =>
       [...pool]
         .filter((r) => val(r) != null)
         .sort((a, b) => ((val(a) as number) - (val(b) as number)) * dir)
-        .slice(0, 5);
+        .slice(0, HIGHLIGHT_MAX);
     return [
       {
         title: "Most volatile",
@@ -396,7 +437,7 @@ export function MarketInsightsPage() {
         rows: rows
           .filter((r) => r.shortage)
           .sort((a, b) => (b.demandScore ?? 0) - (a.demandScore ?? 0))
-          .slice(0, 5),
+          .slice(0, HIGHLIGHT_MAX),
         value: (r) => `${r.activeListings} on board`,
       },
       {
@@ -417,7 +458,7 @@ export function MarketInsightsPage() {
         rows: rows
           .filter((r) => r.trend?.direction === "up")
           .sort((a, b) => (b.trend?.changePct ?? 0) - (a.trend?.changePct ?? 0))
-          .slice(0, 5),
+          .slice(0, HIGHLIGHT_MAX),
         value: (r) => `+${r.trend?.changePct ?? 0}%`,
       },
       {
@@ -426,7 +467,7 @@ export function MarketInsightsPage() {
         rows: rows
           .filter((r) => r.trend?.direction === "down")
           .sort((a, b) => (a.trend?.changePct ?? 0) - (b.trend?.changePct ?? 0))
-          .slice(0, 5),
+          .slice(0, HIGHLIGHT_MAX),
         value: (r) => `${r.trend?.changePct ?? 0}%`,
       },
     ];
