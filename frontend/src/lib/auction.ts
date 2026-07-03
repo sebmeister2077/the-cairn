@@ -65,6 +65,37 @@ export function formatGears(n: number): string {
     return `${Math.round(n).toLocaleString()}⚙`;
 }
 
+/** Linear-interpolated percentile over an already-sorted ascending array. */
+export function percentileSorted(sorted: number[], p: number): number {
+    if (sorted.length === 0) return 0;
+    const idx = (sorted.length - 1) * p;
+    const lo = Math.floor(idx);
+    const hi = Math.ceil(idx);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+/**
+ * Convert an in-game "hours to sell" figure into real-world elapsed time.
+ * Vintage Story runs at 1 in-game hour ≈ 2 real minutes, so real minutes =
+ * gameHours * 2. The result is formatted into the largest sensible unit.
+ */
+export function formatRealTimeToSell(gameHours: number): string {
+    const realMinutes = gameHours * 2;
+    if (realMinutes < 1) return "<1 min";
+    if (realMinutes < 60) return `${Math.round(realMinutes)} min`;
+    const realHours = realMinutes / 60;
+    if (realHours < 24) {
+        const h = Math.floor(realHours);
+        const m = Math.round(realMinutes - h * 60);
+        return m ? `${h} h ${m} min` : `${h} h`;
+    }
+    const days = realHours / 24;
+    const d = Math.floor(days);
+    const h = Math.round(realHours - d * 24);
+    return h ? `${d} d ${h} h` : `${d} d`;
+}
+
 // --------------------------------------------------------------------------- //
 // Market reference clocks
 // --------------------------------------------------------------------------- //

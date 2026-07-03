@@ -78,6 +78,7 @@ export const en = {
                 waypointMacro: "Waypoint Macros",
                 marketOverview: "Overview",
                 marketListings: "Listings",
+                marketInsights: "Insights",
                 marketLeaderboards: "Leaderboards",
                 marketMap: "Trade Map",
             },

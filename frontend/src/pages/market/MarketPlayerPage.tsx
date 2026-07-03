@@ -1,9 +1,10 @@
 import { useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
-import { useAuctionListings, useCurrentGameHours, formatGears } from "@/lib/auction";
+import { useAuctionListings, useCurrentGameHours, formatGears, formatRealTimeToSell } from "@/lib/auction";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -21,6 +22,8 @@ export function MarketPlayerPage() {
   const { uid } = useParams<{ uid: string }>();
   const { data, isLoading } = useAuctionListings();
   const currentGameHours = useCurrentGameHours();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
@@ -96,6 +99,12 @@ export function MarketPlayerPage() {
     [asSeller],
   );
 
+  // Purchases (this player as buyer), newest first.
+  const sortedBuyerListings = useMemo(
+    () => [...asBuyer].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
+    [asBuyer],
+  );
+
   const columns = useMemo<ListingColumn[]>(
     () => [
       {
@@ -136,6 +145,99 @@ export function MarketPlayerPage() {
         ),
       },
       {
+        key: "buyer",
+        header: "Buyer",
+        width: "minmax(6rem,1fr)",
+        cell: (l) =>
+          l.sold && l.buyerUid ? (
+            <Link
+              to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
+              className="text-xs hover:underline"
+            >
+              {l.buyerName ?? "—"}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">{l.sold ? (l.buyerName ?? "—") : "—"}</span>
+          ),
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: "5rem",
+        cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
+      },
+    ],
+    [currentGameHours],
+  );
+
+  // Purchase table: this player is the buyer, so surface who they bought *from*.
+  const buyerColumns = useMemo<ListingColumn[]>(
+    () => [
+      {
+        key: "item",
+        header: "Item",
+        width: "minmax(8rem,1fr)",
+        cell: (l) => (
+          <Link to={`/market/items/${l.itemId}`} className="hover:underline">
+            {l.name}
+          </Link>
+        ),
+      },
+      {
+        key: "price",
+        header: "Price",
+        width: "6rem",
+        align: "right",
+        cell: (l) => l.price.toLocaleString(),
+      },
+      {
+        key: "qty",
+        header: "Qty",
+        width: "3.5rem",
+        align: "right",
+        cell: (l) => l.qty,
+      },
+      {
+        key: "date",
+        header: "Game date",
+        width: "6.5rem",
+        cell: (l) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
+          >
+            {formatGameDate(l.postedTotalHours)}
+          </span>
+        ),
+      },
+      {
+        key: "seller",
+        header: "From",
+        width: "minmax(6rem,1fr)",
+        cell: (l) =>
+          l.sellerUid ? (
+            <Link
+              to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
+              className="text-xs hover:underline"
+            >
+              {l.sellerName ?? "—"}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">{l.sellerName ?? "—"}</span>
+          ),
+      },
+      {
+        key: "soldIn",
+        header: "Sold in",
+        width: "minmax(5.5rem,0.9fr)",
+        align: "right",
+        cell: (l) => (
+          <span className="text-xs text-muted-foreground" title="Real-world time from posting to sale">
+            {l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
+          </span>
+        ),
+      },
+      {
         key: "status",
         header: "Status",
         width: "5rem",
@@ -166,12 +268,23 @@ export function MarketPlayerPage() {
   const soldCount = asSeller.filter((l) => l.sold).length;
   const sellThrough = asSeller.length ? soldCount / asSeller.length : 0;
 
+  const onBack = () => {
+    // Return to wherever the user came from; fall back to the leaderboards on a
+    // fresh load with no in-app history to pop.
+    if (location.key !== "default") navigate(-1);
+    else navigate("/market/leaderboards");
+  };
+
   return (
     <div className="space-y-5">
       <div>
-        <Link to="/market/leaderboards" className="text-sm text-primary hover:underline">
-          ← Leaderboards
-        </Link>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
+        </button>
         <h1 className="text-2xl font-semibold">{name}</h1>
       </div>
 
@@ -249,6 +362,17 @@ export function MarketPlayerPage() {
       <div>
         <h2 className="font-semibold mb-2">Listings ({asSeller.length})</h2>
         <VirtualListingsTable listings={sortedSellerListings} columns={columns} />
+      </div>
+
+      <div>
+        <h2 className="font-semibold mb-2">Purchases ({asBuyer.length})</h2>
+        {asBuyer.length === 0 ? (
+          <p className="rounded-md border px-3 py-6 text-center text-sm text-muted-foreground">
+            No recorded purchases.
+          </p>
+        ) : (
+          <VirtualListingsTable listings={sortedBuyerListings} columns={buyerColumns} />
+        )}
       </div>
     </div>
   );

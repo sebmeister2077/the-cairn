@@ -159,3 +159,103 @@ export interface ItemCatalogEntry {
 }
 
 export type ItemCatalog = Record<string, ItemCatalogEntry>;
+
+// --------------------------------------------------------------------------- //
+// Market Insights (computed client-side by `useMarketInsights`)
+// --------------------------------------------------------------------------- //
+
+export type VolatilityTier = "stable" | "moderate" | "volatile";
+export type DemandTier = "hot" | "high" | "normal" | "low";
+export type LiquidityTier = "high" | "medium" | "low";
+export type ConfidenceTier = "high" | "medium" | "low";
+export type RecencyTier = "active" | "cooling" | "stale";
+export type ConcentrationTier = "competitive" | "moderate" | "concentrated" | "monopoly";
+
+/** All per-item indicators for the Market Insights screener, within a window. */
+export interface InsightsRow {
+    itemId: number;
+    name: string;
+    category: string;
+
+    // --- Volume ---
+    /** Sum of sale price over sold listings in the window (price volume). */
+    gearsTraded: number;
+    /** Sum of quantity over sold listings in the window (unit volume). */
+    unitsSold: number;
+    soldCount: number;
+    /** All non-spam listings for the item observed in the window. */
+    listings: number;
+    /** Current listings still on the board (snapshot, window-independent). */
+    activeListings: number;
+
+    // --- Price ---
+    priceStats: PriceStats | null;
+    medianPricePerUnit: number | null;
+
+    // --- Volatility ---
+    /** Robust coefficient of variation: (p75 − p25) / median. */
+    dispersionCV: number | null;
+    volatilityTier: VolatilityTier | null;
+    /** Recent-vs-older per-unit price movement. */
+    trend: PriceTrend | null;
+
+    // --- Liquidity / demand ---
+    sellThrough: number | null;
+    /** Median in-game hours from posting to sale. */
+    medianTimeToSellHours: number | null;
+    /** Sold listings per real day across the window. */
+    salesVelocity: number;
+    /** 0–100 composite of volume + speed + sell-through. */
+    demandScore: number | null;
+    demandTier: DemandTier | null;
+    /** Demand outpaces the supply currently on the board. */
+    shortage: boolean;
+    /** 0–100 composite of sell-through + speed + listing frequency. */
+    liquidityScore: number | null;
+    liquidityTier: LiquidityTier | null;
+
+    // --- Deals / arbitrage ---
+    /** (median − p10) / median: how far cheap listings undercut the median. */
+    dealScore: number | null;
+    /** Count of active listings priced below the p25 fair-price band. */
+    dealsAvailable: number;
+
+    // --- Confidence ---
+    confidence: ConfidenceTier;
+
+    // --- Recency ---
+    /** In-game total hours of the most recent sale (for in-game date display). */
+    lastSaleGameHours: number | null;
+    /** Real-world days since the most recent sale (anchored to latest sweep). */
+    daysSinceLastSale: number | null;
+    recencyTier: RecencyTier | null;
+
+    // --- Seller concentration ---
+    /** Herfindahl–Hirschman index over seller listing shares (0–1). */
+    hhi: number | null;
+    concentrationTier: ConcentrationTier | null;
+    sellerCount: number;
+
+    // --- Delivery ---
+    /** Median delivered vs non-delivered per-unit price premium, in %. */
+    deliveryPremiumPct: number | null;
+}
+
+export interface InsightsTotals {
+    gearsTraded: number;
+    unitsSold: number;
+    soldCount: number;
+    activeListings: number;
+    sellThrough: number | null;
+    uniqueItemsTraded: number;
+    medianTimeToSellHours: number | null;
+}
+
+export interface MarketInsights {
+    /** Chosen window in real days, or `null` for all-time. */
+    windowDays: number | null;
+    /** In-game "now" (total hours) the window is measured back from. */
+    anchorGameHours: number;
+    rows: InsightsRow[];
+    totals: InsightsTotals;
+}

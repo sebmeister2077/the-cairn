@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { ExternalLink, Info } from "lucide-react";
+import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
+import { ExternalLink, Info, ArrowLeft } from "lucide-react";
 import {
   ComposedChart,
   Bar,
   Line,
+  BarChart,
   XAxis,
   YAxis,
   Tooltip as ChartTooltip,
@@ -13,6 +14,8 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -22,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatCard } from "@/components/usage/StatCard";
-import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
+import { useAuctionListings, formatGears, formatRealTimeToSell, percentileSorted } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import {
   VirtualListingsTable,
@@ -30,35 +33,13 @@ import {
   formatGameDate,
   type ListingColumn,
 } from "./VirtualListingsTable";
-
-/** Convert an in-game "hours to sell" figure into real-world elapsed time.
- * Vintage Story runs at 1 in-game hour ≈ 2 real minutes, so real minutes =
- * gameHours * 2. The result is formatted into the largest sensible unit. */
-function formatRealTimeToSell(gameHours: number) {
-  const realMinutes = gameHours * 2;
-  if (realMinutes < 1) return "<1 min";
-  if (realMinutes < 60) return `${Math.round(realMinutes)} min`;
-  const realHours = realMinutes / 60;
-  if (realHours < 24) {
-    const h = Math.floor(realHours);
-    const m = Math.round(realMinutes - h * 60);
-    return m ? `${h} h ${m} min` : `${h} h`;
-  }
-  const days = realHours / 24;
-  const d = Math.floor(days);
-  const h = Math.round(realHours - d * 24);
-  return h ? `${d} d ${h} h` : `${d} d`;
-}
-
-/** Linear-interpolated percentile over an already-sorted ascending array. */
-function percentileSorted(sorted: number[], p: number) {
-  if (sorted.length === 0) return 0;
-  const idx = (sorted.length - 1) * p;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
+import {
+  INSIGHTS_WINDOWS,
+  computeMarketInsights,
+  filterListingsByWindow,
+  saleGameHours,
+} from "./useMarketInsights";
+import { useMarketWindow } from "./useMarketWindow";
 
 /** Build a price histogram plus a fitted log-normal density curve. */
 function buildHistogram(prices: number[], bins = 24) {
@@ -192,23 +173,49 @@ export function MarketItemPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const id = Number(itemId);
   const listingsQ = useAuctionListings();
-  const summaryQ = useAuctionSummary();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Shared market time-range window (kept in sync with the Insights page).
+  const [windowKey, setWindowKey] = useMarketWindow();
+  const windowDays = useMemo(
+    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
+    [windowKey],
+  );
 
   // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
   const [bins, setBins] = useState(24);
+  // Show only sold listings in the Recent listings table.
+  const [soldOnly, setSoldOnly] = useState(false);
+  // Volume-over-time series unit: total gears vs total units.
+  const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
 
   const itemListings = useMemo(
     () => (listingsQ.data ?? []).filter((l) => l.itemId === id),
     [listingsQ.data, id],
   );
-  const stat = useMemo(
-    () => summaryQ.data?.itemStats.find((s) => s.itemId === id),
-    [summaryQ.data, id],
+
+  // Listings restricted to the selected window (by in-game posting time).
+  const windowListings = useMemo(
+    () => filterListingsByWindow(itemListings, windowDays),
+    [itemListings, windowDays],
   );
 
+  // Reuse the Insights engine for this single item so every windowed stat
+  // (trend, fair price, sell-through, time to sell…) matches the screener page
+  // exactly. All of this item's listings share one itemId, so there's a single
+  // row. Composite demand/liquidity scores aren't meaningful for one item and
+  // aren't shown here.
+  const insight = useMemo(
+    () => (itemListings.length ? computeMarketInsights(itemListings, windowDays).rows[0] ?? null : null),
+    [itemListings, windowDays],
+  );
+
+  const trend = insight?.trend ?? null;
+
   const soldPpu = useMemo(
-    () => itemListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
-    [itemListings],
+    () => windowListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
+    [windowListings],
   );
 
   // Some items are only ever sold as full stacks, so the per-unit median can
@@ -218,26 +225,25 @@ export function MarketItemPage() {
   // the histogram shows a real spread instead of everything collapsing onto
   // 0 / 1 per-unit buckets.
   const soldStackPrices = useMemo(
-    () => itemListings.filter((l) => l.sold).map((l) => l.price),
-    [itemListings],
+    () => windowListings.filter((l) => l.sold).map((l) => l.price),
+    [windowListings],
   );
 
   // Typical stack size of sold listings, used to present the (per-unit) price
   // trend in whole-stack terms when the page is stack-priced.
   const medianStackSize = useMemo(() => {
-    const sizes = itemListings
+    const sizes = windowListings
       .filter((l) => l.sold)
       .map((l) => l.qty)
       .sort((a, b) => a - b);
     return sizes.length ? sizes[Math.floor(sizes.length / 2)] : 1;
-  }, [itemListings]);
+  }, [windowListings]);
 
-  // `priceStats.median` is the per-unit median computed server-side. When it
-  // drops below 2 gears per unit the per-unit view rounds poorly, so we fall
-  // back to whole-stack prices — but only when we actually know the item's
-  // stack size (a stack of more than one), since otherwise there's nothing to
-  // convert to.
-  const perUnitUseful = (stat?.priceStats?.median ?? 0) >= 2 || medianStackSize <= 1;
+  // `priceStats.median` is the per-unit median (windowed). When it drops below 2
+  // gears per unit the per-unit view rounds poorly, so we fall back to whole-
+  // stack prices — but only when we actually know the item's stack size (a stack
+  // of more than one), since otherwise there's nothing to convert to.
+  const perUnitUseful = (insight?.priceStats?.median ?? 0) >= 2 || medianStackSize <= 1;
   const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
   const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
 
@@ -250,11 +256,44 @@ export function MarketItemPage() {
     return percentileSorted(prices, 0.5);
   }, [soldStackPrices]);
 
-  // Newest first by in-game posting time (matches the Game date column).
-  const sortedListings = useMemo(
-    () => [...itemListings].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
-    [itemListings],
-  );
+  // Volume of sold listings over time, bucketed by in-game sale time across the
+  // selected window. Shows either total gears traded or total units sold.
+  const volumeSeries = useMemo(() => {
+    const sold = windowListings
+      .filter((l) => l.sold && saleGameHours(l) != null)
+      .map((l) => ({ t: saleGameHours(l)!, price: l.price, qty: l.qty }));
+    if (sold.length === 0) return [];
+    let minT = Infinity;
+    let maxT = -Infinity;
+    for (const s of sold) {
+      if (s.t < minT) minT = s.t;
+      if (s.t > maxT) maxT = s.t;
+    }
+    const BUCKETS = 16;
+    const span = maxT - minT || 1;
+    const width = span / BUCKETS;
+    const bars = Array.from({ length: BUCKETS }, (_, i) => ({
+      t: minT + (i + 0.5) * width,
+      label: formatGameDate(minT + (i + 0.5) * width),
+      gears: 0,
+      units: 0,
+    }));
+    for (const s of sold) {
+      let idx = Math.floor((s.t - minT) / width);
+      if (idx < 0) idx = 0;
+      if (idx >= BUCKETS) idx = BUCKETS - 1;
+      bars[idx].gears += s.price;
+      bars[idx].units += s.qty;
+    }
+    return bars;
+  }, [windowListings]);
+
+  // Newest first by in-game posting time (matches the Game date column),
+  // restricted to the window and optionally to sold listings only.
+  const sortedListings = useMemo(() => {
+    const base = soldOnly ? windowListings.filter((l) => l.sold) : windowListings;
+    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
+  }, [windowListings, soldOnly]);
 
   const columns = useMemo<ListingColumn[]>(
     () => [
@@ -302,6 +341,33 @@ export function MarketItemPage() {
           ),
       },
       {
+        key: "buyer",
+        header: "Buyer",
+        width: "minmax(6rem,1fr)",
+        cell: (l) =>
+          l.sold && l.buyerUid ? (
+            <Link
+              to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
+              className="text-xs hover:underline"
+            >
+              {l.buyerName ?? "—"}
+            </Link>
+          ) : (
+            <span className="text-xs text-muted-foreground">{l.sold ? (l.buyerName ?? "—") : "—"}</span>
+          ),
+      },
+      {
+        key: "timeToSell",
+        header: "Sold in",
+        width: "minmax(5.5rem,0.9fr)",
+        align: "right",
+        cell: (l) => (
+          <span className="text-xs text-muted-foreground" title="Real-world time from posting to sale">
+            {l.sold && l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
+          </span>
+        ),
+      },
+      {
         key: "status",
         header: "Status",
         width: "5rem",
@@ -327,7 +393,7 @@ export function MarketItemPage() {
     [],
   );
 
-  if (listingsQ.isLoading || summaryQ.isLoading) {
+  if (listingsQ.isLoading) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground py-12 justify-center">
         <Spinner /> Loading…
@@ -345,23 +411,34 @@ export function MarketItemPage() {
     );
   }
 
-  const ps = stat?.priceStats;
-  // `stat` only exists for items with at least one non-spam listing. Items whose
-  // listings are all spam/expired still have raw listings to show, so fall back
-  // to the first listing for the name/category header.
-  const displayName = stat?.name ?? itemListings[0]?.name ?? `#${id}`;
-  const displayCategory = stat?.category ?? itemListings[0]?.category ?? "unknown";
+  const onBack = () => {
+    // Go back to wherever the user came from; fall back to the listings page on
+    // a fresh load (no in-app history entry to pop).
+    if (location.key !== "default") navigate(-1);
+    else navigate("/market/listings");
+  };
+
+  const ps = insight?.priceStats ?? null;
+  // `insight` is null when the item has no non-spam activity in the window. It
+  // still has raw listings to show, so fall back to the first listing for the
+  // name/category header.
+  const displayName = insight?.name ?? itemListings[0]?.name ?? `#${id}`;
+  const displayCategory = insight?.category ?? itemListings[0]?.category ?? "unknown";
 
   return (
     <div className="space-y-5">
       <div>
-        <Link to="/market/listings" className="text-sm text-primary hover:underline">
-          ← Listings
-        </Link>
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
+        </button>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          {stat?.trend && (
-            <TrendBadge trend={stat.trend} perUnit={perUnitUseful} stackSize={medianStackSize} />
+          {trend && (
+            <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={medianStackSize} />
           )}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
@@ -379,12 +456,32 @@ export function MarketItemPage() {
         </p>
       </div>
 
+      {/* Time-range window (shared with the Insights page) */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm text-muted-foreground">Time range:</span>
+        {INSIGHTS_WINDOWS.map((w) => (
+          <Button
+            key={w.key}
+            size="sm"
+            variant={windowKey === w.key ? "default" : "outline"}
+            onClick={() => setWindowKey(w.key)}
+          >
+            {w.label}
+          </Button>
+        ))}
+        <span className="ml-1 text-xs text-muted-foreground">
+          1 real day ≈ 1 in-game month
+        </span>
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label={perUnitUseful ? "Fair price / unit" : "Fair price / stack"}
           value={
             perUnitUseful
-              ? formatGears(ps!.median)
+              ? ps
+                ? formatGears(ps.median)
+                : "—"
               : medianStackPrice
                 ? formatGears(medianStackPrice)
                 : "—"
@@ -393,14 +490,18 @@ export function MarketItemPage() {
             perUnitUseful ? "Median of sold listings" : "Sold in stacks — median sold stack price"
           }
         />
-        <StatCard label="Units sold" value={stat?.unitsSold ?? 0} />
+        <StatCard label="Units sold" value={insight?.unitsSold ?? 0} />
         <StatCard
           label="Sell-through"
-          value={stat?.sellThrough != null ? `${(stat.sellThrough * 100).toFixed(0)}%` : "—"}
+          value={insight?.sellThrough != null ? `${(insight.sellThrough * 100).toFixed(0)}%` : "—"}
         />
         <StatCard
           label="Median time to sell"
-          value={stat?.medianTimeToSell != null ? formatRealTimeToSell(stat.medianTimeToSell) : "—"}
+          value={
+            insight?.medianTimeToSellHours != null
+              ? formatRealTimeToSell(insight.medianTimeToSellHours)
+              : "—"
+          }
           hint="Real-world time"
         />
       </div>
@@ -532,8 +633,94 @@ export function MarketItemPage() {
         </Card>
       )}
 
+      {/* Volume over time */}
+      <Card>
+        <CardContent className="py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <div>
+              <h2 className="font-semibold">Volume over time</h2>
+              <p className="text-xs text-muted-foreground">
+                {volumeMode === "price" ? "Gears traded" : "Units sold"} per period, over the
+                selected range (by in-game sale date).
+              </p>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant={volumeMode === "price" ? "default" : "outline"}
+                onClick={() => setVolumeMode("price")}
+              >
+                Gears
+              </Button>
+              <Button
+                size="sm"
+                variant={volumeMode === "unit" ? "default" : "outline"}
+                onClick={() => setVolumeMode("unit")}
+              >
+                Units
+              </Button>
+            </div>
+          </div>
+          {volumeSeries.length === 0 ? (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              No sales in this range.
+            </p>
+          ) : (
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={volumeSeries} margin={{ top: 4, right: 8, bottom: 18, left: 4 }}>
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10 }}
+                    interval="preserveStartEnd"
+                    minTickGap={16}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    allowDecimals={false}
+                    width={48}
+                    tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
+                  />
+                  <ChartTooltip
+                    contentStyle={{
+                      fontSize: 12,
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 6,
+                    }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    labelFormatter={(label) => `≈ ${label}`}
+                    formatter={(value) => [
+                      Number(value).toLocaleString(),
+                      volumeMode === "price" ? "Gears traded" : "Units sold",
+                    ]}
+                  />
+                  <Bar
+                    dataKey={volumeMode === "price" ? "gears" : "units"}
+                    fill="#6366f1"
+                    name={volumeMode === "price" ? "Gears traded" : "Units sold"}
+                    radius={[2, 2, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <div>
-        <h2 className="text-lg font-semibold mb-2">Recent listings ({itemListings.length})</h2>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">Recent listings ({sortedListings.length})</h2>
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={soldOnly}
+              onCheckedChange={(v) => setSoldOnly(v === true)}
+            />
+            Sold only
+          </label>
+        </div>
         <VirtualListingsTable listings={sortedListings} columns={columns} />
       </div>
     </div>
