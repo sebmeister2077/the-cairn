@@ -1,19 +1,19 @@
 {
-  "generatedUtc": "2026-07-04T09:41:27.221299+00:00",
+  "generatedUtc": "2026-07-04T10:15:22.948130+00:00",
   "totals": {
-    "totalAuctions": 11706,
-    "activeListings": 846,
-    "soldCount": 2413,
+    "totalAuctions": 11720,
+    "activeListings": 853,
+    "soldCount": 2420,
     "expiredCount": 8447,
-    "gearsTraded": 66441.0,
-    "feesPaid": 6619,
-    "deliveryFeesPaid": 7516.0,
-    "deliveredCount": 2209,
+    "gearsTraded": 66556.0,
+    "feesPaid": 6629,
+    "deliveryFeesPaid": 7527.0,
+    "deliveredCount": 2214,
     "deliveryRate": 0.915,
     "uniqueSellers": 333,
-    "uniqueBuyers": 313,
+    "uniqueBuyers": 314,
     "uniqueItems": 1429,
-    "sellThrough": 0.222,
+    "sellThrough": 0.223,
     "spamFiltered": 5235
   },
   "itemStats": [
@@ -1102,7 +1102,7 @@
       "itemId": 1999,
       "name": "Ore blasting bomb",
       "category": "bomb",
-      "listings": 58,
+      "listings": 59,
       "soldCount": 10,
       "sellThrough": 0.196,
       "medianTimeToSell": 367.24,
@@ -1377,18 +1377,18 @@
       "name": "Cured redmeat",
       "category": "redmeat",
       "listings": 96,
-      "soldCount": 52,
-      "sellThrough": 0.675,
+      "soldCount": 53,
+      "sellThrough": 0.679,
       "medianTimeToSell": 303.87,
-      "unitsSold": 3328,
-      "gearsTraded": 301.0,
+      "unitsSold": 3392,
+      "gearsTraded": 307.0,
       "priceStats": {
-        "count": 52,
+        "count": 53,
         "min": 0.047,
         "p10": 0.05,
         "p25": 0.09,
         "median": 0.09,
-        "p75": 0.1,
+        "p75": 0.09,
         "p90": 0.11,
         "max": 0.125,
         "mean": 0.09
@@ -1399,7 +1399,7 @@
         "recentMedian": 0.094,
         "olderMedian": 0.094,
         "recentCount": 17,
-        "olderCount": 35
+        "olderCount": 36
       }
     },
     {
@@ -1670,6 +1670,36 @@
       "trend": null
     },
     {
+      "itemId": 1119,
+      "name": "Parchment",
+      "category": "paper",
+      "listings": 103,
+      "soldCount": 34,
+      "sellThrough": 0.425,
+      "medianTimeToSell": 196.83,
+      "unitsSold": 222,
+      "gearsTraded": 257.0,
+      "priceStats": {
+        "count": 34,
+        "min": 0.062,
+        "p10": 0.78,
+        "p25": 3.0,
+        "median": 3.0,
+        "p75": 3.0,
+        "p90": 10.0,
+        "max": 10.0,
+        "mean": 3.82
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 3.0,
+        "olderMedian": 3.0,
+        "recentCount": 11,
+        "olderCount": 23
+      }
+    },
+    {
       "itemId": 4020,
       "name": "Rotwalker hood",
       "category": "clothes",
@@ -1737,36 +1767,6 @@
         "mean": 255.0
       },
       "trend": null
-    },
-    {
-      "itemId": 1119,
-      "name": "Parchment",
-      "category": "paper",
-      "listings": 103,
-      "soldCount": 33,
-      "sellThrough": 0.418,
-      "medianTimeToSell": 192.98,
-      "unitsSold": 221,
-      "gearsTraded": 254.0,
-      "priceStats": {
-        "count": 33,
-        "min": 0.062,
-        "p10": 0.78,
-        "p25": 3.0,
-        "median": 3.0,
-        "p75": 3.0,
-        "p90": 10.0,
-        "max": 10.0,
-        "mean": 3.84
-      },
-      "trend": {
-        "direction": "flat",
-        "changePct": 0.0,
-        "recentMedian": 3.0,
-        "olderMedian": 3.0,
-        "recentCount": 11,
-        "olderCount": 22
-      }
     },
     {
       "itemId": 91837208,
@@ -1993,7 +1993,7 @@
       "itemId": 1973,
       "name": "Pelt (Medium)",
       "category": "hide",
-      "listings": 7,
+      "listings": 13,
       "soldCount": 7,
       "sellThrough": 1.0,
       "medianTimeToSell": 784.83,
@@ -2838,6 +2838,29 @@
         "p90": 104.9,
         "max": 111.0,
         "mean": 80.5
+      },
+      "trend": null
+    },
+    {
+      "itemId": 8365,
+      "name": "Aged chalk ashlar blocks",
+      "category": "agedstonebricks",
+      "listings": 19,
+      "soldCount": 4,
+      "sellThrough": 0.211,
+      "medianTimeToSell": 213.3,
+      "unitsSold": 256,
+      "gearsTraded": 160.0,
+      "priceStats": {
+        "count": 4,
+        "min": 0.469,
+        "p10": 0.47,
+        "p25": 0.47,
+        "median": 0.62,
+        "p75": 0.78,
+        "p90": 0.78,
+        "max": 0.781,
+        "mean": 0.62
       },
       "trend": null
     },
@@ -3899,29 +3922,6 @@
         "p90": 100.0,
         "max": 100.0,
         "mean": 100.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 8365,
-      "name": "Aged chalk ashlar blocks",
-      "category": "agedstonebricks",
-      "listings": 19,
-      "soldCount": 2,
-      "sellThrough": 0.118,
-      "medianTimeToSell": 145.18,
-      "unitsSold": 128,
-      "gearsTraded": 100.0,
-      "priceStats": {
-        "count": 2,
-        "min": 0.781,
-        "p10": 0.78,
-        "p25": 0.78,
-        "median": 0.78,
-        "p75": 0.78,
-        "p90": 0.78,
-        "max": 0.781,
-        "mean": 0.78
       },
       "trend": null
     },
@@ -8092,6 +8092,29 @@
       "trend": null
     },
     {
+      "itemId": 9045,
+      "name": "Chalk dry stone",
+      "category": "drystone",
+      "listings": 3,
+      "soldCount": 1,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 213.67,
+      "unitsSold": 64,
+      "gearsTraded": 30.0,
+      "priceStats": {
+        "count": 1,
+        "min": 0.469,
+        "p10": 0.47,
+        "p25": 0.47,
+        "median": 0.47,
+        "p75": 0.47,
+        "p90": 0.47,
+        "max": 0.469,
+        "mean": 0.47
+      },
+      "trend": null
+    },
+    {
       "itemId": 4204,
       "name": "Acrobat bolero",
       "category": "clothes",
@@ -11292,6 +11315,29 @@
         "p90": 15.0,
         "max": 15.0,
         "mean": 15.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 8078,
+      "name": "Chalk rock (Polished)",
+      "category": "rockpolished",
+      "listings": 4,
+      "soldCount": 1,
+      "sellThrough": 0.25,
+      "medianTimeToSell": 324.4,
+      "unitsSold": 64,
+      "gearsTraded": 15.0,
+      "priceStats": {
+        "count": 1,
+        "min": 0.234,
+        "p10": 0.23,
+        "p25": 0.23,
+        "median": 0.23,
+        "p75": 0.23,
+        "p90": 0.23,
+        "max": 0.234,
+        "mean": 0.23
       },
       "trend": null
     },
@@ -15919,6 +15965,29 @@
       "trend": null
     },
     {
+      "itemId": 3388,
+      "name": "Linen sack",
+      "category": "linensack",
+      "listings": 10,
+      "soldCount": 1,
+      "sellThrough": 0.1,
+      "medianTimeToSell": 598.19,
+      "unitsSold": 1,
+      "gearsTraded": 1.0,
+      "priceStats": {
+        "count": 1,
+        "min": 1.0,
+        "p10": 1.0,
+        "p25": 1.0,
+        "median": 1.0,
+        "p75": 1.0,
+        "p90": 1.0,
+        "max": 1.0,
+        "mean": 1.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 826,
       "name": "Spelt grain",
       "category": "grain",
@@ -16325,19 +16394,6 @@
       "name": "Themorning",
       "category": "tapestry",
       "listings": 9,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 3388,
-      "name": "Linen sack",
-      "category": "linensack",
-      "listings": 10,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -19431,7 +19487,7 @@
       "itemId": 11142,
       "name": "Basalt rock",
       "category": "rock",
-      "listings": 4,
+      "listings": 11,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -21742,19 +21798,6 @@
       "trend": null
     },
     {
-      "itemId": 8078,
-      "name": "Chalk rock (Polished)",
-      "category": "rockpolished",
-      "listings": 4,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 11568,
       "name": "Sleek door",
       "category": "door",
@@ -21785,19 +21828,6 @@
       "name": "Chalk cobblestone",
       "category": "cobblestone",
       "listings": 2,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 9045,
-      "name": "Chalk dry stone",
-      "category": "drystone",
-      "listings": 3,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -25828,8 +25858,8 @@
     {
       "uid": "5z6wfGC8cu00vxoWaMwNJucZ",
       "name": "Yoma22k",
-      "revenue": 17545.0,
-      "sold": 431,
+      "revenue": 17559.0,
+      "sold": 432,
       "listed": 5349
     },
     {
@@ -25961,8 +25991,8 @@
     {
       "uid": "QMQjKskhIumg2R2aL7ZdKasP",
       "name": "dirtgrubs",
-      "revenue": 634.0,
-      "sold": 88,
+      "revenue": 640.0,
+      "sold": 89,
       "listed": 152
     },
     {
@@ -26033,7 +26063,7 @@
       "name": "Raistrind",
       "revenue": 328.0,
       "sold": 9,
-      "listed": 16
+      "listed": 30
     },
     {
       "uid": "V8HasWTdaqUtElOR00SP0M+h",
@@ -26424,6 +26454,12 @@
       "bought": 18
     },
     {
+      "uid": "AEY2v11NxtinFXcLjT1cA8zk",
+      "name": "MangoKingOfFruit",
+      "spent": 283.0,
+      "bought": 21
+    },
+    {
       "uid": "ZPG4VeVGHgBp4XD2KWT1RO8Z",
       "name": "Cyrox_1",
       "spent": 281.0,
@@ -26470,12 +26506,6 @@
       "name": "oo7sk8punk",
       "spent": 227.0,
       "bought": 6
-    },
-    {
-      "uid": "JkPAHFwIuPZWZK430/4v9iTA",
-      "name": "Ezralyne",
-      "spent": 218.0,
-      "bought": 2
     }
   ],
   "biggestSales": [
@@ -27039,7 +27069,7 @@
     {
       "x": 512,
       "z": 2048,
-      "count": 62
+      "count": 63
     },
     {
       "x": -6144,
@@ -27239,7 +27269,7 @@
     {
       "x": 1536,
       "z": -4608,
-      "count": 91
+      "count": 92
     },
     {
       "x": 35328,
@@ -27294,7 +27324,7 @@
     {
       "x": -512,
       "z": 1024,
-      "count": 44
+      "count": 45
     },
     {
       "x": -2048,
@@ -29252,6 +29282,11 @@
       "count": 2
     },
     {
+      "x": -512,
+      "z": 67072,
+      "count": 1
+    },
+    {
       "x": -11264,
       "z": -6656,
       "count": 5
@@ -29260,6 +29295,11 @@
       "x": 15360,
       "z": -6144,
       "count": 2
+    },
+    {
+      "x": 3584,
+      "z": 29696,
+      "count": 3
     },
     {
       "x": -22016,
@@ -29276,7 +29316,7 @@
     {
       "x": -512,
       "z": 1024,
-      "count": 278
+      "count": 282
     },
     {
       "x": 512,
@@ -29596,7 +29636,7 @@
     {
       "x": 2560,
       "z": -6656,
-      "count": 2
+      "count": 3
     },
     {
       "x": -18944,
@@ -31041,6 +31081,11 @@
       "listings": 73
     },
     {
+      "x": -19352,
+      "z": 3792,
+      "listings": 70
+    },
+    {
       "x": 7344,
       "z": 87248,
       "listings": 62
@@ -31069,11 +31114,6 @@
       "x": -21288,
       "z": 31840,
       "listings": 58
-    },
-    {
-      "x": -19352,
-      "z": 3792,
-      "listings": 56
     },
     {
       "x": -3016,

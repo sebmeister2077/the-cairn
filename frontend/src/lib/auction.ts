@@ -91,6 +91,68 @@ export function variantBase(variant: string): string {
     return variant.replace(/\d+$/, "").replace(/[-_/]+$/, "") || variant;
 }
 
+/**
+ * Vintage Story host rocks that ore blocks are embedded in. The same ore in a
+ * different stratum is a distinct block id (e.g. `ore-bountiful-hematite-granite`
+ * vs `…-peridotite`) but is functionally the same tradeable item, so we treat
+ * the trailing rock segment as a variant to merge on the item page.
+ */
+const ORE_HOST_ROCKS = new Set([
+    "granite",
+    "andesite",
+    "basalt",
+    "peridotite",
+    "diorite",
+    "gabbro",
+    "gneiss",
+    "sandstone",
+    "limestone",
+    "conglomerate",
+    "chalk",
+    "claystone",
+    "shale",
+    "slate",
+    "chert",
+    "phyllite",
+    "quartzite",
+    "sanidine",
+    "suevite",
+    "marble",
+    "halite",
+    "kimberlite",
+    "obsidian",
+]);
+
+/**
+ * Split an ore item code into its host-rock-agnostic base and the host rock.
+ * e.g. `ore-bountiful-hematite-granite` -> `{ base: "ore-bountiful-hematite",
+ * rock: "granite" }`. Codes without a recognised trailing rock (e.g.
+ * `ore-quartz`, `ore-borax`) return the code unchanged with `rock: null`, so an
+ * ore that exists in one form only never merges with anything else.
+ */
+export function splitOreHostRock(code: string): { base: string; rock: string | null } {
+    const tail = code.includes(":") ? (code.split(":").pop() as string) : code;
+    const parts = tail.split("-");
+    if (parts.length >= 3 && ORE_HOST_ROCKS.has(parts[parts.length - 1])) {
+        const rock = parts.pop() as string;
+        return { base: parts.join("-"), rock };
+    }
+    return { base: tail, rock: null };
+}
+
+/**
+ * Turn a bare item/block code into a readable display name, mirroring the
+ * backend's `humanize_code` (used to label an ore group merged across host
+ * rocks, e.g. `ore-bountiful-hematite` -> "Ore bountiful hematite").
+ */
+export function humanizeItemCode(code: string): string {
+    const tail = code.includes(":") ? (code.split(":").pop() as string) : code;
+    const words = tail.replace(/_/g, "-").split("-").filter(Boolean);
+    if (words.length === 0) return code;
+    const text = words.join(" ");
+    return text.slice(0, 1).toUpperCase() + text.slice(1);
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 export function percentileSorted(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

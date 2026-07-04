@@ -138,7 +138,9 @@ export function MarketListingsPage() {
                 <TableCell className="text-right tabular-nums text-muted-foreground">
                   {l.delivered ? (
                     <span title="Delivery fee the buyer paid for this listing">
-                      {l.deliveryFee > 0 ? `+${Math.round(l.deliveryFee).toLocaleString()}⚙` : "Free"}
+                      {l.deliveryFee > 0
+                        ? `+${Math.round(l.deliveryFee).toLocaleString()}⚙`
+                        : "Free"}
                     </span>
                   ) : (
                     "—"

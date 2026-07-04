@@ -32,6 +32,9 @@ import {
   formatRealTimeToSell,
   percentileSorted,
   variantBase,
+  useItemCatalog,
+  splitOreHostRock,
+  humanizeItemCode,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
@@ -182,6 +185,7 @@ export function MarketItemPage() {
   const { itemId } = useParams<{ itemId: string }>();
   const id = Number(itemId);
   const listingsQ = useAuctionListings();
+  const catalogQ = useItemCatalog();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -199,10 +203,38 @@ export function MarketItemPage() {
   // Volume-over-time series unit: total gears vs total units.
   const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
 
-  const itemListings = useMemo(
-    () => (listingsQ.data ?? []).filter((l) => l.itemId === id),
-    [listingsQ.data, id],
-  );
+  // Ores are a single ore type embedded in different host rocks — a distinct
+  // block id per rock (e.g. "Ore bountiful hematite granite" vs "…peridotite")
+  // but functionally the same tradeable item. On this item page we merge all of
+  // an ore's host-rock variants into one view so the sell prices aggregate. The
+  // grouping is derived from the item catalog's codes (listings carry no code),
+  // and only kicks in when the ore actually has more than one host-rock form.
+  const oreGroup = useMemo(() => {
+    const catalog = catalogQ.data;
+    if (!catalog) return null;
+    const entry = catalog[String(id)];
+    if (!entry || entry.category !== "ore" || !entry.code) return null;
+    const { base } = splitOreHostRock(entry.code);
+    const ids = new Set<number>();
+    const rockByItemId = new Map<number, string | null>();
+    for (const [key, e] of Object.entries(catalog)) {
+      if (e.category !== "ore" || !e.code) continue;
+      const split = splitOreHostRock(e.code);
+      if (split.base !== base) continue;
+      const iid = Number(key);
+      ids.add(iid);
+      rockByItemId.set(iid, split.rock);
+    }
+    if (ids.size <= 1) return null;
+    return { base, name: humanizeItemCode(base), ids, rockByItemId };
+  }, [catalogQ.data, id]);
+  const combineOres = oreGroup != null;
+
+  const itemListings = useMemo(() => {
+    const all = listingsQ.data ?? [];
+    if (combineOres && oreGroup) return all.filter((l) => oreGroup.ids.has(l.itemId));
+    return all.filter((l) => l.itemId === id);
+  }, [listingsQ.data, id, combineOres, oreGroup]);
 
   // Listings restricted to the selected window (by in-game posting time).
   const windowListings = useMemo(
@@ -216,11 +248,18 @@ export function MarketItemPage() {
   // row. Composite demand/liquidity scores aren't meaningful for one item and
   // aren't shown here.
   const insight = useMemo(
-    () =>
-      itemListings.length
-        ? (computeMarketInsights(itemListings, windowDays).rows[0] ?? null)
-        : null,
-    [itemListings, windowDays],
+    () => {
+      if (!itemListings.length) return null;
+      // When merging an ore's host-rock variants, remap every listing onto this
+      // page's itemId (and a shared display name) so the Insights engine treats
+      // them as one item and returns a single combined row.
+      const src =
+        combineOres && oreGroup
+          ? itemListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
+          : itemListings;
+      return computeMarketInsights(src, windowDays).rows[0] ?? null;
+    },
+    [itemListings, windowDays, combineOres, oreGroup, id],
   );
 
   const trend = insight?.trend ?? null;
@@ -350,6 +389,23 @@ export function MarketItemPage() {
             } satisfies ListingColumn,
           ]
         : []),
+      ...(combineOres && oreGroup
+        ? [
+            {
+              key: "hostRock",
+              header: "Host rock",
+              width: "minmax(6rem,1fr)",
+              cell: (l) => (
+                <span
+                  className="text-xs font-medium capitalize"
+                  title="Rock stratum this ore was found in"
+                >
+                  {oreGroup.rockByItemId.get(l.itemId) ?? "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
       {
         key: "date",
         header: "Game date",
@@ -455,7 +511,7 @@ export function MarketItemPage() {
         },
       },
     ],
-    [hasVariants],
+    [hasVariants, combineOres, oreGroup],
   );
 
   if (listingsQ.isLoading) {
@@ -486,8 +542,11 @@ export function MarketItemPage() {
   const ps = insight?.priceStats ?? null;
   // `insight` is null when the item has no non-spam activity in the window. It
   // still has raw listings to show, so fall back to the first listing for the
-  // name/category header.
-  const displayName = insight?.name ?? itemListings[0]?.name ?? `#${id}`;
+  // name/category header. Merged ores use the host-rock-agnostic group name.
+  const displayName =
+    (combineOres && oreGroup ? oreGroup.name : insight?.name) ??
+    itemListings[0]?.name ??
+    `#${id}`;
   const displayCategory = insight?.category ?? itemListings[0]?.category ?? "unknown";
 
   return (
@@ -517,6 +576,15 @@ export function MarketItemPage() {
         <p className="text-sm text-muted-foreground">
           {displayCategory} · #{id}
         </p>
+        {combineOres && oreGroup && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Combined across{" "}
+            {new Set(
+              Array.from(oreGroup.rockByItemId.values()).filter((r): r is string => !!r),
+            ).size}{" "}
+            host rocks — sell prices are aggregated for every stratum this ore is found in.
+          </p>
+        )}
         {variantCodes.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
