@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-04T10:15:22.948130+00:00",
+  "generatedUtc": "2026-07-04T11:46:07.282818+00:00",
   "totals": {
     "totalAuctions": 11720,
     "activeListings": 853,
@@ -1680,24 +1680,17 @@
       "unitsSold": 222,
       "gearsTraded": 257.0,
       "priceStats": {
-        "count": 34,
+        "count": 7,
         "min": 0.062,
-        "p10": 0.78,
-        "p25": 3.0,
-        "median": 3.0,
-        "p75": 3.0,
-        "p90": 10.0,
-        "max": 10.0,
-        "mean": 3.82
+        "p10": 0.38,
+        "p25": 0.67,
+        "median": 0.78,
+        "p75": 0.78,
+        "p90": 0.87,
+        "max": 1.0,
+        "mean": 0.68
       },
-      "trend": {
-        "direction": "flat",
-        "changePct": 0.0,
-        "recentMedian": 3.0,
-        "olderMedian": 3.0,
-        "recentCount": 11,
-        "olderCount": 23
-      }
+      "trend": null
     },
     {
       "itemId": 4020,
@@ -8055,17 +8048,7 @@
       "medianTimeToSell": 432.53,
       "unitsSold": 2,
       "gearsTraded": 30.0,
-      "priceStats": {
-        "count": 2,
-        "min": 15.0,
-        "p10": 15.0,
-        "p25": 15.0,
-        "median": 15.0,
-        "p75": 15.0,
-        "p90": 15.0,
-        "max": 15.0,
-        "mean": 15.0
-      },
+      "priceStats": null,
       "trend": null
     },
     {
@@ -10148,17 +10131,7 @@
       "medianTimeToSell": 574.25,
       "unitsSold": 1,
       "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 1,
-        "min": 20.0,
-        "p10": 20.0,
-        "p25": 20.0,
-        "median": 20.0,
-        "p75": 20.0,
-        "p90": 20.0,
-        "max": 20.0,
-        "mean": 20.0
-      },
+      "priceStats": null,
       "trend": null
     },
     {
@@ -10171,17 +10144,7 @@
       "medianTimeToSell": 142.87,
       "unitsSold": 1,
       "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 1,
-        "min": 20.0,
-        "p10": 20.0,
-        "p25": 20.0,
-        "median": 20.0,
-        "p75": 20.0,
-        "p90": 20.0,
-        "max": 20.0,
-        "mean": 20.0
-      },
+      "priceStats": null,
       "trend": null
     },
     {
@@ -11351,17 +11314,7 @@
       "medianTimeToSell": 57.44,
       "unitsSold": 1,
       "gearsTraded": 15.0,
-      "priceStats": {
-        "count": 1,
-        "min": 15.0,
-        "p10": 15.0,
-        "p25": 15.0,
-        "median": 15.0,
-        "p75": 15.0,
-        "p90": 15.0,
-        "max": 15.0,
-        "mean": 15.0
-      },
+      "priceStats": null,
       "trend": null
     },
     {

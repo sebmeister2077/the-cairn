@@ -10,6 +10,7 @@ import {
   useCurrentGameHours,
   formatGears,
   formatRealTimeToSell,
+  listingHasText,
 } from "@/lib/auction";
 import {
   VirtualListingsTable,
@@ -17,6 +18,7 @@ import {
   formatGameDate,
   ListingStateBadge,
   DeliveryFeeCell,
+  ListingNotesCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
 
@@ -137,6 +139,11 @@ export function MarketPlayerPage() {
     return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
   }, [asBuyer]);
 
+  // Whether this player's sales/purchases include any written parchments/books,
+  // so the "Notes" column only appears when it has something to flag.
+  const sellerHasText = useMemo(() => asSeller.some(listingHasText), [asSeller]);
+  const buyerHasText = useMemo(() => asBuyer.some(listingHasText), [asBuyer]);
+
   const columns = useMemo<ListingColumn[]>(
     () => [
       {
@@ -219,6 +226,16 @@ export function MarketPlayerPage() {
         align: "right",
         cell: (l) => <DeliveryFeeCell listing={l} />,
       },
+      ...(sellerHasText
+        ? [
+            {
+              key: "notes",
+              header: "Notes",
+              width: "minmax(4.5rem,0.8fr)",
+              cell: (l) => <ListingNotesCell listing={l} />,
+            } satisfies ListingColumn,
+          ]
+        : []),
       {
         key: "status",
         header: "Status",
@@ -226,7 +243,7 @@ export function MarketPlayerPage() {
         cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
       },
     ],
-    [currentGameHours],
+    [currentGameHours, sellerHasText],
   );
 
   // Purchase table: this player is the buyer, so surface who they bought *from*.
@@ -310,6 +327,16 @@ export function MarketPlayerPage() {
         align: "right",
         cell: (l) => <DeliveryFeeCell listing={l} />,
       },
+      ...(buyerHasText
+        ? [
+            {
+              key: "notes",
+              header: "Notes",
+              width: "minmax(4.5rem,0.8fr)",
+              cell: (l) => <ListingNotesCell listing={l} />,
+            } satisfies ListingColumn,
+          ]
+        : []),
       {
         key: "status",
         header: "Status",
@@ -317,7 +344,7 @@ export function MarketPlayerPage() {
         cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
       },
     ],
-    [currentGameHours],
+    [currentGameHours, buyerHasText],
   );
 
   if (isLoading) {

@@ -16,8 +16,12 @@ import { useAuctionListings, useCurrentGameHours } from "@/lib/auction";
 import auctionsCsvUrl from "@/assets/Auction/auctions.csv?url";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
-import { formatGameDate, formatListingDate, ListingStateBadge } from "./VirtualListingsTable";
-
+import {
+  formatGameDate,
+  formatListingDate,
+  ListingStateBadge,
+  ListingNotesCell,
+} from "./VirtualListingsTable";
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {
@@ -82,6 +86,7 @@ export function MarketListingsPage() {
               <TableHead>Seller</TableHead>
               <TableHead>Buyer</TableHead>
               <TableHead className="text-right">Delivery</TableHead>
+              <TableHead>Notes</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -146,11 +151,14 @@ export function MarketListingsPage() {
                     "—"
                   )}
                 </TableCell>
+                <TableCell>
+                  <ListingNotesCell listing={l} />
+                </TableCell>
               </TableRow>
             ))}
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
                   No listings match your filters.
                 </TableCell>
               </TableRow>

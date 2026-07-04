@@ -5,7 +5,7 @@
 import { useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus } from "@/lib/auction";
+import { deriveListingStatus, listingHasText } from "@/lib/auction";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -89,6 +89,26 @@ export function DeliveryFeeCell({ listing }: { listing: AuctionListing }) {
     >
       {fee > 0 ? `+${Math.round(fee).toLocaleString()}⚙` : "Free"}
     </span>
+  );
+}
+
+/**
+ * Notes cell for a listing: flags parchments/books that carry written content
+ * (a story, note, or advert). These are priced for their content rather than as
+ * the raw commodity, so they're excluded from fair-price stats but still listed.
+ */
+export function ListingNotesCell({ listing }: { listing: AuctionListing }) {
+  if (!listingHasText(listing)) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="text-xs font-normal"
+      title="This item has written text — excluded from fair-price stats"
+    >
+      Text
+    </Badge>
   );
 }
 

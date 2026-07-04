@@ -153,6 +153,21 @@ export function humanizeItemCode(code: string): string {
     return text.slice(0, 1).toUpperCase() + text.slice(1);
 }
 
+/**
+ * Whether a listing carries written content — a parchment (or book) someone
+ * wrote a story, note, or advert on. Such items are priced for their content,
+ * not as the raw commodity, so they must be excluded from fair-price
+ * aggregation (median / percentiles / trend) even though they're still shown in
+ * the listing tables. Detected from the item stack's `text` / `title` attrs.
+ */
+export function listingHasText(l: { attrs?: Record<string, unknown> | null }): boolean {
+    const a = l.attrs;
+    if (!a) return false;
+    const text = typeof a.text === "string" ? a.text.trim() : "";
+    const title = typeof a.title === "string" ? a.title.trim() : "";
+    return text.length > 0 || title.length > 0;
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 export function percentileSorted(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

@@ -399,6 +399,21 @@ def price_stats(prices: List[float]) -> Dict[str, float]:
     }
 
 
+def _has_written_text(rec: Dict[str, Any]) -> bool:
+    """Whether a listing carries written content — a parchment/book someone wrote
+    a story, note, or advert on (stored in the stack's `text`/`title` attrs).
+    Such items are priced for their content, not as the raw commodity, so they're
+    excluded from fair-price aggregation while still shown in the listing tables.
+    """
+    attrs = rec.get("attrs") or {}
+    text = attrs.get("text")
+    title = attrs.get("title")
+    return bool(
+        (isinstance(text, str) and text.strip())
+        or (isinstance(title, str) and title.strip())
+    )
+
+
 def _sale_time_key(r: Dict[str, Any]) -> str:
     """Best wall-clock timestamp for ordering a sale by recency. ISO-8601
     strings compare correctly lexicographically, so no parsing needed."""
@@ -612,7 +627,11 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     for item_id, recs in by_item.items():
         sold_recs = [r for r in recs if r["sold"]]
         expired = sum(1 for r in recs if r["state"] == "Expired")
-        ppu_sold = [r["pricePerUnit"] for r in sold_recs]
+        # Written parchments/books are priced for their story, not the raw item,
+        # so drop them from the fair-price figures (median / percentiles / trend)
+        # while still counting them toward sold volume below.
+        priced_sold = [r for r in sold_recs if not _has_written_text(r)]
+        ppu_sold = [r["pricePerUnit"] for r in priced_sold]
         tts = [r["timeToSellHours"] for r in sold_recs if r["timeToSellHours"] is not None]
         item_stats.append(
             {
@@ -628,7 +647,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "unitsSold": sum(r["qty"] for r in sold_recs),
                 "gearsTraded": sum(r["price"] for r in sold_recs),
                 "priceStats": price_stats(ppu_sold) if ppu_sold else None,
-                "trend": price_trend(sold_recs),
+                "trend": price_trend(priced_sold),
             }
         )
     item_stats.sort(key=lambda x: x["gearsTraded"], reverse=True)

@@ -35,6 +35,7 @@ import {
   useItemCatalog,
   splitOreHostRock,
   humanizeItemCode,
+  listingHasText,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
@@ -43,6 +44,7 @@ import {
   formatListingDate,
   formatGameDate,
   DeliveryFeeCell,
+  ListingNotesCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
 import {
@@ -247,26 +249,33 @@ export function MarketItemPage() {
   // exactly. All of this item's listings share one itemId, so there's a single
   // row. Composite demand/liquidity scores aren't meaningful for one item and
   // aren't shown here.
-  const insight = useMemo(
-    () => {
-      if (!itemListings.length) return null;
-      // When merging an ore's host-rock variants, remap every listing onto this
-      // page's itemId (and a shared display name) so the Insights engine treats
-      // them as one item and returns a single combined row.
-      const src =
-        combineOres && oreGroup
-          ? itemListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
-          : itemListings;
-      return computeMarketInsights(src, windowDays).rows[0] ?? null;
-    },
-    [itemListings, windowDays, combineOres, oreGroup, id],
-  );
+  const insight = useMemo(() => {
+    if (!itemListings.length) return null;
+    // When merging an ore's host-rock variants, remap every listing onto this
+    // page's itemId (and a shared display name) so the Insights engine treats
+    // them as one item and returns a single combined row.
+    const src =
+      combineOres && oreGroup
+        ? itemListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
+        : itemListings;
+    return computeMarketInsights(src, windowDays).rows[0] ?? null;
+  }, [itemListings, windowDays, combineOres, oreGroup, id]);
 
   const trend = insight?.trend ?? null;
 
-  const soldPpu = useMemo(
-    () => windowListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
+  // Listings whose price should count toward the fair-price figures. Written
+  // parchments/books (a story or advert someone penned) are priced for their
+  // content, not as the raw item, so they're dropped from the price histogram,
+  // per-unit and per-stack medians — but stay in the volume series and the
+  // recent-listings table below.
+  const pricedWindowListings = useMemo(
+    () => windowListings.filter((l) => !listingHasText(l)),
     [windowListings],
+  );
+
+  const soldPpu = useMemo(
+    () => pricedWindowListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
+    [pricedWindowListings],
   );
 
   // Representative full-stack size for the item: the largest stack we've seen
@@ -276,11 +285,11 @@ export function MarketItemPage() {
   // "per stack" price and to scale the (per-unit) trend into whole-stack terms.
   const stackSize = useMemo(() => {
     let max = 1;
-    for (const l of windowListings) {
+    for (const l of pricedWindowListings) {
       if (l.sold && l.qty > max) max = l.qty;
     }
     return max;
-  }, [windowListings]);
+  }, [pricedWindowListings]);
 
   // Some items are only ever sold as full stacks, so the per-unit median can
   // round down to below 1 gear (e.g. 28 gears for a stack of 32). In that case
@@ -291,8 +300,8 @@ export function MarketItemPage() {
   // (per-unit price × stack size), so partial-stack listings (e.g. a half-stack
   // sold for less) don't drag the per-stack figure below its true value.
   const soldStackPrices = useMemo(
-    () => windowListings.filter((l) => l.sold).map((l) => l.pricePerUnit * stackSize),
-    [windowListings, stackSize],
+    () => pricedWindowListings.filter((l) => l.sold).map((l) => l.pricePerUnit * stackSize),
+    [pricedWindowListings, stackSize],
   );
 
   // `priceStats.median` is the per-unit median (windowed). When it drops below 2
@@ -356,6 +365,11 @@ export function MarketItemPage() {
   // specific object is visible even though they aggregate under one item.
   const hasVariants = useMemo(() => itemListings.some((l) => l.variant), [itemListings]);
 
+  // Whether any of this item's listings carry written text (e.g. a parchment
+  // someone wrote a story or advert on). Those are excluded from the fair-price
+  // figures above but still listed here, tagged in a "Notes" column.
+  const hasTextListings = useMemo(() => itemListings.some(listingHasText), [itemListings]);
+
   // Distinct in-game clutter codes (attrs.type) covered by this grouped item, so
   // the item page can spell out exactly which objects it represents.
   const variantCodes = useMemo(
@@ -403,6 +417,16 @@ export function MarketItemPage() {
                   {oreGroup.rockByItemId.get(l.itemId) ?? "—"}
                 </span>
               ),
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(hasTextListings
+        ? [
+            {
+              key: "notes",
+              header: "Notes",
+              width: "minmax(4.5rem,0.8fr)",
+              cell: (l) => <ListingNotesCell listing={l} />,
             } satisfies ListingColumn,
           ]
         : []),
@@ -511,7 +535,7 @@ export function MarketItemPage() {
         },
       },
     ],
-    [hasVariants, combineOres, oreGroup],
+    [hasVariants, combineOres, oreGroup, hasTextListings],
   );
 
   if (listingsQ.isLoading) {
@@ -544,9 +568,7 @@ export function MarketItemPage() {
   // still has raw listings to show, so fall back to the first listing for the
   // name/category header. Merged ores use the host-rock-agnostic group name.
   const displayName =
-    (combineOres && oreGroup ? oreGroup.name : insight?.name) ??
-    itemListings[0]?.name ??
-    `#${id}`;
+    (combineOres && oreGroup ? oreGroup.name : insight?.name) ?? itemListings[0]?.name ?? `#${id}`;
   const displayCategory = insight?.category ?? itemListings[0]?.category ?? "unknown";
 
   return (
@@ -579,9 +601,10 @@ export function MarketItemPage() {
         {combineOres && oreGroup && (
           <p className="mt-1 text-xs text-muted-foreground">
             Combined across{" "}
-            {new Set(
-              Array.from(oreGroup.rockByItemId.values()).filter((r): r is string => !!r),
-            ).size}{" "}
+            {
+              new Set(Array.from(oreGroup.rockByItemId.values()).filter((r): r is string => !!r))
+                .size
+            }{" "}
             host rocks — sell prices are aggregated for every stratum this ore is found in.
           </p>
         )}

@@ -20,6 +20,7 @@ import { useMemo } from "react";
 import {
     deriveListingStatus,
     getCurrentGameHours,
+    listingHasText,
     percentileSorted,
     refreshMarketReferences,
 } from "@/lib/auction";
@@ -236,7 +237,12 @@ export function computeMarketInsights(
     for (const [itemId, recs] of byItem) {
         const sold = recs.filter((r) => r.sold);
         const expired = recs.filter((r) => r.state === "Expired").length;
-        const soldPpu = sold.map((r) => r.pricePerUnit).sort((a, b) => a - b);
+        // Written parchments/books are priced for their story, not as the raw
+        // commodity, so they're excluded from every price-derived figure (fair
+        // price, percentiles, volatility, deals, delivery premium, trend). They
+        // still count toward volume/liquidity metrics below.
+        const pricedSold = sold.filter((r) => !listingHasText(r));
+        const soldPpu = pricedSold.map((r) => r.pricePerUnit).sort((a, b) => a - b);
         const priceStats = soldPpu.length ? fullPriceStats(soldPpu) : null;
         const median = priceStats?.median ?? null;
 
@@ -252,7 +258,7 @@ export function computeMarketInsights(
         // Volatility (dispersion): needs a few sales to be meaningful.
         let dispersionCV: number | null = null;
         let volatilityTier: VolatilityTier | null = null;
-        if (priceStats && sold.length >= 3 && priceStats.median > 0) {
+        if (priceStats && pricedSold.length >= 3 && priceStats.median > 0) {
             dispersionCV = (priceStats.p75 - priceStats.p25) / priceStats.median;
             volatilityTier = volatilityTierFor(dispersionCV);
         }
@@ -265,7 +271,8 @@ export function computeMarketInsights(
         const active = activeByItem.get(itemId) ?? [];
         const dealsAvailable =
             priceStats != null
-                ? active.filter((a) => a.pricePerUnit < priceStats.p25).length
+                ? active.filter((a) => !listingHasText(a) && a.pricePerUnit < priceStats.p25)
+                    .length
                 : 0;
 
         // Seller concentration.
@@ -287,11 +294,11 @@ export function computeMarketInsights(
             hhi != null ? concentrationTierFor(sellerCount, hhi) : null;
 
         // Delivery premium (needs a sample on both sides).
-        const delivPpu = sold
+        const delivPpu = pricedSold
             .filter((r) => r.delivered)
             .map((r) => r.pricePerUnit)
             .sort((a, b) => a - b);
-        const nonDelivPpu = sold
+        const nonDelivPpu = pricedSold
             .filter((r) => !r.delivered)
             .map((r) => r.pricePerUnit)
             .sort((a, b) => a - b);
@@ -350,7 +357,7 @@ export function computeMarketInsights(
             medianPricePerUnit: median,
             dispersionCV,
             volatilityTier,
-            trend: computeTrend(sold),
+            trend: computeTrend(pricedSold),
             sellThrough,
             medianTimeToSellHours: medianTts,
             salesVelocity,
