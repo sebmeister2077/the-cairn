@@ -114,7 +114,12 @@ export default function App() {
         // 2026-07-04 — v3: the auction `summary.json` totals gained delivery
         // fields (deliveryFeesPaid / deliveredCount / deliveryRate). A stale
         // hydrated summary lacks them and crashed the Overview page.
-        buster: "v3-2026-07-04-auction-delivery",
+        //
+        // 2026-07-04 — v4: the auction `summary.json` totals gained
+        // `depositFeesPaid` (and listings gained `depositFee`). A stale
+        // hydrated summary lacks it and renders "0" deposit fees on the
+        // Overview page.
+        buster: "v4-2026-07-04-auction-deposit",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

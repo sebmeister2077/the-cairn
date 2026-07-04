@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-04T11:46:07.282818+00:00",
+  "generatedUtc": "2026-07-04T12:03:44.463819+00:00",
   "totals": {
     "totalAuctions": 11720,
     "activeListings": 853,
@@ -7,6 +7,7 @@
     "expiredCount": 8447,
     "gearsTraded": 66556.0,
     "feesPaid": 6629,
+    "depositFeesPaid": 15900,
     "deliveryFeesPaid": 7527.0,
     "deliveredCount": 2214,
     "deliveryRate": 0.915,

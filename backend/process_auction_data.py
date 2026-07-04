@@ -84,6 +84,38 @@ def _to_relative(value: Any) -> float:
 
 
 # --------------------------------------------------------------------------- #
+# Deposit fee
+# --------------------------------------------------------------------------- #
+# When a seller lists an auction they pay a non-refundable deposit (separate
+# from the TraderCut sale commission and the delivery fee). It is set by the
+# listing duration in weeks. The raw capture carries the duration as
+# `InitialDurationHours`; one in-game week is 168 hours.
+HOURS_PER_WEEK = 168
+DEPOSIT_FEE_BY_WEEKS = {
+    3: 1,
+    5: 1,
+    6: 2,
+    10: 2,
+    9: 3,
+    15: 3,
+    12: 4,
+    20: 4,
+    25: 5,
+}
+
+
+def deposit_fee_for_hours(initial_duration_hours: Any) -> int:
+    """Deposit (in gears) the seller paid to list the auction, derived from its
+    initial duration. Returns 0 when the duration is missing or doesn't match a
+    known listing-length option."""
+    hours = float(initial_duration_hours or 0)
+    if hours <= 0:
+        return 0
+    weeks = round(hours / HOURS_PER_WEEK)
+    return DEPOSIT_FEE_BY_WEEKS.get(weeks, 0)
+
+
+# --------------------------------------------------------------------------- #
 # RawHex ItemStack decoding
 # --------------------------------------------------------------------------- #
 # Vintage Story TreeAttribute type ids (subset we can decode safely).
@@ -585,6 +617,9 @@ def build_records(
                 "qty": stack_size,
                 "pricePerUnit": round(price / stack_size, 3) if stack_size else price,
                 "traderCut": row.get("TraderCut") or 0,
+                # Non-refundable deposit the seller paid to list this auction,
+                # set by its duration in weeks (independent of sale outcome).
+                "depositFee": deposit_fee_for_hours(row.get("InitialDurationHours")),
                 "state": state,
                 "sold": sold,
                 # Whether we ever captured a *terminal* verdict for this auction.
@@ -725,6 +760,9 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "expiredCount": sum(1 for r in clean if r["state"] == "Expired"),
         "gearsTraded": round(total_gears, 2),
         "feesPaid": round(sum(r["traderCut"] or 0 for r in sold), 2),
+        # Deposit is paid up-front to list, regardless of whether the auction
+        # sells or expires, so sum it across every (non-spam) listing.
+        "depositFeesPaid": round(sum(r.get("depositFee") or 0 for r in clean), 2),
         # Delivery: total fees buyers paid for delivered sales, how many sales
         # used delivery, and that share of all sales.
         "deliveryFeesPaid": round(delivery_fees_paid, 2),

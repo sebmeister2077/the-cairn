@@ -21,6 +21,9 @@ export interface AuctionListing {
     qty: number;
     pricePerUnit: number;
     traderCut: number;
+    /** Non-refundable deposit (in gears) the seller paid to list the auction,
+     *  set by its duration in weeks. 0 when the duration is unknown. */
+    depositFee: number;
     state: "Active" | "Sold" | "SoldRetrieved" | "Expired";
     sold: boolean;
     /**
@@ -143,6 +146,8 @@ export interface MarketTotals {
     expiredCount: number;
     gearsTraded: number;
     feesPaid: number;
+    /** Total listing deposits sellers paid across all listings. */
+    depositFeesPaid: number;
     /** Total delivery fees buyers paid across all delivered sales. */
     deliveryFeesPaid: number;
     /** Number of sold listings that were delivered. */
