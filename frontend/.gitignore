@@ -25,4 +25,6 @@ dist-ssr
 
 # Auction data files
 public/auction/
+src/assets/Auction/auction-events.jsonl
+src/assets/Auction/auctions.csv
 
