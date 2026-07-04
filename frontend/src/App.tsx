@@ -119,7 +119,12 @@ export default function App() {
         // `depositFeesPaid` (and listings gained `depositFee`). A stale
         // hydrated summary lacks it and renders "0" deposit fees on the
         // Overview page.
-        buster: "v4-2026-07-04-auction-deposit",
+        //
+        // 2026-07-04 — v5: the auction `summary.json` gained `timeSeries`
+        // (+ `timeSeriesBucketHours`) for the Overview market-trends chart.
+        // A stale hydrated summary lacks it, so the chart shows "Not enough
+        // dated auctions to chart market trends."
+        buster: "v5-2026-07-04-auction-timeseries",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

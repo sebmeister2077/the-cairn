@@ -659,6 +659,88 @@ def build_records(
     return records, items_catalog
 
 
+# In-game calendar: 24 hours per day, 30 days per month. The auction time
+# series is bucketed by the month (since world start) in which each auction was
+# posted, giving ~100 points across this world's history — a clean "market
+# activity over time" curve. Each auction (and its eventual outcome) is
+# attributed to its posting month.
+GAME_HOURS_PER_DAY = 24
+GAME_DAYS_PER_MONTH = 30
+TIME_SERIES_BUCKET_HOURS = GAME_HOURS_PER_DAY * GAME_DAYS_PER_MONTH  # 720
+
+
+def build_time_series(clean: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Aggregate (non-spam) auctions into monthly in-game buckets keyed by
+    posting time, so the frontend can chart how market activity evolved.
+
+    Buckets are keyed by ``monthIndex = floor(postedTotalHours / 720)``.
+    Every metric is attributed to the auction's posting month, including its
+    sale outcome, so per-bucket cumulative sums line up with the market totals.
+    Auctions without a known posting time are skipped.
+    """
+    buckets: Dict[int, Dict[str, Any]] = {}
+    sellers_by_bucket: Dict[int, set] = defaultdict(set)
+    buyers_by_bucket: Dict[int, set] = defaultdict(set)
+    items_by_bucket: Dict[int, set] = defaultdict(set)
+
+    for r in clean:
+        posted = r.get("postedTotalHours")
+        if not posted or posted <= 0:
+            continue
+        month = int(posted // TIME_SERIES_BUCKET_HOURS)
+        b = buckets.get(month)
+        if b is None:
+            b = buckets[month] = {
+                "monthIndex": month,
+                "gameHours": month * TIME_SERIES_BUCKET_HOURS,
+                "posted": 0,
+                "sold": 0,
+                "expired": 0,
+                "unitsSold": 0,
+                "gearsTraded": 0.0,
+                "feesPaid": 0.0,
+                "depositFeesPaid": 0.0,
+                "deliveryFeesPaid": 0.0,
+                "deliveredCount": 0,
+            }
+        b["posted"] += 1
+        b["depositFeesPaid"] += r.get("depositFee") or 0
+        items_by_bucket[month].add(r["itemId"])
+        if r.get("sellerUid"):
+            sellers_by_bucket[month].add(r["sellerUid"])
+        if r["state"] == "Expired":
+            b["expired"] += 1
+        if r["sold"]:
+            b["sold"] += 1
+            b["unitsSold"] += r["qty"]
+            b["gearsTraded"] += r["price"]
+            b["feesPaid"] += r["traderCut"] or 0
+            if r.get("buyerUid"):
+                buyers_by_bucket[month].add(r["buyerUid"])
+            if r["delivered"]:
+                b["deliveredCount"] += 1
+                b["deliveryFeesPaid"] += r.get("deliveryFee") or 0
+
+    series = []
+    for month in sorted(buckets):
+        b = buckets[month]
+        resolved = b["sold"] + b["expired"]
+        series.append(
+            {
+                **b,
+                "gearsTraded": round(b["gearsTraded"], 2),
+                "feesPaid": round(b["feesPaid"], 2),
+                "depositFeesPaid": round(b["depositFeesPaid"], 2),
+                "deliveryFeesPaid": round(b["deliveryFeesPaid"], 2),
+                "sellThrough": round(b["sold"] / resolved, 3) if resolved else None,
+                "uniqueSellers": len(sellers_by_bucket[month]),
+                "uniqueBuyers": len(buyers_by_bucket[month]),
+                "uniqueItems": len(items_by_bucket[month]),
+            }
+        )
+    return series
+
+
 def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     clean = [r for r in records if not r["spam"]]
     sold = [r for r in clean if r["sold"]]
@@ -789,9 +871,14 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "spamFiltered": sum(1 for r in records if r["spam"]),
     }
 
+    # --- Time series (bucketed by in-game posting month) ------------------ #
+    time_series = build_time_series(clean)
+
     return {
         "generatedUtc": datetime.now(timezone.utc).isoformat(),
         "totals": totals,
+        "timeSeries": time_series,
+        "timeSeriesBucketHours": TIME_SERIES_BUCKET_HOURS,
         "itemStats": item_stats,
         "topSellers": top_sellers,
         "topBuyers": top_buyers,

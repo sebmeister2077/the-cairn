@@ -161,10 +161,43 @@ export interface MarketTotals {
     spamFiltered: number;
 }
 
+/**
+ * Market activity for one in-game month bucket (keyed by posting time).
+ * Every metric attributes an auction to the month it was posted in, including
+ * its eventual sale outcome, so cumulative sums align with the market totals.
+ */
+export interface MarketTimePoint {
+    /** Months since world start (bucket key). */
+    monthIndex: number;
+    /** In-game total hours at the start of the bucket (for date formatting). */
+    gameHours: number;
+    /** Auctions posted in this month. */
+    posted: number;
+    /** Of those, how many sold. */
+    sold: number;
+    /** Of those, how many expired unsold. */
+    expired: number;
+    unitsSold: number;
+    gearsTraded: number;
+    feesPaid: number;
+    depositFeesPaid: number;
+    deliveryFeesPaid: number;
+    deliveredCount: number;
+    /** Sold / (sold + expired) for auctions posted this month; null if none resolved. */
+    sellThrough: number | null;
+    uniqueSellers: number;
+    uniqueBuyers: number;
+    uniqueItems: number;
+}
+
 export interface AuctionSummary {
     generatedUtc: string;
     totals: MarketTotals;
     itemStats: ItemStat[];
+    /** Market activity bucketed by in-game posting month (oldest first). */
+    timeSeries: MarketTimePoint[];
+    /** In-game hours per time-series bucket (720 = one 30-day month). */
+    timeSeriesBucketHours: number;
     topSellers: SellerLeader[];
     topBuyers: BuyerLeader[];
     biggestSales: BiggestSale[];

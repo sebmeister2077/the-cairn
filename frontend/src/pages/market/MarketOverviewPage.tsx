@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
+import { MarketTrendsChart } from "./MarketTrendsChart";
 
 function FreshnessBanner({ generatedUtc }: { generatedUtc: string }) {
   const when = new Date(generatedUtc);
@@ -60,6 +61,8 @@ export function MarketOverviewPage() {
         <StatCard label="Traders" value={t.uniqueSellers} />
         <StatCard label="Buyers" value={t.uniqueBuyers} />
       </div>
+
+      <MarketTrendsChart series={data.timeSeries ?? []} />
 
       <div className="grid md:grid-cols-3 gap-3">
         <Link to="/market/listings">
