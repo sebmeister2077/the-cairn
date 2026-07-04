@@ -988,7 +988,13 @@ def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     size_kb = path.stat().st_size / 1024
-    print(f"  wrote {path.relative_to(REPO_ROOT)}  ({size_kb:,.1f} KB)")
+    try:
+        shown = path.relative_to(REPO_ROOT)
+    except ValueError:
+        # Output dir may live outside the repo (e.g. the proxy's local scratch
+        # dir when publishing R2-only). Fall back to the absolute path.
+        shown = path
+    print(f"  wrote {shown}  ({size_kb:,.1f} KB)")
 
 
 def _content_version(paths: List[Path]) -> str:
