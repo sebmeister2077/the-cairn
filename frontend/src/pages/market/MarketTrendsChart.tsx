@@ -37,6 +37,13 @@ const METRICS: MetricDef[] = [
     value: (p) => p.gearsTraded,
     gears: true,
   },
+  {
+    key: "gearsRemoved",
+    label: "Gears removed",
+    color: "#dc2626",
+    value: (p) => p.feesPaid + p.depositFeesPaid + p.deliveryFeesPaid,
+    gears: true,
+  },
   { key: "sold", label: "Items sold", color: "#10b981", value: (p) => p.sold },
   { key: "posted", label: "Auctions posted", color: "#3b82f6", value: (p) => p.posted },
   { key: "unitsSold", label: "Units sold", color: "#06b6d4", value: (p) => p.unitsSold },
@@ -65,7 +72,7 @@ const METRICS: MetricDef[] = [
   },
   {
     key: "uniqueSellers",
-    label: "Active traders",
+    label: "Sellers",
     color: "#f97316",
     value: (p) => p.uniqueSellers,
   },
