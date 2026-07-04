@@ -7,6 +7,7 @@ import {
   Tooltip as ChartTooltip,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,7 @@ const METRICS: MetricDef[] = [
     value: (p) => p.uniqueSellers,
   },
   { key: "uniqueBuyers", label: "Active buyers", color: "#6366f1", value: (p) => p.uniqueBuyers },
+  { key: "missing", label: "Missing auctions", color: "#94a3b8", value: (p) => p.missing },
 ];
 
 function compactNumber(v: number): string {
@@ -85,7 +87,13 @@ function compactNumber(v: number): string {
   return String(Math.round(v));
 }
 
-export function MarketTrendsChart({ series }: { series: MarketTimePoint[] }) {
+export function MarketTrendsChart({
+  series,
+  recordingStart,
+}: {
+  series: MarketTimePoint[];
+  recordingStart?: number | null;
+}) {
   const [metricKey, setMetricKey] = useState(METRICS[0].key);
   const [cumulative, setCumulative] = useState(false);
 
@@ -108,6 +116,19 @@ export function MarketTrendsChart({ series }: { series: MarketTimePoint[] }) {
       };
     });
   }, [series, metric, showCumulative]);
+
+  // Snap the real-world "started recording" moment onto the categorical
+  // (monthly) x-axis by picking the bucket whose in-game clock is closest.
+  const recordingLabel = useMemo(() => {
+    if (recordingStart == null || series.length === 0) return null;
+    let best = series[0];
+    for (const p of series) {
+      if (Math.abs(p.gameHours - recordingStart) < Math.abs(best.gameHours - recordingStart)) {
+        best = p;
+      }
+    }
+    return formatGameDate(best.gameHours);
+  }, [recordingStart, series]);
 
   const fmt = (v: number) =>
     metric.pct ? `${(v * 100).toFixed(0)}%` : metric.gears ? formatGears(v) : v.toLocaleString();
@@ -204,6 +225,26 @@ export function MarketTrendsChart({ series }: { series: MarketTimePoint[] }) {
                 dot={false}
                 name={metric.label}
               />
+              {/* Drawn last so it sits on top of the area fill. `currentColor`
+                  (the inherited theme text color) keeps the line and its label
+                  legible in both light and dark mode — CSS `var()` does NOT
+                  resolve inside SVG presentation attributes, which is why a
+                  `hsl(var(--…))` fill rendered black in dark mode. */}
+              {recordingLabel != null && (
+                <ReferenceLine
+                  x={recordingLabel}
+                  stroke="currentColor"
+                  strokeDasharray="5 4"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: "Started recording",
+                    position: "insideTopRight",
+                    fontSize: 10,
+                    fill: "currentColor",
+                  }}
+                />
+              )}
             </AreaChart>
           </ResponsiveContainer>
         </div>

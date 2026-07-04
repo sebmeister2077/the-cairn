@@ -124,7 +124,15 @@ export default function App() {
         // (+ `timeSeriesBucketHours`) for the Overview market-trends chart.
         // A stale hydrated summary lacks it, so the chart shows "Not enough
         // dated auctions to chart market trends."
-        buster: "v5-2026-07-04-auction-timeseries",
+        //
+        // 2026-07-04 — v6: the auction `summary.json` gained
+        // `recordingStartGameHours` for the "Started recording" marker on the
+        // market-trends chart. Stale snapshots simply lack the marker.
+        //
+        // 2026-07-04 — v7: the auction `summary.json` time series gained
+        // `missing` (auctions inferred from sequential-id gaps). Stale
+        // snapshots lack the "Missing auctions" trend line.
+        buster: "v7-2026-07-04-auction-missing",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

@@ -183,6 +183,12 @@ export interface MarketTimePoint {
     depositFeesPaid: number;
     deliveryFeesPaid: number;
     deliveredCount: number;
+    /**
+     * Auctions that existed this month but were never captured — inferred from
+     * gaps in the sequential auction ids (ids strictly increase with posting
+     * time). A measure of how complete the capture was over time.
+     */
+    missing: number;
     /** Sold / (sold + expired) for auctions posted this month; null if none resolved. */
     sellThrough: number | null;
     uniqueSellers: number;
@@ -198,6 +204,12 @@ export interface AuctionSummary {
     timeSeries: MarketTimePoint[];
     /** In-game hours per time-series bucket (720 = one 30-day month). */
     timeSeriesBucketHours: number;
+    /**
+     * In-game total hours at the moment auction capture began (the game clock
+     * during the initial board dump). Drawn as a "Started recording" marker on
+     * the trend chart; null when it can't be estimated.
+     */
+    recordingStartGameHours: number | null;
     topSellers: SellerLeader[];
     topBuyers: BuyerLeader[];
     biggestSales: BiggestSale[];

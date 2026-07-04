@@ -668,8 +668,59 @@ GAME_HOURS_PER_DAY = 24
 GAME_DAYS_PER_MONTH = 30
 TIME_SERIES_BUCKET_HOURS = GAME_HOURS_PER_DAY * GAME_DAYS_PER_MONTH  # 720
 
+# The capture begins with a one-off backlog dump of every auction currently on
+# the board (posted at all sorts of past in-game times), after which only newly
+# posted auctions stream in live. To mark "when recording started" on the
+# in-game timeline we take the newest auction posting time seen during that
+# initial dump window — i.e. the game clock at the moment capture began.
+RECORDING_START_WINDOW_MINUTES = 60
 
-def build_time_series(clean: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+
+def _parse_observed(ts: Optional[str]) -> Optional[datetime]:
+    """Parse an ISO-8601 `observedUtc` timestamp (7-digit fractional seconds
+    with a trailing ``Z``) into an aware datetime, or None when unparseable."""
+    if not ts:
+        return None
+    s = ts.strip().replace("Z", "+00:00")
+    # .NET writes 100-ns precision (7 fractional digits); trim to microseconds
+    # so it round-trips through datetime.fromisoformat on all Python versions.
+    m = re.match(r"^(.*\.\d{6})\d*(\+\d{2}:\d{2})$", s)
+    if m:
+        s = m.group(1) + m.group(2)
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def recording_start_game_hours(clean: List[Dict[str, Any]]) -> Optional[float]:
+    """Estimate the in-game clock (total hours) at the moment capture began.
+
+    The earliest `observedUtc` is when recording started; during the first
+    ``RECORDING_START_WINDOW_MINUTES`` the whole existing auction board was
+    dumped. The newest posting time seen in that window is the game clock then,
+    which the frontend draws as a "Started recording" marker on the trend
+    chart. Returns None if there aren't enough dated observations.
+    """
+    dated = [
+        (obs, r.get("postedTotalHours") or 0)
+        for r in clean
+        if (obs := _parse_observed(r.get("observedUtc"))) is not None
+        and (r.get("postedTotalHours") or 0) > 0
+    ]
+    if not dated:
+        return None
+    t0 = min(obs for obs, _ in dated)
+    cutoff = t0.timestamp() + RECORDING_START_WINDOW_MINUTES * 60
+    in_window = [ph for obs, ph in dated if obs.timestamp() <= cutoff]
+    if not in_window:
+        return None
+    return round(max(in_window), 2)
+
+
+def build_time_series(
+    clean: List[Dict[str, Any]], records: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
     """Aggregate (non-spam) auctions into monthly in-game buckets keyed by
     posting time, so the frontend can chart how market activity evolved.
 
@@ -677,17 +728,21 @@ def build_time_series(clean: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     Every metric is attributed to the auction's posting month, including its
     sale outcome, so per-bucket cumulative sums line up with the market totals.
     Auctions without a known posting time are skipped.
+
+    ``missing`` counts auctions we never captured: auction ids are assigned
+    sequentially and (verified) strictly increase with posting time, so every
+    gap between two consecutive captured ids is a run of auctions that were
+    posted and resolved between our scans. Each gap is attributed to the month
+    of the captured auction that follows it. ``records`` (all captured rows,
+    including spam) is the "present" set for this — spam auctions were still
+    captured, so they are not missing.
     """
     buckets: Dict[int, Dict[str, Any]] = {}
     sellers_by_bucket: Dict[int, set] = defaultdict(set)
     buyers_by_bucket: Dict[int, set] = defaultdict(set)
     items_by_bucket: Dict[int, set] = defaultdict(set)
 
-    for r in clean:
-        posted = r.get("postedTotalHours")
-        if not posted or posted <= 0:
-            continue
-        month = int(posted // TIME_SERIES_BUCKET_HOURS)
+    def ensure_bucket(month: int) -> Dict[str, Any]:
         b = buckets.get(month)
         if b is None:
             b = buckets[month] = {
@@ -702,7 +757,16 @@ def build_time_series(clean: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
                 "depositFeesPaid": 0.0,
                 "deliveryFeesPaid": 0.0,
                 "deliveredCount": 0,
+                "missing": 0,
             }
+        return b
+
+    for r in clean:
+        posted = r.get("postedTotalHours")
+        if not posted or posted <= 0:
+            continue
+        month = int(posted // TIME_SERIES_BUCKET_HOURS)
+        b = ensure_bucket(month)
         b["posted"] += 1
         b["depositFeesPaid"] += r.get("depositFee") or 0
         items_by_bucket[month].add(r["itemId"])
@@ -720,6 +784,22 @@ def build_time_series(clean: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
             if r["delivered"]:
                 b["deliveredCount"] += 1
                 b["deliveryFeesPaid"] += r.get("deliveryFee") or 0
+
+    # Missing auctions from sequential-id gaps, attributed by posting month.
+    present = sorted(
+        (
+            (r["auctionId"], r.get("postedTotalHours") or 0)
+            for r in records
+            if r.get("auctionId") is not None and (r.get("postedTotalHours") or 0) > 0
+        ),
+        key=lambda t: t[0],
+    )
+    prev_id: Optional[int] = None
+    for aid, posted in present:
+        if prev_id is not None and aid > prev_id + 1:
+            month = int(posted // TIME_SERIES_BUCKET_HOURS)
+            ensure_bucket(month)["missing"] += aid - prev_id - 1
+        prev_id = aid
 
     series = []
     for month in sorted(buckets):
@@ -872,13 +952,14 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
     # --- Time series (bucketed by in-game posting month) ------------------ #
-    time_series = build_time_series(clean)
+    time_series = build_time_series(clean, records)
 
     return {
         "generatedUtc": datetime.now(timezone.utc).isoformat(),
         "totals": totals,
         "timeSeries": time_series,
         "timeSeriesBucketHours": TIME_SERIES_BUCKET_HOURS,
+        "recordingStartGameHours": recording_start_game_hours(clean),
         "itemStats": item_stats,
         "topSellers": top_sellers,
         "topBuyers": top_buyers,

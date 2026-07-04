@@ -49,7 +49,9 @@ export function MarketOverviewPage() {
         <StatCard label="Gears traded" value={formatGears(t.gearsTraded)} />
         <StatCard
           label="Gears removed"
-          value={formatGears((t.feesPaid ?? 0) + (t.depositFeesPaid ?? 0) + (t.deliveryFeesPaid ?? 0))}
+          value={formatGears(
+            (t.feesPaid ?? 0) + (t.depositFeesPaid ?? 0) + (t.deliveryFeesPaid ?? 0),
+          )}
         />
         <StatCard label="Items sold" value={t.soldCount} />
         <StatCard label="Sell-through" value={`${(t.sellThrough * 100).toFixed(0)}%`} />
@@ -66,7 +68,10 @@ export function MarketOverviewPage() {
         <StatCard label="Buyers" value={t.uniqueBuyers} />
       </div>
 
-      <MarketTrendsChart series={data.timeSeries ?? []} />
+      <MarketTrendsChart
+        series={data.timeSeries ?? []}
+        recordingStart={data.recordingStartGameHours}
+      />
 
       <div className="grid md:grid-cols-3 gap-3">
         <Link to="/market/listings">
