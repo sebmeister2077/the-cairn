@@ -278,18 +278,23 @@ export function MarketItemPage() {
     [pricedWindowListings],
   );
 
-  // Representative full-stack size for the item: the largest stack we've seen
-  // sold. Listings can be posted in partial stacks (e.g. 16 of a 64-stack item),
-  // so the raw listing price mixes different quantities and can't be compared
-  // directly. We normalize everything to this size to get a comparable
-  // "per stack" price and to scale the (per-unit) trend into whole-stack terms.
+  // Representative full-stack size for the item. We prefer the item's real
+  // in-game maximum stack size (from the game registry, carried on the item
+  // catalog) so the "per stack" figure matches what a full stack actually is.
+  // Listings can be posted in partial stacks (e.g. 16 of a 64-stack item), so we
+  // normalize every listing to this size (per-unit × stackSize) to get a
+  // comparable per-stack price and to scale the trend into whole-stack terms.
+  // When the registry has no stack size for this id (e.g. synthetic clutter/
+  // tapestry groups), we fall back to the largest stack we've actually seen sold.
   const stackSize = useMemo(() => {
+    const known = catalogQ.data?.[String(id)]?.maxStackSize;
+    if (known && known > 0) return known;
     let max = 1;
     for (const l of pricedWindowListings) {
       if (l.sold && l.qty > max) max = l.qty;
     }
     return max;
-  }, [pricedWindowListings]);
+  }, [catalogQ.data, id, pricedWindowListings]);
 
   // Some items are only ever sold as full stacks, so the per-unit median can
   // round down to below 1 gear (e.g. 28 gears for a stack of 32). In that case

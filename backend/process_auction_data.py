@@ -20,7 +20,7 @@ Outputs (written to frontend/public/auction/)
 - listings.json   compact one-row-per-auction records (no RawHex)
 - summary.json    precomputed aggregates (per-item stats, leaderboards, heatmap
                   bins, market totals, time series, generatedUtc)
-- items.json      itemId -> {name, category, code, classType}
+- items.json      itemId -> {name, category, code, classType, maxStackSize}
 
 Key data rules (see plans/auction-house-explorer-plan.md):
 - Dedup to the newest row per AuctionId (raw file has partial duplicates as an
@@ -254,13 +254,17 @@ def load_registry(path: Path) -> Dict[str, Dict[str, str]]:
     """
     if not path.exists():
         print(f"[warn] registry not found at {path} — item names will fall back to ids")
-        return {"Item": {}, "Block": {}, "ItemNames": {}, "BlockNames": {}}
+        return {"Item": {}, "Block": {}, "ItemNames": {}, "BlockNames": {}, "ItemStack": {}, "BlockStack": {}}
     data = json.loads(path.read_text(encoding="utf-8"))
     return {
         "Item": {str(k): v for k, v in (data.get("Items") or {}).items()},
         "Block": {str(k): v for k, v in (data.get("Blocks") or {}).items()},
         "ItemNames": {str(k): v for k, v in (data.get("ItemNames") or {}).items()},
         "BlockNames": {str(k): v for k, v in (data.get("BlockNames") or {}).items()},
+        # Real in-game maximum stack size per id (from Packet_Item/BlockType.MaxStackSize,
+        # sniffed off the join handshake). Absent ids simply have no known stack size.
+        "ItemStack": {str(k): v for k, v in (data.get("ItemStackSizes") or {}).items()},
+        "BlockStack": {str(k): v for k, v in (data.get("BlockStackSizes") or {}).items()},
     }
 
 
@@ -313,12 +317,17 @@ def resolve_item(
         or (humanize_code(code) if code else f"#{item_id}")
     )
     category = mapped.get("category") or (_category_from_code(code) if code else "unknown")
+    # Real in-game max stack size for this id (from the game registry). Keyed by the
+    # original decoded id/class — before any clutter/tapestry variant remap — since the
+    # underlying block/item is what actually defines the stack size.
+    max_stack = registry.get(f"{class_type}Stack", {}).get(key)
     return {
         "itemId": item_id,
         "name": name,
         "code": code,
         "category": category,
         "classType": class_type,
+        "maxStackSize": max_stack,
     }
 
 
@@ -580,6 +589,7 @@ def build_records(
             "category": item["category"],
             "code": item["code"],
             "classType": item["classType"],
+            "maxStackSize": item.get("maxStackSize"),
         }
 
         price = float(row.get("Price") or 0)

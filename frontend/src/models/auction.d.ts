@@ -179,6 +179,12 @@ export interface ItemCatalogEntry {
     category: string;
     code: string | null;
     classType: "Item" | "Block";
+    /**
+     * The item's real in-game maximum stack size (from the game registry,
+     * sniffed off the server join handshake). Null when unknown — e.g. synthetic
+     * clutter/tapestry variant groups that don't map to a single registry id.
+     */
+    maxStackSize?: number | null;
 }
 
 export type ItemCatalog = Record<string, ItemCatalogEntry>;
