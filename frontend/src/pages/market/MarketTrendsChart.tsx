@@ -197,7 +197,9 @@ export function MarketTrendsChart({
               <YAxis
                 tick={{ fontSize: 11 }}
                 width={48}
-                allowDecimals={false}
+                allowDecimals={metric.pct}
+                domain={metric.pct ? [0, 1] : [0, "auto"]}
+                ticks={metric.pct ? [0, 0.25, 0.5, 0.75, 1] : undefined}
                 tickFormatter={(v: number) =>
                   metric.pct ? `${Math.round(v * 100)}%` : compactNumber(v)
                 }
