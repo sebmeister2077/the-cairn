@@ -780,10 +780,10 @@
     "classType": "Block"
   },
   "1832": {
-    "name": "Storagevessel oxblood",
-    "category": "storagevessel",
-    "code": "storagevessel-oxblood",
-    "classType": "Block"
+    "name": "Crystalizedore bountiful sphalerite slate",
+    "category": "crystalizedore",
+    "code": "crystalizedore-bountiful-sphalerite-slate",
+    "classType": "Item"
   },
   "1207": {
     "name": "Small 4-way iron hub",
@@ -870,10 +870,10 @@
     "classType": "Block"
   },
   "1999": {
-    "name": "Brass ingot",
-    "category": "ingot",
-    "code": "ingot-brass",
-    "classType": "Item"
+    "name": "Ore blasting bomb",
+    "category": "bomb",
+    "code": "bomb-ore",
+    "classType": "Block"
   },
   "2544": {
     "name": "Black coal",
@@ -5208,10 +5208,10 @@
     "classType": "Item"
   },
   "3343": {
-    "name": "Lantern small up",
-    "category": "lantern",
-    "code": "lantern-small-up",
-    "classType": "Block"
+    "name": "Deep Noble saddle blanket",
+    "category": "hoovedwearables",
+    "code": "hoovedwearables-blanket-deepnoble",
+    "classType": "Item"
   },
   "3789": {
     "name": "Forlorn Hope greaves (Broken)",
@@ -9993,6 +9993,84 @@
     "name": "Chute Section",
     "category": "chutesection",
     "code": "chutesection-copper",
+    "classType": "Item"
+  },
+  "1544": {
+    "name": "Crystalizedore rich sphalerite chert",
+    "category": "crystalizedore",
+    "code": "crystalizedore-rich-sphalerite-chert",
+    "classType": "Item"
+  },
+  "1770": {
+    "name": "Crystalizedore rich quartz nativesilver peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-rich-quartz_nativesilver-peridotite",
+    "classType": "Item"
+  },
+  "1601": {
+    "name": "Crystalizedore bountiful malachite limestone",
+    "category": "crystalizedore",
+    "code": "crystalizedore-bountiful-malachite-limestone",
+    "classType": "Item"
+  },
+  "1484": {
+    "name": "Crystalizedore medium chromite andesite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-medium-chromite-andesite",
+    "classType": "Item"
+  },
+  "1768": {
+    "name": "Crystalizedore poor quartz nativesilver peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-poor-quartz_nativesilver-peridotite",
+    "classType": "Item"
+  },
+  "1782": {
+    "name": "Crystalizedore bountiful pentlandite peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-bountiful-pentlandite-peridotite",
+    "classType": "Item"
+  },
+  "1540": {
+    "name": "Crystalizedore rich galena chert",
+    "category": "crystalizedore",
+    "code": "crystalizedore-rich-galena-chert",
+    "classType": "Item"
+  },
+  "1758": {
+    "name": "Crystalizedore poor cassiterite peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-poor-cassiterite-peridotite",
+    "classType": "Item"
+  },
+  "1767": {
+    "name": "Crystalizedore medium sphalerite peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-medium-sphalerite-peridotite",
+    "classType": "Item"
+  },
+  "1672": {
+    "name": "Crystalizedore medium galena sandstone",
+    "category": "crystalizedore",
+    "code": "crystalizedore-medium-galena-sandstone",
+    "classType": "Item"
+  },
+  "1769": {
+    "name": "Crystalizedore medium quartz nativesilver peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-medium-quartz_nativesilver-peridotite",
+    "classType": "Item"
+  },
+  "95064740": {
+    "name": "Stove ruined",
+    "category": "clutter",
+    "code": "clutter",
+    "classType": "Block"
+  },
+  "1778": {
+    "name": "Crystalizedore bountiful hematite peridotite",
+    "category": "crystalizedore",
+    "code": "crystalizedore-bountiful-hematite-peridotite",
     "classType": "Item"
   }
 }
