@@ -12,8 +12,8 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
-import { useAuctionListings, useCurrentGameHours } from "@/lib/auction";
-import auctionsCsvUrl from "@/assets/Auction/auctions.csv?url";
+import { useAuctionListings, useAuctionCsvUrl, useCurrentGameHours } from "@/lib/auction";
+import auctionsCsvBundledUrl from "@/assets/Auction/auctions.csv?url";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
 import {
@@ -30,6 +30,10 @@ export function MarketListingsPage() {
   const filters = useAppSelector((s) => s.auctionFilters);
   const rows = useFilteredListings(data, filters);
   const [page, setPage] = useState(0);
+  // Prefer the R2-hosted CSV (published alongside the JSON); fall back to the
+  // committed bundle for local dev where no public bucket origin is configured.
+  const r2CsvUrl = useAuctionCsvUrl();
+  const csvUrl = r2CsvUrl ?? auctionsCsvBundledUrl;
 
   const categories = useMemo(() => {
     if (!data) return [];
@@ -61,7 +65,7 @@ export function MarketListingsPage() {
             {rows.length.toLocaleString()} of {data.length.toLocaleString()} listings
           </p>
           <a
-            href={auctionsCsvUrl}
+            href={csvUrl}
             download="auctions.csv"
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >

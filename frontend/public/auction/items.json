@@ -9562,11 +9562,11 @@
     "maxStackSize": 64
   },
   "1600": {
-    "name": "Clay oven",
-    "category": "clayoven",
-    "code": "clayoven-north",
-    "classType": "Block",
-    "maxStackSize": 1
+    "name": "Crystalizedore rich malachite limestone",
+    "category": "crystalizedore",
+    "code": "crystalizedore-rich-malachite-limestone",
+    "classType": "Item",
+    "maxStackSize": 64
   },
   "2019": {
     "name": "Iron bloom",
@@ -11786,5 +11786,19 @@
     "code": "flower-woad-free",
     "classType": "Block",
     "maxStackSize": 64
+  },
+  "4292": {
+    "name": "Nomad mantle",
+    "category": "clothes",
+    "code": "clothes-upperbodyover-nomad-mantle",
+    "classType": "Item",
+    "maxStackSize": 1
+  },
+  "4256": {
+    "name": "Scarlet ornate linen tunic",
+    "category": "clothes",
+    "code": "clothes-upperbody-scarlet-ornate-linen-tunic",
+    "classType": "Item",
+    "maxStackSize": 1
   }
 }

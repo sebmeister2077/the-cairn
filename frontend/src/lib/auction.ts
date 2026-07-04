@@ -1,9 +1,16 @@
 // Data access for the Auction House explorer.
 //
 // The market data is produced offline by `backend/process_auction_data.py`
-// and published as static JSON under `public/auction/`. We fetch it at
-// runtime (kept out of the JS bundle) and cache it via TanStack Query.
-// Swapping to an R2/CDN origin later is a one-line change to `AUCTION_BASE`.
+// and published to the public R2 bucket (`… --publish-r2`) as static JSON
+// under `auction/`. When `VITE_PUBLIC_BUCKET_ORIGIN` is set we fetch it from
+// R2 at runtime (no commit/redeploy needed to refresh the market); otherwise
+// we fall back to the committed static bundle under `public/auction/` for
+// local dev. Fetches are cached via TanStack Query + the browser HTTP cache.
+//
+// Cache invalidation: the R2 data files are uploaded `immutable`, so we bust
+// their cache by appending `?v=<version>` read from `manifest.json` (uploaded
+// `no-cache`). A republish flips the version → every data URL changes → old
+// cached copies are dropped instantly.
 
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -13,10 +20,70 @@ import type {
     ItemCatalog,
 } from "@/models/auction";
 
-const AUCTION_BASE = `${import.meta.env.BASE_URL}auction`;
+const publicBucketOrigin = import.meta.env.VITE_PUBLIC_BUCKET_ORIGIN?.replace(/\/+$/, "");
+// When the public bucket origin is configured, fetch the market data straight
+// from R2. Otherwise fall back to the committed static bundle for local dev.
+const USE_R2 = Boolean(publicBucketOrigin);
+const AUCTION_BASE = USE_R2
+    ? `${publicBucketOrigin}/auction`
+    : `${import.meta.env.BASE_URL}auction`;
 
-async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-    const res = await fetch(`${AUCTION_BASE}/${path}`, { signal });
+interface AuctionManifest {
+    version: string;
+    generatedUtc?: string;
+    files?: string[];
+}
+
+async function fetchManifest(signal?: AbortSignal): Promise<AuctionManifest> {
+    // `no-store`: always read the freshest pointer. The data files it names are
+    // the ones that get cached hard (they're content-versioned via `?v=`).
+    const res = await fetch(`${AUCTION_BASE}/manifest.json`, { signal, cache: "no-store" });
+    if (!res.ok) {
+        throw new Error(`Failed to load auction manifest: ${res.status}`);
+    }
+    return (await res.json()) as AuctionManifest;
+}
+
+/** Fetch the R2 dataset pointer. Re-checked every minute so a republish is
+ *  picked up without a page reload. Disabled (never runs) in the static
+ *  bundle fallback where there is no manifest. */
+export function useAuctionManifest() {
+    return useQuery({
+        queryKey: ["auction", "manifest"],
+        queryFn: ({ signal }) => fetchManifest(signal),
+        enabled: USE_R2,
+        staleTime: 1000 * 60, // re-check the pointer every minute
+        gcTime: 1000 * 60 * 60,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/** Current dataset version + whether the data queries may run yet.
+ *  In static-bundle mode (`!USE_R2`) there is no version and queries run
+ *  immediately. In R2 mode we wait for the manifest to settle; if it errors we
+ *  still proceed (unversioned URL) so the explorer degrades gracefully. */
+function useAuctionVersion(): { ready: boolean; version?: string } {
+    const manifest = useAuctionManifest();
+    if (!USE_R2) return { ready: true, version: undefined };
+    if (manifest.isPending) return { ready: false, version: undefined };
+    return { ready: true, version: manifest.data?.version };
+}
+
+function auctionUrl(path: string, version?: string): string {
+    return version ? `${AUCTION_BASE}/${path}?v=${version}` : `${AUCTION_BASE}/${path}`;
+}
+
+/** URL for the raw auctions CSV on R2, cache-busted by the current version.
+ *  Returns `undefined` in static-bundle mode (callers fall back to the
+ *  committed asset) or while the manifest is still loading. */
+export function useAuctionCsvUrl(): string | undefined {
+    const { ready, version } = useAuctionVersion();
+    if (!USE_R2 || !ready) return undefined;
+    return auctionUrl("auctions.csv", version);
+}
+
+async function fetchJson<T>(path: string, version?: string, signal?: AbortSignal): Promise<T> {
+    const res = await fetch(auctionUrl(path, version), { signal });
     if (!res.ok) {
         throw new Error(`Failed to load ${path}: ${res.status}`);
     }
@@ -32,13 +99,15 @@ const STATIC_QUERY = {
 } as const;
 
 export function useAuctionListings() {
+    const { ready, version } = useAuctionVersion();
     return useQuery({
-        queryKey: ["auction", "listings"],
+        queryKey: ["auction", "listings", version],
         queryFn: async ({ signal }) => {
-            const data = await fetchJson<AuctionListing[]>("listings.json", signal);
+            const data = await fetchJson<AuctionListing[]>("listings.json", version, signal);
             refreshMarketReferences(data);
             return data;
         },
+        enabled: ready,
         ...STATIC_QUERY,
         // The listings payload is ~13 MB — far larger than the localStorage
         // quota — so it must NOT be dehydrated into storage (attempting to
@@ -50,18 +119,21 @@ export function useAuctionListings() {
 }
 
 export function useAuctionSummary(options?: { enabled?: boolean }) {
+    const { ready, version } = useAuctionVersion();
     return useQuery({
-        queryKey: ["auction", "summary"],
-        queryFn: ({ signal }) => fetchJson<AuctionSummary>("summary.json", signal),
-        enabled: options?.enabled ?? true,
+        queryKey: ["auction", "summary", version],
+        queryFn: ({ signal }) => fetchJson<AuctionSummary>("summary.json", version, signal),
+        enabled: ready && (options?.enabled ?? true),
         ...STATIC_QUERY,
     });
 }
 
 export function useItemCatalog() {
+    const { ready, version } = useAuctionVersion();
     return useQuery({
-        queryKey: ["auction", "items"],
-        queryFn: ({ signal }) => fetchJson<ItemCatalog>("items.json", signal),
+        queryKey: ["auction", "items", version],
+        queryFn: ({ signal }) => fetchJson<ItemCatalog>("items.json", version, signal),
+        enabled: ready,
         ...STATIC_QUERY,
     });
 }

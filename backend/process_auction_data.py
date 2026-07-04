@@ -33,6 +33,7 @@ Key data rules (see plans/auction-house-explorer-plan.md):
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import re
@@ -990,12 +991,44 @@ def write_json(path: Path, data: Any) -> None:
     print(f"  wrote {path.relative_to(REPO_ROOT)}  ({size_kb:,.1f} KB)")
 
 
+def _content_version(paths: List[Path]) -> str:
+    """Short content hash over the given files. Stable across runs when the
+    underlying data is unchanged, so republishing identical data keeps the
+    frontend's ``?v=`` cache-buster (and therefore the CDN cache) stable."""
+    h = hashlib.sha256()
+    for p in sorted(paths, key=lambda x: x.name):
+        if p.is_file():
+            h.update(p.name.encode("utf-8"))
+            h.update(p.read_bytes())
+    return h.hexdigest()[:12]
+
+
+def write_manifest(out_dir: Path, files: List[Path]) -> Path:
+    """Write ``manifest.json`` — the invalidation pointer the frontend reads to
+    discover the current dataset ``version`` and bust its cache with ``?v=``."""
+    existing = [p for p in files if p.is_file()]
+    manifest = {
+        "version": _content_version(existing),
+        "generatedUtc": datetime.now(timezone.utc).isoformat(),
+        "files": sorted(p.name for p in existing),
+    }
+    path = out_dir / "manifest.json"
+    write_json(path, manifest)
+    return path
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input", type=Path, default=DEFAULT_INPUT)
     ap.add_argument("--item-map", type=Path, default=DEFAULT_ITEM_MAP)
     ap.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     ap.add_argument("--out", type=Path, default=DEFAULT_OUTPUT_DIR)
+    ap.add_argument(
+        "--publish-r2",
+        action="store_true",
+        help="After writing the artifacts, upload them (plus the raw capture, "
+        "CSV and manifest) to both the dev and prod public R2 buckets.",
+    )
     args = ap.parse_args()
 
     print(f"Reading {args.input}…")
@@ -1018,9 +1051,41 @@ def main() -> None:
     print(f"  spam-filtered {summary['totals']['spamFiltered']:,} listings")
 
     print("Writing artifacts…")
-    write_json(args.out / "listings.json", records)
-    write_json(args.out / "summary.json", summary)
-    write_json(args.out / "items.json", items_catalog)
+    listings_path = args.out / "listings.json"
+    summary_path = args.out / "summary.json"
+    items_path = args.out / "items.json"
+    write_json(listings_path, records)
+    write_json(summary_path, summary)
+    write_json(items_path, items_catalog)
+
+    # The raw capture and the CSV snapshot live next to the input JSONL (the C#
+    # auto-publisher copies both there). Include them so the download button and
+    # any raw consumers can pull them straight from R2.
+    events_path = args.input
+    csv_path = args.input.parent / "auctions.csv"
+
+    # The manifest fingerprints the computed data (what the explorer renders);
+    # the raw capture/CSV are the same underlying data, so they don't affect it.
+    manifest_path = write_manifest(args.out, [listings_path, summary_path, items_path])
+
+    if args.publish_r2:
+        print("Publishing to R2 (dev + prod)…")
+        import sys
+
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from auction_r2_publish import publish_auction_files
+
+        publish_auction_files(
+            [
+                listings_path,
+                summary_path,
+                items_path,
+                events_path,
+                csv_path,
+                manifest_path,
+            ]
+        )
+
     print("Done.")
 
 
