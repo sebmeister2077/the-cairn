@@ -1,14 +1,17 @@
 {
-  "generatedUtc": "2026-07-04T08:40:14.534815+00:00",
+  "generatedUtc": "2026-07-04T09:41:27.221299+00:00",
   "totals": {
-    "totalAuctions": 11705,
+    "totalAuctions": 11706,
     "activeListings": 846,
-    "soldCount": 2412,
+    "soldCount": 2413,
     "expiredCount": 8447,
-    "gearsTraded": 66438.0,
+    "gearsTraded": 66441.0,
     "feesPaid": 6619,
+    "deliveryFeesPaid": 7516.0,
+    "deliveredCount": 2209,
+    "deliveryRate": 0.915,
     "uniqueSellers": 333,
-    "uniqueBuyers": 312,
+    "uniqueBuyers": 313,
     "uniqueItems": 1429,
     "sellThrough": 0.222,
     "spamFiltered": 5235
@@ -758,7 +761,7 @@
       "itemId": 4595,
       "name": "Fruittree cutting",
       "category": "fruittree",
-      "listings": 121,
+      "listings": 122,
       "soldCount": 35,
       "sellThrough": 0.324,
       "medianTimeToSell": 556.79,
@@ -777,8 +780,8 @@
       },
       "trend": {
         "direction": "up",
-        "changePct": 100.0,
-        "recentMedian": 1.0,
+        "changePct": 50.0,
+        "recentMedian": 0.75,
         "olderMedian": 0.5,
         "recentCount": 11,
         "olderCount": 24
@@ -1740,13 +1743,13 @@
       "name": "Parchment",
       "category": "paper",
       "listings": 103,
-      "soldCount": 32,
-      "sellThrough": 0.41,
+      "soldCount": 33,
+      "sellThrough": 0.418,
       "medianTimeToSell": 192.98,
-      "unitsSold": 220,
-      "gearsTraded": 251.0,
+      "unitsSold": 221,
+      "gearsTraded": 254.0,
       "priceStats": {
-        "count": 32,
+        "count": 33,
         "min": 0.062,
         "p10": 0.78,
         "p25": 3.0,
@@ -1754,14 +1757,14 @@
         "p75": 3.0,
         "p90": 10.0,
         "max": 10.0,
-        "mean": 3.87
+        "mean": 3.84
       },
       "trend": {
         "direction": "flat",
         "changePct": 0.0,
         "recentMedian": 3.0,
         "olderMedian": 3.0,
-        "recentCount": 10,
+        "recentCount": 11,
         "olderCount": 22
       }
     },
@@ -27291,7 +27294,7 @@
     {
       "x": -512,
       "z": 1024,
-      "count": 43
+      "count": 44
     },
     {
       "x": -2048,
@@ -29548,7 +29551,7 @@
     {
       "x": -27648,
       "z": 14336,
-      "count": 1
+      "count": 2
     },
     {
       "x": 11776,

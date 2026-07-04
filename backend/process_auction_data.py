@@ -548,6 +548,9 @@ def build_records(
         src = (_to_relative(row.get("SrcX")), _to_relative(row.get("SrcZ")))
         dst = (_to_relative(row.get("DstX")), _to_relative(row.get("DstZ")))
         delivered = bool(row.get("WithDelivery"))
+        # Delivery fee the buyer paid (in gears) for delivered listings; 0 for
+        # pickup. Present on every row as `DeliveryFeeGears`.
+        delivery_fee = round(float(row.get("DeliveryFeeGears") or 0), 2)
         trade_distance = None
         if delivered and dst[0] and dst[1]:
             trade_distance = round(math.hypot(src[0] - dst[0], src[1] - dst[1]), 1)
@@ -575,6 +578,7 @@ def build_records(
                 # a last-known guess, not a confirmed live listing.
                 "verdictObserved": state in TERMINAL_STATES,
                 "delivered": delivered,
+                "deliveryFee": delivery_fee,
                 "sellerName": row.get("SellerName"),
                 "sellerUid": row.get("SellerUid"),
                 "buyerName": row.get("BuyerName"),
@@ -693,6 +697,8 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
 
     # --- Market totals ---------------------------------------------------- #
     total_gears = sum(r["price"] for r in sold)
+    delivered_sold = [r for r in sold if r["delivered"]]
+    delivery_fees_paid = sum(r.get("deliveryFee") or 0 for r in sold)
     totals = {
         "totalAuctions": len(clean),
         "activeListings": sum(1 for r in clean if r["state"] == "Active"),
@@ -700,6 +706,11 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "expiredCount": sum(1 for r in clean if r["state"] == "Expired"),
         "gearsTraded": round(total_gears, 2),
         "feesPaid": round(sum(r["traderCut"] or 0 for r in sold), 2),
+        # Delivery: total fees buyers paid for delivered sales, how many sales
+        # used delivery, and that share of all sales.
+        "deliveryFeesPaid": round(delivery_fees_paid, 2),
+        "deliveredCount": len(delivered_sold),
+        "deliveryRate": round(len(delivered_sold) / len(sold), 3) if sold else 0,
         "uniqueSellers": len(sellers),
         "uniqueBuyers": len(buyers),
         "uniqueItems": len(by_item),

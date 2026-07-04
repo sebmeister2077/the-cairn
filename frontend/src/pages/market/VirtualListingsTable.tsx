@@ -72,6 +72,26 @@ export interface ListingColumn {
 
 const ROW_HEIGHT = 36;
 
+/**
+ * Delivery fee cell for a listing: shows the gears the buyer paid for delivery
+ * (e.g. "+3⚙"), or an em dash for pickup listings. Shared across the listing
+ * tables so delivery pricing renders consistently.
+ */
+export function DeliveryFeeCell({ listing }: { listing: AuctionListing }) {
+  if (!listing.delivered) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const fee = listing.deliveryFee ?? 0;
+  return (
+    <span
+      className="text-xs tabular-nums text-muted-foreground"
+      title="Delivery fee the buyer paid for this listing"
+    >
+      {fee > 0 ? `+${Math.round(fee).toLocaleString()}⚙` : "Free"}
+    </span>
+  );
+}
+
 interface VirtualListingsTableProps {
   listings: AuctionListing[];
   columns: ListingColumn[];

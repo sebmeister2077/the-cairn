@@ -16,6 +16,7 @@ import {
   formatListingDate,
   formatGameDate,
   ListingStateBadge,
+  DeliveryFeeCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
 
@@ -35,7 +36,7 @@ export function MarketPlayerPage() {
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
-  const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent } =
+  const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent, delivery } =
     useMemo(() => {
       const all = data ?? [];
       const asSeller = all.filter((l) => l.sellerUid === decodedUid);
@@ -98,7 +99,30 @@ export function MarketPlayerPage() {
         .sort((a, b) => b.count - a.count)
         .slice(0, 6);
 
-      return { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent };
+      // Delivery: what share of this player's sales/purchases used delivery, and
+      // the total delivery fees they paid as a buyer.
+      const soldSeller = asSeller.filter((l) => l.sold);
+      const sellerDelivered = soldSeller.filter((l) => l.delivered).length;
+      const buyerDelivered = asBuyer.filter((l) => l.delivered).length;
+      const delivery = {
+        feesPaid: asBuyer.reduce((s, l) => s + (l.deliveryFee || 0), 0),
+        sellerDelivered,
+        sellerRate: soldSeller.length ? sellerDelivered / soldSeller.length : null,
+        buyerDelivered,
+        buyerRate: asBuyer.length ? buyerDelivered / asBuyer.length : null,
+      };
+
+      return {
+        name,
+        asSeller,
+        asBuyer,
+        favItems,
+        favBuyItems,
+        locations,
+        revenue,
+        spent,
+        delivery,
+      };
     }, [data, decodedUid]);
 
   // Newest first by in-game posting time (matches the Game date column).
@@ -189,6 +213,13 @@ export function MarketPlayerPage() {
         ),
       },
       {
+        key: "delivery",
+        header: "Delivery",
+        width: "minmax(4.5rem,0.7fr)",
+        align: "right",
+        cell: (l) => <DeliveryFeeCell listing={l} />,
+      },
+      {
         key: "status",
         header: "Status",
         width: "5rem",
@@ -273,6 +304,13 @@ export function MarketPlayerPage() {
         ),
       },
       {
+        key: "delivery",
+        header: "Delivery",
+        width: "minmax(4.5rem,0.7fr)",
+        align: "right",
+        cell: (l) => <DeliveryFeeCell listing={l} />,
+      },
+      {
         key: "status",
         header: "Status",
         width: "5rem",
@@ -328,6 +366,23 @@ export function MarketPlayerPage() {
         <StatCard label="Total spent" value={formatGears(spent)} />
         <StatCard label="Items listed" value={asSeller.length} />
         <StatCard label="Sell-through" value={`${(sellThrough * 100).toFixed(0)}%`} />
+        <StatCard label="Delivery paid" value={formatGears(delivery.feesPaid)} />
+        <StatCard
+          label="Sales delivered"
+          value={
+            delivery.sellerRate != null
+              ? `${delivery.sellerDelivered} · ${(delivery.sellerRate * 100).toFixed(0)}%`
+              : "—"
+          }
+        />
+        <StatCard
+          label="Buys delivered"
+          value={
+            delivery.buyerRate != null
+              ? `${delivery.buyerDelivered} · ${(delivery.buyerRate * 100).toFixed(0)}%`
+              : "—"
+          }
+        />
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">

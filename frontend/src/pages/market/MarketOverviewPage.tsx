@@ -49,6 +49,11 @@ export function MarketOverviewPage() {
         <StatCard label="Items sold" value={t.soldCount} />
         <StatCard label="Sell-through" value={`${(t.sellThrough * 100).toFixed(0)}%`} />
         <StatCard label="Fees paid" value={formatGears(t.feesPaid)} />
+        <StatCard label="Delivery fees paid" value={formatGears(t.deliveryFeesPaid ?? 0)} />
+        <StatCard
+          label="Delivered sales"
+          value={`${(t.deliveredCount ?? 0).toLocaleString()} · ${((t.deliveryRate ?? 0) * 100).toFixed(0)}%`}
+        />
         <StatCard label="Active listings" value={t.activeListings} />
         <StatCard label="Unique items" value={t.uniqueItems} />
         <StatCard label="Traders" value={t.uniqueSellers} />

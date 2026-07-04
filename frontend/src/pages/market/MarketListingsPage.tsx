@@ -81,7 +81,7 @@ export function MarketListingsPage() {
               <TableHead>Status</TableHead>
               <TableHead>Seller</TableHead>
               <TableHead>Buyer</TableHead>
-              <TableHead className="text-center">Del.</TableHead>
+              <TableHead className="text-right">Delivery</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -135,7 +135,15 @@ export function MarketListingsPage() {
                     (l.buyerName ?? "—")
                   )}
                 </TableCell>
-                <TableCell className="text-center">{l.delivered ? "✓" : ""}</TableCell>
+                <TableCell className="text-right tabular-nums text-muted-foreground">
+                  {l.delivered ? (
+                    <span title="Delivery fee the buyer paid for this listing">
+                      {l.deliveryFee > 0 ? `+${Math.round(l.deliveryFee).toLocaleString()}⚙` : "Free"}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {pageRows.length === 0 && (

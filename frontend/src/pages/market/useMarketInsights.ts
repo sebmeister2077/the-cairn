@@ -406,6 +406,8 @@ export function computeMarketInsights(
     let soldCount = 0;
     let expiredCount = 0;
     let activeListings = 0;
+    let deliveryFeesPaid = 0;
+    let deliveredCount = 0;
     for (const row of rows) {
         gearsTraded += row.gearsTraded;
         unitsSold += row.unitsSold;
@@ -416,6 +418,10 @@ export function computeMarketInsights(
         if (!inWindow(l)) continue;
         if (l.state === "Expired") expiredCount += 1;
         if (l.sold && l.timeToSellHours != null) allSoldTts.push(l.timeToSellHours);
+        if (l.sold && l.delivered) {
+            deliveredCount += 1;
+            deliveryFeesPaid += l.deliveryFee ?? 0;
+        }
     }
     allSoldTts.sort((a, b) => a - b);
 
@@ -430,6 +436,9 @@ export function computeMarketInsights(
         medianTimeToSellHours: allSoldTts.length
             ? percentileSorted(allSoldTts, 0.5)
             : null,
+        deliveryFeesPaid,
+        deliveredCount,
+        deliveryRate: soldCount > 0 ? deliveredCount / soldCount : null,
     };
 
     return { windowDays, anchorGameHours: currentGameHours, rows, totals };

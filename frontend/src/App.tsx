@@ -110,7 +110,11 @@ export default function App() {
         // the wrong world bounds even after the backend was fixed, until
         // their cache happened to refetch. Bumping the buster forces a
         // clean hydration on next load.
-        buster: "v2-2026-05-20-tops-map-bounds",
+        //
+        // 2026-07-04 — v3: the auction `summary.json` totals gained delivery
+        // fields (deliveryFeesPaid / deliveredCount / deliveryRate). A stale
+        // hydrated summary lacks them and crashed the Overview page.
+        buster: "v3-2026-07-04-auction-delivery",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

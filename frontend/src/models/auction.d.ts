@@ -31,6 +31,9 @@ export interface AuctionListing {
      */
     verdictObserved: boolean;
     delivered: boolean;
+    /** Delivery fee (in gears) the buyer paid for a delivered listing; 0 for
+     *  pickup listings. */
+    deliveryFee: number;
     spam: boolean;
     sellerName: string | null;
     sellerUid: string | null;
@@ -140,6 +143,12 @@ export interface MarketTotals {
     expiredCount: number;
     gearsTraded: number;
     feesPaid: number;
+    /** Total delivery fees buyers paid across all delivered sales. */
+    deliveryFeesPaid: number;
+    /** Number of sold listings that were delivered. */
+    deliveredCount: number;
+    /** Share of sold listings that used delivery (0–1). */
+    deliveryRate: number;
     uniqueSellers: number;
     uniqueBuyers: number;
     uniqueItems: number;
@@ -258,6 +267,12 @@ export interface InsightsTotals {
     sellThrough: number | null;
     uniqueItemsTraded: number;
     medianTimeToSellHours: number | null;
+    /** Total delivery fees buyers paid across delivered sales in the window. */
+    deliveryFeesPaid: number;
+    /** Number of delivered sold listings in the window. */
+    deliveredCount: number;
+    /** Share of sold listings in the window that used delivery (0–1). */
+    deliveryRate: number | null;
 }
 
 export interface MarketInsights {

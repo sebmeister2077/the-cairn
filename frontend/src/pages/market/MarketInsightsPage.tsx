@@ -284,8 +284,8 @@ const COLUMN_GLOSSARY: GlossaryEntry[] = [
   },
   {
     term: "Delivery +",
-    what: "Extra that buyers pay for delivered listings versus pickup.",
-    read: "+% = delivery commands a premium · −% = delivered listings are actually cheaper.",
+    what: "Extra that buyers pay for delivered listings (sent to them) versus pickup (they travel to collect).",
+    read: "+% = delivery commands a premium · −% = delivered listings are actually cheaper. Example: if pickup sells for ~10 gears and delivered for ~8, that's −20% (delivered went for less).",
   },
   {
     term: "Confidence",
@@ -732,6 +732,15 @@ export function MarketInsightsPage() {
           label="Median time to sell"
           value={
             t.medianTimeToSellHours != null ? formatRealTimeToSell(t.medianTimeToSellHours) : "—"
+          }
+        />
+        <StatCard label="Delivery fees paid" value={formatGears(t.deliveryFeesPaid)} />
+        <StatCard
+          label="Delivered sales"
+          value={
+            t.deliveryRate != null
+              ? `${t.deliveredCount.toLocaleString()} · ${(t.deliveryRate * 100).toFixed(0)}%`
+              : "—"
           }
         />
       </div>

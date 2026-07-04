@@ -39,6 +39,7 @@ import {
   VirtualListingsTable,
   formatListingDate,
   formatGameDate,
+  DeliveryFeeCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
 import {
@@ -423,6 +424,13 @@ export function MarketItemPage() {
             {l.sold && l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
           </span>
         ),
+      },
+      {
+        key: "delivery",
+        header: "Delivery",
+        width: "minmax(4.5rem,0.7fr)",
+        align: "right",
+        cell: (l) => <DeliveryFeeCell listing={l} />,
       },
       {
         key: "status",
