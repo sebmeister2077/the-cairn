@@ -1,21 +1,21 @@
 {
-  "generatedUtc": "2026-07-04T13:40:27.969427+00:00",
+  "generatedUtc": "2026-07-04T14:08:54.927584+00:00",
   "totals": {
-    "totalAuctions": 11720,
-    "activeListings": 853,
-    "soldCount": 2420,
-    "expiredCount": 8447,
-    "gearsTraded": 66556.0,
-    "feesPaid": 6629,
-    "depositFeesPaid": 15900,
-    "deliveryFeesPaid": 7527.0,
-    "deliveredCount": 2214,
-    "deliveryRate": 0.915,
+    "totalAuctions": 11766,
+    "activeListings": 800,
+    "soldCount": 2504,
+    "expiredCount": 8462,
+    "gearsTraded": 67884.0,
+    "feesPaid": 6763,
+    "depositFeesPaid": 15950,
+    "deliveryFeesPaid": 7688.0,
+    "deliveredCount": 2298,
+    "deliveryRate": 0.918,
     "uniqueSellers": 333,
-    "uniqueBuyers": 314,
-    "uniqueItems": 1429,
-    "sellThrough": 0.223,
-    "spamFiltered": 5235
+    "uniqueBuyers": 315,
+    "uniqueItems": 1432,
+    "sellThrough": 0.228,
+    "spamFiltered": 5259
   },
   "itemStats": [
     {
@@ -23,28 +23,28 @@
       "name": "Gold ingot",
       "category": "ingot",
       "listings": 22,
-      "soldCount": 14,
-      "sellThrough": 0.7,
+      "soldCount": 15,
+      "sellThrough": 0.714,
       "medianTimeToSell": 105.86,
-      "unitsSold": 57,
-      "gearsTraded": 2186.0,
+      "unitsSold": 58,
+      "gearsTraded": 2246.0,
       "priceStats": {
-        "count": 14,
+        "count": 15,
         "min": 9.0,
-        "p10": 23.25,
+        "p10": 23.5,
         "p25": 25.0,
-        "median": 40.75,
-        "p75": 48.12,
-        "p90": 53.5,
-        "max": 55.0,
-        "mean": 37.14
+        "median": 44.0,
+        "p75": 49.17,
+        "p90": 55.0,
+        "max": 60.0,
+        "mean": 38.67
       },
       "trend": {
         "direction": "up",
-        "changePct": 91.3,
-        "recentMedian": 52.5,
+        "changePct": 100.4,
+        "recentMedian": 55.0,
         "olderMedian": 27.45,
-        "recentCount": 4,
+        "recentCount": 5,
         "olderCount": 10
       }
     },
@@ -100,9 +100,9 @@
         "mean": 0.84
       },
       "trend": {
-        "direction": "up",
-        "changePct": 12.5,
-        "recentMedian": 1.0,
+        "direction": "flat",
+        "changePct": 5.5,
+        "recentMedian": 0.938,
         "olderMedian": 0.889,
         "recentCount": 25,
         "olderCount": 52
@@ -173,29 +173,29 @@
       "name": "Aged oak log",
       "category": "log",
       "listings": 177,
-      "soldCount": 52,
-      "sellThrough": 0.299,
+      "soldCount": 53,
+      "sellThrough": 0.303,
       "medianTimeToSell": 197.81,
-      "unitsSold": 777,
-      "gearsTraded": 1331.0,
+      "unitsSold": 793,
+      "gearsTraded": 1365.0,
       "priceStats": {
-        "count": 52,
+        "count": 53,
         "min": 0.062,
         "p10": 1.22,
         "p25": 1.44,
         "median": 1.56,
-        "p75": 2.15,
+        "p75": 2.14,
         "p90": 2.3,
         "max": 2.812,
-        "mean": 1.7
+        "mean": 1.71
       },
       "trend": {
         "direction": "down",
-        "changePct": -16.7,
-        "recentMedian": 1.556,
-        "olderMedian": 1.867,
+        "changePct": -8.9,
+        "recentMedian": 1.562,
+        "olderMedian": 1.715,
         "recentCount": 17,
-        "olderCount": 35
+        "olderCount": 36
       }
     },
     {
@@ -233,23 +233,30 @@
       "name": "Iron meteorite piece",
       "category": "stone",
       "listings": 46,
-      "soldCount": 7,
-      "sellThrough": 0.156,
-      "medianTimeToSell": 293.59,
-      "unitsSold": 401,
-      "gearsTraded": 896.0,
+      "soldCount": 8,
+      "sellThrough": 0.174,
+      "medianTimeToSell": 366.01,
+      "unitsSold": 465,
+      "gearsTraded": 986.0,
       "priceStats": {
-        "count": 7,
+        "count": 8,
         "min": 0.412,
-        "p10": 1.21,
-        "p25": 1.73,
-        "median": 2.17,
+        "p10": 1.11,
+        "p25": 1.65,
+        "median": 1.95,
         "p75": 2.17,
-        "p90": 2.87,
+        "p90": 2.69,
         "max": 3.906,
-        "mean": 2.04
+        "mean": 1.96
       },
-      "trend": null
+      "trend": {
+        "direction": "down",
+        "changePct": -20.2,
+        "recentMedian": 1.734,
+        "olderMedian": 2.172,
+        "recentCount": 3,
+        "olderCount": 5
+      }
     },
     {
       "itemId": 2123,
@@ -278,9 +285,9 @@
       "itemId": 2022,
       "name": "Leather",
       "category": "leather",
-      "listings": 101,
+      "listings": 104,
       "soldCount": 41,
-      "sellThrough": 0.562,
+      "sellThrough": 0.539,
       "medianTimeToSell": 323.58,
       "unitsSold": 2206,
       "gearsTraded": 871.0,
@@ -361,22 +368,22 @@
       "itemId": 1884,
       "name": "Lump of rendered fat",
       "category": "fat",
-      "listings": 90,
-      "soldCount": 36,
-      "sellThrough": 0.59,
+      "listings": 91,
+      "soldCount": 37,
+      "sellThrough": 0.597,
       "medianTimeToSell": 350.3,
-      "unitsSold": 1988,
-      "gearsTraded": 724.0,
+      "unitsSold": 2052,
+      "gearsTraded": 744.0,
       "priceStats": {
-        "count": 36,
+        "count": 37,
         "min": 0.281,
         "p10": 0.3,
         "p25": 0.31,
         "median": 0.34,
         "p75": 0.41,
-        "p90": 0.54,
+        "p90": 0.52,
         "max": 1.333,
-        "mean": 0.43
+        "mean": 0.42
       },
       "trend": {
         "direction": "up",
@@ -384,7 +391,7 @@
         "recentMedian": 0.375,
         "olderMedian": 0.312,
         "recentCount": 12,
-        "olderCount": 24
+        "olderCount": 25
       }
     },
     {
@@ -566,7 +573,7 @@
       "category": "linen",
       "listings": 86,
       "soldCount": 19,
-      "sellThrough": 0.275,
+      "sellThrough": 0.268,
       "medianTimeToSell": 293.21,
       "unitsSold": 1216,
       "gearsTraded": 537.0,
@@ -736,6 +743,36 @@
       "trend": null
     },
     {
+      "itemId": 1434,
+      "name": "Beeswax",
+      "category": "beeswax",
+      "listings": 87,
+      "soldCount": 26,
+      "sellThrough": 0.329,
+      "medianTimeToSell": 532.33,
+      "unitsSold": 1099,
+      "gearsTraded": 495.0,
+      "priceStats": {
+        "count": 26,
+        "min": 0.219,
+        "p10": 0.28,
+        "p25": 0.4,
+        "median": 0.4,
+        "p75": 0.5,
+        "p90": 0.61,
+        "max": 0.816,
+        "mean": 0.44
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 0.4,
+        "olderMedian": 0.4,
+        "recentCount": 8,
+        "olderCount": 18
+      }
+    },
+    {
       "itemId": 11154,
       "name": "Pink marble rock",
       "category": "rock",
@@ -858,6 +895,36 @@
       "trend": null
     },
     {
+      "itemId": 12370,
+      "name": "Fancy aged carved acacia log (Top)",
+      "category": "carvedlog",
+      "listings": 14,
+      "soldCount": 10,
+      "sellThrough": 0.714,
+      "medianTimeToSell": 227.78,
+      "unitsSold": 17,
+      "gearsTraded": 450.0,
+      "priceStats": {
+        "count": 10,
+        "min": 25.0,
+        "p10": 25.0,
+        "p25": 25.0,
+        "median": 25.0,
+        "p75": 25.0,
+        "p90": 35.5,
+        "max": 40.0,
+        "mean": 27.5
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 25.0,
+        "olderMedian": 25.0,
+        "recentCount": 3,
+        "olderCount": 7
+      }
+    },
+    {
       "itemId": 2623,
       "name": "Pumpkin seeds",
       "category": "seeds",
@@ -909,72 +976,72 @@
         "mean": 0.21
       },
       "trend": {
-        "direction": "up",
-        "changePct": 60.3,
-        "recentMedian": 0.25,
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 0.156,
         "olderMedian": 0.156,
         "recentCount": 11,
         "olderCount": 23
       }
     },
     {
-      "itemId": 1434,
-      "name": "Beeswax",
-      "category": "beeswax",
-      "listings": 82,
-      "soldCount": 23,
-      "sellThrough": 0.303,
-      "medianTimeToSell": 532.4,
-      "unitsSold": 967,
-      "gearsTraded": 445.0,
-      "priceStats": {
-        "count": 23,
-        "min": 0.219,
-        "p10": 0.28,
-        "p25": 0.4,
-        "median": 0.4,
-        "p75": 0.5,
-        "p90": 0.62,
-        "max": 0.816,
-        "mean": 0.45
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 17.2,
-        "recentMedian": 0.469,
-        "olderMedian": 0.4,
-        "recentCount": 7,
-        "olderCount": 16
-      }
-    },
-    {
-      "itemId": 12370,
-      "name": "Fancy aged carved acacia log (Top)",
-      "category": "carvedlog",
-      "listings": 12,
+      "itemId": 3174,
+      "name": "Steel falx head",
+      "category": "bladehead",
+      "listings": 17,
       "soldCount": 8,
-      "sellThrough": 0.667,
-      "medianTimeToSell": 227.86,
-      "unitsSold": 15,
-      "gearsTraded": 400.0,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 503.71,
+      "unitsSold": 8,
+      "gearsTraded": 408.0,
       "priceStats": {
         "count": 8,
         "min": 25.0,
         "p10": 25.0,
         "p25": 25.0,
-        "median": 25.0,
-        "p75": 27.5,
-        "p90": 36.5,
-        "max": 40.0,
-        "mean": 28.12
+        "median": 31.5,
+        "p75": 35.0,
+        "p90": 84.5,
+        "max": 200.0,
+        "mean": 51.0
       },
       "trend": {
-        "direction": "flat",
-        "changePct": 0.0,
-        "recentMedian": 25.0,
-        "olderMedian": 25.0,
+        "direction": "down",
+        "changePct": -20.0,
+        "recentMedian": 28.0,
+        "olderMedian": 35.0,
         "recentCount": 3,
         "olderCount": 5
+      }
+    },
+    {
+      "itemId": 3093,
+      "name": "Steel shovel",
+      "category": "shovel",
+      "listings": 30,
+      "soldCount": 20,
+      "sellThrough": 0.769,
+      "medianTimeToSell": 178.19,
+      "unitsSold": 20,
+      "gearsTraded": 403.0,
+      "priceStats": {
+        "count": 20,
+        "min": 1.0,
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 15.0,
+        "p75": 29.25,
+        "p90": 30.0,
+        "max": 32.0,
+        "mean": 20.15
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 100.0,
+        "recentMedian": 30.0,
+        "olderMedian": 15.0,
+        "recentCount": 6,
+        "olderCount": 14
       }
     },
     {
@@ -1024,57 +1091,34 @@
       "trend": null
     },
     {
-      "itemId": 3093,
-      "name": "Steel shovel",
-      "category": "shovel",
-      "listings": 30,
-      "soldCount": 19,
-      "sellThrough": 0.76,
-      "medianTimeToSell": 178.18,
-      "unitsSold": 19,
-      "gearsTraded": 388.0,
+      "itemId": 1448,
+      "name": "Candle",
+      "category": "candle",
+      "listings": 13,
+      "soldCount": 8,
+      "sellThrough": 0.667,
+      "medianTimeToSell": 422.52,
+      "unitsSold": 256,
+      "gearsTraded": 384.0,
       "priceStats": {
-        "count": 19,
+        "count": 8,
         "min": 1.0,
-        "p10": 15.0,
-        "p25": 15.0,
-        "median": 15.0,
-        "p75": 29.5,
-        "p90": 30.0,
-        "max": 32.0,
-        "mean": 20.42
+        "p10": 1.0,
+        "p25": 1.0,
+        "median": 1.5,
+        "p75": 2.0,
+        "p90": 2.0,
+        "max": 2.0,
+        "mean": 1.5
       },
       "trend": {
-        "direction": "up",
-        "changePct": 100.0,
-        "recentMedian": 30.0,
-        "olderMedian": 15.0,
-        "recentCount": 6,
-        "olderCount": 13
+        "direction": "down",
+        "changePct": -50.0,
+        "recentMedian": 1.0,
+        "olderMedian": 2.0,
+        "recentCount": 3,
+        "olderCount": 5
       }
-    },
-    {
-      "itemId": 3174,
-      "name": "Steel falx head",
-      "category": "bladehead",
-      "listings": 17,
-      "soldCount": 7,
-      "sellThrough": 0.467,
-      "medianTimeToSell": 313.51,
-      "unitsSold": 7,
-      "gearsTraded": 380.0,
-      "priceStats": {
-        "count": 7,
-        "min": 25.0,
-        "p10": 25.0,
-        "p25": 25.0,
-        "median": 35.0,
-        "p75": 35.0,
-        "p90": 101.0,
-        "max": 200.0,
-        "mean": 54.29
-      },
-      "trend": null
     },
     {
       "itemId": 4000,
@@ -1100,10 +1144,33 @@
       "trend": null
     },
     {
+      "itemId": 1240,
+      "name": "Crushed chromite",
+      "category": "crushed",
+      "listings": 13,
+      "soldCount": 7,
+      "sellThrough": 0.583,
+      "medianTimeToSell": 134.11,
+      "unitsSold": 352,
+      "gearsTraded": 372.0,
+      "priceStats": {
+        "count": 7,
+        "min": 0.781,
+        "p10": 0.78,
+        "p25": 0.89,
+        "median": 1.0,
+        "p75": 1.25,
+        "p90": 1.25,
+        "max": 1.25,
+        "mean": 1.04
+      },
+      "trend": null
+    },
+    {
       "itemId": 1999,
       "name": "Ore blasting bomb",
       "category": "bomb",
-      "listings": 59,
+      "listings": 60,
       "soldCount": 10,
       "sellThrough": 0.196,
       "medianTimeToSell": 367.24,
@@ -1149,29 +1216,6 @@
         "p90": 123.0,
         "max": 123.0,
         "mean": 80.25
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1448,
-      "name": "Candle",
-      "category": "candle",
-      "listings": 13,
-      "soldCount": 7,
-      "sellThrough": 0.636,
-      "medianTimeToSell": 422.52,
-      "unitsSold": 224,
-      "gearsTraded": 352.0,
-      "priceStats": {
-        "count": 7,
-        "min": 1.0,
-        "p10": 1.0,
-        "p25": 1.25,
-        "median": 1.5,
-        "p75": 2.0,
-        "p90": 2.0,
-        "max": 2.0,
-        "mean": 1.57
       },
       "trend": null
     },
@@ -1378,13 +1422,13 @@
       "name": "Cured redmeat",
       "category": "redmeat",
       "listings": 96,
-      "soldCount": 53,
-      "sellThrough": 0.679,
+      "soldCount": 54,
+      "sellThrough": 0.684,
       "medianTimeToSell": 303.87,
-      "unitsSold": 3392,
-      "gearsTraded": 307.0,
+      "unitsSold": 3456,
+      "gearsTraded": 311.0,
       "priceStats": {
-        "count": 53,
+        "count": 54,
         "min": 0.047,
         "p10": 0.05,
         "p25": 0.09,
@@ -1399,7 +1443,7 @@
         "changePct": 0.0,
         "recentMedian": 0.094,
         "olderMedian": 0.094,
-        "recentCount": 17,
+        "recentCount": 18,
         "olderCount": 36
       }
     },
@@ -1523,53 +1567,30 @@
       "name": "Chest",
       "category": "chest",
       "listings": 134,
-      "soldCount": 30,
-      "sellThrough": 0.233,
-      "medianTimeToSell": 388.03,
-      "unitsSold": 60,
-      "gearsTraded": 292.0,
+      "soldCount": 32,
+      "sellThrough": 0.244,
+      "medianTimeToSell": 429.72,
+      "unitsSold": 62,
+      "gearsTraded": 298.0,
       "priceStats": {
-        "count": 30,
+        "count": 32,
         "min": 0.333,
         "p10": 1.0,
         "p25": 3.0,
         "median": 5.0,
-        "p75": 9.6,
-        "p90": 11.1,
+        "p75": 8.8,
+        "p90": 11.0,
         "max": 20.0,
-        "mean": 6.11
+        "mean": 5.92
       },
       "trend": {
         "direction": "down",
-        "changePct": -20.0,
-        "recentMedian": 4.0,
+        "changePct": -40.0,
+        "recentMedian": 3.0,
         "olderMedian": 5.0,
         "recentCount": 10,
-        "olderCount": 20
+        "olderCount": 22
       }
-    },
-    {
-      "itemId": 1240,
-      "name": "Crushed chromite",
-      "category": "crushed",
-      "listings": 13,
-      "soldCount": 6,
-      "sellThrough": 0.545,
-      "medianTimeToSell": 134.11,
-      "unitsSold": 288,
-      "gearsTraded": 292.0,
-      "priceStats": {
-        "count": 6,
-        "min": 0.781,
-        "p10": 0.78,
-        "p25": 0.84,
-        "median": 1.0,
-        "p75": 1.19,
-        "p90": 1.25,
-        "max": 1.25,
-        "mean": 1.01
-      },
-      "trend": null
     },
     {
       "itemId": 2544,
@@ -1651,7 +1672,7 @@
       "itemId": 2001,
       "name": "Copper ingot",
       "category": "ingot",
-      "listings": 9,
+      "listings": 10,
       "soldCount": 7,
       "sellThrough": 0.778,
       "medianTimeToSell": 1514.41,
@@ -1675,11 +1696,11 @@
       "name": "Parchment",
       "category": "paper",
       "listings": 103,
-      "soldCount": 34,
-      "sellThrough": 0.425,
-      "medianTimeToSell": 196.83,
-      "unitsSold": 222,
-      "gearsTraded": 257.0,
+      "soldCount": 36,
+      "sellThrough": 0.419,
+      "medianTimeToSell": 211.87,
+      "unitsSold": 224,
+      "gearsTraded": 263.0,
       "priceStats": {
         "count": 7,
         "min": 0.062,
@@ -1761,6 +1782,36 @@
         "mean": 255.0
       },
       "trend": null
+    },
+    {
+      "itemId": 2130,
+      "name": "Nugget (Bismuthinite)",
+      "category": "nugget",
+      "listings": 9,
+      "soldCount": 8,
+      "sellThrough": 0.889,
+      "medianTimeToSell": 444.69,
+      "unitsSold": 856,
+      "gearsTraded": 253.0,
+      "priceStats": {
+        "count": 8,
+        "min": 0.273,
+        "p10": 0.29,
+        "p25": 0.3,
+        "median": 0.3,
+        "p75": 0.3,
+        "p90": 0.3,
+        "max": 0.3,
+        "mean": 0.3
+      },
+      "trend": {
+        "direction": "flat",
+        "changePct": -1.0,
+        "recentMedian": 0.297,
+        "olderMedian": 0.3,
+        "recentCount": 3,
+        "olderCount": 5
+      }
     },
     {
       "itemId": 91837208,
@@ -1904,7 +1955,7 @@
       "itemId": 1473,
       "name": "Compost",
       "category": "compost",
-      "listings": 48,
+      "listings": 49,
       "soldCount": 39,
       "sellThrough": 0.929,
       "medianTimeToSell": 484.6,
@@ -1976,9 +2027,9 @@
       },
       "trend": {
         "direction": "up",
-        "changePct": 84.6,
+        "changePct": 100.0,
         "recentMedian": 3.0,
-        "olderMedian": 1.625,
+        "olderMedian": 1.5,
         "recentCount": 9,
         "olderCount": 20
       }
@@ -1987,7 +2038,7 @@
       "itemId": 1973,
       "name": "Pelt (Medium)",
       "category": "hide",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 7,
       "sellThrough": 1.0,
       "medianTimeToSell": 784.83,
@@ -2242,6 +2293,36 @@
       }
     },
     {
+      "itemId": 2878,
+      "name": "Steel axe",
+      "category": "axe",
+      "listings": 25,
+      "soldCount": 10,
+      "sellThrough": 0.556,
+      "medianTimeToSell": 503.22,
+      "unitsSold": 10,
+      "gearsTraded": 210.0,
+      "priceStats": {
+        "count": 10,
+        "min": 15.0,
+        "p10": 15.0,
+        "p25": 15.0,
+        "median": 17.5,
+        "p75": 28.0,
+        "p90": 29.1,
+        "max": 30.0,
+        "mean": 21.0
+      },
+      "trend": {
+        "direction": "down",
+        "changePct": -46.4,
+        "recentMedian": 15.0,
+        "olderMedian": 28.0,
+        "recentCount": 3,
+        "olderCount": 7
+      }
+    },
+    {
       "itemId": 2627,
       "name": "Peanut seeds",
       "category": "seeds",
@@ -2270,6 +2351,29 @@
         "recentCount": 3,
         "olderCount": 7
       }
+    },
+    {
+      "itemId": 2542,
+      "name": "Cinnabar",
+      "category": "ore",
+      "listings": 19,
+      "soldCount": 5,
+      "sellThrough": 0.357,
+      "medianTimeToSell": 360.93,
+      "unitsSold": 187,
+      "gearsTraded": 201.0,
+      "priceStats": {
+        "count": 5,
+        "min": 0.5,
+        "p10": 0.64,
+        "p25": 0.86,
+        "median": 1.41,
+        "p75": 2.75,
+        "p90": 3.5,
+        "max": 4.0,
+        "mean": 1.9
+      },
+      "trend": null
     },
     {
       "itemId": 3915,
@@ -2371,6 +2475,36 @@
       "trend": null
     },
     {
+      "itemId": 3779,
+      "name": "Blackguard cuirass (Broken)",
+      "category": "armor",
+      "listings": 31,
+      "soldCount": 12,
+      "sellThrough": 0.387,
+      "medianTimeToSell": 205.52,
+      "unitsSold": 12,
+      "gearsTraded": 195.0,
+      "priceStats": {
+        "count": 12,
+        "min": 5.0,
+        "p10": 9.1,
+        "p25": 11.5,
+        "median": 12.5,
+        "p75": 20.25,
+        "p90": 25.5,
+        "max": 40.0,
+        "mean": 16.25
+      },
+      "trend": {
+        "direction": "up",
+        "changePct": 41.7,
+        "recentMedian": 17.0,
+        "olderMedian": 12.0,
+        "recentCount": 4,
+        "olderCount": 8
+      }
+    },
+    {
       "itemId": 13665,
       "name": "Large bellows",
       "category": "bellows",
@@ -2392,6 +2526,36 @@
         "mean": 195.0
       },
       "trend": null
+    },
+    {
+      "itemId": 12668,
+      "name": "Ebony log",
+      "category": "log",
+      "listings": 192,
+      "soldCount": 17,
+      "sellThrough": 0.089,
+      "medianTimeToSell": 413.42,
+      "unitsSold": 264,
+      "gearsTraded": 192.0,
+      "priceStats": {
+        "count": 17,
+        "min": 0.111,
+        "p10": 0.5,
+        "p25": 0.5,
+        "median": 0.69,
+        "p75": 1.0,
+        "p90": 1.0,
+        "max": 1.0,
+        "mean": 0.71
+      },
+      "trend": {
+        "direction": "down",
+        "changePct": -12.0,
+        "recentMedian": 0.688,
+        "olderMedian": 0.781,
+        "recentCount": 5,
+        "olderCount": 12
+      }
     },
     {
       "itemId": 8111,
@@ -2463,66 +2627,6 @@
       "trend": null
     },
     {
-      "itemId": 3779,
-      "name": "Blackguard cuirass (Broken)",
-      "category": "armor",
-      "listings": 31,
-      "soldCount": 11,
-      "sellThrough": 0.367,
-      "medianTimeToSell": 127.9,
-      "unitsSold": 11,
-      "gearsTraded": 183.0,
-      "priceStats": {
-        "count": 11,
-        "min": 5.0,
-        "p10": 9.0,
-        "p25": 11.0,
-        "median": 13.0,
-        "p75": 20.5,
-        "p90": 26.0,
-        "max": 40.0,
-        "mean": 16.64
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 75.0,
-        "recentMedian": 21.0,
-        "olderMedian": 12.0,
-        "recentCount": 3,
-        "olderCount": 8
-      }
-    },
-    {
-      "itemId": 12668,
-      "name": "Ebony log",
-      "category": "log",
-      "listings": 192,
-      "soldCount": 16,
-      "sellThrough": 0.085,
-      "medianTimeToSell": 452.42,
-      "unitsSold": 249,
-      "gearsTraded": 181.0,
-      "priceStats": {
-        "count": 16,
-        "min": 0.111,
-        "p10": 0.5,
-        "p25": 0.5,
-        "median": 0.66,
-        "p75": 1.0,
-        "p90": 1.0,
-        "max": 1.0,
-        "mean": 0.71
-      },
-      "trend": {
-        "direction": "down",
-        "changePct": -46.7,
-        "recentMedian": 0.5,
-        "olderMedian": 0.938,
-        "recentCount": 5,
-        "olderCount": 11
-      }
-    },
-    {
       "itemId": 93245044,
       "name": "Book big open",
       "category": "clutter",
@@ -2544,59 +2648,6 @@
         "mean": 45.25
       },
       "trend": null
-    },
-    {
-      "itemId": 2542,
-      "name": "Cinnabar",
-      "category": "ore",
-      "listings": 19,
-      "soldCount": 4,
-      "sellThrough": 0.308,
-      "medianTimeToSell": 652.56,
-      "unitsSold": 182,
-      "gearsTraded": 181.0,
-      "priceStats": {
-        "count": 4,
-        "min": 0.5,
-        "p10": 0.61,
-        "p25": 0.77,
-        "median": 1.13,
-        "p75": 1.74,
-        "p90": 2.35,
-        "max": 2.75,
-        "mean": 1.38
-      },
-      "trend": null
-    },
-    {
-      "itemId": 2878,
-      "name": "Steel axe",
-      "category": "axe",
-      "listings": 25,
-      "soldCount": 8,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 535.28,
-      "unitsSold": 8,
-      "gearsTraded": 180.0,
-      "priceStats": {
-        "count": 8,
-        "min": 15.0,
-        "p10": 15.0,
-        "p25": 15.0,
-        "median": 24.0,
-        "p75": 28.25,
-        "p90": 29.3,
-        "max": 30.0,
-        "mean": 22.5
-      },
-      "trend": {
-        "direction": "up",
-        "changePct": 93.3,
-        "recentMedian": 29.0,
-        "olderMedian": 15.0,
-        "recentCount": 3,
-        "olderCount": 5
-      }
     },
     {
       "itemId": 4261,
@@ -2645,29 +2696,6 @@
       "trend": null
     },
     {
-      "itemId": 2130,
-      "name": "Nugget (Bismuthinite)",
-      "category": "nugget",
-      "listings": 7,
-      "soldCount": 6,
-      "sellThrough": 0.857,
-      "medianTimeToSell": 444.75,
-      "unitsSold": 600,
-      "gearsTraded": 180.0,
-      "priceStats": {
-        "count": 6,
-        "min": 0.3,
-        "p10": 0.3,
-        "p25": 0.3,
-        "median": 0.3,
-        "p75": 0.3,
-        "p90": 0.3,
-        "max": 0.3,
-        "mean": 0.3
-      },
-      "trend": null
-    },
-    {
       "itemId": 3102,
       "name": "Rift ward",
       "category": "riftward",
@@ -2689,6 +2717,36 @@
         "mean": 60.0
       },
       "trend": null
+    },
+    {
+      "itemId": 1455,
+      "name": "Fire clay",
+      "category": "clay",
+      "listings": 304,
+      "soldCount": 16,
+      "sellThrough": 0.054,
+      "medianTimeToSell": 470.65,
+      "unitsSold": 1021,
+      "gearsTraded": 179.0,
+      "priceStats": {
+        "count": 16,
+        "min": 0.082,
+        "p10": 0.12,
+        "p25": 0.17,
+        "median": 0.17,
+        "p75": 0.2,
+        "p90": 0.23,
+        "max": 0.234,
+        "mean": 0.17
+      },
+      "trend": {
+        "direction": "down",
+        "changePct": -27.3,
+        "recentMedian": 0.125,
+        "olderMedian": 0.172,
+        "recentCount": 5,
+        "olderCount": 11
+      }
     },
     {
       "itemId": 4307,
@@ -2839,7 +2897,7 @@
       "itemId": 8365,
       "name": "Aged chalk ashlar blocks",
       "category": "agedstonebricks",
-      "listings": 19,
+      "listings": 21,
       "soldCount": 4,
       "sellThrough": 0.211,
       "medianTimeToSell": 213.3,
@@ -2958,34 +3016,27 @@
       "trend": null
     },
     {
-      "itemId": 1455,
-      "name": "Fire clay",
-      "category": "clay",
-      "listings": 304,
-      "soldCount": 13,
-      "sellThrough": 0.044,
-      "medianTimeToSell": 482.73,
-      "unitsSold": 829,
-      "gearsTraded": 145.0,
+      "itemId": 2125,
+      "name": "Nugget (Cassiterite)",
+      "category": "nugget",
+      "listings": 14,
+      "soldCount": 5,
+      "sellThrough": 0.417,
+      "medianTimeToSell": 42.71,
+      "unitsSold": 612,
+      "gearsTraded": 147.0,
       "priceStats": {
-        "count": 13,
-        "min": 0.082,
-        "p10": 0.13,
-        "p25": 0.17,
-        "median": 0.17,
-        "p75": 0.17,
-        "p90": 0.23,
-        "max": 0.234,
-        "mean": 0.17
+        "count": 5,
+        "min": 0.172,
+        "p10": 0.18,
+        "p25": 0.2,
+        "median": 0.23,
+        "p75": 0.27,
+        "p90": 0.32,
+        "max": 0.35,
+        "mean": 0.24
       },
-      "trend": {
-        "direction": "down",
-        "changePct": -13.7,
-        "recentMedian": 0.148,
-        "olderMedian": 0.172,
-        "recentCount": 4,
-        "olderCount": 9
-      }
+      "trend": null
     },
     {
       "itemId": 4126,
@@ -3782,6 +3833,29 @@
       }
     },
     {
+      "itemId": 2807,
+      "name": "Ebony seed",
+      "category": "treeseed",
+      "listings": 13,
+      "soldCount": 6,
+      "sellThrough": 0.545,
+      "medianTimeToSell": 201.67,
+      "unitsSold": 12,
+      "gearsTraded": 106.0,
+      "priceStats": {
+        "count": 6,
+        "min": 1.667,
+        "p10": 4.83,
+        "p25": 8.0,
+        "median": 11.5,
+        "p75": 15.75,
+        "p90": 19.0,
+        "max": 22.0,
+        "mean": 11.78
+      },
+      "trend": null
+    },
+    {
       "itemId": 2212,
       "name": "Red glass",
       "category": "glass",
@@ -3801,6 +3875,29 @@
         "p90": 0.47,
         "max": 0.5,
         "mean": 0.41
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1704,
+      "name": "Crystalizedore bountiful galena shale",
+      "category": "crystalizedore",
+      "listings": 5,
+      "soldCount": 3,
+      "sellThrough": 0.6,
+      "medianTimeToSell": 359.13,
+      "unitsSold": 3,
+      "gearsTraded": 103.0,
+      "priceStats": {
+        "count": 3,
+        "min": 11.0,
+        "p10": 13.4,
+        "p25": 17.0,
+        "median": 23.0,
+        "p75": 46.0,
+        "p90": 59.8,
+        "max": 69.0,
+        "mean": 34.33
       },
       "trend": null
     },
@@ -4104,29 +4201,6 @@
       "trend": null
     },
     {
-      "itemId": 1704,
-      "name": "Crystalizedore bountiful galena shale",
-      "category": "crystalizedore",
-      "listings": 5,
-      "soldCount": 2,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 3210.42,
-      "unitsSold": 2,
-      "gearsTraded": 92.0,
-      "priceStats": {
-        "count": 2,
-        "min": 23.0,
-        "p10": 27.6,
-        "p25": 34.5,
-        "median": 46.0,
-        "p75": 57.5,
-        "p90": 64.4,
-        "max": 69.0,
-        "mean": 46.0
-      },
-      "trend": null
-    },
-    {
       "itemId": 92342830,
       "name": "Banner aged red top",
       "category": "clutter",
@@ -4295,6 +4369,29 @@
       "trend": null
     },
     {
+      "itemId": 1259,
+      "name": "Saltpeter",
+      "category": "saltpeter",
+      "listings": 27,
+      "soldCount": 7,
+      "sellThrough": 0.269,
+      "medianTimeToSell": 39.21,
+      "unitsSold": 448,
+      "gearsTraded": 86.0,
+      "priceStats": {
+        "count": 7,
+        "min": 0.062,
+        "p10": 0.12,
+        "p25": 0.16,
+        "median": 0.2,
+        "p75": 0.2,
+        "p90": 0.26,
+        "max": 0.344,
+        "mean": 0.19
+      },
+      "trend": null
+    },
+    {
       "itemId": 3045,
       "name": "Steel prospecting pick",
       "category": "prospectingpick",
@@ -4314,29 +4411,6 @@
         "p90": 28.5,
         "max": 30.0,
         "mean": 21.25
-      },
-      "trend": null
-    },
-    {
-      "itemId": 2807,
-      "name": "Ebony seed",
-      "category": "treeseed",
-      "listings": 13,
-      "soldCount": 5,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 180.57,
-      "unitsSold": 11,
-      "gearsTraded": 84.0,
-      "priceStats": {
-        "count": 5,
-        "min": 1.667,
-        "p10": 4.2,
-        "p25": 8.0,
-        "median": 8.0,
-        "p75": 15.0,
-        "p90": 15.6,
-        "max": 16.0,
-        "mean": 9.73
       },
       "trend": null
     },
@@ -4387,27 +4461,34 @@
       "trend": null
     },
     {
-      "itemId": 2125,
-      "name": "Nugget (Cassiterite)",
-      "category": "nugget",
-      "listings": 12,
-      "soldCount": 3,
-      "sellThrough": 0.3,
-      "medianTimeToSell": 251.34,
-      "unitsSold": 356,
+      "itemId": 2614,
+      "name": "Flax seeds",
+      "category": "seeds",
+      "listings": 19,
+      "soldCount": 9,
+      "sellThrough": 0.529,
+      "medianTimeToSell": 73.44,
+      "unitsSold": 576,
       "gearsTraded": 82.0,
       "priceStats": {
-        "count": 3,
-        "min": 0.172,
-        "p10": 0.18,
-        "p25": 0.18,
-        "median": 0.2,
-        "p75": 0.27,
-        "p90": 0.32,
-        "max": 0.35,
-        "mean": 0.24
+        "count": 9,
+        "min": 0.047,
+        "p10": 0.05,
+        "p25": 0.05,
+        "median": 0.19,
+        "p75": 0.19,
+        "p90": 0.21,
+        "max": 0.219,
+        "mean": 0.14
       },
-      "trend": null
+      "trend": {
+        "direction": "down",
+        "changePct": -75.0,
+        "recentMedian": 0.047,
+        "olderMedian": 0.188,
+        "recentCount": 3,
+        "olderCount": 6
+      }
     },
     {
       "itemId": 8364,
@@ -4525,33 +4606,56 @@
       "trend": null
     },
     {
-      "itemId": 2614,
-      "name": "Flax seeds",
-      "category": "seeds",
-      "listings": 19,
-      "soldCount": 8,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 73.44,
-      "unitsSold": 512,
+      "itemId": 927,
+      "name": "Jonas sub-assembly (Intricately wound spring)",
+      "category": "jonasframes",
+      "listings": 18,
+      "soldCount": 5,
+      "sellThrough": 0.278,
+      "medianTimeToSell": 203.81,
+      "unitsSold": 52,
       "gearsTraded": 79.0,
       "priceStats": {
-        "count": 8,
-        "min": 0.047,
-        "p10": 0.05,
-        "p25": 0.13,
-        "median": 0.19,
-        "p75": 0.19,
-        "p90": 0.21,
-        "max": 0.219,
-        "mean": 0.15
+        "count": 5,
+        "min": 0.75,
+        "p10": 1.07,
+        "p25": 1.56,
+        "median": 2.5,
+        "p75": 4.0,
+        "p90": 6.4,
+        "max": 8.0,
+        "mean": 3.36
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2917,
+      "name": "Recurve bow",
+      "category": "bow",
+      "listings": 33,
+      "soldCount": 15,
+      "sellThrough": 0.625,
+      "medianTimeToSell": 395.69,
+      "unitsSold": 15,
+      "gearsTraded": 79.0,
+      "priceStats": {
+        "count": 15,
+        "min": 5.0,
+        "p10": 5.0,
+        "p25": 5.0,
+        "median": 5.0,
+        "p75": 5.5,
+        "p90": 6.0,
+        "max": 6.0,
+        "mean": 5.27
       },
       "trend": {
-        "direction": "down",
-        "changePct": -17.0,
-        "recentMedian": 0.156,
-        "olderMedian": 0.188,
-        "recentCount": 3,
-        "olderCount": 5
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 5.0,
+        "olderMedian": 5.0,
+        "recentCount": 5,
+        "olderCount": 10
       }
     },
     {
@@ -4574,6 +4678,29 @@
         "p90": 1.4,
         "max": 1.5,
         "mean": 1.01
+      },
+      "trend": null
+    },
+    {
+      "itemId": 934,
+      "name": "Jonas part (Parallel transfer vessel)",
+      "category": "jonasparts",
+      "listings": 17,
+      "soldCount": 5,
+      "sellThrough": 0.312,
+      "medianTimeToSell": 203.98,
+      "unitsSold": 71,
+      "gearsTraded": 78.0,
+      "priceStats": {
+        "count": 5,
+        "min": 0.176,
+        "p10": 0.41,
+        "p25": 0.75,
+        "median": 0.8,
+        "p75": 1.56,
+        "p90": 6.02,
+        "max": 9.0,
+        "mean": 2.46
       },
       "trend": null
     },
@@ -4877,36 +5004,6 @@
       "trend": null
     },
     {
-      "itemId": 2917,
-      "name": "Recurve bow",
-      "category": "bow",
-      "listings": 32,
-      "soldCount": 14,
-      "sellThrough": 0.609,
-      "medianTimeToSell": 395.69,
-      "unitsSold": 14,
-      "gearsTraded": 74.0,
-      "priceStats": {
-        "count": 14,
-        "min": 5.0,
-        "p10": 5.0,
-        "p25": 5.0,
-        "median": 5.0,
-        "p75": 5.75,
-        "p90": 6.0,
-        "max": 6.0,
-        "mean": 5.29
-      },
-      "trend": {
-        "direction": "flat",
-        "changePct": 0.0,
-        "recentMedian": 5.0,
-        "olderMedian": 5.0,
-        "recentCount": 4,
-        "olderCount": 10
-      }
-    },
-    {
       "itemId": 4130,
       "name": "Nazar",
       "category": "clothes",
@@ -4979,29 +5076,6 @@
         "p90": 17.5,
         "max": 20.0,
         "mean": 12.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1259,
-      "name": "Saltpeter",
-      "category": "saltpeter",
-      "listings": 25,
-      "soldCount": 5,
-      "sellThrough": 0.208,
-      "medianTimeToSell": 32.23,
-      "unitsSold": 320,
-      "gearsTraded": 72.0,
-      "priceStats": {
-        "count": 5,
-        "min": 0.172,
-        "p10": 0.18,
-        "p25": 0.2,
-        "median": 0.2,
-        "p75": 0.2,
-        "p90": 0.29,
-        "max": 0.344,
-        "mean": 0.23
       },
       "trend": null
     },
@@ -5404,6 +5478,29 @@
       "trend": null
     },
     {
+      "itemId": 93791188,
+      "name": "Pile flasks",
+      "category": "clutter",
+      "listings": 16,
+      "soldCount": 6,
+      "sellThrough": 0.375,
+      "medianTimeToSell": 352.35,
+      "unitsSold": 6,
+      "gearsTraded": 64.0,
+      "priceStats": {
+        "count": 6,
+        "min": 3.0,
+        "p10": 5.0,
+        "p25": 7.75,
+        "median": 10.0,
+        "p75": 11.5,
+        "p90": 17.0,
+        "max": 22.0,
+        "mean": 10.67
+      },
+      "trend": null
+    },
+    {
       "itemId": 3851,
       "name": "Squire emblem",
       "category": "clothes",
@@ -5611,29 +5708,6 @@
       "trend": null
     },
     {
-      "itemId": 93791188,
-      "name": "Pile flasks",
-      "category": "clutter",
-      "listings": 16,
-      "soldCount": 5,
-      "sellThrough": 0.333,
-      "medianTimeToSell": 232.21,
-      "unitsSold": 5,
-      "gearsTraded": 57.0,
-      "priceStats": {
-        "count": 5,
-        "min": 3.0,
-        "p10": 5.8,
-        "p25": 10.0,
-        "median": 10.0,
-        "p75": 12.0,
-        "p90": 18.0,
-        "max": 22.0,
-        "mean": 11.4
-      },
-      "trend": null
-    },
-    {
       "itemId": 91517321,
       "name": "Table long with accessories",
       "category": "clutter",
@@ -5749,6 +5823,29 @@
       "trend": null
     },
     {
+      "itemId": 1252,
+      "name": "Powdered sulfur",
+      "category": "powder",
+      "listings": 3,
+      "soldCount": 3,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 410.33,
+      "unitsSold": 192,
+      "gearsTraded": 56.0,
+      "priceStats": {
+        "count": 3,
+        "min": 0.25,
+        "p10": 0.25,
+        "p25": 0.25,
+        "median": 0.25,
+        "p75": 0.31,
+        "p90": 0.35,
+        "max": 0.375,
+        "mean": 0.29
+      },
+      "trend": null
+    },
+    {
       "itemId": 4117,
       "name": "Lunula",
       "category": "clothes",
@@ -5844,7 +5941,7 @@
       "itemId": 1452,
       "name": "Chute Section",
       "category": "chutesection",
-      "listings": 1,
+      "listings": 2,
       "soldCount": 1,
       "sellThrough": 1.0,
       "medianTimeToSell": 385.61,
@@ -6168,7 +6265,7 @@
       "category": "clothes",
       "listings": 4,
       "soldCount": 1,
-      "sellThrough": 0.333,
+      "sellThrough": 0.25,
       "medianTimeToSell": 146.05,
       "unitsSold": 1,
       "gearsTraded": 50.0,
@@ -6214,7 +6311,7 @@
       "category": "clothes",
       "listings": 2,
       "soldCount": 1,
-      "sellThrough": 1.0,
+      "sellThrough": 0.5,
       "medianTimeToSell": 145.82,
       "unitsSold": 1,
       "gearsTraded": 50.0,
@@ -6320,6 +6417,29 @@
         "p90": 50.0,
         "max": 50.0,
         "mean": 50.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 933,
+      "name": "Jonas part (Temporal alignment node)",
+      "category": "jonasparts",
+      "listings": 19,
+      "soldCount": 5,
+      "sellThrough": 0.294,
+      "medianTimeToSell": 216.48,
+      "unitsSold": 21,
+      "gearsTraded": 49.0,
+      "priceStats": {
+        "count": 5,
+        "min": 0.75,
+        "p10": 2.05,
+        "p25": 4.0,
+        "median": 5.0,
+        "p75": 8.0,
+        "p90": 12.2,
+        "max": 15.0,
+        "mean": 6.55
       },
       "trend": null
     },
@@ -6630,6 +6750,29 @@
       "trend": null
     },
     {
+      "itemId": 4522,
+      "name": "Contaminated coal",
+      "category": "coal",
+      "listings": 145,
+      "soldCount": 7,
+      "sellThrough": 0.049,
+      "medianTimeToSell": 273.85,
+      "unitsSold": 416,
+      "gearsTraded": 46.0,
+      "priceStats": {
+        "count": 7,
+        "min": 0.047,
+        "p10": 0.08,
+        "p25": 0.09,
+        "median": 0.09,
+        "p75": 0.13,
+        "p90": 0.17,
+        "max": 0.172,
+        "mean": 0.11
+      },
+      "trend": null
+    },
+    {
       "itemId": 3929,
       "name": "Blackguard shoes",
       "category": "clothes",
@@ -6718,6 +6861,52 @@
         "p90": 11.6,
         "max": 12.0,
         "mean": 10.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 4194,
+      "name": "Hunter poncho",
+      "category": "clothes",
+      "listings": 14,
+      "soldCount": 3,
+      "sellThrough": 0.214,
+      "medianTimeToSell": 350.67,
+      "unitsSold": 3,
+      "gearsTraded": 44.0,
+      "priceStats": {
+        "count": 3,
+        "min": 7.0,
+        "p10": 8.0,
+        "p25": 9.5,
+        "median": 12.0,
+        "p75": 18.5,
+        "p90": 22.4,
+        "max": 25.0,
+        "mean": 14.67
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2128,
+      "name": "Nugget (Sphalerite)",
+      "category": "nugget",
+      "listings": 5,
+      "soldCount": 2,
+      "sellThrough": 0.4,
+      "medianTimeToSell": 42.79,
+      "unitsSold": 256,
+      "gearsTraded": 44.0,
+      "priceStats": {
+        "count": 2,
+        "min": 0.156,
+        "p10": 0.16,
+        "p25": 0.16,
+        "median": 0.17,
+        "p75": 0.18,
+        "p90": 0.18,
+        "max": 0.188,
+        "mean": 0.17
       },
       "trend": null
     },
@@ -6883,29 +7072,6 @@
       "trend": null
     },
     {
-      "itemId": 4522,
-      "name": "Contaminated coal",
-      "category": "coal",
-      "listings": 145,
-      "soldCount": 6,
-      "sellThrough": 0.042,
-      "medianTimeToSell": 273.85,
-      "unitsSold": 352,
-      "gearsTraded": 40.0,
-      "priceStats": {
-        "count": 6,
-        "min": 0.047,
-        "p10": 0.07,
-        "p25": 0.09,
-        "median": 0.09,
-        "p75": 0.15,
-        "p90": 0.17,
-        "max": 0.172,
-        "mean": 0.11
-      },
-      "trend": null
-    },
-    {
       "itemId": 4218,
       "name": "Embroidered fur shirt",
       "category": "clothes",
@@ -6948,6 +7114,29 @@
         "p90": 40.0,
         "max": 40.0,
         "mean": 40.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 4294,
+      "name": "Marketeer tunic",
+      "category": "clothes",
+      "listings": 10,
+      "soldCount": 2,
+      "sellThrough": 0.2,
+      "medianTimeToSell": 437.13,
+      "unitsSold": 2,
+      "gearsTraded": 40.0,
+      "priceStats": {
+        "count": 2,
+        "min": 20.0,
+        "p10": 20.0,
+        "p25": 20.0,
+        "median": 20.0,
+        "p75": 20.0,
+        "p90": 20.0,
+        "max": 20.0,
+        "mean": 20.0
       },
       "trend": null
     },
@@ -7189,48 +7378,25 @@
       "trend": null
     },
     {
-      "itemId": 933,
-      "name": "Jonas part (Temporal alignment node)",
-      "category": "jonasparts",
-      "listings": 18,
-      "soldCount": 4,
-      "sellThrough": 0.25,
-      "medianTimeToSell": 239.21,
-      "unitsSold": 5,
-      "gearsTraded": 37.0,
-      "priceStats": {
-        "count": 4,
-        "min": 4.0,
-        "p10": 4.3,
-        "p25": 4.75,
-        "median": 6.5,
-        "p75": 9.75,
-        "p90": 12.9,
-        "max": 15.0,
-        "mean": 8.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 4194,
-      "name": "Hunter poncho",
-      "category": "clothes",
-      "listings": 14,
+      "itemId": 1486,
+      "name": "Crystalizedore medium ilmenite andesite",
+      "category": "crystalizedore",
+      "listings": 5,
       "soldCount": 2,
-      "sellThrough": 0.154,
-      "medianTimeToSell": 754.72,
-      "unitsSold": 2,
+      "sellThrough": 0.4,
+      "medianTimeToSell": 341.73,
+      "unitsSold": 3,
       "gearsTraded": 37.0,
       "priceStats": {
         "count": 2,
-        "min": 12.0,
-        "p10": 13.3,
-        "p25": 15.25,
-        "median": 18.5,
-        "p75": 21.75,
-        "p90": 23.7,
-        "max": 25.0,
-        "mean": 18.5
+        "min": 8.5,
+        "p10": 9.65,
+        "p25": 11.38,
+        "median": 14.25,
+        "p75": 17.12,
+        "p90": 18.85,
+        "max": 20.0,
+        "mean": 14.25
       },
       "trend": null
     },
@@ -7392,6 +7558,29 @@
         "p90": 1.88,
         "max": 2.5,
         "mean": 1.46
+      },
+      "trend": null
+    },
+    {
+      "itemId": 11019,
+      "name": "Anthracite",
+      "category": "ore",
+      "listings": 4,
+      "soldCount": 1,
+      "sellThrough": 0.25,
+      "medianTimeToSell": 341.84,
+      "unitsSold": 5,
+      "gearsTraded": 35.0,
+      "priceStats": {
+        "count": 1,
+        "min": 7.0,
+        "p10": 7.0,
+        "p25": 7.0,
+        "median": 7.0,
+        "p75": 7.0,
+        "p90": 7.0,
+        "max": 7.0,
+        "mean": 7.0
       },
       "trend": null
     },
@@ -7580,6 +7769,29 @@
       "trend": null
     },
     {
+      "itemId": 926,
+      "name": "Jonas sub-assembly (Finely balanced oscillator)",
+      "category": "jonasframes",
+      "listings": 14,
+      "soldCount": 4,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 240.52,
+      "unitsSold": 19,
+      "gearsTraded": 32.0,
+      "priceStats": {
+        "count": 4,
+        "min": 0.75,
+        "p10": 1.12,
+        "p25": 1.69,
+        "median": 5.0,
+        "p75": 8.5,
+        "p90": 9.4,
+        "max": 10.0,
+        "mean": 5.19
+      },
+      "trend": null
+    },
+    {
       "itemId": 8391,
       "name": "Cracked bauxite ashlar blocks",
       "category": "crackedstonebricks",
@@ -7603,27 +7815,34 @@
       "trend": null
     },
     {
-      "itemId": 1252,
-      "name": "Powdered sulfur",
-      "category": "powder",
-      "listings": 3,
-      "soldCount": 2,
-      "sellThrough": 1.0,
-      "medianTimeToSell": 773.08,
-      "unitsSold": 128,
+      "itemId": 821,
+      "name": "Breadfruit",
+      "category": "fruit",
+      "listings": 25,
+      "soldCount": 8,
+      "sellThrough": 0.32,
+      "medianTimeToSell": 1181.23,
+      "unitsSold": 512,
       "gearsTraded": 32.0,
       "priceStats": {
-        "count": 2,
-        "min": 0.25,
-        "p10": 0.25,
-        "p25": 0.25,
-        "median": 0.25,
-        "p75": 0.25,
-        "p90": 0.25,
-        "max": 0.25,
-        "mean": 0.25
+        "count": 8,
+        "min": 0.062,
+        "p10": 0.06,
+        "p25": 0.06,
+        "median": 0.06,
+        "p75": 0.06,
+        "p90": 0.06,
+        "max": 0.062,
+        "mean": 0.06
       },
-      "trend": null
+      "trend": {
+        "direction": "flat",
+        "changePct": 0.0,
+        "recentMedian": 0.062,
+        "olderMedian": 0.062,
+        "recentCount": 3,
+        "olderCount": 5
+      }
     },
     {
       "itemId": 11586,
@@ -7902,6 +8121,29 @@
       "trend": null
     },
     {
+      "itemId": 1641,
+      "name": "Crystalizedore rich cassiterite granite",
+      "category": "crystalizedore",
+      "listings": 7,
+      "soldCount": 2,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 355.31,
+      "unitsSold": 2,
+      "gearsTraded": 30.0,
+      "priceStats": {
+        "count": 2,
+        "min": 8.0,
+        "p10": 9.4,
+        "p25": 11.5,
+        "median": 15.0,
+        "p75": 18.5,
+        "p90": 20.6,
+        "max": 22.0,
+        "mean": 15.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 1774,
       "name": "Crystalizedore rich bismuthinite peridotite",
       "category": "crystalizedore",
@@ -8079,7 +8321,7 @@
       "itemId": 9045,
       "name": "Chalk dry stone",
       "category": "drystone",
-      "listings": 3,
+      "listings": 4,
       "soldCount": 1,
       "sellThrough": 0.333,
       "medianTimeToSell": 213.67,
@@ -8125,7 +8367,7 @@
       "itemId": 2134,
       "name": "Nugget (Pentlandite)",
       "category": "nugget",
-      "listings": 4,
+      "listings": 5,
       "soldCount": 1,
       "sellThrough": 0.25,
       "medianTimeToSell": 586.37,
@@ -8306,29 +8548,6 @@
       "trend": null
     },
     {
-      "itemId": 927,
-      "name": "Jonas sub-assembly (Intricately wound spring)",
-      "category": "jonasframes",
-      "listings": 18,
-      "soldCount": 4,
-      "sellThrough": 0.235,
-      "medianTimeToSell": 822.05,
-      "unitsSold": 20,
-      "gearsTraded": 29.0,
-      "priceStats": {
-        "count": 4,
-        "min": 0.75,
-        "p10": 1.27,
-        "p25": 2.06,
-        "median": 3.25,
-        "p75": 5.0,
-        "p90": 6.8,
-        "max": 8.0,
-        "mean": 3.81
-      },
-      "trend": null
-    },
-    {
       "itemId": 935,
       "name": "Jonas part (Inverted refraction cylinder)",
       "category": "jonasparts",
@@ -8348,29 +8567,6 @@
         "p90": 9.8,
         "max": 11.0,
         "mean": 5.8
-      },
-      "trend": null
-    },
-    {
-      "itemId": 934,
-      "name": "Jonas part (Parallel transfer vessel)",
-      "category": "jonasparts",
-      "listings": 17,
-      "soldCount": 4,
-      "sellThrough": 0.267,
-      "medianTimeToSell": 254.28,
-      "unitsSold": 39,
-      "gearsTraded": 28.0,
-      "priceStats": {
-        "count": 4,
-        "min": 0.176,
-        "p10": 0.35,
-        "p25": 0.61,
-        "median": 0.78,
-        "p75": 2.85,
-        "p90": 6.54,
-        "max": 9.0,
-        "mean": 2.68
       },
       "trend": null
     },
@@ -8835,6 +9031,29 @@
       "trend": null
     },
     {
+      "itemId": 3007,
+      "name": "Ruined baselard",
+      "category": "knife",
+      "listings": 47,
+      "soldCount": 3,
+      "sellThrough": 0.064,
+      "medianTimeToSell": 346.4,
+      "unitsSold": 3,
+      "gearsTraded": 24.0,
+      "priceStats": {
+        "count": 3,
+        "min": 4.0,
+        "p10": 4.8,
+        "p25": 6.0,
+        "median": 8.0,
+        "p75": 10.0,
+        "p90": 11.2,
+        "max": 12.0,
+        "mean": 8.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 9743,
       "name": "Wet dirty gravel  (Stoney)",
       "category": "dirtygravel",
@@ -8900,6 +9119,29 @@
         "p90": 0.48,
         "max": 0.48,
         "mean": 0.48
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1217,
+      "name": "Steel pounder cap",
+      "category": "poundercap",
+      "listings": 3,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 559.5,
+      "unitsSold": 2,
+      "gearsTraded": 24.0,
+      "priceStats": {
+        "count": 1,
+        "min": 12.0,
+        "p10": 12.0,
+        "p25": 12.0,
+        "median": 12.0,
+        "p75": 12.0,
+        "p90": 12.0,
+        "max": 12.0,
+        "mean": 12.0
       },
       "trend": null
     },
@@ -9049,29 +9291,6 @@
       "soldCount": 1,
       "sellThrough": 0.333,
       "medianTimeToSell": 236.8,
-      "unitsSold": 1,
-      "gearsTraded": 22.0,
-      "priceStats": {
-        "count": 1,
-        "min": 22.0,
-        "p10": 22.0,
-        "p25": 22.0,
-        "median": 22.0,
-        "p75": 22.0,
-        "p90": 22.0,
-        "max": 22.0,
-        "mean": 22.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1641,
-      "name": "Crystalizedore rich cassiterite granite",
-      "category": "crystalizedore",
-      "listings": 7,
-      "soldCount": 1,
-      "sellThrough": 0.2,
-      "medianTimeToSell": 31.58,
       "unitsSold": 1,
       "gearsTraded": 22.0,
       "priceStats": {
@@ -9341,6 +9560,52 @@
       "trend": null
     },
     {
+      "itemId": 10642,
+      "name": "Lead ore",
+      "category": "ore",
+      "listings": 5,
+      "soldCount": 1,
+      "sellThrough": 0.2,
+      "medianTimeToSell": 332.62,
+      "unitsSold": 18,
+      "gearsTraded": 22.0,
+      "priceStats": {
+        "count": 1,
+        "min": 1.222,
+        "p10": 1.22,
+        "p25": 1.22,
+        "median": 1.22,
+        "p75": 1.22,
+        "p90": 1.22,
+        "max": 1.222,
+        "mean": 1.22
+      },
+      "trend": null
+    },
+    {
+      "itemId": 11008,
+      "name": "Anthracite",
+      "category": "ore",
+      "listings": 3,
+      "soldCount": 1,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 332.72,
+      "unitsSold": 2,
+      "gearsTraded": 22.0,
+      "priceStats": {
+        "count": 1,
+        "min": 11.0,
+        "p10": 11.0,
+        "p25": 11.0,
+        "median": 11.0,
+        "p75": 11.0,
+        "p90": 11.0,
+        "max": 11.0,
+        "mean": 11.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 8835,
       "name": "Large smoky quartz crystal (variant 2)",
       "category": "crystal",
@@ -9371,6 +9636,52 @@
       "soldCount": 1,
       "sellThrough": 1.0,
       "medianTimeToSell": 93.39,
+      "unitsSold": 1,
+      "gearsTraded": 22.0,
+      "priceStats": {
+        "count": 1,
+        "min": 22.0,
+        "p10": 22.0,
+        "p25": 22.0,
+        "median": 22.0,
+        "p75": 22.0,
+        "p90": 22.0,
+        "max": 22.0,
+        "mean": 22.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 11088,
+      "name": "Cinnabar",
+      "category": "ore",
+      "listings": 2,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 346.32,
+      "unitsSold": 1,
+      "gearsTraded": 22.0,
+      "priceStats": {
+        "count": 1,
+        "min": 22.0,
+        "p10": 22.0,
+        "p25": 22.0,
+        "median": 22.0,
+        "p75": 22.0,
+        "p90": 22.0,
+        "max": 22.0,
+        "mean": 22.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1601,
+      "name": "Crystalizedore bountiful malachite limestone",
+      "category": "crystalizedore",
+      "listings": 1,
+      "soldCount": 1,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 410.53,
       "unitsSold": 1,
       "gearsTraded": 22.0,
       "priceStats": {
@@ -9452,6 +9763,98 @@
         "p90": 7.0,
         "max": 7.0,
         "mean": 7.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1103,
+      "name": "Aged lore book (Orange brown)",
+      "category": "lore",
+      "listings": 64,
+      "soldCount": 7,
+      "sellThrough": 0.115,
+      "medianTimeToSell": 341.63,
+      "unitsSold": 7,
+      "gearsTraded": 20.0,
+      "priceStats": {
+        "count": 7,
+        "min": 1.0,
+        "p10": 1.6,
+        "p25": 2.0,
+        "median": 2.0,
+        "p75": 3.0,
+        "p90": 4.6,
+        "max": 7.0,
+        "mean": 2.86
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2668,
+      "name": "Phyllite stone",
+      "category": "stone",
+      "listings": 7,
+      "soldCount": 2,
+      "sellThrough": 0.286,
+      "medianTimeToSell": 1131.84,
+      "unitsSold": 128,
+      "gearsTraded": 20.0,
+      "priceStats": {
+        "count": 2,
+        "min": 0.062,
+        "p10": 0.08,
+        "p25": 0.11,
+        "median": 0.16,
+        "p75": 0.2,
+        "p90": 0.23,
+        "max": 0.25,
+        "mean": 0.16
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1102,
+      "name": "Scroll",
+      "category": "lore",
+      "listings": 63,
+      "soldCount": 4,
+      "sellThrough": 0.063,
+      "medianTimeToSell": 760.1,
+      "unitsSold": 4,
+      "gearsTraded": 20.0,
+      "priceStats": {
+        "count": 4,
+        "min": 2.0,
+        "p10": 2.3,
+        "p25": 2.75,
+        "median": 3.5,
+        "p75": 5.75,
+        "p90": 8.9,
+        "max": 11.0,
+        "mean": 5.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 1104,
+      "name": "Aged lore book (Orange)",
+      "category": "lore",
+      "listings": 36,
+      "soldCount": 5,
+      "sellThrough": 0.139,
+      "medianTimeToSell": 259.9,
+      "unitsSold": 5,
+      "gearsTraded": 20.0,
+      "priceStats": {
+        "count": 5,
+        "min": 2.0,
+        "p10": 2.8,
+        "p25": 4.0,
+        "median": 4.0,
+        "p75": 5.0,
+        "p90": 5.0,
+        "max": 5.0,
+        "mean": 4.0
       },
       "trend": null
     },
@@ -9548,29 +9951,6 @@
       "trend": null
     },
     {
-      "itemId": 926,
-      "name": "Jonas sub-assembly (Finely balanced oscillator)",
-      "category": "jonasframes",
-      "listings": 14,
-      "soldCount": 3,
-      "sellThrough": 0.273,
-      "medianTimeToSell": 240.52,
-      "unitsSold": 3,
-      "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 3,
-        "min": 2.0,
-        "p10": 3.2,
-        "p25": 5.0,
-        "median": 8.0,
-        "p75": 9.0,
-        "p90": 9.6,
-        "max": 10.0,
-        "mean": 6.67
-      },
-      "trend": null
-    },
-    {
       "itemId": 8847,
       "name": "Olivine cluster (variant 2)",
       "category": "crystal",
@@ -9647,29 +10027,6 @@
       "soldCount": 1,
       "sellThrough": 1.0,
       "medianTimeToSell": 238.2,
-      "unitsSold": 1,
-      "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 1,
-        "min": 20.0,
-        "p10": 20.0,
-        "p25": 20.0,
-        "median": 20.0,
-        "p75": 20.0,
-        "p90": 20.0,
-        "max": 20.0,
-        "mean": 20.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1486,
-      "name": "Crystalizedore medium ilmenite andesite",
-      "category": "crystalizedore",
-      "listings": 5,
-      "soldCount": 1,
-      "sellThrough": 0.25,
-      "medianTimeToSell": 237.91,
       "unitsSold": 1,
       "gearsTraded": 20.0,
       "priceStats": {
@@ -9847,29 +10204,6 @@
       "trend": null
     },
     {
-      "itemId": 2128,
-      "name": "Nugget (Sphalerite)",
-      "category": "nugget",
-      "listings": 4,
-      "soldCount": 1,
-      "sellThrough": 0.25,
-      "medianTimeToSell": 42.79,
-      "unitsSold": 128,
-      "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 1,
-        "min": 0.156,
-        "p10": 0.16,
-        "p25": 0.16,
-        "median": 0.16,
-        "p75": 0.16,
-        "p90": 0.16,
-        "max": 0.156,
-        "mean": 0.16
-      },
-      "trend": null
-    },
-    {
       "itemId": 3973,
       "name": "Miner gloves",
       "category": "clothes",
@@ -9923,29 +10257,6 @@
       "soldCount": 1,
       "sellThrough": 0.167,
       "medianTimeToSell": 631.77,
-      "unitsSold": 1,
-      "gearsTraded": 20.0,
-      "priceStats": {
-        "count": 1,
-        "min": 20.0,
-        "p10": 20.0,
-        "p25": 20.0,
-        "median": 20.0,
-        "p75": 20.0,
-        "p90": 20.0,
-        "max": 20.0,
-        "mean": 20.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 4294,
-      "name": "Marketeer tunic",
-      "category": "clothes",
-      "listings": 10,
-      "soldCount": 1,
-      "sellThrough": 0.111,
-      "medianTimeToSell": 47.58,
       "unitsSold": 1,
       "gearsTraded": 20.0,
       "priceStats": {
@@ -10264,6 +10575,29 @@
       "trend": null
     },
     {
+      "itemId": 4,
+      "name": "Armor stand (aged)",
+      "category": "armorstand",
+      "listings": 66,
+      "soldCount": 4,
+      "sellThrough": 0.061,
+      "medianTimeToSell": 360.24,
+      "unitsSold": 4,
+      "gearsTraded": 18.0,
+      "priceStats": {
+        "count": 4,
+        "min": 4.0,
+        "p10": 4.0,
+        "p25": 4.0,
+        "median": 4.5,
+        "p75": 5.0,
+        "p90": 5.0,
+        "max": 5.0,
+        "mean": 4.5
+      },
+      "trend": null
+    },
+    {
       "itemId": 4271,
       "name": "Hunter shirt",
       "category": "clothes",
@@ -10375,29 +10709,6 @@
         "p90": 18.0,
         "max": 18.0,
         "mean": 18.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1102,
-      "name": "Scroll",
-      "category": "lore",
-      "listings": 63,
-      "soldCount": 3,
-      "sellThrough": 0.048,
-      "medianTimeToSell": 760.1,
-      "unitsSold": 3,
-      "gearsTraded": 17.0,
-      "priceStats": {
-        "count": 3,
-        "min": 2.0,
-        "p10": 2.4,
-        "p25": 3.0,
-        "median": 4.0,
-        "p75": 7.5,
-        "p90": 9.6,
-        "max": 11.0,
-        "mean": 5.67
       },
       "trend": null
     },
@@ -10517,29 +10828,6 @@
       "trend": null
     },
     {
-      "itemId": 2668,
-      "name": "Phyllite stone",
-      "category": "stone",
-      "listings": 7,
-      "soldCount": 1,
-      "sellThrough": 0.167,
-      "medianTimeToSell": 1131.84,
-      "unitsSold": 64,
-      "gearsTraded": 16.0,
-      "priceStats": {
-        "count": 1,
-        "min": 0.25,
-        "p10": 0.25,
-        "p25": 0.25,
-        "median": 0.25,
-        "p75": 0.25,
-        "p90": 0.25,
-        "max": 0.25,
-        "mean": 0.25
-      },
-      "trend": null
-    },
-    {
       "itemId": 3429,
       "name": "Metal parts",
       "category": "metal",
@@ -10616,29 +10904,6 @@
       }
     },
     {
-      "itemId": 1104,
-      "name": "Aged lore book (Orange)",
-      "category": "lore",
-      "listings": 36,
-      "soldCount": 4,
-      "sellThrough": 0.114,
-      "medianTimeToSell": 259.9,
-      "unitsSold": 4,
-      "gearsTraded": 16.0,
-      "priceStats": {
-        "count": 4,
-        "min": 2.0,
-        "p10": 2.6,
-        "p25": 3.5,
-        "median": 4.5,
-        "p75": 5.0,
-        "p90": 5.0,
-        "max": 5.0,
-        "mean": 4.0
-      },
-      "trend": null
-    },
-    {
       "itemId": 4750,
       "name": "Brown bamboo sapling",
       "category": "sapling",
@@ -10662,29 +10927,6 @@
       "trend": null
     },
     {
-      "itemId": 3007,
-      "name": "Ruined baselard",
-      "category": "knife",
-      "listings": 47,
-      "soldCount": 2,
-      "sellThrough": 0.043,
-      "medianTimeToSell": 564.12,
-      "unitsSold": 2,
-      "gearsTraded": 16.0,
-      "priceStats": {
-        "count": 2,
-        "min": 4.0,
-        "p10": 4.8,
-        "p25": 6.0,
-        "median": 8.0,
-        "p75": 10.0,
-        "p90": 11.2,
-        "max": 12.0,
-        "mean": 8.0
-      },
-      "trend": null
-    },
-    {
       "itemId": 4146,
       "name": "Pearl necklace",
       "category": "clothes",
@@ -10704,6 +10946,29 @@
         "p90": 8.2,
         "max": 9.0,
         "mean": 5.33
+      },
+      "trend": null
+    },
+    {
+      "itemId": 4386,
+      "name": "Omok piece (Lead)",
+      "category": "omokpiece",
+      "listings": 8,
+      "soldCount": 3,
+      "sellThrough": 0.375,
+      "medianTimeToSell": 366.27,
+      "unitsSold": 90,
+      "gearsTraded": 16.0,
+      "priceStats": {
+        "count": 3,
+        "min": 0.1,
+        "p10": 0.12,
+        "p25": 0.15,
+        "median": 0.2,
+        "p75": 0.22,
+        "p90": 0.23,
+        "max": 0.233,
+        "mean": 0.18
       },
       "trend": null
     },
@@ -10911,6 +11176,52 @@
         "p90": 16.0,
         "max": 16.0,
         "mean": 16.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2800,
+      "name": "Pine seed",
+      "category": "treeseed",
+      "listings": 5,
+      "soldCount": 3,
+      "sellThrough": 0.6,
+      "medianTimeToSell": 28.61,
+      "unitsSold": 192,
+      "gearsTraded": 16.0,
+      "priceStats": {
+        "count": 3,
+        "min": 0.078,
+        "p10": 0.08,
+        "p25": 0.08,
+        "median": 0.08,
+        "p75": 0.09,
+        "p90": 0.09,
+        "max": 0.094,
+        "mean": 0.08
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2057,
+      "name": "Blue wallpaper",
+      "category": "wallpaper",
+      "listings": 2,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 334.97,
+      "unitsSold": 64,
+      "gearsTraded": 16.0,
+      "priceStats": {
+        "count": 1,
+        "min": 0.25,
+        "p10": 0.25,
+        "p25": 0.25,
+        "median": 0.25,
+        "p75": 0.25,
+        "p90": 0.25,
+        "max": 0.25,
+        "mean": 0.25
       },
       "trend": null
     },
@@ -11283,6 +11594,29 @@
       "trend": null
     },
     {
+      "itemId": 2061,
+      "name": "Walnut wallpaper",
+      "category": "wallpaper",
+      "listings": 6,
+      "soldCount": 1,
+      "sellThrough": 0.167,
+      "medianTimeToSell": 341.79,
+      "unitsSold": 64,
+      "gearsTraded": 15.0,
+      "priceStats": {
+        "count": 1,
+        "min": 0.234,
+        "p10": 0.23,
+        "p25": 0.23,
+        "median": 0.23,
+        "p75": 0.23,
+        "p90": 0.23,
+        "max": 0.234,
+        "mean": 0.23
+      },
+      "trend": null
+    },
+    {
       "itemId": 8078,
       "name": "Chalk rock (Polished)",
       "category": "rockpolished",
@@ -11322,7 +11656,7 @@
       "itemId": 928,
       "name": "Jonas sub-assembly (A complex joint)",
       "category": "jonasframes",
-      "listings": 13,
+      "listings": 14,
       "soldCount": 3,
       "sellThrough": 0.273,
       "medianTimeToSell": 114.66,
@@ -11483,7 +11817,7 @@
       "itemId": 3599,
       "name": "Acrobat bracelet",
       "category": "clothes",
-      "listings": 14,
+      "listings": 15,
       "soldCount": 2,
       "sellThrough": 0.154,
       "medianTimeToSell": 296.75,
@@ -11595,6 +11929,29 @@
       "trend": null
     },
     {
+      "itemId": 4388,
+      "name": "Omok piece (Copper)",
+      "category": "omokpiece",
+      "listings": 6,
+      "soldCount": 2,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 710.7,
+      "unitsSold": 60,
+      "gearsTraded": 13.0,
+      "priceStats": {
+        "count": 2,
+        "min": 0.167,
+        "p10": 0.18,
+        "p25": 0.19,
+        "median": 0.22,
+        "p75": 0.24,
+        "p90": 0.26,
+        "max": 0.267,
+        "mean": 0.22
+      },
+      "trend": null
+    },
+    {
       "itemId": 13722,
       "name": "Tall display case",
       "category": "talldisplaycase",
@@ -11660,29 +12017,6 @@
         "p90": 13.0,
         "max": 13.0,
         "mean": 13.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 1103,
-      "name": "Aged lore book (Orange brown)",
-      "category": "lore",
-      "listings": 64,
-      "soldCount": 4,
-      "sellThrough": 0.069,
-      "medianTimeToSell": 223.55,
-      "unitsSold": 4,
-      "gearsTraded": 12.0,
-      "priceStats": {
-        "count": 4,
-        "min": 1.0,
-        "p10": 1.3,
-        "p25": 1.75,
-        "median": 2.0,
-        "p75": 3.25,
-        "p90": 5.5,
-        "max": 7.0,
-        "mean": 3.0
       },
       "trend": null
     },
@@ -12101,29 +12435,6 @@
       "trend": null
     },
     {
-      "itemId": 2800,
-      "name": "Pine seed",
-      "category": "treeseed",
-      "listings": 4,
-      "soldCount": 2,
-      "sellThrough": 0.5,
-      "medianTimeToSell": 773.8,
-      "unitsSold": 128,
-      "gearsTraded": 11.0,
-      "priceStats": {
-        "count": 2,
-        "min": 0.078,
-        "p10": 0.08,
-        "p25": 0.08,
-        "median": 0.09,
-        "p75": 0.09,
-        "p90": 0.09,
-        "max": 0.094,
-        "mean": 0.09
-      },
-      "trend": null
-    },
-    {
       "itemId": 10875,
       "name": "Bismuth ore",
       "category": "ore",
@@ -12354,29 +12665,6 @@
       "trend": null
     },
     {
-      "itemId": 4,
-      "name": "Armor stand (aged)",
-      "category": "armorstand",
-      "listings": 66,
-      "soldCount": 2,
-      "sellThrough": 0.031,
-      "medianTimeToSell": 320.0,
-      "unitsSold": 2,
-      "gearsTraded": 10.0,
-      "priceStats": {
-        "count": 2,
-        "min": 5.0,
-        "p10": 5.0,
-        "p25": 5.0,
-        "median": 5.0,
-        "p75": 5.0,
-        "p90": 5.0,
-        "max": 5.0,
-        "mean": 5.0
-      },
-      "trend": null
-    },
-    {
       "itemId": 95186781,
       "name": "Bookshelves scrollrack full",
       "category": "clutter",
@@ -12396,29 +12684,6 @@
         "p90": 10.0,
         "max": 10.0,
         "mean": 10.0
-      },
-      "trend": null
-    },
-    {
-      "itemId": 4386,
-      "name": "Omok piece (Lead)",
-      "category": "omokpiece",
-      "listings": 8,
-      "soldCount": 2,
-      "sellThrough": 0.286,
-      "medianTimeToSell": 595.24,
-      "unitsSold": 60,
-      "gearsTraded": 10.0,
-      "priceStats": {
-        "count": 2,
-        "min": 0.1,
-        "p10": 0.11,
-        "p25": 0.13,
-        "median": 0.17,
-        "p75": 0.2,
-        "p90": 0.22,
-        "max": 0.233,
-        "mean": 0.17
       },
       "trend": null
     },
@@ -12883,6 +13148,29 @@
       "trend": null
     },
     {
+      "itemId": 3911,
+      "name": "Acrobat anklets",
+      "category": "clothes",
+      "listings": 8,
+      "soldCount": 1,
+      "sellThrough": 0.143,
+      "medianTimeToSell": 436.56,
+      "unitsSold": 1,
+      "gearsTraded": 10.0,
+      "priceStats": {
+        "count": 1,
+        "min": 10.0,
+        "p10": 10.0,
+        "p25": 10.0,
+        "median": 10.0,
+        "p75": 10.0,
+        "p90": 10.0,
+        "max": 10.0,
+        "mean": 10.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 4338,
       "name": "Cerise embroidered reindeer herder waistband",
       "category": "clothes",
@@ -13132,6 +13420,29 @@
         "p90": 10.0,
         "max": 10.0,
         "mean": 10.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2551,
+      "name": "Kernite",
+      "category": "ore",
+      "listings": 1,
+      "soldCount": 1,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 649.21,
+      "unitsSold": 13,
+      "gearsTraded": 10.0,
+      "priceStats": {
+        "count": 1,
+        "min": 0.769,
+        "p10": 0.77,
+        "p25": 0.77,
+        "median": 0.77,
+        "p75": 0.77,
+        "p90": 0.77,
+        "max": 0.769,
+        "mean": 0.77
       },
       "trend": null
     },
@@ -13481,52 +13792,6 @@
       "trend": null
     },
     {
-      "itemId": 4388,
-      "name": "Omok piece (Copper)",
-      "category": "omokpiece",
-      "listings": 6,
-      "soldCount": 1,
-      "sellThrough": 0.2,
-      "medianTimeToSell": 710.7,
-      "unitsSold": 30,
-      "gearsTraded": 8.0,
-      "priceStats": {
-        "count": 1,
-        "min": 0.267,
-        "p10": 0.27,
-        "p25": 0.27,
-        "median": 0.27,
-        "p75": 0.27,
-        "p90": 0.27,
-        "max": 0.267,
-        "mean": 0.27
-      },
-      "trend": null
-    },
-    {
-      "itemId": 821,
-      "name": "Breadfruit",
-      "category": "fruit",
-      "listings": 25,
-      "soldCount": 2,
-      "sellThrough": 0.105,
-      "medianTimeToSell": 687.21,
-      "unitsSold": 128,
-      "gearsTraded": 8.0,
-      "priceStats": {
-        "count": 2,
-        "min": 0.062,
-        "p10": 0.06,
-        "p25": 0.06,
-        "median": 0.06,
-        "p75": 0.06,
-        "p90": 0.06,
-        "max": 0.062,
-        "mean": 0.06
-      },
-      "trend": null
-    },
-    {
       "itemId": 1384,
       "name": "Horns (Bighorn sheep)",
       "category": "antler",
@@ -13546,6 +13811,29 @@
         "p90": 8.0,
         "max": 8.0,
         "mean": 8.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2552,
+      "name": "Phosphorite",
+      "category": "ore",
+      "listings": 2,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 649.31,
+      "unitsSold": 6,
+      "gearsTraded": 8.0,
+      "priceStats": {
+        "count": 1,
+        "min": 1.333,
+        "p10": 1.33,
+        "p25": 1.33,
+        "median": 1.33,
+        "p75": 1.33,
+        "p90": 1.33,
+        "max": 1.333,
+        "mean": 1.33
       },
       "trend": null
     },
@@ -13803,6 +14091,29 @@
       "trend": null
     },
     {
+      "itemId": 2956,
+      "name": "Tin bronze hammer",
+      "category": "hammer",
+      "listings": 1,
+      "soldCount": 1,
+      "sellThrough": 1.0,
+      "medianTimeToSell": 806.7,
+      "unitsSold": 1,
+      "gearsTraded": 7.0,
+      "priceStats": {
+        "count": 1,
+        "min": 7.0,
+        "p10": 7.0,
+        "p25": 7.0,
+        "median": 7.0,
+        "p75": 7.0,
+        "p90": 7.0,
+        "max": 7.0,
+        "mean": 7.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 1096,
       "name": "Purple rotten book",
       "category": "book",
@@ -13918,6 +14229,52 @@
       "trend": null
     },
     {
+      "itemId": 8958,
+      "name": "Small milky quartz crystal (variant 2)",
+      "category": "crystal",
+      "listings": 3,
+      "soldCount": 1,
+      "sellThrough": 0.333,
+      "medianTimeToSell": 334.9,
+      "unitsSold": 1,
+      "gearsTraded": 6.0,
+      "priceStats": {
+        "count": 1,
+        "min": 6.0,
+        "p10": 6.0,
+        "p25": 6.0,
+        "median": 6.0,
+        "p75": 6.0,
+        "p90": 6.0,
+        "max": 6.0,
+        "mean": 6.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 8966,
+      "name": "Small amethyst crystal (variant 3)",
+      "category": "crystal",
+      "listings": 4,
+      "soldCount": 1,
+      "sellThrough": 0.25,
+      "medianTimeToSell": 337.84,
+      "unitsSold": 1,
+      "gearsTraded": 6.0,
+      "priceStats": {
+        "count": 1,
+        "min": 6.0,
+        "p10": 6.0,
+        "p25": 6.0,
+        "median": 6.0,
+        "p75": 6.0,
+        "p90": 6.0,
+        "max": 6.0,
+        "mean": 6.0
+      },
+      "trend": null
+    },
+    {
       "itemId": 7912,
       "name": "Fanned kimberlite cobblestone",
       "category": "cobblestonefan",
@@ -14006,6 +14363,29 @@
         "p90": 0.4,
         "max": 0.4,
         "mean": 0.4
+      },
+      "trend": null
+    },
+    {
+      "itemId": 95637689,
+      "name": "Armillary",
+      "category": "clutter",
+      "listings": 12,
+      "soldCount": 1,
+      "sellThrough": 0.083,
+      "medianTimeToSell": 341.86,
+      "unitsSold": 1,
+      "gearsTraded": 5.0,
+      "priceStats": {
+        "count": 1,
+        "min": 5.0,
+        "p10": 5.0,
+        "p25": 5.0,
+        "median": 5.0,
+        "p75": 5.0,
+        "p90": 5.0,
+        "max": 5.0,
+        "mean": 5.0
       },
       "trend": null
     },
@@ -14121,6 +14501,29 @@
         "p90": 0.39,
         "max": 0.385,
         "mean": 0.39
+      },
+      "trend": null
+    },
+    {
+      "itemId": 3046,
+      "name": "Wooden round shield",
+      "category": "shield",
+      "listings": 13,
+      "soldCount": 1,
+      "sellThrough": 0.083,
+      "medianTimeToSell": 378.69,
+      "unitsSold": 1,
+      "gearsTraded": 5.0,
+      "priceStats": {
+        "count": 1,
+        "min": 5.0,
+        "p10": 5.0,
+        "p25": 5.0,
+        "median": 5.0,
+        "p75": 5.0,
+        "p90": 5.0,
+        "max": 5.0,
+        "mean": 5.0
       },
       "trend": null
     },
@@ -14650,6 +15053,29 @@
         "p90": 0.06,
         "max": 0.062,
         "mean": 0.06
+      },
+      "trend": null
+    },
+    {
+      "itemId": 2879,
+      "name": "Ruined bearded axe",
+      "category": "axe",
+      "listings": 5,
+      "soldCount": 1,
+      "sellThrough": 0.2,
+      "medianTimeToSell": 343.33,
+      "unitsSold": 1,
+      "gearsTraded": 4.0,
+      "priceStats": {
+        "count": 1,
+        "min": 4.0,
+        "p10": 4.0,
+        "p25": 4.0,
+        "median": 4.0,
+        "p75": 4.0,
+        "p90": 4.0,
+        "max": 4.0,
+        "mean": 4.0
       },
       "trend": null
     },
@@ -15464,7 +15890,7 @@
       "category": "legume",
       "listings": 8,
       "soldCount": 1,
-      "sellThrough": 0.167,
+      "sellThrough": 0.125,
       "medianTimeToSell": 320.81,
       "unitsSold": 32,
       "gearsTraded": 2.0,
@@ -15811,6 +16237,29 @@
       "soldCount": 1,
       "sellThrough": 0.333,
       "medianTimeToSell": 393.06,
+      "unitsSold": 1,
+      "gearsTraded": 2.0,
+      "priceStats": {
+        "count": 1,
+        "min": 2.0,
+        "p10": 2.0,
+        "p25": 2.0,
+        "median": 2.0,
+        "p75": 2.0,
+        "p90": 2.0,
+        "max": 2.0,
+        "mean": 2.0
+      },
+      "trend": null
+    },
+    {
+      "itemId": 11033,
+      "name": "Black coal",
+      "category": "ore",
+      "listings": 2,
+      "soldCount": 1,
+      "sellThrough": 0.5,
+      "medianTimeToSell": 351.05,
       "unitsSold": 1,
       "gearsTraded": 2.0,
       "priceStats": {
@@ -16322,19 +16771,6 @@
       "name": "Schematic c bloody",
       "category": "tapestry",
       "listings": 6,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 95637689,
-      "name": "Armillary",
-      "category": "clutter",
-      "listings": 12,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -17917,19 +18353,6 @@
       "trend": null
     },
     {
-      "itemId": 2879,
-      "name": "Ruined bearded axe",
-      "category": "axe",
-      "listings": 5,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 42,
       "name": "Butterfly dead commonbrimstonefemale",
       "category": "butterfly",
@@ -17947,19 +18370,6 @@
       "name": "Painting (Old Village)",
       "category": "painting",
       "listings": 5,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 11019,
-      "name": "Anthracite",
-      "category": "ore",
-      "listings": 4,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -18207,19 +18617,6 @@
       "name": "Shepherd pants",
       "category": "clothes",
       "listings": 8,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 3046,
-      "name": "Wooden round shield",
-      "category": "shield",
-      "listings": 13,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -18648,7 +19045,7 @@
       "itemId": 1062,
       "name": "Strong tannin",
       "category": "strongtanninportion",
-      "listings": 2,
+      "listings": 3,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -18856,7 +19253,7 @@
       "itemId": 2324,
       "name": "Ore bountiful hematite granite",
       "category": "ore",
-      "listings": 10,
+      "listings": 12,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -19922,7 +20319,7 @@
       "itemId": 1215,
       "name": "Iron pounder cap",
       "category": "poundercap",
-      "listings": 1,
+      "listings": 2,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -20196,45 +20593,6 @@
       "name": "Aged chert ashlar blocks",
       "category": "agedstonebricks",
       "listings": 10,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 2057,
-      "name": "Blue wallpaper",
-      "category": "wallpaper",
-      "listings": 2,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 2061,
-      "name": "Walnut wallpaper",
-      "category": "wallpaper",
-      "listings": 6,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 8958,
-      "name": "Small milky quartz crystal (variant 2)",
-      "category": "crystal",
-      "listings": 3,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -20585,19 +20943,6 @@
       "itemId": 8105,
       "name": "Aged polished cobbled rock (Conglomerate)",
       "category": "polishedrockold",
-      "listings": 2,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 11033,
-      "name": "Black coal",
-      "category": "ore",
       "listings": 2,
       "soldCount": 0,
       "sellThrough": 0.0,
@@ -20959,19 +21304,6 @@
       "trend": null
     },
     {
-      "itemId": 1217,
-      "name": "Steel pounder cap",
-      "category": "poundercap",
-      "listings": 2,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 4752,
       "name": "Brown bamboo shoots",
       "category": "sapling",
@@ -21310,19 +21642,6 @@
       "trend": null
     },
     {
-      "itemId": 8966,
-      "name": "Small amethyst crystal (variant 3)",
-      "category": "crystal",
-      "listings": 4,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 11344,
       "name": "Slate sand",
       "category": "sand",
@@ -21414,19 +21733,6 @@
       "trend": null
     },
     {
-      "itemId": 10642,
-      "name": "Lead ore",
-      "category": "ore",
-      "listings": 5,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 4489,
       "name": "Farmhand belt",
       "category": "clothes",
@@ -21483,19 +21789,6 @@
       "name": "Chalk gravel",
       "category": "gravel",
       "listings": 4,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 11008,
-      "name": "Anthracite",
-      "category": "ore",
-      "listings": 3,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -21573,7 +21866,7 @@
       "itemId": 1896,
       "name": "Flint",
       "category": "flint",
-      "listings": 5,
+      "listings": 6,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -21665,19 +21958,6 @@
       "name": "Chains chain section",
       "category": "clutter",
       "listings": 1,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 3911,
-      "name": "Acrobat anklets",
-      "category": "clothes",
-      "listings": 8,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -21807,19 +22087,6 @@
       "itemId": 91768334,
       "name": "Bed bed fancy ruined",
       "category": "clutter",
-      "listings": 2,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 2552,
-      "name": "Phosphorite",
-      "category": "ore",
       "listings": 2,
       "soldCount": 0,
       "sellThrough": 0.0,
@@ -22444,7 +22711,7 @@
       "itemId": 1600,
       "name": "Clay oven",
       "category": "clayoven",
-      "listings": 5,
+      "listings": 8,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -23004,19 +23271,6 @@
       "name": "Copper shovel",
       "category": "shovel",
       "listings": 3,
-      "soldCount": 0,
-      "sellThrough": 0.0,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 11088,
-      "name": "Cinnabar",
-      "category": "ore",
-      "listings": 2,
       "soldCount": 0,
       "sellThrough": 0.0,
       "medianTimeToSell": null,
@@ -25574,32 +25828,6 @@
       "trend": null
     },
     {
-      "itemId": 2956,
-      "name": "Tin bronze hammer",
-      "category": "hammer",
-      "listings": 1,
-      "soldCount": 0,
-      "sellThrough": null,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 2551,
-      "name": "Kernite",
-      "category": "ore",
-      "listings": 1,
-      "soldCount": 0,
-      "sellThrough": null,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
       "itemId": 4323,
       "name": "Squire belt",
       "category": "clothes",
@@ -25641,19 +25869,6 @@
     {
       "itemId": 1770,
       "name": "Crystalizedore rich quartz nativesilver peridotite",
-      "category": "crystalizedore",
-      "listings": 1,
-      "soldCount": 0,
-      "sellThrough": null,
-      "medianTimeToSell": null,
-      "unitsSold": 0,
-      "gearsTraded": 0,
-      "priceStats": null,
-      "trend": null
-    },
-    {
-      "itemId": 1601,
-      "name": "Crystalizedore bountiful malachite limestone",
       "category": "crystalizedore",
       "listings": 1,
       "soldCount": 0,
@@ -25806,21 +26021,60 @@
       "gearsTraded": 0,
       "priceStats": null,
       "trend": null
+    },
+    {
+      "itemId": 1249,
+      "name": "Powdered iron oxide",
+      "category": "powder",
+      "listings": 3,
+      "soldCount": 0,
+      "sellThrough": null,
+      "medianTimeToSell": null,
+      "unitsSold": 0,
+      "gearsTraded": 0,
+      "priceStats": null,
+      "trend": null
+    },
+    {
+      "itemId": 999,
+      "name": "Limewater",
+      "category": "limewaterportion",
+      "listings": 1,
+      "soldCount": 0,
+      "sellThrough": null,
+      "medianTimeToSell": null,
+      "unitsSold": 0,
+      "gearsTraded": 0,
+      "priceStats": null,
+      "trend": null
+    },
+    {
+      "itemId": 4523,
+      "name": "Woad",
+      "category": "flower",
+      "listings": 1,
+      "soldCount": 0,
+      "sellThrough": null,
+      "medianTimeToSell": null,
+      "unitsSold": 0,
+      "gearsTraded": 0,
+      "priceStats": null,
+      "trend": null
     }
   ],
   "topSellers": [
     {
       "uid": "5z6wfGC8cu00vxoWaMwNJucZ",
       "name": "Yoma22k",
-      "revenue": 17559.0,
-      "sold": 432,
+      "revenue": 17964.0,
+      "sold": 469,
       "listed": 5349
     },
     {
       "uid": "dtp5Q8WXxod8I04++3OclPva",
       "name": "Tuxedocat",
-      "revenue": 2784.0,
-      "sold": 69,
+      "revenue": 2786.0,
+      "sold": 70,
       "listed": 91
     },
     {
@@ -25847,8 +26101,8 @@
     {
       "uid": "vOTPshKgMRJN8pEimJt9TWOE",
       "name": "Afili",
-      "revenue": 1613.0,
-      "sold": 39,
+      "revenue": 1685.0,
+      "sold": 40,
       "listed": 143
     },
     {
@@ -25877,7 +26131,14 @@
       "name": "myworld8",
       "revenue": 915.0,
       "sold": 32,
-      "listed": 97
+      "listed": 100
+    },
+    {
+      "uid": "Y7N1SqP7WyMvpQ9WoDfXvoeY",
+      "name": "The_Saturn",
+      "revenue": 890.0,
+      "sold": 54,
+      "listed": 70
     },
     {
       "uid": "V8rhuQUCVX0tkIjwu2EnE3f6",
@@ -25901,18 +26162,18 @@
       "listed": 111
     },
     {
-      "uid": "Y7N1SqP7WyMvpQ9WoDfXvoeY",
-      "name": "The_Saturn",
-      "revenue": 836.0,
-      "sold": 50,
-      "listed": 67
-    },
-    {
       "uid": "2CSpTcWCnwaswcnAtqP/Kfzj",
       "name": "Vesanus",
-      "revenue": 731.0,
-      "sold": 52,
+      "revenue": 752.0,
+      "sold": 58,
       "listed": 180
+    },
+    {
+      "uid": "Cpn+KEJU0ZBvpuvvlNofJYzG",
+      "name": "oo7sk8punk",
+      "revenue": 714.0,
+      "sold": 51,
+      "listed": 73
     },
     {
       "uid": "bqEKLdNg+zV6pyMPkdFVBCA/",
@@ -25936,18 +26197,11 @@
       "listed": 3
     },
     {
-      "uid": "Cpn+KEJU0ZBvpuvvlNofJYzG",
-      "name": "oo7sk8punk",
-      "revenue": 674.0,
-      "sold": 48,
-      "listed": 73
-    },
-    {
       "uid": "QMQjKskhIumg2R2aL7ZdKasP",
       "name": "dirtgrubs",
-      "revenue": 640.0,
-      "sold": 89,
-      "listed": 152
+      "revenue": 663.0,
+      "sold": 91,
+      "listed": 154
     },
     {
       "uid": "ojNDtWzwhw/TPBfnFuKogymF",
@@ -25957,11 +26211,25 @@
       "listed": 128
     },
     {
+      "uid": "2nINquxqeBJIcw0k/Bhm6J6T",
+      "name": "XDead_MasterX",
+      "revenue": 589.0,
+      "sold": 24,
+      "listed": 59
+    },
+    {
       "uid": "zjkWh9B0cS4Pe7WLzUUAlhe3",
       "name": "WilliamAcuerdo",
       "revenue": 499.0,
       "sold": 29,
       "listed": 52
+    },
+    {
+      "uid": "NwGTkvkr8gn6lN3Y6AJENOuG",
+      "name": "Doinysos",
+      "revenue": 492.0,
+      "sold": 17,
+      "listed": 33
     },
     {
       "uid": "p+sWDRtakwTwn7B0bk9m1gKt",
@@ -25978,17 +26246,10 @@
       "listed": 78
     },
     {
-      "uid": "NwGTkvkr8gn6lN3Y6AJENOuG",
-      "name": "Doinysos",
-      "revenue": 447.0,
-      "sold": 15,
-      "listed": 31
-    },
-    {
       "uid": "H7qd9gl+EYyRJ2D11UR/oOri",
       "name": "snakeslayer541",
-      "revenue": 445.0,
-      "sold": 17,
+      "revenue": 472.0,
+      "sold": 19,
       "listed": 81
     },
     {
@@ -26006,6 +26267,13 @@
       "listed": 18
     },
     {
+      "uid": "PDisuWT/IhXaxjjZIbwjpwsY",
+      "name": "vak",
+      "revenue": 377.0,
+      "sold": 13,
+      "listed": 128
+    },
+    {
       "uid": "ZnPv4iRXIWhs3VSsWTDcB5Dp",
       "name": "Marabunta12",
       "revenue": 331.0,
@@ -26017,7 +26285,7 @@
       "name": "Raistrind",
       "revenue": 328.0,
       "sold": 9,
-      "listed": 30
+      "listed": 32
     },
     {
       "uid": "V8HasWTdaqUtElOR00SP0M+h",
@@ -26034,25 +26302,11 @@
       "listed": 7
     },
     {
-      "uid": "2nINquxqeBJIcw0k/Bhm6J6T",
-      "name": "XDead_MasterX",
-      "revenue": 294.0,
-      "sold": 12,
-      "listed": 41
-    },
-    {
       "uid": "m5CztL+aHYinOQC0E6oyz43y",
       "name": "ifoz",
       "revenue": 293.0,
       "sold": 9,
       "listed": 18
-    },
-    {
-      "uid": "PDisuWT/IhXaxjjZIbwjpwsY",
-      "name": "vak",
-      "revenue": 287.0,
-      "sold": 11,
-      "listed": 128
     },
     {
       "uid": "x1yF9qGF0CUP2RZspQyoYfOA",
@@ -26143,7 +26397,7 @@
       "name": "morall",
       "revenue": 205.0,
       "sold": 13,
-      "listed": 34
+      "listed": 35
     },
     {
       "uid": "zXMfrKD8usQ6fIqrZMiAvnYc",
@@ -26157,7 +26411,7 @@
       "name": "MangoKingOfFruit",
       "revenue": 197.0,
       "sold": 5,
-      "listed": 15
+      "listed": 21
     }
   ],
   "topBuyers": [
@@ -26170,8 +26424,8 @@
     {
       "uid": "PDisuWT/IhXaxjjZIbwjpwsY",
       "name": "vak",
-      "spent": 4651.0,
-      "bought": 75
+      "spent": 4761.0,
+      "bought": 77
     },
     {
       "uid": "7EfZF+PKbVaooLLxGW27ftPv",
@@ -26206,20 +26460,20 @@
     {
       "uid": "Y7N1SqP7WyMvpQ9WoDfXvoeY",
       "name": "The_Saturn",
-      "spent": 2138.0,
-      "bought": 41
+      "spent": 2300.0,
+      "bought": 46
+    },
+    {
+      "uid": "xtVGs78xLYBa5vX6H9peCCkj",
+      "name": "AbigailDark",
+      "spent": 1797.0,
+      "bought": 56
     },
     {
       "uid": "yP5BadHiPEF6Nt5uWRnx6VRD",
       "name": "MK0",
       "spent": 1631.0,
       "bought": 35
-    },
-    {
-      "uid": "xtVGs78xLYBa5vX6H9peCCkj",
-      "name": "AbigailDark",
-      "spent": 1394.0,
-      "bought": 22
     },
     {
       "uid": "8b6pew03tv3ZZduaa9JdsNfj",
@@ -26320,8 +26574,8 @@
     {
       "uid": "ITfSlNshvYEccsyAVwsMuaER",
       "name": "Nope_avi",
-      "spent": 381.0,
-      "bought": 19
+      "spent": 441.0,
+      "bought": 20
     },
     {
       "uid": "9CAoPfK4EclFJSsWmv5MHUW+",
@@ -26342,6 +26596,12 @@
       "bought": 16
     },
     {
+      "uid": "SGxYDiAzqpgRfZ/7eQaFJ9KP",
+      "name": "Wist",
+      "spent": 342.0,
+      "bought": 30
+    },
+    {
       "uid": "n5knehkf086KghOuRWCpHeLL",
       "name": "GuildedChaser",
       "spent": 337.0,
@@ -26352,6 +26612,12 @@
       "name": "Edelstxin",
       "spent": 332.0,
       "bought": 4
+    },
+    {
+      "uid": "POY0eQJcWifQW2zRAkAgbOy9",
+      "name": "sirch",
+      "spent": 330.0,
+      "bought": 17
     },
     {
       "uid": "for8fS76EjFIPsfSf5o7aOCR",
@@ -26378,6 +26644,12 @@
       "bought": 11
     },
     {
+      "uid": "AEY2v11NxtinFXcLjT1cA8zk",
+      "name": "MangoKingOfFruit",
+      "spent": 307.0,
+      "bought": 22
+    },
+    {
       "uid": "2CSpTcWCnwaswcnAtqP/Kfzj",
       "name": "Vesanus",
       "spent": 305.0,
@@ -26388,12 +26660,6 @@
       "name": "SplataufBurger",
       "spent": 299.0,
       "bought": 1
-    },
-    {
-      "uid": "SGxYDiAzqpgRfZ/7eQaFJ9KP",
-      "name": "Wist",
-      "spent": 294.0,
-      "bought": 24
     },
     {
       "uid": "VAEMDdJsT2BCHN+tfQImpv59",
@@ -26408,22 +26674,10 @@
       "bought": 18
     },
     {
-      "uid": "AEY2v11NxtinFXcLjT1cA8zk",
-      "name": "MangoKingOfFruit",
-      "spent": 283.0,
-      "bought": 21
-    },
-    {
       "uid": "ZPG4VeVGHgBp4XD2KWT1RO8Z",
       "name": "Cyrox_1",
       "spent": 281.0,
       "bought": 6
-    },
-    {
-      "uid": "POY0eQJcWifQW2zRAkAgbOy9",
-      "name": "sirch",
-      "spent": 278.0,
-      "bought": 13
     },
     {
       "uid": "R4QWqCLVP5N9jqwmy6KYyguZ",
@@ -26978,7 +27232,7 @@
     {
       "x": 1024,
       "z": 0,
-      "count": 49
+      "count": 52
     },
     {
       "x": -5120,
@@ -26998,7 +27252,7 @@
     {
       "x": -2048,
       "z": -1024,
-      "count": 98
+      "count": 102
     },
     {
       "x": 3584,
@@ -27023,7 +27277,7 @@
     {
       "x": 512,
       "z": 2048,
-      "count": 63
+      "count": 99
     },
     {
       "x": -6144,
@@ -27123,7 +27377,7 @@
     {
       "x": -19456,
       "z": 3584,
-      "count": 30
+      "count": 32
     },
     {
       "x": 3072,
@@ -27163,7 +27417,7 @@
     {
       "x": -512,
       "z": -2560,
-      "count": 41
+      "count": 42
     },
     {
       "x": 0,
@@ -27223,7 +27477,7 @@
     {
       "x": 1536,
       "z": -4608,
-      "count": 92
+      "count": 94
     },
     {
       "x": 35328,
@@ -27248,7 +27502,7 @@
     {
       "x": 0,
       "z": 37888,
-      "count": 40
+      "count": 46
     },
     {
       "x": 40448,
@@ -27278,7 +27532,7 @@
     {
       "x": -512,
       "z": 1024,
-      "count": 45
+      "count": 49
     },
     {
       "x": -2048,
@@ -27383,7 +27637,7 @@
     {
       "x": 2048,
       "z": 12288,
-      "count": 16
+      "count": 28
     },
     {
       "x": -3584,
@@ -27423,7 +27677,7 @@
     {
       "x": 0,
       "z": 9728,
-      "count": 125
+      "count": 126
     },
     {
       "x": 6656,
@@ -27713,7 +27967,7 @@
     {
       "x": 12288,
       "z": 27648,
-      "count": 8
+      "count": 9
     },
     {
       "x": 36864,
@@ -28238,7 +28492,7 @@
     {
       "x": -512,
       "z": 4608,
-      "count": 9
+      "count": 11
     },
     {
       "x": 35840,
@@ -28508,7 +28762,7 @@
     {
       "x": 5120,
       "z": 19968,
-      "count": 15
+      "count": 17
     },
     {
       "x": 17408,
@@ -28773,7 +29027,7 @@
     {
       "x": -512,
       "z": -512,
-      "count": 15
+      "count": 17
     },
     {
       "x": 7168,
@@ -28893,7 +29147,7 @@
     {
       "x": -2048,
       "z": 16384,
-      "count": 3
+      "count": 4
     },
     {
       "x": 18432,
@@ -28928,7 +29182,7 @@
     {
       "x": -17920,
       "z": 14848,
-      "count": 1
+      "count": 2
     },
     {
       "x": 6656,
@@ -29038,7 +29292,7 @@
     {
       "x": 6656,
       "z": 20480,
-      "count": 8
+      "count": 10
     },
     {
       "x": -7168,
@@ -29236,6 +29490,11 @@
       "count": 2
     },
     {
+      "x": 22528,
+      "z": 23552,
+      "count": 1
+    },
+    {
       "x": -512,
       "z": 67072,
       "count": 1
@@ -29259,18 +29518,23 @@
       "x": -22016,
       "z": 22016,
       "count": 2
+    },
+    {
+      "x": -7680,
+      "z": 18944,
+      "count": 1
     }
   ],
   "buyHeatmap": [
     {
       "x": 0,
       "z": 2560,
-      "count": 18
+      "count": 24
     },
     {
       "x": -512,
       "z": 1024,
-      "count": 282
+      "count": 284
     },
     {
       "x": 512,
@@ -29325,7 +29589,7 @@
     {
       "x": -2048,
       "z": -1024,
-      "count": 25
+      "count": 30
     },
     {
       "x": -1536,
@@ -29660,7 +29924,7 @@
     {
       "x": 1536,
       "z": -4608,
-      "count": 10
+      "count": 11
     },
     {
       "x": -5120,
@@ -30040,7 +30304,7 @@
     {
       "x": -5120,
       "z": 0,
-      "count": 14
+      "count": 15
     },
     {
       "x": -512,
@@ -30130,7 +30394,7 @@
     {
       "x": -25088,
       "z": -2560,
-      "count": 3
+      "count": 4
     },
     {
       "x": 2048,
@@ -30260,7 +30524,7 @@
     {
       "x": 22528,
       "z": 512,
-      "count": 2
+      "count": 6
     },
     {
       "x": -11264,
@@ -30505,7 +30769,7 @@
     {
       "x": 18944,
       "z": 1536,
-      "count": 11
+      "count": 17
     },
     {
       "x": -31232,
@@ -30630,7 +30894,7 @@
     {
       "x": -21504,
       "z": 31744,
-      "count": 7
+      "count": 11
     },
     {
       "x": -2048,
@@ -30640,7 +30904,7 @@
     {
       "x": -17920,
       "z": 14848,
-      "count": 15
+      "count": 16
     },
     {
       "x": -8192,
@@ -30760,7 +31024,7 @@
     {
       "x": -21504,
       "z": 2560,
-      "count": 4
+      "count": 7
     },
     {
       "x": -5632,
@@ -30770,7 +31034,7 @@
     {
       "x": -512,
       "z": 3584,
-      "count": 3
+      "count": 37
     },
     {
       "x": 2048,
@@ -30780,7 +31044,7 @@
     {
       "x": 41984,
       "z": 26624,
-      "count": 17
+      "count": 18
     },
     {
       "x": -4096,
@@ -30820,7 +31084,7 @@
     {
       "x": 1024,
       "z": 5632,
-      "count": 6
+      "count": 16
     },
     {
       "x": -512,
@@ -30845,7 +31109,7 @@
     {
       "x": 4096,
       "z": -6144,
-      "count": 2
+      "count": 3
     },
     {
       "x": 5632,
@@ -30855,7 +31119,7 @@
     {
       "x": -2560,
       "z": 12288,
-      "count": 2
+      "count": 4
     },
     {
       "x": 41984,
@@ -30913,6 +31177,16 @@
       "count": 1
     },
     {
+      "x": -2560,
+      "z": -2560,
+      "count": 1
+    },
+    {
+      "x": -6656,
+      "z": 8192,
+      "count": 1
+    },
+    {
       "x": 5120,
       "z": 5632,
       "count": 2
@@ -30942,7 +31216,7 @@
     {
       "x": -1712,
       "z": -880,
-      "listings": 231
+      "listings": 233
     },
     {
       "x": 112,
@@ -30965,6 +31239,11 @@
       "listings": 130
     },
     {
+      "x": -4992,
+      "z": 64,
+      "listings": 120
+    },
+    {
       "x": 42848,
       "z": 49136,
       "listings": 120
@@ -30978,11 +31257,6 @@
       "x": -1712,
       "z": -888,
       "listings": 113
-    },
-    {
-      "x": -4992,
-      "z": 64,
-      "listings": 109
     },
     {
       "x": 12784,
@@ -31025,6 +31299,11 @@
       "listings": 75
     },
     {
+      "x": -19352,
+      "z": 3792,
+      "listings": 74
+    },
+    {
       "x": -15616,
       "z": -16872,
       "listings": 73
@@ -31035,9 +31314,14 @@
       "listings": 73
     },
     {
-      "x": -19352,
-      "z": 3792,
-      "listings": 70
+      "x": 2336,
+      "z": 12600,
+      "listings": 65
+    },
+    {
+      "x": 1824,
+      "z": -4360,
+      "listings": 62
     },
     {
       "x": 7344,
@@ -31053,11 +31337,6 @@
       "x": 42376,
       "z": 50080,
       "listings": 61
-    },
-    {
-      "x": 1824,
-      "z": -4360,
-      "listings": 60
     },
     {
       "x": -76496,
@@ -31108,11 +31387,6 @@
       "x": -496,
       "z": -280,
       "listings": 48
-    },
-    {
-      "x": 2336,
-      "z": 12600,
-      "listings": 47
     },
     {
       "x": -8856,
@@ -31655,6 +31929,11 @@
       "listings": 20
     },
     {
+      "x": 42240,
+      "z": 26816,
+      "listings": 20
+    },
+    {
       "x": -8,
       "z": 3584,
       "listings": 19
@@ -31795,6 +32074,11 @@
       "listings": 17
     },
     {
+      "x": 16760,
+      "z": 1872,
+      "listings": 17
+    },
+    {
       "x": 28576,
       "z": 28400,
       "listings": 17
@@ -31840,11 +32124,6 @@
       "listings": 16
     },
     {
-      "x": 16760,
-      "z": 1872,
-      "listings": 16
-    },
-    {
       "x": -8216,
       "z": 45624,
       "listings": 16
@@ -31867,6 +32146,11 @@
     {
       "x": 29448,
       "z": 59432,
+      "listings": 16
+    },
+    {
+      "x": 4168,
+      "z": -6072,
       "listings": 16
     },
     {
@@ -31912,16 +32196,6 @@
     {
       "x": 25400,
       "z": 31632,
-      "listings": 15
-    },
-    {
-      "x": 19216,
-      "z": 2000,
-      "listings": 15
-    },
-    {
-      "x": -87072,
-      "z": 73128,
       "listings": 15
     }
   ],

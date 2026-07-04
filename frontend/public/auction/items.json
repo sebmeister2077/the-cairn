@@ -11751,5 +11751,40 @@
     "code": "crystalizedore-bountiful-hematite-peridotite",
     "classType": "Item",
     "maxStackSize": 64
+  },
+  "624": {
+    "name": "Sundial (Turquoise)",
+    "category": "seashell",
+    "code": "seashell-sundial-turquoise",
+    "classType": "Block",
+    "maxStackSize": 64
+  },
+  "11332": {
+    "name": "Andesite sand",
+    "category": "sand",
+    "code": "sand-andesite",
+    "classType": "Block",
+    "maxStackSize": 64
+  },
+  "1249": {
+    "name": "Powdered iron oxide",
+    "category": "powder",
+    "code": "powder-iron-oxide",
+    "classType": "Item",
+    "maxStackSize": 64
+  },
+  "999": {
+    "name": "Limewater",
+    "category": "limewaterportion",
+    "code": "limewaterportion",
+    "classType": "Item",
+    "maxStackSize": 5000
+  },
+  "4523": {
+    "name": "Woad",
+    "category": "flower",
+    "code": "flower-woad-free",
+    "classType": "Block",
+    "maxStackSize": 64
   }
 }
