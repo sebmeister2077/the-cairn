@@ -13,7 +13,6 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
 import { useAuctionListings, useAuctionCsvUrl, useCurrentGameHours } from "@/lib/auction";
-import auctionsCsvBundledUrl from "@/assets/Auction/auctions.csv?url";
 import { MarketFilterBar } from "./MarketFilterBar";
 import { useFilteredListings } from "./useFilteredListings";
 import {
@@ -30,10 +29,9 @@ export function MarketListingsPage() {
   const filters = useAppSelector((s) => s.auctionFilters);
   const rows = useFilteredListings(data, filters);
   const [page, setPage] = useState(0);
-  // Prefer the R2-hosted CSV (published alongside the JSON); fall back to the
-  // committed bundle for local dev where no public bucket origin is configured.
-  const r2CsvUrl = useAuctionCsvUrl();
-  const csvUrl = r2CsvUrl ?? auctionsCsvBundledUrl;
+  // The raw CSV is published to the R2 bucket's `auction/` folder alongside the
+  // JSON data; the download link points straight at it.
+  const csvUrl = useAuctionCsvUrl();
 
   const categories = useMemo(() => {
     if (!data) return [];
@@ -64,14 +62,16 @@ export function MarketListingsPage() {
           <p className="text-sm text-muted-foreground">
             {rows.length.toLocaleString()} of {data.length.toLocaleString()} listings
           </p>
-          <a
-            href={csvUrl}
-            download="auctions.csv"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            <Download />
-            Download CSV
-          </a>
+          {csvUrl && (
+            <a
+              href={csvUrl}
+              download="auctions.csv"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <Download />
+              Download CSV
+            </a>
+          )}
         </div>
       </div>
 

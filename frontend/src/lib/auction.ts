@@ -73,12 +73,13 @@ function auctionUrl(path: string, version?: string): string {
     return version ? `${AUCTION_BASE}/${path}?v=${version}` : `${AUCTION_BASE}/${path}`;
 }
 
-/** URL for the raw auctions CSV on R2, cache-busted by the current version.
- *  Returns `undefined` in static-bundle mode (callers fall back to the
- *  committed asset) or while the manifest is still loading. */
+/** URL for the raw auctions CSV, cache-busted by the current version. Points at
+ *  the R2 bucket's `auction/` folder when a public bucket origin is configured,
+ *  and at the committed `public/auction/` bundle for local dev. Returns
+ *  `undefined` while the manifest (and thus the version) is still loading. */
 export function useAuctionCsvUrl(): string | undefined {
     const { ready, version } = useAuctionVersion();
-    if (!USE_R2 || !ready) return undefined;
+    if (!ready) return undefined;
     return auctionUrl("auctions.csv", version);
 }
 
