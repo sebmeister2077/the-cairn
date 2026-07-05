@@ -36,6 +36,7 @@ import { elkWalkableSlice } from "./slices/elkWalkable";
 import { i18nSlice } from "./slices/i18n";
 import { topsMapPreviewSlice } from "./slices/topsMapPreview";
 import { auctionFiltersSlice } from "./slices/auctionFilters";
+import { insightsFiltersSlice } from "./slices/insightsFilters";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -58,6 +59,7 @@ const rootReducer = combineReducers({
     i18n: i18nSlice.reducer,
     topsMapPreview: topsMapPreviewSlice.reducer,
     auctionFilters: auctionFiltersSlice.reducer,
+    insightsFilters: insightsFiltersSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

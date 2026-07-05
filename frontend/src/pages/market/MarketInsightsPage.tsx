@@ -39,6 +39,10 @@ import {
 import { formatGameDate } from "./VirtualListingsTable";
 import { INSIGHTS_WINDOWS, useMarketInsights } from "./useMarketInsights";
 import { ScreenerTable, type ScreenerColumn } from "./InsightsScreenerTable";
+import { InsightsFilterBar } from "./InsightsFilterBar";
+import { useFilteredInsights } from "./useFilteredInsights";
+import { patchInsightsFilters } from "@/store/slices/insightsFilters";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { InsightsRow, PriceTrend } from "@/models/auction";
 import { cn } from "@/lib/utils";
 
@@ -422,6 +426,8 @@ export function MarketInsightsPage() {
   const { data: listings, isPending, isError } = useAuctionListings();
   const { data: summary } = useAuctionSummary();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((s) => s.insightsFilters);
 
   const [windowKey, setWindowKey] = useMarketWindow();
   const [volumeMode, setVolumeMode] = useState<VolumeMode>("price");
@@ -438,6 +444,13 @@ export function MarketInsightsPage() {
     () => (insights ? insights.rows.filter((r) => r.soldCount > 0) : []),
     [insights],
   );
+
+  // Categories present in the (window-scoped) screener rows, for the filter bar.
+  const categories = useMemo(() => Array.from(new Set(rows.map((r) => r.category))).sort(), [rows]);
+
+  // Filters apply to the screener table only — highlight cards and window totals
+  // below intentionally use the full `rows`/`insights` so they stay market-wide.
+  const filteredRows = useFilteredInsights(rows, filters, volumeMode);
 
   const highlights = useMemo<Highlight[]>(() => {
     if (!rows.length) return [];
@@ -761,26 +774,38 @@ export function MarketInsightsPage() {
         <div className="mb-2 flex items-baseline justify-between">
           <h2 className="text-lg font-semibold">Item screener</h2>
           <span className="text-xs text-muted-foreground">
-            {rows.length.toLocaleString()} items · click a row for details · click a header to sort
+            {filteredRows.length.toLocaleString()}
+            {filteredRows.length !== rows.length ? ` of ${rows.length.toLocaleString()}` : ""} items
+            · click a row for details · click a header to sort
           </span>
         </div>
         <div className="mb-3">
           <ColumnGlossary />
         </div>
+        <div className="mb-3">
+          <InsightsFilterBar categories={categories} />
+        </div>
         {rows.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">
             No sales recorded in this window.
+          </p>
+        ) : filteredRows.length === 0 ? (
+          <p className="py-8 text-center text-muted-foreground">
+            No items match the current filters.
           </p>
         ) : (
           // Break out of the centered page container so the wide screener can
           // use the full viewport width (minus a little breathing room).
           <div className="mx-[calc(50%-50vw)] px-4 sm:px-6 lg:px-8">
             <ScreenerTable
-              rows={rows}
+              rows={filteredRows}
               columns={columns}
               rowKey={(r) => r.itemId}
-              defaultSortKey="volume"
-              defaultSortDir="desc"
+              sortKey={filters.sortKey}
+              sortDir={filters.sortDir}
+              onSortChange={(key, dir) =>
+                dispatch(patchInsightsFilters({ sortKey: key, sortDir: dir }))
+              }
               minWidth="1180px"
               onRowClick={(r) => navigate(`/market/items/${r.itemId}`)}
             />

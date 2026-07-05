@@ -25,6 +25,7 @@ import { loadInitialMapViewState } from "./slices/mapView";
 import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
 import { initialRoutePlannerState } from "./slices/routePlanner";
 import { initialElkWalkableState } from "./slices/elkWalkable";
+import { normalizeInsightsFilters } from "./slices/insightsFilters";
 import {
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
@@ -154,6 +155,11 @@ const NORMALIZE_ON_READ: {
         pendingAttest: Array.isArray(s?.pendingAttest) ? s.pendingAttest : [],
         pendingUnattest: Array.isArray(s?.pendingUnattest) ? s.pendingUnattest : [],
     }),
+    // The Insights screener filters gained multi-select (array) fields plus a
+    // new `concentration` field after the first envelope was written; normalise
+    // so older stored objects (single-string fields / missing keys) don't
+    // destructure to `undefined` at runtime.
+    insightsFilters: (s) => normalizeInsightsFilters(s),
 };
 
 interface Envelope {

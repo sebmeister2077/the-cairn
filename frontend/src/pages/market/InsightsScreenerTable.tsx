@@ -29,9 +29,17 @@ interface ScreenerTableProps<T> {
   rows: T[];
   columns: ScreenerColumn<T>[];
   rowKey: (row: T) => string | number;
-  /** Initial sort column key. */
+  /** Initial sort column key (uncontrolled mode). */
   defaultSortKey?: string;
   defaultSortDir?: "asc" | "desc";
+  /**
+   * Controlled sort. When `sortKey`/`sortDir` and `onSortChange` are provided the
+   * table becomes controlled and reports sort changes instead of holding them in
+   * local state — letting callers persist the sort.
+   */
+  sortKey?: string;
+  sortDir?: "asc" | "desc";
+  onSortChange?: (key: string, dir: "asc" | "desc") => void;
   maxHeightClass?: string;
   onRowClick?: (row: T) => void;
   /** Minimum content width (CSS length) that forces horizontal scroll. */
@@ -52,12 +60,18 @@ export function ScreenerTable<T>({
   rowKey,
   defaultSortKey,
   defaultSortDir = "desc",
+  sortKey: controlledSortKey,
+  sortDir: controlledSortDir,
+  onSortChange,
   maxHeightClass = "max-h-[70vh]",
   onRowClick,
   minWidth = "1200px",
 }: ScreenerTableProps<T>) {
-  const [sortKey, setSortKey] = useState<string | undefined>(defaultSortKey);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">(defaultSortDir);
+  const controlled = controlledSortKey !== undefined && onSortChange !== undefined;
+  const [localSortKey, setLocalSortKey] = useState<string | undefined>(defaultSortKey);
+  const [localSortDir, setLocalSortDir] = useState<"asc" | "desc">(defaultSortDir);
+  const sortKey = controlled ? controlledSortKey : localSortKey;
+  const sortDir = controlled ? (controlledSortDir ?? defaultSortDir) : localSortDir;
 
   const sorted = useMemo(() => {
     const col = columns.find((c) => c.key === sortKey);
@@ -84,10 +98,14 @@ export function ScreenerTable<T>({
   function toggleSort(col: ScreenerColumn<T>) {
     if (!col.sortValue) return;
     if (sortKey === col.key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+      const nextDir = sortDir === "asc" ? "desc" : "asc";
+      if (controlled) onSortChange!(col.key, nextDir);
+      else setLocalSortDir(nextDir);
+    } else if (controlled) {
+      onSortChange!(col.key, "desc");
     } else {
-      setSortKey(col.key);
-      setSortDir("desc");
+      setLocalSortKey(col.key);
+      setLocalSortDir("desc");
     }
   }
 
