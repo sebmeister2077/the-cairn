@@ -226,6 +226,295 @@ export function humanizeItemCode(code: string): string {
 }
 
 /**
+ * Material families that group the different in-game *forms* of the same
+ * underlying material, so the item page can surface "Related items" the way the
+ * survival handbook chains an ore to its metal. Examples:
+ *   * hematite / magnetite / limonite ore → iron nugget → iron bloom → iron ingot
+ *   * sulfur chunk → powdered sulfur
+ *   * rock salt (halite) → salt
+ * `tokens` are matched as *whole words* against an item's code segments and its
+ * display name, so "salt" never swallows "saltpeter" (a distinct family).
+ */
+interface MaterialFamily {
+    key: string;
+    label: string;
+    tokens: string[];
+}
+
+const MATERIAL_FAMILIES: MaterialFamily[] = [
+    // Metals: the ore minerals that smelt into a metal share the metal's family,
+    // even though their codes/names don't mention the metal (e.g. "hematite").
+    { key: "iron", label: "Iron", tokens: ["iron", "ironbloom", "hematite", "magnetite", "limonite"] },
+    { key: "copper", label: "Copper", tokens: ["copper", "nativecopper", "malachite", "cuprite", "tetrahedrite"] },
+    { key: "tin", label: "Tin", tokens: ["tin", "cassiterite"] },
+    { key: "zinc", label: "Zinc", tokens: ["zinc", "sphalerite"] },
+    { key: "lead", label: "Lead", tokens: ["lead", "galena"] },
+    { key: "silver", label: "Silver", tokens: ["silver"] },
+    { key: "gold", label: "Gold", tokens: ["gold", "nativegold"] },
+    { key: "bismuth", label: "Bismuth", tokens: ["bismuth", "bismuthinite"] },
+    { key: "titanium", label: "Titanium", tokens: ["titanium", "ilmenite"] },
+    { key: "chromium", label: "Chromium", tokens: ["chromium", "chromite"] },
+    { key: "nickel", label: "Nickel", tokens: ["nickel", "pentlandite"] },
+    { key: "platinum", label: "Platinum", tokens: ["platinum"] },
+    // Minerals / non-metals: the raw chunk and its processed forms (powder, etc.).
+    { key: "sulfur", label: "Sulfur", tokens: ["sulfur", "sulphur"] },
+    { key: "salt", label: "Salt", tokens: ["salt", "halite"] },
+    { key: "saltpeter", label: "Saltpeter", tokens: ["saltpeter", "saltpetre", "niter", "nitre"] },
+    { key: "borax", label: "Borax", tokens: ["borax"] },
+    { key: "quartz", label: "Quartz", tokens: ["quartz"] },
+    { key: "cinnabar", label: "Cinnabar", tokens: ["cinnabar", "mercury", "quicksilver"] },
+    { key: "fluorite", label: "Fluorite", tokens: ["fluorite"] },
+    { key: "lapislazuli", label: "Lapis lazuli", tokens: ["lapislazuli", "lazurite"] },
+    { key: "olivine", label: "Olivine", tokens: ["olivine", "peridot"] },
+    { key: "sylvite", label: "Sylvite", tokens: ["sylvite", "potash"] },
+    { key: "graphite", label: "Graphite", tokens: ["graphite"] },
+    { key: "corundum", label: "Corundum", tokens: ["corundum", "ruby", "sapphire"] },
+    { key: "diamond", label: "Diamond", tokens: ["diamond"] },
+];
+
+/**
+ * Item categories (the first code segment, e.g. "ore-bountiful-hematite" ->
+ * "ore") that count as a raw/intermediate *material form* for the "Related
+ * items" section. This keeps the related list to the material chain (ore →
+ * nugget → bloom → ingot, chunk → powder) and excludes finished goods that merely
+ * share a metal name (e.g. an iron pickaxe or anvil).
+ */
+const RELATED_FORM_CATEGORIES = new Set([
+    "ore",
+    "nugget",
+    "ingot",
+    "ironbloom",
+    "crystal",
+    "powder",
+    "gem",
+    "metalbit",
+    // Raw mineral rock/stone forms (e.g. "stone-halite" = rock salt, "rock-halite").
+    // Scoped by the material-family filter, so only family-matching stones/rocks
+    // (not granite, basalt, …) ever surface as related.
+    "stone",
+    "rock",
+    // Raw minerals whose category *is* the mineral name.
+    "sulfur",
+    "sulphur",
+    "salt",
+    "halite",
+    "saltpeter",
+    "borax",
+    "quartz",
+    "cinnabar",
+    "fluorite",
+    "graphite",
+]);
+
+/** Split an item code + name into the set of whole lowercase words it contains. */
+function itemWordTokens(entry: { code: string | null; name: string }): Set<string> {
+    const words = new Set<string>();
+    if (entry.code) {
+        // Strip an ore's trailing host-rock segment (e.g. `ore-sylvite-halite` ->
+        // `ore-sylvite`) so the rock stratum an ore is embedded in can't leak a
+        // false material token — e.g. sylvite mined in halite rock must not join
+        // the salt/halite family.
+        const base = splitOreHostRock(entry.code).base;
+        for (const w of base.toLowerCase().split(/[-_/]+/)) if (w) words.add(w);
+    }
+    for (const w of entry.name.toLowerCase().split(/[^a-z0-9]+/)) if (w) words.add(w);
+    return words;
+}
+
+/**
+ * Resolve an item to its {@link MaterialFamily} (e.g. an iron ore, nugget, bloom
+ * and ingot all resolve to `iron`), or `null` when it belongs to no known
+ * material family. Used to link between different forms of the same material.
+ */
+export function resolveItemFamily(entry: {
+    code: string | null;
+    name: string;
+}): { key: string; label: string } | null {
+    const words = itemWordTokens(entry);
+    for (const fam of MATERIAL_FAMILIES) {
+        if (fam.tokens.some((t) => words.has(t))) return { key: fam.key, label: fam.label };
+    }
+    return null;
+}
+
+/** Whether an item's category is a raw/intermediate material form (see above). */
+export function isRelatedFormCategory(category: string): boolean {
+    return RELATED_FORM_CATEGORIES.has(category);
+}
+
+// --------------------------------------------------------------------------- //
+// Manual "Related items" links
+// --------------------------------------------------------------------------- //
+/**
+ * Hand-crafted "Related items" links, layered on top of the automatic material
+ * families above. Use these for relationships the token families can't express
+ * on their own — e.g. an alloy that draws from several base metals, or a link to
+ * a couple of *specific* items without pulling in their whole family.
+ *
+ * A rule matches the item you're viewing by its `code`, then contributes extra
+ * related items via any combination of:
+ *   • `families` — pull in every related-form member of these material families
+ *     (keys from {@link MATERIAL_FAMILIES}, e.g. "lead", "tin"). This is ON TOP
+ *     of the item's own auto-detected family, so you only list the *extra* ones.
+ *   • `items`    — pull in these exact item *codes*, regardless of their family
+ *     or category. Use this to link a few specific items without dragging in
+ *     their whole family.
+ *
+ * Code matching (for both `code` and `items`): exact match, or a trailing `*`
+ * for a prefix match (e.g. `"ore-sylvite*"` matches `ore-sylvite` and
+ * `ore-sylvite-halite`). A leading `game:` (or any `domain:`) is ignored.
+ *
+ * Links are one-directional: a rule only affects the page whose item matches
+ * `code`. To relate two items *both* ways, add a rule on each side.
+ *
+ * ── HOW TO ADD A LINK ──────────────────────────────────────────────────────
+ * Add an object to {@link MANUAL_LINKS}. Example — "Lead solder ingot" should
+ * relate to the whole lead + tin chains, plus the two silver-solder items
+ * specifically, but NOT the rest of the silver family:
+ *
+ *   { code: "ingot-leadsolder",
+ *     label: "Solder & its base metals",
+ *     families: ["lead", "tin"],
+ *     items: ["ingot-silversolder", "metalbit-silversolder"] },
+ *
+ * (Its own "lead" family is already included automatically, so `families` here
+ * only needs the *additional* "tin". It's listed anyway for clarity — harmless.)
+ */
+export interface ManualLinkRule {
+    /** Item code of the page this rule applies to (exact, or `"prefix*"`). */
+    code: string;
+    /** Optional heading shown under "Related items" (defaults to the family). */
+    label?: string;
+    /** Extra material-family keys to include (from {@link MATERIAL_FAMILIES}). */
+    families?: string[];
+    /** Extra item codes to include verbatim (exact, or `"prefix*"`). */
+    items?: string[];
+}
+
+const MANUAL_LINKS: ManualLinkRule[] = [
+    // ── Add your hand-crafted links here. See the docs above for the format. ──
+    // {
+    //     code: "ingot-leadsolder",
+    //     label: "Solder & its base metals",
+    //     families: ["lead", "tin"],
+    //     items: ["ingot-silversolder", "metalbit-silversolder"],
+    // },
+];
+
+/** Strip a leading `domain:` (e.g. `game:`) from an item code for matching. */
+function bareCode(code: string): string {
+    return code.includes(":") ? (code.split(":").pop() as string) : code;
+}
+
+/** Match an item code against a pattern — exact, or a trailing `*` for prefix. */
+function codeMatches(code: string, pattern: string): boolean {
+    const c = bareCode(code);
+    const p = bareCode(pattern);
+    if (p.endsWith("*")) return c.startsWith(p.slice(0, -1));
+    return c === p;
+}
+
+/** The first manual-link rule whose `code` matches this item, or null. */
+function findManualLink(code: string | null): ManualLinkRule | null {
+    if (!code) return null;
+    return MANUAL_LINKS.find((r) => codeMatches(code, r.code)) ?? null;
+}
+
+/** A related item surfaced on the item page. */
+export interface RelatedItem {
+    id: number;
+    name: string;
+    category: string;
+}
+
+export interface RelatedItems {
+    /** Heading shown next to "Related items" (e.g. "Other forms of iron"). */
+    label: string;
+    items: RelatedItem[];
+}
+
+/**
+ * Compute the "Related items" for an item page: the other in-game *forms* of the
+ * same underlying material (ore → nugget → bloom → ingot, chunk → powder, …),
+ * plus any hand-crafted links from {@link MANUAL_LINKS}.
+ *
+ * Membership comes from three sources, unioned together:
+ *   1. The item's own material family (auto-detected from its code/name).
+ *   2. Any extra `families` a matching manual rule adds.
+ *   3. Any specific `items` codes a matching manual rule adds (family-agnostic).
+ * Family members are restricted to raw/intermediate *forms* (so a finished tool
+ * that merely shares a metal name doesn't show up); manual `items` are not.
+ *
+ * @param selfIds  itemIds already represented by this page (a merged ore
+ *                 host-rock group, or just the current item) — never "related".
+ * @param activeIds itemIds that actually have listings, so links land on a page
+ *                 with data. Pass an empty set to skip this filter.
+ */
+export function computeRelatedItems(
+    currentId: number,
+    catalog: ItemCatalog,
+    selfIds: Set<number>,
+    activeIds: Set<number>,
+): RelatedItems | null {
+    const current = catalog[String(currentId)];
+    if (!current) return null;
+
+    const ownFamily = resolveItemFamily(current);
+    const rule = findManualLink(current.code);
+    if (!ownFamily && !rule) return null;
+
+    // Families to draw related *forms* from: the item's own, plus manual extras.
+    const familyKeys = new Set<string>();
+    if (ownFamily) familyKeys.add(ownFamily.key);
+    for (const k of rule?.families ?? []) familyKeys.add(k);
+    // Specific item codes a manual rule links regardless of family/category.
+    const itemPatterns = rule?.items ?? [];
+
+    const filterActive = activeIds.size > 0;
+    const seen = new Set<string>();
+    const items: RelatedItem[] = [];
+    for (const [key, e] of Object.entries(catalog)) {
+        const iid = Number(key);
+        if (selfIds.has(iid)) continue;
+        if (filterActive && !activeIds.has(iid)) continue;
+
+        // Include if the entry is a form-member of an included family, OR it's
+        // one of the manually-listed specific item codes.
+        const byFamily =
+            isRelatedFormCategory(e.category) &&
+            (() => {
+                const ef = resolveItemFamily(e);
+                return ef != null && familyKeys.has(ef.key);
+            })();
+        const byManualItem = e.code != null && itemPatterns.some((p) => codeMatches(e.code!, p));
+        if (!byFamily && !byManualItem) continue;
+
+        // Collapse an ore's host-rock variants (distinct block ids) into one
+        // entry; any one id opens the item page, which re-merges the strata.
+        let dedupe: string;
+        let name: string;
+        if (e.category === "ore" && e.code) {
+            const b = splitOreHostRock(e.code).base;
+            dedupe = `ore:${b}`;
+            name = humanizeItemCode(b);
+        } else {
+            dedupe = e.code ?? e.name;
+            name = e.name;
+        }
+        if (seen.has(dedupe)) continue;
+        seen.add(dedupe);
+        items.push({ id: iid, name, category: e.category });
+    }
+    if (items.length === 0) return null;
+    items.sort((a, b) => a.name.localeCompare(b.name));
+
+    const label =
+        rule?.label ??
+        (ownFamily ? `Other forms of ${ownFamily.label.toLowerCase()}` : `Related to ${current.name}`);
+    return { label, items };
+}
+
+/**
  * Whether a listing carries written content — a parchment (or book) someone
  * wrote a story, note, or advert on. Such items are priced for their content,
  * not as the raw commodity, so they must be excluded from fair-price

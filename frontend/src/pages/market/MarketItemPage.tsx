@@ -36,6 +36,7 @@ import {
   splitOreHostRock,
   humanizeItemCode,
   listingHasText,
+  computeRelatedItems,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
@@ -231,6 +232,25 @@ export function MarketItemPage() {
     return { base, name: humanizeItemCode(base), ids, rockByItemId };
   }, [catalogQ.data, id]);
   const combineOres = oreGroup != null;
+
+  // "Related items": other forms of the same underlying material — e.g. from an
+  // iron ore, link to the other iron ores, iron nugget, iron bloom and iron
+  // ingot; from a sulfur chunk, link to powdered sulfur. Derived from the item
+  // catalog's material families (plus any hand-crafted MANUAL_LINKS), restricted
+  // to raw/intermediate material forms (so finished tools that merely share a
+  // metal name don't show up) and to items that actually have market data (so
+  // links land on a populated page). Ore host-rock variants collapse into one
+  // entry, mirroring this page's merge.
+  const related = useMemo(() => {
+    const catalog = catalogQ.data;
+    if (!catalog) return null;
+    // itemIds already represented by this page (a merged ore host-rock group, or
+    // just the current item) must not appear as "related".
+    const selfIds = oreGroup ? oreGroup.ids : new Set<number>([id]);
+    // Only surface items we have listings for, so the link opens a page with data.
+    const active = new Set((listingsQ.data ?? []).map((l) => l.itemId));
+    return computeRelatedItems(id, catalog, selfIds, active);
+  }, [catalogQ.data, listingsQ.data, id, oreGroup]);
 
   const itemListings = useMemo(() => {
     const all = listingsQ.data ?? [];
@@ -626,6 +646,32 @@ export function MarketItemPage() {
           </div>
         )}
       </div>
+
+      {related && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="mb-2 flex items-baseline gap-2">
+              <h2 className="font-semibold">Related items</h2>
+              <span className="text-xs text-muted-foreground">
+                {related.label}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {related.items.map((r) => (
+                <Link
+                  key={r.id}
+                  to={`/market/items/${r.id}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-input px-3 py-1 text-sm hover:bg-accent/50 hover:text-foreground transition-colors"
+                  title={`View ${r.name}`}
+                >
+                  <span className="font-medium">{r.name}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{r.category}</span>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {tapestryImage && (
         <figure className="w-fit rounded-md border bg-muted/30 p-3">

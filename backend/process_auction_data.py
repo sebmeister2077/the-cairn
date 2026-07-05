@@ -291,6 +291,25 @@ def humanize_code(code: str) -> str:
     return text[:1].upper() + text[1:]
 
 
+# Vintage Story registers Items and Blocks in two *separate* id spaces that both
+# start near 0, so the same numeric id routinely names a Block and an Item at
+# once (e.g. Block 1600 "Clay oven" vs Item 1600 "…malachite crystalized ore").
+# The whole explorer keys everything by a single numeric `itemId`, so we lift
+# Block ids into a high, dedicated range to keep them globally unique. Without
+# this, one form silently overwrites the other in the item catalog (so it
+# vanishes from the Items page) and their two unrelated listings get merged into
+# one item's price stats. Must stay above every real id (< ~15k) and below the
+# synthetic variant range (`VARIANT_ID_BASE` = 90M) so the three id ranges never
+# overlap: real Items 0…~15k, Blocks 20M…~20.015M, variant groups 90M…99M.
+BLOCK_ID_OFFSET = 20_000_000
+
+
+def namespace_item_id(item_id: int, class_type: str) -> int:
+    """Globally-unique itemId: Block ids are offset into a dedicated range so
+    they never collide with the Item id space (see `BLOCK_ID_OFFSET`)."""
+    return item_id + BLOCK_ID_OFFSET if class_type == "Block" else item_id
+
+
 def resolve_item(
     stack: Dict[str, Any],
     raw_item: Dict[str, Any],
@@ -323,7 +342,7 @@ def resolve_item(
     # underlying block/item is what actually defines the stack size.
     max_stack = registry.get(f"{class_type}Stack", {}).get(key)
     return {
-        "itemId": item_id,
+        "itemId": namespace_item_id(item_id, class_type),
         "name": name,
         "code": code,
         "category": category,
