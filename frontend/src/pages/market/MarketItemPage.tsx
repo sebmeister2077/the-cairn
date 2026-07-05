@@ -269,9 +269,21 @@ export function MarketItemPage() {
       rockByItemId.set(iid, split.rock);
     }
     if (ids.size <= 1) return null;
-    return { base, name: humanizeItemCode(base), ids, rockByItemId };
+    // Some ores (e.g. anthracite, sulfur) exist both as a standalone item —
+    // the thing people actually trade — and as an ore still embedded in a host
+    // rock (e.g. "ore-anthracite-chalk"), a distinct block only listed when the
+    // ore hasn't been extracted. When the group mixes both forms we let the
+    // price figures drop the host-rock blocks by default (see `includeHostRock`).
+    const rocks = Array.from(rockByItemId.values());
+    const hostRockSplit = rocks.some((r) => r == null) && rocks.some((r) => r != null);
+    return { base, name: humanizeItemCode(base), ids, rockByItemId, hostRockSplit };
   }, [catalogQ.data, id]);
   const combineOres = oreGroup != null;
+  // When an ore has both a standalone item and host-rock block forms, the price
+  // stats default to the standalone item only (host rocks excluded). The user
+  // can opt to fold the host-rock listings back into the price figures. The
+  // Recent listings table always shows every form regardless of this toggle.
+  const [includeHostRock, setIncludeHostRock] = useState(false);
 
   // "Related items": other forms of the same underlying material — e.g. from an
   // iron ore, link to the other iron ores, iron nugget, iron bloom and iron
@@ -298,10 +310,30 @@ export function MarketItemPage() {
     return all.filter((l) => l.itemId === id);
   }, [listingsQ.data, id, combineOres, oreGroup]);
 
+  // Listings that feed the price/market figures (fair price, distribution,
+  // sell-through, trend…). For ores that exist both as a standalone item and as
+  // ore embedded in a host rock, drop the host-rock blocks unless the user opts
+  // to include them — people trade the extracted item, so the host-rock blocks
+  // would otherwise skew the price. The Recent listings table stays untouched.
+  const priceListings = useMemo(() => {
+    if (combineOres && oreGroup && oreGroup.hostRockSplit && !includeHostRock) {
+      return itemListings.filter((l) => !oreGroup.rockByItemId.get(l.itemId));
+    }
+    return itemListings;
+  }, [itemListings, combineOres, oreGroup, includeHostRock]);
+
   // Listings restricted to the selected window (by in-game posting time).
   const windowListings = useMemo(
     () => filterListingsByWindow(itemListings, windowDays),
     [itemListings, windowDays],
+  );
+
+  // Window-restricted view of the price listings (host-rock blocks optionally
+  // excluded). Drives every price figure below; `windowListings` (all forms)
+  // still drives the volume series and the Recent listings table.
+  const priceWindowListings = useMemo(
+    () => filterListingsByWindow(priceListings, windowDays),
+    [priceListings, windowDays],
   );
 
   // Reuse the Insights engine for this single item so every windowed stat
@@ -310,16 +342,16 @@ export function MarketItemPage() {
   // row. Composite demand/liquidity scores aren't meaningful for one item and
   // aren't shown here.
   const insight = useMemo(() => {
-    if (!itemListings.length) return null;
+    if (!priceListings.length) return null;
     // When merging an ore's host-rock variants, remap every listing onto this
     // page's itemId (and a shared display name) so the Insights engine treats
     // them as one item and returns a single combined row.
     const src =
       combineOres && oreGroup
-        ? itemListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
-        : itemListings;
+        ? priceListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
+        : priceListings;
     return computeMarketInsights(src, windowDays).rows[0] ?? null;
-  }, [itemListings, windowDays, combineOres, oreGroup, id]);
+  }, [priceListings, windowDays, combineOres, oreGroup, id]);
 
   const trend = insight?.trend ?? null;
 
@@ -329,8 +361,8 @@ export function MarketItemPage() {
   // per-unit and per-stack medians — but stay in the volume series and the
   // recent-listings table below.
   const pricedWindowListings = useMemo(
-    () => windowListings.filter((l) => !listingHasText(l)),
-    [windowListings],
+    () => priceWindowListings.filter((l) => !listingHasText(l)),
+    [priceWindowListings],
   );
 
   const soldPpu = useMemo(
@@ -686,6 +718,36 @@ export function MarketItemPage() {
             }{" "}
             host rocks — sell prices are aggregated for every stratum this ore is found in.
           </p>
+        )}
+        {combineOres && oreGroup?.hostRockSplit && (
+          <label className="mt-2 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={includeHostRock}
+              onCheckedChange={(v) => setIncludeHostRock(v === true)}
+            />
+            Include host-rock blocks in price
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label="What are host-rock blocks?"
+                    className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <Info className="size-4" />
+                  </button>
+                }
+              />
+              <PopoverContent className="max-w-xs">
+                <p className="text-left">
+                  This ore also exists as a block still embedded in a host rock, which is only
+                  listed when the ore hasn't been extracted. Those blocks are excluded from the
+                  price figures by default so they don't skew the value of the item itself. The
+                  Recent listings table below always shows every form.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </label>
         )}
         {variantCodes.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
