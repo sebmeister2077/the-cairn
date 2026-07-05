@@ -101,18 +101,20 @@ function MultiSelect({
           <ChevronDown className="size-4 shrink-0 text-muted-foreground/70" />
         </PopoverTrigger>
         <PopoverContent side="bottom" align="start" className="w-52 p-1">
-          {options.map((o) => (
-            <label
-              key={o.value}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
-            >
-              <Checkbox
-                checked={selected.includes(o.value)}
-                onCheckedChange={() => toggle(o.value)}
-              />
-              {o.label}
-            </label>
-          ))}
+          <div className="max-h-[min(18rem,60vh)] overflow-y-auto">
+            {options.map((o) => (
+              <label
+                key={o.value}
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
+              >
+                <Checkbox
+                  checked={selected.includes(o.value)}
+                  onCheckedChange={() => toggle(o.value)}
+                />
+                {o.label}
+              </label>
+            ))}
+          </div>
           {selected.length > 0 ? (
             <Button
               variant="ghost"
