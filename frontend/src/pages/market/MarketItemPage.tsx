@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { ExternalLink, Info, ArrowLeft } from "lucide-react";
+import { ExternalLink, Info, ArrowLeft, ArrowUp } from "lucide-react";
 import {
   ComposedChart,
   Bar,
@@ -175,6 +175,46 @@ function TrendBadge({
   );
 }
 
+/** Amber caveat chip shown when the market never revealed a price ceiling for
+ * an item: no expired listing was ever priced above the highest one that sold.
+ * In that case the "fair price" is really a floor — buyers might have paid more
+ * — so we flag that the true upper bound is unknown. */
+function UpperBoundUnknownBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-sm font-medium text-amber-600">
+      <ArrowUp className="size-4" aria-hidden />
+      Upper price bound unknown
+      <Popover>
+        <PopoverTrigger
+          render={
+            <button
+              type="button"
+              aria-label="Why is the upper price bound unknown?"
+              className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <Info className="size-4" />
+            </button>
+          }
+        />
+        <PopoverContent className="max-w-xs">
+          <div className="space-y-1.5 text-left">
+            <p>
+              No expired listing for this item was ever priced above the highest one that actually
+              sold.
+            </p>
+            <p>
+              That means the market never showed a price too high to sell at, so the true ceiling is
+              unknown — the fair price here is likely a{" "}
+              <span className="text-foreground">floor</span>, and buyers may have been willing to
+              pay more.
+            </p>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </span>
+  );
+}
+
 /** Selectable histogram resolutions. More bins = smaller price step, which
  * resolves tight clusters when an item has big price swings. */
 const BIN_OPTIONS = [
@@ -297,6 +337,19 @@ export function MarketItemPage() {
     () => pricedWindowListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
     [pricedWindowListings],
   );
+
+  // The market never revealed a price ceiling when no expired listing was ever
+  // priced above the highest one that actually sold. With no evidence that any
+  // price was ever "too high", the fair price is really a floor, not a true
+  // upper bound.
+  const upperBoundUnknown = useMemo(() => {
+    if (soldPpu.length === 0) return false;
+    const maxSold = Math.max(...soldPpu);
+    const expiredPpu = pricedWindowListings
+      .filter((l) => l.state === "Expired")
+      .map((l) => l.pricePerUnit);
+    return expiredPpu.every((p) => p <= maxSold);
+  }, [soldPpu, pricedWindowListings]);
 
   // Representative full-stack size for the item. We prefer the item's real
   // in-game maximum stack size (from the game registry, carried on the item
@@ -609,6 +662,7 @@ export function MarketItemPage() {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
           {trend && <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />}
+          {upperBoundUnknown && <UpperBoundUnknownBadge />}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
             target="_blank"
@@ -652,9 +706,7 @@ export function MarketItemPage() {
           <CardContent className="py-4">
             <div className="mb-2 flex items-baseline gap-2">
               <h2 className="font-semibold">Related items</h2>
-              <span className="text-xs text-muted-foreground">
-                {related.label}
-              </span>
+              <span className="text-xs text-muted-foreground">{related.label}</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {related.items.map((r) => (
