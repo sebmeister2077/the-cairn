@@ -18,7 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
 import { ordersApi, useInvalidateOrders } from "@/lib/orders";
 import type { Order } from "@/models/orders";
-import { priceUnitLabel, SELL_UNIT_MANY } from "./ordersShared";
+import { priceUnitLabel, SELL_UNIT_MANY, SELL_UNIT_ONE } from "./ordersShared";
 
 interface OrderRequestDialogProps {
   order: Order;
@@ -60,13 +60,21 @@ export function OrderRequestDialog({ order, open, onOpenChange }: OrderRequestDi
       setError("Enter a valid quantity (≥ 1).");
       return;
     }
-    const proposed = price.trim() ? Number.parseFloat(price) : null;
-    if (proposed != null && (!Number.isFinite(proposed) || proposed <= 0)) {
-      setError("Proposed price must be greater than 0.");
+    // The user enters a *total* price for the whole request; the backend stores
+    // a per-unit price, so divide by the quantity before sending.
+    const total = price.trim() ? Number.parseFloat(price) : null;
+    if (total != null && (!Number.isFinite(total) || total <= 0)) {
+      setError("Total price must be greater than 0.");
       return;
     }
+    const proposed = total != null ? total / qty : null;
     mutation.mutate({ quantity: qty, proposed_unit_price: proposed, note: note.trim() || null });
   };
+
+  // Default total shown as the placeholder: listed unit price × requested qty.
+  const parsedQty = Number.parseInt(quantity, 10);
+  const effectiveQty = Number.isInteger(parsedQty) && parsedQty >= 1 ? parsedQty : 1;
+  const listedTotal = order.unit_price * effectiveQty;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,7 +99,7 @@ export function OrderRequestDialog({ order, open, onOpenChange }: OrderRequestDi
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="req-price">Your price (optional)</Label>
+              <Label htmlFor="req-price">Total price (optional)</Label>
               <Input
                 id="req-price"
                 type="number"
@@ -99,10 +107,15 @@ export function OrderRequestDialog({ order, open, onOpenChange }: OrderRequestDi
                 step="1"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
-                placeholder={String(order.unit_price)}
+                placeholder={String(listedTotal)}
               />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            This is the <span className="font-medium">total</span> price for all {effectiveQty}{" "}
+            {SELL_UNIT_MANY[order.sell_unit]} — not the price per{" "}
+            {SELL_UNIT_ONE[order.sell_unit]}.
+          </p>
           <div className="space-y-1">
             <Label htmlFor="req-note">Note (optional)</Label>
             <textarea
