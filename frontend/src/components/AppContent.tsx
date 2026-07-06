@@ -653,7 +653,7 @@ export function AppContent() {
                             <span
                               aria-label={t("app.nav.ordersUnreadAria")}
                               title={t("app.nav.ordersUnreadAria")}
-                              className="absolute -top-1 -right-2 h-2 w-2 rounded-full bg-red-500"
+                              className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
                             />
                           )}
                           {pending > 0 && (
