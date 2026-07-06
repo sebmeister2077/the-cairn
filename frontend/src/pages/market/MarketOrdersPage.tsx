@@ -261,6 +261,16 @@ function OrderCard({ order, unread }: { order: Order; unread: boolean }) {
               {order.location.label || `${order.location.x}, ${order.location.z}`}
             </span>
           )}
+          {order.created_at && (
+            <span title={`Posted ${new Date(order.created_at).toLocaleString()}`}>
+              · Posted {new Date(order.created_at).toLocaleDateString()}
+            </span>
+          )}
+          {order.updated_at && order.updated_at !== order.created_at && (
+            <span title={`Updated ${new Date(order.updated_at).toLocaleString()}`}>
+              · Updated {new Date(order.updated_at).toLocaleDateString()}
+            </span>
+          )}
           {order.status === "fulfilled" && <Badge variant="outline">Fulfilled</Badge>}
         </div>
       </Card>

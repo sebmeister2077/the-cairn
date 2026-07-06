@@ -153,6 +153,41 @@ export function OrderDetailPage() {
           )}
         </div>
 
+        {(order.created_at || order.updated_at) && (
+          <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+            {order.created_at && (
+              <span>
+                Posted{" "}
+                <time
+                  dateTime={order.created_at}
+                  title={new Date(order.created_at).toLocaleString()}
+                >
+                  {new Date(order.created_at).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              </span>
+            )}
+            {order.updated_at && order.updated_at !== order.created_at && (
+              <span>
+                · Updated{" "}
+                <time
+                  dateTime={order.updated_at}
+                  title={new Date(order.updated_at).toLocaleString()}
+                >
+                  {new Date(order.updated_at).toLocaleDateString(undefined, {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
           {isOwner ? (
             <>
