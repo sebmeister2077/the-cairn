@@ -78,11 +78,20 @@ export interface OrderRequest {
 export interface OrderFill {
     id: number;
     order_id: string;
+    request_id: number | null;
     quantity_reduced: number;
     reason: FillReason;
     unit_price: number | null;
     publish_analytics: boolean;
+    /** The offerer flagged this trade as false — excluded from analytics but
+     *  still shown to everyone with a "Flagged" marker. */
+    flagged: boolean;
+    flagged_at: string | null;
     reporter_api_key_id: string | null;
+    /** The offerer (requester) the trade is attributed to. */
+    counterparty_api_key_id: string | null;
+    /** The offerer's public name, shown to everyone so the price can be verified. */
+    counterparty: string | null;
     created_at: string | null;
 }
 

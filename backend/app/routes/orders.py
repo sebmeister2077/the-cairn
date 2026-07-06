@@ -45,7 +45,6 @@ _LABEL_MAX = 60
 _SIDES = {"buy", "sell"}
 _MOBILITY = {"stationary", "occasional", "frequent"}
 _SELL_UNITS = {"unit", "stack", "crate"}
-_FILL_REASONS = {"sell", "buy", "adjust"}
 _LOC_SOURCES = {"manual", "landmark", "favorite"}
 _SORTS = {"newest", "oldest", "price_asc", "price_desc"}
 _MSG_KINDS = {"message", "counter"}
@@ -54,7 +53,7 @@ _MSG_KINDS = {"message", "counter"}
 _CREATE_CAP = 30
 _REQUEST_CAP = 60
 _MESSAGE_CAP = 200
-_FILL_CAP = 100
+_FLAG_CAP = 100
 
 
 # ---------------------------------------------------------------------------
@@ -107,11 +106,8 @@ class MessageBody(BaseModel):
     note: Optional[str] = Field(default=None, max_length=_NOTE_MAX)
 
 
-class FillBody(BaseModel):
-    quantity_reduced: int = Field(..., ge=1)
-    reason: str = "adjust"
-    unit_price: Optional[float] = Field(default=None, gt=0)
-    publish_analytics: bool = True
+class FlagFillBody(BaseModel):
+    flagged: bool = True
 
 
 class ProfileBody(BaseModel):
@@ -443,18 +439,27 @@ async def accept_request(
 ):
     _ensure_enabled()
     kid = _key_id_for(ctx["key"])
-    context = odb.get_request_context(request_id)
-    if context is None:
+    check_scoped_rate_limit(ctx["key"], "orders-message", _MESSAGE_CAP, _DAY)
+    result = odb.accept_request(request_id, kid)
+    if result.get("ok"):
+        return result["request"]
+    error = result.get("error")
+    if error == "not_found":
         raise HTTPException(status_code=404, detail="Request not found")
-    # Either party may accept the other's standing offer/counter.
-    if kid not in (context["order_owner"], context["requester_api_key_id"]):
+    if error == "not_party":
         raise HTTPException(status_code=403, detail="Not a party to this request")
-    if context["status"] in ("accepted", "rejected", "withdrawn"):
-        raise HTTPException(status_code=409, detail="This request is closed")
-    return odb.add_message(
-        request_id=request_id, author_api_key_id=kid, kind="accept",
-        proposed_quantity=None, proposed_unit_price=None, note=None,
-    )
+    if error == "self_accept":
+        raise HTTPException(
+            status_code=403,
+            detail="You can't accept your own offer — wait for the other party to accept.",
+        )
+    if error == "over_fill":
+        raise HTTPException(
+            status_code=409,
+            detail="The agreed quantity exceeds the order's remaining stock. Re-negotiate the amount.",
+        )
+    # closed / no_terms
+    raise HTTPException(status_code=409, detail="This request can no longer be accepted")
 
 
 @router.post("/requests/{request_id}/reject")
@@ -495,27 +500,31 @@ async def withdraw_request(
     return odb.get_request(request_id)
 
 
-@router.post("/{order_id}/fills")
-async def create_fill(
-    order_id: str,
-    body: FillBody,
+@router.post("/fills/{fill_id}/flag")
+async def flag_fill(
+    fill_id: int,
+    body: FlagFillBody,
     ctx: dict = Depends(require_active_user),
 ):
+    """Let the offerer flag (or un-flag) their own recorded trade as false.
+
+    Flagged trades drop out of the price analytics aggregate but stay visible in
+    the trade list with a "Flagged" marker. Only the offerer (counterparty of
+    the trade) may toggle their own flag.
+    """
     _ensure_enabled()
-    if body.reason not in _FILL_REASONS:
-        raise HTTPException(status_code=400, detail="Invalid fill reason")
     kid = _key_id_for(ctx["key"])
-    check_scoped_rate_limit(ctx["key"], "orders-fill", _FILL_CAP, _DAY)
-    order = odb.add_fill(
-        order_id=order_id,
-        reporter_api_key_id=kid,
-        quantity_reduced=body.quantity_reduced,
-        reason=body.reason,
-        unit_price=body.unit_price,
-        publish_analytics=bool(body.publish_analytics),
-    )
+    check_scoped_rate_limit(ctx["key"], "orders-flag", _FLAG_CAP, _DAY)
+    result = odb.flag_fill(fill_id, kid, bool(body.flagged))
+    if not result.get("ok"):
+        error = result.get("error")
+        if error == "not_found":
+            raise HTTPException(status_code=404, detail="Trade not found")
+        raise HTTPException(status_code=403, detail="Only the offerer can flag this trade")
+    order_id = result["order_id"]
+    order = odb.get_order(order_id)
     if order is None:
-        raise HTTPException(status_code=404, detail="Order not found or not yours")
-    order["fills"] = odb.list_fills(order_id)
+        raise HTTPException(status_code=404, detail="Order not found")
+    order["fills"] = odb.list_fills(order_id, published_only=True)
     order["analytics"] = odb.order_analytics(order_id)
     return order

@@ -1,6 +1,7 @@
 // Order detail page: full order info, structured negotiation threads, owner
-// controls (edit / close / record trade), and a per-order price analytics
-// panel that respects each seller's publish choice.
+// controls (edit / close), and a per-order price analytics panel fed by
+// accepted negotiations. Trades are attributed to the offerer, who can flag
+// their own trade as false.
 
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -23,7 +24,6 @@ import {
 import { EditOrderDialog } from "./orders/EditOrderDialog";
 import { NegotiationThread } from "./orders/NegotiationThread";
 import { OrderRequestDialog } from "./orders/OrderRequestDialog";
-import { TradeFillDialog } from "./orders/TradeFillDialog";
 import { OrderAnalyticsPanel } from "./orders/OrderAnaliticsPanel";
 
 function formatGears(n: number): string {
@@ -41,7 +41,6 @@ export function OrderDetailPage() {
   const markOrderSeen = useMarkOrderSeen();
 
   const [requestOpen, setRequestOpen] = useState(false);
-  const [fillOpen, setFillOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   // Clear this order's unread dot once the user opens it.
@@ -159,9 +158,6 @@ export function OrderDetailPage() {
             <>
               {isOpen && (
                 <>
-                  <Button size="sm" onClick={() => setFillOpen(true)}>
-                    Record trade
-                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
                     Edit
                   </Button>
@@ -202,6 +198,7 @@ export function OrderDetailPage() {
         unitLabel={SELL_UNIT_MANY[order.sell_unit]}
         fills={order.fills}
         sellUnit={order.sell_unit}
+        myId={myId}
       />
 
       {/* Requests / negotiations. Non-owners only see their own threads. */}
@@ -215,7 +212,6 @@ export function OrderDetailPage() {
       )}
 
       <OrderRequestDialog order={order} open={requestOpen} onOpenChange={setRequestOpen} />
-      <TradeFillDialog order={order} open={fillOpen} onOpenChange={setFillOpen} />
       <EditOrderDialog order={order} open={editOpen} onOpenChange={setEditOpen} />
     </div>
   );

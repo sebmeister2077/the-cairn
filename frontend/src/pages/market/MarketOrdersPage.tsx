@@ -10,6 +10,7 @@ import { MapPin, Package, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -57,6 +58,7 @@ export function MarketOrdersPage() {
   const [q, setQ] = useState("");
   const [mobility, setMobility] = useState<TraderMobility | "">("");
   const [sort, setSort] = useState<OrderSort>("newest");
+  const [showClosed, setShowClosed] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
 
   const filters: OrderFilters = {
@@ -64,6 +66,7 @@ export function MarketOrdersPage() {
     q: q.trim() || undefined,
     mobility: mobility || undefined,
     sort,
+    include_closed: showClosed || undefined,
     limit: 100,
   };
   const { data, isPending, isError, featureDisabled } = useOrdersList(filters);
@@ -181,6 +184,10 @@ export function MarketOrdersPage() {
             ))}
           </SelectContent>
         </Select>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox checked={showClosed} onCheckedChange={(v) => setShowClosed(v === true)} />
+          Show closed
+        </label>
       </div>
 
       {featureDisabled ? (

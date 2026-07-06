@@ -16,7 +16,6 @@ import {
 import { API_BASE, ApiError, authHeaders, handleResponse } from "@/lib/api";
 import type {
     CreateOrderPayload,
-    FillReason,
     MessageKind,
     Order,
     OrderDetail,
@@ -104,15 +103,8 @@ export const ordersApi = {
         sendJson<OrderRequest>(`/requests/${requestId}/reject`, "POST"),
     withdrawRequest: (requestId: number) =>
         sendJson<OrderRequest>(`/requests/${requestId}/withdraw`, "POST"),
-    addFill: (
-        id: string,
-        payload: {
-            quantity_reduced: number;
-            reason: FillReason;
-            unit_price?: number | null;
-            publish_analytics: boolean;
-        },
-    ) => sendJson<OrderDetail>(`/${encodeURIComponent(id)}/fills`, "POST", payload),
+    flagFill: (fillId: number, flagged: boolean) =>
+        sendJson<OrderDetail>(`/fills/${fillId}/flag`, "POST", { flagged }),
     profile: (signal?: AbortSignal) => getJson<TraderProfile>("/profile", signal),
     setProfile: (payload: {
         location?: OrderLocation | null;

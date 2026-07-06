@@ -12,7 +12,7 @@ Conventions (mirror ``grouping_library_db`` / ``accounts_db``):
     ``users.api_key_id`` so they always reflect the trader's current privacy
     choice (``in_game_name`` when ``use_in_game_name`` else ``display_name``).
   * ``quantity_remaining`` is a denormalised counter kept in sync by
-    :func:`add_fill`.
+    :func:`accept_request`.
 """
 
 from __future__ import annotations
@@ -129,11 +129,22 @@ def _fill_from_row(row: dict) -> dict:
     return {
         "id": int(row["id"]),
         "order_id": row["order_id"],
+        "request_id": int(row["request_id"]) if row.get("request_id") is not None else None,
         "quantity_reduced": int(row["quantity_reduced"]),
         "reason": row["reason"],
         "unit_price": _num(row.get("unit_price")),
         "publish_analytics": bool(row["publish_analytics"]),
+        "flagged": bool(row.get("flagged")),
+        "flagged_at": _iso(row.get("flagged_at")),
         "reporter_api_key_id": str(row["reporter_api_key_id"]) if row.get("reporter_api_key_id") else None,
+        "counterparty_api_key_id": str(row["counterparty_api_key_id"]) if row.get("counterparty_api_key_id") else None,
+        # The offerer's live public name — shown to everyone so the recorded
+        # price can be verified with the person who actually traded.
+        "counterparty": _public_name(
+            row.get("counterparty_display_name"),
+            row.get("counterparty_in_game_name"),
+            row.get("counterparty_use_in_game_name"),
+        ),
         "created_at": _iso(row.get("created_at")),
     }
 
@@ -536,65 +547,189 @@ def set_request_status(request_id: int, status: str) -> bool:
 # Fills + order-local analytics
 # ---------------------------------------------------------------------------
 
-def add_fill(
-    *,
-    order_id: str,
-    reporter_api_key_id: str,
-    quantity_reduced: int,
-    reason: str,
-    unit_price: Optional[float],
-    publish_analytics: bool,
-) -> Optional[dict]:
-    """Record a post-trade fill and decrement the order's remaining stock.
+def _standing_terms(cur, request_id: int) -> Optional[dict]:
+    """Fold the negotiation's offer/counter turns into the current agreed terms.
 
-    Flips the order to ``fulfilled`` when it reaches zero. Returns the updated
-    order dict, or ``None`` if the order is missing / not owned by the reporter.
+    Walks the ``offer``/``counter`` messages in chronological order, carrying
+    forward the most recent non-null quantity and price. Plain ``message`` turns
+    (and any chatter after the last proposal) are ignored, so the *latest*
+    proposed price/qty always wins. Returns ``{quantity, unit_price,
+    last_proposer}`` or ``None`` if the request has no proposals (should not
+    happen — the initial offer always seeds one).
+    """
+    cur.execute(
+        """SELECT r.quantity, r.proposed_unit_price, o.unit_price AS order_price
+             FROM order_requests r
+             JOIN orders o ON o.id = r.order_id
+            WHERE r.id = %s""",
+        (request_id,),
+    )
+    base = cur.fetchone()
+    if base is None:
+        return None
+    qty = int(base["quantity"])
+    price = base["proposed_unit_price"]
+    if price is None:
+        price = base["order_price"]
+    cur.execute(
+        """SELECT author_api_key_id, kind, proposed_quantity, proposed_unit_price
+             FROM order_negotiation_messages
+            WHERE request_id = %s AND kind IN ('offer', 'counter')
+            ORDER BY created_at ASC, id ASC""",
+        (request_id,),
+    )
+    last_proposer: Optional[str] = None
+    for msg in cur.fetchall():
+        if msg["proposed_quantity"] is not None:
+            qty = int(msg["proposed_quantity"])
+        if msg["proposed_unit_price"] is not None:
+            price = msg["proposed_unit_price"]
+        if msg["author_api_key_id"] is not None:
+            last_proposer = str(msg["author_api_key_id"])
+    return {
+        "quantity": qty,
+        "unit_price": _num(price),
+        "last_proposer": last_proposer,
+    }
+
+
+def accept_request(request_id: int, actor_api_key_id: str) -> Dict[str, Any]:
+    """Accept the standing offer/counter, recording the trade automatically.
+
+    Only the *counterparty* of the last proposer may accept (you can't accept
+    your own standing offer). The recorded price/qty is the latest agreed terms.
+    A fill is written attributed to the offerer (requester) so their public name
+    is shown to everyone, and the order's remaining stock is decremented.
+
+    Returns ``{"ok": True, "request": <dict>}`` on success, or
+    ``{"ok": False, "error": <code>}`` where ``error`` is one of
+    ``not_found`` / ``closed`` / ``not_party`` / ``self_accept`` /
+    ``over_fill`` / ``no_terms``.
     """
     if not db.is_available():
         raise RuntimeError("Database not configured")
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT author_api_key_id, quantity_remaining FROM orders WHERE id = %s FOR UPDATE",
-                (order_id,),
+                """SELECT r.status, r.requester_api_key_id, r.order_id,
+                          o.author_api_key_id AS order_owner, o.side,
+                          o.quantity_remaining, o.status AS order_status
+                     FROM order_requests r
+                     JOIN orders o ON o.id = r.order_id
+                    WHERE r.id = %s
+                      FOR UPDATE OF o""",
+                (request_id,),
             )
-            order = cur.fetchone()
-            if order is None:
-                return None
-            if str(order["author_api_key_id"]) != str(reporter_api_key_id):
-                return None
+            ctx = cur.fetchone()
+            if ctx is None:
+                return {"ok": False, "error": "not_found"}
+            owner = str(ctx["order_owner"]) if ctx["order_owner"] else None
+            requester = str(ctx["requester_api_key_id"]) if ctx["requester_api_key_id"] else None
+            actor = str(actor_api_key_id)
+            if actor not in (owner, requester):
+                return {"ok": False, "error": "not_party"}
+            if ctx["status"] in ("accepted", "rejected", "withdrawn"):
+                return {"ok": False, "error": "closed"}
+            if ctx["order_status"] == "closed":
+                return {"ok": False, "error": "closed"}
+
+            terms = _standing_terms(cur, request_id)
+            if terms is None:
+                return {"ok": False, "error": "no_terms"}
+            # You may only accept the *other* party's standing proposal.
+            if terms["last_proposer"] is not None and terms["last_proposer"] == actor:
+                return {"ok": False, "error": "self_accept"}
+
+            qty = int(terms["quantity"])
+            remaining = int(ctx["quantity_remaining"])
+            if qty > remaining:
+                return {"ok": False, "error": "over_fill"}
+
+            # Append the accept turn + close the request.
+            cur.execute(
+                """INSERT INTO order_negotiation_messages
+                       (request_id, author_api_key_id, kind)
+                   VALUES (%s, %s, 'accept')""",
+                (request_id, actor),
+            )
+            cur.execute(
+                "UPDATE order_requests SET status = 'accepted', updated_at = now() WHERE id = %s",
+                (request_id,),
+            )
+            # Record the trade — attributed to the offerer (requester), always
+            # published (the offerer can flag it false later).
+            reason = "sell" if ctx["side"] == "sell" else "buy"
             cur.execute(
                 """INSERT INTO order_fills
-                       (order_id, reporter_api_key_id, quantity_reduced, reason,
-                        unit_price, publish_analytics)
-                   VALUES (%s, %s, %s, %s, %s, %s)""",
-                (order_id, reporter_api_key_id, quantity_reduced, reason,
-                 unit_price, publish_analytics),
+                       (order_id, reporter_api_key_id, counterparty_api_key_id,
+                        request_id, quantity_reduced, reason, unit_price,
+                        publish_analytics)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)""",
+                (ctx["order_id"], actor, requester, request_id, qty, reason,
+                 terms["unit_price"]),
             )
-            remaining = max(0, int(order["quantity_remaining"]) - int(quantity_reduced))
-            new_status = "fulfilled" if remaining == 0 else "open"
+            new_remaining = max(0, remaining - qty)
+            new_status = "fulfilled" if new_remaining == 0 else "open"
             cur.execute(
                 """UPDATE orders
                        SET quantity_remaining = %s,
                            status = CASE WHEN status = 'closed' THEN 'closed' ELSE %s END,
                            updated_at = now()
                      WHERE id = %s""",
-                (remaining, new_status, order_id),
+                (new_remaining, new_status, ctx["order_id"]),
             )
-    return get_order(order_id)
+    return {"ok": True, "request": get_request(request_id)}
+
+
+def flag_fill(fill_id: int, actor_api_key_id: str, flagged: bool) -> Dict[str, Any]:
+    """Let the offerer flag/un-flag their own recorded trade as false.
+
+    Flagged trades are excluded from the price analytics aggregate but remain
+    visible in the trade list. Returns ``{"ok": True, "order_id": <id>}`` or
+    ``{"ok": False, "error": <code>}`` (``not_found`` / ``forbidden``).
+    """
+    if not db.is_available():
+        raise RuntimeError("Database not configured")
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT order_id, counterparty_api_key_id FROM order_fills WHERE id = %s FOR UPDATE",
+                (fill_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return {"ok": False, "error": "not_found"}
+            counterparty = str(row["counterparty_api_key_id"]) if row["counterparty_api_key_id"] else None
+            if counterparty is None or counterparty != str(actor_api_key_id):
+                return {"ok": False, "error": "forbidden"}
+            cur.execute(
+                """UPDATE order_fills
+                       SET flagged = %s,
+                           flagged_at = CASE WHEN %s THEN now() ELSE NULL END
+                     WHERE id = %s""",
+                (flagged, flagged, fill_id),
+            )
+    return {"ok": True, "order_id": row["order_id"]}
 
 
 def list_fills(order_id: str, *, published_only: bool = False) -> List[dict]:
     if not db.is_available():
         return []
-    where = "WHERE order_id = %s"
+    where = "WHERE f.order_id = %s"
     if published_only:
-        where += " AND publish_analytics = TRUE"
+        where += " AND f.publish_analytics = TRUE"
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                f"""SELECT * FROM order_fills {where}
-                    ORDER BY created_at DESC""",
+                f"""SELECT f.*,
+                          cu.display_name     AS counterparty_display_name,
+                          cu.in_game_name     AS counterparty_in_game_name,
+                          cu.use_in_game_name AS counterparty_use_in_game_name
+                     FROM order_fills f
+                     LEFT JOIN users cu
+                            ON cu.api_key_id = f.counterparty_api_key_id::uuid
+                    {where}
+                    ORDER BY f.created_at DESC""",
                 (order_id,),
             )
             return [_fill_from_row(dict(r)) for r in cur.fetchall()]
@@ -614,12 +749,12 @@ def order_analytics(order_id: str) -> dict:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
                 """SELECT
-                       COUNT(*) FILTER (WHERE publish_analytics AND unit_price IS NOT NULL) AS pub_count,
+                       COUNT(*) FILTER (WHERE publish_analytics AND NOT flagged AND unit_price IS NOT NULL) AS pub_count,
                        COUNT(*) AS total_count,
-                       AVG(unit_price) FILTER (WHERE publish_analytics AND unit_price IS NOT NULL) AS avg_price,
-                       MIN(unit_price) FILTER (WHERE publish_analytics AND unit_price IS NOT NULL) AS min_price,
-                       MAX(unit_price) FILTER (WHERE publish_analytics AND unit_price IS NOT NULL) AS max_price,
-                       SUM(quantity_reduced) FILTER (WHERE publish_analytics) AS total_qty
+                       AVG(unit_price) FILTER (WHERE publish_analytics AND NOT flagged AND unit_price IS NOT NULL) AS avg_price,
+                       MIN(unit_price) FILTER (WHERE publish_analytics AND NOT flagged AND unit_price IS NOT NULL) AS min_price,
+                       MAX(unit_price) FILTER (WHERE publish_analytics AND NOT flagged AND unit_price IS NOT NULL) AS max_price,
+                       SUM(quantity_reduced) FILTER (WHERE publish_analytics AND NOT flagged) AS total_qty
                      FROM order_fills WHERE order_id = %s""",
                 (order_id,),
             )

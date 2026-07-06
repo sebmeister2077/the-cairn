@@ -7,9 +7,11 @@ import { useMutation } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
+import { formatGears } from "@/lib/auction";
 import { ordersApi, useInvalidateOrders } from "@/lib/orders";
 import type { MessageKind, NegotiationMessage, Order, OrderRequest } from "@/models/orders";
 
@@ -17,6 +19,29 @@ interface NegotiationThreadProps {
   order: Order;
   request: OrderRequest;
   myId: string | null;
+}
+
+/** Fold the offer/counter turns into the currently agreed terms + the id of
+ *  whoever made the last proposal. Plain messages don't change the terms, so
+ *  the latest proposed price/qty always wins even if chatter followed it. */
+function standingTerms(
+  order: Order,
+  request: OrderRequest,
+): {
+  quantity: number;
+  unitPrice: number;
+  lastProposer: string | null;
+} {
+  let quantity = request.quantity;
+  let unitPrice = request.proposed_unit_price ?? order.unit_price;
+  let lastProposer: string | null = null;
+  for (const m of request.messages) {
+    if (m.kind !== "offer" && m.kind !== "counter") continue;
+    if (m.proposed_quantity != null) quantity = m.proposed_quantity;
+    if (m.proposed_unit_price != null) unitPrice = m.proposed_unit_price;
+    if (m.author_api_key_id != null) lastProposer = m.author_api_key_id;
+  }
+  return { quantity, unitPrice, lastProposer };
 }
 
 const STATUS_LABELS: Record<OrderRequest["status"], string> = {
@@ -75,7 +100,14 @@ export function NegotiationThread({ order, request, myId }: NegotiationThreadPro
   const [counterQty, setCounterQty] = useState("");
   const [counterPrice, setCounterPrice] = useState("");
   const [showCounter, setShowCounter] = useState(false);
+  const [confirmAccept, setConfirmAccept] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const terms = standingTerms(order, request);
+  // You can only accept the *other* party's standing offer, and only once a
+  // proposal exists. Accepting records the trade at the latest agreed price.
+  const canAccept =
+    isParty && active && orderOpen && terms.lastProposer != null && terms.lastProposer !== myId;
 
   const post = useMutation({
     mutationFn: (payload: {
@@ -220,20 +252,20 @@ export function NegotiationThread({ order, request, myId }: NegotiationThreadPro
                 Counter-offer
               </Button>
             )}
+            {canAccept && (
+              <Button size="sm" onClick={() => setConfirmAccept(true)} disabled={busy}>
+                Accept
+              </Button>
+            )}
             {isOwner && (
-              <>
-                <Button size="sm" onClick={() => decide.mutate("accept")} disabled={busy}>
-                  Accept
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => decide.mutate("reject")}
-                  disabled={busy}
-                >
-                  Reject
-                </Button>
-              </>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => decide.mutate("reject")}
+                disabled={busy}
+              >
+                Reject
+              </Button>
             )}
             {isRequester && (
               <Button
@@ -248,6 +280,24 @@ export function NegotiationThread({ order, request, myId }: NegotiationThreadPro
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmAccept}
+        title="Accept and record this trade?"
+        description={
+          <>
+            This records a trade of <strong>{terms.quantity}×</strong> at{" "}
+            <strong>{formatGears(terms.unitPrice)}</strong> each and feeds it into the price
+            analytics. The offerer can flag it later if the price is wrong.
+          </>
+        }
+        confirmLabel="Accept trade"
+        loading={decide.isPending}
+        onConfirm={() => {
+          decide.mutate("accept", { onSuccess: () => setConfirmAccept(false) });
+        }}
+        onCancel={() => setConfirmAccept(false)}
+      />
     </div>
   );
 }
