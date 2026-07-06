@@ -44,10 +44,17 @@ function MessageRow({ msg, myId }: { msg: NegotiationMessage; myId: string | nul
       <div className="flex items-center gap-2">
         <span className="font-medium">{msg.author ?? "Unknown"}</span>
         {msg.kind === "counter" && <Badge variant="outline">Counter</Badge>}
+        {msg.kind === "accept" && <Badge variant="outline">Accept</Badge>}
+        {msg.kind === "reject" && <Badge variant="outline">Reject</Badge>}
         {(msg.proposed_quantity != null || msg.proposed_unit_price != null) && (
           <span className="text-xs text-muted-foreground">
             {msg.proposed_quantity != null && `${msg.proposed_quantity}×`}
             {msg.proposed_unit_price != null && ` @ ${msg.proposed_unit_price} ⚙`}
+          </span>
+        )}
+        {msg.created_at && (
+          <span className="ml-auto text-xs text-muted-foreground">
+            {new Date(msg.created_at).toLocaleString()}
           </span>
         )}
       </div>
