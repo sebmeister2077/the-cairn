@@ -95,7 +95,7 @@ export function OrderRequestDialog({ order, open, onOpenChange }: OrderRequestDi
               <Input
                 id="req-price"
                 type="number"
-                min="0"
+                min="1"
                 step="1"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}

@@ -19,10 +19,10 @@ import logging
 import re
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from ..auth import require_active_user
+from ..auth import require_active_user, resolve_key_id
 from ..core import api_key_cache
 from ..core import feature_flags
 from ..core import orders_db as odb
@@ -258,12 +258,26 @@ async def put_profile(
 
 
 @router.get("/{order_id}")
-async def get_order(order_id: str):
+async def get_order(
+    order_id: str,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+):
     _ensure_enabled()
     order = odb.get_order(order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="Order not found")
-    order["requests"] = odb.list_requests_for_order(order_id)
+    # Reads are public, but negotiation threads are private: the order owner
+    # sees every request while any other viewer only receives their own. We
+    # resolve the (optional) API key here without forcing auth so anonymous
+    # visitors can still browse the order.
+    viewer_kid = str(resolve_key_id(x_api_key)) if x_api_key else None
+    requests = odb.list_requests_for_order(order_id)
+    is_owner = viewer_kid is not None and order.get("author_api_key_id") == viewer_kid
+    if not is_owner:
+        requests = [
+            r for r in requests if r.get("requester_api_key_id") == viewer_kid
+        ]
+    order["requests"] = requests
     # Only expose trades the seller published for analytics — unpublished fills
     # stay private (they still power the aggregate "blocked" state below).
     order["fills"] = odb.list_fills(order_id, published_only=True)

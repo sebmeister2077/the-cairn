@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getMyAccountSafe } from "@/lib/api";
 import { formatGears } from "@/lib/auction";
 import { useOrdersList, useOrdersUnreadIds } from "@/lib/orders";
@@ -67,6 +68,13 @@ export function MarketOrdersPage() {
   };
   const { data, isPending, isError, featureDisabled } = useOrdersList(filters);
 
+  const postDisabled = !isLoggedIn || featureDisabled;
+  const postDisabledReason = !isLoggedIn
+    ? "Create an account to post an order"
+    : featureDisabled
+      ? "The Orders marketplace is not currently available."
+      : null;
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -77,30 +85,33 @@ export function MarketOrdersPage() {
             track fair prices. Independent of the in-game Auction House.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            if (!isLoggedIn || featureDisabled) return;
-            setCreateOpen(true);
-          }}
-          disabled={!isLoggedIn || featureDisabled}
-          title={
-            !isLoggedIn
-              ? "Sign in to post an order"
-              : featureDisabled
-                ? "The Orders marketplace is not currently available."
-                : undefined
-          }
-        >
-          <Plus className="h-4 w-4" aria-hidden />
-          New order
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span className={postDisabled ? "inline-block cursor-not-allowed" : "inline-block"} />
+            }
+          >
+            <Button
+              onClick={() => {
+                if (postDisabled) return;
+                setCreateOpen(true);
+              }}
+              disabled={postDisabled}
+              className={postDisabled ? "pointer-events-none" : undefined}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              New order
+            </Button>
+          </TooltipTrigger>
+          {postDisabledReason && <TooltipContent>{postDisabledReason}</TooltipContent>}
+        </Tooltip>
       </div>
 
       {!isLoggedIn && (
         <p className="text-sm text-muted-foreground">
           You can browse freely.{" "}
           <Link to="/account" className="underline">
-            Sign in
+            Create an account
           </Link>{" "}
           to post orders, send requests, or negotiate.
         </p>
