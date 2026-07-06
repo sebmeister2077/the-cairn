@@ -81,6 +81,7 @@ export const en = {
                 marketItems: "Items",
                 marketInsights: "Insights",
                 marketConverter: "Converter",
+                marketOrders: "Orders",
                 marketLeaderboards: "Leaderboards",
                 marketMap: "Trade Map",
             },
@@ -99,6 +100,7 @@ export const en = {
                 many: "{count} items awaiting your review",
                 other: "{count} items awaiting your review",
             },
+            ordersUnreadAria: "You have new order activity",
         },
         access: {
             unavailableTitle: "Access not available",

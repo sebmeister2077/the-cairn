@@ -3,7 +3,17 @@ import { Input as InputPrimitive } from "@base-ui/react/input";
 
 import { cn } from "@/lib/utils";
 
-function Input({ className, type, autoComplete = "off", ...props }: React.ComponentProps<"input">) {
+// Hide the browser's native number spinner arrows on `type="number"` inputs.
+const NO_SPINNER =
+  "[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none";
+
+function Input({
+  className,
+  type,
+  autoComplete = "off",
+  showSpinner = false,
+  ...props
+}: React.ComponentProps<"input"> & { showSpinner?: boolean }) {
   return (
     <InputPrimitive
       type={type}
@@ -12,6 +22,7 @@ function Input({ className, type, autoComplete = "off", ...props }: React.Compon
       className={cn(
         "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
         className,
+        type === "number" && !showSpinner && NO_SPINNER,
       )}
       {...props}
     />

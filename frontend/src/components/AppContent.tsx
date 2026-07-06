@@ -45,6 +45,8 @@ import { MarketItemsPage } from "@/pages/market/MarketItemsPage";
 import { MarketLeaderboardsPage } from "@/pages/market/MarketLeaderboardsPage";
 import { MarketPlayerPage } from "@/pages/market/MarketPlayerPage";
 import { MarketMapPage } from "@/pages/market/MarketMapPage";
+import { MarketOrdersPage } from "@/pages/market/MarketOrdersPage";
+import { OrderDetailPage } from "@/pages/market/OrderDetailPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
@@ -71,6 +73,7 @@ import {
 } from "@/lib/api";
 import { AuthRejectedBanner } from "./AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
+import { useOrdersUnread } from "@/lib/orders";
 import { useReduxState } from "@/store/hooks";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -112,6 +115,7 @@ const NavigationRoutes = {
     Items: "/market/items",
     Insights: "/market/insights",
     Converter: "/market/converter",
+    Orders: "/market/orders",
     Leaderboards: "/market/leaderboards",
     Map: "/market/map",
   },
@@ -182,6 +186,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketOverview"
   | "app.nav.subtabs.marketListings"
   | "app.nav.subtabs.marketConverter"
+  | "app.nav.subtabs.marketOrders"
   | "app.nav.subtabs.marketLeaderboards"
   | "app.nav.subtabs.marketMap"
   | "app.nav.chip.new";
@@ -217,6 +222,7 @@ const subTabs: Subtabs = {
     { value: "/market/items", labelKey: "app.nav.subtabs.marketItems" },
     { value: "/market/insights", labelKey: "app.nav.subtabs.marketInsights" },
     { value: "/market/converter", labelKey: "app.nav.subtabs.marketConverter" },
+    { value: "/market/orders", labelKey: "app.nav.subtabs.marketOrders" },
     { value: "/market/leaderboards", labelKey: "app.nav.subtabs.marketLeaderboards" },
     { value: "/market/map", labelKey: "app.nav.subtabs.marketMap" },
   ],
@@ -356,6 +362,7 @@ export function AppContent() {
     refetchOnWindowFocus: false,
     refetchOnMount: false,
   });
+  const ordersUnread = useOrdersUnread(hasApiKey);
   const categories = isAdmin
     ? [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]
     : BASE_CATEGORIES;
@@ -627,6 +634,8 @@ export function AppContent() {
               <TabsList variant="line">
                 {activeSubs.map((tab) => {
                   const pending = getPendingCountFor(tab.value, pendingCounts);
+                  const showOrdersDot =
+                    tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
                   return (
                     <NavLink key={tab.value} to={tab.value} end>
                       {() => (
@@ -639,6 +648,13 @@ export function AppContent() {
                             >
                               {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
                             </Badge>
+                          )}
+                          {showOrdersDot && (
+                            <span
+                              aria-label={t("app.nav.ordersUnreadAria")}
+                              title={t("app.nav.ordersUnreadAria")}
+                              className="absolute -top-1 -right-2 h-2 w-2 rounded-full bg-red-500"
+                            />
                           )}
                           {pending > 0 && (
                             <Badge
@@ -944,6 +960,22 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketConverterPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/orders"
+            element={
+              <ErrorBoundary title="Orders failed" resetKeys={[location.pathname]}>
+                <MarketOrdersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/orders/:id"
+            element={
+              <ErrorBoundary title="Orders failed" resetKeys={[location.pathname]}>
+                <OrderDetailPage />
               </ErrorBoundary>
             }
           />

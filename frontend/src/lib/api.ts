@@ -2136,6 +2136,9 @@ export async function getDefaultPublicInvite(): Promise<DefaultInviteRecord | nu
 
 export interface AccountUser {
     id: string | null;
+    /** The caller's `api_keys.id` — matches the `author_api_key_id` stored on
+     *  content they create (orders, negotiations, etc.). */
+    api_key_id: string | null;
     display_name: string;
     in_game_name: string | null;
     use_in_game_name: boolean;
