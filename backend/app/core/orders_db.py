@@ -279,6 +279,46 @@ def close_order(order_id: str, author_api_key_id: str) -> bool:
             return cur.rowcount > 0
 
 
+def reopen_order(
+    order_id: str, author_api_key_id: str, add_quantity: int = 0
+) -> Dict[str, Any]:
+    """Owner re-opens a closed/fulfilled order, optionally restocking it.
+
+    ``add_quantity`` is added to both the total quantity and the remaining
+    counter, then the status is set back to ``'open'``. The order must end up
+    with at least one unit remaining, otherwise there is nothing to sell.
+
+    Returns ``{"ok": True, "order": <order>}`` or ``{"ok": False,
+    "error": <code>}`` (``not_found`` / ``no_stock``).
+    """
+    if not db.is_available():
+        raise RuntimeError("Database not configured")
+    add = max(0, int(add_quantity))
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT quantity_remaining FROM orders
+                     WHERE id = %s AND author_api_key_id = %s
+                     FOR UPDATE""",
+                (order_id, author_api_key_id),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return {"ok": False, "error": "not_found"}
+            if int(row["quantity_remaining"]) + add < 1:
+                return {"ok": False, "error": "no_stock"}
+            cur.execute(
+                """UPDATE orders
+                       SET quantity = quantity + %s,
+                           quantity_remaining = quantity_remaining + %s,
+                           status = 'open',
+                           updated_at = now()
+                     WHERE id = %s""",
+                (add, add, order_id),
+            )
+    return {"ok": True, "order": get_order(order_id)}
+
+
 def get_order(order_id: str) -> Optional[dict]:
     if not db.is_available():
         return None

@@ -113,8 +113,7 @@ export function OrderRequestDialog({ order, open, onOpenChange }: OrderRequestDi
           </div>
           <p className="text-xs text-muted-foreground">
             This is the <span className="font-medium">total</span> price for all {effectiveQty}{" "}
-            {SELL_UNIT_MANY[order.sell_unit]} — not the price per{" "}
-            {SELL_UNIT_ONE[order.sell_unit]}.
+            {SELL_UNIT_MANY[order.sell_unit]} — not the price per {SELL_UNIT_ONE[order.sell_unit]}.
           </p>
           <div className="space-y-1">
             <Label htmlFor="req-note">Note (optional)</Label>

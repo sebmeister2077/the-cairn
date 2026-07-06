@@ -24,6 +24,7 @@ import {
 import { EditOrderDialog } from "./orders/EditOrderDialog";
 import { NegotiationThread } from "./orders/NegotiationThread";
 import { OrderRequestDialog } from "./orders/OrderRequestDialog";
+import { ReopenOrderDialog } from "./orders/ReopenOrderDialog";
 import { OrderAnalyticsPanel } from "./orders/OrderAnaliticsPanel";
 
 function formatGears(n: number): string {
@@ -42,6 +43,7 @@ export function OrderDetailPage() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
 
   // Clear this order's unread dot once the user opens it.
   useEffect(() => {
@@ -207,6 +209,11 @@ export function OrderDetailPage() {
                   </Button>
                 </>
               )}
+              {!isOpen && (
+                <Button size="sm" onClick={() => setReopenOpen(true)}>
+                  Reopen order
+                </Button>
+              )}
             </>
           ) : (
             isOpen &&
@@ -248,6 +255,7 @@ export function OrderDetailPage() {
 
       <OrderRequestDialog order={order} open={requestOpen} onOpenChange={setRequestOpen} />
       <EditOrderDialog order={order} open={editOpen} onOpenChange={setEditOpen} />
+      <ReopenOrderDialog order={order} open={reopenOpen} onOpenChange={setReopenOpen} />
     </div>
   );
 }

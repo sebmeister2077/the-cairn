@@ -93,6 +93,10 @@ class UpdateOrderBody(BaseModel):
     mobility: Optional[str] = None
 
 
+class ReopenOrderBody(BaseModel):
+    add_quantity: int = Field(default=0, ge=0)
+
+
 class RequestBody(BaseModel):
     quantity: int = Field(..., ge=1)
     proposed_unit_price: Optional[float] = Field(default=None, gt=0)
@@ -364,6 +368,24 @@ async def close_order(
     if not odb.close_order(order_id, kid):
         raise HTTPException(status_code=404, detail="Order not found or not yours")
     return {"ok": True}
+
+
+@router.post("/{order_id}/reopen")
+async def reopen_order(
+    order_id: str,
+    body: ReopenOrderBody,
+    ctx: dict = Depends(require_active_user),
+):
+    _ensure_enabled()
+    kid = _key_id_for(ctx["key"])
+    result = odb.reopen_order(order_id, kid, add_quantity=body.add_quantity)
+    if not result["ok"]:
+        if result["error"] == "not_found":
+            raise HTTPException(status_code=404, detail="Order not found or not yours")
+        raise HTTPException(
+            status_code=400, detail="Add some stock before reopening this order"
+        )
+    return result["order"]
 
 
 @router.post("/{order_id}/seen")

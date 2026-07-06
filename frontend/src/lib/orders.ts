@@ -84,6 +84,8 @@ export const ordersApi = {
     update: (id: string, payload: Partial<CreateOrderPayload> & { clear_location?: boolean }) =>
         sendJson<Order>(`/${encodeURIComponent(id)}`, "PATCH", payload),
     close: (id: string) => sendJson<{ ok: boolean }>(`/${encodeURIComponent(id)}/close`, "POST"),
+    reopen: (id: string, addQuantity: number) =>
+        sendJson<Order>(`/${encodeURIComponent(id)}/reopen`, "POST", { add_quantity: addQuantity }),
     createRequest: (
         id: string,
         payload: { quantity: number; proposed_unit_price?: number | null; note?: string | null },
