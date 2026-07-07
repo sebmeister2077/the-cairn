@@ -13,6 +13,7 @@ import {
   clearStoredAuthFlags,
   clearAdminSession,
   clearPersistedQueryCache,
+  ApiError,
   type AccountMeResponse,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
   setShowAdvancedMapOptions,
   setWCTileCacheEnabled,
 } from "@/store/slices/mapView";
+import { clearRejectedMarker } from "@/store/slices/auth";
 
 // localStorage keys preserved when the user clicks "Clear local cache":
 // the API key and the cached auth flags / passkey session that keep them
@@ -80,7 +82,7 @@ export function AccountPage() {
   const [confirmDelete, setConfirmDelete] = useState("");
   const [clearCacheOpen, setClearCacheOpen] = useState(false);
 
-  const { data, isLoading, error } = useQuery<AccountMeResponse>({
+  const { data, isLoading, error, refetch } = useQuery<AccountMeResponse>({
     queryKey: ["account-me", apiKey ?? ""],
     queryFn: getMyAccountSafe,
     retry: false,
@@ -175,10 +177,42 @@ export function AccountPage() {
   }
 
   if (error) {
+    // The short-circuit in `getMyAccount` throws a bare `Error("auth_rejected")`
+    // and a real 401 surfaces as an `ApiError` with status 401. Both mean the
+    // same thing to the user: the key couldn't be verified right now. This is
+    // frequently transient (a backend cold start, a brief DB blip) rather than
+    // a genuine revocation, so we show a reassuring message and let them retry
+    // in place — clearing the in-memory rejection marker so the request is
+    // actually re-issued instead of short-circuiting again.
+    const rawMessage = (error as Error).message;
+    const isAuthRejected =
+      rawMessage === "auth_rejected" || (error as ApiError)?.status === 401;
+    if (isAuthRejected) {
+      return (
+        <Card>
+          <CardContent className="space-y-3 py-8 text-sm">
+            <p className="text-muted-foreground">
+              We couldn't verify your access key just now. This is usually a
+              temporary hiccup — your key is still saved on this device. Try
+              again in a moment, and reload the page if it keeps happening.
+            </p>
+            <Button
+              size="sm"
+              onClick={() => {
+                dispatch(clearRejectedMarker());
+                void refetch();
+              }}
+            >
+              Try again
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card>
         <CardContent className="py-8 text-sm text-destructive">
-          {(error as Error).message}
+          {rawMessage}
         </CardContent>
       </Card>
     );

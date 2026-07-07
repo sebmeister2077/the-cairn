@@ -49,7 +49,15 @@ def _resolve_key(key: str, request: Request) -> Optional[dict]:
         return cached
 
     if not db.is_available():
-        return None
+        # The key isn't cached and the database is momentarily unavailable
+        # (cold start / brief connection drop). That's a transient condition,
+        # NOT an invalid key — surface it as 503 so the client retries instead
+        # of treating it as an auth rejection. A 401 here would poison the
+        # user's stored key for the whole browser session.
+        raise HTTPException(
+            status_code=503,
+            detail="Authentication temporarily unavailable, please retry",
+        )
 
     record = db.get_api_key(key)
     if not record or record.get("revoked"):
