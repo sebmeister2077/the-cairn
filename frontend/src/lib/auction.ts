@@ -530,6 +530,144 @@ export function listingHasText(l: { attrs?: Record<string, unknown> | null }): b
     return text.length > 0 || title.length > 0;
 }
 
+/**
+ * Item categories that are wearable tools or weapons. Their auction item stacks
+ * can carry a `condition` / `durability` (wear) plus other combat or utility
+ * modifiers, so an individual listing may be worth inspecting beyond its price.
+ */
+const TOOL_CATEGORIES = new Set([
+    "axe", "axehead",
+    "pickaxe", "pickaxehead",
+    "shovel", "shovelhead",
+    "hoe",
+    "scythe", "scythehead",
+    "saw", "sawblade",
+    "hammer", "hammerhead",
+    "chisel",
+    "knife",
+    "blade", "bladehead",
+    "sword",
+    "spear", "spearhead",
+    "javelin",
+    "club",
+    "mace", "macehead",
+    "bow",
+    "sling",
+    "flail",
+    "prospectingpick", "propick",
+    "wrench",
+    "shears",
+    "file",
+    "rollingpin",
+    "paxel",
+    "poleaxe",
+    "halberd",
+    "helvehammer",
+]);
+
+/** Whether a listing's category is a wearable tool/weapon (see `TOOL_CATEGORIES`). */
+export function isToolCategory(category: string | null | undefined): boolean {
+    if (!category) return false;
+    return TOOL_CATEGORIES.has(category.toLowerCase());
+}
+
+// Attribute keys that are purely cosmetic / placement noise (or handled
+// explicitly, like condition/durability) — never surfaced as a generic "buff".
+const COSMETIC_ATTR_KEYS = new Set([
+    "randomx", "randomz", "type", "collected", "text", "title",
+    "wood", "metal", "color", "deco", "toolmode", "_partial",
+    "condition", "durability",
+]);
+
+export interface ListingAttribute {
+    label: string;
+    value: string;
+}
+
+function attrToNumber(v: unknown): number | null {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "") {
+        const n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    }
+    return null;
+}
+
+function humanizeAttrKey(key: string): string {
+    const words = key
+        .replace(/([a-z])([A-Z])/g, "$1 $2")
+        .replace(/[_-]+/g, " ")
+        .trim();
+    if (!words) return key;
+    return words[0].toUpperCase() + words.slice(1);
+}
+
+function formatAttrValue(v: unknown): string {
+    if (typeof v === "boolean") return v ? "Yes" : "No";
+    const n = attrToNumber(v);
+    if (n != null) return Number.isInteger(n) ? String(n) : String(Number(n.toFixed(3)));
+    return String(v);
+}
+
+/**
+ * Flatten a (possibly nested) attribute value into displayable label/value
+ * rows. Nested trees (e.g. `buffs: { miningSpeedMul: 1.2 }`) are expanded into
+ * one row per leaf, prefixing the parent name ("Buffs · Mining speed mul").
+ * Empty objects yield nothing so we don't surface a bare, useless key.
+ */
+function flattenAttr(label: string, value: unknown, out: ListingAttribute[]): void {
+    if (value == null) return;
+    if (typeof value === "object") {
+        // Arrays and plain trees both decode to objects here; walk their entries.
+        const entries = Array.isArray(value)
+            ? value.map((v, i) => [String(i), v] as const)
+            : Object.entries(value as Record<string, unknown>);
+        for (const [childKey, childValue] of entries) {
+            flattenAttr(`${label} · ${humanizeAttrKey(childKey)}`, childValue, out);
+        }
+        return;
+    }
+    out.push({ label, value: formatAttrValue(value) });
+}
+
+/**
+ * Notable attributes worth surfacing for a tool/weapon listing: its wear
+ * (condition and/or remaining durability) plus any non-cosmetic modifiers
+ * ("buffs"). Returns an empty array when the listing isn't a tool or has nothing
+ * useful to show (e.g. a brand-new, unmodified tool sitting at full condition),
+ * so callers can hide the affordance entirely.
+ */
+export function listingToolAttributes(l: {
+    category: string;
+    attrs?: Record<string, unknown> | null;
+}): ListingAttribute[] {
+    if (!isToolCategory(l.category)) return [];
+    const a = l.attrs;
+    if (!a) return [];
+    const out: ListingAttribute[] = [];
+
+    // Condition is a 0..1 fraction of remaining durability; only worth showing
+    // once the tool is actually worn (a pristine tool sits at exactly 1).
+    const condition = attrToNumber(a.condition);
+    if (condition != null && condition < 0.995) {
+        out.push({ label: "Condition", value: `${Math.round(condition * 100)}%` });
+    }
+    // Remaining durability points, when the stack carries them directly.
+    const durability = attrToNumber(a.durability);
+    if (durability != null) {
+        out.push({ label: "Durability", value: `${Math.round(durability)} left` });
+    }
+    // Anything else that isn't cosmetic/placement noise is a modifier worth
+    // flagging (e.g. server-side buffs or enchantments). Nested trees are
+    // flattened; empty ones contribute nothing.
+    for (const [key, value] of Object.entries(a)) {
+        if (value == null) continue;
+        if (COSMETIC_ATTR_KEYS.has(key.toLowerCase())) continue;
+        flattenAttr(humanizeAttrKey(key), value, out);
+    }
+    return out;
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 export function percentileSorted(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

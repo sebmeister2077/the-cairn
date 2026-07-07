@@ -36,6 +36,7 @@ import {
   splitOreHostRock,
   humanizeItemCode,
   listingHasText,
+  listingToolAttributes,
   computeRelatedItems,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
@@ -46,6 +47,7 @@ import {
   formatGameDate,
   DeliveryFeeCell,
   ListingNotesCell,
+  ListingAttributesCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
 import {
@@ -480,6 +482,14 @@ export function MarketItemPage() {
   // figures above but still listed here, tagged in a "Notes" column.
   const hasTextListings = useMemo(() => itemListings.some(listingHasText), [itemListings]);
 
+  // Whether any listing is a tool/weapon carrying notable attributes (a worn
+  // condition, remaining durability, or a buff). Only then do we add the
+  // "Details" column that opens a per-listing attribute popover.
+  const hasToolAttrs = useMemo(
+    () => itemListings.some((l) => listingToolAttributes(l).length > 0),
+    [itemListings],
+  );
+
   // Distinct in-game clutter codes (attrs.type) covered by this grouped item, so
   // the item page can spell out exactly which objects it represents.
   const variantCodes = useMemo(
@@ -537,6 +547,16 @@ export function MarketItemPage() {
               header: "Notes",
               width: "minmax(4.5rem,0.8fr)",
               cell: (l) => <ListingNotesCell listing={l} />,
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(hasToolAttrs
+        ? [
+            {
+              key: "attrs",
+              header: "Details",
+              width: "minmax(5rem,0.8fr)",
+              cell: (l) => <ListingAttributesCell listing={l} />,
             } satisfies ListingColumn,
           ]
         : []),
@@ -645,7 +665,7 @@ export function MarketItemPage() {
         },
       },
     ],
-    [hasVariants, combineOres, oreGroup, hasTextListings],
+    [hasVariants, combineOres, oreGroup, hasTextListings, hasToolAttrs],
   );
 
   if (listingsQ.isLoading) {

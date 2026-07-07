@@ -4,9 +4,11 @@
 
 import { useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { Wrench } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus, listingHasText } from "@/lib/auction";
+import { deriveListingStatus, listingHasText, listingToolAttributes } from "@/lib/auction";
 import { Badge } from "@/components/ui/badge";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 /**
@@ -109,6 +111,47 @@ export function ListingNotesCell({ listing }: { listing: AuctionListing }) {
     >
       Text
     </Badge>
+  );
+}
+
+/**
+ * Attributes cell for a tool/weapon listing: when the item stack carries
+ * something worth seeing (a worn condition, remaining durability, or a
+ * modifier/buff), shows a small "Details" button that opens a popover with the
+ * decoded attributes. Non-tool listings and pristine tools render an em dash so
+ * the column stays quiet. Never dumps the raw attribute JSON.
+ */
+export function ListingAttributesCell({ listing }: { listing: AuctionListing }) {
+  const attrs = listingToolAttributes(listing);
+  if (attrs.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex h-6 cursor-pointer items-center gap-1 rounded border border-border/60 px-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            title="View this item's condition and modifiers"
+          >
+            <Wrench className="h-3 w-3" aria-hidden />
+            Details
+          </button>
+        }
+      />
+      <PopoverContent align="end" className="w-72 max-w-[90vw] p-3">
+        <p className="mb-2 text-xs font-medium">Item attributes</p>
+        <dl className="space-y-1">
+          {attrs.map((a) => (
+            <div key={a.label} className="flex items-start justify-between gap-3 text-xs">
+              <dt className="shrink-0 text-muted-foreground">{a.label}</dt>
+              <dd className="min-w-0 break-words text-right font-medium tabular-nums">{a.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </PopoverContent>
+    </Popover>
   );
 }
 

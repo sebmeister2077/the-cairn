@@ -185,16 +185,15 @@ export function AccountPage() {
     // in place — clearing the in-memory rejection marker so the request is
     // actually re-issued instead of short-circuiting again.
     const rawMessage = (error as Error).message;
-    const isAuthRejected =
-      rawMessage === "auth_rejected" || (error as ApiError)?.status === 401;
+    const isAuthRejected = rawMessage === "auth_rejected" || (error as ApiError)?.status === 401;
     if (isAuthRejected) {
       return (
         <Card>
           <CardContent className="space-y-3 py-8 text-sm">
             <p className="text-muted-foreground">
-              We couldn't verify your access key just now. This is usually a
-              temporary hiccup — your key is still saved on this device. Try
-              again in a moment, and reload the page if it keeps happening.
+              We couldn't verify your access key just now. This is usually a temporary hiccup — your
+              key is still saved on this device. Try again in a moment, and reload the page if it
+              keeps happening.
             </p>
             <Button
               size="sm"
@@ -211,9 +210,7 @@ export function AccountPage() {
     }
     return (
       <Card>
-        <CardContent className="py-8 text-sm text-destructive">
-          {rawMessage}
-        </CardContent>
+        <CardContent className="py-8 text-sm text-destructive">{rawMessage}</CardContent>
       </Card>
     );
   }
