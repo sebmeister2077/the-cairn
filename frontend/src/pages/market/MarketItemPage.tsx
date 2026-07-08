@@ -855,10 +855,21 @@ export function MarketItemPage() {
               : `Median sold price, normalized to a full stack of ${stackSize}`
           }
         />
-        <StatCard label="Units sold" value={insight?.unitsSold ?? 0} />
+        <StatCard
+          label="Units sold"
+          value={insight?.unitsSold ?? 0}
+          hint={
+            stackSize > 1
+              ? `${((insight?.unitsSold ?? 0) / stackSize).toLocaleString(undefined, {
+                  maximumFractionDigits: 1,
+                })} stacks`
+              : undefined
+          }
+        />
         <StatCard
           label="Sell-through"
           value={insight?.sellThrough != null ? `${(insight.sellThrough * 100).toFixed(0)}%` : "—"}
+          hint={insight ? `${insight.listings.toLocaleString()} listings` : undefined}
         />
         <StatCard
           label="Median time to sell"
