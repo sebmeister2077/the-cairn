@@ -97,6 +97,12 @@ export interface ItemStat {
     unitsSold: number;
     gearsTraded: number;
     priceStats: PriceStats | null;
+    /**
+     * Quantity-weighted median per-unit sold price: each sold listing's per-unit
+     * price weighted by the quantity it moved, so bulk trades dominate. `null`
+     * when the item has no priced sales. Companion to `priceStats.median`.
+     */
+    weightedPricePerUnit: number | null;
     trend: PriceTrend | null;
 }
 
@@ -265,6 +271,14 @@ export interface InsightsRow {
     // --- Price ---
     priceStats: PriceStats | null;
     medianPricePerUnit: number | null;
+    /** Quantity-weighted median per-unit sold price (bulk trades dominate). */
+    weightedPricePerUnit: number | null;
+    /**
+     * The market never revealed a price ceiling for this item: no expired
+     * listing was ever priced above the highest one that actually sold, so the
+     * fair price is really a floor. Drives the "Upper price bound unknown" chip.
+     */
+    upperBoundUnknown: boolean;
 
     // --- Volatility ---
     /** Robust coefficient of variation: (p75 − p25) / median. */

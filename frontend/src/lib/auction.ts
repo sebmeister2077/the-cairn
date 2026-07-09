@@ -679,6 +679,36 @@ export function percentileSorted(sorted: number[], p: number): number {
 }
 
 /**
+ * Quantity-weighted median of a set of (value, weight) pairs — the value at
+ * which the cumulative weight crosses the half-way point of the total weight.
+ * Used for the "quantity-weighted" fair price: each sold listing's per-unit
+ * price is weighted by the quantity it moved, so a single bulk trade counts for
+ * more than many one-off sales, while staying robust to outlier prices (unlike
+ * a volume-weighted average). Weights ≤ 0 are ignored; returns `null` when no
+ * positive-weight sample exists.
+ */
+export function weightedMedian(pairs: { value: number; weight: number }[]): number | null {
+    const valid = pairs.filter((p) => p.weight > 0);
+    if (valid.length === 0) return null;
+    valid.sort((a, b) => a.value - b.value);
+    const total = valid.reduce((s, p) => s + p.weight, 0);
+    const half = total / 2;
+    let cum = 0;
+    for (let i = 0; i < valid.length; i++) {
+        cum += valid[i].weight;
+        if (cum >= half) {
+            // Exactly on the boundary with more samples ahead: average the two
+            // straddling values so an even split doesn't bias toward the lower.
+            if (cum === half && i + 1 < valid.length) {
+                return (valid[i].value + valid[i + 1].value) / 2;
+            }
+            return valid[i].value;
+        }
+    }
+    return valid[valid.length - 1].value;
+}
+
+/**
  * Convert an in-game "hours to sell" figure into real-world elapsed time.
  * Vintage Story runs at 1 in-game hour ≈ 2 real minutes, so real minutes =
  * gameHours * 2. The result is formatted into the largest sensible unit.

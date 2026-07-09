@@ -460,6 +460,30 @@ def price_stats(prices: List[float]) -> Dict[str, float]:
     }
 
 
+def weighted_median(pairs: List[Tuple[float, float]]) -> Optional[float]:
+    """Quantity-weighted median of (value, weight) pairs — the value at which the
+    cumulative weight crosses half the total weight. Used for the "quantity-
+    weighted" fair price: each sold listing's per-unit price counts in proportion
+    to the quantity it moved, so a single bulk trade outweighs many one-off sales
+    while staying robust to outlier prices (unlike a volume-weighted average).
+    Returns None when no positive-weight sample exists.
+    """
+    valid = [(v, w) for v, w in pairs if w > 0]
+    if not valid:
+        return None
+    valid.sort(key=lambda p: p[0])
+    total = sum(w for _, w in valid)
+    half = total / 2
+    cum = 0.0
+    for i, (v, w) in enumerate(valid):
+        cum += w
+        if cum >= half:
+            if cum == half and i + 1 < len(valid):
+                return (v + valid[i + 1][0]) / 2
+            return v
+    return valid[-1][0]
+
+
 def _has_written_text(rec: Dict[str, Any]) -> bool:
     """Whether a listing carries written content — a parchment/book someone wrote
     a story, note, or advert on (stored in the stack's `text`/`title` attrs).
@@ -860,6 +884,9 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         priced_sold = [r for r in sold_recs if not _has_written_text(r)]
         ppu_sold = [r["pricePerUnit"] for r in priced_sold]
         tts = [r["timeToSellHours"] for r in sold_recs if r["timeToSellHours"] is not None]
+        weighted_ppu = weighted_median(
+            [(r["pricePerUnit"], r["qty"]) for r in priced_sold]
+        )
         item_stats.append(
             {
                 "itemId": item_id,
@@ -874,6 +901,9 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
                 "unitsSold": sum(r["qty"] for r in sold_recs),
                 "gearsTraded": sum(r["price"] for r in sold_recs),
                 "priceStats": price_stats(ppu_sold) if ppu_sold else None,
+                "weightedPricePerUnit": round(weighted_ppu, 2)
+                if weighted_ppu is not None
+                else None,
                 "trend": price_trend(priced_sold),
             }
         )

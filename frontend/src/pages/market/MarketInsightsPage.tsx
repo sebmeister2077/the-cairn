@@ -40,7 +40,9 @@ import { formatGameDate } from "./VirtualListingsTable";
 import { INSIGHTS_WINDOWS, useMarketInsights } from "./useMarketInsights";
 import { ScreenerTable, type ScreenerColumn } from "./InsightsScreenerTable";
 import { InsightsFilterBar } from "./InsightsFilterBar";
-import { useFilteredInsights } from "./useFilteredInsights";
+import { useFilteredInsights, rowPrice } from "./useFilteredInsights";
+import { useMarketPriceMode } from "./useMarketPriceMode";
+import { PriceModeInfo } from "./PriceModeInfo";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { InsightsRow, PriceTrend } from "@/models/auction";
@@ -239,7 +241,7 @@ const COLUMN_GLOSSARY: GlossaryEntry[] = [
   },
   {
     term: "Median/unit",
-    what: "The typical per-unit sale price — the middle value, so outliers don't skew it.",
+    what: "The typical per-unit sale price. The price toggle switches this between the plain median (middle sale, outlier-resistant) and a quantity-weighted median, where each sale counts in proportion to the quantity it moved so bulk trades set the price.",
     read: "Your fair-price reference for one unit.",
   },
   {
@@ -431,6 +433,7 @@ export function MarketInsightsPage() {
 
   const [windowKey, setWindowKey] = useMarketWindow();
   const [volumeMode, setVolumeMode] = useState<VolumeMode>("price");
+  const [priceMode, setPriceMode] = useMarketPriceMode();
 
   const windowDays = useMemo(
     () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
@@ -450,7 +453,7 @@ export function MarketInsightsPage() {
 
   // Filters apply to the screener table only — highlight cards and window totals
   // below intentionally use the full `rows`/`insights` so they stay market-wide.
-  const filteredRows = useFilteredInsights(rows, filters, volumeMode);
+  const filteredRows = useFilteredInsights(rows, filters, volumeMode, priceMode);
 
   const highlights = useMemo<Highlight[]>(() => {
     if (!rows.length) return [];
@@ -546,12 +549,18 @@ export function MarketInsightsPage() {
       },
       {
         key: "median",
-        header: "Median/unit",
+        header: priceMode === "weighted" ? "Weighted/unit" : "Median/unit",
         width: "minmax(6.5rem,1fr)",
         align: "right",
-        cell: (r) => (r.medianPricePerUnit != null ? formatGears(r.medianPricePerUnit) : DASH),
-        sortValue: (r) => r.medianPricePerUnit,
-        title: "Median per-unit sold price (fair price)",
+        cell: (r) => {
+          const p = rowPrice(r, priceMode);
+          return p != null ? formatGears(p) : DASH;
+        },
+        sortValue: (r) => rowPrice(r, priceMode),
+        title:
+          priceMode === "weighted"
+            ? "Quantity-weighted median per-unit sold price (bulk trades dominate)"
+            : "Median per-unit sold price (fair price)",
       },
       {
         key: "volatility",
@@ -669,7 +678,7 @@ export function MarketInsightsPage() {
         title: "In-game date of the most recent sale",
       },
     ],
-    [volumeMode],
+    [volumeMode, priceMode],
   );
 
   if (isPending) {
@@ -728,6 +737,24 @@ export function MarketInsightsPage() {
           >
             Units
           </Button>
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="mr-1 text-sm text-muted-foreground">Price:</span>
+          <Button
+            size="sm"
+            variant={priceMode === "median" ? "default" : "outline"}
+            onClick={() => setPriceMode("median")}
+          >
+            Median
+          </Button>
+          <Button
+            size="sm"
+            variant={priceMode === "weighted" ? "default" : "outline"}
+            onClick={() => setPriceMode("weighted")}
+          >
+            Qty-weighted
+          </Button>
+          <PriceModeInfo />
         </div>
       </div>
 

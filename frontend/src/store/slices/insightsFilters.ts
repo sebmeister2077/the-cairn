@@ -32,6 +32,8 @@ export interface InsightsFilters {
     trend: InsightsTrendDirection[];
     shortageOnly: boolean;
     dealsOnly: boolean;
+    /** Only items whose upper price bound is unknown (fair price is a floor). */
+    upperBoundUnknownOnly: boolean;
     // Kept as strings so the inputs stay controlled. Price = median/unit (gears);
     // volume = current volume-mode value; sellThrough = percent (0–100).
     priceMin: string;
@@ -56,6 +58,7 @@ export const DEFAULT_INSIGHTS_FILTERS: InsightsFilters = {
     trend: [],
     shortageOnly: false,
     dealsOnly: false,
+    upperBoundUnknownOnly: false,
     priceMin: "",
     priceMax: "",
     volumeMin: "",

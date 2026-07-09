@@ -23,6 +23,7 @@ import {
     listingHasText,
     percentileSorted,
     refreshMarketReferences,
+    weightedMedian,
 } from "@/lib/auction";
 import type {
     AuctionListing,
@@ -246,6 +247,29 @@ export function computeMarketInsights(
         const priceStats = soldPpu.length ? fullPriceStats(soldPpu) : null;
         const median = priceStats?.median ?? null;
 
+        // Quantity-weighted median per-unit price: each sold listing weighted by
+        // the quantity it moved, so a single bulk trade counts for more than many
+        // one-off sales (while staying robust to outlier prices).
+        const weightedPricePerUnit = weightedMedian(
+            pricedSold.map((r) => ({ value: r.pricePerUnit, weight: r.qty })),
+        );
+
+        // The market never revealed a price ceiling when no expired listing was
+        // ever priced above the highest one that actually sold — with no evidence
+        // any price was "too high", the fair price is really a floor. Written
+        // parchments are excluded on both sides (priced for their content, not the
+        // raw item), mirroring the item page's own chip logic.
+        let upperBoundUnknown = false;
+        if (soldPpu.length > 0) {
+            const maxSold = soldPpu[soldPpu.length - 1];
+            upperBoundUnknown = recs.every(
+                (r) =>
+                    r.state !== "Expired" ||
+                    listingHasText(r) ||
+                    r.pricePerUnit <= maxSold,
+            );
+        }
+
         const tts = sold
             .map((r) => r.timeToSellHours)
             .filter((h): h is number => h != null)
@@ -355,6 +379,8 @@ export function computeMarketInsights(
             activeListings: activeCount,
             priceStats,
             medianPricePerUnit: median,
+            weightedPricePerUnit,
+            upperBoundUnknown,
             dispersionCV,
             volatilityTier,
             trend: computeTrend(pricedSold),

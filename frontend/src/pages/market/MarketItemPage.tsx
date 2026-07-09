@@ -57,9 +57,13 @@ import {
   saleGameHours,
 } from "./useMarketInsights";
 import { useMarketWindow } from "./useMarketWindow";
+import { useMarketPriceMode } from "./useMarketPriceMode";
+import { PriceModeInfo } from "./PriceModeInfo";
 
-/** Build a price histogram plus a fitted log-normal density curve. */
-function buildHistogram(prices: number[], bins = 24) {
+/** Build a price histogram plus a fitted log-normal density curve. `markerValue`
+ * is the price the dashed "fair price" reference line should snap to (the plain
+ * median by default; the quantity-weighted price when that mode is active). */
+function buildHistogram(prices: number[], bins = 24, markerValue?: number) {
   if (prices.length === 0) return { bars: [], median: 0, p25: 0, p75: 0, medianBucket: 0 };
   const sorted = [...prices].sort((a, b) => a - b);
   const median = percentileSorted(sorted, 0.5);
@@ -105,10 +109,12 @@ function buildHistogram(prices: number[], bins = 24) {
       fit: Math.round(pdf * width * total),
     };
   });
-  // Snap the fair-price marker to the bucket that actually contains the
-  // median so the reference line lands on a real category on the axis.
-  const medianIdx = Math.min(bins - 1, Math.max(0, Math.floor((median - min) / width)));
-  const medianBucket = bars[medianIdx]?.bucket ?? round(median);
+  // Snap the fair-price marker to the bucket that actually contains it so the
+  // reference line lands on a real category on the axis. Defaults to the median,
+  // but follows the active price mode when a weighted marker is supplied.
+  const marker = markerValue != null && Number.isFinite(markerValue) ? markerValue : median;
+  const medianIdx = Math.min(bins - 1, Math.max(0, Math.floor((marker - min) / width)));
+  const medianBucket = bars[medianIdx]?.bucket ?? round(marker);
   return { bars, median, p25, p75, medianBucket };
 }
 
@@ -240,6 +246,9 @@ export function MarketItemPage() {
     () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
     [windowKey],
   );
+
+  // Shared price mode (median vs quantity-weighted), synced across market pages.
+  const [priceMode, setPriceMode] = useMarketPriceMode();
 
   // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
   const [bins, setBins] = useState(24);
@@ -422,7 +431,22 @@ export function MarketItemPage() {
   // of more than one), since otherwise there's nothing to convert to.
   const perUnitUseful = (insight?.priceStats?.median ?? 0) >= 2 || stackSize <= 1;
   const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
-  const hist = useMemo(() => buildHistogram(chartPrices, bins), [chartPrices, bins]);
+
+  // Quantity-weighted fair price (per-unit) from the Insights engine; the
+  // per-stack figure scales linearly with the stack size (weighted median of
+  // pricePerUnit × stackSize = stackSize × weighted median of pricePerUnit).
+  const weightedUnit = insight?.weightedPricePerUnit ?? null;
+  const weightedStack = weightedUnit != null ? weightedUnit * stackSize : null;
+
+  // Value the dashed reference line snaps to. In weighted mode it follows the
+  // quantity-weighted price; in median mode we leave it undefined so the
+  // histogram keeps snapping to its own median (unchanged behaviour).
+  const markerValue =
+    priceMode === "weighted" ? (perUnitUseful ? weightedUnit : weightedStack) : null;
+  const hist = useMemo(
+    () => buildHistogram(chartPrices, bins, markerValue ?? undefined),
+    [chartPrices, bins, markerValue],
+  );
 
   const medianStackPrice = useMemo(() => {
     const prices = [...soldStackPrices].sort((a, b) => a - b);
@@ -432,6 +456,11 @@ export function MarketItemPage() {
     // for even-sized sets, which disagreed with the chart's true median.
     return percentileSorted(prices, 0.5);
   }, [soldStackPrices]);
+
+  // The fair-price figures shown in the card, honoring the active price mode.
+  const fairUnit = priceMode === "weighted" ? weightedUnit : (insight?.priceStats?.median ?? null);
+  const fairStack = priceMode === "weighted" ? weightedStack : medianStackPrice;
+  const priceModeWeighted = priceMode === "weighted";
 
   // Volume of sold listings over time, bucketed by in-game sale time across the
   // selected window. Shows either total gears traded or total units sold.
@@ -837,22 +866,46 @@ export function MarketItemPage() {
         <span className="ml-1 text-xs text-muted-foreground">1 real day ≈ 1 in-game month</span>
       </div>
 
+      {/* Price basis (shared with the Insights & Converter pages) */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-sm text-muted-foreground">Price:</span>
+        <Button
+          size="sm"
+          variant={priceMode === "median" ? "default" : "outline"}
+          onClick={() => setPriceMode("median")}
+        >
+          Median
+        </Button>
+        <Button
+          size="sm"
+          variant={priceMode === "weighted" ? "default" : "outline"}
+          onClick={() => setPriceMode("weighted")}
+        >
+          Qty-weighted
+        </Button>
+        <PriceModeInfo />
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label={perUnitUseful ? "Fair price / unit" : "Fair price / stack"}
           value={
             perUnitUseful
-              ? ps
-                ? formatGears(ps.median)
+              ? fairUnit != null
+                ? formatGears(fairUnit)
                 : "—"
-              : medianStackPrice
-                ? formatGears(medianStackPrice)
+              : fairStack != null
+                ? formatGears(fairStack)
                 : "—"
           }
           hint={
-            perUnitUseful
-              ? "Median of sold listings"
-              : `Median sold price, normalized to a full stack of ${stackSize}`
+            priceModeWeighted
+              ? perUnitUseful
+                ? "Quantity-weighted median of sold listings (bulk trades dominate)"
+                : `Quantity-weighted median sold price, normalized to a full stack of ${stackSize}`
+              : perUnitUseful
+                ? "Median of sold listings"
+                : `Median sold price, normalized to a full stack of ${stackSize}`
           }
         />
         <StatCard
@@ -998,9 +1051,14 @@ export function MarketItemPage() {
                 <li className="flex items-center gap-2">
                   <span className="inline-block h-0 w-3 shrink-0 border-t-2 border-dashed border-[#10b981]" />
                   <span>
-                    <span className="text-foreground">Fair price (median)</span> — half of sales
-                    were cheaper and half more expensive. Listings far left of this line are
-                    bargains; far right are overpriced.
+                    <span className="text-foreground">
+                      Fair price ({priceModeWeighted ? "qty-weighted" : "median"})
+                    </span>{" "}
+                    —{" "}
+                    {priceModeWeighted
+                      ? "the quantity-weighted typical price, where bulk trades count for more."
+                      : "half of sales were cheaper and half more expensive."}{" "}
+                    Listings far left of this line are bargains; far right are overpriced.
                   </span>
                 </li>
               </ul>

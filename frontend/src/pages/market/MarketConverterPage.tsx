@@ -37,6 +37,7 @@ import {
   type InsightsWindowKey,
 } from "./useMarketInsights";
 import { useMarketWindow } from "./useMarketWindow";
+import { useMarketPriceMode, setMarketPriceMode } from "./useMarketPriceMode";
 import type { ConfidenceTier, InsightsRow, PriceTrend } from "@/models/auction";
 
 // --------------------------------------------------------------------------- //
@@ -44,9 +45,14 @@ import type { ConfidenceTier, InsightsRow, PriceTrend } from "@/models/auction";
 // --------------------------------------------------------------------------- //
 
 /** Which figure from a row's per-unit price distribution drives the rate. */
-export type PriceBasis = "median" | "mean" | "p25" | "p75";
+export type PriceBasis = "weighted" | "median" | "mean" | "p25" | "p75";
 
 const BASIS_OPTIONS: { value: PriceBasis; label: string; hint: string }[] = [
+  {
+    value: "weighted",
+    label: "Quantity-weighted",
+    hint: "Median where bulk trades set the price",
+  },
   { value: "median", label: "Median (typical)", hint: "Middle of sold prices" },
   { value: "mean", label: "Average", hint: "Mean of sold prices" },
   { value: "p25", label: "Cheap (p25)", hint: "Lower quartile — buying cheap" },
@@ -72,7 +78,7 @@ interface ConverterState {
 }
 
 const CONVERTER_STORAGE_KEY = "market.converter";
-const VALID_BASIS = new Set<PriceBasis>(["median", "mean", "p25", "p75"]);
+const VALID_BASIS = new Set<PriceBasis>(["weighted", "median", "mean", "p25", "p75"]);
 const VALID_WINDOW = new Set<string>(INSIGHTS_WINDOWS.map((w) => w.key));
 const DEFAULT_STATE: ConverterState = {
   have: [{ name: "", qty: "1" }],
@@ -238,6 +244,10 @@ function resolveInitialState(params: URLSearchParams): BootstrapState {
 /** Per-unit gear price for a row under the chosen basis, or `null` when the
  * item has no usable sold-price data in the current window. */
 export function gearsPerUnit(row: InsightsRow | undefined, basis: PriceBasis): number | null {
+  if (basis === "weighted") {
+    const w = row?.weightedPricePerUnit;
+    return w != null && Number.isFinite(w) && w > 0 ? w : null;
+  }
   const ps = row?.priceStats;
   if (!ps) return null;
   const v = ps[basis];
@@ -474,6 +484,23 @@ export function MarketConverterPage() {
   const [wantName, setWantName] = useState(boot.current.wantName);
   const [have, setHave] = useState<HaveLine[]>(boot.current.have);
 
+  // The "typical" basis (Quantity-weighted ↔ Median) is mirrored to the shared
+  // price-mode store so the choice carries to the Insights and item pages. The
+  // p25/mean/p75 refinements are converter-only and leave the global mode alone.
+  const [priceMode] = useMarketPriceMode();
+  const setBasisSynced = (next: PriceBasis) => {
+    setBasis(next);
+    if (next === "weighted") setMarketPriceMode("weighted");
+    else if (next === "median") setMarketPriceMode("median");
+  };
+  // React to the global mode changing on another page: swap the typical basis to
+  // match, leaving explicit p25/mean/p75 picks untouched.
+  useEffect(() => {
+    if (priceMode === "weighted" && basis !== "weighted") setBasis("weighted");
+    else if (priceMode === "median" && basis === "weighted") setBasis("median");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [priceMode]);
+
   // Whether it's safe to mirror state back into the URL. When a shared link
   // carries item ids we must wait until they've been resolved to names before
   // writing, otherwise the id-sync effect would clobber the link on mount.
@@ -486,6 +513,9 @@ export function MarketConverterPage() {
   const bootWindow = boot.current.windowKey;
   useEffect(() => {
     if (bootWindow) setWindowKey(bootWindow as InsightsWindowKey);
+    // A shared link (or stored converter) using the weighted basis should also
+    // set the shared price mode so the rest of the market pages agree.
+    if (boot.current?.basis === "weighted") setMarketPriceMode("weighted");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -625,7 +655,7 @@ export function MarketConverterPage() {
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Price basis:</span>
-          <Select value={basis} onValueChange={(v) => setBasis(v as PriceBasis)}>
+          <Select value={basis} onValueChange={(v) => setBasisSynced(v as PriceBasis)}>
             <SelectTrigger size="sm" className="w-44">
               <SelectValue>
                 {(value) => BASIS_OPTIONS.find((o) => o.value === value)?.label ?? value}
@@ -806,15 +836,21 @@ export function MarketConverterPage() {
               </div>
             </div>
 
-            {basket.lines.length === 1 && wantRow.priceStats && (
-              <p className="text-center text-sm text-muted-foreground tabular-nums">
-                1 {basket.lines[0].name} ≈{" "}
-                {formatQty(basket.lines[0].row.priceStats![basis] / wantRow.priceStats[basis])}{" "}
-                {wantRow.name} · 1 {wantRow.name} ≈{" "}
-                {formatQty(wantRow.priceStats[basis] / basket.lines[0].row.priceStats![basis])}{" "}
-                {basket.lines[0].name}
-              </p>
-            )}
+            {basket.lines.length === 1 &&
+              gearsPerUnit(basket.lines[0].row, basis) != null &&
+              gearsPerUnit(wantRow, basis) != null && (
+                <p className="text-center text-sm text-muted-foreground tabular-nums">
+                  1 {basket.lines[0].name} ≈{" "}
+                  {formatQty(
+                    gearsPerUnit(basket.lines[0].row, basis)! / gearsPerUnit(wantRow, basis)!,
+                  )}{" "}
+                  {wantRow.name} · 1 {wantRow.name} ≈{" "}
+                  {formatQty(
+                    gearsPerUnit(wantRow, basis)! / gearsPerUnit(basket.lines[0].row, basis)!,
+                  )}{" "}
+                  {basket.lines[0].name}
+                </p>
+              )}
 
             <p className="text-center text-xs text-muted-foreground">
               {wantRow.activeListings.toLocaleString()} {wantRow.name} listed right now

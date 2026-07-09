@@ -281,6 +281,14 @@ export function InsightsFilterBar({ categories }: { categories: string[] }) {
         Deals available
       </label>
 
+      <label className="flex items-center gap-2 text-sm cursor-pointer h-9">
+        <Checkbox
+          checked={f.upperBoundUnknownOnly}
+          onCheckedChange={(v) => dispatch(patchInsightsFilters({ upperBoundUnknownOnly: !!v }))}
+        />
+        Unknown upper bound
+      </label>
+
       <Button
         variant="ghost"
         size="sm"

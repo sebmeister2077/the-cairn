@@ -55,6 +55,7 @@ interface SearchRow {
   unitsSold: number;
   gearsTraded: number;
   median: number | null;
+  weighted: number | null;
 }
 
 function sortRows(rows: SearchRow[], key: SortKey): SearchRow[] {
@@ -106,6 +107,7 @@ export function MarketItemsPage() {
         unitsSold: st?.unitsSold ?? 0,
         gearsTraded: st?.gearsTraded ?? 0,
         median: st?.priceStats?.median ?? null,
+        weighted: st?.weightedPricePerUnit ?? null,
       };
     });
   }, [catalogQ.data, summaryQ.data]);
@@ -242,6 +244,7 @@ export function MarketItemsPage() {
               <TableHead>Item</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Fair price</TableHead>
+              <TableHead className="text-right">Weighted price</TableHead>
               <TableHead className="text-right">Units sold</TableHead>
               <TableHead className="text-right">Listings</TableHead>
               <TableHead className="text-right">Gears traded</TableHead>
@@ -259,6 +262,9 @@ export function MarketItemsPage() {
                 <TableCell className="text-right tabular-nums">
                   {it.median != null ? formatGears(it.median) : "—"}
                 </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {it.weighted != null ? formatGears(it.weighted) : "—"}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">{num(it.unitsSold)}</TableCell>
                 <TableCell className="text-right tabular-nums">{num(it.listings)}</TableCell>
                 <TableCell className="text-right tabular-nums">
@@ -268,7 +274,7 @@ export function MarketItemsPage() {
             ))}
             {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   No items match your search.
                 </TableCell>
               </TableRow>

@@ -5,9 +5,15 @@
 import { useMemo } from "react";
 import type { InsightsRow } from "@/models/auction";
 import type { InsightsFilters } from "@/store/slices/insightsFilters";
+import type { MarketPriceMode } from "./useMarketPriceMode";
 
 /** The volume dimension the numeric volume range filters against. */
 export type InsightsVolumeMode = "price" | "unit";
+
+/** The per-unit price a row reports under the active price mode. */
+export function rowPrice(r: InsightsRow, mode: MarketPriceMode): number | null {
+    return mode === "weighted" ? r.weightedPricePerUnit : r.medianPricePerUnit;
+}
 
 function num(v: string): number | null {
     if (v.trim() === "") return null;
@@ -19,6 +25,7 @@ export function filterInsights(
     rows: InsightsRow[],
     f: InsightsFilters,
     volumeMode: InsightsVolumeMode,
+    priceMode: MarketPriceMode,
 ): InsightsRow[] {
     const q = f.q.trim().toLowerCase();
     const priceMin = num(f.priceMin);
@@ -48,9 +55,10 @@ export function filterInsights(
 
         if (f.shortageOnly && !r.shortage) return false;
         if (f.dealsOnly && r.dealsAvailable <= 0) return false;
+        if (f.upperBoundUnknownOnly && !r.upperBoundUnknown) return false;
 
         if (priceMin != null || priceMax != null) {
-            const p = r.medianPricePerUnit;
+            const p = rowPrice(r, priceMode);
             if (p == null) return false;
             if (priceMin != null && p < priceMin) return false;
             if (priceMax != null && p > priceMax) return false;
@@ -78,9 +86,10 @@ export function useFilteredInsights(
     rows: InsightsRow[],
     filters: InsightsFilters,
     volumeMode: InsightsVolumeMode,
+    priceMode: MarketPriceMode,
 ): InsightsRow[] {
     return useMemo(
-        () => filterInsights(rows, filters, volumeMode),
-        [rows, filters, volumeMode],
+        () => filterInsights(rows, filters, volumeMode, priceMode),
+        [rows, filters, volumeMode, priceMode],
     );
 }
