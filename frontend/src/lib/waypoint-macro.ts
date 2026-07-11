@@ -54,7 +54,7 @@ export interface MacroFile {
     Code: string;
     Name: string;
     Commands: string[];
-    KeyCombination: MacroKeyCombination;
+    KeyCombination: MacroKeyCombination | null;
 }
 
 /** User-editable macro metadata used to assemble the file + filename. */
@@ -165,7 +165,7 @@ export function buildMacroFile(meta: MacroMeta, commands: string[]): MacroFile {
         Code: name,
         Name: name,
         Commands: commands.length > 0 ? commands : [""],
-        KeyCombination: { ...DEFAULT_KEY_COMBINATION },
+        KeyCombination: null,
     };
 }
 
