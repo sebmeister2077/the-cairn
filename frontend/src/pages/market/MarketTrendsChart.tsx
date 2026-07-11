@@ -79,6 +79,7 @@ const METRICS: MetricDef[] = [
   },
   { key: "uniqueBuyers", label: "Active buyers", color: "#6366f1", value: (p) => p.uniqueBuyers },
   { key: "missing", label: "Missing auctions", color: "#94a3b8", value: (p) => p.missing },
+  { key: "unrecorded", label: "Unrecorded outcome", color: "#a3a3a3", value: (p) => p.unrecorded },
 ];
 
 function compactNumber(v: number): string {

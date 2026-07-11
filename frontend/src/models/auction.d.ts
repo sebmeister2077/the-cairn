@@ -195,6 +195,12 @@ export interface MarketTimePoint {
      * time). A measure of how complete the capture was over time.
      */
     missing: number;
+    /**
+     * Auctions posted this month that we only ever saw as "Active" — capture
+     * stopped before a terminal verdict, so it's unknown whether they sold or
+     * expired. Distinct from `missing` (never captured at all).
+     */
+    unrecorded: number;
     /** Sold / (sold + expired) for auctions posted this month; null if none resolved. */
     sellThrough: number | null;
     uniqueSellers: number;

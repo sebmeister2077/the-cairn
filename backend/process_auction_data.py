@@ -762,6 +762,40 @@ def recording_start_game_hours(clean: List[Dict[str, Any]]) -> Optional[float]:
     return round(max(in_window), 2)
 
 
+# The gap between two Auction House scans is far larger than the spread of
+# observation timestamps within a single scan, so any two observations closer
+# together than this are treated as belonging to the same scan session.
+SCAN_SESSION_GAP_MINUTES = 5
+
+
+def _last_scan_session_start(records: List[Dict[str, Any]]) -> str:
+    """Return the ``lastObservedUtc`` marking the start of the most recent scan
+    session, as an ISO-8601 string suitable for lexicographic comparison.
+
+    A scan streams the whole board over up to a minute, so its observations
+    carry slightly different timestamps, while consecutive scans are ~30–60 min
+    apart. Walking back from the newest observation, every timestamp within
+    ``SCAN_SESSION_GAP_MINUTES`` of the previous one belongs to the same final
+    session; the earliest such timestamp is its start. Returns ``""`` when there
+    are no dated observations (so every non-terminal listing counts).
+    """
+    stamps = sorted(
+        {r.get("lastObservedUtc") for r in records if r.get("lastObservedUtc")}
+    )
+    parsed = [(s, _parse_observed(s)) for s in stamps]
+    parsed = [(s, dt) for s, dt in parsed if dt is not None]
+    if not parsed:
+        return ""
+    start = parsed[-1][0]
+    for i in range(len(parsed) - 1, 0, -1):
+        gap = (parsed[i][1] - parsed[i - 1][1]).total_seconds() / 60
+        if gap <= SCAN_SESSION_GAP_MINUTES:
+            start = parsed[i - 1][0]
+        else:
+            break
+    return start
+
+
 def build_time_series(
     clean: List[Dict[str, Any]], records: List[Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
@@ -786,6 +820,14 @@ def build_time_series(
     buyers_by_bucket: Dict[int, set] = defaultdict(set)
     items_by_bucket: Dict[int, set] = defaultdict(set)
 
+    # Start of the most recent Auction House scan. A scan isn't instantaneous —
+    # it streams over up to a minute, so listings in the same scan get slightly
+    # different `lastObservedUtc` values — while scans themselves are ~30–60 min
+    # apart. A non-terminal listing last seen in this final scan is simply still
+    # live, so it must NOT count as "unrecorded". Only listings that dropped off
+    # the board in an earlier scan are genuinely a missed outcome.
+    last_scan_start = _last_scan_session_start(records)
+
     def ensure_bucket(month: int) -> Dict[str, Any]:
         b = buckets.get(month)
         if b is None:
@@ -802,6 +844,7 @@ def build_time_series(
                 "deliveryFeesPaid": 0.0,
                 "deliveredCount": 0,
                 "missing": 0,
+                "unrecorded": 0,
             }
         return b
 
@@ -816,6 +859,16 @@ def build_time_series(
         items_by_bucket[month].add(r["itemId"])
         if r.get("sellerUid"):
             sellers_by_bucket[month].add(r["sellerUid"])
+        # Auctions we only ever saw as "Active" — capture stopped before a
+        # terminal verdict, so we never learned whether they sold or expired.
+        # Exclude listings seen in the final scan session: those are simply
+        # still live, not a missed outcome. A missing timestamp sorts as a
+        # far-future sentinel so it's treated as "still current" (never counted).
+        if (
+            not r.get("verdictObserved")
+            and (r.get("lastObservedUtc") or "9999-12-31T23:59:59Z") < last_scan_start
+        ):
+            b["unrecorded"] += 1
         if r["state"] == "Expired":
             b["expired"] += 1
         if r["sold"]:
