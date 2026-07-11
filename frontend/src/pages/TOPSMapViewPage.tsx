@@ -1168,6 +1168,7 @@ export function TOPSMapViewPage() {
       seen.add(key);
       out.push(label);
     }
+    out.sort((a, b) => a.localeCompare(b));
     return out;
   }, [allLandmarks]);
 
