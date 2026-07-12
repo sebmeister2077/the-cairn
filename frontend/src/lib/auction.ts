@@ -286,6 +286,7 @@ const RELATED_FORM_CATEGORIES = new Set([
     "ingot",
     "ironbloom",
     "crystal",
+    "crushed",
     "powder",
     "gem",
     "metalbit",
@@ -557,6 +558,9 @@ const METAL_FORM_UNITS: Record<string, number> = {
     nugget: 5,
     // "Metal bits" — the small fragments (e.g. `metalbit-gold`). VERIFY vs wiki.
     metalbit: 5,
+    // Crushed ore (e.g. `crushed-ilmenite`, `crushed-iron`) — the gradeless
+    // pulverized form. Treated as a medium-grade ore's yield. VERIFY vs wiki.
+    crushed: 20,
 };
 
 /**
@@ -617,6 +621,7 @@ export interface MetalForm {
 /** Friendly, pluralized labels for the metal forms shown in the comparison. */
 const METAL_FORM_LABELS: Record<string, string> = {
     ore: "Ore chunks",
+    crushed: "Crushed ore",
     nugget: "Nuggets",
     metalbit: "Metal bits",
     ingot: "Ingots",
@@ -624,7 +629,7 @@ const METAL_FORM_LABELS: Record<string, string> = {
 };
 
 /** Order metal forms from raw → refined in the comparison table. */
-const METAL_FORM_ORDER = ["ore", "nugget", "metalbit", "ingot", "plate"];
+const METAL_FORM_ORDER = ["ore", "crushed", "nugget", "metalbit", "ingot", "plate"];
 
 /**
  * Group every metal item of a family into its tradeable forms (ore chunks,
