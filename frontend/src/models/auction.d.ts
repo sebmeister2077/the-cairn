@@ -27,6 +27,13 @@ export interface AuctionListing {
     state: "Active" | "Sold" | "SoldRetrieved" | "Expired";
     sold: boolean;
     /**
+     * True when an unsold listing was pulled by the seller shortly after being
+     * posted (became retrievable within a couple in-game hours) rather than
+     * running to its natural, weeks-long expiry. Optional for older data
+     * generated before this field existed.
+     */
+    cancelled?: boolean;
+    /**
      * True once a terminal verdict (sold / retrieved / expired) was actually
      * observed. False means the listing is only known as "Active" because it
      * stopped being observed before it resolved — a last-known state, not a

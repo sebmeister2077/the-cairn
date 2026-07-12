@@ -95,6 +95,27 @@ export function DeliveryFeeCell({ listing }: { listing: AuctionListing }) {
 }
 
 /**
+ * Cancellation cell for a listing: flags an unsold listing the seller pulled
+ * early (see `cancelled` in the data model) so an expired row shows at a glance
+ * whether it lapsed naturally or was taken down. Sold rows and naturally expired
+ * rows render an em dash so the column stays quiet.
+ */
+export function CancelledCell({ listing }: { listing: AuctionListing }) {
+  if (!listing.cancelled) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <Badge
+      variant="secondary"
+      className="border border-amber-500/40 text-xs font-normal text-amber-600 dark:text-amber-400"
+      title="The seller pulled this listing shortly after posting it — cancelled rather than expired naturally"
+    >
+      Cancelled
+    </Badge>
+  );
+}
+
+/**
  * Notes cell for a listing: flags parchments/books that carry written content
  * (a story, note, or advert). These are priced for their content rather than as
  * the raw commodity, so they're excluded from fair-price stats but still listed.

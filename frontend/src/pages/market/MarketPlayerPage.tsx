@@ -1,32 +1,18 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  useAuctionListings,
-  useCurrentGameHours,
-  formatGears,
-  formatRealTimeToSell,
-  listingHasText,
-} from "@/lib/auction";
+import { useAuctionListings, formatGears } from "@/lib/auction";
 import { INSIGHTS_WINDOWS, filterListingsByWindow } from "./useMarketInsights";
 import { usePlayerWindow } from "./useMarketPlayerWindow";
 import { usePlayerProfile } from "./usePlayerProfile";
 import { PlayerPricingChart, PlayerActivityChart } from "./PlayerCharts";
+import { PlayerListingsSection } from "./PlayerListingsSection";
+import { PlayerPurchasesSection } from "./PlayerPurchasesSection";
 import { PlayerBehaviorSection } from "./PlayerBehaviorSection";
-import {
-  VirtualListingsTable,
-  formatListingDate,
-  formatGameDate,
-  ListingStateBadge,
-  DeliveryFeeCell,
-  ListingNotesCell,
-  type ListingColumn,
-} from "./VirtualListingsTable";
 
 // Auctioneer entities respawn a few blocks off (with a new entity id) after a
 // culling event, so the same physical stall shows up under slightly different
@@ -36,7 +22,6 @@ const LOCATION_CLUSTER_RADIUS = 12;
 export function MarketPlayerPage() {
   const { uid } = useParams<{ uid: string }>();
   const { data, isLoading } = useAuctionListings();
-  const currentGameHours = useCurrentGameHours();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -48,8 +33,6 @@ export function MarketPlayerPage() {
     () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
     [windowKey],
   );
-
-  const [sellerSoldOnly, setSellerSoldOnly] = useState(false);
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
@@ -143,226 +126,6 @@ export function MarketPlayerPage() {
         delivery,
       };
     }, [data, decodedUid, windowDays]);
-
-  // Newest first by in-game posting time (matches the Game date column).
-  const sortedSellerListings = useMemo(() => {
-    const base = sellerSoldOnly ? asSeller.filter((l) => l.sold) : asSeller;
-    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
-  }, [asSeller, sellerSoldOnly]);
-
-  // Purchases (this player as buyer), newest first.
-  const sortedBuyerListings = useMemo(() => {
-    const base = asBuyer;
-    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
-  }, [asBuyer]);
-
-  // Whether this player's sales/purchases include any written parchments/books,
-  // so the "Notes" column only appears when it has something to flag.
-  const sellerHasText = useMemo(() => asSeller.some(listingHasText), [asSeller]);
-  const buyerHasText = useMemo(() => asBuyer.some(listingHasText), [asBuyer]);
-
-  const columns = useMemo<ListingColumn[]>(
-    () => [
-      {
-        key: "item",
-        header: "Item",
-        width: "minmax(8rem,1fr)",
-        cell: (l) => (
-          <Link
-            to={`/market/items/${l.itemId}`}
-            className="hover:underline"
-            title={l.variant ? l.name : undefined}
-          >
-            {l.variant || l.name}
-          </Link>
-        ),
-      },
-      {
-        key: "price",
-        header: "Price",
-        width: "6rem",
-        align: "right",
-        cell: (l) => l.price.toLocaleString(),
-      },
-      {
-        key: "qty",
-        header: "Qty",
-        width: "3.5rem",
-        align: "right",
-        cell: (l) => l.qty,
-      },
-      {
-        key: "date",
-        header: "Game date",
-        width: "6.5rem",
-        cell: (l) => (
-          <span
-            className="text-xs text-muted-foreground"
-            title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
-          >
-            {formatGameDate(l.postedTotalHours)}
-          </span>
-        ),
-      },
-      {
-        key: "buyer",
-        header: "Buyer",
-        width: "minmax(6rem,1fr)",
-        cell: (l) =>
-          l.sold && l.buyerUid ? (
-            <Link
-              to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
-              className="text-xs hover:underline"
-            >
-              {l.buyerName ?? "—"}
-            </Link>
-          ) : (
-            <span className="text-xs text-muted-foreground">
-              {l.sold ? (l.buyerName ?? "—") : "—"}
-            </span>
-          ),
-      },
-      {
-        key: "soldIn",
-        header: "Sold in",
-        width: "minmax(5.5rem,0.9fr)",
-        align: "right",
-        cell: (l) => (
-          <span
-            className="text-xs text-muted-foreground"
-            title="Real-world time from posting to sale"
-          >
-            {l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
-          </span>
-        ),
-      },
-      {
-        key: "delivery",
-        header: "Delivery",
-        width: "minmax(4.5rem,0.7fr)",
-        align: "right",
-        cell: (l) => <DeliveryFeeCell listing={l} />,
-      },
-      ...(sellerHasText
-        ? [
-            {
-              key: "notes",
-              header: "Notes",
-              width: "minmax(4.5rem,0.8fr)",
-              cell: (l) => <ListingNotesCell listing={l} />,
-            } satisfies ListingColumn,
-          ]
-        : []),
-      {
-        key: "status",
-        header: "Status",
-        width: "5rem",
-        cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
-      },
-    ],
-    [currentGameHours, sellerHasText],
-  );
-
-  // Purchase table: this player is the buyer, so surface who they bought *from*.
-  const buyerColumns = useMemo<ListingColumn[]>(
-    () => [
-      {
-        key: "item",
-        header: "Item",
-        width: "minmax(8rem,1fr)",
-        cell: (l) => (
-          <Link
-            to={`/market/items/${l.itemId}`}
-            className="hover:underline"
-            title={l.variant ? l.name : undefined}
-          >
-            {l.variant || l.name}
-          </Link>
-        ),
-      },
-      {
-        key: "price",
-        header: "Price",
-        width: "6rem",
-        align: "right",
-        cell: (l) => l.price.toLocaleString(),
-      },
-      {
-        key: "qty",
-        header: "Qty",
-        width: "3.5rem",
-        align: "right",
-        cell: (l) => l.qty,
-      },
-      {
-        key: "date",
-        header: "Game date",
-        width: "6.5rem",
-        cell: (l) => (
-          <span
-            className="text-xs text-muted-foreground"
-            title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
-          >
-            {formatGameDate(l.postedTotalHours)}
-          </span>
-        ),
-      },
-      {
-        key: "seller",
-        header: "From",
-        width: "minmax(6rem,1fr)",
-        cell: (l) =>
-          l.sellerUid ? (
-            <Link
-              to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
-              className="text-xs hover:underline"
-            >
-              {l.sellerName ?? "—"}
-            </Link>
-          ) : (
-            <span className="text-xs text-muted-foreground">{l.sellerName ?? "—"}</span>
-          ),
-      },
-      {
-        key: "soldIn",
-        header: "Sold in",
-        width: "minmax(5.5rem,0.9fr)",
-        align: "right",
-        cell: (l) => (
-          <span
-            className="text-xs text-muted-foreground"
-            title="Real-world time from posting to sale"
-          >
-            {l.timeToSellHours != null ? formatRealTimeToSell(l.timeToSellHours) : "—"}
-          </span>
-        ),
-      },
-      {
-        key: "delivery",
-        header: "Delivery",
-        width: "minmax(4.5rem,0.7fr)",
-        align: "right",
-        cell: (l) => <DeliveryFeeCell listing={l} />,
-      },
-      ...(buyerHasText
-        ? [
-            {
-              key: "notes",
-              header: "Notes",
-              width: "minmax(4.5rem,0.8fr)",
-              cell: (l) => <ListingNotesCell listing={l} />,
-            } satisfies ListingColumn,
-          ]
-        : []),
-      {
-        key: "status",
-        header: "Status",
-        width: "5rem",
-        cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
-      },
-    ],
-    [currentGameHours, buyerHasText],
-  );
 
   if (isLoading) {
     return (
@@ -524,30 +287,9 @@ export function MarketPlayerPage() {
         <PlayerActivityChart activity={profile.activity} />
       </div>
 
-      <div>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">Listings ({asSeller.length})</h2>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox
-              checked={sellerSoldOnly}
-              onCheckedChange={(v) => setSellerSoldOnly(v === true)}
-            />
-            Sold only
-          </label>
-        </div>
-        <VirtualListingsTable listings={sortedSellerListings} columns={columns} />
-      </div>
+      <PlayerListingsSection listings={asSeller} />
 
-      <div>
-        <h2 className="font-semibold mb-2">Purchases ({asBuyer.length})</h2>
-        {asBuyer.length === 0 ? (
-          <p className="rounded-md border px-3 py-6 text-center text-sm text-muted-foreground">
-            No recorded purchases.
-          </p>
-        ) : (
-          <VirtualListingsTable listings={sortedBuyerListings} columns={buyerColumns} />
-        )}
-      </div>
+      <PlayerPurchasesSection listings={asBuyer} />
     </div>
   );
 }

@@ -211,7 +211,10 @@ const BUYER_BEHAVIOUR_INFO: InfoItem[] = [
 ];
 
 const SALE_PRICES_INFO: InfoItem[] = [
-  { term: "Below by X%", desc: "On average they list under the market median — good deals for buyers." },
+  {
+    term: "Below by X%",
+    desc: "On average they list under the market median — good deals for buyers.",
+  },
   { term: "At market median", desc: "Their listings sit in line with the going rate." },
   { term: "Above by X%", desc: "On average they list above the market median." },
   {
@@ -319,11 +322,7 @@ export function PlayerBehaviorSection({ profile }: { profile: PlayerProfile }) {
             />
             <BehaviorCard
               label="Sale prices vs market"
-              value={premiumPhrase(
-                profile.sellerMedianPremiumPct,
-                "Below by",
-                "Above by",
-              )}
+              value={premiumPhrase(profile.sellerMedianPremiumPct, "Below by", "Above by")}
               hint="Median of their sales vs the market median"
               info={{ title: "Sale prices vs market", items: SALE_PRICES_INFO }}
             />

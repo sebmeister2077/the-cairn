@@ -64,6 +64,12 @@ SOLD_STATES = {"Sold", "SoldRetrieved"}
 # Terminal (completed) states, preferred when deduplicating.
 TERMINAL_STATES = {"Sold", "SoldRetrieved", "Expired"}
 
+# An unsold listing that becomes retrievable within this many in-game hours of
+# being posted is treated as a seller cancellation (pulled early) rather than a
+# natural expiry. Real listings run for weeks (min duration ~3), so anything
+# that ends this fast was taken down deliberately.
+CANCEL_WINDOW_HOURS = 2
+
 # Heatmap grid resolution in world blocks.
 HEATMAP_BIN = 512
 # Auctioneer clustering resolution in world blocks.
@@ -747,6 +753,17 @@ def build_records(
         if sold and posted and retrievable and retrievable > 0:
             time_to_sell = round(retrievable - posted, 2)
 
+        # Seller cancellation: an unsold listing that became retrievable within a
+        # couple in-game hours of being posted was pulled early rather than run
+        # to its natural (weeks-long) expiry.
+        cancelled = bool(
+            not sold
+            and posted is not None
+            and retrievable is not None
+            and retrievable > 0
+            and 0 <= (retrievable - posted) <= CANCEL_WINDOW_HOURS
+        )
+
         src = (_to_relative(row.get("SrcX")), _to_relative(row.get("SrcZ")))
         dst = (_to_relative(row.get("DstX")), _to_relative(row.get("DstZ")))
         delivered = bool(row.get("WithDelivery"))
@@ -777,6 +794,9 @@ def build_records(
                 "depositFee": deposit_fee_for_hours(row.get("InitialDurationHours")),
                 "state": state,
                 "sold": sold,
+                # An unsold listing the seller pulled early (retrievable within
+                # CANCEL_WINDOW_HOURS of posting) rather than a natural expiry.
+                "cancelled": cancelled,
                 # Whether we ever captured a *terminal* verdict for this auction.
                 # False means the listing is only known as "Active" because it
                 # stopped being observed before selling/expiring — so its state is

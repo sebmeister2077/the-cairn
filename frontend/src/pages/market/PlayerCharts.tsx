@@ -29,9 +29,7 @@ import type { PlayerActivityPoint, PlayerPricingHistoryPoint } from "@/models/au
 /** Track the app's dark/light theme (a `dark` class on `<html>`). */
 function useIsDarkTheme(): boolean {
   const [isDark, setIsDark] = useState(() =>
-    typeof document !== "undefined"
-      ? document.documentElement.classList.contains("dark")
-      : false,
+    typeof document !== "undefined" ? document.documentElement.classList.contains("dark") : false,
   );
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -124,7 +122,7 @@ const MAX_SCATTER_POINTS = 1200;
 
 /** Hard upper bound (%) for the pricing chart's Y axis — outliers above this
  * are clamped to the top edge rather than stretching the whole scale. */
-const PREMIUM_CEILING = 250;
+const PREMIUM_CEILING = 750;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -158,10 +156,10 @@ export function PlayerPricingChart({
       const pad = Math.max(5, (p98 - p2) * 0.08);
       lo = Math.min(-5, Math.floor(p2 - pad));
       hi = Math.max(10, Math.ceil(p98 + pad));
-      // Hard ceiling: never show above +250% on the axis, so a handful of
-      // absurdly over-priced listings can't stretch the scale and squash
-      // everything else. Anything higher is clamped to the top edge and marked
-      // "(off scale)" in its tooltip.
+      // Hard ceiling: never show above `PREMIUM_CEILING` on the axis, so a
+      // handful of absurdly over-priced listings can't stretch the scale and
+      // squash everything else. Anything higher is clamped to the top edge and
+      // marked "(off scale)" in its tooltip.
       hi = Math.min(PREMIUM_CEILING, hi);
       // Never claim to show below a total giveaway (−100%).
       lo = Math.max(-100, lo);
@@ -173,19 +171,35 @@ export function PlayerPricingChart({
       return { ...p, plotPremium: plot, clamped: plot !== raw };
     };
 
-    // Thin the cloud if it's huge, but always keep the clamped extremes (the
-    // interesting outliers) so downsampling never hides them.
+    // Thin the cloud if it's huge. The in-range points get the bulk of the
+    // budget so the readable band never collapses, while the clamped outliers
+    // are kept too (so "off scale" listings stay visible) — but capped to a
+    // slice. Without that cap a chronic over-pricer, whose listings mostly sit
+    // ABOVE the ceiling, would have every one of those points survive and pile
+    // onto the top edge as a solid line, starving the in-range band of samples
+    // (the more you lower the ceiling, the worse it gets).
     let sample = withRef;
     if (withRef.length > MAX_SCATTER_POINTS) {
-      const extremes = withRef.filter(
-        (p) => (p.premiumPct as number) <= lo || (p.premiumPct as number) >= hi,
-      );
-      const rest = withRef.filter(
-        (p) => (p.premiumPct as number) > lo && (p.premiumPct as number) < hi,
-      );
-      const step = Math.ceil(rest.length / Math.max(1, MAX_SCATTER_POINTS - extremes.length));
-      const thinned = rest.filter((_, i) => i % step === 0);
-      sample = [...extremes, ...thinned];
+      const isExtreme = (p: PlayerPricingHistoryPoint) =>
+        (p.premiumPct as number) <= lo || (p.premiumPct as number) >= hi;
+      const extremes = withRef.filter(isExtreme);
+      const rest = withRef.filter((p) => !isExtreme(p));
+      // Clamped outliers all draw at the same edge pixel, so a small sample of
+      // them looks identical to thousands — reserve most of the budget for the
+      // readable in-range points instead.
+      const extremeBudget = Math.min(extremes.length, Math.round(MAX_SCATTER_POINTS * 0.25));
+      const restBudget = Math.max(1, MAX_SCATTER_POINTS - extremeBudget);
+      const thin = (
+        arr: PlayerPricingHistoryPoint[],
+        budget: number,
+      ): PlayerPricingHistoryPoint[] => {
+        if (arr.length <= budget) return arr;
+        const step = arr.length / budget;
+        const out: PlayerPricingHistoryPoint[] = [];
+        for (let i = 0; i < arr.length; i += step) out.push(arr[Math.floor(i)]);
+        return out;
+      };
+      sample = [...thin(extremes, extremeBudget), ...thin(rest, restBudget)];
     }
 
     const plotted = sample.map(toPlot);
@@ -232,7 +246,12 @@ export function PlayerPricingChart({
           y={0}
           stroke={axisStroke}
           strokeDasharray="4 4"
-          label={{ value: "Market median", position: "insideTopRight", fontSize: 10, fill: axisStroke }}
+          label={{
+            value: "Market median",
+            position: "insideTopRight",
+            fontSize: 10,
+            fill: axisStroke,
+          }}
         />
         <Tooltip content={<PricingTooltip />} wrapperStyle={{ outline: "none" }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
@@ -304,7 +323,11 @@ export function PlayerActivityChart({
           tick={{ fontSize: 11, fill: axisStroke }}
           stroke={axisStroke}
         />
-        <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: axisStroke }} stroke={axisStroke} />
+        <YAxis
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: axisStroke }}
+          stroke={axisStroke}
+        />
         <Tooltip content={<ActivityTooltip />} wrapperStyle={{ outline: "none" }} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Bar dataKey="listed" name="Listed" fill={LISTED_COLOR} />
