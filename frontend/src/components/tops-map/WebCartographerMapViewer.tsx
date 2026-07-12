@@ -376,6 +376,16 @@ export function WebCartographerMapViewer({
   const dragMaxDistRef = useRef(0);
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
+  // Per-marker hover tooltip (X/Y/Z) for point markers that carry a `tooltip`
+  // payload (recorded broken translocators). `left`/`top` are container-
+  // relative pixel coordinates of the cursor.
+  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<{
+    left: number;
+    top: number;
+    x: number;
+    y: number;
+    z: number;
+  } | null>(null);
   // Live cursor world position kept in a ref so the per-frame draw can
   // read it without forcing the projectedSegments memo to re-run on every
   // mousemove. Set to `null` whenever the cursor is outside the canvas.
@@ -633,13 +643,34 @@ export function WebCartographerMapViewer({
 
   const projectedPoints = useMemo(() => {
     if (!overlayPoints || overlayPoints.length === 0) {
-      return [] as Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
+      return [] as Array<{
+        x: number;
+        y: number;
+        label?: string;
+        kind?: string;
+        color?: string;
+        tooltip?: { x: number; y: number; z: number };
+      }>;
     }
-    const out: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }> = [];
+    const out: Array<{
+      x: number;
+      y: number;
+      label?: string;
+      kind?: string;
+      color?: string;
+      tooltip?: { x: number; y: number; z: number };
+    }> = [];
     for (const p of overlayPoints) {
       const s = projectWorld(p.x, p.z);
       if (!Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
-      out.push({ x: s.x, y: s.y, label: p.label, kind: p.kind, color: p.color });
+      out.push({
+        x: s.x,
+        y: s.y,
+        label: p.label,
+        kind: p.kind,
+        color: p.color,
+        tooltip: p.tooltip,
+      });
     }
     return out;
   }, [overlayPoints, projectWorld]);
@@ -1383,10 +1414,36 @@ export function WebCartographerMapViewer({
       } else if (hoveredSegmentIndex !== null) {
         setHoveredSegmentIndex(null);
       }
+
+      // Per-marker tooltip hit-test (screen space): nearest point marker that
+      // carries a `tooltip` payload within ~14px of the cursor.
+      if (projectedPoints.length > 0) {
+        const threshold = 14;
+        const thresholdSq = threshold * threshold;
+        let bestTip: { x: number; y: number; z: number } | null = null;
+        let bestDistSq = Infinity;
+        for (const p of projectedPoints) {
+          if (!p.tooltip) continue;
+          const ddx = sx - p.x;
+          const ddy = sy - p.y;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < thresholdSq && dsq < bestDistSq) {
+            bestDistSq = dsq;
+            bestTip = p.tooltip;
+          }
+        }
+        setHoveredPointTooltip(
+          bestTip ? { left: sx, top: sy, x: bestTip.x, y: bestTip.y, z: bestTip.z } : null,
+        );
+      } else if (hoveredPointTooltip) {
+        setHoveredPointTooltip(null);
+      }
     },
     [
       dragging,
       projectedSegments,
+      projectedPoints,
+      hoveredPointTooltip,
       unprojectScreen,
       hoveredSegmentIndex,
       onHoverCoords,
@@ -1405,6 +1462,7 @@ export function WebCartographerMapViewer({
     cursorWorldRef.current = null;
     onHoverCoords?.(null);
     setHoveredSegmentIndex(null);
+    setHoveredPointTooltip(null);
     if (radiusFilterRef.current) scheduleRedraw();
   }, [onHoverCoords, scheduleRedraw]);
 
@@ -1609,6 +1667,23 @@ export function WebCartographerMapViewer({
         {hoverCoords && (
           <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
+          </div>
+        )}
+        {hoveredPointTooltip && (
+          <div
+            className="absolute z-20 rounded bg-black/85 px-2 py-1 text-xs font-mono text-white pointer-events-none whitespace-nowrap shadow-lg"
+            style={{
+              left: hoveredPointTooltip.left + 14,
+              top: hoveredPointTooltip.top + 14,
+            }}
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-red-300">
+              Broken TL
+            </div>
+            <div>
+              X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
+              &nbsp; Z: {Math.round(hoveredPointTooltip.z)}
+            </div>
           </div>
         )}
       </div>
@@ -1859,7 +1934,13 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
 
     ctx.fillStyle = "rgba(34, 211, 238, 0.92)";
     for (const p of points) {
-      if (p.kind === "Server" || p.kind === "Trader" || p.kind === "Home" || p.kind === "Terminus")
+      if (
+        p.kind === "Server" ||
+        p.kind === "Trader" ||
+        p.kind === "Home" ||
+        p.kind === "Terminus" ||
+        p.kind === "BrokenTL"
+      )
         continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, pointOuter, 0, Math.PI * 2);
@@ -1867,7 +1948,13 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     }
     ctx.fillStyle = "rgba(236, 254, 255, 0.98)";
     for (const p of points) {
-      if (p.kind === "Server" || p.kind === "Trader" || p.kind === "Home" || p.kind === "Terminus")
+      if (
+        p.kind === "Server" ||
+        p.kind === "Trader" ||
+        p.kind === "Home" ||
+        p.kind === "Terminus" ||
+        p.kind === "BrokenTL"
+      )
         continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, pointInner, 0, Math.PI * 2);
@@ -1941,6 +2028,32 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     for (const p of points) {
       if (p.kind !== "Terminus") continue;
       drawTerminusMarker(ctx, p.x, p.y, 1, terminusStyle as never);
+    }
+
+    // Broken-translocator markers (recorded session exports) — bold filled
+    // red disc with a dark outline and a white "broken" X, unmistakably
+    // distinct from the cyan landmark dots.
+    const tlOuter = 6.6;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    for (const p of points) {
+      if (p.kind !== "BrokenTL") continue;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, tlOuter, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(220, 38, 38, 0.95)"; // red-600
+      ctx.fill();
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
+      const d = tlOuter * 0.5;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.98)";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(p.x - d, p.y - d);
+      ctx.lineTo(p.x + d, p.y + d);
+      ctx.moveTo(p.x + d, p.y - d);
+      ctx.lineTo(p.x - d, p.y + d);
+      ctx.stroke();
     }
   }
 

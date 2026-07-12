@@ -116,12 +116,17 @@ export interface WorldPointMarker {
   /** Visual classification. `"Trader"` markers are drawn as colored dots
    *  using `color` (defaulting to cyan if absent); `"Home"` is drawn as a
    *  house glyph (used for the user's saved favorite position); `"Terminus"`
-   *  is drawn using the currently selected Terminus icon style; other kinds
-   *  use the built-in landmark palette (cyan dot for Base/Misc, gold star
-   *  for Server). */
-  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus";
+   *  is drawn using the currently selected Terminus icon style; `"BrokenTL"`
+   *  is drawn as a distinct broken-portal glyph (recorded session exports);
+   *  other kinds use the built-in landmark palette (cyan dot for Base/Misc,
+   *  gold star for Server). */
+  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus" | "BrokenTL";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
+  /** Optional per-marker hover tooltip. When present, hovering the marker
+   *  shows an X/Y/Z readout at the cursor. Used by `"BrokenTL"` markers to
+   *  surface the recorded coordinate (relative X/Z, absolute Y). */
+  tooltip?: { x: number; y: number; z: number };
   /** `"user"` when this landmark was contributed by a player (backend
    *  stamps `origin: "user"` on the feature's properties), otherwise
    *  undefined for seed / official data. Used to distinguish
@@ -411,6 +416,16 @@ export function MapViewer({
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
+  // Per-marker hover tooltip (X/Y/Z readout) for point markers that carry a
+  // `tooltip` payload (e.g. recorded broken translocators). `left`/`top` are
+  // container-relative pixel coordinates of the cursor.
+  const [hoveredPointTooltip, setHoveredPointTooltip] = useState<{
+    left: number;
+    top: number;
+    x: number;
+    y: number;
+    z: number;
+  } | null>(null);
   // Natural pixel size of the blob-mode `<img>`. In tile mode we derive
   // dimensions from the tileSet directly (see `imgNatural` below).
   const [blobImgNatural, setBlobImgNatural] = useState({ w: 0, h: 0 });
@@ -687,7 +702,14 @@ export function MapViewer({
       imgNatural.w <= 0 ||
       imgNatural.h <= 0
     ) {
-      return [] as Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
+      return [] as Array<{
+        x: number;
+        y: number;
+        label?: string;
+        kind?: string;
+        color?: string;
+        tooltip?: { x: number; y: number; z: number };
+      }>;
     }
 
     const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
@@ -699,12 +721,20 @@ export function MapViewer({
       label?: string;
       kind?: string;
       color?: string;
+      tooltip?: { x: number; y: number; z: number };
     }> = [];
     for (const pt of overlayPoints) {
       const x = toImgX(pt.x);
       const y = toImgY(pt.z);
       if (![x, y].every(Number.isFinite)) continue;
-      projected.push({ x, y, label: pt.label, kind: pt.kind, color: pt.color });
+      projected.push({
+        x,
+        y,
+        label: pt.label,
+        kind: pt.kind,
+        color: pt.color,
+        tooltip: pt.tooltip,
+      });
     }
 
     return projected;
@@ -1169,7 +1199,8 @@ export function MapViewer({
           pt.kind === "Server" ||
           pt.kind === "Trader" ||
           pt.kind === "Home" ||
-          pt.kind === "Terminus"
+          pt.kind === "Terminus" ||
+          pt.kind === "BrokenTL"
         )
           continue;
         ctx.beginPath();
@@ -1183,7 +1214,8 @@ export function MapViewer({
           pt.kind === "Server" ||
           pt.kind === "Trader" ||
           pt.kind === "Home" ||
-          pt.kind === "Terminus"
+          pt.kind === "Terminus" ||
+          pt.kind === "BrokenTL"
         )
           continue;
         ctx.beginPath();
@@ -1268,6 +1300,36 @@ export function MapViewer({
       for (const pt of projectedOverlayPoints) {
         if (pt.kind !== "Terminus") continue;
         drawTerminusMarker(ctx, pt.x, pt.y, zoom, terminusStyle);
+      }
+
+      // Broken-translocator markers (recorded session exports) — a bold
+      // filled red disc with a dark outline and a white "broken" X, so it
+      // reads as "disabled / broken" and is unmistakably distinct from the
+      // cyan landmark dots and the coloured trader glyphs.
+      const tlOuter = Math.max(4.0, 6.6 / Math.max(zoom, 0.1));
+      const tlStroke = Math.max(0.6, 1.1 / Math.max(zoom, 0.1));
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "BrokenTL") continue;
+        // Filled red disc.
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, tlOuter, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(220, 38, 38, 0.95)"; // red-600
+        ctx.fill();
+        ctx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        ctx.lineWidth = tlStroke;
+        ctx.stroke();
+        // White "broken" cross.
+        const d = tlOuter * 0.5;
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.98)";
+        ctx.lineWidth = Math.max(0.8, tlStroke * 1.6);
+        ctx.beginPath();
+        ctx.moveTo(pt.x - d, pt.y - d);
+        ctx.lineTo(pt.x + d, pt.y + d);
+        ctx.moveTo(pt.x + d, pt.y - d);
+        ctx.lineTo(pt.x - d, pt.y + d);
+        ctx.stroke();
       }
     }
 
@@ -1821,9 +1883,51 @@ export function MapViewer({
         } else {
           setHoveredOverlayIndex(null);
         }
+
+        // Per-marker tooltip hit-test: find the nearest point marker that
+        // carries a `tooltip` payload within a small screen-space radius.
+        // The threshold is a generous ~14 screen px (image px = 14 / zoom) so
+        // the broken-TL glyph is easy to hover even when zoomed in.
+        if (projectedOverlayPoints.length > 0) {
+          const pxThreshold = 14 / Math.max(zoomRef.current, 0.1);
+          const pxThresholdSq = pxThreshold * pxThreshold;
+          let bestTip: { x: number; y: number; z: number } | null = null;
+          let bestDistSq = Infinity;
+          for (const pt of projectedOverlayPoints) {
+            if (!pt.tooltip) continue;
+            const dx = imgX - pt.x;
+            const dy = imgY - pt.y;
+            const distSq = dx * dx + dy * dy;
+            if (distSq < pxThresholdSq && distSq < bestDistSq) {
+              bestDistSq = distSq;
+              bestTip = pt.tooltip;
+            }
+          }
+          if (bestTip) {
+            setHoveredPointTooltip({
+              left: e.clientX - rect.left,
+              top: e.clientY - rect.top,
+              x: bestTip.x,
+              y: bestTip.y,
+              z: bestTip.z,
+            });
+          } else {
+            setHoveredPointTooltip(null);
+          }
+        } else if (hoveredPointTooltip) {
+          setHoveredPointTooltip(null);
+        }
       }
     },
-    [dragging, dragStart, stats, imgNatural, projectedOverlaySegments],
+    [
+      dragging,
+      dragStart,
+      stats,
+      imgNatural,
+      projectedOverlaySegments,
+      projectedOverlayPoints,
+      hoveredPointTooltip,
+    ],
   );
 
   const handleMouseUp = useCallback(() => setDragging(false), []);
@@ -1831,6 +1935,7 @@ export function MapViewer({
     setDragging(false);
     setHoverCoords(null);
     setHoveredOverlayIndex(null);
+    setHoveredPointTooltip(null);
   }, []);
 
   const handleOverlayClick = useCallback(
@@ -2093,6 +2198,23 @@ export function MapViewer({
         {hoverCoords && (
           <div className="absolute bottom-2 right-2 rounded bg-black/70 px-2.5 py-1 text-xs font-mono text-white pointer-events-none">
             X: {hoverCoords.x} &nbsp; Z: {hoverCoords.z}
+          </div>
+        )}
+        {hoveredPointTooltip && (
+          <div
+            className="absolute z-20 rounded bg-black/85 px-2 py-1 text-xs font-mono text-white pointer-events-none whitespace-nowrap shadow-lg"
+            style={{
+              left: hoveredPointTooltip.left + 14,
+              top: hoveredPointTooltip.top + 14,
+            }}
+          >
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-red-300">
+              Broken TL
+            </div>
+            <div>
+              X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
+              &nbsp; Z: {Math.round(hoveredPointTooltip.z)}
+            </div>
           </div>
         )}
       </div>

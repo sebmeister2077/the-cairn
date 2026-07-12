@@ -19,6 +19,8 @@ import {
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
+  setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
+  setShowRecordedTraders as setShowRecordedTradersAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKind as setRockStrataKindAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
@@ -123,6 +125,7 @@ import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
+import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
@@ -367,6 +370,49 @@ export function TOPSMapViewPage() {
   // the Oceans overlay image is suppressed regardless of `showOceans`.
   const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
   const oceansVisible = showOceans && showAdvancedMapOptions;
+
+  // Recorded (in-game session export) overlays: broken translocators and
+  // traders. Both are advanced-only opt-in layers sourced from a bundled
+  // JSON asset (lazy-loaded via `useRecordedMapFeatures`).
+  const showRecordedBrokenTLs = useAppSelector((s) => s.mapView.showRecordedBrokenTLs);
+  const setShowRecordedBrokenTLs = useCallback(
+    (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
+    [dispatch],
+  );
+  const showRecordedTraders = useAppSelector((s) => s.mapView.showRecordedTraders);
+  const setShowRecordedTraders = useCallback(
+    (next: boolean) => dispatch(setShowRecordedTradersAction(next)),
+    [dispatch],
+  );
+  const recordedBrokenTLsVisible = showRecordedBrokenTLs && showAdvancedMapOptions;
+  const recordedTradersVisible = showRecordedTraders && showAdvancedMapOptions;
+  const recordedFeaturesQuery = useRecordedMapFeatures(
+    recordedBrokenTLsVisible || recordedTradersVisible,
+  );
+  const recordedFeatures = recordedFeaturesQuery.data;
+  // Viewport-culling for the recorded broken-TL overlay: only markers inside
+  // the current viewport (plus a margin) are rendered. Fed from MapViewer's
+  // already-debounced `onViewportChange`. `viewportBoundsRef` mirrors the
+  // latest bounds without a re-render so we can seed the state when the layer
+  // is toggled on without an intervening pan.
+  const viewportBoundsRef = useRef<{
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  } | null>(null);
+  const [brokenTLViewportBounds, setBrokenTLViewportBounds] = useState<{
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  } | null>(null);
+  // Seed / clear the culling bounds when the broken-TL layer toggles on.
+  useEffect(() => {
+    if (recordedBrokenTLsVisible && viewportBoundsRef.current) {
+      setBrokenTLViewportBounds(viewportBoundsRef.current);
+    }
+  }, [recordedBrokenTLsVisible]);
 
   // Rock-strata overlay (rockstratafinder mod export). Optional opt-in
   // layer with its own legend filter, debounced re-crop on pan, and a
@@ -931,6 +977,21 @@ export function TOPSMapViewPage() {
         centerWorldZ: info.centerWorldZ,
         pixelsPerBlock: info.pixelsPerBlock,
       };
+      // Cache the visible world rectangle for viewport-culled overlays. The
+      // ref update is free (no re-render); we only push it into state (which
+      // drives the broken-TL cull) while that layer is on, to avoid churning
+      // re-renders on every pan when it's off. MapViewer already debounces
+      // this callback (~300ms) so no extra debounce is needed here.
+      const bounds = {
+        minX: info.worldMinX,
+        maxX: info.worldMaxX,
+        minZ: info.worldMinZ,
+        maxZ: info.worldMaxZ,
+      };
+      viewportBoundsRef.current = bounds;
+      if (recordedBrokenTLsVisible) {
+        setBrokenTLViewportBounds(bounds);
+      }
       // Feed the rock-strata hook only while the overlay is on; setting
       // state every pan when the layer is off would just churn re-renders.
       if (rockStrataVisible) {
@@ -950,7 +1011,7 @@ export function TOPSMapViewPage() {
         worldMaxZ: info.worldMaxZ,
       });
     },
-    [updateUrlParams, rockStrataVisible],
+    [updateUrlParams, rockStrataVisible, recordedBrokenTLsVisible],
   );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
@@ -1131,6 +1192,76 @@ export function TOPSMapViewPage() {
         });
       }
     }
+    // Recorded (session export) overlays. Both are advanced-only and share
+    // one bundled data source; each has its own independent toggle. Broken
+    // TLs carry an X/Y/Z hover tooltip (relative X/Z + absolute Y).
+    if (recordedBrokenTLsVisible && recordedFeatures) {
+      // Viewport culling for performance: only render broken TLs inside the
+      // current viewport, expanded by a margin so markers pop in slightly
+      // before they scroll into view. Until the first viewport is reported
+      // (bounds null) we render them all so visibility never depends on the
+      // debounced-bounds race; culling kicks in once bounds are known.
+      const b = brokenTLViewportBounds;
+      if (b) {
+        const marginX = (b.maxX - b.minX) * 0.25;
+        const marginZ = (b.maxZ - b.minZ) * 0.25;
+        const minX = b.minX - marginX;
+        const maxX = b.maxX + marginX;
+        const minZ = b.minZ - marginZ;
+        const maxZ = b.maxZ + marginZ;
+        for (const m of recordedFeatures.brokenTLs) {
+          if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
+          base.push(m);
+        }
+      } else {
+        for (const m of recordedFeatures.brokenTLs) base.push(m);
+      }
+    }
+    if (recordedTradersVisible && recordedFeatures) {
+      // Collapse recorded traders that duplicate an already-known (official)
+      // trader of the same type within DEDUPE_RADIUS blocks. Build a spatial
+      // hash of the official traders keyed by (type, 10-block cell) so each
+      // recorded trader only tests the 3x3 neighbouring cells. Recorded and
+      // official traders share the same coordinate space (verified against the
+      // live traders.geojson), so coordinates are compared directly.
+      const DEDUPE_RADIUS = 10;
+      const DEDUPE_RADIUS_SQ = DEDUPE_RADIUS * DEDUPE_RADIUS;
+      const officialBuckets = new Map<string, Array<{ x: number; z: number }>>();
+      const cellKey = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
+      for (const ot of allTraders ?? []) {
+        if (!isTraderType(ot.trader_type)) continue;
+        const cx = Math.floor(ot.x / DEDUPE_RADIUS);
+        const cz = Math.floor(ot.z / DEDUPE_RADIUS);
+        const key = cellKey(ot.trader_type, cx, cz);
+        const bucket = officialBuckets.get(key);
+        if (bucket) bucket.push({ x: ot.x, z: ot.z });
+        else officialBuckets.set(key, [{ x: ot.x, z: ot.z }]);
+      }
+      for (const m of recordedFeatures.traders) {
+        // Only dedupe when we know the type; unknown-type recordings always show.
+        if (m.traderType) {
+          const cx = Math.floor(m.x / DEDUPE_RADIUS);
+          const cz = Math.floor(m.z / DEDUPE_RADIUS);
+          let duplicate = false;
+          for (let dx = -1; dx <= 1 && !duplicate; dx++) {
+            for (let dz = -1; dz <= 1 && !duplicate; dz++) {
+              const existing = officialBuckets.get(cellKey(m.traderType, cx + dx, cz + dz));
+              if (!existing) continue;
+              for (const p of existing) {
+                const ddx = p.x - m.x;
+                const ddz = p.z - m.z;
+                if (ddx * ddx + ddz * ddz <= DEDUPE_RADIUS_SQ) {
+                  duplicate = true;
+                  break;
+                }
+              }
+            }
+          }
+          if (duplicate) continue;
+        }
+        base.push(m);
+      }
+    }
     // Always-on house glyph for the user's saved favorite position. Drawn
     // last so the marker sits on top of any colocated landmark/trader dot.
     if (favoriteStartingPosition) {
@@ -1149,6 +1280,10 @@ export function TOPSMapViewPage() {
     showTraders,
     allTraders,
     traderTypeFilterSet,
+    recordedBrokenTLsVisible,
+    recordedTradersVisible,
+    recordedFeatures,
+    brokenTLViewportBounds,
     favoriteStartingPosition,
   ]);
 
@@ -2120,6 +2255,38 @@ export function TOPSMapViewPage() {
                   </div>
                 </div>
               </div>
+            )}
+            {showAdvancedMapOptions && (
+              <>
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                  <Switch
+                    checked={showRecordedBrokenTLs}
+                    onCheckedChange={setShowRecordedBrokenTLs}
+                    aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
+                  />
+                  <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {t("topsMap.recordedBrokenTLsFound")}{" "}
+                    <span className="font-medium text-foreground">
+                      {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                  <Switch
+                    checked={showRecordedTraders}
+                    onCheckedChange={setShowRecordedTraders}
+                    aria-label={t("topsMap.showRecordedTradersOverlay")}
+                  />
+                  <Label>{t("topsMap.showRecordedTraders")}</Label>
+                  <span className="text-xs text-muted-foreground ml-2">
+                    {t("topsMap.recordedTradersFound")}{" "}
+                    <span className="font-medium text-foreground">
+                      {(recordedFeatures?.traders.length ?? 0).toLocaleString()}
+                    </span>
+                  </span>
+                </div>
+              </>
             )}
             <AuctionHeatmapControl
               layer={auctionLayer}

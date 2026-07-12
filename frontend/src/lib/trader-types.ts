@@ -55,6 +55,29 @@ export function isTraderType(s: unknown): s is TraderType {
 }
 
 /**
+ * Map the compact trader `type` codes emitted by the in-game session
+ * exporter (e.g. ``"treasurehunter"``, ``"survivalgoods"``,
+ * ``"buildmaterials"``) to the app's canonical {@link TraderType} union.
+ * Returns ``null`` for unrecognised codes so callers can skip / fall back.
+ */
+const EXPORT_TRADER_TYPE_MAP: Record<string, TraderType> = {
+    agriculture: "agriculture",
+    artisan: "artisan",
+    buildmaterials: "building_materials",
+    clothing: "clothing",
+    commodities: "commodities",
+    furniture: "furniture",
+    luxuries: "luxuries",
+    survivalgoods: "survival_goods",
+    treasurehunter: "treasure_hunter",
+};
+
+export function mapExportTraderType(code: unknown): TraderType | null {
+    if (typeof code !== "string") return null;
+    return EXPORT_TRADER_TYPE_MAP[code.toLowerCase()] ?? null;
+}
+
+/**
  * Keyword bank for ``inferTraderType``. Lower-case substring match against
  * the waypoint label. Ordered most-specific → least-specific within each
  * type; the first type with any keyword hit wins.
