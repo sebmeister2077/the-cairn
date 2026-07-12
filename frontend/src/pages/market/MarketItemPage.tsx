@@ -31,6 +31,7 @@ import {
   formatGears,
   formatRealTimeToSell,
   percentileSorted,
+  weightedMedian,
   variantBase,
   useItemCatalog,
   splitOreHostRock,
@@ -38,6 +39,10 @@ import {
   listingHasText,
   listingToolAttributes,
   computeRelatedItems,
+  resolveItemFamily,
+  metalUnitsForEntry,
+  computeMetalForms,
+  METAL_FAMILY_KEYS,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
@@ -59,6 +64,7 @@ import {
 import { useMarketWindow } from "./useMarketWindow";
 import { useMarketPriceMode } from "./useMarketPriceMode";
 import { PriceModeInfo } from "./PriceModeInfo";
+import { MetalContentCard } from "./MetalContentCard";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -315,6 +321,62 @@ export function MarketItemPage() {
     return computeRelatedItems(id, catalog, selfIds, active);
   }, [catalogQ.data, listingsQ.data, id, oreGroup]);
 
+  // The current item's catalog entry (name/category/code), when the catalog has
+  // loaded. Drives the metal-content features below.
+  const currentEntry = catalogQ.data?.[String(id)] ?? null;
+
+  // If this item is a smeltable metal, resolve its family (gold, iron…). Gates
+  // the "value by metal content" comparison and the blended fair price — both
+  // hinge on a form's pure-metal unit content, which only metals have.
+  const metalFamily = useMemo(() => {
+    if (!currentEntry) return null;
+    const fam = resolveItemFamily(currentEntry);
+    return fam && METAL_FAMILY_KEYS.has(fam.key) ? fam : null;
+  }, [currentEntry]);
+
+  // Pure-metal units in one of this item (ingot = 100, nugget = 5, ore by
+  // grade…), or null when it isn't a content-priced metal form (e.g. a
+  // crystallized chunk, which is excluded on purpose).
+  const currentMetalUnits = useMemo(
+    () => (currentEntry ? metalUnitsForEntry(currentEntry) : null),
+    [currentEntry],
+  );
+
+  // Which form group the current item belongs to, so its row is highlighted in
+  // the comparison and used as the baseline others are measured against. All ore
+  // chunks share the "ore" group regardless of grade/host rock.
+  const currentFormKey = currentEntry
+    ? currentEntry.category === "ore"
+      ? "ore"
+      : currentEntry.category
+    : "";
+
+  const isMetal = metalFamily != null;
+
+  // All itemIds that have any listing, so the metal forms only include tradeable
+  // ones (a link/comparison row lands on a populated page).
+  const activeItemIds = useMemo(
+    () => new Set((listingsQ.data ?? []).map((l) => l.itemId)),
+    [listingsQ.data],
+  );
+
+  // Every tradeable form of this metal (ore chunks, nuggets, bits, ingots…) plus
+  // a per-itemId pure-metal-units map for normalizing prices. Null for non-metals.
+  const metal = useMemo(() => {
+    const catalog = catalogQ.data;
+    if (!catalog || !metalFamily) return null;
+    return computeMetalForms(catalog, metalFamily.key, activeItemIds);
+  }, [catalogQ.data, metalFamily, activeItemIds]);
+
+  // Every listing across all forms of this metal, restricted to the selected
+  // window. Feeds both the comparison card and the blended fair price.
+  const metalWindowListings = useMemo(() => {
+    if (!metal) return [];
+    const ids = metal.unitsByItemId;
+    const family = (listingsQ.data ?? []).filter((l) => ids.has(l.itemId));
+    return filterListingsByWindow(family, windowDays);
+  }, [metal, listingsQ.data, windowDays]);
+
   const itemListings = useMemo(() => {
     const all = listingsQ.data ?? [];
     if (combineOres && oreGroup) return all.filter((l) => oreGroup.ids.has(l.itemId));
@@ -461,6 +523,50 @@ export function MarketItemPage() {
   const fairUnit = priceMode === "weighted" ? weightedUnit : (insight?.priceStats?.median ?? null);
   const fairStack = priceMode === "weighted" ? weightedStack : medianStackPrice;
   const priceModeWeighted = priceMode === "weighted";
+
+  // Metal items only: a fair price for this item blended from *every* form of the
+  // same metal. Each sold listing across all forms is normalized to its per-
+  // unit-of-metal price (price / metal units), aggregated (median, or quantity-
+  // and content-weighted when qty-weighted mode is on), then scaled back up by
+  // this item's own metal content. Bulk and higher-content trades count for more
+  // in weighted mode. Null until there's at least one qualifying sale.
+  const blendedMetal = useMemo(() => {
+    if (!metal || currentMetalUnits == null) return null;
+    const units = metal.unitsByItemId;
+    // Map each itemId to its form group so we can report how many forms fed the
+    // blend (e.g. "across 4 forms of gold").
+    const formByItemId = new Map<number, string>();
+    for (const f of metal.forms) for (const iid of f.itemIds) formByItemId.set(iid, f.key);
+    const values: number[] = [];
+    const pairs: { value: number; weight: number }[] = [];
+    const formsSeen = new Set<string>();
+    for (const l of metalWindowListings) {
+      if (!l.sold || listingHasText(l)) continue;
+      const u = units.get(l.itemId);
+      if (!u || u <= 0) continue;
+      const v = l.pricePerUnit / u;
+      values.push(v);
+      pairs.push({ value: v, weight: l.qty * u });
+      const fk = formByItemId.get(l.itemId);
+      if (fk) formsSeen.add(fk);
+    }
+    if (values.length === 0) return null;
+    const perUnit =
+      priceMode === "weighted"
+        ? weightedMedian(pairs)
+        : percentileSorted(
+            values.sort((a, b) => a - b),
+            0.5,
+          );
+    if (perUnit == null) return null;
+    return { perUnit, formsUsed: formsSeen.size };
+  }, [metal, metalWindowListings, currentMetalUnits, priceMode]);
+
+  // This item's blended fair price (per unit / per stack), scaling the blended
+  // per-metal-unit price by the item's own metal content.
+  const blendedFairUnit =
+    blendedMetal && currentMetalUnits != null ? blendedMetal.perUnit * currentMetalUnits : null;
+  const blendedFairStack = blendedFairUnit != null ? blendedFairUnit * stackSize : null;
 
   // Volume of sold listings over time, bucketed by in-game sale time across the
   // selected window. Shows either total gears traded or total units sold.
@@ -886,7 +992,7 @@ export function MarketItemPage() {
         <PriceModeInfo />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard
           label={perUnitUseful ? "Fair price / unit" : "Fair price / stack"}
           value={
@@ -933,7 +1039,67 @@ export function MarketItemPage() {
           }
           hint="Real-world time"
         />
+        {isMetal && currentMetalUnits != null && (
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                {perUnitUseful ? "Blended price / unit" : "Blended price / stack"}
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        aria-label="What is the blended fair price?"
+                        className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      >
+                        <Info className="size-4" />
+                      </button>
+                    }
+                  />
+                  <PopoverContent className="max-w-xs">
+                    <div className="space-y-1.5 text-left">
+                      <p>
+                        Combines the sold prices of <span className="text-foreground">every</span>{" "}
+                        form of this metal — ore chunks, nuggets, metal bits, ingots — each reduced
+                        to its pure-metal content, then scaled back up to this item&apos;s content.
+                      </p>
+                      <p>
+                        Useful when one form has few sales of its own: the other forms fill in a
+                        content-consistent price. Crystallized chunks are excluded.
+                      </p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="text-3xl font-semibold tabular-nums">
+                {perUnitUseful
+                  ? blendedFairUnit != null
+                    ? formatGears(blendedFairUnit)
+                    : "—"
+                  : blendedFairStack != null
+                    ? formatGears(blendedFairStack)
+                    : "—"}
+              </div>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {blendedMetal
+                  ? `${priceModeWeighted ? "Qty-weighted" : "Median"} across ${blendedMetal.formsUsed} ${metalFamily?.label.toLowerCase()} form${blendedMetal.formsUsed === 1 ? "" : "s"}, by metal content`
+                  : "No sold data across forms in this range"}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {isMetal && metal && (
+        <MetalContentCard
+          familyLabel={metalFamily.label}
+          forms={metal.forms}
+          unitsByItemId={metal.unitsByItemId}
+          listings={metalWindowListings}
+          weighted={priceModeWeighted}
+          currentFormKey={currentFormKey}
+        />
+      )}
 
       {ps && (
         <Card>

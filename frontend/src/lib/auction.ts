@@ -515,6 +515,161 @@ export function computeRelatedItems(
     return { label, items };
 }
 
+// --------------------------------------------------------------------------- //
+// Metal content (per-unit-of-metal) pricing
+// --------------------------------------------------------------------------- //
+/**
+ * The subset of {@link MATERIAL_FAMILIES} keys that are smeltable *metals*. Only
+ * these families get the "value by metal content" comparison and the blended
+ * fair price, since those features hinge on a form's pure-metal unit content
+ * (an ingot = 100 units, a nugget = 5, …). Non-metal minerals (salt, quartz, …)
+ * have no comparable unit content and are excluded.
+ */
+export const METAL_FAMILY_KEYS = new Set<string>([
+    "iron",
+    "copper",
+    "tin",
+    "zinc",
+    "lead",
+    "silver",
+    "gold",
+    "bismuth",
+    "titanium",
+    "chromium",
+    "nickel",
+    "platinum",
+]);
+
+/**
+ * Pure-metal units contained in one item of a given *form* (its code's first
+ * segment / catalog category), so prices can be normalized to a comparable
+ * price-per-unit-of-metal. Vintage Story smelts these in a crucible; an ingot is
+ * the 100-unit reference.
+ *
+ * ── HOW TO ADJUST / EXTEND ─────────────────────────────────────────────────
+ * These are the standard in-game values; VERIFY against the wiki if the game
+ * rebalances them, and add new metal-form categories here as needed. Ore chunk
+ * grades are handled separately in {@link ORE_GRADE_UNITS}.
+ */
+const METAL_FORM_UNITS: Record<string, number> = {
+    ingot: 100,
+    plate: 100,
+    nugget: 5,
+    // "Metal bits" — the small fragments (e.g. `metalbit-gold`). VERIFY vs wiki.
+    metalbit: 5,
+};
+
+/**
+ * Pure-metal units yielded by one raw *ore chunk* item, keyed by its density
+ * grade (the second code segment, e.g. `ore-bountiful-nativegold` → "bountiful").
+ * All host-rock strata of the same grade share these values — a chunk is a chunk
+ * regardless of the rock it sits in. `_default` covers ungraded ore codes.
+ * VERIFY the exact numbers against the wiki if the game rebalances ore yields.
+ */
+const ORE_GRADE_UNITS: Record<string, number> = {
+    poor: 10,
+    medium: 20,
+    rich: 30,
+    bountiful: 40,
+    _default: 20,
+};
+
+/**
+ * Pure-metal units contained in one item of the given catalog entry, or `null`
+ * when the item isn't a metal form we price by content. Only smeltable metals
+ * (see {@link METAL_FAMILY_KEYS}) qualify. Crystallized ore chunks are excluded
+ * on purpose — they aren't smelted for metal (nor collected as a commodity), so
+ * folding them into a metal's price would distort it.
+ */
+export function metalUnitsForEntry(entry: {
+    code: string | null;
+    name: string;
+    category: string;
+}): number | null {
+    const fam = resolveItemFamily(entry);
+    if (!fam || !METAL_FAMILY_KEYS.has(fam.key)) return null;
+    // Drop crystallized chunks — not used for smelting or collection.
+    const codeL = (entry.code ?? "").toLowerCase();
+    const nameL = entry.name.toLowerCase();
+    if (codeL.includes("crystal") || nameL.includes("crystal")) return null;
+    if (entry.category === "ore") {
+        // Grade is the second segment of the host-rock-stripped base
+        // (`ore-<grade>-<mineral>`); ungraded ores fall back to the default.
+        const base = entry.code ? splitOreHostRock(entry.code).base : "";
+        const grade = base.toLowerCase().split("-")[1] ?? "";
+        return ORE_GRADE_UNITS[grade] ?? ORE_GRADE_UNITS._default;
+    }
+    return METAL_FORM_UNITS[entry.category] ?? null;
+}
+
+/** One tradeable *form* of a metal (all its itemIds), for the content
+ *  comparison and blended-price features. Ore chunks of every grade and host
+ *  rock collapse into a single "ore" form. */
+export interface MetalForm {
+    /** Group key: `"ore"` for all chunks, else the form category (ingot/nugget/…). */
+    key: string;
+    /** Display label, e.g. "Ore chunks", "Nuggets", "Ingots". */
+    label: string;
+    /** Every itemId belonging to this form (all grades/host rocks for ore). */
+    itemIds: number[];
+}
+
+/** Friendly, pluralized labels for the metal forms shown in the comparison. */
+const METAL_FORM_LABELS: Record<string, string> = {
+    ore: "Ore chunks",
+    nugget: "Nuggets",
+    metalbit: "Metal bits",
+    ingot: "Ingots",
+    plate: "Plates",
+};
+
+/** Order metal forms from raw → refined in the comparison table. */
+const METAL_FORM_ORDER = ["ore", "nugget", "metalbit", "ingot", "plate"];
+
+/**
+ * Group every metal item of a family into its tradeable forms (ore chunks,
+ * nuggets, metal bits, ingots, …), collapsing all ore grades and host rocks into
+ * one "ore" form. Also returns a per-itemId pure-metal-units map so callers can
+ * normalize each listing's price to a price-per-unit-of-metal (needed because
+ * the ore form mixes grades of differing content).
+ *
+ * @param activeIds itemIds that actually have listings; pass an empty set to
+ *                  skip the filter. Forms with no active itemIds are dropped.
+ */
+export function computeMetalForms(
+    catalog: ItemCatalog,
+    familyKey: string,
+    activeIds: Set<number>,
+): { forms: MetalForm[]; unitsByItemId: Map<number, number> } {
+    const filterActive = activeIds.size > 0;
+    const unitsByItemId = new Map<number, number>();
+    const byForm = new Map<string, number[]>();
+    for (const [key, e] of Object.entries(catalog)) {
+        const iid = Number(key);
+        if (filterActive && !activeIds.has(iid)) continue;
+        const fam = resolveItemFamily(e);
+        if (!fam || fam.key !== familyKey) continue;
+        const units = metalUnitsForEntry(e);
+        if (units == null || units <= 0) continue;
+        unitsByItemId.set(iid, units);
+        const formKey = e.category === "ore" ? "ore" : e.category;
+        const list = byForm.get(formKey);
+        if (list) list.push(iid);
+        else byForm.set(formKey, [iid]);
+    }
+    const forms: MetalForm[] = Array.from(byForm.entries()).map(([key, itemIds]) => ({
+        key,
+        label: METAL_FORM_LABELS[key] ?? humanizeItemCode(key),
+        itemIds,
+    }));
+    forms.sort((a, b) => {
+        const ai = METAL_FORM_ORDER.indexOf(a.key);
+        const bi = METAL_FORM_ORDER.indexOf(b.key);
+        return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi) || a.label.localeCompare(b.label);
+    });
+    return { forms, unitsByItemId };
+}
+
 /**
  * Whether a listing carries written content — a parchment (or book) someone
  * wrote a story, note, or advert on. Such items are priced for their content,
