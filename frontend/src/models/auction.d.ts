@@ -55,6 +55,22 @@ export interface AuctionListing {
      * whether an unconfirmed "Active" listing has since expired.
      */
     expireTotalHours: number | null;
+    /**
+     * Point-in-time market reference: the median per-unit price the same item
+     * sold for (from OTHER sellers) around the moment this listing was posted.
+     * Time-consistent — independent of any viewer-selected window. Null when the
+     * market never priced the item from anyone else. See
+     * `compute_reference_prices` in `backend/process_auction_data.py`.
+     */
+    refPricePerUnit: number | null;
+    /** How many comparable sold listings backed `refPricePerUnit` (confidence). */
+    refSampleSize: number;
+    /**
+     * Signed percentage this listing's per-unit price sits above (+) or below
+     * (−) the market reference: (pricePerUnit − ref) / ref × 100. Null when no
+     * reference exists.
+     */
+    pricePremiumPct: number | null;
     observedUtc: string | null;
     lastObservedUtc: string | null;
 }
@@ -359,3 +375,148 @@ export interface MarketInsights {
     rows: InsightsRow[];
     totals: InsightsTotals;
 }
+
+// --------------------------------------------------------------------------- //
+// Player profile analytics (computed client-side by `usePlayerProfile`)
+// --------------------------------------------------------------------------- //
+
+/** How a seller sets prices, from the spread of their own per-unit prices. */
+export type SellerPricingStyle =
+    | "stable" // holds consistent prices
+    | "adjusting" // moderate price movement
+    | "discoverer" // wide spread — probing for the right price
+    | "insufficient";
+
+/** How a buyer pays relative to the prevailing market reference. */
+export type BuyerStyle =
+    | "value" // tends to pay below market
+    | "market" // pays around market
+    | "eager" // tends to pay above market (neutral framing of "FOMO")
+    | "insufficient";
+
+/** How focused a player's activity is across items/categories. */
+export type SpecializationTier = "specialist" | "focused" | "generalist";
+
+/** Strength of a player's grip on a single item's supply or demand. */
+export type DominanceTier = "leading" | "dominant" | "monopoly";
+
+/** A single headline label summarising the player's trading behaviour. */
+export type PlayerArchetype =
+    | "price-discoverer"
+    | "stable-seller"
+    | "wholesaler"
+    | "bargain-seller"
+    | "value-buyer"
+    | "eager-buyer"
+    | "market-maker"
+    | "monopolist"
+    | "flipper"
+    | "specialist"
+    | "generalist"
+    | "newcomer";
+
+/** One item where the player holds a large share of the item's market. */
+export interface PlayerDominanceRow {
+    itemId: number;
+    name: string;
+    /** "sell" = share of the item's units sold; "buy" = share of units bought. */
+    side: "sell" | "buy";
+    /** Player's share of the item's market volume in the window (0–1). */
+    share: number;
+    /** Units the player moved on this side. */
+    playerUnits: number;
+    /** Listings (sell) or purchases (buy) the player made of this item. */
+    playerTrades: number;
+    /** Total market units on this side (all traders). */
+    marketUnits: number;
+    /** Distinct other traders on the same side (0 → sole participant). */
+    otherTraders: number;
+    tier: DominanceTier;
+}
+
+/** An item the player both buys and sells — a flip / arbitrage opportunity. */
+export interface PlayerFlipRow {
+    itemId: number;
+    name: string;
+    buyMedianPpu: number;
+    sellMedianPpu: number;
+    /** (sell − buy) / buy × 100; positive = resells higher. */
+    marginPct: number;
+    bought: number;
+    sold: number;
+}
+
+/** A single trade that deviated most from the market reference. */
+export interface PlayerNotableTrade {
+    auctionId: number;
+    itemId: number;
+    name: string;
+    variant?: string | null;
+    pricePerUnit: number;
+    refPricePerUnit: number;
+    premiumPct: number;
+    qty: number;
+    postedTotalHours: number | null;
+}
+
+/** Per-item price dispersion behind the seller pricing-style verdict. */
+export interface PlayerPricingHistoryPoint {
+    /** In-game total hours the listing was posted. */
+    gameHours: number;
+    /** Player's per-unit asking price. */
+    pricePerUnit: number;
+    /** Market reference per-unit price at that time (null if none). */
+    refPricePerUnit: number | null;
+    /** Signed premium vs reference (null if no reference). */
+    premiumPct: number | null;
+    sold: boolean;
+    name: string;
+}
+
+/** One in-game-month bucket of the player's activity cadence. */
+export interface PlayerActivityPoint {
+    monthIndex: number;
+    gameHours: number;
+    listed: number;
+    sold: number;
+    bought: number;
+}
+
+export interface PlayerProfile {
+    windowDays: number | null;
+    /** Listings posted as a seller (window-scoped, spam excluded). */
+    sellerCount: number;
+    /** Purchases made as a buyer (window-scoped, spam excluded). */
+    buyerCount: number;
+
+    // --- Behaviour classification ---
+    sellerStyle: SellerPricingStyle;
+    /** Aggregate coefficient of variation of the player's per-unit prices. */
+    sellerPriceCV: number | null;
+    buyerStyle: BuyerStyle;
+    /** Median premium (%) the player paid over market on their purchases. */
+    buyerMedianPremiumPct: number | null;
+    /** Median premium (%) the player listed at vs market on their sales. */
+    sellerMedianPremiumPct: number | null;
+    /** Every headline label that applies, in display order (a trader can be
+     * several things at once, e.g. Market Maker + Wholesaler). Always non-empty;
+     * `["newcomer"]` when there's too little history. */
+    archetypes: PlayerArchetype[];
+
+    // --- Specialization ---
+    specialization: SpecializationTier;
+    /** HHI over the player's item mix (0–1; higher = more focused). */
+    itemHhi: number | null;
+    /** The category the player is most active in, if any. */
+    topCategory: string | null;
+    topCategoryShare: number | null;
+
+    // --- Sections ---
+    dominance: PlayerDominanceRow[];
+    flips: PlayerFlipRow[];
+    overpriced: PlayerNotableTrade[];
+    underpriced: PlayerNotableTrade[];
+    pricingHistory: PlayerPricingHistoryPoint[];
+    activity: PlayerActivityPoint[];
+}
+

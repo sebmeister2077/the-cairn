@@ -33,6 +33,7 @@ Key data rules (see plans/auction-house-explorer-plan.md):
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import json
 import math
@@ -576,6 +577,106 @@ def dedup_latest(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 # --------------------------------------------------------------------------- #
+# Point-in-time market reference price
+# --------------------------------------------------------------------------- #
+# To judge whether a listing was priced above or below the prevailing market
+# (for the player-profile pricing history / fairness charts) we need a
+# *point-in-time* reference: the median per-unit price the same item was selling
+# for around the moment this listing was posted. It must be time-consistent
+# (independent of whatever window a viewer later selects) so it's computed once
+# here and stored per listing.
+#
+# Rules:
+#  - Reference is drawn from SOLD, non-spam, non-written-text listings of the
+#    same item (mirrors the fair-price exclusions elsewhere).
+#  - It EXCLUDES the listing's own seller, so a seller who dominates an item's
+#    supply is compared against the rest of the market, not against themselves.
+#  - Trailing/leading in-game window around the posting time; falls back to the
+#    item-wide sold median (still excluding the own seller) when the local window
+#    is too sparse. Null when the market never priced the item from anyone else.
+
+# Half-width of the in-game window (hours) around a listing's posting time from
+# which comparable sold prices are drawn. 1440h = ±2 in-game months (720h/month).
+REF_WINDOW_HOURS = 1440
+# Minimum comparable sold listings required inside the local window before we
+# trust it; below this we fall back to the item-wide sold median.
+REF_MIN_SAMPLE = 5
+
+
+def _median(sorted_vals: List[float]) -> Optional[float]:
+    n = len(sorted_vals)
+    if n == 0:
+        return None
+    mid = n // 2
+    if n % 2:
+        return float(sorted_vals[mid])
+    return (sorted_vals[mid - 1] + sorted_vals[mid]) / 2
+
+
+def compute_reference_prices(records: List[Dict[str, Any]]) -> None:
+    """Attach `refPricePerUnit`, `refSampleSize` and `pricePremiumPct` to every
+    record (mutates in place). See the section header for the methodology.
+
+    Run AFTER `flag_spam` so spam listings are excluded from the reference pool.
+    """
+    # Build the comparable-sold pool per item, sorted by posting time so a
+    # window slice is a contiguous range we can locate with bisect.
+    by_item: Dict[int, List[Tuple[float, float, Optional[str]]]] = defaultdict(list)
+    for rec in records:
+        if (
+            not rec["sold"]
+            or rec["spam"]
+            or _has_written_text(rec)
+            or rec.get("postedTotalHours") is None
+        ):
+            continue
+        ppu = rec["pricePerUnit"]
+        if ppu is None or ppu <= 0:
+            continue
+        by_item[rec["itemId"]].append((rec["postedTotalHours"], ppu, rec["sellerUid"]))
+
+    for arr in by_item.values():
+        arr.sort(key=lambda t: t[0])
+    # Parallel arrays of just the posting times for bisect lookups.
+    times_by_item = {iid: [t for t, _, _ in arr] for iid, arr in by_item.items()}
+
+    for rec in records:
+        rec["refPricePerUnit"] = None
+        rec["refSampleSize"] = 0
+        rec["pricePremiumPct"] = None
+
+        posted = rec.get("postedTotalHours")
+        ppu = rec["pricePerUnit"]
+        if posted is None or ppu is None or ppu <= 0:
+            continue
+        pool = by_item.get(rec["itemId"])
+        if not pool:
+            continue
+        own = rec["sellerUid"]
+
+        times = times_by_item[rec["itemId"]]
+        lo = bisect.bisect_left(times, posted - REF_WINDOW_HOURS)
+        hi = bisect.bisect_right(times, posted + REF_WINDOW_HOURS)
+        local = [p for _, p, uid in pool[lo:hi] if uid != own]
+
+        if len(local) >= REF_MIN_SAMPLE:
+            sample = local
+        else:
+            # Fall back to the whole item's sold history (still excluding the
+            # own seller) so sparsely-traded items still get a reference.
+            sample = [p for _, p, uid in pool if uid != own]
+        if not sample:
+            continue
+
+        ref = _median(sorted(sample))
+        if ref is None or ref <= 0:
+            continue
+        rec["refPricePerUnit"] = round(ref, 3)
+        rec["refSampleSize"] = len(sample)
+        rec["pricePremiumPct"] = round((ppu - ref) / ref * 100, 1)
+
+
+# --------------------------------------------------------------------------- #
 # Spam / outlier heuristic
 # --------------------------------------------------------------------------- #
 def flag_spam(records: List[Dict[str, Any]]) -> None:
@@ -700,6 +801,7 @@ def build_records(
         )
 
     flag_spam(records)
+    compute_reference_prices(records)
     return records, items_catalog
 
 

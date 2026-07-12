@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   useAuctionListings,
@@ -12,6 +13,11 @@ import {
   formatRealTimeToSell,
   listingHasText,
 } from "@/lib/auction";
+import { INSIGHTS_WINDOWS, filterListingsByWindow } from "./useMarketInsights";
+import { usePlayerWindow } from "./useMarketPlayerWindow";
+import { usePlayerProfile } from "./usePlayerProfile";
+import { PlayerPricingChart, PlayerActivityChart } from "./PlayerCharts";
+import { PlayerBehaviorSection } from "./PlayerBehaviorSection";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -34,13 +40,24 @@ export function MarketPlayerPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Player profiles keep their OWN persisted time window, independent of the
+  // market-wide pages (Insights / items), so investigating a trader never
+  // disturbs the range selected elsewhere.
+  const [windowKey, setWindowKey] = usePlayerWindow();
+  const windowDays = useMemo(
+    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
+    [windowKey],
+  );
+
   const [sellerSoldOnly, setSellerSoldOnly] = useState(false);
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
+  const profile = usePlayerProfile(data, decodedUid, windowDays);
+
   const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent, delivery } =
     useMemo(() => {
-      const all = data ?? [];
+      const all = filterListingsByWindow(data ?? [], windowDays);
       const asSeller = all.filter((l) => l.sellerUid === decodedUid);
       const asBuyer = all.filter((l) => l.buyerUid === decodedUid && l.sold);
       const name =
@@ -125,7 +142,7 @@ export function MarketPlayerPage() {
         spent,
         delivery,
       };
-    }, [data, decodedUid]);
+    }, [data, decodedUid, windowDays]);
 
   // Newest first by in-game posting time (matches the Game date column).
   const sortedSellerListings = useMemo(() => {
@@ -385,8 +402,24 @@ export function MarketPlayerPage() {
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
         </button>
-        <h1 className="text-2xl font-semibold">{name}</h1>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <h1 className="text-2xl font-semibold">{name}</h1>
+          <div className="flex items-center gap-1">
+            {INSIGHTS_WINDOWS.map((w) => (
+              <Button
+                key={w.key}
+                size="sm"
+                variant={windowKey === w.key ? "default" : "outline"}
+                onClick={() => setWindowKey(w.key)}
+              >
+                {w.label}
+              </Button>
+            ))}
+          </div>
+        </div>
       </div>
+
+      <PlayerBehaviorSection profile={profile} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard label="Net revenue" value={formatGears(revenue)} />
@@ -474,6 +507,21 @@ export function MarketPlayerPage() {
             )}
           </div>
         </div>
+      </div>
+
+      <div>
+        <h2 className="font-semibold mb-1">Pricing vs the market</h2>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Each point is one listing, plotted as how far its per-unit price sat above or below the
+          prevailing market median at the time (the dashed line). It reflects pricing habits, not
+          fairness.
+        </p>
+        <PlayerPricingChart points={profile.pricingHistory} />
+      </div>
+
+      <div>
+        <h2 className="font-semibold mb-2">Activity over time</h2>
+        <PlayerActivityChart activity={profile.activity} />
       </div>
 
       <div>
