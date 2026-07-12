@@ -147,17 +147,19 @@ function InfoPopover({
           </button>
         }
       />
-      <PopoverContent align={align} className="w-80 max-h-96 overflow-auto">
-        <p className="mb-2 text-sm font-medium">{title}</p>
-        {intro ? <p className="mb-3 text-xs text-muted-foreground">{intro}</p> : null}
-        <dl className="space-y-2">
-          {items.map((it) => (
-            <div key={it.term}>
-              <dt className="text-sm font-medium">{it.term}</dt>
-              <dd className="text-xs text-muted-foreground">{it.desc}</dd>
-            </div>
-          ))}
-        </dl>
+      <PopoverContent align={align} className="w-80 overflow-hidden">
+        <div className="max-h-96 overflow-y-auto">
+          <p className="mb-2 text-sm font-medium">{title}</p>
+          {intro ? <p className="mb-3 text-xs text-muted-foreground">{intro}</p> : null}
+          <dl className="space-y-2">
+            {items.map((it) => (
+              <div key={it.term}>
+                <dt className="text-sm font-medium">{it.term}</dt>
+                <dd className="text-xs text-muted-foreground">{it.desc}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
       </PopoverContent>
     </Popover>
   );
