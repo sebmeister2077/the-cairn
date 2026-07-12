@@ -161,13 +161,6 @@ export interface MapViewState {
      * behind {@link showAdvancedMapOptions}. Default OFF — opt-in.
      */
     showRecordedBrokenTLs: boolean;
-    /**
-     * When true, render the recorded (in-game session export) *traders*
-     * as colored point markers on the map. Same bundled data source as
-     * {@link showRecordedBrokenTLs}. Gated behind
-     * {@link showAdvancedMapOptions}. Default OFF — opt-in.
-     */
-    showRecordedTraders: boolean;
     /** Rock-strata overlay enable flag (rockstratafinder mod export). */
     showRockStrata: boolean;
     /** Which rockstratafinder layer to render: rocks vs geological provinces. */
@@ -296,7 +289,6 @@ export function loadInitialMapViewState(): MapViewState {
         tlRadiusBlocks: 1000,
         showOceans: false,
         showRecordedBrokenTLs: false,
-        showRecordedTraders: false,
         showRockStrata: false,
         rockStrataKind: "rock",
         rockStrataKeepCodes: null,
@@ -388,9 +380,6 @@ export const mapViewSlice = createSlice({
         },
         setShowRecordedBrokenTLs(state, action: PayloadAction<boolean>) {
             state.showRecordedBrokenTLs = action.payload;
-        },
-        setShowRecordedTraders(state, action: PayloadAction<boolean>) {
-            state.showRecordedTraders = action.payload;
         },
         setShowRockStrata(state, action: PayloadAction<boolean>) {
             state.showRockStrata = action.payload;
@@ -552,7 +541,6 @@ export const {
     setTLRadiusBlocks,
     setShowOceans,
     setShowRecordedBrokenTLs,
-    setShowRecordedTraders,
     setShowRockStrata,
     setRockStrataKind,
     setRockStrataKeepCodes,

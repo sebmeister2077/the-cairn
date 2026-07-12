@@ -20,7 +20,6 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
-  setShowRecordedTraders as setShowRecordedTradersAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKind as setRockStrataKindAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
@@ -371,25 +370,16 @@ export function TOPSMapViewPage() {
   const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
   const oceansVisible = showOceans && showAdvancedMapOptions;
 
-  // Recorded (in-game session export) overlays: broken translocators and
-  // traders. Both are advanced-only opt-in layers sourced from a bundled
-  // JSON asset (lazy-loaded via `useRecordedMapFeatures`).
+  // Recorded (in-game session export) overlays. Broken translocators are an
+  // advanced-only opt-in layer; recorded traders are merged into the standard
+  // Traders overlay (see the `showTraders` handling below). Both are sourced
+  // from a bundled JSON asset (lazy-loaded via `useRecordedMapFeatures`).
   const showRecordedBrokenTLs = useAppSelector((s) => s.mapView.showRecordedBrokenTLs);
   const setShowRecordedBrokenTLs = useCallback(
     (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
     [dispatch],
   );
-  const showRecordedTraders = useAppSelector((s) => s.mapView.showRecordedTraders);
-  const setShowRecordedTraders = useCallback(
-    (next: boolean) => dispatch(setShowRecordedTradersAction(next)),
-    [dispatch],
-  );
   const recordedBrokenTLsVisible = showRecordedBrokenTLs && showAdvancedMapOptions;
-  const recordedTradersVisible = showRecordedTraders && showAdvancedMapOptions;
-  const recordedFeaturesQuery = useRecordedMapFeatures(
-    recordedBrokenTLsVisible || recordedTradersVisible,
-  );
-  const recordedFeatures = recordedFeaturesQuery.data;
   // Viewport-culling for the recorded broken-TL overlay: only markers inside
   // the current viewport (plus a margin) are rendered. Fed from MapViewer's
   // already-debounced `onViewportChange`. `viewportBoundsRef` mirrors the
@@ -756,6 +746,11 @@ export function TOPSMapViewPage() {
     (t: TraderType) => dispatch(toggleTraderTypeFilterAction(t)),
     [dispatch],
   );
+  // Recorded traders are merged into the standard Traders overlay, so the
+  // bundled asset is loaded whenever Traders are shown (or the broken-TL
+  // layer is on). Deduped against the official traders in `landmarkPoints`.
+  const recordedFeaturesQuery = useRecordedMapFeatures(recordedBrokenTLsVisible || showTraders);
+  const recordedFeatures = recordedFeaturesQuery.data;
 
   // Favorite TL groupings (local-only). The groupings themselves persist via
   // `useTLGroupings`; view-mode + active-selection live in the Redux
@@ -1174,26 +1169,74 @@ export function TOPSMapViewPage() {
         if (showLandmarks || p.kind === "Server") base.push(p);
       }
     }
-    if (showTraders && allTraders) {
-      for (const t of allTraders) {
-        if (
-          traderTypeFilterSet.size > 0 &&
-          isTraderType(t.trader_type) &&
-          !traderTypeFilterSet.has(t.trader_type)
-        ) {
-          continue;
+    // Traders overlay. A single toggle (`showTraders`) shows traders from
+    // BOTH sources — the official contributed set and the recorded (session
+    // export) set — deduped, with the per-type filter applied uniformly.
+    if (showTraders) {
+      const passesTypeFilter = (type: string | null | undefined) =>
+        !(traderTypeFilterSet.size > 0 && isTraderType(type) && !traderTypeFilterSet.has(type));
+
+      // Official traders.
+      if (allTraders) {
+        for (const t of allTraders) {
+          if (!passesTypeFilter(t.trader_type)) continue;
+          base.push({
+            x: t.x,
+            z: t.z,
+            kind: "Trader",
+            // label: t.label,
+            color: t.color,
+          });
         }
-        base.push({
-          x: t.x,
-          z: t.z,
-          kind: "Trader",
-          // label: t.label,
-          color: t.color,
-        });
+      }
+
+      // Recorded traders — collapsed against the official set (same type
+      // within DEDUPE_RADIUS blocks) so overlapping traders don't double up.
+      // A spatial hash keyed by (type, 10-block cell) keeps this O(n): each
+      // recorded trader only tests the 3x3 neighbouring cells. Coordinates
+      // share the same space (verified against the live traders.geojson).
+      if (recordedFeatures) {
+        const DEDUPE_RADIUS = 10;
+        const DEDUPE_RADIUS_SQ = DEDUPE_RADIUS * DEDUPE_RADIUS;
+        const officialBuckets = new Map<string, Array<{ x: number; z: number }>>();
+        const cellKey = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
+        for (const ot of allTraders ?? []) {
+          if (!isTraderType(ot.trader_type)) continue;
+          const cx = Math.floor(ot.x / DEDUPE_RADIUS);
+          const cz = Math.floor(ot.z / DEDUPE_RADIUS);
+          const key = cellKey(ot.trader_type, cx, cz);
+          const bucket = officialBuckets.get(key);
+          if (bucket) bucket.push({ x: ot.x, z: ot.z });
+          else officialBuckets.set(key, [{ x: ot.x, z: ot.z }]);
+        }
+        for (const m of recordedFeatures.traders) {
+          if (!passesTypeFilter(m.traderType)) continue;
+          // Only dedupe when we know the type; unknown-type recordings always show.
+          if (m.traderType) {
+            const cx = Math.floor(m.x / DEDUPE_RADIUS);
+            const cz = Math.floor(m.z / DEDUPE_RADIUS);
+            let duplicate = false;
+            for (let dx = -1; dx <= 1 && !duplicate; dx++) {
+              for (let dz = -1; dz <= 1 && !duplicate; dz++) {
+                const existing = officialBuckets.get(cellKey(m.traderType, cx + dx, cz + dz));
+                if (!existing) continue;
+                for (const p of existing) {
+                  const ddx = p.x - m.x;
+                  const ddz = p.z - m.z;
+                  if (ddx * ddx + ddz * ddz <= DEDUPE_RADIUS_SQ) {
+                    duplicate = true;
+                    break;
+                  }
+                }
+              }
+            }
+            if (duplicate) continue;
+          }
+          base.push(m);
+        }
       }
     }
-    // Recorded (session export) overlays. Both are advanced-only and share
-    // one bundled data source; each has its own independent toggle. Broken
+    // Recorded broken-translocator overlay (advanced-only, own toggle). Broken
     // TLs carry an X/Y/Z hover tooltip (relative X/Z + absolute Y).
     if (recordedBrokenTLsVisible && recordedFeatures) {
       // Viewport culling for performance: only render broken TLs inside the
@@ -1217,51 +1260,6 @@ export function TOPSMapViewPage() {
         for (const m of recordedFeatures.brokenTLs) base.push(m);
       }
     }
-    if (recordedTradersVisible && recordedFeatures) {
-      // Collapse recorded traders that duplicate an already-known (official)
-      // trader of the same type within DEDUPE_RADIUS blocks. Build a spatial
-      // hash of the official traders keyed by (type, 10-block cell) so each
-      // recorded trader only tests the 3x3 neighbouring cells. Recorded and
-      // official traders share the same coordinate space (verified against the
-      // live traders.geojson), so coordinates are compared directly.
-      const DEDUPE_RADIUS = 10;
-      const DEDUPE_RADIUS_SQ = DEDUPE_RADIUS * DEDUPE_RADIUS;
-      const officialBuckets = new Map<string, Array<{ x: number; z: number }>>();
-      const cellKey = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
-      for (const ot of allTraders ?? []) {
-        if (!isTraderType(ot.trader_type)) continue;
-        const cx = Math.floor(ot.x / DEDUPE_RADIUS);
-        const cz = Math.floor(ot.z / DEDUPE_RADIUS);
-        const key = cellKey(ot.trader_type, cx, cz);
-        const bucket = officialBuckets.get(key);
-        if (bucket) bucket.push({ x: ot.x, z: ot.z });
-        else officialBuckets.set(key, [{ x: ot.x, z: ot.z }]);
-      }
-      for (const m of recordedFeatures.traders) {
-        // Only dedupe when we know the type; unknown-type recordings always show.
-        if (m.traderType) {
-          const cx = Math.floor(m.x / DEDUPE_RADIUS);
-          const cz = Math.floor(m.z / DEDUPE_RADIUS);
-          let duplicate = false;
-          for (let dx = -1; dx <= 1 && !duplicate; dx++) {
-            for (let dz = -1; dz <= 1 && !duplicate; dz++) {
-              const existing = officialBuckets.get(cellKey(m.traderType, cx + dx, cz + dz));
-              if (!existing) continue;
-              for (const p of existing) {
-                const ddx = p.x - m.x;
-                const ddz = p.z - m.z;
-                if (ddx * ddx + ddz * ddz <= DEDUPE_RADIUS_SQ) {
-                  duplicate = true;
-                  break;
-                }
-              }
-            }
-          }
-          if (duplicate) continue;
-        }
-        base.push(m);
-      }
-    }
     // Always-on house glyph for the user's saved favorite position. Drawn
     // last so the marker sits on top of any colocated landmark/trader dot.
     if (favoriteStartingPosition) {
@@ -1281,7 +1279,6 @@ export function TOPSMapViewPage() {
     allTraders,
     traderTypeFilterSet,
     recordedBrokenTLsVisible,
-    recordedTradersVisible,
     recordedFeatures,
     brokenTLViewportBounds,
     favoriteStartingPosition,
@@ -2257,36 +2254,20 @@ export function TOPSMapViewPage() {
               </div>
             )}
             {showAdvancedMapOptions && (
-              <>
-                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                  <Switch
-                    checked={showRecordedBrokenTLs}
-                    onCheckedChange={setShowRecordedBrokenTLs}
-                    aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
-                  />
-                  <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {t("topsMap.recordedBrokenTLsFound")}{" "}
-                    <span className="font-medium text-foreground">
-                      {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
-                    </span>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showRecordedBrokenTLs}
+                  onCheckedChange={setShowRecordedBrokenTLs}
+                  aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
+                />
+                <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.recordedBrokenTLsFound")}{" "}
+                  <span className="font-medium text-foreground">
+                    {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
                   </span>
-                </div>
-                <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                  <Switch
-                    checked={showRecordedTraders}
-                    onCheckedChange={setShowRecordedTraders}
-                    aria-label={t("topsMap.showRecordedTradersOverlay")}
-                  />
-                  <Label>{t("topsMap.showRecordedTraders")}</Label>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {t("topsMap.recordedTradersFound")}{" "}
-                    <span className="font-medium text-foreground">
-                      {(recordedFeatures?.traders.length ?? 0).toLocaleString()}
-                    </span>
-                  </span>
-                </div>
-              </>
+                </span>
+              </div>
             )}
             <AuctionHeatmapControl
               layer={auctionLayer}

@@ -17,7 +17,6 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
-  setShowRecordedTraders as setShowRecordedTradersAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
@@ -154,11 +153,6 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
     [dispatch],
   );
-  const showRecordedTraders = useAppSelector((s) => s.mapView.showRecordedTraders);
-  const setShowRecordedTraders = useCallback(
-    (next: boolean) => dispatch(setShowRecordedTradersAction(next)),
-    [dispatch],
-  );
   const showRockStrata = useAppSelector((s) => s.mapView.showRockStrata);
   const setShowRockStrata = useCallback(
     (next: boolean) => dispatch(setShowRockStrataAction(next)),
@@ -192,7 +186,7 @@ export function FullscreenControlsOverlay({
   // their account preferences. Default OFF.
   const showAdvancedMapOptions = useAppSelector((s) => s.mapView.showAdvancedMapOptions);
   const recordedFeaturesQuery = useRecordedMapFeatures(
-    showAdvancedMapOptions && (showRecordedBrokenTLs || showRecordedTraders),
+    showTraders || (showAdvancedMapOptions && showRecordedBrokenTLs),
   );
   const recordedFeatures = recordedFeaturesQuery.data;
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
@@ -508,24 +502,6 @@ export function FullscreenControlsOverlay({
           <span className="text-xs text-muted-foreground">
             {t("topsMap.totalCount", {
               count: (recordedFeatures?.brokenTLs.length ?? 0).toLocaleString(),
-            })}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowRecordedTraders(!showRecordedTraders)}
-          className={cn(
-            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <Switch
-            checked={showRecordedTraders}
-            aria-label={t("topsMap.showRecordedTradersOverlay")}
-          />
-          <Label className="cursor-pointer">{t("topsMap.showRecordedTraders")}</Label>
-          <span className="text-xs text-muted-foreground">
-            {t("topsMap.totalCount", {
-              count: (recordedFeatures?.traders.length ?? 0).toLocaleString(),
             })}
           </span>
         </div>
