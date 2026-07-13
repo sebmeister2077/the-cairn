@@ -24,13 +24,19 @@ export interface AuctionListing {
     /** Non-refundable deposit (in gears) the seller paid to list the auction,
      *  set by its duration in weeks. 0 when the duration is unknown. */
     depositFee: number;
+    /**
+     * How many in-game weeks the seller chose to list the auction for (the
+     * listing length that sets the deposit above). Null/undefined when the
+     * duration is unknown or the data predates this field.
+     */
+    durationWeeks?: number | null;
     state: "Active" | "Sold" | "SoldRetrieved" | "Expired";
     sold: boolean;
     /**
-     * True when an unsold listing was pulled by the seller shortly after being
-     * posted (became retrievable within a couple in-game hours) rather than
-     * running to its natural, weeks-long expiry. Optional for older data
-     * generated before this field existed.
+     * True when an unsold listing was pulled by the seller before its natural
+     * expiry (it became retrievable ahead of its posting time plus the chosen
+     * listing duration) rather than running its full, weeks-long term. Optional
+     * for older data generated before this field existed.
      */
     cancelled?: boolean;
     /**

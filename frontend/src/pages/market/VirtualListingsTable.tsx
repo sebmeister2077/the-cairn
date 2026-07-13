@@ -108,10 +108,30 @@ export function CancelledCell({ listing }: { listing: AuctionListing }) {
     <Badge
       variant="secondary"
       className="border border-amber-500/40 text-xs font-normal text-amber-600 dark:text-amber-400"
-      title="The seller pulled this listing shortly after posting it — cancelled rather than expired naturally"
+      title="The seller pulled this listing before its natural expiry — cancelled rather than expired naturally"
     >
       Cancelled
     </Badge>
+  );
+}
+
+/**
+ * Duration cell for a listing: how many in-game weeks the seller chose to list
+ * the auction for (the listing length that set the deposit). Renders an em dash
+ * when the duration is unknown (older data predating the field).
+ */
+export function DurationCell({ listing }: { listing: AuctionListing }) {
+  const weeks = listing.durationWeeks;
+  if (weeks == null || weeks <= 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <span
+      className="text-xs tabular-nums text-muted-foreground"
+      title={`The seller listed this auction for ${weeks} in-game week${weeks === 1 ? "" : "s"}`}
+    >
+      {weeks}w
+    </span>
   );
 }
 

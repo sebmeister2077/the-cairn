@@ -64,11 +64,12 @@ SOLD_STATES = {"Sold", "SoldRetrieved"}
 # Terminal (completed) states, preferred when deduplicating.
 TERMINAL_STATES = {"Sold", "SoldRetrieved", "Expired"}
 
-# An unsold listing that becomes retrievable within this many in-game hours of
-# being posted is treated as a seller cancellation (pulled early) rather than a
-# natural expiry. Real listings run for weeks (min duration ~3), so anything
-# that ends this fast was taken down deliberately.
-CANCEL_WINDOW_HOURS = 2
+# An unsold listing that became retrievable before its natural expiry (its
+# posting time plus the chosen listing duration) was pulled early by the seller
+# rather than running its full term — treated as a cancellation. A small
+# tolerance guards against float/capture-timing noise so a listing that ran
+# essentially its whole duration isn't misflagged as cancelled.
+CANCEL_TOLERANCE_HOURS = 1
 
 # Heatmap grid resolution in world blocks.
 HEATMAP_BIN = 512
@@ -112,14 +113,22 @@ DEPOSIT_FEE_BY_WEEKS = {
 }
 
 
+def duration_weeks_for_hours(initial_duration_hours: Any) -> Optional[int]:
+    """The listing length in whole in-game weeks the seller chose, derived from
+    its initial duration. Returns None when the duration is missing/unknown."""
+    hours = float(initial_duration_hours or 0)
+    if hours <= 0:
+        return None
+    return round(hours / HOURS_PER_WEEK)
+
+
 def deposit_fee_for_hours(initial_duration_hours: Any) -> int:
     """Deposit (in gears) the seller paid to list the auction, derived from its
     initial duration. Returns 0 when the duration is missing or doesn't match a
     known listing-length option."""
-    hours = float(initial_duration_hours or 0)
-    if hours <= 0:
+    weeks = duration_weeks_for_hours(initial_duration_hours)
+    if weeks is None:
         return 0
-    weeks = round(hours / HOURS_PER_WEEK)
     return DEPOSIT_FEE_BY_WEEKS.get(weeks, 0)
 
 
@@ -753,15 +762,19 @@ def build_records(
         if sold and posted and retrievable and retrievable > 0:
             time_to_sell = round(retrievable - posted, 2)
 
-        # Seller cancellation: an unsold listing that became retrievable within a
-        # couple in-game hours of being posted was pulled early rather than run
-        # to its natural (weeks-long) expiry.
+        # Seller cancellation: an unsold listing that became retrievable before
+        # its natural expiry (posting time + chosen listing duration) was pulled
+        # early rather than running its full, weeks-long term. Needs a known
+        # duration to place the expiry; the tolerance ignores listings that ran
+        # essentially their whole term.
+        duration_hours = float(row.get("InitialDurationHours") or 0)
         cancelled = bool(
             not sold
             and posted is not None
             and retrievable is not None
             and retrievable > 0
-            and 0 <= (retrievable - posted) <= CANCEL_WINDOW_HOURS
+            and duration_hours > 0
+            and (retrievable - posted) < (duration_hours - CANCEL_TOLERANCE_HOURS)
         )
 
         src = (_to_relative(row.get("SrcX")), _to_relative(row.get("SrcZ")))
@@ -792,10 +805,16 @@ def build_records(
                 # Non-refundable deposit the seller paid to list this auction,
                 # set by its duration in weeks (independent of sale outcome).
                 "depositFee": deposit_fee_for_hours(row.get("InitialDurationHours")),
+                # How many in-game weeks the seller chose to list the auction
+                # for (drives the deposit above). None when the duration is
+                # unknown.
+                "durationWeeks": duration_weeks_for_hours(
+                    row.get("InitialDurationHours")
+                ),
                 "state": state,
                 "sold": sold,
-                # An unsold listing the seller pulled early (retrievable within
-                # CANCEL_WINDOW_HOURS of posting) rather than a natural expiry.
+                # An unsold listing the seller pulled early (retrievable before
+                # its natural expiry) rather than a natural expiry.
                 "cancelled": cancelled,
                 # Whether we ever captured a *terminal* verdict for this auction.
                 # False means the listing is only known as "Active" because it

@@ -51,6 +51,8 @@ import {
   formatListingDate,
   formatGameDate,
   DeliveryFeeCell,
+  CancelledCell,
+  DurationCell,
   ListingNotesCell,
   ListingAttributesCell,
   type ListingColumn,
@@ -776,6 +778,19 @@ export function MarketItemPage() {
         width: "minmax(4.5rem,0.7fr)",
         align: "right",
         cell: (l) => <DeliveryFeeCell listing={l} />,
+      },
+      {
+        key: "duration",
+        header: "Duration",
+        width: "minmax(4.5rem,0.6fr)",
+        align: "right",
+        cell: (l) => <DurationCell listing={l} />,
+      },
+      {
+        key: "cancelled",
+        header: "Cancelled",
+        width: "minmax(5rem,0.7fr)",
+        cell: (l) => <CancelledCell listing={l} />,
       },
       {
         key: "status",

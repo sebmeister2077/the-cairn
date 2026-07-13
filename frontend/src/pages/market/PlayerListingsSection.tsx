@@ -27,6 +27,7 @@ import {
   ListingStateBadge,
   DeliveryFeeCell,
   CancelledCell,
+  DurationCell,
   ListingNotesCell,
   type ListingColumn,
 } from "./VirtualListingsTable";
@@ -235,6 +236,13 @@ export function PlayerListingsSection({ listings }: { listings: AuctionListing[]
         width: "minmax(4.5rem,0.7fr)",
         align: "right",
         cell: (l) => <DeliveryFeeCell listing={l} />,
+      },
+      {
+        key: "duration",
+        header: "Duration",
+        width: "minmax(4.5rem,0.6fr)",
+        align: "right",
+        cell: (l) => <DurationCell listing={l} />,
       },
       {
         key: "cancelled",
