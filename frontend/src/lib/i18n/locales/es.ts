@@ -77,7 +77,9 @@ const es = {
                 "tunnelPreviewer": "Vista previa de túnel"
             },
             "chip": {
-                "new": "Nuevo"
+                "new": "Nuevo",
+                "adminOnLeave": "Admin ausente · vuelve en {days}d",
+                "adminOnLeaveTooltip": "El administrador está ausente, pero los datos de la Casa de Subastas se siguen registrando y estarán disponibles cuando regrese."
             },
             "pendingReviewAria": {
                 "one": "{count} pendiente de revisión",

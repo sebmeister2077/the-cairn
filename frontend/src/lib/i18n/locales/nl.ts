@@ -80,6 +80,9 @@ const nl = {
             },
             chip: {
                 new: "Nieuw",
+                adminOnLeave: "Beheerder afwezig · terug over {days}d",
+                adminOnLeaveTooltip:
+                    "De beheerder is afwezig, maar de gegevens van het Veilinghuis worden gewoon geregistreerd en zijn beschikbaar zodra hij terug is.",
             },
             pendingReviewAria: {
                 one: "{count} beoordeling in afwachting",

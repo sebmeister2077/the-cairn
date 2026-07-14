@@ -77,7 +77,9 @@ const fr = {
                 "tunnelPreviewer": "Aperçu de tunnel"
             },
             "chip": {
-                "new": "Nouveau"
+                "new": "Nouveau",
+                "adminOnLeave": "Admin absent · retour dans {days}j",
+                "adminOnLeaveTooltip": "L'administrateur est absent, mais les données de l'Hôtel des ventes continuent d'être enregistrées et seront disponibles à son retour."
             },
             "pendingReviewAria": {
                 "one": "{count} en attente de révision",

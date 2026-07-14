@@ -87,6 +87,9 @@ export const en = {
             },
             chip: {
                 new: "New",
+                adminOnLeave: "Admin on leave · back in {days}d",
+                adminOnLeaveTooltip:
+                    "The admin is away, but Auction House data keeps being recorded and will be available when they're back.",
             },
             pendingReviewAria: {
                 one: "{count} pending review",

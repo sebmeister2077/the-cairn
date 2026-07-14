@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/assets/Logo";
 import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -189,7 +190,8 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketOrders"
   | "app.nav.subtabs.marketLeaderboards"
   | "app.nav.subtabs.marketMap"
-  | "app.nav.chip.new";
+  | "app.nav.chip.new"
+  | "app.nav.chip.adminOnLeave";
 const subTabs: Subtabs = {
   "/singleplayer": [
     { value: "/singleplayer/extract", labelKey: "app.nav.subtabs.extract" },
@@ -266,6 +268,26 @@ function shouldShowChip(t: SubTab) {
   } catch {
     return false;
   }
+}
+
+/**
+ * Temporary "Admin on leave" notice shown on the Auction House pages.
+ * Visible while the admin is away (through 19 July 2026, inclusive), in the
+ * visitor's local time. The end bound is exclusive at the start of 20 July,
+ * which is also the day the admin is back.
+ */
+const ADMIN_LEAVE_START = new Date("2026-07-15T00:00:00");
+const ADMIN_BACK = new Date("2026-07-20T00:00:00");
+
+function shouldShowAdminOnLeaveChip(): boolean {
+  const now = new Date();
+  return now >= ADMIN_LEAVE_START && now < ADMIN_BACK;
+}
+
+/** Whole days (rounded up, min 1) until the admin is back. */
+function daysUntilAdminBack(): number {
+  const ms = ADMIN_BACK.getTime() - Date.now();
+  return Math.max(1, Math.ceil(ms / 86_400_000));
 }
 
 /**
@@ -630,49 +652,66 @@ export function AppContent() {
             </TabsList>
           </Tabs>
           {activeSubs.length > 0 && (
-            <Tabs value={activeSub}>
-              <TabsList variant="line">
-                {activeSubs.map((tab) => {
-                  const pending = getPendingCountFor(tab.value, pendingCounts);
-                  const showOrdersDot =
-                    tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
-                  return (
-                    <NavLink key={tab.value} to={tab.value} end>
-                      {() => (
-                        <TabsTrigger value={tab.value} className="relative">
-                          {tStatic(tab.labelKey as StaticNavLabelKey)}
-                          {shouldShowChip(tab) && (
-                            <Badge
-                              variant="default"
-                              className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
-                            >
-                              {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
-                            </Badge>
-                          )}
-                          {showOrdersDot && (
-                            <span
-                              aria-label={t("app.nav.ordersUnreadAria")}
-                              title={t("app.nav.ordersUnreadAria")}
-                              className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
-                            />
-                          )}
-                          {pending > 0 && (
-                            <Badge
-                              variant="default"
-                              aria-label={t("app.nav.pendingReviewAria", { count: pending })}
-                              title={t("app.nav.pendingReviewTitle", { count: pending })}
-                              className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
-                            >
-                              {formatPendingCount(pending)}
-                            </Badge>
-                          )}
-                        </TabsTrigger>
-                      )}
-                    </NavLink>
-                  );
-                })}
-              </TabsList>
-            </Tabs>
+            <div className="flex items-center justify-between gap-2">
+              <Tabs value={activeSub}>
+                <TabsList variant="line">
+                  {activeSubs.map((tab) => {
+                    const pending = getPendingCountFor(tab.value, pendingCounts);
+                    const showOrdersDot =
+                      tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
+                    return (
+                      <NavLink key={tab.value} to={tab.value} end>
+                        {() => (
+                          <TabsTrigger value={tab.value} className="relative">
+                            {tStatic(tab.labelKey as StaticNavLabelKey)}
+                            {shouldShowChip(tab) && (
+                              <Badge
+                                variant="default"
+                                className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                              >
+                                {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
+                              </Badge>
+                            )}
+                            {showOrdersDot && (
+                              <span
+                                aria-label={t("app.nav.ordersUnreadAria")}
+                                title={t("app.nav.ordersUnreadAria")}
+                                className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
+                              />
+                            )}
+                            {pending > 0 && (
+                              <Badge
+                                variant="default"
+                                aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                                title={t("app.nav.pendingReviewTitle", { count: pending })}
+                                className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                              >
+                                {formatPendingCount(pending)}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+                        )}
+                      </NavLink>
+                    );
+                  })}
+                </TabsList>
+              </Tabs>
+              {activeCategory === "/market" && shouldShowAdminOnLeaveChip() && (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Badge
+                        variant="default"
+                        className="shrink-0 whitespace-nowrap cursor-help bg-amber-500 text-white hover:bg-amber-500"
+                      />
+                    }
+                  >
+                    {t("app.nav.chip.adminOnLeave", { days: daysUntilAdminBack() })}
+                  </TooltipTrigger>
+                  <TooltipContent>{t("app.nav.chip.adminOnLeaveTooltip")}</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           )}
         </nav>
       </header>
