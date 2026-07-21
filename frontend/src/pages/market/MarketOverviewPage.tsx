@@ -123,7 +123,7 @@ export function MarketOverviewPage() {
             <CardContent className="py-4">
               <div className="font-medium">Leaderboards</div>
               <p className="text-sm text-muted-foreground">
-                Top traders, buyers and the most valuable items on the market.
+                Top seraphs, buyers and the most valuable items on the market.
               </p>
             </CardContent>
           </Card>

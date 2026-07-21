@@ -36,7 +36,7 @@ export function MarketLeaderboardsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Trader</TableHead>
+                  <TableHead>Seller</TableHead>
                   <TableHead className="text-right">Revenue</TableHead>
                   <TableHead className="text-right">Sold</TableHead>
                 </TableRow>
