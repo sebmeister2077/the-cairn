@@ -185,6 +185,14 @@ export interface WealthFlow {
     gears: number;
 }
 
+/** A player on the elite roster (richest 10%). */
+export interface WealthPlayer {
+    uid: string;
+    name: string | null;
+    /** Net seller revenue + buyer spend. */
+    wealth: number;
+}
+
 /**
  * Market wealth concentration and rich-to-rich trade flows. A player's wealth is
  * their net seller revenue plus buyer spend; players are ranked and split into
@@ -205,6 +213,9 @@ export interface WealthConcentration {
     matchedGears: number;
     /** Gears in sold auctions excluded from `flows` (missing/self-trade party). */
     unmatchedGears: number;
+    /** The elite roster (richest 10%), richest first. Absent in data generated
+     *  before this field existed (and any stale cache). */
+    elite?: WealthPlayer[];
     /** The six unordered tier-pair buckets, richest-first. */
     flows: WealthFlow[];
 }

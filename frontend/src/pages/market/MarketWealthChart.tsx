@@ -6,11 +6,21 @@
 // splits every matched sale into trades between the elite, trades bridging the
 // elite and everyone else, and trades among the rest.
 
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { StatCard } from "@/components/usage/StatCard";
 import { formatGears } from "@/lib/auction";
 import { cn } from "@/lib/utils";
-import type { WealthConcentration, WealthTier } from "@/models/auction";
+import type { WealthConcentration, WealthPlayer, WealthTier } from "@/models/auction";
 
 /** Gears traded between two tiers, looked up order-independently. */
 function flowGears(w: WealthConcentration, a: WealthTier, b: WealthTier): number {
@@ -56,17 +66,20 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
 
   const tc = wealth.tierPlayerCounts;
   const gini = wealth.gini;
-  // Plain-language descriptor for the Gini number so viewers don't need to know
-  // the term. Gini runs 0 (everyone equally wealthy) → 1 (one player owns it all).
+  // Plain-language descriptor for the Gini number, calibrated for a GAME economy
+  // rather than a real-world one. Virtual economies are naturally top-heavy —
+  // veteran players have simply had far longer to accumulate than newcomers — so
+  // they typically sit around 0.7–0.9, where a real country would be extreme.
+  // The bands reflect that so a normal server doesn't read as alarming.
   const giniWord =
     gini == null
       ? "—"
-      : gini >= 0.6
-        ? "Very high"
-        : gini >= 0.45
+      : gini >= 0.93
+        ? "Extreme"
+        : gini >= 0.85
           ? "High"
-          : gini >= 0.3
-            ? "Moderate"
+          : gini >= 0.6
+            ? "Typical"
             : "Low";
 
   return (
@@ -119,9 +132,12 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
           <StatCard
             label="Wealth inequality"
             value={giniWord}
-            hint={gini != null ? `Gini ${gini.toFixed(2)} — 0 even, 1 concentrated` : undefined}
+            hint={gini != null ? `Gini ${gini.toFixed(2)} — high is normal for a game` : undefined}
           />
         </div>
+
+        {/* Who the elite actually are. */}
+        {wealth.elite && wealth.elite.length > 0 && <EliteRoster elite={wealth.elite} />}
 
         {/* 100% stacked flow bar */}
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
@@ -158,5 +174,44 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Expandable roster of the elite players (richest 10%), opened in a dialog.
+ *  Each row links to that player's market profile. */
+function EliteRoster({ elite }: { elite: WealthPlayer[] }) {
+  return (
+    <Dialog>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="w-full sm:w-auto" />}>
+        {`See the ${elite.length.toLocaleString()} elite trader${elite.length === 1 ? "" : "s"} →`}
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Elite traders</DialogTitle>
+          <DialogDescription>
+            The wealthiest 10% by net seller revenue plus buyer spend, richest first.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[60vh] overflow-y-auto rounded-md border divide-y">
+          {elite.map((p, i) => (
+            <Link
+              key={p.uid}
+              to={`/market/players/${encodeURIComponent(p.uid)}`}
+              className="flex items-center justify-between gap-3 px-3 py-2 hover:bg-muted/50"
+            >
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="w-6 shrink-0 text-right text-xs tabular-nums text-muted-foreground">
+                  {i + 1}
+                </span>
+                <span className="truncate font-medium">{p.name ?? "Unknown"}</span>
+              </span>
+              <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+                {formatGears(p.wealth)}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

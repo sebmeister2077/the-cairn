@@ -1138,6 +1138,17 @@ def build_wealth_concentration(
 
     elite_wealth = sum(w for uid, w in wealth.items() if tier_by_uid[uid] == "elite")
 
+    # The elite roster (richest 10%), richest first, with a display name pulled
+    # from whichever side of the market we last saw them on.
+    def display_name(uid: str) -> Optional[str]:
+        return (sellers.get(uid, {}).get("name")) or (buyers.get(uid, {}).get("name"))
+
+    elite_players = [
+        {"uid": uid, "name": display_name(uid), "wealth": round(w, 2)}
+        for uid, w in order
+        if tier_by_uid[uid] == "elite"
+    ]
+
     # Attribute each matched sale to its unordered (seller, buyer) tier pair.
     flow_gears: Dict[Tuple[str, str], float] = {p: 0.0 for p in WEALTH_TIER_PAIRS}
     matched_gears = 0.0
@@ -1164,6 +1175,7 @@ def build_wealth_concentration(
         "gini": _gini(ranked),
         "matchedGears": round(matched_gears, 2),
         "unmatchedGears": round(unmatched_gears, 2),
+        "elite": elite_players,
         "flows": [
             {"a": a, "b": b, "gears": round(flow_gears[(a, b)], 2)}
             for (a, b) in WEALTH_TIER_PAIRS
