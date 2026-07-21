@@ -43,6 +43,8 @@ import {
   metalUnitsForEntry,
   computeMetalForms,
   METAL_FAMILY_KEYS,
+  deriveListingStatus,
+  useCurrentGameHours,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
@@ -247,6 +249,7 @@ export function MarketItemPage() {
   const catalogQ = useItemCatalog();
   const navigate = useNavigate();
   const location = useLocation();
+  const currentGameHours = useCurrentGameHours();
 
   // Shared market time-range window (kept in sync with the Insights page).
   const [windowKey, setWindowKey] = useMarketWindow();
@@ -797,9 +800,11 @@ export function MarketItemPage() {
         header: "Status",
         width: "5rem",
         cell: (l) => {
-          // Coalesce for data generated before verdictObserved existed.
-          const verdictObserved = l.verdictObserved ?? l.state !== "Active";
-          const unconfirmed = !l.sold && !verdictObserved;
+          // Shared status derivation so this matches the player-profile table:
+          // a last-seen-Active listing that dropped out of the latest sweep (or
+          // whose duration elapsed) reads "removed", not "active?".
+          const status = deriveListingStatus(l, currentGameHours);
+          const unconfirmed = status === "unconfirmed";
           return (
             <span
               className="text-xs text-muted-foreground"
@@ -809,13 +814,13 @@ export function MarketItemPage() {
                   : undefined
               }
             >
-              {l.sold ? "sold" : unconfirmed ? "active?" : l.state.toLowerCase()}
+              {unconfirmed ? "active?" : status}
             </span>
           );
         },
       },
     ],
-    [hasVariants, combineOres, oreGroup, hasTextListings, hasToolAttrs],
+    [hasVariants, combineOres, oreGroup, hasTextListings, hasToolAttrs, currentGameHours],
   );
 
   if (listingsQ.isLoading) {
