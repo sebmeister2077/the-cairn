@@ -132,9 +132,26 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
           <StatCard
             label="Wealth inequality"
             value={giniWord}
-            hint={gini != null ? `Gini ${gini.toFixed(2)} — high is normal for a game` : undefined}
+            hint={gini != null ? `Gini ${gini.toFixed(2)}` : undefined}
           />
         </div>
+
+        {gini != null && (
+          <p className="text-xs text-muted-foreground">
+            “Wealth inequality” is the{" "}
+            <a
+              href="https://en.wikipedia.org/wiki/Gini_coefficient"
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              Gini coefficient
+            </a>{" "}
+            (0 = everyone equally wealthy, 1 = a single player holds it all). Accumulated wealth is
+            very unequal even in the real world (national wealth Gini ≈ 0.85), and virtual game
+            economies usually sit around 0.7–0.9, so a high number here is normal.
+          </p>
+        )}
 
         {/* Who the elite actually are. */}
         {wealth.elite && wealth.elite.length > 0 && <EliteRoster elite={wealth.elite} />}
