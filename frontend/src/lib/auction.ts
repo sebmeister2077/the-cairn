@@ -245,6 +245,14 @@ interface MaterialFamily {
 const MATERIAL_FAMILIES: MaterialFamily[] = [
     // Metals: the ore minerals that smelt into a metal share the metal's family,
     // even though their codes/names don't mention the metal (e.g. "hematite").
+    //
+    // Meteoric iron is a DISTINCT metal from ordinary iron in-game (its ingots,
+    // metal bits, plates and the meteorite it comes from), so it gets its own
+    // family — listed BEFORE "iron" so its items resolve here first (their names
+    // contain the word "iron", which would otherwise fold them into the iron
+    // family). Tokens cover both the item codes (`ingot-meteoriciron`,
+    // `meteorite-iron`, `stone-meteorite-iron`) and display names ("Meteoric …").
+    { key: "meteoriciron", label: "Meteoric iron", tokens: ["meteoriciron", "meteorite", "meteoric"] },
     { key: "iron", label: "Iron", tokens: ["iron", "ironbloom", "hematite", "magnetite", "limonite"] },
     { key: "copper", label: "Copper", tokens: ["copper", "nativecopper", "malachite", "cuprite", "tetrahedrite"] },
     { key: "tin", label: "Tin", tokens: ["tin", "cassiterite"] },
@@ -528,6 +536,7 @@ export function computeRelatedItems(
  */
 export const METAL_FAMILY_KEYS = new Set<string>([
     "iron",
+    "meteoriciron",
     "copper",
     "tin",
     "zinc",
@@ -548,34 +557,54 @@ export const METAL_FAMILY_KEYS = new Set<string>([
  * the 100-unit reference.
  *
  * ── HOW TO ADJUST / EXTEND ─────────────────────────────────────────────────
- * These are the standard in-game values; VERIFY against the wiki if the game
+ * These mirror the game's own item definitions (survival
+ * `itemtypes/resource/*.json`); VERIFY against those assets if the game
  * rebalances them, and add new metal-form categories here as needed. Ore chunk
- * grades are handled separately in {@link ORE_GRADE_UNITS}.
+ * yields are mineral-specific and handled separately in {@link ORE_UNITS_BY_MINERAL}.
  */
 const METAL_FORM_UNITS: Record<string, number> = {
     ingot: 100,
     plate: 100,
+    // 20 nuggets = 1 ingot, so a nugget is 5 units (per the game's smelting recipes).
     nugget: 5,
-    // "Metal bits" — the small fragments (e.g. `metalbit-gold`). VERIFY vs wiki.
+    // "Metal bits" — the small surface fragments (e.g. `metalbit-gold`); smelt
+    // like a nugget (5 units).
     metalbit: 5,
-    // Crushed ore (e.g. `crushed-ilmenite`, `crushed-iron`) — the gradeless
-    // pulverized form. Treated as a medium-grade ore's yield. VERIFY vs wiki.
-    crushed: 20,
+    // Crushed ore (e.g. `crushed-iron`, `crushed-cassiterite`) — the pulverized
+    // form. A flat 15 units regardless of the ore it came from: the game's
+    // `crushingPropsByType` ratios conserve metal exactly (e.g. a 25-unit medium
+    // hematite chunk yields 1.66 crushed → 25 / 1.66 ≈ 15; a 15-unit rich
+    // cassiterite chunk yields 1.0 → 15), so every crushed piece is worth 15.
+    crushed: 15,
 };
 
 /**
- * Pure-metal units yielded by one raw *ore chunk* item, keyed by its density
- * grade (the second code segment, e.g. `ore-bountiful-nativegold` → "bountiful").
- * All host-rock strata of the same grade share these values — a chunk is a chunk
- * regardless of the rock it sits in. `_default` covers ungraded ore codes.
- * VERIFY the exact numbers against the wiki if the game rebalances ore yields.
+ * Pure-metal units yielded by one raw *ore chunk*, taken verbatim from the
+ * game's `itemtypes/resource/ore-graded.json` `metalUnitsByType`. Keyed by the
+ * ore *mineral* (the segment after the grade in `ore-<grade>-<mineral>-<rock>`),
+ * then by grade. Yields are mineral-specific — most ores use the shared
+ * `_default`, but tin (cassiterite), iron-as-hematite, silver and gold each have
+ * their own curve (e.g. rich copper = 25 but rich gold = 15). All host-rock
+ * strata of the same mineral+grade share these values.
+ *
+ * ── HOW TO ADJUST / EXTEND ─────────────────────────────────────────────────
+ * Copy the numbers straight from the game asset's `metalUnitsByType` block. Add
+ * a mineral key only when it overrides `_default`; the mineral name must match
+ * the ore code's mineral segment exactly (note the compound `quartz_nativegold`
+ * / `quartz_nativesilver` codes gold and silver use).
  */
-const ORE_GRADE_UNITS: Record<string, number> = {
-    poor: 10,
-    medium: 20,
-    rich: 30,
-    bountiful: 40,
-    _default: 20,
+const ORE_UNITS_BY_MINERAL: Record<string, Record<string, number>> = {
+    // Tin.
+    cassiterite: { poor: 5, medium: 10, rich: 15, bountiful: 20 },
+    // Iron — hematite is richer than the default; limonite & magnetite use `_default`.
+    hematite: { poor: 20, medium: 25, rich: 30, bountiful: 40 },
+    // Silver (native silver in quartz).
+    quartz_nativesilver: { poor: 10, medium: 15, rich: 20, bountiful: 25 },
+    // Gold (native gold in quartz).
+    quartz_nativegold: { poor: 5, medium: 10, rich: 15, bountiful: 20 },
+    // Every other ore: copper (native copper/malachite), limonite, magnetite,
+    // galena, sphalerite, bismuthinite, pentlandite, chromite, ilmenite, …
+    _default: { poor: 15, medium: 20, rich: 25, bountiful: 35 },
 };
 
 /**
@@ -597,11 +626,15 @@ export function metalUnitsForEntry(entry: {
     const nameL = entry.name.toLowerCase();
     if (codeL.includes("crystal") || nameL.includes("crystal")) return null;
     if (entry.category === "ore") {
-        // Grade is the second segment of the host-rock-stripped base
-        // (`ore-<grade>-<mineral>`); ungraded ores fall back to the default.
+        // Ore codes are `ore-<grade>-<mineral>[-<rock>]`; the yield depends on
+        // both the mineral and its grade (rich copper ≠ rich gold), so look up
+        // the mineral's own curve and fall back to the shared default.
         const base = entry.code ? splitOreHostRock(entry.code).base : "";
-        const grade = base.toLowerCase().split("-")[1] ?? "";
-        return ORE_GRADE_UNITS[grade] ?? ORE_GRADE_UNITS._default;
+        const parts = base.toLowerCase().split("-");
+        const grade = parts[1] ?? "";
+        const mineral = parts[2] ?? "";
+        const curve = ORE_UNITS_BY_MINERAL[mineral] ?? ORE_UNITS_BY_MINERAL._default;
+        return curve[grade] ?? ORE_UNITS_BY_MINERAL._default[grade] ?? ORE_UNITS_BY_MINERAL._default.medium;
     }
     return METAL_FORM_UNITS[entry.category] ?? null;
 }
