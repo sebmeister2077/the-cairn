@@ -31,7 +31,7 @@ function flowGears(w: WealthConcentration, a: WealthTier, b: WealthTier): number
 const SEGMENTS = [
   {
     key: "elite",
-    label: "Between elite traders",
+    label: "Between elite seraphs",
     color: "bg-amber-500",
   },
   {
@@ -100,7 +100,7 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
             <span className="font-medium text-foreground tabular-nums">
               {wealth.traderCount.toLocaleString()}
             </span>{" "}
-            traders
+            seraphs
           </span>
           <span>
             <span className="font-medium text-foreground tabular-nums">
@@ -126,7 +126,7 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
           <StatCard
             label="Top 10% wealth share"
             value={`${(wealth.eliteShareOfWealth * 100).toFixed(0)}%`}
-            hint={`held by ${tc.elite.toLocaleString()} elite traders`}
+            hint={`held by ${tc.elite.toLocaleString()} elite seraphs`}
           />
           <StatCard label="Traded between elite" value={`${pct(ee).toFixed(0)}%`} />
           <StatCard
@@ -200,11 +200,11 @@ function EliteRoster({ elite }: { elite: WealthPlayer[] }) {
   return (
     <Dialog>
       <DialogTrigger render={<Button variant="outline" size="sm" className="w-full sm:w-auto" />}>
-        {`See the ${elite.length.toLocaleString()} elite trader${elite.length === 1 ? "" : "s"} →`}
+        {`See the ${elite.length.toLocaleString()} elite seraph${elite.length === 1 ? "" : "s"} →`}
       </DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Elite traders</DialogTitle>
+          <DialogTitle>Elite Seraphs</DialogTitle>
           <DialogDescription>
             The wealthiest 10% by net seller revenue plus buyer spend, richest first.
           </DialogDescription>
