@@ -62,11 +62,24 @@ def init_db():
     global _pool
     if not settings.SUPABASE_DB_URL:
         raise RuntimeError("SUPABASE_DB_URL is not configured")
-    _pool = pg_pool.SimpleConnectionPool(
-        minconn=1,
-        maxconn=5,
-        dsn=settings.SUPABASE_DB_URL,
-    )
+    try:
+        _pool = pg_pool.SimpleConnectionPool(
+            minconn=1,
+            maxconn=5,
+            dsn=settings.SUPABASE_DB_URL,
+        )
+    except psycopg2.OperationalError as exc:
+        # Free-tier Supabase/Neon dev databases auto-pause after a period of
+        # inactivity, and the raw psycopg2 traceback (buried under FastAPI's
+        # nested lifespan frames) is hard to read. Surface a short, actionable
+        # message instead.
+        raise RuntimeError(
+            "Could not connect to the database. If this is the dev "
+            "(Supabase/Neon) database, it has most likely auto-paused after "
+            "inactivity — open the project dashboard and resume/restore it, "
+            "then start the backend again. "
+            f"(original error: {str(exc).strip() or exc.__class__.__name__})"
+        ) from exc
 
 
 def close_db():

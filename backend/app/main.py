@@ -164,7 +164,14 @@ async def lifespan(app: FastAPI):
 
     # Startup: initialise Supabase connection pool + schema
     step_started = perf_counter()
-    init_db()
+    try:
+        init_db()
+    except RuntimeError as exc:
+        # Most commonly the paused dev database (see init_db). Log a clean,
+        # single-line message so it's readable without digging through the
+        # nested lifespan traceback, then re-raise to abort startup.
+        logger.error("Startup aborted: %s", exc)
+        raise
     logger.info("Startup step init_db completed in %.3fs", perf_counter() - step_started)
 
     step_started = perf_counter()
