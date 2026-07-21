@@ -174,6 +174,41 @@ export interface AuctioneerLocation {
     listings: number;
 }
 
+/** Wealth tier a player falls in, by share of the trader population (richest
+ *  first): top 10% (`elite`), next 40% (`mid`), bottom 50% (`regular`). */
+export type WealthTier = "elite" | "mid" | "regular";
+
+/** Gears traded between two wealth tiers (unordered — `a`/`b` are richest-first). */
+export interface WealthFlow {
+    a: WealthTier;
+    b: WealthTier;
+    gears: number;
+}
+
+/**
+ * Market wealth concentration and rich-to-rich trade flows. A player's wealth is
+ * their net seller revenue plus buyer spend; players are ranked and split into
+ * the tiers above. `flows` attributes each sold auction (with a distinct known
+ * seller and buyer) to the unordered pair of their tiers, so it shows how much
+ * value changes hands between the wealthy versus everyone else.
+ */
+export interface WealthConcentration {
+    /** Distinct players that traded (appeared as a seller or buyer). */
+    traderCount: number;
+    /** How many players fall in each tier. */
+    tierPlayerCounts: Record<WealthTier, number>;
+    /** Share of all market wealth held by the elite (top 10%), 0–1. */
+    eliteShareOfWealth: number;
+    /** Gini coefficient of player wealth (0 = equal, →1 = concentrated); null when unmeasurable. */
+    gini: number | null;
+    /** Gears in sold auctions attributed to a tier pair (both parties known & distinct). */
+    matchedGears: number;
+    /** Gears in sold auctions excluded from `flows` (missing/self-trade party). */
+    unmatchedGears: number;
+    /** The six unordered tier-pair buckets, richest-first. */
+    flows: WealthFlow[];
+}
+
 export interface MarketTotals {
     totalAuctions: number;
     activeListings: number;
@@ -258,6 +293,9 @@ export interface AuctionSummary {
     buyHeatmap: HeatmapBin[];
     auctioneers: AuctioneerLocation[];
     heatmapBin: number;
+    /** Wealth concentration & rich-to-rich trade flows. Optional — absent in
+     *  data generated before this metric existed (and any stale cache). */
+    wealth?: WealthConcentration;
 }
 
 export interface ItemCatalogEntry {

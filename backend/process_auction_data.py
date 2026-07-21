@@ -1059,6 +1059,118 @@ def build_time_series(
     return series
 
 
+# Wealth tiers by share of the trader population, richest first. A player's
+# wealth is their net seller revenue plus buyer spend, so both sides of the
+# market count. The tiers split the population into the top 10% ("elite"), the
+# next 40% ("mid") and the bottom 50% ("regular").
+WEALTH_TIERS = ("elite", "mid", "regular")
+WEALTH_TIER_CUTS = (0.10, 0.50)  # cumulative population share at each boundary
+# All six unordered tier pairings, richest-first, for the trade-flow breakdown.
+WEALTH_TIER_PAIRS = (
+    ("elite", "elite"),
+    ("elite", "mid"),
+    ("elite", "regular"),
+    ("mid", "mid"),
+    ("mid", "regular"),
+    ("regular", "regular"),
+)
+
+
+def _gini(values: List[float]) -> Optional[float]:
+    """Gini coefficient (0 = perfectly equal, →1 = one player holds it all) over
+    positive wealth values. None when there's nothing to measure."""
+    vals = sorted(v for v in values if v > 0)
+    n = len(vals)
+    if n == 0:
+        return None
+    total = sum(vals)
+    if total <= 0:
+        return None
+    cum = sum(i * v for i, v in enumerate(vals, start=1))
+    return round((2 * cum) / (n * total) - (n + 1) / n, 3)
+
+
+def build_wealth_concentration(
+    sold: List[Dict[str, Any]],
+    sellers: Dict[str, Dict[str, Any]],
+    buyers: Dict[str, Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Summarise how concentrated the market is and how much value flows between
+    the wealthiest players.
+
+    Wealth per player = net seller revenue + buyer spend. Players are ranked and
+    split into ``elite`` (top 10%), ``mid`` (next 40%) and ``regular`` (bottom
+    50%) tiers. Each sold auction with both a known (distinct) seller and buyer
+    is attributed to the unordered pair of their tiers, so ``flows`` shows what
+    share of gears traded happened between the rich, between rich and the rest,
+    and among everyone else. Self-trades (same player on both sides) are dropped
+    as noise.
+    """
+    wealth: Dict[str, float] = defaultdict(float)
+    for uid, s in sellers.items():
+        wealth[uid] += s["revenue"]
+    for uid, b in buyers.items():
+        wealth[uid] += b["spent"]
+
+    ranked = sorted(wealth.values(), reverse=True)
+    n = len(ranked)
+    total_wealth = sum(ranked)
+
+    # Rank cutoffs (by player count) for each tier boundary.
+    elite_cut = math.ceil(n * WEALTH_TIER_CUTS[0])
+    mid_cut = math.ceil(n * WEALTH_TIER_CUTS[1])
+
+    def tier_of_rank(rank: int) -> str:
+        if rank < elite_cut:
+            return "elite"
+        if rank < mid_cut:
+            return "mid"
+        return "regular"
+
+    # Map each player to a tier by their rank in the wealth order.
+    order = sorted(wealth.items(), key=lambda kv: kv[1], reverse=True)
+    tier_by_uid: Dict[str, str] = {
+        uid: tier_of_rank(i) for i, (uid, _) in enumerate(order)
+    }
+    tier_counts = {t: 0 for t in WEALTH_TIERS}
+    for t in tier_by_uid.values():
+        tier_counts[t] += 1
+
+    elite_wealth = sum(w for uid, w in wealth.items() if tier_by_uid[uid] == "elite")
+
+    # Attribute each matched sale to its unordered (seller, buyer) tier pair.
+    flow_gears: Dict[Tuple[str, str], float] = {p: 0.0 for p in WEALTH_TIER_PAIRS}
+    matched_gears = 0.0
+    unmatched_gears = 0.0
+    for r in sold:
+        su, bu = r.get("sellerUid"), r.get("buyerUid")
+        if not su or not bu or su == bu:
+            unmatched_gears += r["price"]
+            continue
+        ta, tb = tier_by_uid.get(su), tier_by_uid.get(bu)
+        if ta is None or tb is None:
+            unmatched_gears += r["price"]
+            continue
+        key = (ta, tb) if (ta, tb) in flow_gears else (tb, ta)
+        flow_gears[key] += r["price"]
+        matched_gears += r["price"]
+
+    return {
+        "traderCount": n,
+        "tierPlayerCounts": tier_counts,
+        "eliteShareOfWealth": round(elite_wealth / total_wealth, 4)
+        if total_wealth > 0
+        else 0,
+        "gini": _gini(ranked),
+        "matchedGears": round(matched_gears, 2),
+        "unmatchedGears": round(unmatched_gears, 2),
+        "flows": [
+            {"a": a, "b": b, "gears": round(flow_gears[(a, b)], 2)}
+            for (a, b) in WEALTH_TIER_PAIRS
+        ],
+    }
+
+
 def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     clean = [r for r in records if not r["spam"]]
     sold = [r for r in clean if r["sold"]]
@@ -1135,6 +1247,9 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         reverse=True,
     )[:50]
     biggest_sales = sorted(sold, key=lambda r: r["price"], reverse=True)[:50]
+
+    # --- Wealth concentration & rich-to-rich trade flows ------------------ #
+    wealth = build_wealth_concentration(sold, sellers, buyers)
 
     # --- Heatmap bins ----------------------------------------------------- #
     def bin_counts(pairs: List[Tuple[float, float]]) -> List[Dict[str, Any]]:
@@ -1224,6 +1339,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "buyHeatmap": buy_bins,
         "auctioneers": auctioneer_list,
         "heatmapBin": HEATMAP_BIN,
+        "wealth": wealth,
     }
 
 

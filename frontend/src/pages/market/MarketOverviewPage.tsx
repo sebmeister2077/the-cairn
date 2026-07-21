@@ -4,6 +4,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
 import { MarketTrendsChart } from "./MarketTrendsChart";
+import { MarketWealthChart } from "./MarketWealthChart";
 
 function FreshnessBanner({ generatedUtc }: { generatedUtc: string }) {
   const when = new Date(generatedUtc);
@@ -73,7 +74,9 @@ export function MarketOverviewPage() {
         recordingStart={data.recordingStartGameHours}
       />
 
-      <div className="grid md:grid-cols-3 gap-3">
+      <MarketWealthChart wealth={data.wealth} />
+
+      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
         <Link to="/market/listings">
           <Card className="hover:border-primary transition-colors h-full">
             <CardContent className="py-4">
@@ -81,6 +84,36 @@ export function MarketOverviewPage() {
               <p className="text-sm text-muted-foreground">
                 Filter {t.totalAuctions.toLocaleString()} auctions by item, price, category and
                 more.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/market/items">
+          <Card className="hover:border-primary transition-colors h-full">
+            <CardContent className="py-4">
+              <div className="font-medium">Items</div>
+              <p className="text-sm text-muted-foreground">
+                Search every item on the market and jump to its price history.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/market/insights">
+          <Card className="hover:border-primary transition-colors h-full">
+            <CardContent className="py-4">
+              <div className="font-medium">Insights</div>
+              <p className="text-sm text-muted-foreground">
+                Screen items by demand, volatility, liquidity and deals over any time window.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/market/converter">
+          <Card className="hover:border-primary transition-colors h-full">
+            <CardContent className="py-4">
+              <div className="font-medium">Converter</div>
+              <p className="text-sm text-muted-foreground">
+                Work out fair barter rates between any two items from their gear prices.
               </p>
             </CardContent>
           </Card>
@@ -101,6 +134,16 @@ export function MarketOverviewPage() {
               <div className="font-medium">Trade map</div>
               <p className="text-sm text-muted-foreground">
                 Heatmaps of where items are sold and delivered across the world.
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/market/orders">
+          <Card className="hover:border-primary transition-colors h-full">
+            <CardContent className="py-4">
+              <div className="font-medium">Orders</div>
+              <p className="text-sm text-muted-foreground">
+                Community buy &amp; sell orders — post what you have or want and negotiate directly.
               </p>
             </CardContent>
           </Card>

@@ -4,7 +4,7 @@
  <office:meta>
     <meta:generator>LibreOffice/26.2.1.2$Windows_X86_64 LibreOffice_project/620$Build-2</meta:generator>
     <dc:title>Rock pricing model — Aged variants (seed 421943594)</dc:title>
-  <dc:date>2026-06-26T17:30:47.775433500</dc:date><meta:editing-duration>PT1H16M8S</meta:editing-duration><meta:editing-cycles>8</meta:editing-cycles><meta:document-statistic meta:table-count="3" meta:cell-count="309" meta:object-count="0"/></office:meta>
+  <dc:date>2026-07-21T22:01:56.932027900</dc:date><meta:editing-duration>PT1H19M29S</meta:editing-duration><meta:editing-cycles>9</meta:editing-cycles><meta:document-statistic meta:table-count="3" meta:cell-count="309" meta:object-count="0"/></office:meta>
  <office:settings>
   <config:config-item-set config:name="ooo:view-settings">
    <config:config-item config:name="VisibleAreaTop" config:type="int">452</config:config-item>
@@ -52,13 +52,13 @@
        <config:config-item config:name="UseTrailingEmptyLinesInLayout" config:type="boolean">false</config:config-item>
       </config:config-item-map-entry>
       <config:config-item-map-entry config:name="Prices">
-       <config:config-item config:name="CursorPositionX" config:type="int">23</config:config-item>
-       <config:config-item config:name="CursorPositionY" config:type="int">9</config:config-item>
+       <config:config-item config:name="CursorPositionX" config:type="int">19</config:config-item>
+       <config:config-item config:name="CursorPositionY" config:type="int">13</config:config-item>
        <config:config-item config:name="ActiveSplitRange" config:type="short">2</config:config-item>
-       <config:config-item config:name="PositionLeft" config:type="int">0</config:config-item>
+       <config:config-item config:name="PositionLeft" config:type="int">10</config:config-item>
        <config:config-item config:name="PositionRight" config:type="int">0</config:config-item>
        <config:config-item config:name="PositionTop" config:type="int">0</config:config-item>
-       <config:config-item config:name="PositionBottom" config:type="int">6</config:config-item>
+       <config:config-item config:name="PositionBottom" config:type="int">0</config:config-item>
        <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
        <config:config-item config:name="ZoomValue" config:type="int">110</config:config-item>
        <config:config-item config:name="PageViewZoomValue" config:type="int">60</config:config-item>
@@ -70,7 +70,7 @@
        <config:config-item config:name="UseTrailingEmptyLinesInLayout" config:type="boolean">false</config:config-item>
       </config:config-item-map-entry>
      </config:config-item-map-named>
-     <config:config-item config:name="ActiveTable" config:type="string">Clay Prices</config:config-item>
+     <config:config-item config:name="ActiveTable" config:type="string">Prices</config:config-item>
      <config:config-item config:name="HorizontalScrollbarWidth" config:type="int">1855</config:config-item>
      <config:config-item config:name="ZoomType" config:type="short">0</config:config-item>
      <config:config-item config:name="ZoomValue" config:type="int">110</config:config-item>
@@ -95,7 +95,7 @@
      <config:config-item config:name="RasterSubdivisionY" config:type="int">1</config:config-item>
      <config:config-item config:name="IsRasterAxisSynchronized" config:type="boolean">true</config:config-item>
      <config:config-item config:name="FormulaBarHeight" config:type="short">1</config:config-item>
-     <config:config-item config:name="WindowState" config:type="string">1920,23,1920,1017;4;,,,;</config:config-item>
+     <config:config-item config:name="WindowState" config:type="string">0,23,1920,1017;4;,,,;</config:config-item>
      <config:config-item config:name="AnchoredTextOverflowLegacy" config:type="boolean">false</config:config-item>
      <config:config-item config:name="LegacySingleLineFontwork" config:type="boolean">false</config:config-item>
      <config:config-item config:name="ConnectorUseSnapRect" config:type="boolean">false</config:config-item>
@@ -151,7 +151,7 @@
      <config:config-item config:name="CodeName" config:type="string">How to use</config:config-item>
     </config:config-item-map-entry>
     <config:config-item-map-entry config:name="Clay Prices">
-     <config:config-item config:name="CodeName" config:type="string">Sheet3</config:config-item>
+     <config:config-item config:name="CodeName" config:type="string">Clay Prices</config:config-item>
     </config:config-item-map-entry>
    </config:config-item-map-named>
   </config:config-item-set>
@@ -286,59 +286,11 @@
   </loext:theme>
  </office:styles>
  <office:automatic-styles>
-  <style:style style:name="co1" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="2.7398in"/>
-  </style:style>
-  <style:style style:name="co2" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.7465in"/>
-  </style:style>
-  <style:style style:name="co3" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.7827in"/>
-  </style:style>
-  <style:style style:name="co4" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.9016in"/>
-  </style:style>
-  <style:style style:name="co5" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.8661in"/>
-  </style:style>
-  <style:style style:name="co6" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.8898in"/>
-  </style:style>
-  <style:style style:name="co7" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.1402in"/>
-  </style:style>
-  <style:style style:name="co8" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.9972in"/>
-  </style:style>
-  <style:style style:name="co9" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.961in"/>
-  </style:style>
-  <style:style style:name="co10" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.2709in"/>
-  </style:style>
-  <style:style style:name="co11" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.1283in"/>
-  </style:style>
-  <style:style style:name="co12" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.0925in"/>
+  <style:style style:name="co18" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.7717in"/>
   </style:style>
   <style:style style:name="co13" style:family="table-column">
    <style:table-column-properties fo:break-before="auto" style:column-width="0.889in"/>
-  </style:style>
-  <style:style style:name="co14" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="0.6146in"/>
-  </style:style>
-  <style:style style:name="co15" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.3654in"/>
-  </style:style>
-  <style:style style:name="co16" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="3.1665in"/>
-  </style:style>
-  <style:style style:name="co17" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="3.3917in"/>
-  </style:style>
-  <style:style style:name="co18" style:family="table-column">
-   <style:table-column-properties fo:break-before="auto" style:column-width="1.7717in"/>
   </style:style>
   <style:style style:name="co19" style:family="table-column">
    <style:table-column-properties fo:break-before="auto" style:column-width="0.7535in"/>
@@ -348,6 +300,54 @@
   </style:style>
   <style:style style:name="co21" style:family="table-column">
    <style:table-column-properties fo:break-before="auto" style:column-width="1.2083in"/>
+  </style:style>
+  <style:style style:name="co6" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="2.7398in"/>
+  </style:style>
+  <style:style style:name="co7" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.7465in"/>
+  </style:style>
+  <style:style style:name="co8" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.7827in"/>
+  </style:style>
+  <style:style style:name="co9" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.9016in"/>
+  </style:style>
+  <style:style style:name="co10" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.8661in"/>
+  </style:style>
+  <style:style style:name="co11" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.8898in"/>
+  </style:style>
+  <style:style style:name="co12" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.1402in"/>
+  </style:style>
+  <style:style style:name="co14" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.9972in"/>
+  </style:style>
+  <style:style style:name="co15" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.961in"/>
+  </style:style>
+  <style:style style:name="co16" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.2709in"/>
+  </style:style>
+  <style:style style:name="co17" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.1283in"/>
+  </style:style>
+  <style:style style:name="co22" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.0925in"/>
+  </style:style>
+  <style:style style:name="co23" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="0.6146in"/>
+  </style:style>
+  <style:style style:name="co24" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="1.3654in"/>
+  </style:style>
+  <style:style style:name="co25" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="3.1665in"/>
+  </style:style>
+  <style:style style:name="co26" style:family="table-column">
+   <style:table-column-properties fo:break-before="auto" style:column-width="3.3917in"/>
   </style:style>
   <style:style style:name="ro1" style:family="table-row">
    <style:table-row-properties style:row-height="0.2409in" fo:break-before="auto" style:use-optimal-row-height="true"/>
@@ -389,11 +389,61 @@
   <style:style style:name="ce3" style:family="table-cell" style:parent-style-name="Default">
    <style:text-properties fo:font-size="14pt" fo:font-weight="bold"/>
   </style:style>
+  <style:style style:name="ce6" style:family="table-cell" style:parent-style-name="Default">
+   <style:text-properties fo:font-weight="bold"/>
+  </style:style>
+  <style:style style:name="ce42" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+   <style:table-cell-properties style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce43" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+   <style:table-cell-properties fo:background-color="#ffd8ce" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce44" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+   <style:table-cell-properties fo:background-color="#729fcf" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce45" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+   <style:table-cell-properties fo:background-color="#be480a" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce46" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+   <style:table-cell-properties fo:background-color="#333333" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce47" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties style:text-align-source="fix" style:repeat-content="false"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce48" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce49" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#ffd8ce" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce50" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#729fcf" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce51" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#be480a" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce52" style:family="table-cell" style:parent-style-name="Default">
+   <style:table-cell-properties fo:background-color="#333333" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
+   <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
+  </style:style>
+  <style:style style:name="ce31" style:family="table-cell" style:parent-style-name="Default">
+   <style:text-properties fo:font-size="14pt" fo:font-weight="bold"/>
+  </style:style>
   <style:style style:name="section" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#bdd7ee"/>
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
-  <style:style style:name="ce6" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce33" style:family="table-cell" style:parent-style-name="Default">
    <style:text-properties fo:font-weight="bold"/>
   </style:style>
   <style:style style:name="header" style:family="table-cell" style:parent-style-name="Default">
@@ -466,47 +516,47 @@
   <style:style style:name="ce18" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N1">
    <style:text-properties style:text-underline-style="none"/>
   </style:style>
-  <style:style style:name="ce42" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+  <style:style style:name="ce66" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
    <style:table-cell-properties style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce43" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+  <style:style style:name="ce67" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
    <style:table-cell-properties fo:background-color="#ffd8ce" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce44" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+  <style:style style:name="ce68" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
    <style:table-cell-properties fo:background-color="#729fcf" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce45" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+  <style:style style:name="ce69" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
    <style:table-cell-properties fo:background-color="#be480a" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce46" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
+  <style:style style:name="ce70" style:family="table-cell" style:parent-style-name="Default" style:data-style-name="N0">
    <style:table-cell-properties fo:background-color="#333333" style:diagonal-bl-tr="none" style:diagonal-tl-br="none" style:text-align-source="fix" style:repeat-content="false" fo:wrap-option="no-wrap" fo:border="0.51pt solid #000000" style:direction="ltr" fo:padding="0.0138in" style:rotation-angle="0" style:rotation-align="none" style:vertical-align="automatic"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce47" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce71" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties style:text-align-source="fix" style:repeat-content="false"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce48" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce72" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce49" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce73" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#ffd8ce" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce50" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce74" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#729fcf" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce51" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce75" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#be480a" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
-  <style:style style:name="ce52" style:family="table-cell" style:parent-style-name="Default">
+  <style:style style:name="ce76" style:family="table-cell" style:parent-style-name="Default">
    <style:table-cell-properties fo:background-color="#333333" style:text-align-source="fix" style:repeat-content="false" fo:border="0.74pt solid #000000"/>
    <style:paragraph-properties fo:text-align="center" fo:margin-left="0in"/>
   </style:style>
@@ -552,7 +602,7 @@
      <text:p><text:sheet-name>???</text:sheet-name><text:s/>(<text:title>???</text:title>)</text:p>
     </style:region-left>
     <style:region-right>
-     <text:p><text:date style:data-style-name="N2" text:date-value="2026-06-26">00/00/0000</text:date>, <text:time style:data-style-name="N2" text:time-value="17:16:35.485195000">00:00:00</text:time></text:p>
+     <text:p><text:date style:data-style-name="N2" text:date-value="2026-07-21">00/00/0000</text:date>, <text:time style:data-style-name="N2" text:time-value="21:58:35.780232600">00:00:00</text:time></text:p>
     </style:region-right>
    </style:header>
    <style:header-left style:display="false"/>
@@ -568,28 +618,28 @@
   <office:spreadsheet>
    <table:calculation-settings table:case-sensitive="false" table:automatic-find-labels="false" table:use-regular-expressions="false" table:use-wildcards="true"/>
    <table:table table:name="Prices" table:style-name="ta1">
-    <table:table-column table:style-name="co1" table:default-cell-style-name="ce5"/>
-    <table:table-column table:style-name="co2" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co3" table:default-cell-style-name="num-cell"/>
-    <table:table-column table:style-name="co4" table:default-cell-style-name="num-cell"/>
-    <table:table-column table:style-name="co5" table:default-cell-style-name="pct-cell"/>
-    <table:table-column table:style-name="co6" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co6" table:default-cell-style-name="ce5"/>
     <table:table-column table:style-name="co7" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co8" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co9" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co10" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co8" table:default-cell-style-name="num-cell"/>
+    <table:table-column table:style-name="co9" table:default-cell-style-name="num-cell"/>
+    <table:table-column table:style-name="co10" table:default-cell-style-name="pct-cell"/>
     <table:table-column table:style-name="co11" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co12" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co10" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co11" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co12" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co13" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co14" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co15" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co16" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co17" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co22" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co16" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co17" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co22" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co13" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co23" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co24" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co25" table:default-cell-style-name="Default"/>
+    <table:table-column table:style-name="co26" table:default-cell-style-name="Default"/>
     <table:table-row table:style-name="ro1">
-     <table:table-cell table:style-name="ce3" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce31" office:value-type="string" calcext:value-type="string">
       <text:p>Rock pricing model — Aged variants (based on tops seed)</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -616,20 +666,20 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Base price (Aged Granite Ashlar)</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
-      <text:p>3.00</text:p>
+     <table:table-cell table:style-name="config-val" office:value-type="float" office:value="18" calcext:value-type="float">
+      <text:p>18.00</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" office:value-type="string" calcext:value-type="string">
-      <text:p>rusty gears per block</text:p>
+      <text:p>rusty gears</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="2"/>
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Igneous boost multiplier</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
@@ -646,7 +696,7 @@
      <table:table-cell table:number-columns-repeated="13"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Polished multiplier (× ashlar)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="3" calcext:value-type="float">
@@ -659,7 +709,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Cracked/Cobbled multiplier (× ashlar)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="config-val" office:value-type="float" office:value="8" calcext:value-type="float">
@@ -672,7 +722,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Granite boosted % (auto)</text:p>
      </table:table-cell>
      <table:table-cell table:style-name="pct-cell" table:formula="of:=VLOOKUP(&quot;rock-granite&quot;;[.A13:.E25];5;0)" office:value-type="percentage" office:value="0.428733889619667" calcext:value-type="percentage">
@@ -787,32 +837,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E13]=0;0;[.$B$8]/[.E13])" office:value-type="float" office:value="3.24313730335482" calcext:value-type="float">
       <text:p>3.24</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F13];0)" office:value-type="float" office:value="10" calcext:value-type="float">
-      <text:p>10</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F13];0)" office:value-type="float" office:value="58" calcext:value-type="float">
+      <text:p>58</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F13]);0)" office:value-type="float" office:value="5" calcext:value-type="float">
-      <text:p>5</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F13]);0)" office:value-type="float" office:value="32" calcext:value-type="float">
+      <text:p>32</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))));0)" office:value-type="float" office:value="7" calcext:value-type="float">
-      <text:p>7</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))));0)" office:value-type="float" office:value="39" calcext:value-type="float">
+      <text:p>39</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F13]*[.$B$6];0)" office:value-type="float" office:value="29" calcext:value-type="float">
-      <text:p>29</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F13]*[.$B$6];0)" office:value-type="float" office:value="175" calcext:value-type="float">
+      <text:p>175</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F13])*[.$B$6];0)" office:value-type="float" office:value="16" calcext:value-type="float">
-      <text:p>16</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F13])*[.$B$6];0)" office:value-type="float" office:value="97" calcext:value-type="float">
+      <text:p>97</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="20" calcext:value-type="float">
-      <text:p>20</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="118" calcext:value-type="float">
+      <text:p>118</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F13]*[.$B$7];0)" office:value-type="float" office:value="78" calcext:value-type="float">
-      <text:p>78</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F13]*[.$B$7];0)" office:value-type="float" office:value="467" calcext:value-type="float">
+      <text:p>467</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F13])*[.$B$7];0)" office:value-type="float" office:value="43" calcext:value-type="float">
-      <text:p>43</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F13])*[.$B$7];0)" office:value-type="float" office:value="259" calcext:value-type="float">
+      <text:p>259</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="52" calcext:value-type="float">
-      <text:p>52</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F13];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="313" calcext:value-type="float">
+      <text:p>313</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
@@ -844,32 +894,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E14]=0;0;[.$B$8]/[.E14])" office:value-type="float" office:value="30.8286908350624" calcext:value-type="float">
       <text:p>30.83</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F14];0)" office:value-type="float" office:value="92" calcext:value-type="float">
-      <text:p>92</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F14];0)" office:value-type="float" office:value="555" calcext:value-type="float">
+      <text:p>555</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F14]);0)" office:value-type="float" office:value="17" calcext:value-type="float">
-      <text:p>17</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F14]);0)" office:value-type="float" office:value="100" calcext:value-type="float">
+      <text:p>100</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))));0)" office:value-type="float" office:value="13" calcext:value-type="float">
-      <text:p>13</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))));0)" office:value-type="float" office:value="80" calcext:value-type="float">
+      <text:p>80</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F14]*[.$B$6];0)" office:value-type="float" office:value="277" calcext:value-type="float">
-      <text:p>277</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F14]*[.$B$6];0)" office:value-type="float" office:value="1665" calcext:value-type="float">
+      <text:p>1,665</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F14])*[.$B$6];0)" office:value-type="float" office:value="50" calcext:value-type="float">
-      <text:p>50</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F14])*[.$B$6];0)" office:value-type="float" office:value="300" calcext:value-type="float">
+      <text:p>300</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="40" calcext:value-type="float">
-      <text:p>40</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="239" calcext:value-type="float">
+      <text:p>239</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F14]*[.$B$7];0)" office:value-type="float" office:value="740" calcext:value-type="float">
-      <text:p>740</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F14]*[.$B$7];0)" office:value-type="float" office:value="4439" calcext:value-type="float">
+      <text:p>4,439</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F14])*[.$B$7];0)" office:value-type="float" office:value="133" calcext:value-type="float">
-      <text:p>133</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F14])*[.$B$7];0)" office:value-type="float" office:value="800" calcext:value-type="float">
+      <text:p>800</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="106" calcext:value-type="float">
-      <text:p>106</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F14];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="638" calcext:value-type="float">
+      <text:p>638</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell table:style-name="ce14" office:value-type="string" calcext:value-type="string">
@@ -903,32 +953,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E15]=0;0;[.$B$8]/[.E15])" office:value-type="float" office:value="37.7577737287526" calcext:value-type="float">
       <text:p>37.76</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F15];0)" office:value-type="float" office:value="113" calcext:value-type="float">
-      <text:p>113</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F15];0)" office:value-type="float" office:value="680" calcext:value-type="float">
+      <text:p>680</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F15]);0)" office:value-type="float" office:value="18" calcext:value-type="float">
-      <text:p>18</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))));0)" office:value-type="float" office:value="14" calcext:value-type="float">
-      <text:p>14</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F15]*[.$B$6];0)" office:value-type="float" office:value="340" calcext:value-type="float">
-      <text:p>340</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F15])*[.$B$6];0)" office:value-type="float" office:value="55" calcext:value-type="float">
-      <text:p>55</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="42" calcext:value-type="float">
-      <text:p>42</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F15]*[.$B$7];0)" office:value-type="float" office:value="906" calcext:value-type="float">
-      <text:p>906</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F15])*[.$B$7];0)" office:value-type="float" office:value="147" calcext:value-type="float">
-      <text:p>147</text:p>
-     </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="111" calcext:value-type="float">
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F15]);0)" office:value-type="float" office:value="111" calcext:value-type="float">
       <text:p>111</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))));0)" office:value-type="float" office:value="83" calcext:value-type="float">
+      <text:p>83</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F15]*[.$B$6];0)" office:value-type="float" office:value="2039" calcext:value-type="float">
+      <text:p>2,039</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F15])*[.$B$6];0)" office:value-type="float" office:value="332" calcext:value-type="float">
+      <text:p>332</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="250" calcext:value-type="float">
+      <text:p>250</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F15]*[.$B$7];0)" office:value-type="float" office:value="5437" calcext:value-type="float">
+      <text:p>5,437</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F15])*[.$B$7];0)" office:value-type="float" office:value="885" calcext:value-type="float">
+      <text:p>885</text:p>
+     </table:table-cell>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F15];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="667" calcext:value-type="float">
+      <text:p>667</text:p>
      </table:table-cell>
      <table:table-cell/>
      <table:table-cell table:style-name="ce15" office:value-type="string" calcext:value-type="string">
@@ -961,32 +1011,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E16]=0;0;[.$B$8]/[.E16])" office:value-type="float" office:value="53.7430940640516" calcext:value-type="float">
       <text:p>53.74</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F16];0)" office:value-type="float" office:value="161" calcext:value-type="float">
-      <text:p>161</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F16];0)" office:value-type="float" office:value="967" calcext:value-type="float">
+      <text:p>967</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F16]);0)" office:value-type="float" office:value="22" calcext:value-type="float">
-      <text:p>22</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F16]);0)" office:value-type="float" office:value="132" calcext:value-type="float">
+      <text:p>132</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))));0)" office:value-type="float" office:value="15" calcext:value-type="float">
-      <text:p>15</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))));0)" office:value-type="float" office:value="90" calcext:value-type="float">
+      <text:p>90</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F16]*[.$B$6];0)" office:value-type="float" office:value="484" calcext:value-type="float">
-      <text:p>484</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F16]*[.$B$6];0)" office:value-type="float" office:value="2902" calcext:value-type="float">
+      <text:p>2,902</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F16])*[.$B$6];0)" office:value-type="float" office:value="66" calcext:value-type="float">
-      <text:p>66</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F16])*[.$B$6];0)" office:value-type="float" office:value="396" calcext:value-type="float">
+      <text:p>396</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="45" calcext:value-type="float">
-      <text:p>45</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="269" calcext:value-type="float">
+      <text:p>269</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F16]*[.$B$7];0)" office:value-type="float" office:value="1290" calcext:value-type="float">
-      <text:p>1,290</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F16]*[.$B$7];0)" office:value-type="float" office:value="7739" calcext:value-type="float">
+      <text:p>7,739</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F16])*[.$B$7];0)" office:value-type="float" office:value="176" calcext:value-type="float">
-      <text:p>176</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F16])*[.$B$7];0)" office:value-type="float" office:value="1056" calcext:value-type="float">
+      <text:p>1,056</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="120" calcext:value-type="float">
-      <text:p>120</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F16];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="718" calcext:value-type="float">
+      <text:p>718</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="4"/>
      <table:table-cell table:style-name="ce18"/>
@@ -1010,32 +1060,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E17]=0;0;[.$B$8]/[.E17])" office:value-type="float" office:value="23.9328703527821" calcext:value-type="float">
       <text:p>23.93</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F17];0)" office:value-type="float" office:value="72" calcext:value-type="float">
-      <text:p>72</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F17];0)" office:value-type="float" office:value="431" calcext:value-type="float">
+      <text:p>431</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F17]);0)" office:value-type="float" office:value="15" calcext:value-type="float">
-      <text:p>15</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F17]);0)" office:value-type="float" office:value="88" calcext:value-type="float">
+      <text:p>88</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))));0)" office:value-type="float" office:value="13" calcext:value-type="float">
-      <text:p>13</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))));0)" office:value-type="float" office:value="75" calcext:value-type="float">
+      <text:p>75</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F17]*[.$B$6];0)" office:value-type="float" office:value="215" calcext:value-type="float">
-      <text:p>215</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F17]*[.$B$6];0)" office:value-type="float" office:value="1292" calcext:value-type="float">
+      <text:p>1,292</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F17])*[.$B$6];0)" office:value-type="float" office:value="44" calcext:value-type="float">
-      <text:p>44</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F17])*[.$B$6];0)" office:value-type="float" office:value="264" calcext:value-type="float">
+      <text:p>264</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="38" calcext:value-type="float">
-      <text:p>38</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="225" calcext:value-type="float">
+      <text:p>225</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F17]*[.$B$7];0)" office:value-type="float" office:value="574" calcext:value-type="float">
-      <text:p>574</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F17]*[.$B$7];0)" office:value-type="float" office:value="3446" calcext:value-type="float">
+      <text:p>3,446</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F17])*[.$B$7];0)" office:value-type="float" office:value="117" calcext:value-type="float">
-      <text:p>117</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F17])*[.$B$7];0)" office:value-type="float" office:value="704" calcext:value-type="float">
+      <text:p>704</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="100" calcext:value-type="float">
-      <text:p>100</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F17];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="601" calcext:value-type="float">
+      <text:p>601</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1058,32 +1108,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E18]=0;0;[.$B$8]/[.E18])" office:value-type="float" office:value="5.50553904775222" calcext:value-type="float">
       <text:p>5.51</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F18];0)" office:value-type="float" office:value="17" calcext:value-type="float">
-      <text:p>17</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F18];0)" office:value-type="float" office:value="99" calcext:value-type="float">
+      <text:p>99</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F18]);0)" office:value-type="float" office:value="7" calcext:value-type="float">
-      <text:p>7</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F18]);0)" office:value-type="float" office:value="42" calcext:value-type="float">
+      <text:p>42</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))));0)" office:value-type="float" office:value="8" calcext:value-type="float">
-      <text:p>8</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))));0)" office:value-type="float" office:value="49" calcext:value-type="float">
+      <text:p>49</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F18]*[.$B$6];0)" office:value-type="float" office:value="50" calcext:value-type="float">
-      <text:p>50</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F18]*[.$B$6];0)" office:value-type="float" office:value="297" calcext:value-type="float">
+      <text:p>297</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F18])*[.$B$6];0)" office:value-type="float" office:value="21" calcext:value-type="float">
-      <text:p>21</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F18])*[.$B$6];0)" office:value-type="float" office:value="127" calcext:value-type="float">
+      <text:p>127</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="24" calcext:value-type="float">
-      <text:p>24</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="146" calcext:value-type="float">
+      <text:p>146</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F18]*[.$B$7];0)" office:value-type="float" office:value="132" calcext:value-type="float">
-      <text:p>132</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F18]*[.$B$7];0)" office:value-type="float" office:value="793" calcext:value-type="float">
+      <text:p>793</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F18])*[.$B$7];0)" office:value-type="float" office:value="56" calcext:value-type="float">
-      <text:p>56</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F18])*[.$B$7];0)" office:value-type="float" office:value="338" calcext:value-type="float">
+      <text:p>338</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="65" calcext:value-type="float">
-      <text:p>65</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F18];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="390" calcext:value-type="float">
+      <text:p>390</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1106,32 +1156,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E19]=0;0;[.$B$8]/[.E19])" office:value-type="float" office:value="11.918529589829" calcext:value-type="float">
       <text:p>11.92</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F19];0)" office:value-type="float" office:value="36" calcext:value-type="float">
-      <text:p>36</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F19];0)" office:value-type="float" office:value="215" calcext:value-type="float">
+      <text:p>215</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F19]);0)" office:value-type="float" office:value="10" calcext:value-type="float">
-      <text:p>10</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F19]);0)" office:value-type="float" office:value="62" calcext:value-type="float">
+      <text:p>62</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))));0)" office:value-type="float" office:value="10" calcext:value-type="float">
-      <text:p>10</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))));0)" office:value-type="float" office:value="63" calcext:value-type="float">
+      <text:p>63</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F19]*[.$B$6];0)" office:value-type="float" office:value="107" calcext:value-type="float">
-      <text:p>107</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F19]*[.$B$6];0)" office:value-type="float" office:value="644" calcext:value-type="float">
+      <text:p>644</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F19])*[.$B$6];0)" office:value-type="float" office:value="31" calcext:value-type="float">
-      <text:p>31</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F19])*[.$B$6];0)" office:value-type="float" office:value="186" calcext:value-type="float">
+      <text:p>186</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="31" calcext:value-type="float">
-      <text:p>31</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="188" calcext:value-type="float">
+      <text:p>188</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F19]*[.$B$7];0)" office:value-type="float" office:value="286" calcext:value-type="float">
-      <text:p>286</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F19]*[.$B$7];0)" office:value-type="float" office:value="1716" calcext:value-type="float">
+      <text:p>1,716</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F19])*[.$B$7];0)" office:value-type="float" office:value="83" calcext:value-type="float">
-      <text:p>83</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F19])*[.$B$7];0)" office:value-type="float" office:value="497" calcext:value-type="float">
+      <text:p>497</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="83" calcext:value-type="float">
-      <text:p>83</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F19];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="501" calcext:value-type="float">
+      <text:p>501</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1154,32 +1204,32 @@
      <table:table-cell table:style-name="ce25" table:formula="of:=IF([.E20]=0;0;[.$B$8]/[.E20])" office:value-type="float" office:value="1" calcext:value-type="float">
       <text:p>1.00</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*[.F20];0)" office:value-type="float" office:value="3" calcext:value-type="float">
-      <text:p>3</text:p>
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*[.F20];0)" office:value-type="float" office:value="18" calcext:value-type="float">
+      <text:p>18</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*SQRT([.F20]);0)" office:value-type="float" office:value="3" calcext:value-type="float">
-      <text:p>3</text:p>
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND([.$B$4]*SQRT([.F20]);0)" office:value-type="float" office:value="18" calcext:value-type="float">
+      <text:p>18</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))));0)" office:value-type="float" office:value="3" calcext:value-type="float">
-      <text:p>3</text:p>
+     <table:table-cell table:style-name="ce27" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))));0)" office:value-type="float" office:value="18" calcext:value-type="float">
+      <text:p>18</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
-      <text:p>9</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$6];0)" office:value-type="float" office:value="54" calcext:value-type="float">
+      <text:p>54</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
-      <text:p>9</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$6];0)" office:value-type="float" office:value="54" calcext:value-type="float">
+      <text:p>54</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="9" calcext:value-type="float">
-      <text:p>9</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="54" calcext:value-type="float">
+      <text:p>54</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
-      <text:p>24</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*[.F20]*[.$B$7];0)" office:value-type="float" office:value="144" calcext:value-type="float">
+      <text:p>144</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
-      <text:p>24</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND([.$B$4]*SQRT([.F20])*[.$B$7];0)" office:value-type="float" office:value="144" calcext:value-type="float">
+      <text:p>144</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="24" calcext:value-type="float">
-      <text:p>24</text:p>
+     <table:table-cell table:style-name="ce22" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F20];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="144" calcext:value-type="float">
+      <text:p>144</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1202,32 +1252,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E21]=0;0;[.$B$8]/[.E21])" office:value-type="float" office:value="19.0081950889813" calcext:value-type="float">
       <text:p>19.01</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F21];0)" office:value-type="float" office:value="57" calcext:value-type="float">
-      <text:p>57</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F21];0)" office:value-type="float" office:value="342" calcext:value-type="float">
+      <text:p>342</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F21]);0)" office:value-type="float" office:value="13" calcext:value-type="float">
-      <text:p>13</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F21]);0)" office:value-type="float" office:value="78" calcext:value-type="float">
+      <text:p>78</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))));0)" office:value-type="float" office:value="12" calcext:value-type="float">
-      <text:p>12</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))));0)" office:value-type="float" office:value="71" calcext:value-type="float">
+      <text:p>71</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F21]*[.$B$6];0)" office:value-type="float" office:value="171" calcext:value-type="float">
-      <text:p>171</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F21]*[.$B$6];0)" office:value-type="float" office:value="1026" calcext:value-type="float">
+      <text:p>1,026</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F21])*[.$B$6];0)" office:value-type="float" office:value="39" calcext:value-type="float">
-      <text:p>39</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F21])*[.$B$6];0)" office:value-type="float" office:value="235" calcext:value-type="float">
+      <text:p>235</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="36" calcext:value-type="float">
-      <text:p>36</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="213" calcext:value-type="float">
+      <text:p>213</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F21]*[.$B$7];0)" office:value-type="float" office:value="456" calcext:value-type="float">
-      <text:p>456</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F21]*[.$B$7];0)" office:value-type="float" office:value="2737" calcext:value-type="float">
+      <text:p>2,737</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F21])*[.$B$7];0)" office:value-type="float" office:value="105" calcext:value-type="float">
-      <text:p>105</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F21])*[.$B$7];0)" office:value-type="float" office:value="628" calcext:value-type="float">
+      <text:p>628</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="95" calcext:value-type="float">
-      <text:p>95</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F21];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="568" calcext:value-type="float">
+      <text:p>568</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1250,32 +1300,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E22]=0;0;[.$B$8]/[.E22])" office:value-type="float" office:value="3.50305616537992" calcext:value-type="float">
       <text:p>3.50</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F22];0)" office:value-type="float" office:value="11" calcext:value-type="float">
-      <text:p>11</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F22];0)" office:value-type="float" office:value="63" calcext:value-type="float">
+      <text:p>63</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F22]);0)" office:value-type="float" office:value="6" calcext:value-type="float">
-      <text:p>6</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F22]);0)" office:value-type="float" office:value="34" calcext:value-type="float">
+      <text:p>34</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))));0)" office:value-type="float" office:value="7" calcext:value-type="float">
-      <text:p>7</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))));0)" office:value-type="float" office:value="41" calcext:value-type="float">
+      <text:p>41</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F22]*[.$B$6];0)" office:value-type="float" office:value="32" calcext:value-type="float">
-      <text:p>32</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F22]*[.$B$6];0)" office:value-type="float" office:value="189" calcext:value-type="float">
+      <text:p>189</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F22])*[.$B$6];0)" office:value-type="float" office:value="17" calcext:value-type="float">
-      <text:p>17</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F22])*[.$B$6];0)" office:value-type="float" office:value="101" calcext:value-type="float">
+      <text:p>101</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="20" calcext:value-type="float">
-      <text:p>20</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="122" calcext:value-type="float">
+      <text:p>122</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F22]*[.$B$7];0)" office:value-type="float" office:value="84" calcext:value-type="float">
-      <text:p>84</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F22]*[.$B$7];0)" office:value-type="float" office:value="504" calcext:value-type="float">
+      <text:p>504</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F22])*[.$B$7];0)" office:value-type="float" office:value="45" calcext:value-type="float">
-      <text:p>45</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F22])*[.$B$7];0)" office:value-type="float" office:value="270" calcext:value-type="float">
+      <text:p>270</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="54" calcext:value-type="float">
-      <text:p>54</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F22];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="325" calcext:value-type="float">
+      <text:p>325</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1298,32 +1348,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E23]=0;0;[.$B$8]/[.E23])" office:value-type="float" office:value="7.09531210931429" calcext:value-type="float">
       <text:p>7.10</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F23];0)" office:value-type="float" office:value="21" calcext:value-type="float">
-      <text:p>21</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F23];0)" office:value-type="float" office:value="128" calcext:value-type="float">
+      <text:p>128</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F23]);0)" office:value-type="float" office:value="8" calcext:value-type="float">
-      <text:p>8</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F23]);0)" office:value-type="float" office:value="48" calcext:value-type="float">
+      <text:p>48</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))));0)" office:value-type="float" office:value="9" calcext:value-type="float">
-      <text:p>9</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))));0)" office:value-type="float" office:value="53" calcext:value-type="float">
+      <text:p>53</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F23]*[.$B$6];0)" office:value-type="float" office:value="64" calcext:value-type="float">
-      <text:p>64</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F23]*[.$B$6];0)" office:value-type="float" office:value="383" calcext:value-type="float">
+      <text:p>383</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F23])*[.$B$6];0)" office:value-type="float" office:value="24" calcext:value-type="float">
-      <text:p>24</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F23])*[.$B$6];0)" office:value-type="float" office:value="144" calcext:value-type="float">
+      <text:p>144</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="27" calcext:value-type="float">
-      <text:p>27</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="160" calcext:value-type="float">
+      <text:p>160</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F23]*[.$B$7];0)" office:value-type="float" office:value="170" calcext:value-type="float">
-      <text:p>170</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F23]*[.$B$7];0)" office:value-type="float" office:value="1022" calcext:value-type="float">
+      <text:p>1,022</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F23])*[.$B$7];0)" office:value-type="float" office:value="64" calcext:value-type="float">
-      <text:p>64</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F23])*[.$B$7];0)" office:value-type="float" office:value="384" calcext:value-type="float">
+      <text:p>384</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="71" calcext:value-type="float">
-      <text:p>71</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F23];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="426" calcext:value-type="float">
+      <text:p>426</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1346,32 +1396,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E24]=0;0;[.$B$8]/[.E24])" office:value-type="float" office:value="9.75025305601902" calcext:value-type="float">
       <text:p>9.75</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F24];0)" office:value-type="float" office:value="29" calcext:value-type="float">
-      <text:p>29</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F24];0)" office:value-type="float" office:value="176" calcext:value-type="float">
+      <text:p>176</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F24]);0)" office:value-type="float" office:value="9" calcext:value-type="float">
-      <text:p>9</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F24]);0)" office:value-type="float" office:value="56" calcext:value-type="float">
+      <text:p>56</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))));0)" office:value-type="float" office:value="10" calcext:value-type="float">
-      <text:p>10</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))));0)" office:value-type="float" office:value="59" calcext:value-type="float">
+      <text:p>59</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F24]*[.$B$6];0)" office:value-type="float" office:value="88" calcext:value-type="float">
-      <text:p>88</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F24]*[.$B$6];0)" office:value-type="float" office:value="527" calcext:value-type="float">
+      <text:p>527</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F24])*[.$B$6];0)" office:value-type="float" office:value="28" calcext:value-type="float">
-      <text:p>28</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F24])*[.$B$6];0)" office:value-type="float" office:value="169" calcext:value-type="float">
+      <text:p>169</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="29" calcext:value-type="float">
-      <text:p>29</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="177" calcext:value-type="float">
+      <text:p>177</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F24]*[.$B$7];0)" office:value-type="float" office:value="234" calcext:value-type="float">
-      <text:p>234</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F24]*[.$B$7];0)" office:value-type="float" office:value="1404" calcext:value-type="float">
+      <text:p>1,404</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F24])*[.$B$7];0)" office:value-type="float" office:value="75" calcext:value-type="float">
-      <text:p>75</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F24])*[.$B$7];0)" office:value-type="float" office:value="450" calcext:value-type="float">
+      <text:p>450</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="79" calcext:value-type="float">
-      <text:p>79</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F24];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="472" calcext:value-type="float">
+      <text:p>472</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1394,32 +1444,32 @@
      <table:table-cell table:style-name="num2-cell" table:formula="of:=IF([.E25]=0;0;[.$B$8]/[.E25])" office:value-type="float" office:value="17.336567833692" calcext:value-type="float">
       <text:p>17.34</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F25];0)" office:value-type="float" office:value="52" calcext:value-type="float">
-      <text:p>52</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*[.F25];0)" office:value-type="float" office:value="312" calcext:value-type="float">
+      <text:p>312</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F25]);0)" office:value-type="float" office:value="12" calcext:value-type="float">
-      <text:p>12</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND([.$B$4]*SQRT([.F25]);0)" office:value-type="float" office:value="75" calcext:value-type="float">
+      <text:p>75</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))));0)" office:value-type="float" office:value="12" calcext:value-type="float">
-      <text:p>12</text:p>
+     <table:table-cell table:style-name="ce10" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))));0)" office:value-type="float" office:value="69" calcext:value-type="float">
+      <text:p>69</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F25]*[.$B$6];0)" office:value-type="float" office:value="156" calcext:value-type="float">
-      <text:p>156</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F25]*[.$B$6];0)" office:value-type="float" office:value="936" calcext:value-type="float">
+      <text:p>936</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F25])*[.$B$6];0)" office:value-type="float" office:value="37" calcext:value-type="float">
-      <text:p>37</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F25])*[.$B$6];0)" office:value-type="float" office:value="225" calcext:value-type="float">
+      <text:p>225</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="35" calcext:value-type="float">
-      <text:p>35</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))))*[.$B$6];0)" office:value-type="float" office:value="208" calcext:value-type="float">
+      <text:p>208</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F25]*[.$B$7];0)" office:value-type="float" office:value="416" calcext:value-type="float">
-      <text:p>416</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*[.F25]*[.$B$7];0)" office:value-type="float" office:value="2496" calcext:value-type="float">
+      <text:p>2,496</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F25])*[.$B$7];0)" office:value-type="float" office:value="100" calcext:value-type="float">
-      <text:p>100</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND([.$B$4]*SQRT([.F25])*[.$B$7];0)" office:value-type="float" office:value="600" calcext:value-type="float">
+      <text:p>600</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="92" calcext:value-type="float">
-      <text:p>92</text:p>
+     <table:table-cell table:style-name="price-cell" table:formula="of:=ROUND(MAX(1;[.$B$4]*(1+LN(MAX([.F25];0.0000001))))*[.$B$7];0)" office:value-type="float" office:value="555" calcext:value-type="float">
+      <text:p>555</text:p>
      </table:table-cell>
      <table:table-cell table:number-columns-repeated="5"/>
     </table:table-row>
@@ -1430,7 +1480,7 @@
      <table:table-cell table:number-columns-repeated="15"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Total</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1449,7 +1499,7 @@
    <table:table table:name="How to use" table:style-name="ta1">
     <table:table-column table:style-name="co18" table:number-columns-repeated="2" table:default-cell-style-name="Default"/>
     <table:table-row table:style-name="ro1">
-     <table:table-cell table:style-name="ce3" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce31" office:value-type="string" calcext:value-type="string">
       <text:p>How to use this sheet</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1485,7 +1535,7 @@
      <table:table-cell table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Curve definitions (let r = granite_boosted% / rock_boosted%)</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1518,7 +1568,7 @@
      <table:table-cell table:number-columns-repeated="2"/>
     </table:table-row>
     <table:table-row table:style-name="ro2">
-     <table:table-cell table:style-name="ce6" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce33" office:value-type="string" calcext:value-type="string">
       <text:p>Variants</text:p>
      </table:table-cell>
      <table:table-cell/>
@@ -1553,8 +1603,8 @@
     <table:table-column table:style-name="co19" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co20" table:number-columns-repeated="2" table:default-cell-style-name="Default"/>
     <table:table-column table:style-name="co13" table:default-cell-style-name="Default"/>
-    <table:table-column table:style-name="co21" table:default-cell-style-name="ce47"/>
-    <table:table-column table:style-name="co13" table:number-columns-repeated="2" table:default-cell-style-name="ce47"/>
+    <table:table-column table:style-name="co21" table:default-cell-style-name="ce71"/>
+    <table:table-column table:style-name="co13" table:number-columns-repeated="2" table:default-cell-style-name="ce71"/>
     <table:table-row table:style-name="ro2">
      <table:table-cell table:number-columns-repeated="5"/>
      <table:table-cell table:style-name="Default" table:number-columns-repeated="3"/>
@@ -1572,89 +1622,89 @@
     </table:table-row>
     <table:table-row table:style-name="ro2">
      <table:table-cell/>
-     <table:table-cell table:style-name="ce42" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce66" office:value-type="string" calcext:value-type="string">
       <text:p>My Prices</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce46" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce70" office:value-type="string" calcext:value-type="string">
       <text:p>Shingle</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce46" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce70" office:value-type="string" calcext:value-type="string">
       <text:p>Tile</text:p>
      </table:table-cell>
      <table:table-cell/>
-     <table:table-cell table:style-name="ce48" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce72" office:value-type="string" calcext:value-type="string">
       <text:p>Raw item prices</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce52" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce76" office:value-type="string" calcext:value-type="string">
       <text:p>Shingle</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce52" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce76" office:value-type="string" calcext:value-type="string">
       <text:p>Tile</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro2">
      <table:table-cell/>
-     <table:table-cell table:style-name="ce43" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce67" office:value-type="string" calcext:value-type="string">
       <text:p>Fire</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="15" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="15" calcext:value-type="float">
       <text:p>15</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="50" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="50" calcext:value-type="float">
       <text:p>50</text:p>
      </table:table-cell>
      <table:table-cell/>
-     <table:table-cell table:style-name="ce49" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce73" office:value-type="string" calcext:value-type="string">
       <text:p>Fire</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="10" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="10" calcext:value-type="float">
       <text:p>10</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="37.5" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="37.5" calcext:value-type="float">
       <text:p>37.5</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro2">
      <table:table-cell/>
-     <table:table-cell table:style-name="ce44" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce68" office:value-type="string" calcext:value-type="string">
       <text:p>Blue</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="9" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="9" calcext:value-type="float">
       <text:p>9</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="28" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="28" calcext:value-type="float">
       <text:p>28</text:p>
      </table:table-cell>
      <table:table-cell/>
-     <table:table-cell table:style-name="ce50" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce74" office:value-type="string" calcext:value-type="string">
       <text:p>Blue</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="6" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="6" calcext:value-type="float">
       <text:p>6</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="22.5" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="22.5" calcext:value-type="float">
       <text:p>22.5</text:p>
      </table:table-cell>
     </table:table-row>
     <table:table-row table:style-name="ro2">
      <table:table-cell/>
-     <table:table-cell table:style-name="ce45" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce69" office:value-type="string" calcext:value-type="string">
       <text:p>Red</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="6" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="6" calcext:value-type="float">
       <text:p>6</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce42" office:value-type="float" office:value="16" calcext:value-type="float">
+     <table:table-cell table:style-name="ce66" office:value-type="float" office:value="16" calcext:value-type="float">
       <text:p>16</text:p>
      </table:table-cell>
      <table:table-cell/>
-     <table:table-cell table:style-name="ce51" office:value-type="string" calcext:value-type="string">
+     <table:table-cell table:style-name="ce75" office:value-type="string" calcext:value-type="string">
       <text:p>Red</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="3.33" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="3.33" calcext:value-type="float">
       <text:p>3.33</text:p>
      </table:table-cell>
-     <table:table-cell table:style-name="ce48" office:value-type="float" office:value="12.5" calcext:value-type="float">
+     <table:table-cell table:style-name="ce72" office:value-type="float" office:value="12.5" calcext:value-type="float">
       <text:p>12.5</text:p>
      </table:table-cell>
     </table:table-row>
