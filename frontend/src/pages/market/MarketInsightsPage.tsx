@@ -5,12 +5,14 @@
 // `useMarketInsights`). Listing dates are shown in the in-game calendar; time to
 // sell is shown in real-world time.
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMarketWindow } from "./useMarketWindow";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  Columns3,
+  Download,
   ExternalLink,
   Flame,
   Minus,
@@ -20,6 +22,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -42,10 +46,19 @@ import { ScreenerTable, type ScreenerColumn } from "./InsightsScreenerTable";
 import { InsightsFilterBar } from "./InsightsFilterBar";
 import { useFilteredInsights, rowPrice } from "./useFilteredInsights";
 import { useMarketPriceMode } from "./useMarketPriceMode";
+import { useMarketVolumeMode } from "./useMarketVolumeMode";
+import { Sparkline } from "./Sparkline";
+import { downloadInsightsCsv } from "./insightsCsv";
+import {
+  HIDEABLE_INSIGHTS_COLUMNS,
+  showAllInsightsColumns,
+  toggleInsightsColumn,
+  useInsightsHiddenColumns,
+} from "./useInsightsColumns";
 import { PriceModeInfo } from "./PriceModeInfo";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import type { InsightsRow, PriceTrend } from "@/models/auction";
+import type { InsightsRow } from "@/models/auction";
 import { cn } from "@/lib/utils";
 
 type VolumeMode = "price" | "unit";
@@ -98,26 +111,53 @@ function VolatilityBadge({ row }: { row: InsightsRow }) {
   );
 }
 
-function TrendCell({ trend }: { trend: PriceTrend | null }) {
-  if (!trend) return DASH;
-  if (trend.direction === "flat") {
-    return (
+function TrendCell({ row }: { row: InsightsRow }) {
+  const { trend, priceSeries } = row;
+  const spark =
+    priceSeries && priceSeries.length >= 2 ? (
+      <Sparkline
+        data={priceSeries}
+        className={cn(
+          "shrink-0",
+          trend?.direction === "up"
+            ? "text-emerald-600"
+            : trend?.direction === "down"
+              ? "text-red-600"
+              : "text-muted-foreground/70",
+        )}
+      />
+    ) : null;
+
+  let label: ReactNode;
+  if (!trend) {
+    label = spark ? null : DASH;
+  } else if (trend.direction === "flat") {
+    label = (
       <span className="inline-flex items-center gap-1 text-muted-foreground">
         <Minus className="size-3" /> Flat
       </span>
     );
+  } else {
+    const up = trend.direction === "up";
+    label = (
+      <span
+        className={cn(
+          "inline-flex items-center gap-1 tabular-nums",
+          up ? "text-emerald-600" : "text-red-600",
+        )}
+      >
+        {up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
+        {up ? "+" : ""}
+        {trend.changePct}%
+      </span>
+    );
   }
-  const up = trend.direction === "up";
+
+  if (!spark && !trend) return DASH;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 tabular-nums",
-        up ? "text-emerald-600" : "text-red-600",
-      )}
-    >
-      {up ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
-      {up ? "+" : ""}
-      {trend.changePct}%
+    <span className="inline-flex items-center justify-end gap-1.5">
+      {spark}
+      {label}
     </span>
   );
 }
@@ -206,9 +246,10 @@ function RecencyCell({ row }: { row: InsightsRow }) {
       : tier === "cooling"
         ? "bg-amber-500"
         : "bg-muted-foreground";
+  const dotLabel = tier === "active" ? "Active" : tier === "cooling" ? "Cooling off" : "Stale";
   const content = (
     <span className="inline-flex items-center gap-1.5">
-      <span className={cn("size-2 rounded-full", dot)} />
+      <span className={cn("size-2 rounded-full", dot)} role="img" aria-label={dotLabel} />
       {formatGameDate(row.lastSaleGameHours)}
     </span>
   );
@@ -422,6 +463,52 @@ function HighlightCard({
 }
 
 // --------------------------------------------------------------------------- //
+// Column visibility picker
+// --------------------------------------------------------------------------- //
+function ColumnPicker({ hidden }: { hidden: string[] }) {
+  const shown = HIDEABLE_INSIGHTS_COLUMNS.length - hidden.length;
+  return (
+    <Popover>
+      <PopoverTrigger render={<Button variant="outline" size="sm" className="gap-1.5" />}>
+        <Columns3 className="size-4" />
+        Columns
+        {hidden.length > 0 ? (
+          <span className="text-xs text-muted-foreground">
+            {shown}/{HIDEABLE_INSIGHTS_COLUMNS.length}
+          </span>
+        ) : null}
+      </PopoverTrigger>
+      <PopoverContent side="bottom" align="end" className="w-52 p-1">
+        <div className="max-h-[min(20rem,60vh)] overflow-y-auto">
+          {HIDEABLE_INSIGHTS_COLUMNS.map((c) => (
+            <label
+              key={c.key}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/60"
+            >
+              <Checkbox
+                checked={!hidden.includes(c.key)}
+                onCheckedChange={() => toggleInsightsColumn(c.key)}
+              />
+              {c.label}
+            </label>
+          ))}
+        </div>
+        {hidden.length > 0 ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="mt-1 h-7 w-full text-xs text-muted-foreground"
+            onClick={() => showAllInsightsColumns()}
+          >
+            Show all
+          </Button>
+        ) : null}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+// --------------------------------------------------------------------------- //
 // Page
 // --------------------------------------------------------------------------- //
 export function MarketInsightsPage() {
@@ -432,8 +519,9 @@ export function MarketInsightsPage() {
   const filters = useAppSelector((s) => s.insightsFilters);
 
   const [windowKey, setWindowKey] = useMarketWindow();
-  const [volumeMode, setVolumeMode] = useState<VolumeMode>("price");
+  const [volumeMode, setVolumeMode] = useMarketVolumeMode();
   const [priceMode, setPriceMode] = useMarketPriceMode();
+  const hiddenColumns = useInsightsHiddenColumns();
 
   const windowDays = useMemo(
     () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
@@ -554,7 +642,16 @@ export function MarketInsightsPage() {
         align: "right",
         cell: (r) => {
           const p = rowPrice(r, priceMode);
-          return p != null ? formatGears(p) : DASH;
+          if (p == null) return DASH;
+          if (!r.upperBoundUnknown) return formatGears(p);
+          return (
+            <Hint label="Upper price bound unknown — nothing ever sold or expired above this, so treat it as a floor, not a ceiling.">
+              <span className="inline-flex items-center gap-0.5">
+                <span className="text-muted-foreground">≥</span>
+                {formatGears(p)}
+              </span>
+            </Hint>
+          );
         },
         sortValue: (r) => rowPrice(r, priceMode),
         title:
@@ -574,11 +671,11 @@ export function MarketInsightsPage() {
       {
         key: "trend",
         header: "Trend",
-        width: "minmax(5.5rem,0.8fr)",
+        width: "minmax(8rem,1.1fr)",
         align: "right",
-        cell: (r) => <TrendCell trend={r.trend} />,
+        cell: (r) => <TrendCell row={r} />,
         sortValue: (r) => r.trend?.changePct ?? null,
-        title: "Recent vs older per-unit price",
+        title: "Recent vs older per-unit price, with an in-window price sparkline",
       },
       {
         key: "sellThrough",
@@ -681,6 +778,12 @@ export function MarketInsightsPage() {
     [volumeMode, priceMode],
   );
 
+  // The "Item" column is always shown; the rest respect the persisted picker.
+  const visibleColumns = useMemo(
+    () => columns.filter((c) => c.key === "name" || !hiddenColumns.includes(c.key)),
+    [columns, hiddenColumns],
+  );
+
   if (isPending) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
@@ -709,23 +812,25 @@ export function MarketInsightsPage() {
 
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="group" aria-label="Time window">
           {INSIGHTS_WINDOWS.map((w) => (
             <Button
               key={w.key}
               size="sm"
               variant={windowKey === w.key ? "default" : "outline"}
+              aria-pressed={windowKey === w.key}
               onClick={() => setWindowKey(w.key)}
             >
               {w.label}
             </Button>
           ))}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="group" aria-label="Volume unit">
           <span className="mr-1 text-sm text-muted-foreground">Volume:</span>
           <Button
             size="sm"
             variant={volumeMode === "price" ? "default" : "outline"}
+            aria-pressed={volumeMode === "price"}
             onClick={() => setVolumeMode("price")}
           >
             Gears
@@ -733,16 +838,18 @@ export function MarketInsightsPage() {
           <Button
             size="sm"
             variant={volumeMode === "unit" ? "default" : "outline"}
+            aria-pressed={volumeMode === "unit"}
             onClick={() => setVolumeMode("unit")}
           >
             Units
           </Button>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="group" aria-label="Price basis">
           <span className="mr-1 text-sm text-muted-foreground">Price:</span>
           <Button
             size="sm"
             variant={priceMode === "median" ? "default" : "outline"}
+            aria-pressed={priceMode === "median"}
             onClick={() => setPriceMode("median")}
           >
             Median
@@ -750,6 +857,7 @@ export function MarketInsightsPage() {
           <Button
             size="sm"
             variant={priceMode === "weighted" ? "default" : "outline"}
+            aria-pressed={priceMode === "weighted"}
             onClick={() => setPriceMode("weighted")}
           >
             Qty-weighted
@@ -798,13 +906,39 @@ export function MarketInsightsPage() {
 
       {/* Screener */}
       <div>
-        <div className="mb-2 flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold">Item screener</h2>
-          <span className="text-xs text-muted-foreground">
-            {filteredRows.length.toLocaleString()}
-            {filteredRows.length !== rows.length ? ` of ${rows.length.toLocaleString()}` : ""} items
-            · click a row for details · click a header to sort
-          </span>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-2">
+            <h2 className="text-lg font-semibold">Item screener</h2>
+            <span className="text-xs text-muted-foreground">
+              {filteredRows.length.toLocaleString()}
+              {filteredRows.length !== rows.length
+                ? ` of ${rows.length.toLocaleString()}`
+                : ""}{" "}
+              items · click a row for details · click a header to sort
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <ColumnPicker hidden={hiddenColumns} />
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={filteredRows.length === 0}
+              onClick={() =>
+                downloadInsightsCsv(
+                  filteredRows,
+                  volumeMode,
+                  priceMode,
+                  (INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.label ?? windowKey)
+                    .replace(/\s+/g, "-")
+                    .toLowerCase(),
+                )
+              }
+            >
+              <Download className="size-4" />
+              Export CSV
+            </Button>
+          </div>
         </div>
         <div className="mb-3">
           <ColumnGlossary />
@@ -826,7 +960,7 @@ export function MarketInsightsPage() {
           <div className="mx-[calc(50%-50vw)] px-4 sm:px-6 lg:px-8">
             <ScreenerTable
               rows={filteredRows}
-              columns={columns}
+              columns={visibleColumns}
               rowKey={(r) => r.itemId}
               sortKey={filters.sortKey}
               sortDir={filters.sortDir}

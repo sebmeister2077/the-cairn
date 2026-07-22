@@ -370,6 +370,11 @@ export interface InsightsRow {
     volatilityTier: VolatilityTier | null;
     /** Recent-vs-older per-unit price movement. */
     trend: PriceTrend | null;
+    /**
+     * Per-unit sold prices ordered by in-game sale time (downsampled), for the
+     * inline screener sparkline. `null` when too few dated sales to be useful.
+     */
+    priceSeries: number[] | null;
 
     // --- Liquidity / demand ---
     sellThrough: number | null;

@@ -132,6 +132,16 @@ function volatilityTierFor(cv: number): VolatilityTier {
     return "volatile";
 }
 
+/** Evenly downsample a series to at most `max` points, preserving the first and
+ * last. Keeps the inline sparkline cheap to render for high-volume items. */
+export function downsampleSeries(values: number[], max: number): number[] {
+    if (values.length <= max) return values;
+    const out: number[] = [];
+    const step = (values.length - 1) / (max - 1);
+    for (let i = 0; i < max; i++) out.push(values[Math.round(i * step)]);
+    return out;
+}
+
 function demandTierFor(score: number): DemandTier {
     if (score >= 75) return "hot";
     if (score >= 50) return "high";
@@ -360,6 +370,14 @@ export function computeMarketInsights(
         const speedSignal = medianTts != null && medianTts > 0 ? 1 / medianTts : 0;
         const freq = recs.length / effectiveWindowDays;
 
+        // Sparkline series: per-unit sold prices ordered by in-game sale time,
+        // downsampled. Needs a few dated points to convey a shape.
+        const datedPpu = pricedSold
+            .filter((r) => saleGameHours(r) != null)
+            .sort((a, b) => saleGameHours(a)! - saleGameHours(b)!)
+            .map((r) => r.pricePerUnit);
+        const priceSeries = datedPpu.length >= 4 ? downsampleSeries(datedPpu, 32) : null;
+
         // Shortage: strong demand with little stock left on the board.
         const supplyDays = salesVelocity > 0 ? activeCount / salesVelocity : Infinity;
         const shortage =
@@ -384,6 +402,7 @@ export function computeMarketInsights(
             dispersionCV,
             volatilityTier,
             trend: computeTrend(pricedSold),
+            priceSeries,
             sellThrough,
             medianTimeToSellHours: medianTts,
             salesVelocity,
