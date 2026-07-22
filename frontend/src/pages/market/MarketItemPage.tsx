@@ -69,6 +69,7 @@ import { useMarketWindow } from "./useMarketWindow";
 import { useMarketPriceMode } from "./useMarketPriceMode";
 import { PriceModeInfo } from "./PriceModeInfo";
 import { MetalContentCard } from "./MetalContentCard";
+import { ItemConcentrationSection } from "./ItemConcentrationSection";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -1331,6 +1332,8 @@ export function MarketItemPage() {
           )}
         </CardContent>
       </Card>
+
+      <ItemConcentrationSection listings={windowListings} />
 
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">

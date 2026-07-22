@@ -26,6 +26,7 @@ import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adm
 import { initialRoutePlannerState } from "./slices/routePlanner";
 import { initialElkWalkableState } from "./slices/elkWalkable";
 import { normalizeInsightsFilters } from "./slices/insightsFilters";
+import { normalizeMarketConcentration } from "./slices/marketConcentration";
 import {
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
@@ -160,6 +161,9 @@ const NORMALIZE_ON_READ: {
     // so older stored objects (single-string fields / missing keys) don't
     // destructure to `undefined` at runtime.
     insightsFilters: (s) => normalizeInsightsFilters(s),
+    // Two numeric thresholds; merge over defaults + clamp so an older or
+    // partial envelope can't yield NaN/undefined at runtime.
+    marketConcentration: (s) => normalizeMarketConcentration(s),
 };
 
 interface Envelope {
