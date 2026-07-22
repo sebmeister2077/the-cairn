@@ -3,7 +3,7 @@
 // `insightsFilters` slice; the screener sort is persisted separately. Every
 // dropdown is multi-select — only the free-text search is single-valued.
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Star } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,7 @@ function MultiSelect({
 export function InsightsFilterBar({ categories }: { categories: string[] }) {
   const dispatch = useAppDispatch();
   const f = useAppSelector((s) => s.insightsFilters);
+  const favoritesCount = useAppSelector((s) => s.marketFavorites.ids.length);
   const categoryOptions: Option[] = categories.map((c) => ({ value: c, label: c }));
 
   return (
@@ -264,6 +265,21 @@ export function InsightsFilterBar({ categories }: { categories: string[] }) {
           />
         </div>
       </div>
+
+      <label className="flex items-center gap-2 text-sm cursor-pointer h-9">
+        <Checkbox
+          checked={f.favoritesOnly}
+          disabled={favoritesCount === 0 && !f.favoritesOnly}
+          onCheckedChange={(v) => dispatch(patchInsightsFilters({ favoritesOnly: !!v }))}
+        />
+        <span className="inline-flex items-center gap-1">
+          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+          Favorites only
+          {favoritesCount > 0 ? (
+            <span className="text-muted-foreground">({favoritesCount})</span>
+          ) : null}
+        </span>
+      </label>
 
       <label className="flex items-center gap-2 text-sm cursor-pointer h-9">
         <Checkbox

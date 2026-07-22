@@ -26,6 +26,7 @@ export function filterInsights(
     f: InsightsFilters,
     volumeMode: InsightsVolumeMode,
     priceMode: MarketPriceMode,
+    favorites: Set<number>,
 ): InsightsRow[] {
     const q = f.q.trim().toLowerCase();
     const priceMin = num(f.priceMin);
@@ -39,6 +40,8 @@ export function filterInsights(
     return rows.filter((r) => {
         if (q && !r.name.toLowerCase().includes(q)) return false;
         if (f.category.length && !f.category.includes(r.category)) return false;
+
+        if (f.favoritesOnly && !favorites.has(r.itemId)) return false;
 
         if (f.demand.length && !(r.demandTier && f.demand.includes(r.demandTier))) return false;
         if (f.volatility.length && !(r.volatilityTier && f.volatility.includes(r.volatilityTier)))
@@ -87,9 +90,10 @@ export function useFilteredInsights(
     filters: InsightsFilters,
     volumeMode: InsightsVolumeMode,
     priceMode: MarketPriceMode,
+    favorites: Set<number>,
 ): InsightsRow[] {
     return useMemo(
-        () => filterInsights(rows, filters, volumeMode, priceMode),
-        [rows, filters, volumeMode, priceMode],
+        () => filterInsights(rows, filters, volumeMode, priceMode, favorites),
+        [rows, filters, volumeMode, priceMode, favorites],
     );
 }

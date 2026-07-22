@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Flame,
   Minus,
+  Star,
   TriangleAlert,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -57,6 +58,7 @@ import {
 } from "./useInsightsColumns";
 import { PriceModeInfo } from "./PriceModeInfo";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
+import { toggleFavorite } from "@/store/slices/marketFavorites";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { InsightsRow } from "@/models/auction";
 import { cn } from "@/lib/utils";
@@ -64,6 +66,34 @@ import { cn } from "@/lib/utils";
 type VolumeMode = "price" | "unit";
 
 const DASH = <span className="text-muted-foreground">—</span>;
+
+/** Star toggle for the Item column. Subscribes to just this item's favorite
+ *  state so toggling one row doesn't re-render the whole screener. */
+function FavoriteStar({ itemId }: { itemId: number }) {
+  const dispatch = useAppDispatch();
+  const isFavorite = useAppSelector((s) => s.marketFavorites.ids.includes(itemId));
+  return (
+    <button
+      type="button"
+      aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      aria-pressed={isFavorite}
+      onClick={(e) => {
+        e.stopPropagation();
+        dispatch(toggleFavorite(itemId));
+      }}
+      className="-ml-1 inline-flex size-6 shrink-0 items-center justify-center rounded hover:bg-muted"
+    >
+      <Star
+        className={cn(
+          "size-3.5 transition-colors",
+          isFavorite
+            ? "fill-amber-400 text-amber-400"
+            : "text-muted-foreground/40 hover:text-muted-foreground",
+        )}
+      />
+    </button>
+  );
+}
 
 /** Item volume in the currently selected mode. */
 function volumeValue(r: InsightsRow, mode: VolumeMode): number {
@@ -561,6 +591,8 @@ export function MarketInsightsPage() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const filters = useAppSelector((s) => s.insightsFilters);
+  const favoriteIds = useAppSelector((s) => s.marketFavorites.ids);
+  const favorites = useMemo(() => new Set(favoriteIds), [favoriteIds]);
 
   const [windowKey, setWindowKey] = useMarketWindow();
   const [volumeMode, setVolumeMode] = useMarketVolumeMode();
@@ -585,7 +617,7 @@ export function MarketInsightsPage() {
 
   // Filters apply to the screener table only — highlight cards and window totals
   // below intentionally use the full `rows`/`insights` so they stay market-wide.
-  const filteredRows = useFilteredInsights(rows, filters, volumeMode, priceMode);
+  const filteredRows = useFilteredInsights(rows, filters, volumeMode, priceMode, favorites);
 
   const highlights = useMemo<Highlight[]>(() => {
     if (!rows.length) return [];
@@ -667,7 +699,12 @@ export function MarketInsightsPage() {
         key: "name",
         header: "Item",
         width: "minmax(11rem,1.6fr)",
-        cell: (r) => <span className="font-medium">{r.name}</span>,
+        cell: (r) => (
+          <span className="flex items-center gap-1.5 font-medium">
+            <FavoriteStar itemId={r.itemId} />
+            <span className="truncate">{r.name}</span>
+          </span>
+        ),
         sortValue: (r) => r.name.toLowerCase(),
       },
       {

@@ -38,6 +38,7 @@ import { topsMapPreviewSlice } from "./slices/topsMapPreview";
 import { auctionFiltersSlice } from "./slices/auctionFilters";
 import { insightsFiltersSlice } from "./slices/insightsFilters";
 import { marketConcentrationSlice } from "./slices/marketConcentration";
+import { marketFavoritesSlice } from "./slices/marketFavorites";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -62,6 +63,7 @@ const rootReducer = combineReducers({
     auctionFilters: auctionFiltersSlice.reducer,
     insightsFilters: insightsFiltersSlice.reducer,
     marketConcentration: marketConcentrationSlice.reducer,
+    marketFavorites: marketFavoritesSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

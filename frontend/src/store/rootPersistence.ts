@@ -27,6 +27,7 @@ import { initialRoutePlannerState } from "./slices/routePlanner";
 import { initialElkWalkableState } from "./slices/elkWalkable";
 import { normalizeInsightsFilters } from "./slices/insightsFilters";
 import { normalizeMarketConcentration } from "./slices/marketConcentration";
+import { normalizeMarketFavorites } from "./slices/marketFavorites";
 import {
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
@@ -164,6 +165,8 @@ const NORMALIZE_ON_READ: {
     // Two numeric thresholds; merge over defaults + clamp so an older or
     // partial envelope can't yield NaN/undefined at runtime.
     marketConcentration: (s) => normalizeMarketConcentration(s),
+    // Dedupe / drop malformed IDs from a stored favorites list.
+    marketFavorites: (s) => normalizeMarketFavorites(s),
 };
 
 interface Envelope {
