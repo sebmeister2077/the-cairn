@@ -12,7 +12,7 @@
 // "underseller"). We describe habits, we don't judge them.
 
 import { useMemo } from "react";
-import { percentileSorted, listingHasText } from "@/lib/auction";
+import { percentileSorted, listingHasText, specializationGroupFor } from "@/lib/auction";
 import { filterListingsByWindow } from "./useMarketInsights";
 import type {
     AuctionListing,
@@ -80,7 +80,7 @@ function buyerStyleFor(medianPremium: number | null, sample: number): BuyerStyle
 function specializationFor(hhi: number | null): SpecializationTier {
     if (hhi == null) return "generalist";
     if (hhi > 0.5) return "specialist";
-    if (hhi > 0.25) return "focused";
+    if (hhi > 0.3) return "focused";
     return "generalist";
 }
 
@@ -153,23 +153,27 @@ export function usePlayerProfile(
             .map((l) => l.pricePremiumPct as number);
         const sellerMedianPremiumPct = median(sellerPremiums);
 
-        // --- Specialization: HHI over the player's item mix ------------------ #
-        const mixByItem = new Map<number, number>();
+        // --- Specialization: HHI over the player's category mix -------------- #
+        // Measured across *grouped* categories (see `specializationGroupFor`)
+        // rather than individual items: a smith who sells 50 distinct tools, or
+        // a tailor moving dozens of different clothes, is concentrated on one
+        // thing — even though every item is unique. Grouping folds tool/metal
+        // forms together so those traders read as specialists, not generalists.
         const byCategory = new Map<string, number>();
         for (const l of [...asSeller, ...asBuyer]) {
-            mixByItem.set(l.itemId, (mixByItem.get(l.itemId) ?? 0) + 1);
-            byCategory.set(l.category, (byCategory.get(l.category) ?? 0) + 1);
+            const group = specializationGroupFor(l.category);
+            byCategory.set(group, (byCategory.get(group) ?? 0) + 1);
         }
-        const mixTotal = [...mixByItem.values()].reduce((s, c) => s + c, 0);
-        let itemHhi: number | null = null;
+        const mixTotal = [...byCategory.values()].reduce((s, c) => s + c, 0);
+        let categoryHhi: number | null = null;
         if (mixTotal > 0) {
-            itemHhi = 0;
-            for (const c of mixByItem.values()) {
+            categoryHhi = 0;
+            for (const c of byCategory.values()) {
                 const share = c / mixTotal;
-                itemHhi += share * share;
+                categoryHhi += share * share;
             }
         }
-        const specialization = specializationFor(itemHhi);
+        const specialization = specializationFor(categoryHhi);
         let topCategory: string | null = null;
         let topCategoryShare: number | null = null;
         if (mixTotal > 0) {
@@ -401,7 +405,7 @@ export function usePlayerProfile(
             sellerMedianPremiumPct,
             archetypes,
             specialization,
-            itemHhi,
+            categoryHhi,
             topCategory,
             topCategoryShare,
             dominance,

@@ -231,7 +231,7 @@ const SPECIALIZATION_INFO: InfoItem[] = [
   { term: "Generalist", desc: "Trades a broad variety of items." },
   {
     term: "How it's measured",
-    desc: "Concentration of their trades across items (plus their most-active category).",
+    desc: "Concentration of their trades across item categories (tools, metals, clothes, …), with related forms grouped — so trading many kinds of the same thing still reads as specialized. Shown alongside their most-active category.",
   },
 ];
 

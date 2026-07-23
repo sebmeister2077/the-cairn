@@ -764,6 +764,35 @@ export function isToolCategory(category: string | null | undefined): boolean {
     return TOOL_CATEGORIES.has(category.toLowerCase());
 }
 
+/** Metal item forms that all belong to the same "metals" activity group — the
+ *  chunk/nugget/bit/ingot/plate/bloom continuum of a smeltable material. */
+const METAL_FORM_CATEGORIES = new Set([
+    "ore",
+    "crushed",
+    "nugget",
+    "metalbit",
+    "ingot",
+    "plate",
+    "ironbloom",
+]);
+
+/**
+ * Collapse a raw item {@link ItemCatalog} category into the broader activity
+ * group used to judge how specialized a trader is. Individual tool/weapon
+ * categories (axe, pickaxe, sword, …) fold into `tools`, and the metal
+ * chunk→ingot continuum folds into `metals`, so a smith who trades many
+ * distinct tools — or a miner moving many metal forms — reads as focused on
+ * one thing rather than as a generalist. Every other category is returned
+ * unchanged (already broad enough, e.g. `clothes`, `clutter`).
+ */
+export function specializationGroupFor(category: string | null | undefined): string {
+    if (!category) return "other";
+    const c = category.toLowerCase();
+    if (isToolCategory(c)) return "tools";
+    if (METAL_FORM_CATEGORIES.has(c)) return "metals";
+    return c;
+}
+
 // Attribute keys that are purely cosmetic / placement noise (or handled
 // explicitly, like condition/durability) — never surfaced as a generic "buff".
 const COSMETIC_ATTR_KEYS = new Set([

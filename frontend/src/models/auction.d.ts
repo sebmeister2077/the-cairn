@@ -572,8 +572,8 @@ export interface PlayerProfile {
 
     // --- Specialization ---
     specialization: SpecializationTier;
-    /** HHI over the player's item mix (0–1; higher = more focused). */
-    itemHhi: number | null;
+    /** HHI over the player's grouped-category mix (0–1; higher = more focused). */
+    categoryHhi: number | null;
     /** The category the player is most active in, if any. */
     topCategory: string | null;
     topCategoryShare: number | null;
