@@ -1059,21 +1059,12 @@ def build_time_series(
     return series
 
 
-# Wealth tiers by share of the trader population, richest first. A player's
-# wealth is their net seller revenue plus buyer spend, so both sides of the
-# market count. The tiers split the population into the top 10% ("elite"), the
-# next 40% ("mid") and the bottom 50% ("regular").
-WEALTH_TIERS = ("elite", "mid", "regular")
-WEALTH_TIER_CUTS = (0.10, 0.50)  # cumulative population share at each boundary
-# All six unordered tier pairings, richest-first, for the trade-flow breakdown.
-WEALTH_TIER_PAIRS = (
-    ("elite", "elite"),
-    ("elite", "mid"),
-    ("elite", "regular"),
-    ("mid", "mid"),
-    ("mid", "regular"),
-    ("regular", "regular"),
-)
+# A player's wealth is their net seller revenue plus buyer spend, so both sides
+# of the market count. Rather than baking a fixed "elite" cutoff into the data,
+# we ship the full ranked wealth distribution plus compact, cutoff-independent
+# trade-flow arrays, so the frontend can let the viewer choose how the "elite"
+# are defined (top N% of players, or everyone worth at least X gears) and
+# recompute the whole breakdown live.
 
 
 def _gini(values: List[float]) -> Optional[float]:
@@ -1098,13 +1089,24 @@ def build_wealth_concentration(
     """Summarise how concentrated the market is and how much value flows between
     the wealthiest players.
 
-    Wealth per player = net seller revenue + buyer spend. Players are ranked and
-    split into ``elite`` (top 10%), ``mid`` (next 40%) and ``regular`` (bottom
-    50%) tiers. Each sold auction with both a known (distinct) seller and buyer
-    is attributed to the unordered pair of their tiers, so ``flows`` shows what
-    share of gears traded happened between the rich, between rich and the rest,
-    and among everyone else. Self-trades (same player on both sides) are dropped
-    as noise.
+    Wealth per player = net seller revenue + buyer spend. Instead of committing
+    to a single "elite" cutoff, we emit the full ranked wealth distribution and
+    two compact, cutoff-independent flow arrays. The frontend can then define the
+    elite however it likes — the top ``k`` players (a percentile) or everyone
+    worth at least ``X`` gears (an absolute threshold, stable as the server
+    population grows) — and recover the trade-flow breakdown for that cutoff.
+
+    For each sold auction with a distinct known seller and buyer we bin its gears
+    by the *richer* party's rank (``saleGearsByMaxRank``) and the *poorer*
+    party's rank (``saleGearsByMinRank``), where rank 0 is the richest trader.
+    Given any elite cutoff of the top ``k`` traders, the client recovers:
+
+        elite ↔ elite       = sum(saleGearsByMaxRank[:k])   (both ranks < k)
+        rest  ↔ rest        = sum(saleGearsByMinRank[k:])   (both ranks >= k)
+        elite ↔ everyone     = matchedGears − the two above
+
+    Self-trades (same player on both sides) and sales with an unknown party are
+    counted in ``unmatchedGears`` and excluded from the flows.
     """
     wealth: Dict[str, float] = defaultdict(float)
     for uid, s in sellers.items():
@@ -1112,74 +1114,53 @@ def build_wealth_concentration(
     for uid, b in buyers.items():
         wealth[uid] += b["spent"]
 
-    ranked = sorted(wealth.values(), reverse=True)
-    n = len(ranked)
-    total_wealth = sum(ranked)
-
-    # Rank cutoffs (by player count) for each tier boundary.
-    elite_cut = math.ceil(n * WEALTH_TIER_CUTS[0])
-    mid_cut = math.ceil(n * WEALTH_TIER_CUTS[1])
-
-    def tier_of_rank(rank: int) -> str:
-        if rank < elite_cut:
-            return "elite"
-        if rank < mid_cut:
-            return "mid"
-        return "regular"
-
-    # Map each player to a tier by their rank in the wealth order.
+    # Rank every trader by wealth, richest first (rank 0 = the richest).
     order = sorted(wealth.items(), key=lambda kv: kv[1], reverse=True)
-    tier_by_uid: Dict[str, str] = {
-        uid: tier_of_rank(i) for i, (uid, _) in enumerate(order)
-    }
-    tier_counts = {t: 0 for t in WEALTH_TIERS}
-    for t in tier_by_uid.values():
-        tier_counts[t] += 1
+    n = len(order)
+    total_wealth = sum(w for _, w in order)
+    rank_by_uid: Dict[str, int] = {uid: i for i, (uid, _) in enumerate(order)}
 
-    elite_wealth = sum(w for uid, w in wealth.items() if tier_by_uid[uid] == "elite")
-
-    # The elite roster (richest 10%), richest first, with a display name pulled
-    # from whichever side of the market we last saw them on.
+    # Display name pulled from whichever side of the market we last saw them on.
     def display_name(uid: str) -> Optional[str]:
         return (sellers.get(uid, {}).get("name")) or (buyers.get(uid, {}).get("name"))
 
-    elite_players = [
+    # Full roster, richest first — powers the elite list and every derived count
+    # for whatever cutoff the viewer picks.
+    players = [
         {"uid": uid, "name": display_name(uid), "wealth": round(w, 2)}
         for uid, w in order
-        if tier_by_uid[uid] == "elite"
     ]
 
-    # Attribute each matched sale to its unordered (seller, buyer) tier pair.
-    flow_gears: Dict[Tuple[str, str], float] = {p: 0.0 for p in WEALTH_TIER_PAIRS}
+    # Cutoff-independent flow bins (see the docstring). Length == trader count.
+    by_max_rank = [0.0] * n
+    by_min_rank = [0.0] * n
     matched_gears = 0.0
     unmatched_gears = 0.0
     for r in sold:
         su, bu = r.get("sellerUid"), r.get("buyerUid")
-        if not su or not bu or su == bu:
+        if (
+            not su
+            or not bu
+            or su == bu
+            or su not in rank_by_uid
+            or bu not in rank_by_uid
+        ):
             unmatched_gears += r["price"]
             continue
-        ta, tb = tier_by_uid.get(su), tier_by_uid.get(bu)
-        if ta is None or tb is None:
-            unmatched_gears += r["price"]
-            continue
-        key = (ta, tb) if (ta, tb) in flow_gears else (tb, ta)
-        flow_gears[key] += r["price"]
+        rs, rb = rank_by_uid[su], rank_by_uid[bu]
+        by_max_rank[max(rs, rb)] += r["price"]
+        by_min_rank[min(rs, rb)] += r["price"]
         matched_gears += r["price"]
 
     return {
         "traderCount": n,
-        "tierPlayerCounts": tier_counts,
-        "eliteShareOfWealth": round(elite_wealth / total_wealth, 4)
-        if total_wealth > 0
-        else 0,
-        "gini": _gini(ranked),
+        "totalWealth": round(total_wealth, 2),
+        "gini": _gini([w for _, w in order]),
         "matchedGears": round(matched_gears, 2),
         "unmatchedGears": round(unmatched_gears, 2),
-        "elite": elite_players,
-        "flows": [
-            {"a": a, "b": b, "gears": round(flow_gears[(a, b)], 2)}
-            for (a, b) in WEALTH_TIER_PAIRS
-        ],
+        "players": players,
+        "saleGearsByMaxRank": [round(x, 2) for x in by_max_rank],
+        "saleGearsByMinRank": [round(x, 2) for x in by_min_rank],
     }
 
 

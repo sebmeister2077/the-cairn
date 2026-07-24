@@ -174,18 +174,7 @@ export interface AuctioneerLocation {
     listings: number;
 }
 
-/** Wealth tier a player falls in, by share of the trader population (richest
- *  first): top 10% (`elite`), next 40% (`mid`), bottom 50% (`regular`). */
-export type WealthTier = "elite" | "mid" | "regular";
-
-/** Gears traded between two wealth tiers (unordered — `a`/`b` are richest-first). */
-export interface WealthFlow {
-    a: WealthTier;
-    b: WealthTier;
-    gears: number;
-}
-
-/** A player on the elite roster (richest 10%). */
+/** A trader on the wealth roster. Wealth = net seller revenue + buyer spend. */
 export interface WealthPlayer {
     uid: string;
     name: string | null;
@@ -195,29 +184,36 @@ export interface WealthPlayer {
 
 /**
  * Market wealth concentration and rich-to-rich trade flows. A player's wealth is
- * their net seller revenue plus buyer spend; players are ranked and split into
- * the tiers above. `flows` attributes each sold auction (with a distinct known
- * seller and buyer) to the unordered pair of their tiers, so it shows how much
- * value changes hands between the wealthy versus everyone else.
+ * their net seller revenue plus buyer spend.
+ *
+ * Rather than baking in a fixed "elite" cutoff, the backend ships the full
+ * ranked wealth distribution (`players`, richest first) plus two cutoff-
+ * independent flow arrays indexed by trader rank (0 = richest). The frontend
+ * picks an elite cutoff — the top `k` players (a percentile) or everyone worth
+ * at least `X` gears — and recovers the flow breakdown for that `k`:
+ *
+ *   elite ↔ elite     = sum(saleGearsByMaxRank.slice(0, k))
+ *   rest  ↔ rest      = sum(saleGearsByMinRank.slice(k))
+ *   elite ↔ everyone  = matchedGears − the two above
  */
 export interface WealthConcentration {
     /** Distinct players that traded (appeared as a seller or buyer). */
     traderCount: number;
-    /** How many players fall in each tier. */
-    tierPlayerCounts: Record<WealthTier, number>;
-    /** Share of all market wealth held by the elite (top 10%), 0–1. */
-    eliteShareOfWealth: number;
+    /** Sum of every trader's wealth (denominator for the elite wealth share). */
+    totalWealth: number;
     /** Gini coefficient of player wealth (0 = equal, →1 = concentrated); null when unmeasurable. */
     gini: number | null;
-    /** Gears in sold auctions attributed to a tier pair (both parties known & distinct). */
+    /** Gears in sold auctions attributed to a rank pair (both parties known & distinct). */
     matchedGears: number;
-    /** Gears in sold auctions excluded from `flows` (missing/self-trade party). */
+    /** Gears in sold auctions excluded from the flows (missing/self-trade party). */
     unmatchedGears: number;
-    /** The elite roster (richest 10%), richest first. Absent in data generated
-     *  before this field existed (and any stale cache). */
-    elite?: WealthPlayer[];
-    /** The six unordered tier-pair buckets, richest-first. */
-    flows: WealthFlow[];
+    /** Every trader, richest first. Absent in data generated before this field
+     *  existed (and any stale cache). */
+    players?: WealthPlayer[];
+    /** Matched-sale gears binned by the richer party's rank (length = traderCount). */
+    saleGearsByMaxRank?: number[];
+    /** Matched-sale gears binned by the poorer party's rank (length = traderCount). */
+    saleGearsByMinRank?: number[];
 }
 
 export interface MarketTotals {

@@ -2,13 +2,28 @@
 // gears traded happens between rich players?" using the precomputed `wealth`
 // block on `summary.json` (see `build_wealth_concentration` in
 // `backend/process_auction_data.py`). A player's wealth is their net seller
-// revenue plus buyer spend; the wealthiest 10% are the "elite". The stacked bar
-// splits every matched sale into trades between the elite, trades bridging the
-// elite and everyone else, and trades among the rest.
+// revenue plus buyer spend, so both sides of the market count.
+//
+// The backend no longer bakes in a fixed "elite" cutoff — it ships the full
+// ranked wealth distribution (`players`, richest first) plus two cutoff-
+// independent flow arrays indexed by trader rank. That lets the viewer choose
+// how the elite are defined and recompute everything live:
+//   * "Top %"     — the richest N% of traders. Simple, but dilutes as more
+//                   players join a server.
+//   * "Net worth" — everyone worth at least X gears. Stable regardless of how
+//                   many players join, so it stays meaningful as a server grows.
+// For a chosen elite of the top `k` traders, the three flow buckets are:
+//   elite ↔ elite     = sum(saleGearsByMaxRank.slice(0, k))
+//   rest  ↔ rest      = sum(saleGearsByMinRank.slice(k))
+//   elite ↔ everyone  = matchedGears − the two above
 
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -20,51 +35,120 @@ import {
 import { StatCard } from "@/components/usage/StatCard";
 import { formatGears } from "@/lib/auction";
 import { cn } from "@/lib/utils";
-import type { WealthConcentration, WealthPlayer, WealthTier } from "@/models/auction";
-
-/** Gears traded between two tiers, looked up order-independently. */
-function flowGears(w: WealthConcentration, a: WealthTier, b: WealthTier): number {
-  const f = w.flows.find((x) => (x.a === a && x.b === b) || (x.a === b && x.b === a));
-  return f?.gears ?? 0;
-}
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  setWealthMode,
+  setWealthPercent,
+  setWealthThreshold,
+  type WealthEliteMode,
+} from "@/store/slices/marketWealth";
+import type { WealthConcentration, WealthPlayer } from "@/models/auction";
 
 const SEGMENTS = [
-  {
-    key: "elite",
-    label: "Between elite seraphs",
-    color: "bg-amber-500",
-  },
-  {
-    key: "mixed",
-    label: "Elite ↔ everyone else",
-    color: "bg-sky-500",
-  },
-  {
-    key: "rest",
-    label: "Among the rest",
-    color: "bg-slate-400 dark:bg-slate-500",
-  },
+  { key: "elite", label: "Between elite seraphs", color: "bg-amber-500" },
+  { key: "mixed", label: "Elite ↔ everyone else", color: "bg-sky-500" },
+  { key: "rest", label: "Among the rest", color: "bg-slate-400 dark:bg-slate-500" },
 ] as const;
 
+type EliteMode = WealthEliteMode;
+
+// Quick presets for the "Top %" control (also drawn as slider ticks).
+const PERCENT_PRESETS = [1, 5, 10, 25, 50];
+// Resolution of the log-scaled net-worth slider.
+const AMOUNT_SLIDER_STEPS = 1000;
+
+/** Number of players (from the top, richest first) worth at least `threshold`.
+ *  `players` is sorted by wealth descending, so this is a binary search for the
+ *  first player below the threshold. */
+function countAtLeast(players: WealthPlayer[], threshold: number): number {
+  let lo = 0;
+  let hi = players.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (players[mid].wealth >= threshold) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
 export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) {
-  if (!wealth || wealth.matchedGears <= 0) return null;
+  const players = wealth?.players;
+  const n = wealth?.traderCount ?? 0;
 
-  const ee = flowGears(wealth, "elite", "elite");
-  const mixed = flowGears(wealth, "elite", "mid") + flowGears(wealth, "elite", "regular");
-  const rest =
-    flowGears(wealth, "mid", "mid") +
-    flowGears(wealth, "mid", "regular") +
-    flowGears(wealth, "regular", "regular");
+  // Wealth at the default top-10% boundary — the initial net-worth threshold, so
+  // switching from "Top %" (default 10%) to "Net worth" starts on equal footing.
+  const defaultThreshold = useMemo(() => {
+    if (!players || players.length === 0) return 0;
+    const k = Math.max(1, Math.ceil(players.length * 0.1));
+    return players[k - 1].wealth;
+  }, [players]);
 
+  const dispatch = useAppDispatch();
+  const mode = useAppSelector((s) => s.marketWealth.mode);
+  const percent = useAppSelector((s) => s.marketWealth.percent);
+  const threshold = useAppSelector((s) => s.marketWealth.threshold);
+  const effThreshold = threshold ?? defaultThreshold;
+
+  // Prefix sums for the flow arrays + running wealth, so any cutoff `k` is O(1).
+  const sums = useMemo(() => {
+    if (!wealth?.saleGearsByMaxRank || !wealth.saleGearsByMinRank || !players) {
+      return null;
+    }
+    const maxR = wealth.saleGearsByMaxRank;
+    const minR = wealth.saleGearsByMinRank;
+    const len = players.length;
+    // eePrefix[k] = gears where both parties rank < k (both elite).
+    const eePrefix = new Float64Array(len + 1);
+    for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + (maxR[i] ?? 0);
+    // rrSuffix[k] = gears where both parties rank >= k (both non-elite).
+    const rrSuffix = new Float64Array(len + 1);
+    for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + (minR[i] ?? 0);
+    // wealthPrefix[k] = total wealth of the richest k players.
+    const wealthPrefix = new Float64Array(len + 1);
+    for (let i = 0; i < len; i++) wealthPrefix[i + 1] = wealthPrefix[i] + players[i].wealth;
+    return { eePrefix, rrSuffix, wealthPrefix };
+  }, [wealth, players]);
+
+  // Log-scale mapping for the net-worth slider (wealth is heavily skewed, so a
+  // linear slider would waste most of its travel on the poorest players).
+  const amountRange = useMemo(() => {
+    if (!players || players.length === 0) return null;
+    const hi = Math.max(players[0].wealth, 1);
+    const lo = 1; // 1 gear floor keeps the log defined.
+    return { lo, hi, logLo: Math.log(lo), logHi: Math.log(hi) };
+  }, [players]);
+
+  const sliderPos = useMemo(() => {
+    if (!amountRange) return 0;
+    const { lo, logLo, logHi } = amountRange;
+    const w = Math.max(effThreshold, lo);
+    const frac = (Math.log(w) - logLo) / (logHi - logLo || 1);
+    return Math.round(frac * AMOUNT_SLIDER_STEPS);
+  }, [amountRange, effThreshold]);
+
+  if (!wealth || !players || players.length === 0 || wealth.matchedGears <= 0 || !sums) {
+    return null;
+  }
+
+  // Resolve the chosen elite as the richest `k` traders.
+  const k =
+    mode === "percent"
+      ? Math.min(n, Math.max(1, Math.ceil((percent / 100) * n)))
+      : countAtLeast(players, effThreshold);
+
+  const ee = sums.eePrefix[k];
+  const rest = sums.rrSuffix[k];
   const total = wealth.matchedGears;
-  const values: Record<(typeof SEGMENTS)[number]["key"], number> = {
-    elite: ee,
-    mixed,
-    rest,
-  };
+  const mixed = Math.max(0, total - ee - rest);
+  const values: Record<(typeof SEGMENTS)[number]["key"], number> = { elite: ee, mixed, rest };
   const pct = (v: number) => (total > 0 ? (v / total) * 100 : 0);
 
-  const tc = wealth.tierPlayerCounts;
+  const eliteWealth = sums.wealthPrefix[k];
+  const eliteShare = wealth.totalWealth > 0 ? eliteWealth / wealth.totalWealth : 0;
+  // Wealth of the poorest player still counted as elite (the cutoff line).
+  const eliteFloor = k > 0 ? players[k - 1].wealth : 0;
+  const eliteRoster = players.slice(0, k);
+
   const gini = wealth.gini;
   // Plain-language descriptor for the Gini number, calibrated for a GAME economy
   // rather than a real-world one. Virtual economies are naturally top-heavy —
@@ -82,51 +166,131 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
             ? "Typical"
             : "Low";
 
+  const setThresholdFromPos = (pos: number) => {
+    if (!amountRange) return;
+    const { logLo, logHi, lo } = amountRange;
+    const w = Math.exp(logLo + (pos / AMOUNT_SLIDER_STEPS) * (logHi - logLo));
+    dispatch(setWealthThreshold(Math.max(lo, Math.round(w))));
+  };
+
+  const eliteLabel =
+    mode === "percent" ? `top ${percent}%` : `worth ≥ ${formatGears(effThreshold)}`;
+
   return (
     <Card>
       <CardContent className="space-y-4 py-4">
         <div>
           <div className="font-medium">Wealth concentration</div>
           <p className="text-xs text-muted-foreground">
-            Player wealth = net seller revenue + buyer spend; the wealthiest 10% are the “elite”.
-            The bar splits gears traded (sold auctions with a known buyer and seller) by who was on
-            each side.
+            Player wealth = net seller revenue + buyer spend. Choose how the “elite” are defined,
+            then the bar splits gears traded (sold auctions with a known buyer and seller) by
+            whether the elite were on one side, both, or neither.
           </p>
         </div>
 
-        {/* How the trader population splits across the wealth tiers. */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {wealth.traderCount.toLocaleString()}
-            </span>{" "}
-            seraphs
-          </span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {tc.elite.toLocaleString()}
-            </span>{" "}
-            elite (top 10%)
-          </span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {tc.mid.toLocaleString()}
-            </span>{" "}
-            mid (next 40%)
-          </span>
-          <span>
-            <span className="font-medium text-foreground tabular-nums">
-              {tc.regular.toLocaleString()}
-            </span>{" "}
-            regular (bottom 50%)
-          </span>
+        {/* Elite definition controls. */}
+        <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-medium">Define the elite by</span>
+            <Tabs value={mode} onValueChange={(v) => dispatch(setWealthMode(v as EliteMode))}>
+              <TabsList className="h-8">
+                <TabsTrigger value="percent" className="text-xs">
+                  Top %
+                </TabsTrigger>
+                <TabsTrigger value="amount" className="text-xs">
+                  Net worth
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {mode === "percent" ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span>
+                  Richest{" "}
+                  <span className="font-medium text-foreground tabular-nums">{percent}%</span> of
+                  traders
+                </span>
+                <span>
+                  ={" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {k.toLocaleString()}
+                  </span>{" "}
+                  seraph{k === 1 ? "" : "s"} · worth ≥ {formatGears(eliteFloor)}
+                </span>
+              </div>
+              <Slider
+                value={percent}
+                min={1}
+                max={50}
+                step={1}
+                onValueChange={(v) => dispatch(setWealthPercent(v))}
+                snapMarkers={PERCENT_PRESETS.map((v) => ({ value: v }))}
+                aria-label="Elite share of traders (percent)"
+              />
+              <div className="flex flex-wrap gap-1.5">
+                {PERCENT_PRESETS.map((v) => (
+                  <Button
+                    key={v}
+                    size="sm"
+                    variant={percent === v ? "default" : "outline"}
+                    className="h-6 px-2 text-xs"
+                    onClick={() => dispatch(setWealthPercent(v))}
+                  >
+                    {v}%
+                  </Button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span>Everyone worth at least</span>
+                <span>
+                  ={" "}
+                  <span className="font-medium text-foreground tabular-nums">
+                    {k.toLocaleString()}
+                  </span>{" "}
+                  seraph{k === 1 ? "" : "s"} ·{" "}
+                  <span className="tabular-nums">{n > 0 ? ((k / n) * 100).toFixed(1) : "0"}%</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Slider
+                  value={sliderPos}
+                  min={0}
+                  max={AMOUNT_SLIDER_STEPS}
+                  step={1}
+                  onValueChange={setThresholdFromPos}
+                  className="flex-1"
+                  aria-label="Minimum net worth to be elite (gears)"
+                />
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    min={0}
+                    value={Math.round(effThreshold)}
+                    onChange={(e) => {
+                      const v = Number(e.target.value);
+                      dispatch(setWealthThreshold(Number.isFinite(v) && v >= 0 ? v : 0));
+                    }}
+                    className="h-7 w-24 text-right tabular-nums"
+                    aria-label="Minimum net worth (gears)"
+                  />
+                  <span className="text-xs text-muted-foreground">⚙</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <StatCard label="Elite seraphs" value={k.toLocaleString()} hint={eliteLabel} />
           <StatCard
-            label="Top 10% wealth share"
-            value={`${(wealth.eliteShareOfWealth * 100).toFixed(0)}%`}
-            hint={`held by ${tc.elite.toLocaleString()} elite seraphs`}
+            label="Elite wealth share"
+            value={`${(eliteShare * 100).toFixed(0)}%`}
+            hint="of all market wealth"
           />
           <StatCard label="Traded between elite" value={`${pct(ee).toFixed(0)}%`} />
           <StatCard
@@ -147,14 +311,15 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
             >
               Gini coefficient
             </a>{" "}
-            (0 = everyone equally wealthy, 1 = a single player holds it all). Accumulated wealth is
-            very unequal even in the real world (national wealth Gini ≈ 0.85), and virtual game
-            economies usually sit around 0.7–0.9, so a high number here is normal.
+            (0 = everyone equally wealthy, 1 = a single player holds it all) and doesn’t change with
+            your elite cutoff. Accumulated wealth is very unequal even in the real world (national
+            wealth Gini ≈ 0.85), and virtual game economies usually sit around 0.7–0.9, so a high
+            number here is normal.
           </p>
         )}
 
         {/* Who the elite actually are. */}
-        {wealth.elite && wealth.elite.length > 0 && <EliteRoster elite={wealth.elite} />}
+        {eliteRoster.length > 0 && <EliteRoster elite={eliteRoster} label={eliteLabel} />}
 
         {/* 100% stacked flow bar */}
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
@@ -194,9 +359,9 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
   );
 }
 
-/** Expandable roster of the elite players (richest 10%), opened in a dialog.
- *  Each row links to that player's market profile. */
-function EliteRoster({ elite }: { elite: WealthPlayer[] }) {
+/** Expandable roster of the elite players, opened in a dialog. Each row links to
+ *  that player's market profile. */
+function EliteRoster({ elite, label }: { elite: WealthPlayer[]; label: string }) {
   return (
     <Dialog>
       <DialogTrigger render={<Button variant="outline" size="sm" className="w-full sm:w-auto" />}>
@@ -206,7 +371,7 @@ function EliteRoster({ elite }: { elite: WealthPlayer[] }) {
         <DialogHeader>
           <DialogTitle>Elite Seraphs</DialogTitle>
           <DialogDescription>
-            The wealthiest 10% by net seller revenue plus buyer spend, richest first.
+            The {label} by net seller revenue plus buyer spend, richest first.
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[60vh] overflow-y-auto rounded-md border divide-y">

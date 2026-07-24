@@ -38,6 +38,7 @@ import { topsMapPreviewSlice } from "./slices/topsMapPreview";
 import { auctionFiltersSlice } from "./slices/auctionFilters";
 import { insightsFiltersSlice } from "./slices/insightsFilters";
 import { marketConcentrationSlice } from "./slices/marketConcentration";
+import { marketWealthSlice } from "./slices/marketWealth";
 import { marketFavoritesSlice } from "./slices/marketFavorites";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
@@ -63,6 +64,7 @@ const rootReducer = combineReducers({
     auctionFilters: auctionFiltersSlice.reducer,
     insightsFilters: insightsFiltersSlice.reducer,
     marketConcentration: marketConcentrationSlice.reducer,
+    marketWealth: marketWealthSlice.reducer,
     marketFavorites: marketFavoritesSlice.reducer,
 });
 

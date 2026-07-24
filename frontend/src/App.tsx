@@ -132,7 +132,15 @@ export default function App() {
         // 2026-07-04 — v7: the auction `summary.json` time series gained
         // `missing` (auctions inferred from sequential-id gaps). Stale
         // snapshots lack the "Missing auctions" trend line.
-        buster: "v7-2026-07-04-auction-missing",
+        //
+        // 2026-07-24 — v8: the auction `summary.json` `wealth` block was
+        // reworked so the viewer can choose how the "elite" are defined. It
+        // dropped the fixed-cutoff fields (`tierPlayerCounts`,
+        // `eliteShareOfWealth`, `elite`, `flows`) for `players`, `totalWealth`
+        // and the rank-indexed `saleGearsByMaxRank` / `saleGearsByMinRank`
+        // arrays. A stale hydrated summary lacks these, so the wealth chart
+        // renders nothing until it refetches.
+        buster: "v8-2026-07-24-auction-wealth-tiers",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;
