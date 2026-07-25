@@ -109,7 +109,7 @@ export function SelectedTranslocatorHeader({
           Z {selectedTranslocator.z2.toLocaleString()}
         </span>
       </span>
-      {meta?.addedBy && (
+      {/* {meta?.addedBy && (
         <span className="text-xs">
           {addedAtLabel
             ? t("topsMap.selectedTranslocator.addedByOn", {
@@ -118,7 +118,7 @@ export function SelectedTranslocatorHeader({
               })
             : t("topsMap.selectedTranslocator.addedBy", { name: meta.addedBy })}
         </span>
-      )}
+      )} */}
       {translocatorPinned ? (
         <Button
           type="button"
