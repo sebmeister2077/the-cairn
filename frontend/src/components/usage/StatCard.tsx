@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 
 interface StatCardProps {
@@ -12,10 +13,12 @@ interface StatCardProps {
   previous?: number;
   /** Optional secondary line of muted text shown below the value. */
   hint?: string;
+  /** Optional arbitrary content rendered below the hint (e.g. a warning chip). */
+  footer?: ReactNode;
 }
 
 /** Single headline number with optional period-over-period delta. */
-export function StatCard({ label, value, previous, hint }: StatCardProps) {
+export function StatCard({ label, value, previous, hint, footer }: StatCardProps) {
   let deltaStr: string | null = null;
   let deltaClass = "text-muted-foreground";
   if (previous != null && typeof value === "number") {
@@ -39,6 +42,7 @@ export function StatCard({ label, value, previous, hint }: StatCardProps) {
         <div className="text-3xl font-semibold tabular-nums">{displayValue}</div>
         {deltaStr ? <div className={`text-xs mt-1 ${deltaClass}`}>{deltaStr}</div> : null}
         {hint ? <div className="mt-1 text-xs text-muted-foreground">{hint}</div> : null}
+        {footer}
       </CardContent>
     </Card>
   );

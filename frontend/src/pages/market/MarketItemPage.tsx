@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { ExternalLink, Info, ArrowLeft, ArrowUp } from "lucide-react";
+import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert } from "lucide-react";
 import {
   ComposedChart,
   Bar,
@@ -530,6 +530,13 @@ export function MarketItemPage() {
   const fairStack = priceMode === "weighted" ? weightedStack : medianStackPrice;
   const priceModeWeighted = priceMode === "weighted";
 
+  // Low statistical confidence: fewer than 5 recorded sales in the window (the
+  // "low" tier used on the Insights page, see `confidenceFor`). With so few
+  // trades the fair price is easily skewed by a single outlier, so we flag it in
+  // the card and steer people to the raw listings / other sources.
+  const soldCount = insight?.soldCount ?? 0;
+  const lowConfidence = soldCount < 5;
+
   // Metal items only: a fair price for this item blended from *every* form of the
   // same metal. Each sold listing across all forms is normalized to its per-
   // unit-of-metal price (price / metal units), aggregated (median, or quantity-
@@ -1033,6 +1040,32 @@ export function MarketItemPage() {
               : perUnitUseful
                 ? "Median of sold listings"
                 : `Median sold price, normalized to a full stack of ${stackSize}`
+          }
+          footer={
+            lowConfidence ? (
+              <div className="mt-1.5">
+                <Popover>
+                  <PopoverTrigger
+                    render={
+                      <button
+                        type="button"
+                        className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      >
+                        <TriangleAlert className="size-3.5 shrink-0" aria-hidden />
+                        Low confidence
+                      </button>
+                    }
+                  />
+                  <PopoverContent className="max-w-xs">
+                    <p className="text-left text-xs">
+                      Only {soldCount} recorded sale{soldCount === 1 ? "" : "s"} in this range — too
+                      few to trust. A single outlier can skew the price, so treat this as a rough
+                      guide and scan the listings below (and other sources) before pricing.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            ) : undefined
           }
         />
         <StatCard
