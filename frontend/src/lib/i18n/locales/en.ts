@@ -50,6 +50,7 @@ export const en = {
                 manage: "Manage",
                 usage: "Usage",
                 market: "Auction House",
+                rarity: "Rarity",
             },
             subtabs: {
                 extract: "Extract",
@@ -84,6 +85,7 @@ export const en = {
                 marketOrders: "Orders",
                 marketLeaderboards: "Leaderboards",
                 marketMap: "Trade Map",
+                rarityRocks: "Rocks",
             },
             chip: {
                 new: "New",
@@ -1983,6 +1985,55 @@ export const en = {
             },
             startTlMarker: "Start TL",
             endTlMarker: "End TL",
+        },
+    },
+    rarityPage: {
+        rocks: {
+            title: "Rock rarity & pricing",
+            subtitle:
+                "Estimate how rare each rock (and its aged variants) is, and turn that into suggested prices.",
+            intro:
+                "The TOPS map only reveals the surface rock type, so each rock's share of the map is a good proxy for how common it is. Rarity here is measured relative to granite — the most common rock — so a rock covering half as much ground is roughly twice as rare.",
+            igneousNote:
+                "Igneous rocks (granite, andesite, basalt, peridotite) form much taller strata underground than they show on the surface, so their surface share is multiplied by the igneous boost before rarity is worked out. Everything is priced in rusty gears.",
+            inputsTitle: "Pricing inputs",
+            inputsSubtitle:
+                "Edit any value below — the rarity table updates instantly. Your choices are remembered on this device.",
+            basePrice: "Base price",
+            basePriceHint: "Price of the reference rock's aged ashlar (granite).",
+            igneousBoost: "Igneous boost",
+            igneousBoostHint: "Multiplies igneous rocks' surface share to reflect tall strata.",
+            polishedMult: "Polished multiplier",
+            polishedMultHint: "Aged polished price = ashlar × this.",
+            crackedMult: "Cracked / cobbled multiplier",
+            crackedMultHint: "Aged cracked / cobbled price = ashlar × this.",
+            curveLabel: "Rarity curve",
+            recommended: "Recommended",
+            curve: {
+                linear: "Linear",
+                sqrt: "Square root",
+                log: "Logarithmic",
+            },
+            curveDesc: {
+                linear:
+                    "Strictly proportional to rarity — a rock 10× rarer costs 10× more. Brutal; rare rocks become hoarder bait.",
+                sqrt: "A rock 10× rarer costs about 3.2× more. Balanced: rare rocks feel premium without being absurd.",
+                log: "Very flat — a rock 10× rarer costs ~3.3× more, but 100× rarer only ~5.6× more. Pricing barely cares about rarity past a point.",
+            },
+            reset: "Reset to defaults",
+            tableTitle: "Rocks by rarity",
+            tableSubtitle: "Rarest first. Prices shown for the selected curve, per aged variant.",
+            colRock: "Rock",
+            colRarity: "Map share",
+            colRatio: "Rarity",
+            colAshlar: "Ashlar",
+            colPolished: "Polished",
+            colCracked: "Cracked",
+            igneous: "Igneous",
+            reference: "Reference",
+            noData: "No rock map data is available.",
+            tableFootnote:
+                "Rarity is derived from the bundled TOPS rock-strata map. Map share is each rock's percentage of the total boosted surface area; rarity is its price ratio relative to granite (1.00×).",
         },
     },
 } as const;

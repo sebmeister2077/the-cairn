@@ -52,6 +52,7 @@ import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
 import { GeneralPage } from "@/pages/GeneralPage";
+import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
 import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
 import { BlogPostPage } from "@/pages/blog/BlogPostPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,6 +86,7 @@ const BASE_CATEGORIES = [
   { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
   { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
   { value: "/market", labelKey: "app.nav.categories.market" },
+  { value: "/rarity", labelKey: "app.nav.categories.rarity" },
   { value: "/tools", labelKey: "app.nav.categories.tools" },
 ] as const;
 
@@ -119,6 +121,9 @@ const NavigationRoutes = {
     Orders: "/market/orders",
     Leaderboards: "/market/leaderboards",
     Map: "/market/map",
+  },
+  Rarity: {
+    Rocks: "/rarity/rocks",
   },
   General: {},
   Manage: {
@@ -190,6 +195,8 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketOrders"
   | "app.nav.subtabs.marketLeaderboards"
   | "app.nav.subtabs.marketMap"
+  | "app.nav.categories.rarity"
+  | "app.nav.subtabs.rarityRocks"
   | "app.nav.chip.new"
   | "app.nav.chip.adminOnLeave";
 const subTabs: Subtabs = {
@@ -232,6 +239,7 @@ const subTabs: Subtabs = {
     { value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" },
     { value: "/tools/waypoints", labelKey: "app.nav.subtabs.waypointMacro" },
   ],
+  "/rarity": [{ value: "/rarity/rocks", labelKey: "app.nav.subtabs.rarityRocks" }],
   "/manage": [
     { value: "/manage/api-keys", labelKey: "app.nav.subtabs.apiKeys" },
     { value: "/manage/users", labelKey: "app.nav.subtabs.users" },
@@ -1055,6 +1063,15 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketPlayerPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route path="/rarity" element={<Navigate to="/rarity/rocks" replace />} />
+          <Route
+            path="/rarity/rocks"
+            element={
+              <ErrorBoundary title="Rarity failed" resetKeys={[location.pathname]}>
+                <RockRarityPage />
               </ErrorBoundary>
             }
           />
