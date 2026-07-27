@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -136,6 +137,14 @@ export function MarketPlayerPage() {
         delivery,
       };
     }, [data, decodedUid, windowDays]);
+
+  // Report the resolved in-game name (never the raw uid fallback) so the admin
+  // usage "Items & Players" tab can show names instead of opaque uids.
+  useReportEntityLabel(
+    "/market/players/:uid",
+    decodedUid || null,
+    name && name !== decodedUid ? name : null,
+  );
 
   if (isLoading) {
     return (

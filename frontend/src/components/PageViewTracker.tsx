@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { API_BASE, getStoredApiKey } from "@/lib/api";
-import { normalizePath } from "@/lib/pageTracking";
+import { describePath, type PathDescriptor } from "@/lib/pageTracking";
 
 /**
  * Best-effort page-view recorder for the admin Usage "Pages" dashboard.
@@ -28,7 +28,7 @@ const NAV_DEBOUNCE_MS = 300;
 export function PageViewTracker(): null {
   const location = useLocation();
   const lastQueued = useRef<string | null>(null);
-  const buffer = useRef<string[]>([]);
+  const buffer = useRef<PathDescriptor[]>([]);
   const flushTimer = useRef<number | null>(null);
   const navTimer = useRef<number | null>(null);
 
@@ -45,12 +45,13 @@ export function PageViewTracker(): null {
     });
   };
 
-  const enqueue = (path: string) => {
-    // Collapse same-path-as-last-queued so a re-render that re-fires
-    // the same pathname doesn't double-count.
-    if (path === lastQueued.current) return;
-    lastQueued.current = path;
-    buffer.current.push(path);
+  const enqueue = (entry: PathDescriptor) => {
+    // Collapse same-entry-as-last-queued so a re-render that re-fires the
+    // same route (and ref) doesn't double-count.
+    const key = entry.ref ? `${entry.template}\u0000${entry.ref}` : entry.template;
+    if (key === lastQueued.current) return;
+    lastQueued.current = key;
+    buffer.current.push(entry);
 
     if (buffer.current.length >= MAX_BUFFER) {
       flush(false);
@@ -66,11 +67,11 @@ export function PageViewTracker(): null {
 
   // Queue on every route change (debounced to ignore in-flight redirects).
   useEffect(() => {
-    const template = normalizePath(location.pathname);
+    const desc = describePath(location.pathname);
     if (navTimer.current !== null) window.clearTimeout(navTimer.current);
     navTimer.current = window.setTimeout(() => {
       navTimer.current = null;
-      enqueue(template);
+      enqueue(desc);
     }, NAV_DEBOUNCE_MS);
     return () => {
       if (navTimer.current !== null) {
@@ -100,10 +101,12 @@ export function PageViewTracker(): null {
   return null;
 }
 
-async function sendBatch(paths: string[], useBeacon: boolean): Promise<void> {
-  if (paths.length === 0) return;
+async function sendBatch(entries: PathDescriptor[], useBeacon: boolean): Promise<void> {
+  if (entries.length === 0) return;
   const url = `${API_BASE}/usage/page-views`;
-  const body = JSON.stringify({ events: paths.map((p) => ({ path: p })) });
+  const body = JSON.stringify({
+    events: entries.map((e) => (e.ref ? { path: e.template, ref: e.ref } : { path: e.template })),
+  });
   const apiKey = getStoredApiKey();
 
   // Beacon is fire-and-forget and survives ``pagehide`` — ideal for the

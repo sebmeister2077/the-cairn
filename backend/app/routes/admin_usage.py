@@ -954,6 +954,90 @@ async def usage_pages(
 
 
 # ---------------------------------------------------------------------------
+# /page-entities — most-viewed individual items / player profiles.
+# ---------------------------------------------------------------------------
+
+# Route templates that opt into per-entity (``metadata->>'ref'``) analytics.
+# Keep in sync with ``REF_ROUTES`` in the frontend ``lib/pageTracking.ts``.
+_ENTITY_PATHS = {
+    "/market/items/:itemId",
+    "/market/players/:uid",
+}
+
+
+@router.get("/page-entities")
+async def usage_page_entities(
+    _: str = Depends(require_admin),
+    path: str = Query(..., max_length=128),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=_TOP_N_CAP),
+) -> dict:
+    """Return the most-viewed entities for a ref-enabled route template.
+
+    ``page.view`` rows for these routes carry the raw entity id in
+    ``metadata->>'ref'``; this groups by that ref, counts views / distinct
+    actors / distinct IPs, and joins :data:`page_entity_labels` for the
+    human-readable name reported by the item/player pages.
+    """
+    if path not in _ENTITY_PATHS:
+        raise HTTPException(status_code=400, detail="unsupported entity path")
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    cache_key = ("page-entities", path, _iso(start), _iso(end), int(limit))
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT e.ref AS ref,
+                          e.views AS views,
+                          e.distinct_actors AS distinct_actors,
+                          e.distinct_ips AS distinct_ips,
+                          l.label AS label
+                     FROM (
+                        SELECT metadata->>'ref' AS ref,
+                               COUNT(*)::int AS views,
+                               COUNT(DISTINCT actor_api_key_id)::int AS distinct_actors,
+                               COUNT(DISTINCT ip_hash)::int AS distinct_ips
+                          FROM usage_events
+                         WHERE event_type = 'page.view'
+                           AND created_at >= %s AND created_at < %s
+                           AND metadata->>'path' = %s
+                           AND metadata ? 'ref'
+                      GROUP BY metadata->>'ref'
+                      ORDER BY views DESC
+                         LIMIT %s
+                     ) e
+                     LEFT JOIN page_entity_labels l
+                            ON l.path = %s AND l.ref = e.ref
+                 ORDER BY e.views DESC""",
+                (start, end, path, int(limit), path),
+            )
+            rows = [
+                {
+                    "ref": r["ref"],
+                    "label": r["label"],
+                    "views": int(r["views"]),
+                    "distinct_actors": int(r["distinct_actors"] or 0),
+                    "distinct_ips": int(r["distinct_ips"] or 0),
+                }
+                for r in cur.fetchall()
+            ]
+
+    payload = {
+        "from": _iso(start),
+        "to": _iso(end),
+        "path": path,
+        "top": rows,
+    }
+    _cache_put(cache_key, payload)
+    return payload
+
+
+# ---------------------------------------------------------------------------
 # /saved-routes — Route planner "save for road workers" analytics.
 # ---------------------------------------------------------------------------
 

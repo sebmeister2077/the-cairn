@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert } from "lucide-react";
+import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
 import {
   ComposedChart,
   Bar,
@@ -830,6 +831,13 @@ export function MarketItemPage() {
     ],
     [hasVariants, combineOres, oreGroup, hasTextListings, hasToolAttrs, currentGameHours],
   );
+
+  // Report the real item name (never a ``#id`` fallback) so the admin usage
+  // "Items & Players" tab can show names instead of raw ids. Called before the
+  // early returns below to keep hook order stable across renders.
+  const reportableName =
+    (combineOres && oreGroup ? oreGroup.name : insight?.name) ?? itemListings[0]?.name ?? null;
+  useReportEntityLabel("/market/items/:itemId", itemId ?? null, reportableName);
 
   if (listingsQ.isLoading) {
     return (

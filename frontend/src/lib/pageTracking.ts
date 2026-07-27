@@ -121,3 +121,49 @@ export function normalizePath(pathname: string): string {
     }
     return genericTemplate(p);
 }
+
+// Routes that opt into per-entity analytics: the raw id after the template
+// prefix is captured as a ``ref`` so the admin "Items & Players" tab can rank
+// individual entities. The capture group holds the id. Keep the template
+// strings in sync with ``_ENTITY_PATHS`` in the backend ``admin_usage.py``.
+const REF_ROUTES: Array<{ re: RegExp; template: string }> = [
+    { re: /^\/market\/items\/([^/]+)$/, template: "/market/items/:itemId" },
+    { re: /^\/market\/players\/([^/]+)$/, template: "/market/players/:uid" },
+];
+
+// A ref must satisfy the server-side ``_REF_RE``. The charset covers base64
+// (VS player uids are base64 and contain ``+`` / ``/`` / ``=``) plus common id
+// punctuation. Ids with characters outside this set are simply not attributed
+// — the view still counts under the template, it just isn't ranked per-entity.
+const REF_SAFE_RE = /^[A-Za-z0-9:_.+/=-]{1,64}$/;
+
+export interface PathDescriptor {
+    /** Bounded-cardinality route template, e.g. ``/market/items/:itemId``. */
+    template: string;
+    /** Raw entity id for ref-enabled routes, when present and URL-safe. */
+    ref?: string;
+}
+
+/**
+ * Like :func:`normalizePath` but also extracts the raw entity id for
+ * ref-enabled routes so per-entity analytics can rank individual items /
+ * player profiles without exploding the ``metadata->>'path'`` cardinality.
+ */
+export function describePath(pathname: string): PathDescriptor {
+    if (!pathname) return { template: "/unknown" };
+    let p = pathname.split("?")[0].split("#")[0];
+    if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
+    for (const { re, template } of REF_ROUTES) {
+        const m = re.exec(p);
+        if (m) {
+            let raw = m[1];
+            try {
+                raw = decodeURIComponent(raw);
+            } catch {
+                /* leave raw as-is if it isn't valid percent-encoding */
+            }
+            return REF_SAFE_RE.test(raw) ? { template, ref: raw } : { template };
+        }
+    }
+    return { template: normalizePath(p) };
+}

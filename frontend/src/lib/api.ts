@@ -3544,6 +3544,17 @@ export interface UsagePages extends UsageWindow {
     timeline: Array<{ bucket: string; path: string; count: number }>;
 }
 
+export interface UsagePageEntities extends UsageWindow {
+    path: string;
+    top: Array<{
+        ref: string;
+        label: string | null;
+        views: number;
+        distinct_actors: number;
+        distinct_ips: number;
+    }>;
+}
+
 export interface UsageWindowParams {
     from?: string;
     to?: string;
@@ -3594,6 +3605,8 @@ export const adminUsage = {
         _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
     pages: (p: UsageGranularityParams & { limit?: number; path?: string }, signal?: AbortSignal) =>
         _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
+    pageEntities: (p: UsageWindowParams & { path: string; limit?: number }, signal?: AbortSignal) =>
+        _usageGet<UsagePageEntities>("page-entities", { from: p.from, to: p.to, path: p.path, limit: p.limit }, signal),
     savedRoutes: (
         p: UsageGranularityParams & {
             top_limit?: number;
