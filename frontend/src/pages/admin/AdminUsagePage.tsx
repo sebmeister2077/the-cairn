@@ -87,9 +87,9 @@ export function AdminUsagePage() {
       </Card>
 
       <Tabs value={section} onValueChange={(v) => setSection(v as SectionKey)}>
-        <TabsList className="flex flex-wrap gap-1 h-auto">
+        <TabsList className="flex gap-1 h-auto flex-nowrap">
           {SECTIONS.map((s) => (
-            <TabsTrigger key={s.key} value={s.key}>
+            <TabsTrigger key={s.key} value={s.key} className="flex-none">
               {s.label}
             </TabsTrigger>
           ))}
@@ -559,8 +559,20 @@ const ENTITY_KINDS: {
   hrefBase: string;
   encode: boolean;
 }[] = [
-  { key: "items", label: "Items", path: "/market/items/:itemId", hrefBase: "/market/items/", encode: false },
-  { key: "players", label: "Players", path: "/market/players/:uid", hrefBase: "/market/players/", encode: true },
+  {
+    key: "items",
+    label: "Items",
+    path: "/market/items/:itemId",
+    hrefBase: "/market/items/",
+    encode: false,
+  },
+  {
+    key: "players",
+    label: "Players",
+    path: "/market/players/:uid",
+    hrefBase: "/market/players/",
+    encode: true,
+  },
 ];
 
 function EntitiesSection(props: { from: string; to: string }) {
@@ -628,7 +640,9 @@ function EntitiesSection(props: { from: string; to: string }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs text-muted-foreground border-b">
-                    <th className="py-2 pr-4 font-medium">{kind === "items" ? "Item" : "Player"}</th>
+                    <th className="py-2 pr-4 font-medium">
+                      {kind === "items" ? "Item" : "Player"}
+                    </th>
                     <th className="py-2 pr-4 font-medium">Id</th>
                     <th className="py-2 pr-4 font-medium tabular-nums text-right">Views</th>
                     <th className="py-2 pr-4 font-medium tabular-nums text-right">Actors</th>
