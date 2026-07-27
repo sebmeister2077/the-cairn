@@ -15,6 +15,7 @@ import {
   setActiveGroupingIds as setActiveGroupingIdsAction,
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
+  setShowServerLandmarks as setShowServerLandmarksAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
@@ -353,6 +354,11 @@ export function TOPSMapViewPage() {
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
   const setShowLandmarks = useCallback(
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
+    [dispatch],
+  );
+  const showServerLandmarks = useAppSelector((s) => s.mapView.showServerLandmarks);
+  const setShowServerLandmarks = useCallback(
+    (next: boolean) => dispatch(setShowServerLandmarksAction(next)),
     [dispatch],
   );
   const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
@@ -731,6 +737,15 @@ export function TOPSMapViewPage() {
   );
   const terminusCount = useMemo(
     () => (allLandmarks ?? []).filter((p) => p.kind === "Terminus").length,
+    [allLandmarks],
+  );
+  // Server-kind lore POIs excluding the permanent "Spawn" anchor. Drives
+  // the badge next to the fullscreen "Server landmarks" toggle.
+  const serverLandmarkCount = useMemo(
+    () =>
+      (allLandmarks ?? []).filter(
+        (p) => p.kind === "Server" && (p.label ?? "").trim().toLowerCase() !== "spawn",
+      ).length,
     [allLandmarks],
   );
   const translocatorCount = allTranslocators?.length ?? 0;
@@ -1157,7 +1172,9 @@ export function TOPSMapViewPage() {
   // Landmark points fed to the viewer. The Landmarks toggle controls
   // every kind *except* Terminus (which has its own independent toggle).
   // When the Landmarks toggle is off we still surface "Server"-kind
-  // landmarks (always-on POIs).
+  // landmarks (always-on POIs) — unless the dedicated Server-landmarks
+  // toggle is off, in which case every Server landmark is hidden except
+  // the "Spawn" anchor.
   const landmarkPoints = useMemo<WorldPointMarker[]>(() => {
     const base: WorldPointMarker[] = [];
     if (allLandmarks) {
@@ -1166,7 +1183,12 @@ export function TOPSMapViewPage() {
           if (showTerminus) base.push(p);
           continue;
         }
-        if (showLandmarks || p.kind === "Server") base.push(p);
+        if (p.kind === "Server") {
+          const isSpawn = (p.label ?? "").trim().toLowerCase() === "spawn";
+          if (showServerLandmarks || isSpawn) base.push(p);
+          continue;
+        }
+        if (showLandmarks) base.push(p);
       }
     }
     // Traders overlay. A single toggle (`showTraders`) shows traders from
@@ -1274,6 +1296,7 @@ export function TOPSMapViewPage() {
   }, [
     allLandmarks,
     showLandmarks,
+    showServerLandmarks,
     showTerminus,
     showTraders,
     allTraders,
@@ -2573,6 +2596,7 @@ export function TOPSMapViewPage() {
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
               filteringActive={filteringActive}
               landmarkCount={landmarkCount}
+              serverLandmarkCount={serverLandmarkCount}
               terminusCount={terminusCount}
               traderCount={traderCount}
               recentTLCount={recentTLIdSet.size}

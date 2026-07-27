@@ -12,6 +12,7 @@ import {
   setActiveGroupingIds as setActiveGroupingIdsAction,
   toggleActiveGrouping as toggleActiveGroupingAction,
   setShowLandmarks as setShowLandmarksAction,
+  setShowServerLandmarks as setShowServerLandmarksAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
   setShowTraders as setShowTradersAction,
@@ -53,6 +54,7 @@ type FullscreenControlsOverlayProps = {
   visibleTranslocatorCount: number;
   filteringActive: boolean;
   landmarkCount: number;
+  serverLandmarkCount: number;
   terminusCount: number;
   traderCount: number;
   recentTLCount: number;
@@ -94,6 +96,7 @@ export function FullscreenControlsOverlay({
   visibleTranslocatorCount,
   filteringActive,
   landmarkCount,
+  serverLandmarkCount,
   terminusCount,
   traderCount,
   recentTLCount,
@@ -128,6 +131,11 @@ export function FullscreenControlsOverlay({
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
   const setShowLandmarks = useCallback(
     (next: boolean) => dispatch(setShowLandmarksAction(next)),
+    [dispatch],
+  );
+  const showServerLandmarks = useAppSelector((s) => s.mapView.showServerLandmarks);
+  const setShowServerLandmarks = useCallback(
+    (next: boolean) => dispatch(setShowServerLandmarksAction(next)),
     [dispatch],
   );
   const showTerminus = useAppSelector((s) => s.mapView.showTerminus);
@@ -279,6 +287,24 @@ export function FullscreenControlsOverlay({
 
       {/* Top-right: stacked toggles + groupings. */}
       <div className="pointer-events-auto absolute top-16 right-6 flex w-80 flex-col gap-2">
+        <div
+          onClick={() => setShowServerLandmarks(!showServerLandmarks)}
+          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+        >
+          <Switch
+            checked={showServerLandmarks}
+            aria-label={t("topsMap.showServerLandmarksOverlay")}
+          />
+          <Label className="cursor-pointer text-xs leading-tight">
+            {t("topsMap.showServerLandmarks")}
+            <span className="block text-[10px] text-muted-foreground">
+              {t("topsMap.showServerLandmarksSubtitle")}
+            </span>
+          </Label>
+          <span className="ml-auto text-xs text-muted-foreground select-none">
+            {serverLandmarkCount.toLocaleString()}
+          </span>
+        </div>
         <div
           onClick={() => setShowTranslocators(!showTranslocators)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"

@@ -125,6 +125,14 @@ export interface MapViewState {
     activeGroupingIds: string[];
     showLandmarks: boolean;
     /**
+     * Independent toggle for the always-on "Server"-kind landmarks (lore
+     * POIs) that render regardless of {@link showLandmarks}. When false,
+     * every Server landmark is hidden EXCEPT the "Spawn" marker (kept as a
+     * permanent anchor). Default true (current behaviour). Only surfaced in
+     * the fullscreen controls overlay.
+     */
+    showServerLandmarks: boolean;
+    /**
      * Independent toggle for Terminus (one-way death-return teleporter)
      * markers. Decoupled from `showLandmarks` so users can surface
      * Terminus points without the rest of the landmark overlay (and vice
@@ -280,6 +288,7 @@ export function loadInitialMapViewState(): MapViewState {
         groupingsViewMode: readViewMode(),
         activeGroupingIds: readActive(),
         showLandmarks: true,
+        showServerLandmarks: true,
         showTerminus: false,
         showTranslocators: false,
         showTraders: false,
@@ -338,6 +347,9 @@ export const mapViewSlice = createSlice({
         },
         setShowLandmarks(state, action: PayloadAction<boolean>) {
             state.showLandmarks = action.payload;
+        },
+        setShowServerLandmarks(state, action: PayloadAction<boolean>) {
+            state.showServerLandmarks = action.payload;
         },
         setShowTerminus(state, action: PayloadAction<boolean>) {
             state.showTerminus = action.payload;
@@ -531,6 +543,7 @@ export const {
     setActiveGroupingIds,
     toggleActiveGrouping,
     setShowLandmarks,
+    setShowServerLandmarks,
     setShowTerminus,
     setShowTranslocators,
     setShowTraders,
