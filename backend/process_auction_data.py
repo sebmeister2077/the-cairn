@@ -1136,8 +1136,41 @@ def build_wealth_concentration(
     by_min_rank = [0.0] * n
     matched_gears = 0.0
     unmatched_gears = 0.0
+
+    # Per-in-game-month buckets, so the frontend can chart how the flow split
+    # evolved over time. Each bucket carries its own rank-binned flow arrays
+    # (same scheme as the totals above), so the viewer's chosen elite cutoff
+    # recomputes the per-month split live. `wealth_delta` accumulates each
+    # month's contribution to every trader's wealth (seller net revenue + buyer
+    # spend, exactly as the totals are built) so we can snapshot a *cumulative*
+    # Gini — inequality of wealth accumulated up to and including that month.
+    month_bins: Dict[int, Dict[str, Any]] = {}
+    wealth_delta: Dict[int, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
+
+    def ensure_month(month: int) -> Dict[str, Any]:
+        b = month_bins.get(month)
+        if b is None:
+            b = month_bins[month] = {
+                "by_max": [0.0] * n,
+                "by_min": [0.0] * n,
+                "matched": 0.0,
+            }
+        return b
+
     for r in sold:
         su, bu = r.get("sellerUid"), r.get("buyerUid")
+        posted = r.get("postedTotalHours")
+        month = (
+            int(posted // TIME_SERIES_BUCKET_HOURS) if posted and posted > 0 else None
+        )
+        # Cumulative-Gini bookkeeping runs for every sold auction with a known
+        # party and posting month, independent of the matched/rank filter, so
+        # the final cumulative Gini converges to the overall `gini` above.
+        if month is not None:
+            if su:
+                wealth_delta[month][su] += r["price"] - (r.get("traderCut") or 0)
+            if bu:
+                wealth_delta[month][bu] += r["price"]
         if (
             not su
             or not bu
@@ -1151,6 +1184,30 @@ def build_wealth_concentration(
         by_max_rank[max(rs, rb)] += r["price"]
         by_min_rank[min(rs, rb)] += r["price"]
         matched_gears += r["price"]
+        if month is not None:
+            b = ensure_month(month)
+            b["by_max"][max(rs, rb)] += r["price"]
+            b["by_min"][min(rs, rb)] += r["price"]
+            b["matched"] += r["price"]
+
+    # Emit one point per month in chronological order, carrying a running
+    # (cumulative) Gini over wealth accumulated so far.
+    running_wealth: Dict[str, float] = defaultdict(float)
+    time_series: List[Dict[str, Any]] = []
+    for month in sorted(set(month_bins) | set(wealth_delta)):
+        for uid, dv in wealth_delta.get(month, {}).items():
+            running_wealth[uid] += dv
+        b = month_bins.get(month)
+        time_series.append(
+            {
+                "monthIndex": month,
+                "gameHours": month * TIME_SERIES_BUCKET_HOURS,
+                "matchedGears": round(b["matched"], 2) if b else 0.0,
+                "saleGearsByMaxRank": [round(x, 2) for x in b["by_max"]] if b else [],
+                "saleGearsByMinRank": [round(x, 2) for x in b["by_min"]] if b else [],
+                "gini": _gini(list(running_wealth.values())),
+            }
+        )
 
     return {
         "traderCount": n,
@@ -1161,6 +1218,7 @@ def build_wealth_concentration(
         "players": players,
         "saleGearsByMaxRank": [round(x, 2) for x in by_max_rank],
         "saleGearsByMinRank": [round(x, 2) for x in by_min_rank],
+        "timeSeries": time_series,
     }
 
 

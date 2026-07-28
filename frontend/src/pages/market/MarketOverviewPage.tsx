@@ -74,7 +74,7 @@ export function MarketOverviewPage() {
         recordingStart={data.recordingStartGameHours}
       />
 
-      <MarketWealthChart wealth={data.wealth} />
+      <MarketWealthChart wealth={data.wealth} recordingStart={data.recordingStartGameHours} />
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
         <Link to="/market/listings">

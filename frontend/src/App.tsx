@@ -140,7 +140,12 @@ export default function App() {
         // and the rank-indexed `saleGearsByMaxRank` / `saleGearsByMinRank`
         // arrays. A stale hydrated summary lacks these, so the wealth chart
         // renders nothing until it refetches.
-        buster: "v8-2026-07-24-auction-wealth-tiers",
+        //
+        // 2026-07-28 — v9: the auction `summary.json` `wealth` block gained a
+        // per-month `timeSeries` (rank-binned flow arrays + cumulative Gini)
+        // for the new wealth-over-time chart. Stale snapshots lack it, so the
+        // "Over time" section stays hidden until the next refetch.
+        buster: "v9-2026-07-28-auction-wealth-timeseries",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

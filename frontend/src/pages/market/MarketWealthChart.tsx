@@ -17,8 +17,19 @@
 //   rest  ↔ rest      = sum(saleGearsByMinRank.slice(k))
 //   elite ↔ everyone  = matchedGears − the two above
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import {
+  Area,
+  CartesianGrid,
+  ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip as ChartTooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +54,7 @@ import {
   type WealthEliteMode,
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
+import { formatGameDate } from "./VirtualListingsTable";
 
 const SEGMENTS = [
   { key: "elite", label: "Between elite seraphs", color: "bg-amber-500" },
@@ -50,7 +62,22 @@ const SEGMENTS = [
   { key: "rest", label: "Among the rest", color: "bg-slate-400 dark:bg-slate-500" },
 ] as const;
 
+// Hex equivalents of the SEGMENTS tailwind colors, for the recharts area fills
+// (CSS var()/tailwind classes don't resolve inside SVG presentation attrs).
+const SEGMENT_HEX: Record<(typeof SEGMENTS)[number]["key"], string> = {
+  elite: "#f59e0b", // amber-500
+  mixed: "#0ea5e9", // sky-500
+  rest: "#94a3b8", // slate-400
+};
+
 type EliteMode = WealthEliteMode;
+
+/** Short axis labels: 1.2M / 34k / 812. */
+function compactNumber(v: number): string {
+  if (Math.abs(v) >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (Math.abs(v) >= 1000) return `${Math.round(v / 1000)}k`;
+  return String(Math.round(v));
+}
 
 // Quick presets for the "Top %" control (also drawn as slider ticks).
 const PERCENT_PRESETS = [1, 5, 10, 25, 50];
@@ -71,7 +98,13 @@ function countAtLeast(players: WealthPlayer[], threshold: number): number {
   return lo;
 }
 
-export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) {
+export function MarketWealthChart({
+  wealth,
+  recordingStart,
+}: {
+  wealth?: WealthConcentration;
+  recordingStart?: number | null;
+}) {
   const players = wealth?.players;
   const n = wealth?.traderCount ?? 0;
 
@@ -126,6 +159,41 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
     return Math.round(frac * AMOUNT_SLIDER_STEPS);
   }, [amountRange, effThreshold]);
 
+  // Over-time view: per-month prefix sums over each bucket's rank-binned flow
+  // arrays, so the elite/rest split for any cutoff `k` is O(1) per bucket (same
+  // trick as `sums` above, but one set per month).
+  const bucketSums = useMemo(() => {
+    const ts = wealth?.timeSeries;
+    if (!ts || ts.length === 0) return null;
+    return ts.map((b) => {
+      const maxR = b.saleGearsByMaxRank ?? [];
+      const minR = b.saleGearsByMinRank ?? [];
+      const len = maxR.length;
+      const eePrefix = new Float64Array(len + 1);
+      for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + (maxR[i] ?? 0);
+      const rrSuffix = new Float64Array(len + 1);
+      for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + (minR[i] ?? 0);
+      return { eePrefix, rrSuffix };
+    });
+  }, [wealth?.timeSeries]);
+
+  // Snap the real-world "started recording" moment onto the monthly x-axis by
+  // picking the bucket whose in-game clock is closest (mirrors MarketTrendsChart).
+  const recordingLabel = useMemo(() => {
+    const ts = wealth?.timeSeries;
+    if (recordingStart == null || !ts || ts.length === 0) return null;
+    let best = ts[0];
+    for (const p of ts) {
+      if (Math.abs(p.gameHours - recordingStart) < Math.abs(best.gameHours - recordingStart)) {
+        best = p;
+      }
+    }
+    return formatGameDate(best.gameHours);
+  }, [recordingStart, wealth?.timeSeries]);
+
+  // Absolute (per-month) vs cumulative flow view for the over-time chart.
+  const [overTimeCumulative, setOverTimeCumulative] = useState(false);
+
   if (!wealth || !players || players.length === 0 || wealth.matchedGears <= 0 || !sums) {
     return null;
   }
@@ -175,6 +243,34 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
 
   const eliteLabel =
     mode === "percent" ? `top ${percent}%` : `worth ≥ ${formatGears(effThreshold)}`;
+
+  // Per-month elite/rest/mixed split for the current cutoff `k`, optionally
+  // accumulated. Gini rides along as the cumulative inequality line.
+  const overTimeData =
+    wealth.timeSeries && bucketSums
+      ? (() => {
+          let cee = 0;
+          let cmix = 0;
+          let crest = 0;
+          return wealth.timeSeries.map((b, i) => {
+            const bs = bucketSums[i];
+            const kk = Math.min(k, bs.eePrefix.length - 1);
+            const bee = bs.eePrefix[kk];
+            const brest = bs.rrSuffix[kk];
+            const bmix = Math.max(0, b.matchedGears - bee - brest);
+            cee += bee;
+            cmix += bmix;
+            crest += brest;
+            return {
+              label: formatGameDate(b.gameHours),
+              elite: overTimeCumulative ? cee : bee,
+              mixed: overTimeCumulative ? cmix : bmix,
+              rest: overTimeCumulative ? crest : brest,
+              gini: b.gini,
+            };
+          });
+        })()
+      : [];
 
   return (
     <Card>
@@ -354,6 +450,122 @@ export function MarketWealthChart({ wealth }: { wealth?: WealthConcentration }) 
             );
           })}
         </div>
+
+        {/* Over-time view: how the flow split and inequality evolved. */}
+        {overTimeData.length > 0 && (
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-sm font-medium">Over time</div>
+                <p className="text-xs text-muted-foreground">
+                  {overTimeCumulative ? "Cumulative" : "Per in-game month"} gears traded, split by
+                  your elite cutoff ({eliteLabel}), with cumulative wealth inequality (Gini) on the
+                  right.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant={overTimeCumulative ? "default" : "outline"}
+                onClick={() => setOverTimeCumulative((c) => !c)}
+              >
+                {overTimeCumulative ? "Cumulative" : "Per month"}
+              </Button>
+            </div>
+
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={overTimeData}
+                  margin={{ top: 4, right: 8, bottom: 18, left: 4 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 10 }}
+                    interval="preserveStartEnd"
+                    minTickGap={28}
+                  />
+                  <YAxis
+                    yAxisId="gears"
+                    tick={{ fontSize: 11 }}
+                    width={48}
+                    tickFormatter={(v: number) => compactNumber(v)}
+                  />
+                  <YAxis
+                    yAxisId="gini"
+                    orientation="right"
+                    tick={{ fontSize: 11 }}
+                    width={40}
+                    domain={[0, 1]}
+                    ticks={[0, 0.25, 0.5, 0.75, 1]}
+                    tickFormatter={(v: number) => v.toFixed(2)}
+                  />
+                  <ChartTooltip
+                    contentStyle={{
+                      fontSize: 12,
+                      background: "hsl(var(--popover))",
+                      color: "hsl(var(--popover-foreground))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 6,
+                    }}
+                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                    labelFormatter={(label) => `≈ ${label}`}
+                    formatter={(value, name) =>
+                      name === "Wealth inequality (Gini)"
+                        ? [value == null ? "—" : Number(value).toFixed(3), name]
+                        : [formatGears(Number(value)), name]
+                    }
+                  />
+                  {SEGMENTS.map((s) => (
+                    <Area
+                      key={s.key}
+                      yAxisId="gears"
+                      type="monotone"
+                      dataKey={s.key}
+                      stackId="flows"
+                      stroke={SEGMENT_HEX[s.key]}
+                      fill={SEGMENT_HEX[s.key]}
+                      fillOpacity={0.5}
+                      strokeWidth={1}
+                      name={s.label}
+                    />
+                  ))}
+                  <Line
+                    yAxisId="gini"
+                    type="monotone"
+                    dataKey="gini"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    name="Wealth inequality (Gini)"
+                  />
+                  {recordingLabel != null && (
+                    <ReferenceLine
+                      yAxisId="gears"
+                      x={recordingLabel}
+                      stroke="currentColor"
+                      strokeDasharray="5 4"
+                      strokeWidth={2}
+                      ifOverflow="extendDomain"
+                      label={{
+                        value: "Started recording",
+                        position: "insideTopRight",
+                        fontSize: 10,
+                        fill: "currentColor",
+                      }}
+                    />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

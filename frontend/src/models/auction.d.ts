@@ -183,6 +183,31 @@ export interface WealthPlayer {
 }
 
 /**
+ * One in-game month bucket of the wealth flows (keyed by posting time), so the
+ * frontend can chart how the elite/rest trade split and inequality evolved.
+ * The rank-binned arrays use the same global-rank scheme as the totals, so the
+ * viewer's chosen elite cutoff `k` recomputes the per-month split live:
+ *
+ *   elite ↔ elite     = sum(saleGearsByMaxRank.slice(0, k))
+ *   rest  ↔ rest      = sum(saleGearsByMinRank.slice(k))
+ *   elite ↔ everyone  = matchedGears − the two above
+ */
+export interface WealthTimePoint {
+    /** Months since world start (bucket key). */
+    monthIndex: number;
+    /** In-game total hours at the start of the bucket (for date formatting). */
+    gameHours: number;
+    /** Matched-sale gears in this bucket (both parties known & distinct). */
+    matchedGears: number;
+    /** This bucket's matched gears binned by the richer party's rank (length = traderCount). */
+    saleGearsByMaxRank: number[];
+    /** This bucket's matched gears binned by the poorer party's rank (length = traderCount). */
+    saleGearsByMinRank: number[];
+    /** Cumulative Gini of wealth accumulated up to & including this month; null when unmeasurable. */
+    gini: number | null;
+}
+
+/**
  * Market wealth concentration and rich-to-rich trade flows. A player's wealth is
  * their net seller revenue plus buyer spend.
  *
@@ -214,6 +239,9 @@ export interface WealthConcentration {
     saleGearsByMaxRank?: number[];
     /** Matched-sale gears binned by the poorer party's rank (length = traderCount). */
     saleGearsByMinRank?: number[];
+    /** Per-in-game-month flow buckets for the wealth-over-time chart. Absent in
+     *  data generated before this field existed (and any stale cache). */
+    timeSeries?: WealthTimePoint[];
 }
 
 export interface MarketTotals {
