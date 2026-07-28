@@ -1142,8 +1142,8 @@ def build_wealth_concentration(
     # (same scheme as the totals above), so the viewer's chosen elite cutoff
     # recomputes the per-month split live. `wealth_delta` accumulates each
     # month's contribution to every trader's wealth (seller net revenue + buyer
-    # spend, exactly as the totals are built) so we can snapshot a *cumulative*
-    # Gini — inequality of wealth accumulated up to and including that month.
+    # spend, exactly as the totals are built) so the frontend can recover each
+    # month's per-rank wealth and derive windowed wealth share / Gini.
     month_bins: Dict[int, Dict[str, Any]] = {}
     wealth_delta: Dict[int, Dict[str, float]] = defaultdict(lambda: defaultdict(float))
 
@@ -1191,12 +1191,16 @@ def build_wealth_concentration(
             b["matched"] += r["price"]
 
     # Emit one point per month in chronological order, carrying a running
-    # (cumulative) Gini over wealth accumulated so far.
-    running_wealth: Dict[str, float] = defaultdict(float)
+    # Emit one point per month in chronological order. Each bucket carries its
+    # own rank-binned flow arrays plus `wealthByRank` — the wealth every trader
+    # *earned that month*, indexed by their global wealth rank (0 = richest).
+    # That lets the frontend restrict the whole panel (flows, elite share, Gini)
+    # to any time window by summing the buckets it wants.
     time_series: List[Dict[str, Any]] = []
     for month in sorted(set(month_bins) | set(wealth_delta)):
+        wealth_by_rank = [0.0] * n
         for uid, dv in wealth_delta.get(month, {}).items():
-            running_wealth[uid] += dv
+            wealth_by_rank[rank_by_uid[uid]] += dv
         b = month_bins.get(month)
         time_series.append(
             {
@@ -1205,7 +1209,7 @@ def build_wealth_concentration(
                 "matchedGears": round(b["matched"], 2) if b else 0.0,
                 "saleGearsByMaxRank": [round(x, 2) for x in b["by_max"]] if b else [],
                 "saleGearsByMinRank": [round(x, 2) for x in b["by_min"]] if b else [],
-                "gini": _gini(list(running_wealth.values())),
+                "wealthByRank": [round(x, 2) for x in wealth_by_rank],
             }
         )
 

@@ -55,6 +55,7 @@ import {
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
 import { formatGameDate } from "./VirtualListingsTable";
+import { INSIGHTS_WINDOWS } from "./useMarketInsights";
 
 const SEGMENTS = [
   { key: "elite", label: "Between elite seraphs", color: "bg-amber-500" },
@@ -79,10 +80,32 @@ function compactNumber(v: number): string {
   return String(Math.round(v));
 }
 
+/** Gini coefficient over positive wealth values (0 = equal, →1 = one holder).
+ *  Mirrors the backend `_gini`; null when nothing positive to measure. */
+function giniFromValues(values: ArrayLike<number>): number | null {
+  const vals: number[] = [];
+  for (let i = 0; i < values.length; i++) if (values[i] > 0) vals.push(values[i]);
+  vals.sort((a, b) => a - b);
+  const m = vals.length;
+  if (m === 0) return null;
+  let total = 0;
+  for (const v of vals) total += v;
+  if (total <= 0) return null;
+  let cum = 0;
+  for (let i = 0; i < m; i++) cum += (i + 1) * vals[i];
+  return (2 * cum) / (m * total) - (m + 1) / m;
+}
+
 // Quick presets for the "Top %" control (also drawn as slider ticks).
 const PERCENT_PRESETS = [1, 5, 10, 25, 50];
 // Resolution of the log-scaled net-worth slider.
 const AMOUNT_SLIDER_STEPS = 1000;
+
+// In-game hours per selectable "day" of the time window (one real day of play
+// advances the clock ~720 in-game hours = one in-game month), matching the
+// windowing used by the Insights page. The over-time buckets are monthly, so a
+// window of N days keeps roughly the last N monthly buckets.
+const GAME_HOURS_PER_WINDOW_DAY = 720;
 
 /** Number of players (from the top, richest first) worth at least `threshold`.
  *  `players` is sorted by wealth descending, so this is a binary search for the
@@ -159,23 +182,86 @@ export function MarketWealthChart({
     return Math.round(frac * AMOUNT_SLIDER_STEPS);
   }, [amountRange, effThreshold]);
 
-  // Over-time view: per-month prefix sums over each bucket's rank-binned flow
-  // arrays, so the elite/rest split for any cutoff `k` is O(1) per bucket (same
-  // trick as `sums` above, but one set per month).
-  const bucketSums = useMemo(() => {
+  // Absolute (per-month) vs cumulative flow view for the over-time chart.
+  const [overTimeCumulative, setOverTimeCumulative] = useState(false);
+  // Time window applied to the WHOLE panel (stats, flow bar and over-time
+  // chart). Local to this card — reuses the Insights window presets but doesn't
+  // touch the shared market-wide window. Measured back from the end of the most
+  // recent recorded month, so the Overview page needn't fetch the full listings
+  // dataset just to know the live clock.
+  const [windowKey, setWindowKey] = useState<(typeof INSIGHTS_WINDOWS)[number]["key"]>("all");
+
+  // Aggregate the windowed months once (independent of the elite cutoff `k`):
+  // window-total flow prefix sums, per-rank wealth prefix sums, matched total,
+  // total wealth and Gini for the range — plus each month's own flow prefixes
+  // (for the stacked area) and cumulative-within-window Gini (for the line).
+  const overTime = useMemo(() => {
     const ts = wealth?.timeSeries;
-    if (!ts || ts.length === 0) return null;
-    return ts.map((b) => {
+    const len = players?.length ?? 0;
+    if (!ts || ts.length === 0 || len === 0) return null;
+    const windowDays = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null;
+    const latest = ts[ts.length - 1].gameHours + GAME_HOURS_PER_WINDOW_DAY;
+    const cutoff =
+      windowDays == null ? -Infinity : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
+
+    const aggMax = new Float64Array(len);
+    const aggMin = new Float64Array(len);
+    const aggWealth = new Float64Array(len);
+    const running = new Float64Array(len);
+    let matched = 0;
+    const buckets: {
+      label: string;
+      eePrefix: Float64Array;
+      rrSuffix: Float64Array;
+      matched: number;
+      gini: number | null;
+    }[] = [];
+
+    for (const b of ts) {
+      if (b.gameHours < cutoff) continue;
       const maxR = b.saleGearsByMaxRank ?? [];
       const minR = b.saleGearsByMinRank ?? [];
-      const len = maxR.length;
-      const eePrefix = new Float64Array(len + 1);
-      for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + (maxR[i] ?? 0);
-      const rrSuffix = new Float64Array(len + 1);
-      for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + (minR[i] ?? 0);
-      return { eePrefix, rrSuffix };
-    });
-  }, [wealth?.timeSeries]);
+      const wR = b.wealthByRank ?? [];
+      const bl = maxR.length;
+      const eePrefix = new Float64Array(bl + 1);
+      for (let i = 0; i < bl; i++) eePrefix[i + 1] = eePrefix[i] + (maxR[i] ?? 0);
+      const rrSuffix = new Float64Array(bl + 1);
+      for (let i = bl - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + (minR[i] ?? 0);
+      for (let i = 0; i < len; i++) {
+        aggMax[i] += maxR[i] ?? 0;
+        aggMin[i] += minR[i] ?? 0;
+        const dv = wR[i] ?? 0;
+        aggWealth[i] += dv;
+        running[i] += dv;
+      }
+      matched += b.matchedGears;
+      buckets.push({
+        label: formatGameDate(b.gameHours),
+        eePrefix,
+        rrSuffix,
+        matched: b.matchedGears,
+        gini: giniFromValues(running),
+      });
+    }
+
+    // Window-total prefix sums, so elite/rest/wealth for any cutoff `k` is O(1).
+    const eePrefix = new Float64Array(len + 1);
+    for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + aggMax[i];
+    const rrSuffix = new Float64Array(len + 1);
+    for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + aggMin[i];
+    const wealthPrefix = new Float64Array(len + 1);
+    for (let i = 0; i < len; i++) wealthPrefix[i + 1] = wealthPrefix[i] + aggWealth[i];
+
+    return {
+      buckets,
+      eePrefix,
+      rrSuffix,
+      wealthPrefix,
+      matched,
+      totalWealth: wealthPrefix[len],
+      gini: giniFromValues(aggWealth),
+    };
+  }, [wealth?.timeSeries, players, windowKey]);
 
   // Snap the real-world "started recording" moment onto the monthly x-axis by
   // picking the bucket whose in-game clock is closest (mirrors MarketTrendsChart).
@@ -191,9 +277,6 @@ export function MarketWealthChart({
     return formatGameDate(best.gameHours);
   }, [recordingStart, wealth?.timeSeries]);
 
-  // Absolute (per-month) vs cumulative flow view for the over-time chart.
-  const [overTimeCumulative, setOverTimeCumulative] = useState(false);
-
   if (!wealth || !players || players.length === 0 || wealth.matchedGears <= 0 || !sums) {
     return null;
   }
@@ -204,20 +287,27 @@ export function MarketWealthChart({
       ? Math.min(n, Math.max(1, Math.ceil((percent / 100) * n)))
       : countAtLeast(players, effThreshold);
 
-  const ee = sums.eePrefix[k];
-  const rest = sums.rrSuffix[k];
-  const total = wealth.matchedGears;
+  // Everything below honors the selected time window. "All time" uses the
+  // global aggregates (which also count sales we couldn't date); a narrower
+  // window recomputes from the dated monthly buckets. The elite *definition*
+  // (`k`, the roster, the cutoff floor) always stays global — the window only
+  // scopes the market activity we measure for that fixed elite.
+  const usingWindow = windowKey !== "all" && overTime != null;
+  const ee = usingWindow ? overTime.eePrefix[k] : sums.eePrefix[k];
+  const rest = usingWindow ? overTime.rrSuffix[k] : sums.rrSuffix[k];
+  const total = usingWindow ? overTime.matched : wealth.matchedGears;
   const mixed = Math.max(0, total - ee - rest);
   const values: Record<(typeof SEGMENTS)[number]["key"], number> = { elite: ee, mixed, rest };
   const pct = (v: number) => (total > 0 ? (v / total) * 100 : 0);
 
-  const eliteWealth = sums.wealthPrefix[k];
-  const eliteShare = wealth.totalWealth > 0 ? eliteWealth / wealth.totalWealth : 0;
+  const eliteWealth = usingWindow ? overTime.wealthPrefix[k] : sums.wealthPrefix[k];
+  const totalWealth = usingWindow ? overTime.totalWealth : wealth.totalWealth;
+  const eliteShare = totalWealth > 0 ? eliteWealth / totalWealth : 0;
   // Wealth of the poorest player still counted as elite (the cutoff line).
   const eliteFloor = k > 0 ? players[k - 1].wealth : 0;
   const eliteRoster = players.slice(0, k);
 
-  const gini = wealth.gini;
+  const gini = usingWindow ? overTime.gini : wealth.gini;
   // Plain-language descriptor for the Gini number, calibrated for a GAME economy
   // rather than a real-world one. Virtual economies are naturally top-heavy —
   // veteran players have simply had far longer to accumulate than newcomers — so
@@ -244,33 +334,40 @@ export function MarketWealthChart({
   const eliteLabel =
     mode === "percent" ? `top ${percent}%` : `worth ≥ ${formatGears(effThreshold)}`;
 
-  // Per-month elite/rest/mixed split for the current cutoff `k`, optionally
-  // accumulated. Gini rides along as the cumulative inequality line.
-  const overTimeData =
-    wealth.timeSeries && bucketSums
-      ? (() => {
-          let cee = 0;
-          let cmix = 0;
-          let crest = 0;
-          return wealth.timeSeries.map((b, i) => {
-            const bs = bucketSums[i];
-            const kk = Math.min(k, bs.eePrefix.length - 1);
-            const bee = bs.eePrefix[kk];
-            const brest = bs.rrSuffix[kk];
-            const bmix = Math.max(0, b.matchedGears - bee - brest);
-            cee += bee;
-            cmix += bmix;
-            crest += brest;
-            return {
-              label: formatGameDate(b.gameHours),
-              elite: overTimeCumulative ? cee : bee,
-              mixed: overTimeCumulative ? cmix : bmix,
-              rest: overTimeCumulative ? crest : brest,
-              gini: b.gini,
-            };
-          });
-        })()
-      : [];
+  // Per-month stacked-area data: apply the current cutoff `k` to each windowed
+  // bucket's own flow prefixes (cheap), optionally accumulating. The Gini line
+  // is the cumulative-within-window inequality precomputed in `overTime`.
+  const overTimeData = (() => {
+    if (!overTime) {
+      return [] as {
+        label: string;
+        elite: number;
+        mixed: number;
+        rest: number;
+        gini: number | null;
+      }[];
+    }
+    let cee = 0;
+    let cmix = 0;
+    let crest = 0;
+    return overTime.buckets.map((b) => {
+      const kk = Math.min(k, b.eePrefix.length - 1);
+      const bee = b.eePrefix[kk];
+      const brest = b.rrSuffix[kk];
+      const bmix = Math.max(0, b.matched - bee - brest);
+      cee += bee;
+      cmix += bmix;
+      crest += brest;
+      return {
+        label: b.label,
+        elite: overTimeCumulative ? cee : bee,
+        mixed: overTimeCumulative ? cmix : bmix,
+        rest: overTimeCumulative ? crest : brest,
+        gini: b.gini,
+      };
+    });
+  })();
+  const hasTimeSeries = !!(wealth.timeSeries && wealth.timeSeries.length > 0);
 
   return (
     <Card>
@@ -283,6 +380,26 @@ export function MarketWealthChart({
             whether the elite were on one side, both, or neither.
           </p>
         </div>
+
+        {/* Time window — scopes every figure in this panel (stats, bar, chart).
+            The elite are still defined by all-time wealth; the range only limits
+            the market activity measured for them. */}
+        {hasTimeSeries && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-xs text-muted-foreground">Range:</span>
+            {INSIGHTS_WINDOWS.map((w) => (
+              <Button
+                key={w.key}
+                size="sm"
+                variant={windowKey === w.key ? "default" : "outline"}
+                className="h-7 px-2.5 text-xs"
+                onClick={() => setWindowKey(w.key)}
+              >
+                {w.label}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Elite definition controls. */}
         <div className="space-y-3 rounded-lg border bg-muted/30 p-3">
@@ -386,7 +503,7 @@ export function MarketWealthChart({
           <StatCard
             label="Elite wealth share"
             value={`${(eliteShare * 100).toFixed(0)}%`}
-            hint="of all market wealth"
+            hint={usingWindow ? "of market wealth in range" : "of all market wealth"}
           />
           <StatCard label="Traded between elite" value={`${pct(ee).toFixed(0)}%`} />
           <StatCard
@@ -452,7 +569,7 @@ export function MarketWealthChart({
         </div>
 
         {/* Over-time view: how the flow split and inequality evolved. */}
-        {overTimeData.length > 0 && (
+        {hasTimeSeries && (
           <div className="space-y-2 border-t pt-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -472,98 +589,104 @@ export function MarketWealthChart({
               </Button>
             </div>
 
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart
-                  data={overTimeData}
-                  margin={{ top: 4, right: 8, bottom: 18, left: 4 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10 }}
-                    interval="preserveStartEnd"
-                    minTickGap={28}
-                  />
-                  <YAxis
-                    yAxisId="gears"
-                    tick={{ fontSize: 11 }}
-                    width={48}
-                    tickFormatter={(v: number) => compactNumber(v)}
-                  />
-                  <YAxis
-                    yAxisId="gini"
-                    orientation="right"
-                    tick={{ fontSize: 11 }}
-                    width={40}
-                    domain={[0, 1]}
-                    ticks={[0, 0.25, 0.5, 0.75, 1]}
-                    tickFormatter={(v: number) => v.toFixed(2)}
-                  />
-                  <ChartTooltip
-                    contentStyle={{
-                      fontSize: 12,
-                      background: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 6,
-                    }}
-                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    labelFormatter={(label) => `≈ ${label}`}
-                    formatter={(value, name) =>
-                      name === "Wealth inequality (Gini)"
-                        ? [value == null ? "—" : Number(value).toFixed(3), name]
-                        : [formatGears(Number(value)), name]
-                    }
-                  />
-                  {SEGMENTS.map((s) => (
-                    <Area
-                      key={s.key}
-                      yAxisId="gears"
-                      type="monotone"
-                      dataKey={s.key}
-                      stackId="flows"
-                      stroke={SEGMENT_HEX[s.key]}
-                      fill={SEGMENT_HEX[s.key]}
-                      fillOpacity={0.5}
-                      strokeWidth={1}
-                      name={s.label}
+            {overTimeData.length > 0 ? (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart
+                    data={overTimeData}
+                    margin={{ top: 4, right: 8, bottom: 18, left: 4 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      vertical={false}
                     />
-                  ))}
-                  <Line
-                    yAxisId="gini"
-                    type="monotone"
-                    dataKey="gini"
-                    stroke="#8b5cf6"
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                    name="Wealth inequality (Gini)"
-                  />
-                  {recordingLabel != null && (
-                    <ReferenceLine
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fontSize: 10 }}
+                      interval="preserveStartEnd"
+                      minTickGap={28}
+                    />
+                    <YAxis
                       yAxisId="gears"
-                      x={recordingLabel}
-                      stroke="currentColor"
-                      strokeDasharray="5 4"
-                      strokeWidth={2}
-                      ifOverflow="extendDomain"
-                      label={{
-                        value: "Started recording",
-                        position: "insideTopRight",
-                        fontSize: 10,
-                        fill: "currentColor",
+                      tick={{ fontSize: 11 }}
+                      width={48}
+                      tickFormatter={(v: number) => compactNumber(v)}
+                    />
+                    <YAxis
+                      yAxisId="gini"
+                      orientation="right"
+                      tick={{ fontSize: 11 }}
+                      width={40}
+                      domain={[0, 1]}
+                      ticks={[0, 0.25, 0.5, 0.75, 1]}
+                      tickFormatter={(v: number) => v.toFixed(2)}
+                    />
+                    <ChartTooltip
+                      contentStyle={{
+                        fontSize: 12,
+                        background: "hsl(var(--popover))",
+                        color: "hsl(var(--popover-foreground))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: 6,
                       }}
+                      labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+                      itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+                      labelFormatter={(label) => `≈ ${label}`}
+                      formatter={(value, name) =>
+                        name === "Wealth inequality (Gini)"
+                          ? [value == null ? "—" : Number(value).toFixed(3), name]
+                          : [formatGears(Number(value)), name]
+                      }
                     />
-                  )}
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+                    {SEGMENTS.map((s) => (
+                      <Area
+                        key={s.key}
+                        yAxisId="gears"
+                        type="monotone"
+                        dataKey={s.key}
+                        stackId="flows"
+                        stroke={SEGMENT_HEX[s.key]}
+                        fill={SEGMENT_HEX[s.key]}
+                        fillOpacity={0.5}
+                        strokeWidth={1}
+                        name={s.label}
+                      />
+                    ))}
+                    <Line
+                      yAxisId="gini"
+                      type="monotone"
+                      dataKey="gini"
+                      stroke="#8b5cf6"
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                      name="Wealth inequality (Gini)"
+                    />
+                    {recordingLabel != null && (
+                      <ReferenceLine
+                        yAxisId="gears"
+                        x={recordingLabel}
+                        stroke="currentColor"
+                        strokeDasharray="5 4"
+                        strokeWidth={2}
+                        ifOverflow="extendDomain"
+                        label={{
+                          value: "Started recording",
+                          position: "insideTopRight",
+                          fontSize: 10,
+                          fill: "currentColor",
+                        }}
+                      />
+                    )}
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No dated sales in this time range.
+              </p>
+            )}
           </div>
         )}
       </CardContent>

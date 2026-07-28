@@ -203,8 +203,11 @@ export interface WealthTimePoint {
     saleGearsByMaxRank: number[];
     /** This bucket's matched gears binned by the poorer party's rank (length = traderCount). */
     saleGearsByMinRank: number[];
-    /** Cumulative Gini of wealth accumulated up to & including this month; null when unmeasurable. */
-    gini: number | null;
+    /** Wealth each trader *earned this month* (net seller revenue + buyer spend),
+     *  indexed by their global wealth rank (0 = richest; length = traderCount).
+     *  Summing a window's buckets recovers per-rank wealth for that range, which
+     *  drives the windowed elite-wealth share and Gini. */
+    wealthByRank: number[];
 }
 
 /**
