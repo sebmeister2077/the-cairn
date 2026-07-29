@@ -873,6 +873,27 @@ export function MarketItemPage() {
     (combineOres && oreGroup ? oreGroup.name : insight?.name) ?? itemListings[0]?.name ?? `#${id}`;
   const displayCategory = insight?.category ?? itemListings[0]?.category ?? "unknown";
 
+  // Per-unit sold-price series (oldest → newest) behind the header sparkline,
+  // plus its median for the baseline line. Prices are scaled to whole-stack
+  // terms in the tooltip when the page is stack-priced, matching every other
+  // figure on the page (the sparkline's shape is scale-invariant, so the line
+  // itself is unaffected).
+  const priceSeries = insight?.priceSeries ?? null;
+  const priceSeriesMedian =
+    priceSeries && priceSeries.length >= 2
+      ? percentileSorted([...priceSeries].sort((a, b) => a - b), 0.5)
+      : null;
+  const sparkScale = perUnitUseful ? 1 : stackSize || 1;
+  const sparkUnit = perUnitUseful ? "unit" : "stack";
+  const sparkTitle =
+    priceSeries && priceSeries.length >= 2
+      ? `Recent sold prices, oldest → newest · low ${formatGears(
+          Math.min(...priceSeries) * sparkScale,
+        )}, median ${
+          priceSeriesMedian != null ? formatGears(priceSeriesMedian * sparkScale) : "—"
+        }, high ${formatGears(Math.max(...priceSeries) * sparkScale)} per ${sparkUnit}`
+      : undefined;
+
   return (
     <div className="space-y-5">
       <div>
@@ -887,12 +908,14 @@ export function MarketItemPage() {
           <h1 className="text-2xl font-semibold">{displayName}</h1>
           {trend && (
             <span className="inline-flex items-center gap-1.5">
-              {insight?.priceSeries && insight.priceSeries.length >= 2 && (
+              {priceSeries && priceSeries.length >= 2 && (
                 <Sparkline
-                  data={insight.priceSeries}
+                  data={priceSeries}
                   width={96}
                   height={26}
                   strokeWidth={1.5}
+                  baseline={priceSeriesMedian ?? undefined}
+                  title={sparkTitle}
                   className={
                     trend.direction === "up"
                       ? "text-emerald-600"

@@ -12,6 +12,18 @@ interface SparklineProps {
   /** Stroke colour; defaults to `currentColor` so it inherits the cell's text. */
   color?: string;
   strokeWidth?: number;
+  /**
+   * Optional value to draw a faint dashed horizontal reference line at (e.g. the
+   * median), so it's easy to read whether the latest point sits above or below
+   * the typical price. Clamped into the visible range.
+   */
+  baseline?: number;
+  /**
+   * Optional tooltip / accessible label. When set, the sparkline is exposed to
+   * assistive tech as an image and shows a native hover tooltip instead of being
+   * purely decorative.
+   */
+  title?: string;
 }
 
 export function Sparkline({
@@ -21,6 +33,8 @@ export function Sparkline({
   className,
   color,
   strokeWidth = 1.25,
+  baseline,
+  title,
 }: SparklineProps) {
   if (data.length < 2) return null;
   const min = Math.min(...data);
@@ -29,13 +43,9 @@ export function Sparkline({
   const pad = strokeWidth; // keep the stroke from clipping at the top/bottom
   const usableH = height - pad * 2;
   const stepX = width / (data.length - 1);
-  const points = data
-    .map((v, i) => {
-      const x = i * stepX;
-      const y = pad + (1 - (v - min) / span) * usableH;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
+  const yFor = (v: number) => pad + (1 - (v - min) / span) * usableH;
+  const points = data.map((v, i) => `${(i * stepX).toFixed(1)},${yFor(v).toFixed(1)}`).join(" ");
+  const baseY = baseline != null ? yFor(Math.min(max, Math.max(min, baseline))) : null;
   return (
     <svg
       width={width}
@@ -43,8 +53,27 @@ export function Sparkline({
       viewBox={`0 0 ${width} ${height}`}
       className={cn("overflow-visible", className)}
       preserveAspectRatio="none"
-      aria-hidden
+      role={title ? "img" : undefined}
+      aria-label={title}
+      aria-hidden={title ? undefined : true}
     >
+      {title && <title>{title}</title>}
+      {/* Transparent full-area rect so the native <title> tooltip triggers when
+          hovering anywhere over the sparkline, not just the 1.5px line itself. */}
+      {title && <rect x={0} y={0} width={width} height={height} fill="transparent" />}
+      {baseY != null && (
+        <line
+          x1={0}
+          y1={baseY}
+          x2={width}
+          y2={baseY}
+          className="text-muted-foreground/70"
+          stroke="currentColor"
+          strokeWidth={1}
+          strokeDasharray="3 2"
+          vectorEffect="non-scaling-stroke"
+        />
+      )}
       <polyline
         points={points}
         fill="none"
