@@ -1,9 +1,13 @@
 // React Query loader for the recorded (in-game session export) map features:
-// broken translocators and traders. The source is a large JSON asset bundled
-// with the frontend (`frontend/src/assets/MapFeaturesJson/map-features.json`),
-// so we pull it in via a dynamic `import()` — this keeps it out of the main
-// bundle and only downloads the chunk once a user actually enables one of the
-// recorded-features toggles.
+// broken translocators and traders. The source is a pair of split JSON assets
+// bundled with the frontend, one per feature category
+// (`frontend/src/assets/MapFeaturesJson/map-features.translocators.json` and
+// `…/map-features.traders.json`). Each file is a self-describing envelope
+// (`{ generatedUtc, upstream, worldSpawn, category, count, features[] }`)
+// emitted verbatim by the VsClayProxy `--map-export` split writer. We pull them
+// in via dynamic `import()` — this keeps them out of the main bundle and only
+// downloads the chunks once a user actually enables one of the recorded-features
+// toggles.
 //
 // Coordinate handling (see plan): markers are POSITIONED using the file's
 // spawn-relative `rel` coordinates with z kept AS-IS (not negated like the
@@ -36,9 +40,10 @@ interface RecordedTrader {
     code?: string;
 }
 
-interface RecordedMapFeaturesFile {
-    translocators?: RecordedTranslocator[];
-    traders?: RecordedTrader[];
+/** A single split map-feature file: the self-describing envelope the proxy
+ *  writes per category. Only `features[]` is consumed here. */
+interface RecordedMapFeatureFile<T> {
+    features?: T[];
 }
 
 export interface RecordedTraderMarker extends WorldPointMarker {
@@ -61,9 +66,12 @@ function isFiniteNumber(v: unknown): v is number {
     return typeof v === "number" && Number.isFinite(v);
 }
 
-function parseRecordedMapFeatures(file: RecordedMapFeaturesFile): RecordedMapFeatures {
+function parseRecordedMapFeatures(
+    translocatorFeatures: RecordedTranslocator[],
+    traderFeatures: RecordedTrader[],
+): RecordedMapFeatures {
     const brokenTLs: WorldPointMarker[] = [];
-    for (const tl of file.translocators ?? []) {
+    for (const tl of translocatorFeatures) {
         const rel = tl.rel;
         const abs = tl.abs;
         if (!rel || !isFiniteNumber(rel.x) || !isFiniteNumber(rel.z)) continue;
@@ -82,7 +90,7 @@ function parseRecordedMapFeatures(file: RecordedMapFeaturesFile): RecordedMapFea
     }
 
     const traders: RecordedTraderMarker[] = [];
-    for (const tr of file.traders ?? []) {
+    for (const tr of traderFeatures) {
         const rel = tr.rel;
         if (!rel || !isFiniteNumber(rel.x) || !isFiniteNumber(rel.z)) continue;
         const mapped = mapExportTraderType(tr.type);
@@ -100,8 +108,10 @@ function parseRecordedMapFeatures(file: RecordedMapFeaturesFile): RecordedMapFea
 }
 
 /**
- * Load + parse the recorded map-features asset. Pass `enabled: false` to keep
- * the dynamic import (and its network chunk) from loading until a toggle is on.
+ * Load + parse the recorded map-features assets. Pass `enabled: false` to keep
+ * the dynamic imports (and their network chunks) from loading until a toggle is
+ * on. The two split files are fetched in parallel and each is missing-safe (a
+ * category with no data still resolves to an empty `features[]`).
  */
 export function useRecordedMapFeatures(enabled: boolean): UseQueryResult<RecordedMapFeatures> {
     return useQuery<RecordedMapFeatures>({
@@ -110,10 +120,18 @@ export function useRecordedMapFeatures(enabled: boolean): UseQueryResult<Recorde
         staleTime: Infinity,
         gcTime: Infinity,
         queryFn: async () => {
-            const mod = (await import(
-                "@/assets/MapFeaturesJson/map-features.json"
-            )) as { default: RecordedMapFeaturesFile };
-            return parseRecordedMapFeatures(mod.default ?? {});
+            const [translocatorMod, traderMod] = await Promise.all([
+                import("@/assets/MapFeaturesJson/map-features.translocators.json") as Promise<{
+                    default: RecordedMapFeatureFile<RecordedTranslocator>;
+                }>,
+                import("@/assets/MapFeaturesJson/map-features.traders.json") as Promise<{
+                    default: RecordedMapFeatureFile<RecordedTrader>;
+                }>,
+            ]);
+            return parseRecordedMapFeatures(
+                translocatorMod.default?.features ?? [],
+                traderMod.default?.features ?? [],
+            );
         },
     });
 }

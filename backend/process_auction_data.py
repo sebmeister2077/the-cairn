@@ -730,7 +730,7 @@ def build_records(
     items_catalog: Dict[str, Dict[str, Any]] = {}
 
     for row in rows:
-        stack = decode_itemstack(row.get("Item", {}).get("RawHex"))
+        stack = decode_itemstack((row.get("Item") or {}).get("RawHex"))
         if stack is None:
             continue
         item = resolve_item(stack, row.get("Item") or {}, item_map, registry)

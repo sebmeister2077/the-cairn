@@ -219,6 +219,31 @@ class Settings:
         os.environ.get("RESOURCES_DEPOSITS_PAGE_LIMIT", "5000")
     )
 
+    # --- VsAuctionExport webhook receiver ---
+    # Shared secret for HMAC-SHA256 auth of the auction snapshot webhook
+    # (matches the mod's ``Auth.HmacSecret``). When set, incoming requests
+    # must carry a valid ``X-Signature`` / ``X-Timestamp`` pair.
+    AUCTION_WEBHOOK_HMAC_SECRET: str = os.environ.get("AUCTION_WEBHOOK_HMAC_SECRET", "")
+    # Optional static bearer token (matches the mod's ``Auth.BearerToken``).
+    # When set, incoming requests must carry ``Authorization: Bearer <token>``.
+    AUCTION_WEBHOOK_BEARER_TOKEN: str = os.environ.get("AUCTION_WEBHOOK_BEARER_TOKEN", "")
+    # When ``true``, reject unauthenticated requests even if neither secret
+    # nor token is configured. Leave ``false`` for local testing so the mod
+    # can POST with ``Auth.Mode = None``.
+    AUCTION_WEBHOOK_REQUIRE_AUTH: bool = (
+        os.environ.get("AUCTION_WEBHOOK_REQUIRE_AUTH", "false").strip().lower()
+        in ("1", "true", "yes", "on")
+    )
+    # Max accepted (uncompressed) snapshot body size in bytes. Default 64 MiB.
+    AUCTION_WEBHOOK_MAX_BODY_BYTES: int = int(
+        os.environ.get("AUCTION_WEBHOOK_MAX_BODY_BYTES", str(64 * 1024 * 1024))
+    )
+    # Allowed clock skew (seconds) between the mod's ``X-Timestamp`` and the
+    # server, guarding against replay of captured requests.
+    AUCTION_WEBHOOK_MAX_SKEW_SECONDS: int = int(
+        os.environ.get("AUCTION_WEBHOOK_MAX_SKEW_SECONDS", "300")
+    )
+
     # Cloudflare R2
     R2_ACCOUNT_ID: str = os.environ.get("R2_ACCOUNT_ID", "")
     R2_ACCESS_KEY_ID: str = os.environ.get("R2_ACCESS_KEY_ID", "")

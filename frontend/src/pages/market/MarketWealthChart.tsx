@@ -197,12 +197,11 @@ export function MarketWealthChart({
   // (for the stacked area) and cumulative-within-window Gini (for the line).
   const overTime = useMemo(() => {
     const ts = wealth?.timeSeries;
-    const len = players?.length ?? 0;
-    if (!ts || ts.length === 0 || len === 0) return null;
+    if (!ts || ts.length === 0 || !players || players.length === 0) return null;
+    const len = players.length;
     const windowDays = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null;
     const latest = ts[ts.length - 1].gameHours + GAME_HOURS_PER_WINDOW_DAY;
-    const cutoff =
-      windowDays == null ? -Infinity : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
+    const cutoff = windowDays == null ? -Infinity : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
 
     const aggMax = new Float64Array(len);
     const aggMin = new Float64Array(len);
@@ -244,21 +243,37 @@ export function MarketWealthChart({
       });
     }
 
-    // Window-total prefix sums, so elite/rest/wealth for any cutoff `k` is O(1).
+    // Window-total flow prefix sums, keyed to the ALL-TIME rank (0 = richest
+    // overall), so elite/rest flows for a global-rank cutoff are O(1). Flows can
+    // only be split along the all-time ordering (the backend bins them that
+    // way), so the flow bar/area stay all-time-ranked even when the elite are
+    // re-ranked by window wealth below.
     const eePrefix = new Float64Array(len + 1);
     for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + aggMax[i];
     const rrSuffix = new Float64Array(len + 1);
     for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + aggMin[i];
-    const wealthPrefix = new Float64Array(len + 1);
-    for (let i = 0; i < len; i++) wealthPrefix[i + 1] = wealthPrefix[i] + aggWealth[i];
+
+    // Re-rank every trader by the wealth they earned *in this window* (identity
+    // comes from the all-time roster at the same index). Drives the windowed
+    // count, elite roster, wealth share, cutoff floor and Gini.
+    const windowPlayers = players
+      .map((p, i) => ({ uid: p.uid, name: p.name, wealth: aggWealth[i] }))
+      .filter((p) => p.wealth > 0)
+      .sort((a, b) => b.wealth - a.wealth);
+    const wealthPrefix = new Float64Array(windowPlayers.length + 1);
+    for (let i = 0; i < windowPlayers.length; i++) {
+      wealthPrefix[i + 1] = wealthPrefix[i] + windowPlayers[i].wealth;
+    }
 
     return {
       buckets,
       eePrefix,
       rrSuffix,
+      windowPlayers,
       wealthPrefix,
+      activeCount: windowPlayers.length,
       matched,
-      totalWealth: wealthPrefix[len],
+      totalWealth: wealthPrefix[windowPlayers.length],
       gini: giniFromValues(aggWealth),
     };
   }, [wealth?.timeSeries, players, windowKey]);
@@ -281,18 +296,25 @@ export function MarketWealthChart({
     return null;
   }
 
-  // Resolve the chosen elite as the richest `k` traders.
-  const k =
-    mode === "percent"
-      ? Math.min(n, Math.max(1, Math.ceil((percent / 100) * n)))
-      : countAtLeast(players, effThreshold);
-
   // Everything below honors the selected time window. "All time" uses the
   // global aggregates (which also count sales we couldn't date); a narrower
-  // window recomputes from the dated monthly buckets. The elite *definition*
-  // (`k`, the roster, the cutoff floor) always stays global — the window only
-  // scopes the market activity we measure for that fixed elite.
+  // window re-ranks traders by the wealth they earned *in that range*.
   const usingWindow = windowKey !== "all" && overTime != null;
+  // Roster + trader count for the current range: re-ranked by window wealth when
+  // a window is active, else the all-time roster.
+  const rankedPlayers = usingWindow ? overTime.windowPlayers : players;
+  const nEff = usingWindow ? overTime.activeCount : n;
+
+  // Resolve the chosen elite as the richest `k` traders in the active range.
+  const k =
+    mode === "percent"
+      ? Math.min(nEff, Math.max(1, Math.ceil((percent / 100) * nEff)))
+      : countAtLeast(rankedPlayers, effThreshold);
+
+  // Flows can only be split along the ALL-TIME ranking (the backend bins them
+  // that way), so the flow bar/area use the all-time prefix of the same size
+  // `k` — this is surfaced in the UI when a window is active. Uses window flows
+  // when a range is selected, else the global all-time flows.
   const ee = usingWindow ? overTime.eePrefix[k] : sums.eePrefix[k];
   const rest = usingWindow ? overTime.rrSuffix[k] : sums.rrSuffix[k];
   const total = usingWindow ? overTime.matched : wealth.matchedGears;
@@ -304,8 +326,8 @@ export function MarketWealthChart({
   const totalWealth = usingWindow ? overTime.totalWealth : wealth.totalWealth;
   const eliteShare = totalWealth > 0 ? eliteWealth / totalWealth : 0;
   // Wealth of the poorest player still counted as elite (the cutoff line).
-  const eliteFloor = k > 0 ? players[k - 1].wealth : 0;
-  const eliteRoster = players.slice(0, k);
+  const eliteFloor = k > 0 ? rankedPlayers[k - 1].wealth : 0;
+  const eliteRoster = rankedPlayers.slice(0, k);
 
   const gini = usingWindow ? overTime.gini : wealth.gini;
   // Plain-language descriptor for the Gini number, calibrated for a GAME economy
@@ -466,7 +488,9 @@ export function MarketWealthChart({
                     {k.toLocaleString()}
                   </span>{" "}
                   seraph{k === 1 ? "" : "s"} ·{" "}
-                  <span className="tabular-nums">{n > 0 ? ((k / n) * 100).toFixed(1) : "0"}%</span>
+                  <span className="tabular-nums">
+                    {nEff > 0 ? ((k / nEff) * 100).toFixed(1) : "0"}%
+                  </span>
                 </span>
               </div>
               <div className="flex items-center gap-3">
@@ -567,6 +591,17 @@ export function MarketWealthChart({
             );
           })}
         </div>
+
+        {usingWindow && (
+          <p className="text-xs text-muted-foreground">
+            In a time range the elite are re-ranked by the wealth they earned{" "}
+            <span className="text-foreground">in that range</span>. The flow split above (and the
+            area chart below) can only be broken down by <span className="text-foreground">all-time</span>{" "}
+            wealth rank, so it shows trades among the {k.toLocaleString()} richest{" "}
+            <span className="text-foreground">all-time</span> traders rather than this range&apos;s
+            top {k.toLocaleString()}.
+          </p>
+        )}
 
         {/* Over-time view: how the flow split and inequality evolved. */}
         {hasTimeSeries && (

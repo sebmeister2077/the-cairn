@@ -1,0 +1,1653 @@
+{
+  "generatedUtc": "2026-07-29T15:07:22.7545707Z",
+  "upstream": "tops.vintagestory.at",
+  "worldSpawn": {
+    "x": 511997.0,
+    "y": 123.0,
+    "z": 512000.0
+  },
+  "category": "traders",
+  "count": 82,
+  "features": [
+    {
+      "entityId": 34103,
+      "type": "treasurehunter",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-treasurehunter-temperate",
+      "abs": {
+        "x": 512246.52,
+        "y": 116.94,
+        "z": 512754.7
+      },
+      "rel": {
+        "x": 249.52,
+        "y": -6.06,
+        "z": 754.7
+      },
+      "claimed": true,
+      "owner": "custommessage-treasurehunter",
+      "firstSeenUtc": "2026-07-11T20:42:44.7330215Z"
+    },
+    {
+      "entityId": 40561,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 511991.63,
+        "y": 122.0,
+        "z": 513274.1
+      },
+      "rel": {
+        "x": -5.37,
+        "y": -1.0,
+        "z": 1274.1
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:34:34.4477684Z"
+    },
+    {
+      "entityId": 62103,
+      "type": "survivalgoods",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-survivalgoods-temperate",
+      "abs": {
+        "x": 511892.71,
+        "y": 115.5,
+        "z": 511253.09
+      },
+      "rel": {
+        "x": -104.29,
+        "y": -7.5,
+        "z": -746.91
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:24:10.0048551Z"
+    },
+    {
+      "entityId": 117942,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 511669.7,
+        "y": 108.0,
+        "z": 512482.7
+      },
+      "rel": {
+        "x": -327.3,
+        "y": -15.0,
+        "z": 482.7
+      },
+      "claimed": true,
+      "owner": "Player Fulgen",
+      "firstSeenUtc": "2026-07-11T20:31:22.5866049Z"
+    },
+    {
+      "entityId": 151877,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 511492.49,
+        "y": 117.0,
+        "z": 513863.41
+      },
+      "rel": {
+        "x": -504.51,
+        "y": -6.0,
+        "z": 1863.41
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T21:14:59.8780708Z"
+    },
+    {
+      "entityId": 158845,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 511987.16,
+        "y": 110.0,
+        "z": 515585.3
+      },
+      "rel": {
+        "x": -9.84,
+        "y": -13.0,
+        "z": 3585.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T18:55:29.1869333Z"
+    },
+    {
+      "entityId": 163126,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 509958.44,
+        "y": 124.25,
+        "z": 515310.7
+      },
+      "rel": {
+        "x": -2038.56,
+        "y": 1.25,
+        "z": 3310.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T11:30:39.6915464Z"
+    },
+    {
+      "entityId": 180735,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 512182.38,
+        "y": 115.0,
+        "z": 516297.96
+      },
+      "rel": {
+        "x": 185.38,
+        "y": -8.0,
+        "z": 4297.96
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-27T08:48:15.9424131Z"
+    },
+    {
+      "entityId": 183395,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 512111.04,
+        "y": 112.0,
+        "z": 521894.5
+      },
+      "rel": {
+        "x": 114.04,
+        "y": -11.0,
+        "z": 9894.5
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:05:49.983533Z"
+    },
+    {
+      "entityId": 184107,
+      "type": "survivalgoods",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-survivalgoods-temperate",
+      "abs": {
+        "x": 511908.2,
+        "y": 112.5,
+        "z": 523034.55
+      },
+      "rel": {
+        "x": -88.8,
+        "y": -10.5,
+        "z": 11034.55
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:07:19.0500983Z"
+    },
+    {
+      "entityId": 184583,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 512085.99,
+        "y": 115.0,
+        "z": 524927.42
+      },
+      "rel": {
+        "x": 88.99,
+        "y": -8.0,
+        "z": 12927.42
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:09:44.7594881Z"
+    },
+    {
+      "entityId": 184595,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 512083.7,
+        "y": 115.0,
+        "z": 524931.3
+      },
+      "rel": {
+        "x": 86.7,
+        "y": -8.0,
+        "z": 12931.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:09:44.892269Z"
+    },
+    {
+      "entityId": 184596,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 512083.24,
+        "y": 115.0,
+        "z": 524929.42
+      },
+      "rel": {
+        "x": 86.24,
+        "y": -8.0,
+        "z": 12929.42
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:09:44.759683Z"
+    },
+    {
+      "entityId": 185498,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 512104.95,
+        "y": 112.0,
+        "z": 526884.43
+      },
+      "rel": {
+        "x": 107.95,
+        "y": -11.0,
+        "z": 14884.43
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:13:52.5330043Z"
+    },
+    {
+      "entityId": 187131,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 511973.7,
+        "y": 110.0,
+        "z": 530765.82
+      },
+      "rel": {
+        "x": -23.3,
+        "y": -13.0,
+        "z": 18765.82
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:06:09.469032Z"
+    },
+    {
+      "entityId": 201724,
+      "type": "agriculture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-agriculture-temperate",
+      "abs": {
+        "x": 508856.7,
+        "y": 114.0,
+        "z": 517591.7
+      },
+      "rel": {
+        "x": -3140.3,
+        "y": -9.0,
+        "z": 5591.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:02:55.9731332Z"
+    },
+    {
+      "entityId": 486084,
+      "type": "commodities",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-commodities-temperate",
+      "abs": {
+        "x": 511640.5,
+        "y": 110.0,
+        "z": 516646.3
+      },
+      "rel": {
+        "x": -356.5,
+        "y": -13.0,
+        "z": 4646.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T18:50:07.4479841Z"
+    },
+    {
+      "entityId": 766384,
+      "type": "luxuries",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-luxuries-temperate",
+      "abs": {
+        "x": 513173.48,
+        "y": 111.0,
+        "z": 516491.35
+      },
+      "rel": {
+        "x": 1176.48,
+        "y": -12.0,
+        "z": 4491.35
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T20:58:29.1037937Z"
+    },
+    {
+      "entityId": 869139,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 509968.23,
+        "y": 115.0,
+        "z": 510565.59
+      },
+      "rel": {
+        "x": -2028.77,
+        "y": -8.0,
+        "z": -1434.41
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:06:14.5788275Z"
+    },
+    {
+      "entityId": 1066416,
+      "type": "survivalgoods",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-survivalgoods-temperate",
+      "abs": {
+        "x": 514528.41,
+        "y": 112.0,
+        "z": 517267.3
+      },
+      "rel": {
+        "x": 2531.41,
+        "y": -11.0,
+        "z": 5267.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:22:12.5821197Z"
+    },
+    {
+      "entityId": 1225494,
+      "type": "clothing",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-clothing-temperate",
+      "abs": {
+        "x": 510418.81,
+        "y": 116.25,
+        "z": 509937.88
+      },
+      "rel": {
+        "x": -1578.19,
+        "y": -6.75,
+        "z": -2062.12
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-24T14:07:26.2708935Z"
+    },
+    {
+      "entityId": 1258968,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 510558.7,
+        "y": 116.0,
+        "z": 527678.95
+      },
+      "rel": {
+        "x": -1438.3,
+        "y": -7.0,
+        "z": 15678.95
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:21:06.015715Z"
+    },
+    {
+      "entityId": 5172370,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 510384.05,
+        "y": 110.0,
+        "z": 528270.48
+      },
+      "rel": {
+        "x": -1612.95,
+        "y": -13.0,
+        "z": 16270.48
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:23:43.6946394Z"
+    },
+    {
+      "entityId": 10186904,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-buildmaterials-temperate",
+      "abs": {
+        "x": 510224.3,
+        "y": 110.45,
+        "z": 528883.2
+      },
+      "rel": {
+        "x": -1772.7,
+        "y": -12.55,
+        "z": 16883.2
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-23T08:21:18.6203676Z"
+    },
+    {
+      "entityId": 10213991,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 510458.52,
+        "y": 115.25,
+        "z": 529473.7
+      },
+      "rel": {
+        "x": -1538.48,
+        "y": -7.75,
+        "z": 17473.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-23T08:32:18.3107314Z"
+    },
+    {
+      "entityId": 10429975,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 484369.3,
+        "y": 111.12,
+        "z": 526652.7
+      },
+      "rel": {
+        "x": -27627.7,
+        "y": -11.88,
+        "z": 14652.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:40:59.2145275Z"
+    },
+    {
+      "entityId": 10535352,
+      "type": "luxuries",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-luxuries-temperate",
+      "abs": {
+        "x": 486617.3,
+        "y": 106.0,
+        "z": 526582.7
+      },
+      "rel": {
+        "x": -25379.7,
+        "y": -17.0,
+        "z": 14582.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:28:49.306467Z"
+    },
+    {
+      "entityId": 10581071,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-buildmaterials-temperate",
+      "abs": {
+        "x": 516231.71,
+        "y": 127.0,
+        "z": 524950.7
+      },
+      "rel": {
+        "x": 4234.71,
+        "y": 4.0,
+        "z": 12950.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T20:41:37.3354297Z"
+    },
+    {
+      "entityId": 10971419,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 516624.3,
+        "y": 122.25,
+        "z": 532288.69
+      },
+      "rel": {
+        "x": 4627.3,
+        "y": -0.75,
+        "z": 20288.69
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T10:56:02.9167819Z"
+    },
+    {
+      "entityId": 10981666,
+      "type": "commodities",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-commodities-temperate",
+      "abs": {
+        "x": 494313.17,
+        "y": 111.0,
+        "z": 527348.7
+      },
+      "rel": {
+        "x": -17683.83,
+        "y": -12.0,
+        "z": 15348.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:06:02.8485831Z"
+    },
+    {
+      "entityId": 10994020,
+      "type": "furniture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-furniture-temperate",
+      "abs": {
+        "x": 517000.48,
+        "y": 117.0,
+        "z": 532842.24
+      },
+      "rel": {
+        "x": 5003.48,
+        "y": -6.0,
+        "z": 20842.24
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T12:59:16.0718785Z"
+    },
+    {
+      "entityId": 12358534,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 516612.7,
+        "y": 109.0,
+        "z": 524330.47
+      },
+      "rel": {
+        "x": 4615.7,
+        "y": -14.0,
+        "z": 12330.47
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T20:44:33.9984195Z"
+    },
+    {
+      "entityId": 13962322,
+      "type": "agriculture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-agriculture-temperate",
+      "abs": {
+        "x": 517085.05,
+        "y": 110.0,
+        "z": 501891.55
+      },
+      "rel": {
+        "x": 5088.05,
+        "y": -13.0,
+        "z": -10108.45
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T16:38:43.1976762Z"
+    },
+    {
+      "entityId": 14058530,
+      "type": "agriculture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-agriculture-temperate",
+      "abs": {
+        "x": 517434.65,
+        "y": 108.0,
+        "z": 503765.35
+      },
+      "rel": {
+        "x": 5437.65,
+        "y": -15.0,
+        "z": -8234.65
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:21:09.7990137Z"
+    },
+    {
+      "entityId": 14189358,
+      "type": "furniture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-furniture-temperate",
+      "abs": {
+        "x": 515348.02,
+        "y": 123.25,
+        "z": 505186.02
+      },
+      "rel": {
+        "x": 3351.02,
+        "y": 0.25,
+        "z": -6813.98
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T17:47:07.2490847Z"
+    },
+    {
+      "entityId": 15151300,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 492650.18,
+        "y": 182.05,
+        "z": 515790.25
+      },
+      "rel": {
+        "x": -19346.82,
+        "y": 59.05,
+        "z": 3790.25
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:46:34.1335286Z"
+    },
+    {
+      "entityId": 19881813,
+      "type": "clothing",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-clothing-temperate",
+      "abs": {
+        "x": 515826.28,
+        "y": 113.0,
+        "z": 531869.82
+      },
+      "rel": {
+        "x": 3829.28,
+        "y": -10.0,
+        "z": 19869.82
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T11:25:04.487372Z"
+    },
+    {
+      "entityId": 20208069,
+      "type": "furniture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-furniture-temperate",
+      "abs": {
+        "x": 516117.82,
+        "y": 130.0,
+        "z": 532614.76
+      },
+      "rel": {
+        "x": 4120.82,
+        "y": 7.0,
+        "z": 20614.76
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T11:02:43.1295556Z"
+    },
+    {
+      "entityId": 21052172,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 525175.75,
+        "y": 177.0,
+        "z": 539164.37
+      },
+      "rel": {
+        "x": 13178.75,
+        "y": 54.0,
+        "z": 27164.37
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T08:38:23.50311Z"
+    },
+    {
+      "entityId": 24935249,
+      "type": "survivalgoods",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-survivalgoods-temperate",
+      "abs": {
+        "x": 517109.13,
+        "y": 115.14,
+        "z": 531899.66
+      },
+      "rel": {
+        "x": 5112.13,
+        "y": -7.86,
+        "z": 19899.66
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:19:35.1036302Z"
+    },
+    {
+      "entityId": 25823702,
+      "type": "commodities",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-commodities-temperate",
+      "abs": {
+        "x": 515105.59,
+        "y": 107.0,
+        "z": 524593.24
+      },
+      "rel": {
+        "x": 3108.59,
+        "y": -16.0,
+        "z": 12593.24
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T18:46:11.2716515Z"
+    },
+    {
+      "entityId": 33102012,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 506813.3,
+        "y": 112.0,
+        "z": 530870.26
+      },
+      "rel": {
+        "x": -5183.7,
+        "y": -11.0,
+        "z": 18870.26
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T19:35:05.8440761Z"
+    },
+    {
+      "entityId": 36730353,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 515218.34,
+        "y": 117.0,
+        "z": 525206.3
+      },
+      "rel": {
+        "x": 3221.34,
+        "y": -6.0,
+        "z": 13206.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T20:32:43.5355036Z"
+    },
+    {
+      "entityId": 51440393,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 521420.78,
+        "y": 123.0,
+        "z": 526878.08
+      },
+      "rel": {
+        "x": 9423.78,
+        "y": 0.0,
+        "z": 14878.08
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-14T18:30:27.8832362Z"
+    },
+    {
+      "entityId": 56056966,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 517535.15,
+        "y": 112.0,
+        "z": 532345.3
+      },
+      "rel": {
+        "x": 5538.15,
+        "y": -11.0,
+        "z": 20345.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:31:43.7545632Z"
+    },
+    {
+      "entityId": 56201963,
+      "type": "treasurehunter",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-treasurehunter-temperate",
+      "abs": {
+        "x": 517370.3,
+        "y": 118.0,
+        "z": 533462.7
+      },
+      "rel": {
+        "x": 5373.3,
+        "y": -5.0,
+        "z": 21462.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-22T13:13:50.8254848Z"
+    },
+    {
+      "entityId": 56381192,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 513171.81,
+        "y": 110.0,
+        "z": 513225.63
+      },
+      "rel": {
+        "x": 1174.81,
+        "y": -13.0,
+        "z": 1225.63
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:03:47.6123258Z"
+    },
+    {
+      "entityId": 62289673,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 522184.76,
+        "y": 116.0,
+        "z": 527314.89
+      },
+      "rel": {
+        "x": 10187.76,
+        "y": -7.0,
+        "z": 15314.89
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-13T11:06:31.2082733Z"
+    },
+    {
+      "entityId": 68469410,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 517864.3,
+        "y": 115.0,
+        "z": 545128.36
+      },
+      "rel": {
+        "x": 5867.3,
+        "y": -8.0,
+        "z": 33128.36
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T09:33:01.6271026Z"
+    },
+    {
+      "entityId": 68884024,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-buildmaterials-temperate",
+      "abs": {
+        "x": 514335.49,
+        "y": 122.75,
+        "z": 524596.45
+      },
+      "rel": {
+        "x": 2338.49,
+        "y": -0.25,
+        "z": 12596.45
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T18:19:16.274062Z"
+    },
+    {
+      "entityId": 87273599,
+      "type": "agriculture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-agriculture-temperate",
+      "abs": {
+        "x": 487454.3,
+        "y": 111.0,
+        "z": 529618.7
+      },
+      "rel": {
+        "x": -24542.7,
+        "y": -12.0,
+        "z": 17618.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:42:48.1003954Z"
+    },
+    {
+      "entityId": 93884440,
+      "type": "commodities",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-commodities-temperate",
+      "abs": {
+        "x": 503352.46,
+        "y": 135.0,
+        "z": 498707.3
+      },
+      "rel": {
+        "x": -8644.54,
+        "y": 12.0,
+        "z": -13292.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:16:21.7360466Z"
+    },
+    {
+      "entityId": 114922894,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 524784.4,
+        "y": 110.0,
+        "z": 539841.34
+      },
+      "rel": {
+        "x": 12787.4,
+        "y": -13.0,
+        "z": 27841.34
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:22:47.5246637Z"
+    },
+    {
+      "entityId": 118917189,
+      "type": "survivalgoods",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-survivalgoods-temperate",
+      "abs": {
+        "x": 512065.54,
+        "y": 119.0,
+        "z": 511982.5
+      },
+      "rel": {
+        "x": 68.54,
+        "y": -4.0,
+        "z": -17.5
+      },
+      "claimed": true,
+      "owner": "Player Fulgen",
+      "firstSeenUtc": "2026-07-11T20:25:39.1566319Z"
+    },
+    {
+      "entityId": 125422434,
+      "type": "treasurehunter",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-treasurehunter-temperate",
+      "abs": {
+        "x": 503815.7,
+        "y": 120.0,
+        "z": 531012.3
+      },
+      "rel": {
+        "x": -8181.3,
+        "y": -3.0,
+        "z": 19012.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T20:52:03.830997Z"
+    },
+    {
+      "entityId": 128571291,
+      "type": "agriculture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-agriculture-temperate",
+      "abs": {
+        "x": 526531.58,
+        "y": 110.1,
+        "z": 488265.56
+      },
+      "rel": {
+        "x": 14534.58,
+        "y": -12.9,
+        "z": -23734.44
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-24T13:04:22.2194721Z"
+    },
+    {
+      "entityId": 133660777,
+      "type": "treasurehunter",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-treasurehunter-temperate",
+      "abs": {
+        "x": 494077.7,
+        "y": 106.12,
+        "z": 540169.05
+      },
+      "rel": {
+        "x": -17919.3,
+        "y": -16.88,
+        "z": 28169.05
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-29T06:45:06.5279452Z"
+    },
+    {
+      "entityId": 136526515,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 539955.57,
+        "y": 116.0,
+        "z": 540418.54
+      },
+      "rel": {
+        "x": 27958.57,
+        "y": -7.0,
+        "z": 28418.54
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:25:34.2176818Z"
+    },
+    {
+      "entityId": 139752602,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 520031.21,
+        "y": 115.81,
+        "z": 544386.75
+      },
+      "rel": {
+        "x": 8034.21,
+        "y": -7.19,
+        "z": 32386.75
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T09:05:01.2264179Z"
+    },
+    {
+      "entityId": 139939943,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-buildmaterials-temperate",
+      "abs": {
+        "x": 519356.51,
+        "y": 120.75,
+        "z": 544485.7
+      },
+      "rel": {
+        "x": 7359.51,
+        "y": -2.25,
+        "z": 32485.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T09:03:38.7470029Z"
+    },
+    {
+      "entityId": 140150126,
+      "type": "artisan",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-artisan-temperate",
+      "abs": {
+        "x": 518588.7,
+        "y": 114.0,
+        "z": 546009.35
+      },
+      "rel": {
+        "x": 6591.7,
+        "y": -9.0,
+        "z": 34009.35
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T09:36:11.3205543Z"
+    },
+    {
+      "entityId": 155257387,
+      "type": "furniture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-furniture-temperate",
+      "abs": {
+        "x": 527160.13,
+        "y": 111.0,
+        "z": 502765.95
+      },
+      "rel": {
+        "x": 15163.13,
+        "y": -12.0,
+        "z": -9234.05
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-28T17:14:10.2249569Z"
+    },
+    {
+      "entityId": 167396080,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 552238.72,
+        "y": 112.0,
+        "z": 551203.68
+      },
+      "rel": {
+        "x": 40241.72,
+        "y": -11.0,
+        "z": 39203.68
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T08:10:55.3520908Z"
+    },
+    {
+      "entityId": 167414849,
+      "type": "commodities",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-commodities-temperate",
+      "abs": {
+        "x": 551986.24,
+        "y": 110.0,
+        "z": 551748.3
+      },
+      "rel": {
+        "x": 39989.24,
+        "y": -13.0,
+        "z": 39748.3
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T08:00:28.1022812Z"
+    },
+    {
+      "entityId": 184719383,
+      "type": "treasurehunter",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-treasurehunter-temperate",
+      "abs": {
+        "x": 522680.3,
+        "y": 106.0,
+        "z": 535235.45
+      },
+      "rel": {
+        "x": 10683.3,
+        "y": -17.0,
+        "z": 23235.45
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:19:45.9343101Z"
+    },
+    {
+      "entityId": 204167964,
+      "type": "agriculture",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-agriculture-temperate",
+      "abs": {
+        "x": 520433.12,
+        "y": 111.5,
+        "z": 496360.58
+      },
+      "rel": {
+        "x": 8436.12,
+        "y": -11.5,
+        "z": -15639.42
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-24T14:05:08.7412465Z"
+    },
+    {
+      "entityId": 221551581,
+      "type": "furniture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-furniture-temperate",
+      "abs": {
+        "x": 490463.7,
+        "y": 115.0,
+        "z": 526681.7
+      },
+      "rel": {
+        "x": -21533.3,
+        "y": -8.0,
+        "z": 14681.7
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:21:53.2793825Z"
+    },
+    {
+      "entityId": 234880582,
+      "type": "luxuries",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-luxuries-temperate",
+      "abs": {
+        "x": 488773.91,
+        "y": 119.0,
+        "z": 526546.76
+      },
+      "rel": {
+        "x": -23223.09,
+        "y": -4.0,
+        "z": 14546.76
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:24:33.7585422Z"
+    },
+    {
+      "entityId": 235914483,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 547518.14,
+        "y": 110.25,
+        "z": 544737.2
+      },
+      "rel": {
+        "x": 35521.14,
+        "y": -12.75,
+        "z": 32737.2
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:25:57.5051189Z"
+    },
+    {
+      "entityId": 276112646,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 553008.7,
+        "y": 116.0,
+        "z": 554010.73
+      },
+      "rel": {
+        "x": 41011.7,
+        "y": -7.0,
+        "z": 42010.73
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:41:03.7225205Z"
+    },
+    {
+      "entityId": 338538155,
+      "type": "commodities",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-commodities-temperate",
+      "abs": {
+        "x": 540036.35,
+        "y": 112.25,
+        "z": 539714.05
+      },
+      "rel": {
+        "x": 28039.35,
+        "y": -10.75,
+        "z": 27714.05
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T08:28:17.7848522Z"
+    },
+    {
+      "entityId": 584007389,
+      "type": "buildmaterials",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-buildmaterials-temperate",
+      "abs": {
+        "x": 518096.7,
+        "y": 107.0,
+        "z": 531959.18
+      },
+      "rel": {
+        "x": 6099.7,
+        "y": -16.0,
+        "z": 19959.18
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:24:18.2266505Z"
+    },
+    {
+      "entityId": 584013210,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "desert",
+      "code": "trader-female-buildmaterials-desert",
+      "abs": {
+        "x": 518173.05,
+        "y": 115.5,
+        "z": 532109.61
+      },
+      "rel": {
+        "x": 6176.05,
+        "y": -7.5,
+        "z": 20109.61
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T10:24:17.963376Z"
+    },
+    {
+      "entityId": 654584551,
+      "type": "treasurehunter",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-treasurehunter-temperate",
+      "abs": {
+        "x": 489967.57,
+        "y": 122.0,
+        "z": 541668.36
+      },
+      "rel": {
+        "x": -22029.43,
+        "y": -1.0,
+        "z": 29668.36
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-29T06:47:55.2952158Z"
+    },
+    {
+      "entityId": 690655651,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 476724.7,
+        "y": 110.25,
+        "z": 516238.19
+      },
+      "rel": {
+        "x": -35272.3,
+        "y": -12.75,
+        "z": 4238.19
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T19:44:30.3230644Z"
+    },
+    {
+      "entityId": 891814554,
+      "type": "clothing",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-clothing-temperate",
+      "abs": {
+        "x": 509987.51,
+        "y": 106.0,
+        "z": 516440.08
+      },
+      "rel": {
+        "x": -2009.49,
+        "y": -17.0,
+        "z": 4440.08
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-12T11:10:21.054651Z"
+    },
+    {
+      "entityId": 908894169,
+      "type": "buildmaterials",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-buildmaterials-temperate",
+      "abs": {
+        "x": 560344.22,
+        "y": 115.25,
+        "z": 554914.5
+      },
+      "rel": {
+        "x": 48347.22,
+        "y": -7.75,
+        "z": 42914.5
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:38:14.6448643Z"
+    },
+    {
+      "entityId": 938878229,
+      "type": "commodities",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-commodities-temperate",
+      "abs": {
+        "x": 559503.7,
+        "y": 114.0,
+        "z": 554248.2
+      },
+      "rel": {
+        "x": 47506.7,
+        "y": -9.0,
+        "z": 42248.2
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:34:52.7465868Z"
+    },
+    {
+      "entityId": 940009187,
+      "type": "survivalgoods",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-survivalgoods-temperate",
+      "abs": {
+        "x": 556887.13,
+        "y": 112.0,
+        "z": 558759.01
+      },
+      "rel": {
+        "x": 44890.13,
+        "y": -11.0,
+        "z": 46759.01
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T21:34:23.6378004Z"
+    },
+    {
+      "entityId": 996715187,
+      "type": "furniture",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-furniture-temperate",
+      "abs": {
+        "x": 558625.55,
+        "y": 122.56,
+        "z": 576970.14
+      },
+      "rel": {
+        "x": 46628.55,
+        "y": -0.44,
+        "z": 64970.14
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T22:01:56.3352079Z"
+    },
+    {
+      "entityId": 1117331687,
+      "type": "artisan",
+      "gender": "female",
+      "climate": "temperate",
+      "code": "trader-female-artisan-temperate",
+      "abs": {
+        "x": 554610.55,
+        "y": 127.01,
+        "z": 568797.75
+      },
+      "rel": {
+        "x": 42613.55,
+        "y": 4.01,
+        "z": 56797.75
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T22:33:25.882239Z"
+    },
+    {
+      "entityId": 1117338709,
+      "type": "treasurehunter",
+      "gender": "male",
+      "climate": "temperate",
+      "code": "trader-male-treasurehunter-temperate",
+      "abs": {
+        "x": 557351.44,
+        "y": 113.0,
+        "z": 571809.5
+      },
+      "rel": {
+        "x": 45354.44,
+        "y": -10.0,
+        "z": 59809.5
+      },
+      "claimed": true,
+      "owner": "Trader",
+      "firstSeenUtc": "2026-07-11T22:30:45.2089057Z"
+    }
+  ]
+}
