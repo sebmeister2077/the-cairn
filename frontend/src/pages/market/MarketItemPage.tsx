@@ -71,6 +71,7 @@ import { useMarketPriceMode } from "./useMarketPriceMode";
 import { PriceModeInfo } from "./PriceModeInfo";
 import { MetalContentCard } from "./MetalContentCard";
 import { ItemConcentrationSection } from "./ItemConcentrationSection";
+import { Sparkline } from "./Sparkline";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -884,7 +885,26 @@ export function MarketItemPage() {
         </button>
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{displayName}</h1>
-          {trend && <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />}
+          {trend && (
+            <span className="inline-flex items-center gap-1.5">
+              {insight?.priceSeries && insight.priceSeries.length >= 2 && (
+                <Sparkline
+                  data={insight.priceSeries}
+                  width={96}
+                  height={26}
+                  strokeWidth={1.5}
+                  className={
+                    trend.direction === "up"
+                      ? "text-emerald-600"
+                      : trend.direction === "down"
+                        ? "text-red-600"
+                        : "text-muted-foreground/70"
+                  }
+                />
+              )}
+              <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
+            </span>
+          )}
           {upperBoundUnknown && <UpperBoundUnknownBadge />}
           <a
             href={`https://wiki.vintagestory.at/index.php?search=${encodeURIComponent(displayName)}`}
