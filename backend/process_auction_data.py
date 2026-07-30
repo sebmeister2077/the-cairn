@@ -1449,6 +1449,12 @@ def main() -> None:
         help="After writing the artifacts, upload them (plus the raw capture, "
         "CSV and manifest) to both the dev and prod public R2 buckets.",
     )
+    ap.add_argument(
+        "--publish-r2-dev",
+        action="store_true",
+        help="Like --publish-r2, but upload only to the dev (local) R2 bucket, "
+        "leaving prod untouched.",
+    )
     args = ap.parse_args()
 
     print(f"Reading {args.input}…")
@@ -1488,8 +1494,11 @@ def main() -> None:
     # the raw capture/CSV are the same underlying data, so they don't affect it.
     manifest_path = write_manifest(args.out, [listings_path, summary_path, items_path])
 
-    if args.publish_r2:
-        print("Publishing to R2 (dev + prod)…")
+    if args.publish_r2 or args.publish_r2_dev:
+        dev_only = args.publish_r2_dev and not args.publish_r2
+        print(
+            "Publishing to R2 (dev only)…" if dev_only else "Publishing to R2 (dev + prod)…"
+        )
         import sys
 
         sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -1503,7 +1512,8 @@ def main() -> None:
                 events_path,
                 csv_path,
                 manifest_path,
-            ]
+            ],
+            envs=("local",) if dev_only else ("local", "prod"),
         )
 
     print("Done.")

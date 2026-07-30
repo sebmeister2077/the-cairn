@@ -881,7 +881,10 @@ export function MarketItemPage() {
   const priceSeries = insight?.priceSeries ?? null;
   const priceSeriesMedian =
     priceSeries && priceSeries.length >= 2
-      ? percentileSorted([...priceSeries].sort((a, b) => a - b), 0.5)
+      ? percentileSorted(
+          [...priceSeries].sort((a, b) => a - b),
+          0.5,
+        )
       : null;
   const sparkScale = perUnitUseful ? 1 : stackSize || 1;
   const sparkUnit = perUnitUseful ? "unit" : "stack";
