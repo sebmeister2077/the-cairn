@@ -1162,7 +1162,7 @@
     "climateTempAvg": "Average",
     "climateTempMin": "Coldest",
     "climateTempMax": "Warmest",
-    "climateTemperatureHint": "Pick a crop to highlight places where it can grow year-round (the location's coldest month stays at or above the crop's minimum, and the warmest month stays at or below the crop's maximum).",
+    "climateTemperatureHint": "Temperatures are shown at sea level. Pick a crop to highlight places where it can grow year-round (the location's coldest month stays at or above the crop's minimum, and the warmest month stays at or below the crop's maximum).",
     "climateCropTitle": "Crop tolerance",
     "climateCropLinenTag": "linen",
     "climateCropAmaranth": "Amaranth",

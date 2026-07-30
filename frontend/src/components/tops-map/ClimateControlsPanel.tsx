@@ -219,7 +219,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
       >
         <Switch checked={enabled} aria-label={t("topsMap.climate")} />
         <Label className="cursor-pointer">{t("topsMap.climate")}</Label>
-        {enabled && (
+        {/* {enabled && (
           <Tooltip>
             <TooltipTrigger
               render={
@@ -235,7 +235,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
             />
             <TooltipContent>{t("topsMap.climateUnverifiedTooltip")}</TooltipContent>
           </Tooltip>
-        )}
+        )} */}
         {status === "loading" && enabled && (
           <span className="text-xs text-muted-foreground ml-1">…</span>
         )}

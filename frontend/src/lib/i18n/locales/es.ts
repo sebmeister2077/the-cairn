@@ -1211,7 +1211,7 @@ const es = {
         "climateTempAvg": "Promedio",
         "climateTempMin": "Más frío",
         "climateTempMax": "Más cálido",
-        "climateTemperatureHint": "Elige un cultivo para resaltar lugares donde puede crecer todo el año (el mes más frío del lugar se mantiene en o por encima del mínimo del cultivo, y el mes más cálido se mantiene en o por debajo del máximo del cultivo).",
+        "climateTemperatureHint": "Las temperaturas se muestran a nivel del mar. Elige un cultivo para resaltar lugares donde puede crecer todo el año (el mes más frío del lugar se mantiene en o por encima del mínimo del cultivo, y el mes más cálido se mantiene en o por debajo del máximo del cultivo).",
         "climateCropTitle": "Tolerancia de cultivos",
         "climateCropLinenTag": "lino",
         "climateCropAmaranth": "Amaranto",

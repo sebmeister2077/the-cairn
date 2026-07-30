@@ -1212,7 +1212,7 @@ const fr = {
         "climateTempAvg": "Moyenne",
         "climateTempMin": "Plus froid",
         "climateTempMax": "Plus chaud",
-        "climateTemperatureHint": "Choisissez une culture pour mettre en évidence les endroits où elle peut pousser toute l'année (le mois le plus froid de l'emplacement reste au-dessus du minimum de la culture, et le mois le plus chaud reste en dessous du maximum de la culture).",
+        "climateTemperatureHint": "Les températures sont indiquées au niveau de la mer. Choisissez une culture pour mettre en évidence les endroits où elle peut pousser toute l'année (le mois le plus froid de l'emplacement reste au-dessus du minimum de la culture, et le mois le plus chaud reste en dessous du maximum de la culture).",
         "climateCropTitle": "Tolérance des cultures",
         "climateCropLinenTag": "lin",
         "climateCropAmaranth": "Amarante",

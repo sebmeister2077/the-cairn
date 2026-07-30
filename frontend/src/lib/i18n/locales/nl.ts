@@ -1303,7 +1303,7 @@ const nl = {
         climateTempMin: "Koudst",
         climateTempMax: "Warmst",
         climateTemperatureHint:
-            "Kies een gewas om plaatsen te markeren waar het het hele jaar kan groeien (de koudste maand blijft boven de minimum‑temperatuur van het gewas, en de warmste maand onder de maximum‑temperatuur).",
+            "Temperaturen worden op zeeniveau weergegeven. Kies een gewas om plaatsen te markeren waar het het hele jaar kan groeien (de koudste maand blijft boven de minimum‑temperatuur van het gewas, en de warmste maand onder de maximum‑temperatuur).",
         climateCropTitle: "Gewastolerantie",
         climateCropLinenTag: "linnen",
         climateCropAmaranth: "Amarant",
