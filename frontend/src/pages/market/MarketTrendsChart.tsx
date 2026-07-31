@@ -289,7 +289,7 @@ export function MarketTrendsChart({
                   ifOverflow="extendDomain"
                   label={{
                     value: "AH limit 100",
-                    position: "insideTopLeft",
+                    position: "insideTopRight",
                     fontSize: 10,
                     fill: "#ef4444",
                   }}
