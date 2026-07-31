@@ -88,6 +88,16 @@ function compactNumber(v: number): string {
   return String(Math.round(v));
 }
 
+// The in-game moment every seller becomes capped at 100 concurrent auctions
+// (previously unlimited): year 11, month 12, day 1. Expressed as total in-game
+// hours since world start to line up with the series' `gameHours`.
+const GAME_HOURS_PER_DAY = 24;
+const GAME_DAYS_PER_MONTH = 30;
+const GAME_MONTHS_PER_YEAR = 12;
+const AUCTION_LIMIT_GAME_HOURS =
+  ((11 - 1) * GAME_MONTHS_PER_YEAR * GAME_DAYS_PER_MONTH + (12 - 1) * GAME_DAYS_PER_MONTH) *
+  GAME_HOURS_PER_DAY;
+
 export function MarketTrendsChart({
   series,
   recordingStart,
@@ -130,6 +140,28 @@ export function MarketTrendsChart({
     }
     return formatGameDate(best.gameHours);
   }, [recordingStart, series]);
+
+  // Snap the 100-auction cap onto the categorical (monthly) x-axis by picking
+  // the bucket whose in-game clock is closest, but only once the recorded
+  // timeline actually spans that moment.
+  const auctionLimitLabel = useMemo(() => {
+    if (series.length === 0) return null;
+    let minH = series[0].gameHours;
+    let maxH = series[0].gameHours;
+    let best = series[0];
+    for (const p of series) {
+      if (p.gameHours < minH) minH = p.gameHours;
+      if (p.gameHours > maxH) maxH = p.gameHours;
+      if (
+        Math.abs(p.gameHours - AUCTION_LIMIT_GAME_HOURS) <
+        Math.abs(best.gameHours - AUCTION_LIMIT_GAME_HOURS)
+      ) {
+        best = p;
+      }
+    }
+    if (AUCTION_LIMIT_GAME_HOURS < minH || AUCTION_LIMIT_GAME_HOURS > maxH) return null;
+    return formatGameDate(best.gameHours);
+  }, [series]);
 
   const fmt = (v: number) =>
     metric.pct ? `${(v * 100).toFixed(0)}%` : metric.gears ? formatGears(v) : v.toLocaleString();
@@ -245,6 +277,21 @@ export function MarketTrendsChart({
                     position: "insideTopRight",
                     fontSize: 10,
                     fill: "currentColor",
+                  }}
+                />
+              )}
+              {auctionLimitLabel != null && (
+                <ReferenceLine
+                  x={auctionLimitLabel}
+                  stroke="#ef4444"
+                  strokeDasharray="5 4"
+                  strokeWidth={2}
+                  ifOverflow="extendDomain"
+                  label={{
+                    value: "AH limit 100",
+                    position: "insideTopLeft",
+                    fontSize: 10,
+                    fill: "#ef4444",
                   }}
                 />
               )}
