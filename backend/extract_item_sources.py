@@ -87,6 +87,54 @@ def pool_label(pk: str, lang: Dict[str, str]) -> str:
     return lang.get(f"item-stackrandomizer-{pk}") or pk.replace("-", " ").title()
 
 
+def _collect_output_codes(node: object, out: set) -> None:
+    """Recursively gather every grid-recipe ``output.code`` in a parsed file."""
+    if isinstance(node, dict):
+        o = node.get("output")
+        if isinstance(o, dict) and isinstance(o.get("code"), str):
+            out.add(o["code"])
+        for v in node.values():
+            _collect_output_codes(v, out)
+    elif isinstance(node, list):
+        for v in node:
+            _collect_output_codes(v, out)
+
+
+def load_craftable_clothes(assets_root: Path):
+    """Set of exact + wildcard-regex clothes codes that have a crafting recipe
+    (from ``survival/recipes/grid/clothes/*.json``)."""
+    recipe_dir = assets_root / "survival" / "recipes" / "grid" / "clothes"
+    exact: set = set()
+    patterns: list = []
+    if not recipe_dir.is_dir():
+        print(f"[warn] clothes recipes not found at {recipe_dir} — craftable flag skipped")
+        return exact, patterns
+    for path in sorted(recipe_dir.glob("*.json")):
+        try:
+            data = load_vs_json(path)
+        except Exception as exc:  # noqa: BLE001 - a single bad file shouldn't abort
+            print(f"[warn] could not parse {path.name}: {exc}")
+            continue
+        codes: set = set()
+        _collect_output_codes(data, codes)
+        for raw in codes:
+            code = bare_code(raw)
+            if not code.startswith("clothes-"):
+                continue
+            if "{" in code:
+                # `{color}` variant placeholder -> match any variant token.
+                parts = re.split(r"\{[^}]*\}", code)
+                patterns.append(re.compile("^" + "[A-Za-z0-9-]*".join(re.escape(p) for p in parts) + "$"))
+            else:
+                exact.add(code)
+    return exact, patterns
+
+
+def is_craftable(code: str, exact: set, patterns: list) -> bool:
+    return code in exact or any(p.match(code) for p in patterns)
+
+
+
 def rarity_for(max_pct: float) -> str:
     for threshold, tier in RARITY_THRESHOLDS:
         if max_pct >= threshold:
@@ -101,6 +149,7 @@ def build(assets_root: Path) -> dict:
     data = load_vs_json(path)
     by_type = data.get("attributesByType") or {}
     lang = load_lang(assets_root)
+    craft_exact, craft_patterns = load_craftable_clothes(assets_root)
 
     # code -> list of {pool, label, chancePct}
     sources: Dict[str, List[dict]] = defaultdict(list)
@@ -132,7 +181,11 @@ def build(assets_root: Path) -> dict:
     for code in sorted(sources):
         rows = sorted(sources[code], key=lambda r: r["chancePct"], reverse=True)
         max_pct = rows[0]["chancePct"]
-        items[code] = {"rarity": rarity_for(max_pct), "sources": rows}
+        entry: Dict[str, object] = {"rarity": rarity_for(max_pct), "sources": rows}
+        # Craftable flag only for dungeon-loot clothing that has a recipe.
+        if code.startswith("clothes-") and is_craftable(code, craft_exact, craft_patterns):
+            entry["craftable"] = True
+        items[code] = entry
 
     return {
         "generatedUtc": _dt.datetime.now(_dt.timezone.utc).isoformat(),

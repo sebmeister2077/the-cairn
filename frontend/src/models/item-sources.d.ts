@@ -15,6 +15,8 @@ export interface ItemLootSource {
 export interface ItemSourceInfo {
     rarity: Rarity;
     sources: ItemLootSource[];
+    /** True when this (dungeon-loot clothing) item also has a crafting recipe. */
+    craftable?: boolean;
 }
 
 export interface ItemSourcesData {

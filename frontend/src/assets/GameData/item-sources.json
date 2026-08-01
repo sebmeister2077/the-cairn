@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T19:17:00.484526+00:00",
+  "generatedUtc": "2026-08-01T19:59:21.500813+00:00",
   "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
   "poolCount": 33,
   "items": {
@@ -336,7 +336,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-bronze-armlet": {
       "rarity": "rare",
@@ -346,7 +347,8 @@
           "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-bronze-bracelet": {
       "rarity": "common",
@@ -356,7 +358,8 @@
           "label": "Accessory randomizer (Medium status)",
           "chancePct": 20.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-copper-bracelet": {
       "rarity": "uncommon",
@@ -366,7 +369,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-fortuneteller": {
       "rarity": "rare",
@@ -376,7 +380,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-gem-studded-bracelet": {
       "rarity": "uncommon",
@@ -386,7 +391,8 @@
           "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-hornedbracelet": {
       "rarity": "uncommon",
@@ -396,7 +402,8 @@
           "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-japamala": {
       "rarity": "uncommon",
@@ -411,7 +418,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-large-silver-bracelets": {
       "rarity": "uncommon",
@@ -421,7 +429,8 @@
           "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-leather-bracers": {
       "rarity": "uncommon",
@@ -431,7 +440,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-long-gem-studded-bracelet": {
       "rarity": "rare",
@@ -446,7 +456,8 @@
           "label": "Cloth randomizer (High status)",
           "chancePct": 0.34
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-merchant-bracelet": {
       "rarity": "uncommon",
@@ -456,7 +467,8 @@
           "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-midsummer": {
       "rarity": "rare",
@@ -466,7 +478,8 @@
           "label": "Theater randomizer",
           "chancePct": 2.13
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-prisoner-binds": {
       "rarity": "rare",
@@ -476,7 +489,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-rosary": {
       "rarity": "uncommon",
@@ -491,7 +505,8 @@
           "label": "Lazaret randomizer",
           "chancePct": 7.89
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-ruralfarmer": {
       "rarity": "rare",
@@ -501,7 +516,8 @@
           "label": "Theater randomizer",
           "chancePct": 2.13
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-rusty-wrist-manacles": {
       "rarity": "uncommon",
@@ -516,7 +532,8 @@
           "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-silver-bracelet": {
       "rarity": "uncommon",
@@ -526,7 +543,8 @@
           "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-silver-chain": {
       "rarity": "uncommon",
@@ -536,7 +554,8 @@
           "label": "Accessory randomizer (High status)",
           "chancePct": 11.76
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-squire-bracers": {
       "rarity": "uncommon",
@@ -546,7 +565,8 @@
           "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-butterflypin-acadianhairstreak": {
       "rarity": "rare",
@@ -1586,7 +1606,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-great-steppe-boots": {
       "rarity": "very_rare",
@@ -1606,7 +1627,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-hobnailboots": {
       "rarity": "legendary",
@@ -1646,7 +1668,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-lackey-shoes": {
       "rarity": "rare",
@@ -1726,7 +1749,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-noble-shoes": {
       "rarity": "rare",
@@ -1746,7 +1770,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-peasent-slippers": {
       "rarity": "rare",
@@ -1756,7 +1781,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-popinjay": {
       "rarity": "rare",
@@ -1921,7 +1947,8 @@
           "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-foot-wanderer": {
       "rarity": "rare",
@@ -1961,7 +1988,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-hand-beggar": {
       "rarity": "rare",
@@ -2011,7 +2039,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-hand-heavy-leather-gloves": {
       "rarity": "very_rare",
@@ -2021,7 +2050,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-hand-laced-handsome-gloves": {
       "rarity": "rare",
@@ -2061,7 +2091,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-hand-noble-riding-gloves": {
       "rarity": "very_rare",
@@ -2246,7 +2277,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-head-gem-encrusted-fur-hat": {
       "rarity": "rare",
@@ -2356,7 +2388,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-head-noble-fillet": {
       "rarity": "rare",
@@ -2376,7 +2409,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-head-popinjay": {
       "rarity": "rare",
@@ -2586,7 +2620,8 @@
           "label": "Cloth randomizer (High status)",
           "chancePct": 6.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-forgotten": {
       "rarity": "rare",
@@ -2686,7 +2721,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-noble-pants": {
       "rarity": "rare",
@@ -2706,7 +2742,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-popinjay": {
       "rarity": "rare",
@@ -2736,7 +2773,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-reindeer-herder-trousers": {
       "rarity": "legendary",
@@ -2746,7 +2784,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-rottenking": {
       "rarity": "very_rare",
@@ -2826,7 +2865,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 4.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-lowerbody-torn-riding-pants": {
       "rarity": "rare",
@@ -2886,7 +2926,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-neck-bronze-gem-necklace": {
       "rarity": "uncommon",
@@ -3001,7 +3042,8 @@
           "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-neck-golden-necklace": {
       "rarity": "rare",
@@ -3261,7 +3303,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-blacksmith-apron": {
       "rarity": "rare",
@@ -3271,7 +3314,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-embroidered-collar": {
       "rarity": "legendary",
@@ -3311,7 +3355,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-hunter-poncho": {
       "rarity": "rare",
@@ -3331,7 +3376,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-marketeer": {
       "rarity": "very_rare",
@@ -3371,7 +3417,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-noble-fur-collar": {
       "rarity": "very_rare",
@@ -3411,7 +3458,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-popinjay": {
       "rarity": "rare",
@@ -3481,7 +3529,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-shoulder-surgeon": {
       "rarity": "rare",
@@ -3601,7 +3650,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.34
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbody-farmhand": {
       "rarity": "rare",
@@ -3761,7 +3811,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbody-noble-shirt": {
       "rarity": "uncommon",
@@ -3791,7 +3842,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbody-popinjay": {
       "rarity": "rare",
@@ -3821,7 +3873,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbody-reindeer-herder-collared-shirt": {
       "rarity": "legendary",
@@ -3831,7 +3884,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbody-rottenking": {
       "rarity": "very_rare",
@@ -4021,7 +4075,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-upperbodyover-great-steppe-mantle": {
       "rarity": "very_rare",
@@ -4141,7 +4196,8 @@
           "label": "Cloth randomizer (Medium status)",
           "chancePct": 3.44
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-waist-alchemist": {
       "rarity": "rare",
@@ -4241,7 +4297,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-waist-gold-waist-chain": {
       "rarity": "very_rare",
@@ -4416,7 +4473,8 @@
           "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-waist-rottenking": {
       "rarity": "very_rare",

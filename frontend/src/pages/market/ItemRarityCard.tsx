@@ -1,4 +1,4 @@
-import { Gem } from "lucide-react";
+import { Gem, Hammer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { lookupItemSources, RARITY_COLORS, RARITY_LABELS } from "@/lib/item-sources";
@@ -32,6 +32,12 @@ export function ItemRarityCard({ code }: { code: string | null | undefined }) {
             </li>
           ))}
         </ul>
+        {info.craftable ? (
+          <div className="mt-auto flex items-center gap-1.5 text-sm text-emerald-600 dark:text-emerald-400">
+            <Hammer className="size-4" aria-hidden />
+            <span className="font-medium">Also craftable</span>
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
