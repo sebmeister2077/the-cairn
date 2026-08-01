@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T18:38:37.658143+00:00",
+  "generatedUtc": "2026-08-01T19:17:00.484526+00:00",
   "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
   "poolCount": 33,
   "items": {
@@ -8,7 +8,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 21.05
         }
       ]
@@ -18,7 +18,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 10.53
         }
       ]
@@ -28,7 +28,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 21.05
         }
       ]
@@ -38,7 +38,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 10.53
         }
       ]
@@ -48,7 +48,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 21.05
         }
       ]
@@ -58,7 +58,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 10.53
         }
       ]
@@ -68,7 +68,7 @@
       "sources": [
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 10.96
         }
       ]
@@ -78,7 +78,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -88,7 +88,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -98,7 +98,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -108,7 +108,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -118,12 +118,12 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 16.61
         },
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 6.85
         }
       ]
@@ -133,7 +133,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 4.3
         }
       ]
@@ -143,7 +143,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 1.8
         }
       ]
@@ -153,7 +153,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 3.7
         }
       ]
@@ -163,7 +163,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -173,7 +173,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -183,7 +183,7 @@
       "sources": [
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 2.74
         }
       ]
@@ -193,7 +193,7 @@
       "sources": [
         {
           "pool": "armor",
-          "label": "Ruin armor cache",
+          "label": "Armor randomizer",
           "chancePct": 5.26
         }
       ]
@@ -203,7 +203,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -213,7 +213,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -223,7 +223,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 8.8
         }
       ]
@@ -233,7 +233,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 21.7
         }
       ]
@@ -243,7 +243,7 @@
       "sources": [
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 4.11
         }
       ]
@@ -253,7 +253,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 7.0
         }
       ]
@@ -263,17 +263,17 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 1.0
         }
       ]
     },
     "chandelier-candle0": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lantern",
-          "label": "Loot cache (lanterns)",
+          "label": "Lantern randomizer",
           "chancePct": 0.06
         }
       ]
@@ -283,7 +283,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 1.4
         }
       ]
@@ -293,7 +293,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 8.11
         }
       ]
@@ -303,7 +303,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 6.96
         }
       ]
@@ -313,7 +313,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 1.66
         }
       ]
@@ -323,7 +323,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 2.8
         }
       ]
@@ -333,7 +333,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
       ]
@@ -343,7 +343,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -353,7 +353,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 20.0
         }
       ]
@@ -363,7 +363,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
       ]
@@ -373,7 +373,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
       ]
@@ -383,7 +383,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
       ]
@@ -393,7 +393,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -403,12 +403,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
       ]
@@ -418,7 +418,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
       ]
@@ -428,7 +428,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
       ]
@@ -438,12 +438,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.34
         }
       ]
@@ -453,7 +453,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -463,7 +463,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -473,7 +473,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
       ]
@@ -483,12 +483,12 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         },
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         }
       ]
@@ -498,7 +498,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -508,12 +508,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
       ]
@@ -523,7 +523,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 5.88
         }
       ]
@@ -533,7 +533,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 11.76
         }
       ]
@@ -543,7 +543,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -553,7 +553,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -563,7 +563,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 0.99
         }
       ]
@@ -573,7 +573,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -583,7 +583,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -593,7 +593,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -603,7 +603,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -613,7 +613,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -623,7 +623,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -633,7 +633,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -643,7 +643,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -653,7 +653,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -663,7 +663,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 3.96
         }
       ]
@@ -673,7 +673,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -683,7 +683,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -693,7 +693,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -703,7 +703,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -713,7 +713,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -723,7 +723,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -733,7 +733,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -743,7 +743,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -753,7 +753,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 5.94
         }
       ]
@@ -763,7 +763,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -773,7 +773,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -783,7 +783,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -793,7 +793,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -803,7 +803,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -813,7 +813,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -823,7 +823,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -833,7 +833,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -843,7 +843,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -853,7 +853,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -863,7 +863,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -873,7 +873,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -883,17 +883,17 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
     },
     "clothes-butterflypin-redglider": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 0.4
         }
       ]
@@ -903,7 +903,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -913,7 +913,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -923,7 +923,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -933,7 +933,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 0.59
         }
       ]
@@ -943,7 +943,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 0.59
         }
       ]
@@ -953,7 +953,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -963,7 +963,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -973,7 +973,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 3.96
         }
       ]
@@ -983,17 +983,17 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
     },
     "clothes-butterflypin-temporal": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 0.4
         }
       ]
@@ -1003,7 +1003,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -1013,7 +1013,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -1023,7 +1023,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -1033,7 +1033,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -1043,7 +1043,7 @@
       "sources": [
         {
           "pool": "butterfly",
-          "label": "Butterfly jar",
+          "label": "Butterfly pin randomizer",
           "chancePct": 1.98
         }
       ]
@@ -1053,7 +1053,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 4.83
         }
       ]
@@ -1063,7 +1063,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1073,7 +1073,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -1083,7 +1083,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.76
         }
       ]
@@ -1093,7 +1093,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1103,12 +1103,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -1118,7 +1118,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -1128,7 +1128,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -1138,7 +1138,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -1148,7 +1148,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1158,7 +1158,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
@@ -1168,7 +1168,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1178,7 +1178,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
@@ -1188,7 +1188,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1198,7 +1198,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -1208,17 +1208,17 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.76
         }
       ]
     },
     "clothes-face-acrobat": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -1228,7 +1228,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1238,7 +1238,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1248,7 +1248,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1258,7 +1258,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -1268,7 +1268,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1278,7 +1278,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -1288,7 +1288,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1298,7 +1298,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1308,7 +1308,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1318,7 +1318,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1328,7 +1328,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1338,7 +1338,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1348,7 +1348,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1358,7 +1358,7 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 0.66
         }
       ]
@@ -1368,7 +1368,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -1378,12 +1378,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 1.0
         }
       ]
@@ -1393,7 +1393,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1403,7 +1403,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 2.9
         }
       ]
@@ -1413,7 +1413,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1423,17 +1423,17 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
     },
     "clothes-face-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 0.48
         }
       ]
@@ -1443,7 +1443,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -1453,7 +1453,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -1463,7 +1463,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 2.0
         }
       ]
@@ -1473,7 +1473,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -1483,17 +1483,17 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
     },
     "clothes-foot-acrobat": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -1503,7 +1503,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -1513,7 +1513,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -1523,7 +1523,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1533,7 +1533,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1543,7 +1543,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1553,7 +1553,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1563,7 +1563,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1573,17 +1573,17 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
     },
     "clothes-foot-fur-lined-reindeer-herder-shoes": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -1593,7 +1593,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.62
         }
       ]
@@ -1603,17 +1603,17 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
     },
     "clothes-foot-hobnailboots": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -1623,17 +1623,17 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.06
         }
       ]
     },
     "clothes-foot-jester": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -1643,7 +1643,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -1653,7 +1653,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.06
         }
       ]
@@ -1663,7 +1663,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -1673,7 +1673,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -1683,17 +1683,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
     },
     "clothes-foot-metalcap-boots": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
       ]
@@ -1703,7 +1703,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1713,7 +1713,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -1723,7 +1723,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -1733,7 +1733,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1743,7 +1743,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -1753,7 +1753,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -1763,7 +1763,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1773,7 +1773,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -1783,7 +1783,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -1793,17 +1793,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
     },
     "clothes-foot-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -1813,7 +1813,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1823,7 +1823,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1833,12 +1833,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
       ]
@@ -1848,7 +1848,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -1858,7 +1858,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -1868,7 +1868,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -1878,7 +1878,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -1888,7 +1888,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -1898,7 +1898,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -1908,7 +1908,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1918,7 +1918,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1928,7 +1928,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1938,7 +1938,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -1948,7 +1948,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -1958,7 +1958,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -1968,17 +1968,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-hand-deep": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.34
         }
       ]
@@ -1988,7 +1988,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -1998,7 +1998,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2008,7 +2008,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2018,7 +2018,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -2028,7 +2028,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -2038,7 +2038,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2048,7 +2048,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2058,7 +2058,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
       ]
@@ -2068,7 +2068,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.02
         }
       ]
@@ -2078,7 +2078,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -2088,7 +2088,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -2098,7 +2098,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2108,7 +2108,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2118,7 +2118,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2128,7 +2128,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 2.9
         }
       ]
@@ -2138,7 +2138,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2148,7 +2148,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -2158,7 +2158,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -2168,7 +2168,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2178,7 +2178,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -2188,7 +2188,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -2198,32 +2198,32 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 1.32
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
     },
     "clothes-head-embroidered-coif": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
     },
     "clothes-head-emeraldreindeerherder": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -2233,7 +2233,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2243,7 +2243,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2253,7 +2253,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -2263,7 +2263,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -2273,17 +2273,17 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
     },
     "clothes-head-jester": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -2293,7 +2293,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2303,7 +2303,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -2313,7 +2313,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -2323,7 +2323,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -2333,7 +2333,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2343,7 +2343,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2353,7 +2353,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -2363,7 +2363,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -2373,7 +2373,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -2383,7 +2383,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2393,7 +2393,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2403,17 +2403,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
     },
     "clothes-head-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -2423,7 +2423,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2433,7 +2433,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2443,7 +2443,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.76
         }
       ]
@@ -2453,7 +2453,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -2463,7 +2463,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -2473,7 +2473,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -2483,7 +2483,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2493,7 +2493,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2503,7 +2503,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -2513,7 +2513,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2523,17 +2523,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-lowerbody-deep": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.34
         }
       ]
@@ -2543,7 +2543,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -2553,17 +2553,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
     },
     "clothes-lowerbody-emeraldreindeerherder": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -2573,7 +2573,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2583,7 +2583,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 6.78
         }
       ]
@@ -2593,7 +2593,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2603,7 +2603,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2613,7 +2613,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
       ]
@@ -2623,7 +2623,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2633,7 +2633,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2643,7 +2643,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -2653,7 +2653,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2663,7 +2663,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -2673,7 +2673,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2683,7 +2683,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -2693,7 +2693,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -2703,7 +2703,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2713,7 +2713,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -2723,7 +2723,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -2733,17 +2733,17 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
     },
     "clothes-lowerbody-reindeer-herder-trousers": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -2753,17 +2753,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
     },
     "clothes-lowerbody-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -2773,7 +2773,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2783,7 +2783,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -2793,7 +2793,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2803,7 +2803,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -2813,7 +2813,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2823,7 +2823,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 4.69
         }
       ]
@@ -2833,7 +2833,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -2843,17 +2843,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-lowerbody-warm-woolen-pants": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
       ]
@@ -2863,17 +2863,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-lowerbody-woolen-leggings": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.34
         }
       ]
@@ -2883,7 +2883,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -2893,7 +2893,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -2903,7 +2903,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 3.0
         }
       ]
@@ -2913,7 +2913,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
       ]
@@ -2923,7 +2923,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -2933,12 +2933,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -2948,7 +2948,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -2958,7 +2958,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -2968,7 +2968,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -2978,12 +2978,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -2993,12 +2993,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 1.32
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -3008,7 +3008,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.76
         }
       ]
@@ -3018,12 +3018,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -3033,12 +3033,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -3048,12 +3048,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -3063,12 +3063,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -3078,7 +3078,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -3088,7 +3088,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 10.0
         }
       ]
@@ -3098,7 +3098,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3108,12 +3108,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 5.26
         },
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 1.0
         }
       ]
@@ -3123,12 +3123,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 5.26
         },
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 1.0
         }
       ]
@@ -3138,12 +3138,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 5.26
         },
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 1.0
         }
       ]
@@ -3153,7 +3153,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -3163,7 +3163,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 9.66
         }
       ]
@@ -3173,12 +3173,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 7.89
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 0.97
         }
       ]
@@ -3188,7 +3188,7 @@
       "sources": [
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 2.9
         }
       ]
@@ -3198,7 +3198,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3208,7 +3208,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -3218,7 +3218,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -3228,7 +3228,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3238,7 +3238,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3248,7 +3248,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -3258,7 +3258,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -3268,17 +3268,17 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
     },
     "clothes-shoulder-embroidered-collar": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -3288,7 +3288,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3298,7 +3298,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -3308,7 +3308,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3318,7 +3318,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -3328,7 +3328,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -3338,7 +3338,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -3348,7 +3348,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3358,7 +3358,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3368,7 +3368,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
       ]
@@ -3378,7 +3378,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.02
         }
       ]
@@ -3388,7 +3388,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3398,7 +3398,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3408,7 +3408,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3418,17 +3418,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-shoulder-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -3438,7 +3438,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -3448,7 +3448,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3458,7 +3458,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3468,17 +3468,17 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
     },
     "clothes-shoulder-stained-leather-poncho": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
       ]
@@ -3488,7 +3488,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3498,7 +3498,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3508,7 +3508,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3518,7 +3518,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3528,7 +3528,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3538,7 +3538,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3548,7 +3548,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -3558,7 +3558,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3568,37 +3568,37 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-upperbody-classicaltunic": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
     },
     "clothes-upperbody-deep": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.34
         }
       ]
     },
     "clothes-upperbody-earth-toned-robe": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.34
         }
       ]
@@ -3608,7 +3608,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3618,7 +3618,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -3628,7 +3628,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -3638,7 +3638,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3648,7 +3648,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -3658,7 +3658,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3668,7 +3668,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 2.41
         }
       ]
@@ -3678,7 +3678,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3688,7 +3688,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3698,7 +3698,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3708,7 +3708,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -3718,7 +3718,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 3.44
         }
       ]
@@ -3728,7 +3728,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -3738,7 +3738,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3748,7 +3748,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3758,7 +3758,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -3768,17 +3768,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 6.78
         }
       ]
     },
     "clothes-upperbody-pearl-shirt": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
       ]
@@ -3788,7 +3788,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -3798,7 +3798,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3808,7 +3808,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -3818,17 +3818,17 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
     },
     "clothes-upperbody-reindeer-herder-collared-shirt": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -3838,7 +3838,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -3848,7 +3848,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3858,7 +3858,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3868,7 +3868,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3878,7 +3878,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -3888,7 +3888,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -3898,7 +3898,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -3908,7 +3908,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3918,7 +3918,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -3928,7 +3928,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 4.69
         }
       ]
@@ -3938,7 +3938,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 3.39
         }
       ]
@@ -3948,7 +3948,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -3958,27 +3958,27 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-upperbody-woolen-shirt": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.16
         }
       ]
     },
     "clothes-upperbodyover-cerise-embroidered-reindeer-herder-coat": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -3988,7 +3988,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -3998,7 +3998,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4008,7 +4008,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4018,7 +4018,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4028,7 +4028,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.62
         }
       ]
@@ -4038,7 +4038,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 3.12
         }
       ]
@@ -4048,7 +4048,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -4058,7 +4058,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4068,7 +4068,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4078,7 +4078,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4088,7 +4088,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4098,17 +4098,17 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
     },
     "clothes-upperbodyover-rotwalker": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -4118,7 +4118,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4128,7 +4128,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4138,7 +4138,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 3.44
         }
       ]
@@ -4148,7 +4148,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4158,7 +4158,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -4168,7 +4168,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4178,7 +4178,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
@@ -4188,17 +4188,17 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
     },
     "clothes-waist-cerise-embroidered-reindeer-herder-waistband": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.31
         }
       ]
@@ -4208,7 +4208,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.02
         }
       ]
@@ -4218,7 +4218,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4228,7 +4228,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4238,7 +4238,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4248,7 +4248,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
@@ -4258,7 +4258,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4268,7 +4268,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4278,7 +4278,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4288,12 +4288,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 0.59
         }
       ]
@@ -4303,7 +4303,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4313,7 +4313,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.94
         }
       ]
@@ -4323,7 +4323,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.03
         }
       ]
@@ -4333,7 +4333,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4343,7 +4343,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4353,7 +4353,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4363,7 +4363,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4373,7 +4373,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 1.56
         }
       ]
@@ -4383,7 +4383,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4393,7 +4393,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -4403,17 +4403,17 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 1.18
         }
       ]
     },
     "clothes-waist-reindeer-herder-waistband": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -4423,7 +4423,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 0.68
         }
       ]
@@ -4433,7 +4433,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4443,7 +4443,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4453,7 +4453,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4463,7 +4463,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 0.69
         }
       ]
@@ -4473,17 +4473,17 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 3.44
         }
       ]
     },
     "clothes-waist-sturdy-leather-belt": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.47
         }
       ]
@@ -4493,7 +4493,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4503,7 +4503,7 @@
       "sources": [
         {
           "pool": "theater",
-          "label": "Theater cache",
+          "label": "Theater randomizer",
           "chancePct": 2.13
         }
       ]
@@ -4513,7 +4513,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -4523,7 +4523,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -4533,7 +4533,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -4543,17 +4543,17 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
     },
     "coke": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 0.3
         }
       ]
@@ -4563,7 +4563,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 3.5
         }
       ]
@@ -4573,7 +4573,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 20.3
         }
       ]
@@ -4583,7 +4583,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 16.4
         }
       ]
@@ -4593,7 +4593,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 12.2
         }
       ]
@@ -4603,7 +4603,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 5.5
         }
       ]
@@ -4613,7 +4613,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 10.5
         }
       ]
@@ -4623,17 +4623,17 @@
       "sources": [
         {
           "pool": "gear",
-          "label": "Loot cache (temporal gears)",
+          "label": "Gear randomizer",
           "chancePct": 99.03
         }
       ]
     },
     "gear-temporal": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "gear",
-          "label": "Loot cache (temporal gears)",
+          "label": "Gear randomizer",
           "chancePct": 0.32
         }
       ]
@@ -4643,7 +4643,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 7.97
         }
       ]
@@ -4653,7 +4653,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 9.97
         }
       ]
@@ -4663,7 +4663,7 @@
       "sources": [
         {
           "pool": "cloth-mediumstatus",
-          "label": "Medium-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Medium status)",
           "chancePct": 1.72
         }
       ]
@@ -4673,7 +4673,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4683,7 +4683,7 @@
       "sources": [
         {
           "pool": "cloth-highstatus",
-          "label": "High-status ruin chest (clothing)",
+          "label": "Cloth randomizer (High status)",
           "chancePct": 1.69
         }
       ]
@@ -4693,7 +4693,7 @@
       "sources": [
         {
           "pool": "cloth-lowstatus",
-          "label": "Low-status ruin chest (clothing)",
+          "label": "Cloth randomizer (Low status)",
           "chancePct": 0.78
         }
       ]
@@ -4703,7 +4703,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -4713,7 +4713,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -4723,12 +4723,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 1.0
         }
       ]
@@ -4738,7 +4738,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -4748,12 +4748,12 @@
       "sources": [
         {
           "pool": "lazaret",
-          "label": "Lazaret cache",
+          "label": "Lazaret randomizer",
           "chancePct": 2.63
         },
         {
           "pool": "accessory-lowstatus",
-          "label": "Low-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Low status)",
           "chancePct": 1.93
         }
       ]
@@ -4763,7 +4763,7 @@
       "sources": [
         {
           "pool": "accessory-mediumstatus",
-          "label": "Medium-status ruin chest (accessory)",
+          "label": "Accessory randomizer (Medium status)",
           "chancePct": 5.0
         }
       ]
@@ -4773,7 +4773,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -4783,7 +4783,7 @@
       "sources": [
         {
           "pool": "accessory-highstatus",
-          "label": "High-status ruin chest (accessory)",
+          "label": "Accessory randomizer (High status)",
           "chancePct": 2.94
         }
       ]
@@ -4793,7 +4793,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 1.04
         }
       ]
@@ -4803,7 +4803,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 0.52
         }
       ]
@@ -4813,7 +4813,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 0.52
         }
       ]
@@ -4823,7 +4823,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 3.65
         }
       ]
@@ -4833,17 +4833,17 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 16.67
         }
       ]
     },
     "ingot-gold": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 0.26
         }
       ]
@@ -4853,7 +4853,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 28.65
         }
       ]
@@ -4863,17 +4863,17 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 4.17
         }
       ]
     },
     "ingot-silver": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 0.26
         }
       ]
@@ -4883,7 +4883,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 23.96
         }
       ]
@@ -4893,7 +4893,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 0.52
         }
       ]
@@ -4903,7 +4903,7 @@
       "sources": [
         {
           "pool": "ingot",
-          "label": "Loot cache (metal ingots)",
+          "label": "Ingot randomizer",
           "chancePct": 19.79
         }
       ]
@@ -4913,12 +4913,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -4928,12 +4928,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -4943,12 +4943,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -4958,12 +4958,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -4973,12 +4973,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -4988,12 +4988,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5003,12 +5003,12 @@
       "sources": [
         {
           "pool": "jonasframes",
-          "label": "Jonas locus (frames)",
+          "label": "Jonasframes randomizer",
           "chancePct": 14.29
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5018,12 +5018,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5033,12 +5033,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5048,12 +5048,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5063,12 +5063,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5078,12 +5078,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5093,12 +5093,12 @@
       "sources": [
         {
           "pool": "jonasparts",
-          "label": "Jonas locus (parts)",
+          "label": "Jonas parts randomizer",
           "chancePct": 16.67
         },
         {
           "pool": "alljonas",
-          "label": "Jonas locus",
+          "label": "Jonas Parts&Frames Stack randomizer",
           "chancePct": 7.69
         }
       ]
@@ -5108,7 +5108,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 2.6
         }
       ]
@@ -5118,7 +5118,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5128,7 +5128,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5138,7 +5138,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5148,7 +5148,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5158,7 +5158,7 @@
       "sources": [
         {
           "pool": "lantern",
-          "label": "Loot cache (lanterns)",
+          "label": "Lantern randomizer",
           "chancePct": 54.51
         }
       ]
@@ -5168,7 +5168,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 0.8
         }
       ]
@@ -5178,7 +5178,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 12.3
         }
       ]
@@ -5188,7 +5188,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 14.14
         }
       ]
@@ -5198,12 +5198,12 @@
       "sources": [
         {
           "pool": "lore-research",
-          "label": "Ruin bookshelf (research)",
+          "label": "Lore randomizer (R)",
           "chancePct": 100.0
         },
         {
           "pool": "lore-jonas",
-          "label": "Ruin bookshelf (Jonas lore)",
+          "label": "Lore randomizer (J)",
           "chancePct": 100.0
         }
       ]
@@ -5213,7 +5213,7 @@
       "sources": [
         {
           "pool": "lore-tobias",
-          "label": "Ruin bookshelf (Tobias' notes)",
+          "label": "Lore randomizer (T)",
           "chancePct": 100.0
         }
       ]
@@ -5223,12 +5223,12 @@
       "sources": [
         {
           "pool": "lore-villager",
-          "label": "Ruin bookshelf (villager lore)",
+          "label": "Lore randomizer (V)",
           "chancePct": 100.0
         },
         {
           "pool": "lore-diaries",
-          "label": "Ruin bookshelf (diaries)",
+          "label": "Lore randomizer (D)",
           "chancePct": 100.0
         }
       ]
@@ -5238,12 +5238,12 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 3.64
         },
         {
           "pool": "gear",
-          "label": "Loot cache (temporal gears)",
+          "label": "Gear randomizer",
           "chancePct": 0.65
         }
       ]
@@ -5253,17 +5253,17 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 10.4
         },
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 10.0
         },
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 8.0
         }
       ]
@@ -5273,17 +5273,17 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 4.89
         }
       ]
     },
     "ore-anthracite": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 0.4
         }
       ]
@@ -5293,7 +5293,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 2.9
         }
       ]
@@ -5303,7 +5303,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 4.0
         }
       ]
@@ -5313,7 +5313,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 2.8
         }
       ]
@@ -5323,7 +5323,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 2.8
         }
       ]
@@ -5333,12 +5333,12 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 13.99
         },
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 5.8
         }
       ]
@@ -5348,7 +5348,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 8.74
         }
       ]
@@ -5358,27 +5358,27 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 13.99
         }
       ]
     },
     "ore-medium-quartz_nativegold-andesite": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 0.17
         }
       ]
     },
     "ore-medium-quartz_nativesilver-andesite": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 0.17
         }
       ]
@@ -5388,7 +5388,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 6.99
         }
       ]
@@ -5398,7 +5398,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 4.0
         }
       ]
@@ -5408,7 +5408,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 8.74
         }
       ]
@@ -5418,7 +5418,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 10.49
         }
       ]
@@ -5428,7 +5428,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 8.74
         }
       ]
@@ -5438,7 +5438,7 @@
       "sources": [
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 13.99
         }
       ]
@@ -5448,22 +5448,22 @@
       "sources": [
         {
           "pool": "lantern",
-          "label": "Loot cache (lanterns)",
+          "label": "Lantern randomizer",
           "chancePct": 45.43
         },
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 32.79
         },
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 17.5
         },
         {
           "pool": "ore",
-          "label": "Loot cache (ore)",
+          "label": "Ore Randomizer",
           "chancePct": 13.99
         }
       ]
@@ -5473,47 +5473,47 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 0.9
         }
       ]
     },
     "ore-sylvite": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 0.3
         }
       ]
     },
     "padlock-bismuthbronze": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.21
         }
       ]
     },
     "padlock-blackbronze": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.21
         }
       ]
     },
     "padlock-tinbronze": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.21
         }
       ]
@@ -5523,7 +5523,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 19.67
         }
       ]
@@ -5533,7 +5533,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 1.64
         }
       ]
@@ -5543,7 +5543,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 9.84
         }
       ]
@@ -5553,7 +5553,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 14.75
         }
       ]
@@ -5563,7 +5563,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 3.28
         }
       ]
@@ -5573,7 +5573,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 3.93
         }
       ]
@@ -5583,7 +5583,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 6.56
         }
       ]
@@ -5593,7 +5593,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 2.62
         }
       ]
@@ -5603,7 +5603,7 @@
       "sources": [
         {
           "pool": "painting",
-          "label": "Loot cache (paintings)",
+          "label": "Painting randomizer",
           "chancePct": 4.92
         }
       ]
@@ -5613,7 +5613,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 15.9
         }
       ]
@@ -5623,7 +5623,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 0.66
         }
       ]
@@ -5633,7 +5633,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 15.38
         }
       ]
@@ -5643,7 +5643,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 2.66
         }
       ]
@@ -5653,7 +5653,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 3.01
         }
       ]
@@ -5663,7 +5663,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 0.8
         }
       ]
@@ -5673,7 +5673,7 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 10.4
         }
       ]
@@ -5683,7 +5683,7 @@
       "sources": [
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 26.1
         }
       ]
@@ -5693,17 +5693,17 @@
       "sources": [
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 9.2
         }
       ]
     },
     "saw-copper": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 0.33
         }
       ]
@@ -5713,7 +5713,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 3.32
         }
       ]
@@ -5723,7 +5723,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 0.66
         }
       ]
@@ -5733,7 +5733,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 19.87
         }
       ]
@@ -5743,7 +5743,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 2.65
         }
       ]
@@ -5753,7 +5753,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 3.97
         }
       ]
@@ -5763,7 +5763,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 6.62
         }
       ]
@@ -5773,7 +5773,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 0.66
         }
       ]
@@ -5783,7 +5783,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 0.66
         }
       ]
@@ -5793,7 +5793,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 21.19
         }
       ]
@@ -5803,7 +5803,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 0.66
         }
       ]
@@ -5813,7 +5813,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 26.49
         }
       ]
@@ -5823,7 +5823,7 @@
       "sources": [
         {
           "pool": "seed",
-          "label": "Loot cache (seeds)",
+          "label": "Seed randomizer",
           "chancePct": 16.56
         }
       ]
@@ -5833,7 +5833,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 1.99
         }
       ]
@@ -5843,7 +5843,7 @@
       "sources": [
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 26.58
         }
       ]
@@ -5853,7 +5853,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5863,7 +5863,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5873,7 +5873,7 @@
       "sources": [
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 34.25
         }
       ]
@@ -5883,7 +5883,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5893,7 +5893,7 @@
       "sources": [
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
       ]
@@ -5903,27 +5903,27 @@
       "sources": [
         {
           "pool": "copperweapon",
-          "label": "Ruined weapon cache (copper)",
+          "label": "Weapon randomizer (Copper)",
           "chancePct": 41.1
         },
         {
           "pool": "ruinedweapon",
-          "label": "Ruined weapon cache",
+          "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 33.33
         },
         {
           "pool": "coppertool",
-          "label": "Ruined tool cache (copper)",
+          "label": "Tool randomizer (Copper)",
           "chancePct": 29.9
         },
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 18.4
         },
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 18.3
         }
       ]
@@ -5933,12 +5933,12 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 17.15
         },
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 11.0
         }
       ]
@@ -5948,7 +5948,7 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 5.3
         }
       ]
@@ -5958,12 +5958,12 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 17.15
         },
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 11.0
         }
       ]
@@ -5973,7 +5973,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -5983,7 +5983,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -5993,7 +5993,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6003,7 +6003,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6013,7 +6013,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6023,7 +6023,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6033,7 +6033,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6043,7 +6043,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6053,7 +6053,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6063,7 +6063,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6073,7 +6073,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6083,7 +6083,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6093,7 +6093,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6103,7 +6103,7 @@
       "sources": [
         {
           "pool": "materials-building",
-          "label": "Loot cache (building materials)",
+          "label": "Building materials randomizer",
           "chancePct": 0.52
         }
       ]
@@ -6113,7 +6113,7 @@
       "sources": [
         {
           "pool": "fuel",
-          "label": "Loot cache (fuel)",
+          "label": "Fuel randomizer",
           "chancePct": 18.3
         }
       ]
@@ -6123,17 +6123,17 @@
       "sources": [
         {
           "pool": "materials-mining",
-          "label": "Loot cache (mining materials)",
+          "label": "Mining materials randomizer",
           "chancePct": 18.8
         },
         {
           "pool": "kitchen",
-          "label": "Loot cache (kitchenware)",
+          "label": "Food and kitchen tools randomizer",
           "chancePct": 15.7
         },
         {
           "pool": "resource",
-          "label": "Loot cache (resources)",
+          "label": "Resource randomizer",
           "chancePct": 14.1
         }
       ]
@@ -6143,7 +6143,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6153,7 +6153,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6163,7 +6163,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6173,7 +6173,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6183,7 +6183,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6193,7 +6193,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6203,7 +6203,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6213,7 +6213,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6223,7 +6223,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]
@@ -6233,7 +6233,7 @@
       "sources": [
         {
           "pool": "tuningcylinder",
-          "label": "Loot cache (tuning cylinders)",
+          "label": "Tuning cylinder randomizer",
           "chancePct": 10.0
         }
       ]

@@ -2,7 +2,7 @@
 // by `backend/extract_item_sources.py` (served from
 // `frontend/src/assets/GameData/item-sources.json`). Keyed by bare item code.
 
-export type Rarity = "common" | "uncommon" | "rare" | "very_rare";
+export type Rarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary";
 
 /** One loot pool an item can drop from, with its drop chance in that pool. */
 export interface ItemLootSource {

@@ -12,6 +12,7 @@ export const RARITY_LABELS: Record<Rarity, string> = {
     uncommon: "Uncommon",
     rare: "Rare",
     very_rare: "Very Rare",
+    legendary: "Legendary",
 };
 
 export const RARITY_COLORS: Record<Rarity, string> = {
@@ -19,6 +20,7 @@ export const RARITY_COLORS: Record<Rarity, string> = {
     uncommon: "#22c55e", // green-500
     rare: "#3b82f6", // blue-500
     very_rare: "#a855f7", // purple-500
+    legendary: "#f59e0b", // amber-500
 };
 
 /** Loot sources + rarity for an item code, or null when it isn't loot-table drop. */

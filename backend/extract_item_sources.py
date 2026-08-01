@@ -29,50 +29,17 @@ from typing import Dict, List, Optional
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUT = REPO_ROOT / "frontend" / "src" / "assets" / "GameData" / "item-sources.json"
 
-# Human labels for the stackrandomizer pools (bare pool code, no "*-" prefix).
-# The status tiers are the loot placed in ruin/story-structure chests.
-POOL_LABELS: Dict[str, str] = {
-    "cloth-lowstatus": "Low-status ruin chest (clothing)",
-    "cloth-mediumstatus": "Medium-status ruin chest (clothing)",
-    "cloth-highstatus": "High-status ruin chest (clothing)",
-    "accessory-lowstatus": "Low-status ruin chest (accessory)",
-    "accessory-mediumstatus": "Medium-status ruin chest (accessory)",
-    "accessory-highstatus": "High-status ruin chest (accessory)",
-    "lore-villager": "Ruin bookshelf (villager lore)",
-    "lore-tobias": "Ruin bookshelf (Tobias' notes)",
-    "lore-research": "Ruin bookshelf (research)",
-    "lore-diaries": "Ruin bookshelf (diaries)",
-    "lore-jonas": "Ruin bookshelf (Jonas lore)",
-    "gear": "Loot cache (temporal gears)",
-    "ore": "Loot cache (ore)",
-    "fuel": "Loot cache (fuel)",
-    "ingot": "Loot cache (metal ingots)",
-    "seed": "Loot cache (seeds)",
-    "coppertool": "Ruined tool cache (copper)",
-    "copperweapon": "Ruined weapon cache (copper)",
-    "ruinedweapon": "Ruined weapon cache",
-    "resource": "Loot cache (resources)",
-    "tuningcylinder": "Loot cache (tuning cylinders)",
-    "lantern": "Loot cache (lanterns)",
-    "painting": "Loot cache (paintings)",
-    "jonasparts": "Jonas locus (parts)",
-    "jonasframes": "Jonas locus (frames)",
-    "alljonas": "Jonas locus",
-    "materials-building": "Loot cache (building materials)",
-    "materials-mining": "Loot cache (mining materials)",
-    "kitchen": "Loot cache (kitchenware)",
-    "armor": "Ruin armor cache",
-    "lazaret": "Lazaret cache",
-    "butterfly": "Butterfly jar",
-    "theater": "Theater cache",
-}
+# Pool labels come straight from the game's lang file (`item-stackrandomizer-<pool>`,
+# e.g. "Cloth randomizer (High status)") so they read exactly like the in-game
+# handbook / Extra Info mod. See `pool_label()`.
 
 # Rarity buckets by best (max) per-pool drop chance, in percent.
 RARITY_THRESHOLDS = [
     (12.0, "common"),
     (5.0, "uncommon"),
     (1.5, "rare"),
-    (0.0, "very_rare"),
+    (0.5, "very_rare"),
+    (0.0, "legendary"),
 ]
 
 
@@ -101,16 +68,30 @@ def bare_code(code: str) -> str:
     return code.split(":", 1)[-1].strip()
 
 
+def load_lang(assets_root: Path) -> Dict[str, str]:
+    """Game English lang table (strict JSON), used for the randomizer pool names."""
+    path = assets_root / "game" / "lang" / "en.json"
+    if not path.is_file():
+        print(f"[warn] lang file not found at {path} — pool labels will fall back to codes")
+        return {}
+    return json.loads(path.read_text(encoding="utf-8-sig"))
+
+
 def pool_key(raw_key: str) -> str:
     """`*-cloth-highstatus` -> `cloth-highstatus`."""
     return raw_key.split("-", 1)[1] if raw_key.startswith("*-") else raw_key
+
+
+def pool_label(pk: str, lang: Dict[str, str]) -> str:
+    """In-game randomizer name (e.g. "Cloth randomizer (High status)")."""
+    return lang.get(f"item-stackrandomizer-{pk}") or pk.replace("-", " ").title()
 
 
 def rarity_for(max_pct: float) -> str:
     for threshold, tier in RARITY_THRESHOLDS:
         if max_pct >= threshold:
             return tier
-    return "very_rare"
+    return "legendary"
 
 
 def build(assets_root: Path) -> dict:
@@ -119,6 +100,7 @@ def build(assets_root: Path) -> dict:
         raise SystemExit(f"stackrandomizer not found: {path}")
     data = load_vs_json(path)
     by_type = data.get("attributesByType") or {}
+    lang = load_lang(assets_root)
 
     # code -> list of {pool, label, chancePct}
     sources: Dict[str, List[dict]] = defaultdict(list)
@@ -138,7 +120,7 @@ def build(assets_root: Path) -> dict:
         if total <= 0:
             continue
         pk = pool_key(raw_key)
-        label = POOL_LABELS.get(pk, pk.replace("-", " ").title())
+        label = pool_label(pk, lang)
         for code, weight in weight_by_code.items():
             sources[code].append({
                 "pool": pk,
