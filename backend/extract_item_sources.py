@@ -201,10 +201,11 @@ def build(assets_root: Path) -> dict:
         for r in rows:
             if r["pool"] == LAZARET_POOL:
                 r["oncePerServer"] = True
-        # Lazaret-only -> legendary (once per server); otherwise the non-Lazaret
-        # pools decide the tier so a still-findable item keeps its real rarity.
-        non_lazaret = [r for r in rows if r["pool"] != LAZARET_POOL]
-        rarity = rarity_for(max(r["chancePct"] for r in non_lazaret)) if non_lazaret else "legendary"
+        # An item sold only via once-per-server chests is the world's sole copy
+        # -> "unique"; otherwise the non-once pools decide the tier so a still-
+        # findable item keeps its real rarity.
+        repeatable = [r for r in rows if not r.get("oncePerServer")]
+        rarity = rarity_for(max(r["chancePct"] for r in repeatable)) if repeatable else "unique"
         entry: Dict[str, object] = {"rarity": rarity, "sources": rows}
         # Craftable flag only for dungeon-loot clothing that has a recipe.
         if code.startswith("clothes-") and is_craftable(code, craft_exact, craft_patterns):

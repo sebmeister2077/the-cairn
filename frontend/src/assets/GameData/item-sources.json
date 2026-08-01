@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T21:17:05.364511+00:00",
+  "generatedUtc": "2026-08-01T21:28:15.382467+00:00",
   "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
   "poolCount": 33,
   "items": {
@@ -1299,7 +1299,7 @@
       ]
     },
     "clothes-face-funeralmask1": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1310,7 +1310,7 @@
       ]
     },
     "clothes-face-funeralmask2": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1321,7 +1321,7 @@
       ]
     },
     "clothes-face-funeralmask3": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1332,7 +1332,7 @@
       ]
     },
     "clothes-face-funeralmask4": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1343,7 +1343,7 @@
       ]
     },
     "clothes-face-funeralmask5": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1354,7 +1354,7 @@
       ]
     },
     "clothes-face-funeralmask6": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1365,7 +1365,7 @@
       ]
     },
     "clothes-face-funeralmask7": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
@@ -1376,7 +1376,7 @@
       ]
     },
     "clothes-face-funeralmask8": {
-      "rarity": "legendary",
+      "rarity": "unique",
       "sources": [
         {
           "pool": "lazaret",
