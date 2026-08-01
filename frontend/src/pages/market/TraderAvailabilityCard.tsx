@@ -4,68 +4,64 @@ import { lookupTraderInfo } from "@/lib/trader-wares";
 import { TRADER_TYPE_COLORS, TRADER_TYPE_LABELS } from "@/lib/trader-types";
 import type { TraderWarePrice } from "@/models/trader-wares";
 
-/** Compact gears number: one decimal below 10, whole numbers above. */
-function fmtGears(n: number): string {
-    const r = n < 10 ? Math.round(n * 10) / 10 : Math.round(n);
-    return String(r);
-}
-
+/** In-game gears range: prices are whole gears, so the realised span is
+ *  floor(min)..ceil(max) — matching what the game/handbook shows. */
 function priceRange(w: TraderWarePrice): string {
-    const lo = fmtGears(w.priceMin);
-    const hi = fmtGears(w.priceMax);
-    return lo === hi ? `${lo}⚙` : `${lo}–${hi}⚙`;
+  const lo = Math.floor(w.priceMin);
+  const hi = Math.ceil(w.priceMax);
+  return lo === hi ? `${lo}⚙` : `${lo}–${hi}⚙`;
 }
 
 function WareRow({ ware }: { ware: TraderWarePrice }) {
-    const qty = ware.stacksize && ware.stacksize > 1 ? ware.stacksize : null;
-    return (
-        <div className="flex items-center gap-2 text-sm">
-            <span
-                className="size-2.5 shrink-0 rounded-full"
-                style={{ backgroundColor: TRADER_TYPE_COLORS[ware.traderType] }}
-                aria-hidden
-            />
-            <span className="min-w-0 flex-1 truncate">{TRADER_TYPE_LABELS[ware.traderType]}</span>
-            {qty ? (
-                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                    ×{qty}
-                </span>
-            ) : null}
-            <span className="shrink-0 font-medium tabular-nums">{priceRange(ware)}</span>
-        </div>
-    );
+  const qty = ware.stacksize && ware.stacksize > 1 ? ware.stacksize : null;
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span
+        className="size-2.5 shrink-0 rounded-full"
+        style={{ backgroundColor: TRADER_TYPE_COLORS[ware.traderType] }}
+        aria-hidden
+      />
+      <span className="min-w-0 flex-1 truncate">{TRADER_TYPE_LABELS[ware.traderType]}</span>
+      {qty ? (
+        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+          ×{qty}
+        </span>
+      ) : null}
+      <span className="shrink-0 font-medium tabular-nums">{priceRange(ware)}</span>
+    </div>
+  );
 }
 
 function Direction({ label, wares }: { label: string; wares: TraderWarePrice[] }) {
-    return (
-        <div className="space-y-1">
-            <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                {label}
-            </div>
-            {wares.map((w) => (
-                <WareRow key={`${label}-${w.traderType}`} ware={w} />
-            ))}
-        </div>
-    );
+  return (
+    <div className="space-y-1">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      {wares.map((w) => (
+        <WareRow key={`${label}-${w.traderType}`} ware={w} />
+      ))}
+    </div>
+  );
 }
 
 /** Shows which trader professions sell/buy this item, the quantity per trade and
  *  the price interval. Renders nothing when no trader deals in the item. */
 export function TraderAvailabilityCard({ code }: { code: string | null | undefined }) {
-    const info = lookupTraderInfo(code);
-    if (!info) return null;
+  const info = lookupTraderInfo(code);
+  if (!info) return null;
 
-    return (
-        <Card className="h-full">
-            <CardContent className="flex h-full flex-col gap-3 py-3">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Coins className="size-4" aria-hidden />
-                    <h2 className="text-sm font-semibold text-foreground">Traders</h2>
-                    <span className="ml-auto text-xs">qty · price</span>
-                </div>
-                {info.sells?.length ? <Direction label="Buy from" wares={info.sells} /> : null}
-                {info.buys?.length ? <Direction label="Sell to" wares={info.buys} /> : null}
-            </CardContent>
-        </Card>
-    );
+  return (
+    <Card className="h-full">
+      <CardContent className="flex h-full flex-col gap-3 py-3">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Coins className="size-4" aria-hidden />
+          <h2 className="text-sm font-semibold text-foreground">Traders</h2>
+          <span className="ml-auto text-xs">qty · price</span>
+        </div>
+        {info.sells?.length ? <Direction label="Buy from" wares={info.sells} /> : null}
+        {info.buys?.length ? <Direction label="Sell to" wares={info.buys} /> : null}
+      </CardContent>
+    </Card>
+  );
 }
