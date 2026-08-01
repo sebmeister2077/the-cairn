@@ -782,6 +782,9 @@ def backup_manual_key(
 LANDMARKS_LIVE_KEY = "landmarks.geojson"
 TRANSLOCATORS_LIVE_KEY = "translocators.geojson"
 TRADERS_LIVE_KEY = "traders.geojson"
+# Merged type assignments for the static trader-claim boxes. Keyed by the
+# quantised absolute claim centre ("x:y:z"); see trader_claim_types.py.
+TRADER_CLAIM_TYPES_KEY = "trader_claim_types.json"
 ELK_WALKABLE_LIVE_KEY = "elk_walkable.json"
 ELK_WALKABLE_SNAPSHOTS_PREFIX = "elk_walkable/snapshots/"
 
@@ -796,6 +799,10 @@ def translocators_live_key() -> str:
 
 def traders_live_key() -> str:
     return TRADERS_LIVE_KEY
+
+
+def trader_claim_types_key() -> str:
+    return TRADER_CLAIM_TYPES_KEY
 
 
 def elk_walkable_live_key() -> str:

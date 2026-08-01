@@ -13,7 +13,7 @@
 //      that's already invalid.
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, type MarkerFileUrlResponse, type TradersUrlResponse } from "@/lib/api";
+import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, getTraderClaimTypesUrl, type MarkerFileUrlResponse, type TradersUrlResponse, type TraderClaimTypesUrlResponse } from "@/lib/api";
 import type {
     LandmarkProperty,
     WorldLineSegment,
@@ -291,3 +291,74 @@ export function useTradersOverlay(): UseQueryResult<CachedOverlay<TraderMarker[]
         meta: { persist: true },
     });
 }
+
+// ---------------------------------------------------------------------------
+// Trader-claim type overlay (trader_claim_types.json)
+// ---------------------------------------------------------------------------
+
+export const TRADER_CLAIM_TYPES_QUERY_KEY = ["overlay", "trader-claim-types"] as const;
+
+/** Merged claim-type map: ``claimId → { trader_type, source }``. */
+export type ClaimTypeMap = Record<string, { trader_type: TraderType; source: string }>;
+
+export function parseClaimTypes(json: unknown): ClaimTypeMap {
+    const claims = (json as { claims?: unknown })?.claims;
+    const out: ClaimTypeMap = {};
+    if (!claims || typeof claims !== "object") return out;
+    for (const [claimId, raw] of Object.entries(claims as Record<string, unknown>)) {
+        const v = raw as { trader_type?: unknown; source?: unknown };
+        if (!isTraderType(v.trader_type)) continue;
+        out[claimId] = {
+            trader_type: v.trader_type,
+            source: typeof v.source === "string" ? v.source : "manual",
+        };
+    }
+    return out;
+}
+
+/**
+ * Trader-claim type overlay. Maps a claim id to its assigned trader type so
+ * the map can colour otherwise-unclassified claim dots. Refreshes every 5 min
+ * when empty so a fresh mark becomes visible without a hard reload.
+ */
+export function useTraderClaimTypesOverlay(
+    enabled: boolean,
+): UseQueryResult<CachedOverlay<ClaimTypeMap>> {
+    const queryClient = useQueryClient();
+
+    return useQuery<CachedOverlay<ClaimTypeMap>>({
+        queryKey: [...TRADER_CLAIM_TYPES_QUERY_KEY],
+        enabled,
+        queryFn: async () => {
+            const info: TraderClaimTypesUrlResponse = await getTraderClaimTypesUrl();
+            if (!info.url) {
+                return {
+                    etag: info.disabled ? "__disabled__" : "__empty__",
+                    expiresAt: Date.now() + 5 * 60_000,
+                    data: {} as ClaimTypeMap,
+                };
+            }
+            const expiresAt =
+                Date.now() + Math.max(0, (info.expires_in_seconds ?? 3600) * 1000 - EXPIRY_GUARD_MS);
+            const etag = info.etag ?? "";
+            const cached = queryClient.getQueryData<CachedOverlay<ClaimTypeMap>>([
+                ...TRADER_CLAIM_TYPES_QUERY_KEY,
+            ]);
+            if (cached && etag && cached.etag === etag) {
+                return { etag, expiresAt, data: cached.data };
+            }
+            const res = await fetch(info.url, { cache: "no-cache" });
+            if (res.status === 404) {
+                return { etag: "__empty__", expiresAt, data: {} as ClaimTypeMap };
+            }
+            if (!res.ok) {
+                throw new Error(`Failed to load claim-type overlay (${res.status})`);
+            }
+            const json: unknown = await res.json();
+            return { etag, expiresAt, data: parseClaimTypes(json) };
+        },
+        staleTime: 0,
+        meta: { persist: true },
+    });
+}
+

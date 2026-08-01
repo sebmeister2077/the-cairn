@@ -290,7 +290,11 @@ export function AdminUsersPage() {
         }}
       />
 
-      <PermissionsDialog target={permsTarget} onClose={() => setPermsTarget(null)} />
+      <PermissionsDialog
+        apiKey={permsTarget?.api_key ?? null}
+        label={permsTarget?.display_name}
+        onClose={() => setPermsTarget(null)}
+      />
 
       <RekeyResultDialog result={rekeyResult} onClose={() => setRekeyResult(null)} />
 

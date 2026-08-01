@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, Trash2 } from "lucide-react";
+import { Check, Copy, Trash2, ShieldCheck } from "lucide-react";
 import { type ApiKeyRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +17,13 @@ import {
 export function KeyRow({
   record,
   onRevoke,
+  onEditPermissions,
 }: {
   record: ApiKeyRecord;
   onRevoke: (key: string) => void;
+  /** When provided (admin view), renders a Permissions button opening the granular-permission
+   *  editor for this key. */
+  onEditPermissions?: (key: string) => void;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const { copied, copy } = useCopy();
@@ -91,6 +95,17 @@ export function KeyRow({
             </>
           )}
         </Button>
+        {!record.revoked && onEditPermissions && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => onEditPermissions(record.key)}
+            title="Edit granular permissions"
+          >
+            <ShieldCheck className="size-4" />
+            Permissions
+          </Button>
+        )}
         {!record.revoked ? (
           <Button
             size="sm"

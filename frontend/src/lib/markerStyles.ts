@@ -114,8 +114,8 @@ function tlSize(zoom: number) {
 }
 
 function traderSize(zoom: number) {
-    const outer = Math.max(2.4, 4.0 / Math.max(zoom, 0.1));
-    const stroke = Math.max(0.4, 0.8 / Math.max(zoom, 0.1));
+    const outer = Math.max(4.0, 6.5 / Math.max(zoom, 0.1));
+    const stroke = Math.max(0.6, 1.1 / Math.max(zoom, 0.1));
     return { outer, stroke };
 }
 
@@ -236,6 +236,41 @@ export function drawTraderMarker(
         return;
     }
 }
+
+// ---- Trader claim -------------------------------------------------------
+
+/** Size policy for the trader-claim dots. Drawn at a constant on-screen size
+ *  (callers pass zoom = 1) so the dots stay clearly visible at every zoom
+ *  level instead of shrinking as you zoom out. */
+function claimSize(zoom: number) {
+    const outer = Math.max(4.0, 5.0 / Math.max(zoom, 0.1));
+    const stroke = Math.max(0.8, 1.0 / Math.max(zoom, 0.1));
+    return { outer, stroke };
+}
+
+/**
+ * Draw a trader-claim dot: a plain outlined disc. `color` is the neutral
+ * unclassified tone until a trader type has been assigned, at which point the
+ * caller passes the type colour. `highlight` thickens the outline for hover.
+ */
+export function drawClaimDot(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    color: string,
+    highlight = false,
+) {
+    const { outer, stroke } = claimSize(zoom);
+    ctx.beginPath();
+    ctx.arc(x, y, outer, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = highlight ? stroke * 2.5 : stroke;
+    ctx.strokeStyle = highlight ? "rgba(255,255,255,0.95)" : OUTLINE;
+    ctx.stroke();
+}
+
 
 /**
  * Draws an 8-tooth gear silhouette centered at (x, y) with outer radius `r`.

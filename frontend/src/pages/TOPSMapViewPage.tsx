@@ -21,6 +21,7 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
+  setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKind as setRockStrataKindAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
@@ -126,10 +127,12 @@ import { LandmarkManagementCard } from "@/components/tops-map/landmarks/Landmark
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
+import { useTraderClaims } from "@/hooks/useTraderClaims";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
   useTradersOverlay,
+  useTraderClaimTypesOverlay,
   LANDMARKS_QUERY_KEY,
 } from "@/hooks/useOverlayData";
 import {
@@ -386,6 +389,23 @@ export function TOPSMapViewPage() {
     [dispatch],
   );
   const recordedBrokenTLsVisible = showRecordedBrokenTLs && showAdvancedMapOptions;
+
+  // "All trader claims" overlay: the full static claim-box set, coloured by
+  // any assigned type. Advanced-only opt-in; the (large) asset + the type
+  // overlay only load once the toggle is on.
+  const showTraderClaims = useAppSelector((s) => s.mapView.showTraderClaims);
+  const setShowTraderClaims = useCallback(
+    (next: boolean) => dispatch(setShowTraderClaimsAction(next)),
+    [dispatch],
+  );
+  const traderClaimsVisible = showTraderClaims && showAdvancedMapOptions;
+  // Load claim positions + types whenever either the dedicated claims layer OR
+  // the Traders layer is on: classified claims render as normal trader markers
+  // under Show Traders, so their data must be available there too.
+  const showTradersForClaims = useAppSelector((s) => s.mapView.showTraders);
+  const claimsDataEnabled = traderClaimsVisible || showTradersForClaims;
+  const traderClaimsQuery = useTraderClaims(claimsDataEnabled);
+  const traderClaimTypesQuery = useTraderClaimTypesOverlay(claimsDataEnabled);
   // Viewport-culling for the recorded broken-TL overlay: only markers inside
   // the current viewport (plus a margin) are rendered. Fed from MapViewer's
   // already-debounced `onViewportChange`. `viewportBoundsRef` mirrors the
@@ -1257,6 +1277,63 @@ export function TOPSMapViewPage() {
           base.push(m);
         }
       }
+
+      // Classified trader claims render as normal trader markers here (part of
+      // the Traders layer), so a type you assign a claim shows up under "Show
+      // Traders" — not only the dedicated claims overlay. Positions use the
+      // claim's spawn-relative coords (same space as the official/recorded
+      // traders). Deduped against the official + recorded traders within
+      // DEDUPE_RADIUS so a claim colocated with an existing trader marker
+      // doesn't double up.
+      const claimTypeMap = traderClaimTypesQuery.data?.data;
+      const claimList = traderClaimsQuery.data;
+      if (claimTypeMap && claimList) {
+        const R = 10;
+        const R_SQ = R * R;
+        const buckets = new Map<string, Array<{ x: number; z: number }>>();
+        const cell = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
+        const addBucket = (type: string, x: number, z: number) => {
+          const key = cell(type, Math.floor(x / R), Math.floor(z / R));
+          const b = buckets.get(key);
+          if (b) b.push({ x, z });
+          else buckets.set(key, [{ x, z }]);
+        };
+        for (const ot of allTraders ?? []) {
+          if (isTraderType(ot.trader_type)) addBucket(ot.trader_type, ot.x, ot.z);
+        }
+        for (const rm of recordedFeatures?.traders ?? []) {
+          if (rm.traderType) addBucket(rm.traderType, rm.x, rm.z);
+        }
+        for (const c of claimList) {
+          const assigned = claimTypeMap[c.claimId];
+          if (!assigned) continue;
+          if (!passesTypeFilter(assigned.trader_type)) continue;
+          const cx = Math.floor(c.x / R);
+          const cz = Math.floor(c.z / R);
+          let duplicate = false;
+          for (let dx = -1; dx <= 1 && !duplicate; dx++) {
+            for (let dz = -1; dz <= 1 && !duplicate; dz++) {
+              const existing = buckets.get(cell(assigned.trader_type, cx + dx, cz + dz));
+              if (!existing) continue;
+              for (const p of existing) {
+                const ddx = p.x - c.x;
+                const ddz = p.z - c.z;
+                if (ddx * ddx + ddz * ddz <= R_SQ) {
+                  duplicate = true;
+                  break;
+                }
+              }
+            }
+          }
+          if (duplicate) continue;
+          base.push({
+            x: c.x,
+            z: c.z,
+            kind: "Trader",
+            color: TRADER_TYPE_COLORS[assigned.trader_type],
+          });
+        }
+      }
     }
     // Recorded broken-translocator overlay (advanced-only, own toggle). Broken
     // TLs carry an X/Y/Z hover tooltip (relative X/Z + absolute Y).
@@ -1303,6 +1380,8 @@ export function TOPSMapViewPage() {
     traderTypeFilterSet,
     recordedBrokenTLsVisible,
     recordedFeatures,
+    traderClaimsQuery.data,
+    traderClaimTypesQuery.data,
     brokenTLViewportBounds,
     favoriteStartingPosition,
   ]);
@@ -2292,6 +2371,22 @@ export function TOPSMapViewPage() {
                 </span>
               </div>
             )}
+            {showAdvancedMapOptions && (
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showTraderClaims}
+                  onCheckedChange={setShowTraderClaims}
+                  aria-label={t("topsMap.showTraderClaimsOverlay")}
+                />
+                <Label>{t("topsMap.showTraderClaims")}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.traderClaimsFound")}{" "}
+                  <span className="font-medium text-foreground">
+                    {(traderClaimsQuery.data?.length ?? 0).toLocaleString()}
+                  </span>
+                </span>
+              </div>
+            )}
             <AuctionHeatmapControl
               layer={auctionLayer}
               onLayerChange={setAuctionLayer}
@@ -2396,6 +2491,9 @@ export function TOPSMapViewPage() {
               }
               highlightedSegments={finalHighlightedSegments}
               segmentColors={groupingSegmentColors}
+              claimMarkers={traderClaimsVisible ? traderClaimsQuery.data : undefined}
+              claimTypes={traderClaimTypesQuery.data?.data}
+              claimMarkingEnabled={traderClaimsVisible}
               radiusFilter={radiusFilter}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}

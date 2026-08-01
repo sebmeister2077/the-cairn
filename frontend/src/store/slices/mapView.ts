@@ -169,6 +169,14 @@ export interface MapViewState {
      * behind {@link showAdvancedMapOptions}. Default OFF — opt-in.
      */
     showRecordedBrokenTLs: boolean;
+    /**
+     * When true, render the static trader *claim* boxes (from the frontend
+     * bundle, `map-features.traderclaims.json`) as small dots — white/grey
+     * when unclassified, or the trader-type colour once a type has been
+     * assigned (via the type overlay). Gated behind {@link
+     * showAdvancedMapOptions}. Default OFF — opt-in.
+     */
+    showTraderClaims: boolean;
     /** Rock-strata overlay enable flag (rockstratafinder mod export). */
     showRockStrata: boolean;
     /** Which rockstratafinder layer to render: rocks vs geological provinces. */
@@ -298,6 +306,7 @@ export function loadInitialMapViewState(): MapViewState {
         tlRadiusBlocks: 1000,
         showOceans: false,
         showRecordedBrokenTLs: false,
+        showTraderClaims: false,
         showRockStrata: false,
         rockStrataKind: "rock",
         rockStrataKeepCodes: null,
@@ -392,6 +401,9 @@ export const mapViewSlice = createSlice({
         },
         setShowRecordedBrokenTLs(state, action: PayloadAction<boolean>) {
             state.showRecordedBrokenTLs = action.payload;
+        },
+        setShowTraderClaims(state, action: PayloadAction<boolean>) {
+            state.showTraderClaims = action.payload;
         },
         setShowRockStrata(state, action: PayloadAction<boolean>) {
             state.showRockStrata = action.payload;
@@ -554,6 +566,7 @@ export const {
     setTLRadiusBlocks,
     setShowOceans,
     setShowRecordedBrokenTLs,
+    setShowTraderClaims,
     setShowRockStrata,
     setRockStrataKind,
     setRockStrataKeepCodes,

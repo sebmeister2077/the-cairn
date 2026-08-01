@@ -301,6 +301,12 @@ INSERT INTO feature_flags (key, enabled) VALUES
     ('traders_manual_daily_cap', TRUE),
     ('traders_max_batch', TRUE),
     ('traders_dedupe_radius', TRUE),
+    -- Trader-claim type overlay (static claim boxes get a user/proxy type).
+    -- Boolean gates default OFF; the daily-cap is a quota (value_int) row.
+    ('trader_claims_viewer', FALSE),
+    ('trader_claims_manual', FALSE),
+    ('trader_claims_authoritative', FALSE),
+    ('trader_claims_manual_daily_cap', TRUE),
     ('translocators_chatlog_daily_cap', TRUE),
     ('translocators_manual_daily_cap', TRUE),
     ('translocators_max_batch', TRUE),
@@ -2603,7 +2609,7 @@ class GeojsonLocked(Exception):
 
 
 GEOJSON_LOCK_TTL_SECONDS = 60
-_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks", "elk_walkable"}
+_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks", "elk_walkable", "trader_claim_types"}
 
 
 def try_acquire_geojson_lock(
@@ -3708,6 +3714,136 @@ def count_trader_submissions_in_window(
                 (actor_api_key_id, source, int(window_seconds)),
             )
             return int(cur.fetchone()[0])
+
+
+
+def insert_trader_claim_type_audit(
+    *,
+    claim_id: str,
+    action: str,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    source: Optional[str] = None,
+    trader_type: Optional[str] = None,
+    center: Optional[dict] = None,
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+) -> int:
+    """Append-only audit record for a trader-claim type assignment. Returns row id."""
+    cx = cy = cz = None
+    if isinstance(center, dict):
+        cx = center.get("x")
+        cy = center.get("y")
+        cz = center.get("z")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO trader_claim_types_audit
+                       (claim_id, action, source, trader_type,
+                        center_x, center_y, center_z,
+                        actor_api_key_id, actor_display_name,
+                        before_payload, after_payload)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    claim_id,
+                    action,
+                    source,
+                    trader_type,
+                    float(cx) if cx is not None else None,
+                    float(cy) if cy is not None else None,
+                    float(cz) if cz is not None else None,
+                    actor_api_key_id,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                ),
+            )
+            audit_row_id = int(cur.fetchone()[0])
+    _emit_usage_event(
+        f"trader_claim.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={
+            "claim_id": claim_id,
+            "source": source,
+            "trader_type": trader_type,
+        },
+    )
+    return audit_row_id
+
+
+def count_trader_claim_type_submissions_in_window(
+    *,
+    actor_api_key_id: str,
+    source: str,
+    window_seconds: int,
+) -> int:
+    """Per-source claim-type submission counter used by the manual daily cap.
+    Counts ``add`` rows in the window."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM trader_claim_types_audit
+                    WHERE action = 'add'
+                      AND actor_api_key_id = %s
+                      AND source = %s
+                      AND created_at >= now() - (%s || ' seconds')::INTERVAL""",
+                (actor_api_key_id, source, int(window_seconds)),
+            )
+            return int(cur.fetchone()[0])
+
+
+def list_trader_claim_type_audit_paginated(
+    *,
+    claim_id: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    action: Optional[str] = None,
+    trader_type: Optional[str] = None,
+    source: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if claim_id:
+        where.append("claim_id = %s")
+        params.append(claim_id)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    if trader_type:
+        where.append("trader_type = %s")
+        params.append(trader_type)
+    if source:
+        where.append("source = %s")
+        params.append(source)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM trader_claim_types_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, claim_id, action, source, trader_type,
+                           center_x, center_y, center_z,
+                           actor_api_key_id, actor_display_name,
+                           before_payload, after_payload, created_at
+                       FROM trader_claim_types_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
 
 
 

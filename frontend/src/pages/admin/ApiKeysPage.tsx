@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { KeyRow } from "@/components/ApiKeyRow";
+import { PermissionsDialog } from "@/components/admin/PermissionsDialog";
 import { CreatedKeyDialog } from "@/components/CreatedKeyDialog";
 import { GenerateKeyDialog } from "@/components/GenerateKeyDialog";
 import { InviteLinkRow } from "@/components/InviteLinkRow";
@@ -107,6 +108,7 @@ export function ApiKeysPage() {
   const [createdKey, setCreatedKey] = useState<ApiKeyRecord | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [createdInvite, setCreatedInvite] = useState<InviteLinkRecord | null>(null);
+  const [permsKey, setPermsKey] = useState<string | null>(null);
 
   // --- Active keys (page-based pagination) ---
   const [activeKeysPage, setActiveKeysPage] = useState(0);
@@ -313,7 +315,12 @@ export function ApiKeysPage() {
             <>
               <div className={activeKeys.isFetching ? "opacity-60 transition-opacity" : ""}>
                 {activeKeyItems.map((k) => (
-                  <KeyRow key={k.key} record={k} onRevoke={(key) => revokeMutation.mutate(key)} />
+                  <KeyRow
+                    key={k.key}
+                    record={k}
+                    onRevoke={(key) => revokeMutation.mutate(key)}
+                    onEditPermissions={setPermsKey}
+                  />
                 ))}
               </div>
               <Pagination
@@ -382,6 +389,8 @@ export function ApiKeysPage() {
       />
 
       <CreatedKeyDialog record={createdKey} onClose={() => setCreatedKey(null)} />
+
+      <PermissionsDialog apiKey={permsKey} onClose={() => setPermsKey(null)} />
 
       <Separator />
 

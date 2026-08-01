@@ -55,6 +55,23 @@ export function isTraderType(s: unknown): s is TraderType {
 }
 
 /**
+ * Fill colour for a trader *claim* box that has no type assigned yet. Neutral
+ * off-white so classified claims (which use {@link TRADER_TYPE_COLORS}) stand
+ * out against it.
+ */
+export const CLAIM_UNCLASSIFIED_COLOR = "#e5e7eb"; // gray-200
+
+/**
+ * Canonical id for a trader claim: its quantised absolute centre ``"x:y:z"``.
+ * Both the static claim asset and the proxy compute this from the same
+ * absolute centre, so overlay type assignments merge by lookup. Rounds to the
+ * nearest integer to absorb the ``.5`` centres in the export.
+ */
+export function claimIdFromCenter(center: { x: number; y: number; z: number }): string {
+    return `${Math.round(center.x)}:${Math.round(center.y)}:${Math.round(center.z)}`;
+}
+
+/**
  * Map the compact trader `type` codes emitted by the in-game session
  * exporter (e.g. ``"treasurehunter"``, ``"survivalgoods"``,
  * ``"buildmaterials"``) to the app's canonical {@link TraderType} union.

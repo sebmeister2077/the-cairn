@@ -18,6 +18,7 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
+  setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
@@ -28,6 +29,7 @@ import {
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
+import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
 
@@ -161,6 +163,11 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
     [dispatch],
   );
+  const showTraderClaims = useAppSelector((s) => s.mapView.showTraderClaims);
+  const setShowTraderClaims = useCallback(
+    (next: boolean) => dispatch(setShowTraderClaimsAction(next)),
+    [dispatch],
+  );
   const showRockStrata = useAppSelector((s) => s.mapView.showRockStrata);
   const setShowRockStrata = useCallback(
     (next: boolean) => dispatch(setShowRockStrataAction(next)),
@@ -197,6 +204,9 @@ export function FullscreenControlsOverlay({
     showTraders || (showAdvancedMapOptions && showRecordedBrokenTLs),
   );
   const recordedFeatures = recordedFeaturesQuery.data;
+  // Shares the React Query cache with the page's loader (same query key), so
+  // this only surfaces the deduped count — no extra fetch.
+  const traderClaimsQuery = useTraderClaims(showAdvancedMapOptions && showTraderClaims);
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
   const toggleTraderType = useCallback(
@@ -528,6 +538,21 @@ export function FullscreenControlsOverlay({
           <span className="text-xs text-muted-foreground">
             {t("topsMap.totalCount", {
               count: (recordedFeatures?.brokenTLs.length ?? 0).toLocaleString(),
+            })}
+          </span>
+        </div>
+        <div
+          onClick={() => setShowTraderClaims(!showTraderClaims)}
+          className={cn(
+            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+            !showAdvancedMapOptions && "hidden",
+          )}
+        >
+          <Switch checked={showTraderClaims} aria-label={t("topsMap.showTraderClaimsOverlay")} />
+          <Label className="cursor-pointer">{t("topsMap.showTraderClaims")}</Label>
+          <span className="text-xs text-muted-foreground">
+            {t("topsMap.totalCount", {
+              count: (traderClaimsQuery.data?.length ?? 0).toLocaleString(),
             })}
           </span>
         </div>

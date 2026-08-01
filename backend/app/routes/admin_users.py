@@ -406,7 +406,7 @@ async def resolve_flag(
 
 # Whitelist of permission names accepted by the toggle endpoint. Keep this
 # narrow so admins can't typo a permission into existence.
-VALID_KEY_PERMISSIONS = {"region_overwrite"}
+VALID_KEY_PERMISSIONS = {"region_overwrite", "trader_claims_publish"}
 
 
 class KeyPermissionPatch(BaseModel):

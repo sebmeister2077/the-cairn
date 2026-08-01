@@ -2736,7 +2736,7 @@ export async function adminClearMaintenanceNotice(
 
 // --- Admin: per-key granular permissions (Phase 0c) ---
 
-export type KeyPermission = "region_overwrite";
+export type KeyPermission = "region_overwrite" | "trader_claims_publish";
 
 export async function adminGetKeyPermissions(
     apiKey: string,
@@ -2941,6 +2941,48 @@ export async function getTradersUrl(): Promise<TradersUrlResponse> {
     // });
     // return (await handleResponse(res)).json();
     return { url: `${publicBucketOrigin}/traders.geojson`, etag: "", expires_in_seconds: 0 };
+}
+
+/**
+ * Merged trader-*claim* type overlay (``trader_claim_types.json``). Same
+ * public-bucket shortcut as {@link getTradersUrl}: the object is public-read
+ * so we skip the presigned ``/trader-claim-types/url`` endpoint on the read
+ * path and hit the bucket origin directly.
+ */
+export interface TraderClaimTypesUrlResponse {
+    url: string | null;
+    etag?: string;
+    expires_in_seconds?: number;
+    disabled?: boolean;
+    empty?: boolean;
+}
+
+export async function getTraderClaimTypesUrl(): Promise<TraderClaimTypesUrlResponse> {
+    return { url: `${publicBucketOrigin}/trader_claim_types.json`, etag: "", expires_in_seconds: 0 };
+}
+
+export interface ClaimTypeSubmitItem {
+    claim_id: string;
+    trader_type: TraderType;
+    center?: { x: number; y: number; z: number };
+}
+
+export interface ClaimTypeSubmitResult {
+    accepted: number;
+    submitted: number;
+}
+
+/** Manual (logged-in) claim-type assignment. Cannot override an
+ *  authoritative (proxy) value; rate-limited server-side. */
+export async function submitTraderClaimTypes(
+    items: ClaimTypeSubmitItem[],
+): Promise<ClaimTypeSubmitResult> {
+    const res = await fetch(`${API_BASE}/trader-claim-types`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ items }),
+    });
+    return (await handleResponse(res)).json();
 }
 
 export interface TraderContributionItem {

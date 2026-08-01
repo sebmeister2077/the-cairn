@@ -1,7 +1,6 @@
 import {
   adminGetKeyPermissions,
   adminSetKeyPermission,
-  type AdminUserListItem,
   type KeyPermission,
 } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,17 +19,25 @@ const KEY_PERMISSIONS: { key: KeyPermission; label: string; help: string }[] = [
     label: "Region overwrite",
     help: "Allow this contributor to submit region-restricted updates that overwrite existing chunks.",
   },
+  {
+    key: "trader_claims_publish",
+    label: "Trader claim types (authoritative)",
+    help: "Allow this key to publish authoritative trader-claim types (used by the VsProxy). Requires the trader_claims_authoritative feature flag.",
+  },
 ];
 
 export function PermissionsDialog({
-  target,
+  apiKey,
+  label,
   onClose,
 }: {
-  target: AdminUserListItem | null;
+  /** API key whose permissions to edit; null closes the dialog. */
+  apiKey: string | null;
+  /** Human-readable name shown in the title (falls back to a shortened key). */
+  label?: string | null;
   onClose: () => void;
 }) {
   const queryClient = useQueryClient();
-  const apiKey = target?.api_key;
 
   const q = useQuery({
     queryKey: ["admin-key-perms", apiKey],
@@ -44,14 +51,15 @@ export function PermissionsDialog({
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-key-perms", apiKey] }),
   });
 
-  if (!target) return null;
+  if (!apiKey) return null;
   const perms = q.data?.extra_permissions ?? {};
+  const title = label || `${apiKey.slice(0, 8)}…${apiKey.slice(-4)}`;
 
   return (
-    <Dialog open={!!target} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={!!apiKey} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Permissions for {target.display_name}</DialogTitle>
+          <DialogTitle>Permissions for {title}</DialogTitle>
           <DialogDescription>
             Granular permissions on this API key. These supplement (not replace) the coarse "read" /
             "contribute" tier.

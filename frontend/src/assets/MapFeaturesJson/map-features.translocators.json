@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-07-29T15:07:22.7545707Z",
+  "generatedUtc": "2026-08-01T14:13:10.2869334Z",
   "upstream": "tops.vintagestory.at",
   "worldSpawn": {
     "x": 511997.0,
@@ -7,7 +7,7 @@
     "z": 512000.0
   },
   "category": "translocators",
-  "count": 2975,
+  "count": 3362,
   "features": [
     {
       "abs": {
@@ -11520,6 +11520,40 @@
     },
     {
       "abs": {
+        "x": 507968.0,
+        "y": 53.0,
+        "z": 508816.0
+      },
+      "rel": {
+        "x": -4029.0,
+        "y": -70.0,
+        "z": -3184.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:28.9878594Z"
+    },
+    {
+      "abs": {
+        "x": 507972.0,
+        "y": 21.0,
+        "z": 508893.0
+      },
+      "rel": {
+        "x": -4025.0,
+        "y": -102.0,
+        "z": -3107.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:28.6019206Z"
+    },
+    {
+      "abs": {
         "x": 507985.0,
         "y": 63.0,
         "z": 518356.0
@@ -11534,6 +11568,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:49:50.0868962Z"
+    },
+    {
+      "abs": {
+        "x": 508012.0,
+        "y": 32.0,
+        "z": 508847.0
+      },
+      "rel": {
+        "x": -3985.0,
+        "y": -91.0,
+        "z": -3153.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:27.428556Z"
     },
     {
       "abs": {
@@ -11605,6 +11656,23 @@
     },
     {
       "abs": {
+        "x": 508112.0,
+        "y": 18.0,
+        "z": 508967.0
+      },
+      "rel": {
+        "x": -3885.0,
+        "y": -105.0,
+        "z": -3033.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:32.3321848Z"
+    },
+    {
+      "abs": {
         "x": 508142.0,
         "y": 91.0,
         "z": 518654.0
@@ -11636,6 +11704,57 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:49:04.0268536Z"
+    },
+    {
+      "abs": {
+        "x": 508200.0,
+        "y": 59.0,
+        "z": 508713.0
+      },
+      "rel": {
+        "x": -3797.0,
+        "y": -64.0,
+        "z": -3287.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:27.4338746Z"
+    },
+    {
+      "abs": {
+        "x": 508218.0,
+        "y": 41.0,
+        "z": 508708.0
+      },
+      "rel": {
+        "x": -3779.0,
+        "y": -82.0,
+        "z": -3292.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:27.4332295Z"
+    },
+    {
+      "abs": {
+        "x": 508269.0,
+        "y": 55.0,
+        "z": 508731.0
+      },
+      "rel": {
+        "x": -3728.0,
+        "y": -68.0,
+        "z": -3269.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:30.2711784Z"
     },
     {
       "abs": {
@@ -12316,6 +12435,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T11:20:01.2074355Z"
+    },
+    {
+      "abs": {
+        "x": 509572.0,
+        "y": 52.0,
+        "z": 510815.0
+      },
+      "rel": {
+        "x": -2425.0,
+        "y": -71.0,
+        "z": -1185.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:25:53.9890358Z"
     },
     {
       "abs": {
@@ -14020,23 +14156,6 @@
     {
       "abs": {
         "x": 510255.0,
-        "y": 12.0,
-        "z": 510513.0
-      },
-      "rel": {
-        "x": -1742.0,
-        "y": -111.0,
-        "z": -1487.0
-      },
-      "state": "broken",
-      "facing": "south",
-      "code": "statictranslocator-broken-south",
-      "claimed": false,
-      "firstSeenUtc": "2026-07-11T20:06:48.5545794Z"
-    },
-    {
-      "abs": {
-        "x": 510255.0,
         "y": 37.0,
         "z": 529465.0
       },
@@ -15141,6 +15260,23 @@
     },
     {
       "abs": {
+        "x": 510786.0,
+        "y": 72.0,
+        "z": 538721.0
+      },
+      "rel": {
+        "x": -1211.0,
+        "y": -51.0,
+        "z": 26721.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:39:55.3946524Z"
+    },
+    {
+      "abs": {
         "x": 510787.0,
         "y": 51.0,
         "z": 527334.0
@@ -15257,6 +15393,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:04:40.2163128Z"
+    },
+    {
+      "abs": {
+        "x": 510877.0,
+        "y": 73.0,
+        "z": 538469.0
+      },
+      "rel": {
+        "x": -1120.0,
+        "y": -50.0,
+        "z": 26469.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:39:55.3581793Z"
     },
     {
       "abs": {
@@ -15447,6 +15600,23 @@
     },
     {
       "abs": {
+        "x": 510961.0,
+        "y": 67.0,
+        "z": 538632.0
+      },
+      "rel": {
+        "x": -1036.0,
+        "y": -56.0,
+        "z": 26632.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:35.1696366Z"
+    },
+    {
+      "abs": {
         "x": 510993.0,
         "y": 34.0,
         "z": 513416.0
@@ -15495,6 +15665,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T11:37:21.9565786Z"
+    },
+    {
+      "abs": {
+        "x": 511012.0,
+        "y": 56.0,
+        "z": 538344.0
+      },
+      "rel": {
+        "x": -985.0,
+        "y": -67.0,
+        "z": 26344.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:39:44.5225963Z"
     },
     {
       "abs": {
@@ -15719,6 +15906,23 @@
     },
     {
       "abs": {
+        "x": 511084.0,
+        "y": 82.0,
+        "z": 538562.0
+      },
+      "rel": {
+        "x": -913.0,
+        "y": -41.0,
+        "z": 26562.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:23.5525051Z"
+    },
+    {
+      "abs": {
         "x": 511086.0,
         "y": 64.0,
         "z": 515099.0
@@ -15736,6 +15940,23 @@
     },
     {
       "abs": {
+        "x": 511090.0,
+        "y": 70.0,
+        "z": 538894.0
+      },
+      "rel": {
+        "x": -907.0,
+        "y": -53.0,
+        "z": 26894.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:45.2358043Z"
+    },
+    {
+      "abs": {
         "x": 511091.0,
         "y": 85.0,
         "z": 513112.0
@@ -15750,6 +15971,40 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:37:27.7921002Z"
+    },
+    {
+      "abs": {
+        "x": 511093.0,
+        "y": 87.0,
+        "z": 538584.0
+      },
+      "rel": {
+        "x": -904.0,
+        "y": -36.0,
+        "z": 26584.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:23.5527441Z"
+    },
+    {
+      "abs": {
+        "x": 511102.0,
+        "y": 89.0,
+        "z": 538567.0
+      },
+      "rel": {
+        "x": -895.0,
+        "y": -34.0,
+        "z": 26567.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:23.5528065Z"
     },
     {
       "abs": {
@@ -15804,6 +16059,23 @@
     },
     {
       "abs": {
+        "x": 511134.0,
+        "y": 12.0,
+        "z": 538627.0
+      },
+      "rel": {
+        "x": -863.0,
+        "y": -111.0,
+        "z": 26627.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:23.5227208Z"
+    },
+    {
+      "abs": {
         "x": 511140.0,
         "y": 75.0,
         "z": 514974.0
@@ -15838,6 +16110,23 @@
     },
     {
       "abs": {
+        "x": 511146.0,
+        "y": 91.0,
+        "z": 538775.0
+      },
+      "rel": {
+        "x": -851.0,
+        "y": -32.0,
+        "z": 26775.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:25.2714729Z"
+    },
+    {
+      "abs": {
         "x": 511151.0,
         "y": 47.0,
         "z": 512582.0
@@ -15869,6 +16158,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T21:15:23.1929366Z"
+    },
+    {
+      "abs": {
+        "x": 511153.0,
+        "y": 53.0,
+        "z": 538856.0
+      },
+      "rel": {
+        "x": -844.0,
+        "y": -70.0,
+        "z": 26856.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:35.3977606Z"
     },
     {
       "abs": {
@@ -16093,6 +16399,23 @@
     },
     {
       "abs": {
+        "x": 511236.0,
+        "y": 32.0,
+        "z": 538376.0
+      },
+      "rel": {
+        "x": -761.0,
+        "y": -91.0,
+        "z": 26376.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:23:49.8624645Z"
+    },
+    {
+      "abs": {
         "x": 511237.0,
         "y": 83.0,
         "z": 514425.0
@@ -16263,6 +16586,23 @@
     },
     {
       "abs": {
+        "x": 511299.0,
+        "y": 50.0,
+        "z": 538423.0
+      },
+      "rel": {
+        "x": -698.0,
+        "y": -73.0,
+        "z": 26423.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:35.4185882Z"
+    },
+    {
+      "abs": {
         "x": 511304.0,
         "y": 36.0,
         "z": 514080.0
@@ -16396,6 +16736,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:15:00.7321976Z"
+    },
+    {
+      "abs": {
+        "x": 511354.0,
+        "y": 83.0,
+        "z": 538463.0
+      },
+      "rel": {
+        "x": -643.0,
+        "y": -40.0,
+        "z": 26463.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:35.4310848Z"
     },
     {
       "abs": {
@@ -16586,6 +16943,23 @@
     },
     {
       "abs": {
+        "x": 511465.0,
+        "y": 54.0,
+        "z": 538593.0
+      },
+      "rel": {
+        "x": -532.0,
+        "y": -69.0,
+        "z": 26593.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:54.3411253Z"
+    },
+    {
+      "abs": {
         "x": 511476.0,
         "y": 52.0,
         "z": 514145.0
@@ -16634,6 +17008,40 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:13:17.3911509Z"
+    },
+    {
+      "abs": {
+        "x": 511490.0,
+        "y": 59.0,
+        "z": 538721.0
+      },
+      "rel": {
+        "x": -507.0,
+        "y": -64.0,
+        "z": 26721.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:24:12.9158497Z"
+    },
+    {
+      "abs": {
+        "x": 511512.0,
+        "y": 47.0,
+        "z": 538673.0
+      },
+      "rel": {
+        "x": -485.0,
+        "y": -76.0,
+        "z": 26673.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:24:11.0302302Z"
     },
     {
       "abs": {
@@ -16805,23 +17213,6 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:27:44.8612856Z"
-    },
-    {
-      "abs": {
-        "x": 511577.0,
-        "y": 20.0,
-        "z": 516590.0
-      },
-      "rel": {
-        "x": -420.0,
-        "y": -103.0,
-        "z": 4590.0
-      },
-      "state": "broken",
-      "facing": "north",
-      "code": "statictranslocator-broken-north",
-      "claimed": false,
-      "firstSeenUtc": "2026-07-11T18:50:11.573261Z"
     },
     {
       "abs": {
@@ -17751,6 +18142,23 @@
     },
     {
       "abs": {
+        "x": 511763.0,
+        "y": 22.0,
+        "z": 540466.0
+      },
+      "rel": {
+        "x": -234.0,
+        "y": -101.0,
+        "z": 28466.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:35.2202912Z"
+    },
+    {
+      "abs": {
         "x": 511765.0,
         "y": 57.0,
         "z": 523691.0
@@ -17987,6 +18395,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:13:28.3400137Z"
+    },
+    {
+      "abs": {
+        "x": 511788.0,
+        "y": 92.0,
+        "z": 540888.0
+      },
+      "rel": {
+        "x": -209.0,
+        "y": -31.0,
+        "z": 28888.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:49.8251533Z"
     },
     {
       "abs": {
@@ -18231,6 +18656,23 @@
     },
     {
       "abs": {
+        "x": 511812.0,
+        "y": 86.0,
+        "z": 541201.0
+      },
+      "rel": {
+        "x": -185.0,
+        "y": -37.0,
+        "z": 29201.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:17.6860314Z"
+    },
+    {
+      "abs": {
         "x": 511813.0,
         "y": 63.0,
         "z": 527966.0
@@ -18297,6 +18739,23 @@
       "claimed": true,
       "owner": "Player Fulgen",
       "firstSeenUtc": "2026-07-11T20:21:46.5275825Z"
+    },
+    {
+      "abs": {
+        "x": 511820.0,
+        "y": 72.0,
+        "z": 541183.0
+      },
+      "rel": {
+        "x": -177.0,
+        "y": -51.0,
+        "z": 29183.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:19.8832331Z"
     },
     {
       "abs": {
@@ -18541,6 +19000,23 @@
     },
     {
       "abs": {
+        "x": 511849.0,
+        "y": 34.0,
+        "z": 541360.0
+      },
+      "rel": {
+        "x": -148.0,
+        "y": -89.0,
+        "z": 29360.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:02.8762638Z"
+    },
+    {
+      "abs": {
         "x": 511850.0,
         "y": 75.0,
         "z": 524738.0
@@ -18712,6 +19188,40 @@
     },
     {
       "abs": {
+        "x": 511872.0,
+        "y": 78.0,
+        "z": 541016.0
+      },
+      "rel": {
+        "x": -125.0,
+        "y": -45.0,
+        "z": 29016.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:34.44241Z"
+    },
+    {
+      "abs": {
+        "x": 511875.0,
+        "y": 17.0,
+        "z": 540470.0
+      },
+      "rel": {
+        "x": -122.0,
+        "y": -106.0,
+        "z": 28470.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:22.8832759Z"
+    },
+    {
+      "abs": {
         "x": 511876.0,
         "y": 48.0,
         "z": 516343.0
@@ -18794,6 +19304,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:13:52.8263215Z"
+    },
+    {
+      "abs": {
+        "x": 511892.0,
+        "y": 45.0,
+        "z": 541259.0
+      },
+      "rel": {
+        "x": -105.0,
+        "y": -78.0,
+        "z": 29259.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:15.8629291Z"
     },
     {
       "abs": {
@@ -19002,6 +19529,40 @@
     },
     {
       "abs": {
+        "x": 511921.0,
+        "y": 19.0,
+        "z": 541292.0
+      },
+      "rel": {
+        "x": -76.0,
+        "y": -104.0,
+        "z": 29292.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:02.892107Z"
+    },
+    {
+      "abs": {
+        "x": 511922.0,
+        "y": 38.0,
+        "z": 541094.0
+      },
+      "rel": {
+        "x": -75.0,
+        "y": -85.0,
+        "z": 29094.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:21.5160654Z"
+    },
+    {
+      "abs": {
         "x": 511924.0,
         "y": 98.0,
         "z": 508556.0
@@ -19068,6 +19629,23 @@
       "claimed": true,
       "owner": "Player Fulgen",
       "firstSeenUtc": "2026-07-11T20:24:31.040688Z"
+    },
+    {
+      "abs": {
+        "x": 511928.0,
+        "y": 62.0,
+        "z": 540289.0
+      },
+      "rel": {
+        "x": -69.0,
+        "y": -61.0,
+        "z": 28289.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:44.45619Z"
     },
     {
       "abs": {
@@ -19289,6 +19867,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T21:14:14.9234702Z"
+    },
+    {
+      "abs": {
+        "x": 511963.0,
+        "y": 55.0,
+        "z": 541384.0
+      },
+      "rel": {
+        "x": -34.0,
+        "y": -68.0,
+        "z": 29384.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:02.4753244Z"
     },
     {
       "abs": {
@@ -19600,6 +20195,23 @@
     },
     {
       "abs": {
+        "x": 512009.0,
+        "y": 35.0,
+        "z": 541367.0
+      },
+      "rel": {
+        "x": 12.0,
+        "y": -88.0,
+        "z": 29367.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:15:07.4912062Z"
+    },
+    {
+      "abs": {
         "x": 512010.0,
         "y": 32.0,
         "z": 516234.0
@@ -19737,6 +20349,23 @@
     },
     {
       "abs": {
+        "x": 512031.0,
+        "y": 78.0,
+        "z": 540465.0
+      },
+      "rel": {
+        "x": 34.0,
+        "y": -45.0,
+        "z": 28465.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:23.382428Z"
+    },
+    {
+      "abs": {
         "x": 512036.0,
         "y": 12.0,
         "z": 531319.0
@@ -19788,6 +20417,23 @@
     },
     {
       "abs": {
+        "x": 512049.0,
+        "y": 25.0,
+        "z": 541722.0
+      },
+      "rel": {
+        "x": 52.0,
+        "y": -98.0,
+        "z": 29722.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:16:49.7786275Z"
+    },
+    {
+      "abs": {
         "x": 512051.0,
         "y": 18.0,
         "z": 524827.0
@@ -19802,6 +20448,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:09:23.5399667Z"
+    },
+    {
+      "abs": {
+        "x": 512051.0,
+        "y": 66.0,
+        "z": 540390.0
+      },
+      "rel": {
+        "x": 54.0,
+        "y": -57.0,
+        "z": 28390.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:33.6058955Z"
     },
     {
       "abs": {
@@ -20010,6 +20673,23 @@
     },
     {
       "abs": {
+        "x": 512068.0,
+        "y": 59.0,
+        "z": 540765.0
+      },
+      "rel": {
+        "x": 71.0,
+        "y": -64.0,
+        "z": 28765.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:02.390127Z"
+    },
+    {
+      "abs": {
         "x": 512071.0,
         "y": 65.0,
         "z": 512201.0
@@ -20164,6 +20844,23 @@
     },
     {
       "abs": {
+        "x": 512085.0,
+        "y": 25.0,
+        "z": 540876.0
+      },
+      "rel": {
+        "x": 88.0,
+        "y": -98.0,
+        "z": 28876.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:37.673131Z"
+    },
+    {
+      "abs": {
         "x": 512089.0,
         "y": 24.0,
         "z": 523449.0
@@ -20230,6 +20927,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:10:03.7120394Z"
+    },
+    {
+      "abs": {
+        "x": 512096.0,
+        "y": 57.0,
+        "z": 541541.0
+      },
+      "rel": {
+        "x": 99.0,
+        "y": -66.0,
+        "z": 29541.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:14:54.7510076Z"
     },
     {
       "abs": {
@@ -20519,6 +21233,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:13:13.8057904Z"
+    },
+    {
+      "abs": {
+        "x": 512144.0,
+        "y": 48.0,
+        "z": 518806.0
+      },
+      "rel": {
+        "x": 147.0,
+        "y": -75.0,
+        "z": 6806.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:58:01.9343207Z"
     },
     {
       "abs": {
@@ -21187,6 +21918,23 @@
     {
       "abs": {
         "x": 512232.0,
+        "y": 91.0,
+        "z": 518879.0
+      },
+      "rel": {
+        "x": 235.0,
+        "y": -32.0,
+        "z": 6879.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:58:01.9249784Z"
+    },
+    {
+      "abs": {
+        "x": 512232.0,
         "y": 114.0,
         "z": 530974.0
       },
@@ -21339,6 +22087,23 @@
     },
     {
       "abs": {
+        "x": 512240.0,
+        "y": 33.0,
+        "z": 540604.0
+      },
+      "rel": {
+        "x": 243.0,
+        "y": -90.0,
+        "z": 28604.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:24.1061239Z"
+    },
+    {
+      "abs": {
         "x": 512241.0,
         "y": 103.0,
         "z": 524125.0
@@ -21390,6 +22155,23 @@
     },
     {
       "abs": {
+        "x": 512243.0,
+        "y": 98.0,
+        "z": 540627.0
+      },
+      "rel": {
+        "x": 246.0,
+        "y": -25.0,
+        "z": 28627.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:21.5186445Z"
+    },
+    {
+      "abs": {
         "x": 512246.0,
         "y": 32.0,
         "z": 514913.0
@@ -21404,6 +22186,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T19:01:08.4798212Z"
+    },
+    {
+      "abs": {
+        "x": 512246.0,
+        "y": 31.0,
+        "z": 541048.0
+      },
+      "rel": {
+        "x": 249.0,
+        "y": -92.0,
+        "z": 29048.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:17:36.3297645Z"
     },
     {
       "abs": {
@@ -21510,6 +22309,23 @@
     },
     {
       "abs": {
+        "x": 512265.0,
+        "y": 38.0,
+        "z": 524770.0
+      },
+      "rel": {
+        "x": 268.0,
+        "y": -85.0,
+        "z": 12770.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:25:53.0946924Z"
+    },
+    {
+      "abs": {
         "x": 512266.0,
         "y": 21.0,
         "z": 527884.0
@@ -21524,6 +22340,40 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:18:39.8005011Z"
+    },
+    {
+      "abs": {
+        "x": 512267.0,
+        "y": 40.0,
+        "z": 524375.0
+      },
+      "rel": {
+        "x": 270.0,
+        "y": -83.0,
+        "z": 12375.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:53.9734243Z"
+    },
+    {
+      "abs": {
+        "x": 512284.0,
+        "y": 27.0,
+        "z": 524871.0
+      },
+      "rel": {
+        "x": 287.0,
+        "y": -96.0,
+        "z": 12871.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:26:05.4481665Z"
     },
     {
       "abs": {
@@ -21560,6 +22410,57 @@
       "claimed": true,
       "owner": "custommessage-sacred",
       "firstSeenUtc": "2026-07-11T18:52:10.8841216Z"
+    },
+    {
+      "abs": {
+        "x": 512287.0,
+        "y": 67.0,
+        "z": 525021.0
+      },
+      "rel": {
+        "x": 290.0,
+        "y": -56.0,
+        "z": 13021.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:26:20.9490916Z"
+    },
+    {
+      "abs": {
+        "x": 512287.0,
+        "y": 74.0,
+        "z": 541387.0
+      },
+      "rel": {
+        "x": 290.0,
+        "y": -49.0,
+        "z": 29387.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:15:07.3112344Z"
+    },
+    {
+      "abs": {
+        "x": 512288.0,
+        "y": 149.0,
+        "z": 524284.0
+      },
+      "rel": {
+        "x": 291.0,
+        "y": 26.0,
+        "z": 12284.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:25:38.2942637Z"
     },
     {
       "abs": {
@@ -21614,6 +22515,23 @@
     },
     {
       "abs": {
+        "x": 512304.0,
+        "y": 114.0,
+        "z": 525171.0
+      },
+      "rel": {
+        "x": 307.0,
+        "y": -9.0,
+        "z": 13171.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:26:57.4978595Z"
+    },
+    {
+      "abs": {
         "x": 512305.0,
         "y": 23.0,
         "z": 530129.0
@@ -21645,6 +22563,40 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:02:06.2655041Z"
+    },
+    {
+      "abs": {
+        "x": 512317.0,
+        "y": 94.0,
+        "z": 540470.0
+      },
+      "rel": {
+        "x": 320.0,
+        "y": -29.0,
+        "z": 28470.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:18:53.7965702Z"
+    },
+    {
+      "abs": {
+        "x": 512324.0,
+        "y": 15.0,
+        "z": 518911.0
+      },
+      "rel": {
+        "x": 327.0,
+        "y": -108.0,
+        "z": 6911.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T12:02:24.9071094Z"
     },
     {
       "abs": {
@@ -21683,6 +22635,23 @@
     {
       "abs": {
         "x": 512334.0,
+        "y": 92.0,
+        "z": 518339.0
+      },
+      "rel": {
+        "x": 337.0,
+        "y": -31.0,
+        "z": 6339.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:58:12.8191033Z"
+    },
+    {
+      "abs": {
+        "x": 512334.0,
         "y": 59.0,
         "z": 518408.0
       },
@@ -21696,6 +22665,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T09:46:05.3508834Z"
+    },
+    {
+      "abs": {
+        "x": 512337.0,
+        "y": 84.0,
+        "z": 540476.0
+      },
+      "rel": {
+        "x": 340.0,
+        "y": -39.0,
+        "z": 28476.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:04.033096Z"
     },
     {
       "abs": {
@@ -21747,6 +22733,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:04:02.1647237Z"
+    },
+    {
+      "abs": {
+        "x": 512372.0,
+        "y": 28.0,
+        "z": 524321.0
+      },
+      "rel": {
+        "x": 375.0,
+        "y": -95.0,
+        "z": 12321.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:19.7531753Z"
     },
     {
       "abs": {
@@ -21907,6 +22910,23 @@
     },
     {
       "abs": {
+        "x": 512401.0,
+        "y": 15.0,
+        "z": 524513.0
+      },
+      "rel": {
+        "x": 404.0,
+        "y": -108.0,
+        "z": 12513.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:06.3028287Z"
+    },
+    {
+      "abs": {
         "x": 512412.0,
         "y": 52.0,
         "z": 518418.0
@@ -21958,6 +22978,23 @@
     },
     {
       "abs": {
+        "x": 512422.0,
+        "y": 58.0,
+        "z": 524840.0
+      },
+      "rel": {
+        "x": 425.0,
+        "y": -65.0,
+        "z": 12840.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:26:04.0434461Z"
+    },
+    {
+      "abs": {
         "x": 512423.0,
         "y": 31.0,
         "z": 513110.0
@@ -21972,6 +23009,57 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:02:24.5214046Z"
+    },
+    {
+      "abs": {
+        "x": 512425.0,
+        "y": 62.0,
+        "z": 524785.0
+      },
+      "rel": {
+        "x": 428.0,
+        "y": -61.0,
+        "z": 12785.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:25:52.6586466Z"
+    },
+    {
+      "abs": {
+        "x": 512457.0,
+        "y": 36.0,
+        "z": 524237.0
+      },
+      "rel": {
+        "x": 460.0,
+        "y": -87.0,
+        "z": 12237.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:19.9941405Z"
+    },
+    {
+      "abs": {
+        "x": 512459.0,
+        "y": 37.0,
+        "z": 540663.0
+      },
+      "rel": {
+        "x": 462.0,
+        "y": -86.0,
+        "z": 28663.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:14.1815827Z"
     },
     {
       "abs": {
@@ -22009,6 +23097,57 @@
     },
     {
       "abs": {
+        "x": 512476.0,
+        "y": 49.0,
+        "z": 540833.0
+      },
+      "rel": {
+        "x": 479.0,
+        "y": -74.0,
+        "z": 28833.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:23:30.7953872Z"
+    },
+    {
+      "abs": {
+        "x": 512480.0,
+        "y": 83.0,
+        "z": 524328.0
+      },
+      "rel": {
+        "x": 483.0,
+        "y": -40.0,
+        "z": 12328.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:52.8739752Z"
+    },
+    {
+      "abs": {
+        "x": 512483.0,
+        "y": 24.0,
+        "z": 524676.0
+      },
+      "rel": {
+        "x": 486.0,
+        "y": -99.0,
+        "z": 12676.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:06.2908423Z"
+    },
+    {
+      "abs": {
         "x": 512491.0,
         "y": 95.0,
         "z": 530181.0
@@ -22023,6 +23162,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:04:06.8356283Z"
+    },
+    {
+      "abs": {
+        "x": 512493.0,
+        "y": 43.0,
+        "z": 524949.0
+      },
+      "rel": {
+        "x": 496.0,
+        "y": -80.0,
+        "z": 12949.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:31:55.0315794Z"
     },
     {
       "abs": {
@@ -22077,6 +23233,57 @@
     },
     {
       "abs": {
+        "x": 512507.0,
+        "y": 78.0,
+        "z": 540559.0
+      },
+      "rel": {
+        "x": 510.0,
+        "y": -45.0,
+        "z": 28559.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:23:29.2566362Z"
+    },
+    {
+      "abs": {
+        "x": 512510.0,
+        "y": 22.0,
+        "z": 524523.0
+      },
+      "rel": {
+        "x": 513.0,
+        "y": -101.0,
+        "z": 12523.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.7947445Z"
+    },
+    {
+      "abs": {
+        "x": 512519.0,
+        "y": 88.0,
+        "z": 524432.0
+      },
+      "rel": {
+        "x": 522.0,
+        "y": -35.0,
+        "z": 12432.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.6888669Z"
+    },
+    {
+      "abs": {
         "x": 512520.0,
         "y": 78.0,
         "z": 516098.0
@@ -22111,6 +23318,23 @@
     },
     {
       "abs": {
+        "x": 512532.0,
+        "y": 124.0,
+        "z": 525110.0
+      },
+      "rel": {
+        "x": 535.0,
+        "y": 1.0,
+        "z": 13110.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:08.2485826Z"
+    },
+    {
+      "abs": {
         "x": 512534.0,
         "y": 29.0,
         "z": 518765.0
@@ -22125,6 +23349,40 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T09:45:54.3222373Z"
+    },
+    {
+      "abs": {
+        "x": 512534.0,
+        "y": 91.0,
+        "z": 524431.0
+      },
+      "rel": {
+        "x": 537.0,
+        "y": -32.0,
+        "z": 12431.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.689123Z"
+    },
+    {
+      "abs": {
+        "x": 512537.0,
+        "y": 49.0,
+        "z": 524552.0
+      },
+      "rel": {
+        "x": 540.0,
+        "y": -74.0,
+        "z": 12552.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.603208Z"
     },
     {
       "abs": {
@@ -22179,6 +23437,23 @@
     },
     {
       "abs": {
+        "x": 512574.0,
+        "y": 50.0,
+        "z": 524540.0
+      },
+      "rel": {
+        "x": 577.0,
+        "y": -73.0,
+        "z": 12540.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.3926617Z"
+    },
+    {
+      "abs": {
         "x": 512575.0,
         "y": 66.0,
         "z": 516078.0
@@ -22227,6 +23502,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:18:04.3204134Z"
+    },
+    {
+      "abs": {
+        "x": 512586.0,
+        "y": 13.0,
+        "z": 524846.0
+      },
+      "rel": {
+        "x": 589.0,
+        "y": -110.0,
+        "z": 12846.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:07.6815639Z"
     },
     {
       "abs": {
@@ -22279,6 +23571,23 @@
       "claimed": true,
       "owner": "Player DarkJones",
       "firstSeenUtc": "2026-07-11T18:53:32.1059374Z"
+    },
+    {
+      "abs": {
+        "x": 512600.0,
+        "y": 12.0,
+        "z": 524656.0
+      },
+      "rel": {
+        "x": 603.0,
+        "y": -111.0,
+        "z": 12656.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.7751198Z"
     },
     {
       "abs": {
@@ -22347,6 +23656,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:02:46.1249216Z"
+    },
+    {
+      "abs": {
+        "x": 512632.0,
+        "y": 26.0,
+        "z": 524868.0
+      },
+      "rel": {
+        "x": 635.0,
+        "y": -97.0,
+        "z": 12868.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:10.5181034Z"
     },
     {
       "abs": {
@@ -22435,6 +23761,23 @@
     },
     {
       "abs": {
+        "x": 512663.0,
+        "y": 11.0,
+        "z": 524290.0
+      },
+      "rel": {
+        "x": 666.0,
+        "y": -112.0,
+        "z": 12290.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:37.296287Z"
+    },
+    {
+      "abs": {
         "x": 512670.0,
         "y": 86.0,
         "z": 516196.0
@@ -22483,6 +23826,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-29T15:07:03.1856628Z"
+    },
+    {
+      "abs": {
+        "x": 512677.0,
+        "y": 104.0,
+        "z": 524753.0
+      },
+      "rel": {
+        "x": 680.0,
+        "y": -19.0,
+        "z": 12753.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:19.123951Z"
     },
     {
       "abs": {
@@ -22602,6 +23962,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:18:11.4002564Z"
+    },
+    {
+      "abs": {
+        "x": 512687.0,
+        "y": 92.0,
+        "z": 518918.0
+      },
+      "rel": {
+        "x": 690.0,
+        "y": -31.0,
+        "z": 6918.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T12:00:40.1636684Z"
     },
     {
       "abs": {
@@ -22809,6 +24186,23 @@
     },
     {
       "abs": {
+        "x": 512751.0,
+        "y": 47.0,
+        "z": 518927.0
+      },
+      "rel": {
+        "x": 754.0,
+        "y": -76.0,
+        "z": 6927.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T12:00:40.1538767Z"
+    },
+    {
+      "abs": {
         "x": 512752.0,
         "y": 90.0,
         "z": 512711.0
@@ -22861,6 +24255,23 @@
     {
       "abs": {
         "x": 512757.0,
+        "y": 86.0,
+        "z": 518360.0
+      },
+      "rel": {
+        "x": 760.0,
+        "y": -37.0,
+        "z": 6360.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:58:33.5771273Z"
+    },
+    {
+      "abs": {
+        "x": 512757.0,
         "y": 68.0,
         "z": 518568.0
       },
@@ -22874,6 +24285,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T09:46:28.0318278Z"
+    },
+    {
+      "abs": {
+        "x": 512770.0,
+        "y": 99.0,
+        "z": 524981.0
+      },
+      "rel": {
+        "x": 773.0,
+        "y": -24.0,
+        "z": 12981.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:32.5388632Z"
     },
     {
       "abs": {
@@ -22891,6 +24319,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:02:45.6766845Z"
+    },
+    {
+      "abs": {
+        "x": 512776.0,
+        "y": 75.0,
+        "z": 518350.0
+      },
+      "rel": {
+        "x": 779.0,
+        "y": -48.0,
+        "z": 6350.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:58:35.0955504Z"
     },
     {
       "abs": {
@@ -23081,6 +24526,40 @@
     },
     {
       "abs": {
+        "x": 512832.0,
+        "y": 52.0,
+        "z": 524757.0
+      },
+      "rel": {
+        "x": 835.0,
+        "y": -71.0,
+        "z": 12757.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:20.3706264Z"
+    },
+    {
+      "abs": {
+        "x": 512840.0,
+        "y": 80.0,
+        "z": 524970.0
+      },
+      "rel": {
+        "x": 843.0,
+        "y": -43.0,
+        "z": 12970.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:34.1212157Z"
+    },
+    {
+      "abs": {
         "x": 512846.0,
         "y": 63.0,
         "z": 522143.0
@@ -23095,6 +24574,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:04:34.3041443Z"
+    },
+    {
+      "abs": {
+        "x": 512850.0,
+        "y": 84.0,
+        "z": 524904.0
+      },
+      "rel": {
+        "x": 853.0,
+        "y": -39.0,
+        "z": 12904.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:34.0407187Z"
     },
     {
       "abs": {
@@ -23149,6 +24645,23 @@
     },
     {
       "abs": {
+        "x": 512887.0,
+        "y": 16.0,
+        "z": 525009.0
+      },
+      "rel": {
+        "x": 890.0,
+        "y": -107.0,
+        "z": 13009.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:44.463847Z"
+    },
+    {
+      "abs": {
         "x": 512893.0,
         "y": 55.0,
         "z": 513292.0
@@ -23197,6 +24710,57 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:04:34.330573Z"
+    },
+    {
+      "abs": {
+        "x": 512906.0,
+        "y": 91.0,
+        "z": 525073.0
+      },
+      "rel": {
+        "x": 909.0,
+        "y": -32.0,
+        "z": 13073.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:33:00.7266156Z"
+    },
+    {
+      "abs": {
+        "x": 512909.0,
+        "y": 42.0,
+        "z": 524915.0
+      },
+      "rel": {
+        "x": 912.0,
+        "y": -81.0,
+        "z": 12915.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:33:00.628349Z"
+    },
+    {
+      "abs": {
+        "x": 512920.0,
+        "y": 35.0,
+        "z": 524485.0
+      },
+      "rel": {
+        "x": 923.0,
+        "y": -88.0,
+        "z": 12485.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:07.489868Z"
     },
     {
       "abs": {
@@ -23404,6 +24968,23 @@
     },
     {
       "abs": {
+        "x": 513000.0,
+        "y": 62.0,
+        "z": 524344.0
+      },
+      "rel": {
+        "x": 1003.0,
+        "y": -61.0,
+        "z": 12344.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:22:28.5310901Z"
+    },
+    {
+      "abs": {
         "x": 513012.0,
         "y": 28.0,
         "z": 530110.0
@@ -23418,6 +24999,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:59:55.2013214Z"
+    },
+    {
+      "abs": {
+        "x": 513018.0,
+        "y": 98.0,
+        "z": 524004.0
+      },
+      "rel": {
+        "x": 1021.0,
+        "y": -25.0,
+        "z": 12004.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:22:15.443078Z"
     },
     {
       "abs": {
@@ -23452,6 +25050,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:19:27.5971115Z"
+    },
+    {
+      "abs": {
+        "x": 513072.0,
+        "y": 46.0,
+        "z": 524071.0
+      },
+      "rel": {
+        "x": 1075.0,
+        "y": -77.0,
+        "z": 12071.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:21:03.4993984Z"
     },
     {
       "abs": {
@@ -23503,6 +25118,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T20:58:05.4266788Z"
+    },
+    {
+      "abs": {
+        "x": 513088.0,
+        "y": 23.0,
+        "z": 523927.0
+      },
+      "rel": {
+        "x": 1091.0,
+        "y": -100.0,
+        "z": 11927.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:21:02.345098Z"
     },
     {
       "abs": {
@@ -23639,6 +25271,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:04:03.1217907Z"
+    },
+    {
+      "abs": {
+        "x": 513150.0,
+        "y": 94.0,
+        "z": 523989.0
+      },
+      "rel": {
+        "x": 1153.0,
+        "y": -29.0,
+        "z": 11989.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:59.8597879Z"
     },
     {
       "abs": {
@@ -23826,6 +25475,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:56:38.4015551Z"
+    },
+    {
+      "abs": {
+        "x": 513226.0,
+        "y": 45.0,
+        "z": 523969.0
+      },
+      "rel": {
+        "x": 1229.0,
+        "y": -78.0,
+        "z": 11969.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:48.5976325Z"
     },
     {
       "abs": {
@@ -24118,6 +25784,23 @@
     },
     {
       "abs": {
+        "x": 513310.0,
+        "y": 18.0,
+        "z": 525008.0
+      },
+      "rel": {
+        "x": 1313.0,
+        "y": -105.0,
+        "z": 13008.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:34:54.2985346Z"
+    },
+    {
+      "abs": {
         "x": 513314.0,
         "y": 53.0,
         "z": 517454.0
@@ -24271,6 +25954,23 @@
     },
     {
       "abs": {
+        "x": 513358.0,
+        "y": 95.0,
+        "z": 523881.0
+      },
+      "rel": {
+        "x": 1361.0,
+        "y": -28.0,
+        "z": 11881.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:35.2147927Z"
+    },
+    {
+      "abs": {
         "x": 513365.0,
         "y": 43.0,
         "z": 521995.0
@@ -24285,6 +25985,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:03:41.8814788Z"
+    },
+    {
+      "abs": {
+        "x": 513367.0,
+        "y": 79.0,
+        "z": 523942.0
+      },
+      "rel": {
+        "x": 1370.0,
+        "y": -44.0,
+        "z": 11942.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:34.9423105Z"
     },
     {
       "abs": {
@@ -24543,6 +26260,23 @@
     },
     {
       "abs": {
+        "x": 513455.0,
+        "y": 61.0,
+        "z": 523910.0
+      },
+      "rel": {
+        "x": 1458.0,
+        "y": -62.0,
+        "z": 11910.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:24.268199Z"
+    },
+    {
+      "abs": {
         "x": 513460.0,
         "y": 85.0,
         "z": 524589.0
@@ -24798,6 +26532,23 @@
     },
     {
       "abs": {
+        "x": 513519.0,
+        "y": 102.0,
+        "z": 524043.0
+      },
+      "rel": {
+        "x": 1522.0,
+        "y": -21.0,
+        "z": 12043.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:13.4502594Z"
+    },
+    {
+      "abs": {
         "x": 513528.0,
         "y": 87.0,
         "z": 509879.0
@@ -24829,6 +26580,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-14T18:02:45.4966611Z"
+    },
+    {
+      "abs": {
+        "x": 513533.0,
+        "y": 77.0,
+        "z": 523809.0
+      },
+      "rel": {
+        "x": 1536.0,
+        "y": -46.0,
+        "z": 11809.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:24.3386483Z"
     },
     {
       "abs": {
@@ -24880,6 +26648,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:15:29.9275392Z"
+    },
+    {
+      "abs": {
+        "x": 513549.0,
+        "y": 105.0,
+        "z": 524053.0
+      },
+      "rel": {
+        "x": 1552.0,
+        "y": -18.0,
+        "z": 12053.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:13.2948114Z"
     },
     {
       "abs": {
@@ -24968,6 +26753,23 @@
     },
     {
       "abs": {
+        "x": 513570.0,
+        "y": 75.0,
+        "z": 523805.0
+      },
+      "rel": {
+        "x": 1573.0,
+        "y": -48.0,
+        "z": 11805.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:24.3591987Z"
+    },
+    {
+      "abs": {
         "x": 513572.0,
         "y": 47.0,
         "z": 498625.0
@@ -25016,6 +26818,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:56:40.8627929Z"
+    },
+    {
+      "abs": {
+        "x": 513585.0,
+        "y": 12.0,
+        "z": 548308.0
+      },
+      "rel": {
+        "x": 1588.0,
+        "y": -111.0,
+        "z": 36308.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:22:53.4622409Z"
     },
     {
       "abs": {
@@ -25087,6 +26906,40 @@
     },
     {
       "abs": {
+        "x": 513609.0,
+        "y": 81.0,
+        "z": 548298.0
+      },
+      "rel": {
+        "x": 1612.0,
+        "y": -42.0,
+        "z": 36298.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:07.7412231Z"
+    },
+    {
+      "abs": {
+        "x": 513620.0,
+        "y": 52.0,
+        "z": 548423.0
+      },
+      "rel": {
+        "x": 1623.0,
+        "y": -71.0,
+        "z": 36423.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:22:54.3668819Z"
+    },
+    {
+      "abs": {
         "x": 513624.0,
         "y": 69.0,
         "z": 513555.0
@@ -25104,6 +26957,40 @@
     },
     {
       "abs": {
+        "x": 513624.0,
+        "y": 63.0,
+        "z": 524183.0
+      },
+      "rel": {
+        "x": 1627.0,
+        "y": -60.0,
+        "z": 12183.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T10:11:34.8501624Z"
+    },
+    {
+      "abs": {
+        "x": 513630.0,
+        "y": 36.0,
+        "z": 523916.0
+      },
+      "rel": {
+        "x": 1633.0,
+        "y": -87.0,
+        "z": 11916.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:13.3849216Z"
+    },
+    {
+      "abs": {
         "x": 513636.0,
         "y": 43.0,
         "z": 524766.0
@@ -25118,6 +27005,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-14T18:01:44.3863405Z"
+    },
+    {
+      "abs": {
+        "x": 513638.0,
+        "y": 72.0,
+        "z": 548228.0
+      },
+      "rel": {
+        "x": 1641.0,
+        "y": -51.0,
+        "z": 36228.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:07.1372802Z"
     },
     {
       "abs": {
@@ -25172,6 +27076,40 @@
     },
     {
       "abs": {
+        "x": 513653.0,
+        "y": 102.0,
+        "z": 548210.0
+      },
+      "rel": {
+        "x": 1656.0,
+        "y": -21.0,
+        "z": 36210.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:07.1405559Z"
+    },
+    {
+      "abs": {
+        "x": 513660.0,
+        "y": 86.0,
+        "z": 548457.0
+      },
+      "rel": {
+        "x": 1663.0,
+        "y": -37.0,
+        "z": 36457.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:22:54.4784312Z"
+    },
+    {
+      "abs": {
         "x": 513666.0,
         "y": 61.0,
         "z": 498583.0
@@ -25203,6 +27141,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:00:58.3883198Z"
+    },
+    {
+      "abs": {
+        "x": 513673.0,
+        "y": 98.0,
+        "z": 523918.0
+      },
+      "rel": {
+        "x": 1676.0,
+        "y": -25.0,
+        "z": 11918.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:20:02.8508782Z"
     },
     {
       "abs": {
@@ -25257,6 +27212,23 @@
     },
     {
       "abs": {
+        "x": 513694.0,
+        "y": 153.0,
+        "z": 523966.0
+      },
+      "rel": {
+        "x": 1697.0,
+        "y": 30.0,
+        "z": 11966.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:19:00.6969076Z"
+    },
+    {
+      "abs": {
         "x": 513712.0,
         "y": 75.0,
         "z": 517613.0
@@ -25288,6 +27260,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:04:23.7894515Z"
+    },
+    {
+      "abs": {
+        "x": 513722.0,
+        "y": 36.0,
+        "z": 548355.0
+      },
+      "rel": {
+        "x": 1725.0,
+        "y": -87.0,
+        "z": 36355.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:04.3766313Z"
     },
     {
       "abs": {
@@ -25325,6 +27314,40 @@
     },
     {
       "abs": {
+        "x": 513732.0,
+        "y": 102.0,
+        "z": 548238.0
+      },
+      "rel": {
+        "x": 1735.0,
+        "y": -21.0,
+        "z": 36238.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:03.9079719Z"
+    },
+    {
+      "abs": {
+        "x": 513749.0,
+        "y": 64.0,
+        "z": 524236.0
+      },
+      "rel": {
+        "x": 1752.0,
+        "y": -59.0,
+        "z": 12236.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T10:12:08.6211985Z"
+    },
+    {
+      "abs": {
         "x": 513752.0,
         "y": 83.0,
         "z": 521935.0
@@ -25339,6 +27362,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:03:09.0010507Z"
+    },
+    {
+      "abs": {
+        "x": 513759.0,
+        "y": 65.0,
+        "z": 524227.0
+      },
+      "rel": {
+        "x": 1762.0,
+        "y": -58.0,
+        "z": 12227.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T10:12:08.6212573Z"
     },
     {
       "abs": {
@@ -25546,6 +27586,40 @@
     },
     {
       "abs": {
+        "x": 513832.0,
+        "y": 14.0,
+        "z": 548097.0
+      },
+      "rel": {
+        "x": 1835.0,
+        "y": -109.0,
+        "z": 36097.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:03.8380108Z"
+    },
+    {
+      "abs": {
+        "x": 513842.0,
+        "y": 33.0,
+        "z": 523990.0
+      },
+      "rel": {
+        "x": 1845.0,
+        "y": -90.0,
+        "z": 11990.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:48.9760827Z"
+    },
+    {
+      "abs": {
         "x": 513849.0,
         "y": 43.0,
         "z": 524555.0
@@ -25597,6 +27671,23 @@
     },
     {
       "abs": {
+        "x": 513862.0,
+        "y": 21.0,
+        "z": 548237.0
+      },
+      "rel": {
+        "x": 1865.0,
+        "y": -102.0,
+        "z": 36237.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:01.8661091Z"
+    },
+    {
+      "abs": {
         "x": 513866.0,
         "y": 116.0,
         "z": 517254.0
@@ -25611,6 +27702,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:01:07.1907172Z"
+    },
+    {
+      "abs": {
+        "x": 513866.0,
+        "y": 43.0,
+        "z": 523971.0
+      },
+      "rel": {
+        "x": 1869.0,
+        "y": -80.0,
+        "z": 11971.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:48.9206341Z"
     },
     {
       "abs": {
@@ -25784,6 +27892,23 @@
     },
     {
       "abs": {
+        "x": 513919.0,
+        "y": 86.0,
+        "z": 548535.0
+      },
+      "rel": {
+        "x": 1922.0,
+        "y": -37.0,
+        "z": 36535.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:22:53.2989154Z"
+    },
+    {
+      "abs": {
         "x": 513926.0,
         "y": 26.0,
         "z": 525332.0
@@ -25835,6 +27960,23 @@
     },
     {
       "abs": {
+        "x": 513995.0,
+        "y": 34.0,
+        "z": 548369.0
+      },
+      "rel": {
+        "x": 1998.0,
+        "y": -89.0,
+        "z": 36369.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:03.6141563Z"
+    },
+    {
+      "abs": {
         "x": 513997.0,
         "y": 86.0,
         "z": 521962.0
@@ -25869,6 +28011,74 @@
     },
     {
       "abs": {
+        "x": 514003.0,
+        "y": 33.0,
+        "z": 548362.0
+      },
+      "rel": {
+        "x": 2006.0,
+        "y": -90.0,
+        "z": 36362.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:51:03.6140994Z"
+    },
+    {
+      "abs": {
+        "x": 514012.0,
+        "y": 73.0,
+        "z": 548538.0
+      },
+      "rel": {
+        "x": 2015.0,
+        "y": -50.0,
+        "z": 36538.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:41:09.8348334Z"
+    },
+    {
+      "abs": {
+        "x": 514028.0,
+        "y": 72.0,
+        "z": 523997.0
+      },
+      "rel": {
+        "x": 2031.0,
+        "y": -51.0,
+        "z": 11997.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.5121676Z"
+    },
+    {
+      "abs": {
+        "x": 514032.0,
+        "y": 79.0,
+        "z": 524046.0
+      },
+      "rel": {
+        "x": 2035.0,
+        "y": -44.0,
+        "z": 12046.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.5072532Z"
+    },
+    {
+      "abs": {
         "x": 514036.0,
         "y": 78.0,
         "z": 522131.0
@@ -25883,6 +28093,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:02:45.3069023Z"
+    },
+    {
+      "abs": {
+        "x": 514039.0,
+        "y": 39.0,
+        "z": 548067.0
+      },
+      "rel": {
+        "x": 2042.0,
+        "y": -84.0,
+        "z": 36067.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:46:50.9191903Z"
     },
     {
       "abs": {
@@ -25903,6 +28130,23 @@
     },
     {
       "abs": {
+        "x": 514059.0,
+        "y": 57.0,
+        "z": 524032.0
+      },
+      "rel": {
+        "x": 2062.0,
+        "y": -66.0,
+        "z": 12032.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.3889917Z"
+    },
+    {
+      "abs": {
         "x": 514060.0,
         "y": 51.0,
         "z": 521946.0
@@ -25920,6 +28164,142 @@
     },
     {
       "abs": {
+        "x": 514061.0,
+        "y": 63.0,
+        "z": 524038.0
+      },
+      "rel": {
+        "x": 2064.0,
+        "y": -60.0,
+        "z": 12038.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.389658Z"
+    },
+    {
+      "abs": {
+        "x": 514069.0,
+        "y": 67.0,
+        "z": 524006.0
+      },
+      "rel": {
+        "x": 2072.0,
+        "y": -56.0,
+        "z": 12006.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.3921034Z"
+    },
+    {
+      "abs": {
+        "x": 514084.0,
+        "y": 77.0,
+        "z": 523978.0
+      },
+      "rel": {
+        "x": 2087.0,
+        "y": -46.0,
+        "z": 11978.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:25.0519971Z"
+    },
+    {
+      "abs": {
+        "x": 514092.0,
+        "y": 38.0,
+        "z": 523829.0
+      },
+      "rel": {
+        "x": 2095.0,
+        "y": -85.0,
+        "z": 11829.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:38.3447296Z"
+    },
+    {
+      "abs": {
+        "x": 514093.0,
+        "y": 40.0,
+        "z": 523856.0
+      },
+      "rel": {
+        "x": 2096.0,
+        "y": -83.0,
+        "z": 11856.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:35.8554819Z"
+    },
+    {
+      "abs": {
+        "x": 514099.0,
+        "y": 95.0,
+        "z": 524051.0
+      },
+      "rel": {
+        "x": 2102.0,
+        "y": -28.0,
+        "z": 12051.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:21.0211471Z"
+    },
+    {
+      "abs": {
+        "x": 514108.0,
+        "y": 48.0,
+        "z": 523838.0
+      },
+      "rel": {
+        "x": 2111.0,
+        "y": -75.0,
+        "z": 11838.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:38.345161Z"
+    },
+    {
+      "abs": {
+        "x": 514129.0,
+        "y": 51.0,
+        "z": 548330.0
+      },
+      "rel": {
+        "x": 2132.0,
+        "y": -72.0,
+        "z": 36330.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:41:09.2734872Z"
+    },
+    {
+      "abs": {
         "x": 514135.0,
         "y": 170.0,
         "z": 525252.0
@@ -25934,6 +28314,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:37:57.8815321Z"
+    },
+    {
+      "abs": {
+        "x": 514145.0,
+        "y": 77.0,
+        "z": 523938.0
+      },
+      "rel": {
+        "x": 2148.0,
+        "y": -46.0,
+        "z": 11938.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:22.7425092Z"
     },
     {
       "abs": {
@@ -26039,6 +28436,23 @@
     },
     {
       "abs": {
+        "x": 514252.0,
+        "y": 83.0,
+        "z": 523955.0
+      },
+      "rel": {
+        "x": 2255.0,
+        "y": -40.0,
+        "z": 11955.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:21.0103216Z"
+    },
+    {
+      "abs": {
         "x": 514283.0,
         "y": 66.0,
         "z": 522227.0
@@ -26070,6 +28484,40 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:22:20.742156Z"
+    },
+    {
+      "abs": {
+        "x": 514319.0,
+        "y": 12.0,
+        "z": 523926.0
+      },
+      "rel": {
+        "x": 2322.0,
+        "y": -111.0,
+        "z": 11926.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:22.5023769Z"
+    },
+    {
+      "abs": {
+        "x": 514323.0,
+        "y": 21.0,
+        "z": 523927.0
+      },
+      "rel": {
+        "x": 2326.0,
+        "y": -102.0,
+        "z": 11927.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:22.5027533Z"
     },
     {
       "abs": {
@@ -26121,6 +28569,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:22:17.8789152Z"
+    },
+    {
+      "abs": {
+        "x": 514371.0,
+        "y": 32.0,
+        "z": 523902.0
+      },
+      "rel": {
+        "x": 2374.0,
+        "y": -91.0,
+        "z": 11902.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:24.9653377Z"
     },
     {
       "abs": {
@@ -26669,6 +29134,23 @@
     {
       "abs": {
         "x": 514649.0,
+        "y": 32.0,
+        "z": 524083.0
+      },
+      "rel": {
+        "x": 2652.0,
+        "y": -91.0,
+        "z": 12083.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:15.3051827Z"
+    },
+    {
+      "abs": {
+        "x": 514649.0,
         "y": 80.0,
         "z": 524317.0
       },
@@ -27042,6 +29524,23 @@
     },
     {
       "abs": {
+        "x": 514788.0,
+        "y": 74.0,
+        "z": 535050.0
+      },
+      "rel": {
+        "x": 2791.0,
+        "y": -49.0,
+        "z": 23050.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:24:50.4809234Z"
+    },
+    {
+      "abs": {
         "x": 514798.0,
         "y": 72.0,
         "z": 517045.0
@@ -27073,6 +29572,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T14:07:08.3179793Z"
+    },
+    {
+      "abs": {
+        "x": 514801.0,
+        "y": 20.0,
+        "z": 535042.0
+      },
+      "rel": {
+        "x": 2804.0,
+        "y": -103.0,
+        "z": 23042.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:24:50.4790804Z"
     },
     {
       "abs": {
@@ -27365,6 +29881,40 @@
     },
     {
       "abs": {
+        "x": 514887.0,
+        "y": 12.0,
+        "z": 534966.0
+      },
+      "rel": {
+        "x": 2890.0,
+        "y": -111.0,
+        "z": 22966.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:26.8561565Z"
+    },
+    {
+      "abs": {
+        "x": 514887.0,
+        "y": 41.0,
+        "z": 535111.0
+      },
+      "rel": {
+        "x": 2890.0,
+        "y": -82.0,
+        "z": 23111.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:26.8327325Z"
+    },
+    {
+      "abs": {
         "x": 514896.0,
         "y": 24.0,
         "z": 505504.0
@@ -27518,6 +30068,23 @@
     },
     {
       "abs": {
+        "x": 514937.0,
+        "y": 49.0,
+        "z": 534907.0
+      },
+      "rel": {
+        "x": 2940.0,
+        "y": -74.0,
+        "z": 22907.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:26.7791497Z"
+    },
+    {
+      "abs": {
         "x": 514939.0,
         "y": 54.0,
         "z": 505089.0
@@ -27566,6 +30133,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:05:29.5206957Z"
+    },
+    {
+      "abs": {
+        "x": 514954.0,
+        "y": 29.0,
+        "z": 535159.0
+      },
+      "rel": {
+        "x": 2957.0,
+        "y": -94.0,
+        "z": 23159.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:17.575525Z"
     },
     {
       "abs": {
@@ -27634,6 +30218,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T18:46:25.0578697Z"
+    },
+    {
+      "abs": {
+        "x": 514979.0,
+        "y": 16.0,
+        "z": 535163.0
+      },
+      "rel": {
+        "x": 2982.0,
+        "y": -107.0,
+        "z": 23163.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:08.1474438Z"
     },
     {
       "abs": {
@@ -27790,6 +30391,40 @@
     },
     {
       "abs": {
+        "x": 515064.0,
+        "y": 22.0,
+        "z": 534733.0
+      },
+      "rel": {
+        "x": 3067.0,
+        "y": -101.0,
+        "z": 22733.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:53:07.5477816Z"
+    },
+    {
+      "abs": {
+        "x": 515068.0,
+        "y": 12.0,
+        "z": 534761.0
+      },
+      "rel": {
+        "x": 3071.0,
+        "y": -111.0,
+        "z": 22761.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:29.3214581Z"
+    },
+    {
+      "abs": {
         "x": 515076.0,
         "y": 19.0,
         "z": 545118.0
@@ -27855,6 +30490,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T20:20:56.0500882Z"
+    },
+    {
+      "abs": {
+        "x": 515098.0,
+        "y": 96.0,
+        "z": 535323.0
+      },
+      "rel": {
+        "x": 3101.0,
+        "y": -27.0,
+        "z": 23323.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:24:30.3571386Z"
     },
     {
       "abs": {
@@ -27957,6 +30609,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T18:45:57.4026929Z"
+    },
+    {
+      "abs": {
+        "x": 515151.0,
+        "y": 55.0,
+        "z": 535086.0
+      },
+      "rel": {
+        "x": 3154.0,
+        "y": -68.0,
+        "z": 23086.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:19:55.3168144Z"
     },
     {
       "abs": {
@@ -28079,6 +30748,23 @@
     },
     {
       "abs": {
+        "x": 515239.0,
+        "y": 76.0,
+        "z": 535346.0
+      },
+      "rel": {
+        "x": 3242.0,
+        "y": -47.0,
+        "z": 23346.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:39:16.9772711Z"
+    },
+    {
+      "abs": {
         "x": 515252.0,
         "y": 59.0,
         "z": 532190.0
@@ -28147,6 +30833,23 @@
     },
     {
       "abs": {
+        "x": 515303.0,
+        "y": 103.0,
+        "z": 535235.0
+      },
+      "rel": {
+        "x": 3306.0,
+        "y": -20.0,
+        "z": 23235.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:05.271554Z"
+    },
+    {
+      "abs": {
         "x": 515332.0,
         "y": 55.0,
         "z": 505157.0
@@ -28161,6 +30864,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T16:28:03.9978254Z"
+    },
+    {
+      "abs": {
+        "x": 515334.0,
+        "y": 22.0,
+        "z": 535279.0
+      },
+      "rel": {
+        "x": 3337.0,
+        "y": -101.0,
+        "z": 23279.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:07.0949521Z"
     },
     {
       "abs": {
@@ -28195,6 +30915,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T11:19:15.7099683Z"
+    },
+    {
+      "abs": {
+        "x": 515361.0,
+        "y": 87.0,
+        "z": 535208.0
+      },
+      "rel": {
+        "x": 3364.0,
+        "y": -36.0,
+        "z": 23208.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:06.5841653Z"
     },
     {
       "abs": {
@@ -30153,6 +32890,23 @@
     },
     {
       "abs": {
+        "x": 516510.0,
+        "y": 70.0,
+        "z": 548754.0
+      },
+      "rel": {
+        "x": 4513.0,
+        "y": -53.0,
+        "z": 36754.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:27.2688006Z"
+    },
+    {
+      "abs": {
         "x": 516515.0,
         "y": 91.0,
         "z": 513079.0
@@ -30374,6 +33128,40 @@
     },
     {
       "abs": {
+        "x": 516578.0,
+        "y": 33.0,
+        "z": 548698.0
+      },
+      "rel": {
+        "x": 4581.0,
+        "y": -90.0,
+        "z": 36698.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:25.6043355Z"
+    },
+    {
+      "abs": {
+        "x": 516588.0,
+        "y": 43.0,
+        "z": 548998.0
+      },
+      "rel": {
+        "x": 4591.0,
+        "y": -80.0,
+        "z": 36998.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:25.6007153Z"
+    },
+    {
+      "abs": {
         "x": 516593.0,
         "y": 80.0,
         "z": 524363.0
@@ -30391,6 +33179,23 @@
     },
     {
       "abs": {
+        "x": 516597.0,
+        "y": 12.0,
+        "z": 548807.0
+      },
+      "rel": {
+        "x": 4600.0,
+        "y": -111.0,
+        "z": 36807.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:24.6210679Z"
+    },
+    {
+      "abs": {
         "x": 516604.0,
         "y": 89.0,
         "z": 532436.0
@@ -30405,6 +33210,57 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T10:55:45.1859454Z"
+    },
+    {
+      "abs": {
+        "x": 516608.0,
+        "y": 29.0,
+        "z": 548671.0
+      },
+      "rel": {
+        "x": 4611.0,
+        "y": -94.0,
+        "z": 36671.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:24.9940382Z"
+    },
+    {
+      "abs": {
+        "x": 516613.0,
+        "y": 46.0,
+        "z": 548977.0
+      },
+      "rel": {
+        "x": 4616.0,
+        "y": -77.0,
+        "z": 36977.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:23.45697Z"
+    },
+    {
+      "abs": {
+        "x": 516619.0,
+        "y": 40.0,
+        "z": 548781.0
+      },
+      "rel": {
+        "x": 4622.0,
+        "y": -83.0,
+        "z": 36781.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:24.0189717Z"
     },
     {
       "abs": {
@@ -30442,6 +33298,23 @@
     },
     {
       "abs": {
+        "x": 516673.0,
+        "y": 45.0,
+        "z": 549035.0
+      },
+      "rel": {
+        "x": 4676.0,
+        "y": -78.0,
+        "z": 37035.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:25.3874986Z"
+    },
+    {
+      "abs": {
         "x": 516682.0,
         "y": 44.0,
         "z": 532692.0
@@ -30473,6 +33346,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T20:44:47.2298923Z"
+    },
+    {
+      "abs": {
+        "x": 516689.0,
+        "y": 106.0,
+        "z": 548718.0
+      },
+      "rel": {
+        "x": 4692.0,
+        "y": -17.0,
+        "z": 36718.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:23.6408794Z"
     },
     {
       "abs": {
@@ -30558,6 +33448,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T13:02:00.0945413Z"
+    },
+    {
+      "abs": {
+        "x": 516762.0,
+        "y": 53.0,
+        "z": 548662.0
+      },
+      "rel": {
+        "x": 4765.0,
+        "y": -70.0,
+        "z": 36662.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:25.2429513Z"
     },
     {
       "abs": {
@@ -30833,6 +33740,23 @@
     },
     {
       "abs": {
+        "x": 516850.0,
+        "y": 37.0,
+        "z": 548776.0
+      },
+      "rel": {
+        "x": 4853.0,
+        "y": -86.0,
+        "z": 36776.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:22.976644Z"
+    },
+    {
+      "abs": {
         "x": 516851.0,
         "y": 50.0,
         "z": 533111.0
@@ -31003,6 +33927,23 @@
     },
     {
       "abs": {
+        "x": 516912.0,
+        "y": 12.0,
+        "z": 548840.0
+      },
+      "rel": {
+        "x": 4915.0,
+        "y": -111.0,
+        "z": 36840.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:24.5761793Z"
+    },
+    {
+      "abs": {
         "x": 516922.0,
         "y": 35.0,
         "z": 531724.0
@@ -31034,6 +33975,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T12:58:16.1729941Z"
+    },
+    {
+      "abs": {
+        "x": 516970.0,
+        "y": 100.0,
+        "z": 548908.0
+      },
+      "rel": {
+        "x": 4973.0,
+        "y": -23.0,
+        "z": 36908.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:26.3154805Z"
     },
     {
       "abs": {
@@ -31225,6 +34183,23 @@
     {
       "abs": {
         "x": 517083.0,
+        "y": 38.0,
+        "z": 526757.0
+      },
+      "rel": {
+        "x": 5086.0,
+        "y": -85.0,
+        "z": 14757.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:37.7040778Z"
+    },
+    {
+      "abs": {
+        "x": 517083.0,
         "y": 86.0,
         "z": 532716.0
       },
@@ -31377,6 +34352,23 @@
     },
     {
       "abs": {
+        "x": 517143.0,
+        "y": 68.0,
+        "z": 526663.0
+      },
+      "rel": {
+        "x": 5146.0,
+        "y": -55.0,
+        "z": 14663.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:48.2193152Z"
+    },
+    {
+      "abs": {
         "x": 517149.0,
         "y": 91.0,
         "z": 531952.0
@@ -31442,6 +34434,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:19:39.0446958Z"
+    },
+    {
+      "abs": {
+        "x": 517161.0,
+        "y": 141.0,
+        "z": 527021.0
+      },
+      "rel": {
+        "x": 5164.0,
+        "y": 18.0,
+        "z": 15021.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:37.7556927Z"
     },
     {
       "abs": {
@@ -31547,6 +34556,23 @@
     },
     {
       "abs": {
+        "x": 517192.0,
+        "y": 58.0,
+        "z": 527059.0
+      },
+      "rel": {
+        "x": 5195.0,
+        "y": -65.0,
+        "z": 15059.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:37.7128395Z"
+    },
+    {
+      "abs": {
         "x": 517198.0,
         "y": 36.0,
         "z": 532298.0
@@ -31578,6 +34604,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T13:08:03.262241Z"
+    },
+    {
+      "abs": {
+        "x": 517220.0,
+        "y": 34.0,
+        "z": 526972.0
+      },
+      "rel": {
+        "x": 5223.0,
+        "y": -89.0,
+        "z": 14972.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:46.6549398Z"
     },
     {
       "abs": {
@@ -31666,6 +34709,23 @@
     },
     {
       "abs": {
+        "x": 517240.0,
+        "y": 47.0,
+        "z": 526705.0
+      },
+      "rel": {
+        "x": 5243.0,
+        "y": -76.0,
+        "z": 14705.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:43.2610979Z"
+    },
+    {
+      "abs": {
         "x": 517245.0,
         "y": 77.0,
         "z": 531973.0
@@ -31680,6 +34740,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:19:39.2471431Z"
+    },
+    {
+      "abs": {
+        "x": 517258.0,
+        "y": 69.0,
+        "z": 526558.0
+      },
+      "rel": {
+        "x": 5261.0,
+        "y": -54.0,
+        "z": 14558.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:53:54.4054989Z"
     },
     {
       "abs": {
@@ -31782,6 +34859,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:15:05.9873495Z"
+    },
+    {
+      "abs": {
+        "x": 517301.0,
+        "y": 50.0,
+        "z": 526859.0
+      },
+      "rel": {
+        "x": 5304.0,
+        "y": -73.0,
+        "z": 14859.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:42.9438633Z"
     },
     {
       "abs": {
@@ -31952,6 +35046,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T10:32:36.1404981Z"
+    },
+    {
+      "abs": {
+        "x": 517406.0,
+        "y": 45.0,
+        "z": 527051.0
+      },
+      "rel": {
+        "x": 5409.0,
+        "y": -78.0,
+        "z": 15051.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:26.9477427Z"
     },
     {
       "abs": {
@@ -32295,6 +35406,23 @@
     },
     {
       "abs": {
+        "x": 517542.0,
+        "y": 55.0,
+        "z": 526781.0
+      },
+      "rel": {
+        "x": 5545.0,
+        "y": -68.0,
+        "z": 14781.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:49.0970109Z"
+    },
+    {
+      "abs": {
         "x": 517544.0,
         "y": 64.0,
         "z": 544841.0
@@ -32326,6 +35454,40 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T13:11:19.1492752Z"
+    },
+    {
+      "abs": {
+        "x": 517552.0,
+        "y": 77.0,
+        "z": 526789.0
+      },
+      "rel": {
+        "x": 5555.0,
+        "y": -46.0,
+        "z": 14789.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:49.2100636Z"
+    },
+    {
+      "abs": {
+        "x": 517555.0,
+        "y": 21.0,
+        "z": 526589.0
+      },
+      "rel": {
+        "x": 5558.0,
+        "y": -102.0,
+        "z": 14589.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:38:10.8143701Z"
     },
     {
       "abs": {
@@ -32428,6 +35590,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-22T13:12:07.0272463Z"
+    },
+    {
+      "abs": {
+        "x": 517606.0,
+        "y": 38.0,
+        "z": 526710.0
+      },
+      "rel": {
+        "x": 5609.0,
+        "y": -85.0,
+        "z": 14710.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:53:54.5862135Z"
     },
     {
       "abs": {
@@ -34335,6 +37514,57 @@
     },
     {
       "abs": {
+        "x": 518984.0,
+        "y": 12.0,
+        "z": 531754.0
+      },
+      "rel": {
+        "x": 6987.0,
+        "y": -111.0,
+        "z": 19754.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:46.2231872Z"
+    },
+    {
+      "abs": {
+        "x": 518995.0,
+        "y": 29.0,
+        "z": 532098.0
+      },
+      "rel": {
+        "x": 6998.0,
+        "y": -94.0,
+        "z": 20098.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:58.3777066Z"
+    },
+    {
+      "abs": {
+        "x": 519003.0,
+        "y": 32.0,
+        "z": 531942.0
+      },
+      "rel": {
+        "x": 7006.0,
+        "y": -91.0,
+        "z": 19942.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:35.3802397Z"
+    },
+    {
+      "abs": {
         "x": 519006.0,
         "y": 45.0,
         "z": 546255.0
@@ -34349,6 +37579,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:36:48.8156Z"
+    },
+    {
+      "abs": {
+        "x": 519064.0,
+        "y": 89.0,
+        "z": 532168.0
+      },
+      "rel": {
+        "x": 7067.0,
+        "y": -34.0,
+        "z": 20168.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:58.3750738Z"
     },
     {
       "abs": {
@@ -34369,6 +37616,23 @@
     },
     {
       "abs": {
+        "x": 519085.0,
+        "y": 32.0,
+        "z": 531745.0
+      },
+      "rel": {
+        "x": 7088.0,
+        "y": -91.0,
+        "z": 19745.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:32.5220363Z"
+    },
+    {
+      "abs": {
         "x": 519107.0,
         "y": 15.0,
         "z": 545028.0
@@ -34383,6 +37647,40 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:08:58.5282192Z"
+    },
+    {
+      "abs": {
+        "x": 519110.0,
+        "y": 89.0,
+        "z": 531949.0
+      },
+      "rel": {
+        "x": 7113.0,
+        "y": -34.0,
+        "z": 19949.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:27.9876986Z"
+    },
+    {
+      "abs": {
+        "x": 519136.0,
+        "y": 93.0,
+        "z": 531931.0
+      },
+      "rel": {
+        "x": 7139.0,
+        "y": -30.0,
+        "z": 19931.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:27.2563943Z"
     },
     {
       "abs": {
@@ -34403,6 +37701,23 @@
     },
     {
       "abs": {
+        "x": 519153.0,
+        "y": 64.0,
+        "z": 531745.0
+      },
+      "rel": {
+        "x": 7156.0,
+        "y": -59.0,
+        "z": 19745.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:32.9331186Z"
+    },
+    {
+      "abs": {
         "x": 519164.0,
         "y": 12.0,
         "z": 546208.0
@@ -34417,6 +37732,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:37:08.4615538Z"
+    },
+    {
+      "abs": {
+        "x": 519185.0,
+        "y": 40.0,
+        "z": 532058.0
+      },
+      "rel": {
+        "x": 7188.0,
+        "y": -83.0,
+        "z": 20058.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:31.2451644Z"
     },
     {
       "abs": {
@@ -34451,6 +37783,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:03:31.0260635Z"
+    },
+    {
+      "abs": {
+        "x": 519215.0,
+        "y": 60.0,
+        "z": 531964.0
+      },
+      "rel": {
+        "x": 7218.0,
+        "y": -63.0,
+        "z": 19964.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:27.0288803Z"
     },
     {
       "abs": {
@@ -34505,6 +37854,23 @@
     },
     {
       "abs": {
+        "x": 519264.0,
+        "y": 22.0,
+        "z": 545237.0
+      },
+      "rel": {
+        "x": 7267.0,
+        "y": -101.0,
+        "z": 33237.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:12:31.6019252Z"
+    },
+    {
+      "abs": {
         "x": 519292.0,
         "y": 97.0,
         "z": 494879.0
@@ -34519,6 +37885,40 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:43:12.5379594Z"
+    },
+    {
+      "abs": {
+        "x": 519292.0,
+        "y": 46.0,
+        "z": 532156.0
+      },
+      "rel": {
+        "x": 7295.0,
+        "y": -77.0,
+        "z": 20156.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:46.1215282Z"
+    },
+    {
+      "abs": {
+        "x": 519296.0,
+        "y": 110.0,
+        "z": 531816.0
+      },
+      "rel": {
+        "x": 7299.0,
+        "y": -13.0,
+        "z": 19816.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:30.6069492Z"
     },
     {
       "abs": {
@@ -34658,6 +38058,23 @@
     },
     {
       "abs": {
+        "x": 519451.0,
+        "y": 54.0,
+        "z": 531973.0
+      },
+      "rel": {
+        "x": 7454.0,
+        "y": -69.0,
+        "z": 19973.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:25:46.3337337Z"
+    },
+    {
+      "abs": {
         "x": 519457.0,
         "y": 12.0,
         "z": 494585.0
@@ -34777,6 +38194,57 @@
     },
     {
       "abs": {
+        "x": 519521.0,
+        "y": 12.0,
+        "z": 545368.0
+      },
+      "rel": {
+        "x": 7524.0,
+        "y": -111.0,
+        "z": 33368.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:12:19.4496094Z"
+    },
+    {
+      "abs": {
+        "x": 519522.0,
+        "y": 27.0,
+        "z": 545091.0
+      },
+      "rel": {
+        "x": 7525.0,
+        "y": -96.0,
+        "z": 33091.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:10:56.3213601Z"
+    },
+    {
+      "abs": {
+        "x": 519528.0,
+        "y": 65.0,
+        "z": 545119.0
+      },
+      "rel": {
+        "x": 7531.0,
+        "y": -58.0,
+        "z": 33119.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:10:56.3229672Z"
+    },
+    {
+      "abs": {
         "x": 519534.0,
         "y": 13.0,
         "z": 495037.0
@@ -34825,6 +38293,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:42:52.4603601Z"
+    },
+    {
+      "abs": {
+        "x": 519616.0,
+        "y": 13.0,
+        "z": 545416.0
+      },
+      "rel": {
+        "x": 7619.0,
+        "y": -110.0,
+        "z": 33416.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:04.2232751Z"
     },
     {
       "abs": {
@@ -34913,6 +38398,40 @@
     },
     {
       "abs": {
+        "x": 519655.0,
+        "y": 34.0,
+        "z": 545401.0
+      },
+      "rel": {
+        "x": 7658.0,
+        "y": -89.0,
+        "z": 33401.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:04.0462287Z"
+    },
+    {
+      "abs": {
+        "x": 519659.0,
+        "y": 20.0,
+        "z": 545146.0
+      },
+      "rel": {
+        "x": 7662.0,
+        "y": -103.0,
+        "z": 33146.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:04.0911778Z"
+    },
+    {
+      "abs": {
         "x": 519661.0,
         "y": 18.0,
         "z": 544041.0
@@ -34947,6 +38466,40 @@
     },
     {
       "abs": {
+        "x": 519703.0,
+        "y": 34.0,
+        "z": 545077.0
+      },
+      "rel": {
+        "x": 7706.0,
+        "y": -89.0,
+        "z": 33077.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:04.1597718Z"
+    },
+    {
+      "abs": {
+        "x": 519707.0,
+        "y": 48.0,
+        "z": 545312.0
+      },
+      "rel": {
+        "x": 7710.0,
+        "y": -75.0,
+        "z": 33312.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:03.9268039Z"
+    },
+    {
+      "abs": {
         "x": 519717.0,
         "y": 32.0,
         "z": 495231.0
@@ -34961,6 +38514,40 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:35:00.3220671Z"
+    },
+    {
+      "abs": {
+        "x": 519719.0,
+        "y": 108.0,
+        "z": 544972.0
+      },
+      "rel": {
+        "x": 7722.0,
+        "y": -15.0,
+        "z": 32972.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:16.9423876Z"
+    },
+    {
+      "abs": {
+        "x": 519723.0,
+        "y": 61.0,
+        "z": 546381.0
+      },
+      "rel": {
+        "x": 7726.0,
+        "y": -62.0,
+        "z": 34381.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:10.9246175Z"
     },
     {
       "abs": {
@@ -34998,6 +38585,91 @@
     },
     {
       "abs": {
+        "x": 519748.0,
+        "y": 42.0,
+        "z": 539419.0
+      },
+      "rel": {
+        "x": 7751.0,
+        "y": -81.0,
+        "z": 27419.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:52:15.9062431Z"
+    },
+    {
+      "abs": {
+        "x": 519756.0,
+        "y": 77.0,
+        "z": 545193.0
+      },
+      "rel": {
+        "x": 7759.0,
+        "y": -46.0,
+        "z": 33193.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:08:52.1735475Z"
+    },
+    {
+      "abs": {
+        "x": 519759.0,
+        "y": 105.0,
+        "z": 539257.0
+      },
+      "rel": {
+        "x": 7762.0,
+        "y": -18.0,
+        "z": 27257.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:52:30.2381627Z"
+    },
+    {
+      "abs": {
+        "x": 519767.0,
+        "y": 114.0,
+        "z": 539246.0
+      },
+      "rel": {
+        "x": 7770.0,
+        "y": -9.0,
+        "z": 27246.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:52:30.2385682Z"
+    },
+    {
+      "abs": {
+        "x": 519770.0,
+        "y": 97.0,
+        "z": 546437.0
+      },
+      "rel": {
+        "x": 7773.0,
+        "y": -26.0,
+        "z": 34437.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:57:12.0459254Z"
+    },
+    {
+      "abs": {
         "x": 519778.0,
         "y": 76.0,
         "z": 495165.0
@@ -35012,6 +38684,91 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:35:01.1275799Z"
+    },
+    {
+      "abs": {
+        "x": 519781.0,
+        "y": 32.0,
+        "z": 546160.0
+      },
+      "rel": {
+        "x": 7784.0,
+        "y": -91.0,
+        "z": 34160.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:27.9747149Z"
+    },
+    {
+      "abs": {
+        "x": 519784.0,
+        "y": 14.0,
+        "z": 545581.0
+      },
+      "rel": {
+        "x": 7787.0,
+        "y": -109.0,
+        "z": 33581.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:20.7732499Z"
+    },
+    {
+      "abs": {
+        "x": 519786.0,
+        "y": 12.0,
+        "z": 543779.0
+      },
+      "rel": {
+        "x": 7789.0,
+        "y": -111.0,
+        "z": 31779.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:29:57.6708471Z"
+    },
+    {
+      "abs": {
+        "x": 519793.0,
+        "y": 69.0,
+        "z": 546350.0
+      },
+      "rel": {
+        "x": 7796.0,
+        "y": -54.0,
+        "z": 34350.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:00:58.833769Z"
+    },
+    {
+      "abs": {
+        "x": 519800.0,
+        "y": 25.0,
+        "z": 546658.0
+      },
+      "rel": {
+        "x": 7803.0,
+        "y": -98.0,
+        "z": 34658.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:57:00.9049988Z"
     },
     {
       "abs": {
@@ -35049,6 +38806,57 @@
     },
     {
       "abs": {
+        "x": 519826.0,
+        "y": 19.0,
+        "z": 545499.0
+      },
+      "rel": {
+        "x": 7829.0,
+        "y": -104.0,
+        "z": 33499.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:20.979052Z"
+    },
+    {
+      "abs": {
+        "x": 519835.0,
+        "y": 45.0,
+        "z": 546195.0
+      },
+      "rel": {
+        "x": 7838.0,
+        "y": -78.0,
+        "z": 34195.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:14.9716696Z"
+    },
+    {
+      "abs": {
+        "x": 519843.0,
+        "y": 92.0,
+        "z": 539336.0
+      },
+      "rel": {
+        "x": 7846.0,
+        "y": -31.0,
+        "z": 27336.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:48.9631813Z"
+    },
+    {
+      "abs": {
         "x": 519847.0,
         "y": 64.0,
         "z": 495044.0
@@ -35063,6 +38871,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:41:44.8828588Z"
+    },
+    {
+      "abs": {
+        "x": 519860.0,
+        "y": 84.0,
+        "z": 539319.0
+      },
+      "rel": {
+        "x": 7863.0,
+        "y": -39.0,
+        "z": 27319.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:49.0845695Z"
     },
     {
       "abs": {
@@ -35100,6 +38925,57 @@
     },
     {
       "abs": {
+        "x": 519899.0,
+        "y": 21.0,
+        "z": 545655.0
+      },
+      "rel": {
+        "x": 7902.0,
+        "y": -102.0,
+        "z": 33655.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:08.2490853Z"
+    },
+    {
+      "abs": {
+        "x": 519902.0,
+        "y": 40.0,
+        "z": 546377.0
+      },
+      "rel": {
+        "x": 7905.0,
+        "y": -83.0,
+        "z": 34377.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:56:50.044305Z"
+    },
+    {
+      "abs": {
+        "x": 519912.0,
+        "y": 27.0,
+        "z": 545210.0
+      },
+      "rel": {
+        "x": 7915.0,
+        "y": -96.0,
+        "z": 33210.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:39.605427Z"
+    },
+    {
+      "abs": {
         "x": 519922.0,
         "y": 48.0,
         "z": 495211.0
@@ -35134,6 +39010,23 @@
     },
     {
       "abs": {
+        "x": 519928.0,
+        "y": 22.0,
+        "z": 546479.0
+      },
+      "rel": {
+        "x": 7931.0,
+        "y": -101.0,
+        "z": 34479.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:33.8207384Z"
+    },
+    {
+      "abs": {
         "x": 519938.0,
         "y": 72.0,
         "z": 495805.0
@@ -35148,6 +39041,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:46:23.0112462Z"
+    },
+    {
+      "abs": {
+        "x": 519947.0,
+        "y": 72.0,
+        "z": 545975.0
+      },
+      "rel": {
+        "x": 7950.0,
+        "y": -51.0,
+        "z": 33975.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:39.9463302Z"
     },
     {
       "abs": {
@@ -35219,6 +39129,40 @@
     },
     {
       "abs": {
+        "x": 519969.0,
+        "y": 89.0,
+        "z": 546226.0
+      },
+      "rel": {
+        "x": 7972.0,
+        "y": -34.0,
+        "z": 34226.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:12.8930908Z"
+    },
+    {
+      "abs": {
+        "x": 519972.0,
+        "y": 90.0,
+        "z": 539324.0
+      },
+      "rel": {
+        "x": 7975.0,
+        "y": -33.0,
+        "z": 27324.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:46.6091986Z"
+    },
+    {
+      "abs": {
         "x": 519975.0,
         "y": 41.0,
         "z": 495913.0
@@ -35250,6 +39194,57 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:47:36.7865555Z"
+    },
+    {
+      "abs": {
+        "x": 519978.0,
+        "y": 28.0,
+        "z": 546766.0
+      },
+      "rel": {
+        "x": 7981.0,
+        "y": -95.0,
+        "z": 34766.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:33.9142103Z"
+    },
+    {
+      "abs": {
+        "x": 519980.0,
+        "y": 18.0,
+        "z": 543940.0
+      },
+      "rel": {
+        "x": 7983.0,
+        "y": -105.0,
+        "z": 31940.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:29:29.9074897Z"
+    },
+    {
+      "abs": {
+        "x": 519988.0,
+        "y": 82.0,
+        "z": 546525.0
+      },
+      "rel": {
+        "x": 7991.0,
+        "y": -41.0,
+        "z": 34525.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:33.5202291Z"
     },
     {
       "abs": {
@@ -35287,6 +39282,40 @@
     },
     {
       "abs": {
+        "x": 520000.0,
+        "y": 101.0,
+        "z": 539505.0
+      },
+      "rel": {
+        "x": 8003.0,
+        "y": -22.0,
+        "z": 27505.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:48.2918823Z"
+    },
+    {
+      "abs": {
+        "x": 520000.0,
+        "y": 22.0,
+        "z": 545638.0
+      },
+      "rel": {
+        "x": 8003.0,
+        "y": -101.0,
+        "z": 33638.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:08.3374959Z"
+    },
+    {
+      "abs": {
         "x": 520016.0,
         "y": 60.0,
         "z": 495352.0
@@ -35301,6 +39330,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:45:30.3574483Z"
+    },
+    {
+      "abs": {
+        "x": 520019.0,
+        "y": 48.0,
+        "z": 546841.0
+      },
+      "rel": {
+        "x": 8022.0,
+        "y": -75.0,
+        "z": 34841.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:57:57.6334883Z"
     },
     {
       "abs": {
@@ -35321,6 +39367,74 @@
     },
     {
       "abs": {
+        "x": 520027.0,
+        "y": 65.0,
+        "z": 545499.0
+      },
+      "rel": {
+        "x": 8030.0,
+        "y": -58.0,
+        "z": 33499.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:20.7624716Z"
+    },
+    {
+      "abs": {
+        "x": 520035.0,
+        "y": 19.0,
+        "z": 543829.0
+      },
+      "rel": {
+        "x": 8038.0,
+        "y": -104.0,
+        "z": 31829.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:29:12.4525172Z"
+    },
+    {
+      "abs": {
+        "x": 520037.0,
+        "y": 43.0,
+        "z": 545064.0
+      },
+      "rel": {
+        "x": 8040.0,
+        "y": -80.0,
+        "z": 33064.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:51.5665587Z"
+    },
+    {
+      "abs": {
+        "x": 520038.0,
+        "y": 33.0,
+        "z": 546787.0
+      },
+      "rel": {
+        "x": 8041.0,
+        "y": -90.0,
+        "z": 34787.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:57:44.7541571Z"
+    },
+    {
+      "abs": {
         "x": 520040.0,
         "y": 105.0,
         "z": 495768.0
@@ -35338,6 +39452,91 @@
     },
     {
       "abs": {
+        "x": 520043.0,
+        "y": 55.0,
+        "z": 546532.0
+      },
+      "rel": {
+        "x": 8046.0,
+        "y": -68.0,
+        "z": 34532.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:21.5245479Z"
+    },
+    {
+      "abs": {
+        "x": 520044.0,
+        "y": 48.0,
+        "z": 545539.0
+      },
+      "rel": {
+        "x": 8047.0,
+        "y": -75.0,
+        "z": 33539.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:08.8661195Z"
+    },
+    {
+      "abs": {
+        "x": 520051.0,
+        "y": 24.0,
+        "z": 545768.0
+      },
+      "rel": {
+        "x": 8054.0,
+        "y": -99.0,
+        "z": 33768.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:53.9077216Z"
+    },
+    {
+      "abs": {
+        "x": 520069.0,
+        "y": 70.0,
+        "z": 546396.0
+      },
+      "rel": {
+        "x": 8072.0,
+        "y": -53.0,
+        "z": 34396.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:33.6685471Z"
+    },
+    {
+      "abs": {
+        "x": 520076.0,
+        "y": 42.0,
+        "z": 539496.0
+      },
+      "rel": {
+        "x": 8079.0,
+        "y": -81.0,
+        "z": 27496.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:48.1584216Z"
+    },
+    {
+      "abs": {
         "x": 520078.0,
         "y": 41.0,
         "z": 496090.0
@@ -35352,6 +39551,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:48:40.4488622Z"
+    },
+    {
+      "abs": {
+        "x": 520090.0,
+        "y": 54.0,
+        "z": 539379.0
+      },
+      "rel": {
+        "x": 8093.0,
+        "y": -69.0,
+        "z": 27379.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:46.2832741Z"
     },
     {
       "abs": {
@@ -35406,6 +39622,23 @@
     },
     {
       "abs": {
+        "x": 520126.0,
+        "y": 19.0,
+        "z": 539528.0
+      },
+      "rel": {
+        "x": 8129.0,
+        "y": -104.0,
+        "z": 27528.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:48.8398245Z"
+    },
+    {
+      "abs": {
         "x": 520130.0,
         "y": 88.0,
         "z": 495978.0
@@ -35420,6 +39653,57 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:48:16.6392126Z"
+    },
+    {
+      "abs": {
+        "x": 520132.0,
+        "y": 12.0,
+        "z": 543799.0
+      },
+      "rel": {
+        "x": 8135.0,
+        "y": -111.0,
+        "z": 31799.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:28:54.6252989Z"
+    },
+    {
+      "abs": {
+        "x": 520133.0,
+        "y": 27.0,
+        "z": 546287.0
+      },
+      "rel": {
+        "x": 8136.0,
+        "y": -96.0,
+        "z": 34287.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:13.1587214Z"
+    },
+    {
+      "abs": {
+        "x": 520134.0,
+        "y": 30.0,
+        "z": 545787.0
+      },
+      "rel": {
+        "x": 8137.0,
+        "y": -93.0,
+        "z": 33787.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:54.0009877Z"
     },
     {
       "abs": {
@@ -35440,6 +39724,23 @@
     },
     {
       "abs": {
+        "x": 520146.0,
+        "y": 69.0,
+        "z": 546599.0
+      },
+      "rel": {
+        "x": 8149.0,
+        "y": -54.0,
+        "z": 34599.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:21.3670341Z"
+    },
+    {
+      "abs": {
         "x": 520147.0,
         "y": 115.0,
         "z": 495942.0
@@ -35454,6 +39755,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T12:48:08.1192479Z"
+    },
+    {
+      "abs": {
+        "x": 520152.0,
+        "y": 59.0,
+        "z": 539281.0
+      },
+      "rel": {
+        "x": 8155.0,
+        "y": -64.0,
+        "z": 27281.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:46.8306866Z"
     },
     {
       "abs": {
@@ -35474,6 +39792,23 @@
     },
     {
       "abs": {
+        "x": 520160.0,
+        "y": 49.0,
+        "z": 545483.0
+      },
+      "rel": {
+        "x": 8163.0,
+        "y": -74.0,
+        "z": 33483.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:20.9240348Z"
+    },
+    {
+      "abs": {
         "x": 520164.0,
         "y": 73.0,
         "z": 544427.0
@@ -35491,6 +39826,57 @@
     },
     {
       "abs": {
+        "x": 520168.0,
+        "y": 77.0,
+        "z": 539125.0
+      },
+      "rel": {
+        "x": 8171.0,
+        "y": -46.0,
+        "z": 27125.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:51:50.111943Z"
+    },
+    {
+      "abs": {
+        "x": 520186.0,
+        "y": 12.0,
+        "z": 545930.0
+      },
+      "rel": {
+        "x": 8189.0,
+        "y": -111.0,
+        "z": 33930.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:42.6759289Z"
+    },
+    {
+      "abs": {
+        "x": 520203.0,
+        "y": 27.0,
+        "z": 545768.0
+      },
+      "rel": {
+        "x": 8206.0,
+        "y": -96.0,
+        "z": 33768.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:01:56.9594931Z"
+    },
+    {
+      "abs": {
         "x": 520207.0,
         "y": 51.0,
         "z": 544534.0
@@ -35505,6 +39891,74 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:05:08.8052582Z"
+    },
+    {
+      "abs": {
+        "x": 520207.0,
+        "y": 90.0,
+        "z": 546330.0
+      },
+      "rel": {
+        "x": 8210.0,
+        "y": -33.0,
+        "z": 34330.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:33.9059957Z"
+    },
+    {
+      "abs": {
+        "x": 520208.0,
+        "y": 88.0,
+        "z": 546650.0
+      },
+      "rel": {
+        "x": 8211.0,
+        "y": -35.0,
+        "z": 34650.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:22.2514625Z"
+    },
+    {
+      "abs": {
+        "x": 520211.0,
+        "y": 91.0,
+        "z": 544977.0
+      },
+      "rel": {
+        "x": 8214.0,
+        "y": -32.0,
+        "z": 32977.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:03.7310683Z"
+    },
+    {
+      "abs": {
+        "x": 520218.0,
+        "y": 12.0,
+        "z": 545649.0
+      },
+      "rel": {
+        "x": 8221.0,
+        "y": -111.0,
+        "z": 33649.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:02:08.7525637Z"
     },
     {
       "abs": {
@@ -35542,6 +39996,91 @@
     },
     {
       "abs": {
+        "x": 520258.0,
+        "y": 12.0,
+        "z": 543941.0
+      },
+      "rel": {
+        "x": 8261.0,
+        "y": -111.0,
+        "z": 31941.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:28:54.9304578Z"
+    },
+    {
+      "abs": {
+        "x": 520292.0,
+        "y": 42.0,
+        "z": 545140.0
+      },
+      "rel": {
+        "x": 8295.0,
+        "y": -81.0,
+        "z": 33140.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:03.6020405Z"
+    },
+    {
+      "abs": {
+        "x": 520320.0,
+        "y": 69.0,
+        "z": 545162.0
+      },
+      "rel": {
+        "x": 8323.0,
+        "y": -54.0,
+        "z": 33162.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:08.2530572Z"
+    },
+    {
+      "abs": {
+        "x": 520350.0,
+        "y": 72.0,
+        "z": 539259.0
+      },
+      "rel": {
+        "x": 8353.0,
+        "y": -51.0,
+        "z": 27259.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:52:00.2333831Z"
+    },
+    {
+      "abs": {
+        "x": 520351.0,
+        "y": 25.0,
+        "z": 545068.0
+      },
+      "rel": {
+        "x": 8354.0,
+        "y": -98.0,
+        "z": 33068.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:06.285273Z"
+    },
+    {
+      "abs": {
         "x": 520363.0,
         "y": 99.0,
         "z": 496189.0
@@ -35576,6 +40115,23 @@
     },
     {
       "abs": {
+        "x": 520408.0,
+        "y": 13.0,
+        "z": 543961.0
+      },
+      "rel": {
+        "x": 8411.0,
+        "y": -110.0,
+        "z": 31961.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:54:30.9785936Z"
+    },
+    {
+      "abs": {
         "x": 520410.0,
         "y": 25.0,
         "z": 496474.0
@@ -35590,6 +40146,57 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T14:05:09.3604797Z"
+    },
+    {
+      "abs": {
+        "x": 520425.0,
+        "y": 19.0,
+        "z": 543605.0
+      },
+      "rel": {
+        "x": 8428.0,
+        "y": -104.0,
+        "z": 31605.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:49:55.8559273Z"
+    },
+    {
+      "abs": {
+        "x": 520457.0,
+        "y": 16.0,
+        "z": 543732.0
+      },
+      "rel": {
+        "x": 8460.0,
+        "y": -107.0,
+        "z": 31732.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:38:38.988799Z"
+    },
+    {
+      "abs": {
+        "x": 520475.0,
+        "y": 19.0,
+        "z": 543348.0
+      },
+      "rel": {
+        "x": 8478.0,
+        "y": -104.0,
+        "z": 31348.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T10:28:30.5871652Z"
     },
     {
       "abs": {
@@ -35610,6 +40217,23 @@
     },
     {
       "abs": {
+        "x": 520487.0,
+        "y": 20.0,
+        "z": 543797.0
+      },
+      "rel": {
+        "x": 8490.0,
+        "y": -103.0,
+        "z": 31797.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:38:37.8949686Z"
+    },
+    {
+      "abs": {
         "x": 520493.0,
         "y": 76.0,
         "z": 496410.0
@@ -35624,6 +40248,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T14:05:07.6576223Z"
+    },
+    {
+      "abs": {
+        "x": 520500.0,
+        "y": 28.0,
+        "z": 544944.0
+      },
+      "rel": {
+        "x": 8503.0,
+        "y": -95.0,
+        "z": 32944.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:27.0760327Z"
     },
     {
       "abs": {
@@ -35644,6 +40285,40 @@
     },
     {
       "abs": {
+        "x": 520516.0,
+        "y": 27.0,
+        "z": 543567.0
+      },
+      "rel": {
+        "x": 8519.0,
+        "y": -96.0,
+        "z": 31567.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:39:18.2002829Z"
+    },
+    {
+      "abs": {
+        "x": 520557.0,
+        "y": 45.0,
+        "z": 545050.0
+      },
+      "rel": {
+        "x": 8560.0,
+        "y": -78.0,
+        "z": 33050.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:03:26.6343167Z"
+    },
+    {
+      "abs": {
         "x": 520558.0,
         "y": 101.0,
         "z": 496087.0
@@ -35661,6 +40336,23 @@
     },
     {
       "abs": {
+        "x": 520563.0,
+        "y": 48.0,
+        "z": 544861.0
+      },
+      "rel": {
+        "x": 8566.0,
+        "y": -75.0,
+        "z": 32861.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:05:26.9507086Z"
+    },
+    {
+      "abs": {
         "x": 520568.0,
         "y": 71.0,
         "z": 496105.0
@@ -35675,6 +40367,74 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T14:05:23.3817823Z"
+    },
+    {
+      "abs": {
+        "x": 520576.0,
+        "y": 20.0,
+        "z": 545162.0
+      },
+      "rel": {
+        "x": 8579.0,
+        "y": -103.0,
+        "z": 33162.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:05:24.4166675Z"
+    },
+    {
+      "abs": {
+        "x": 520579.0,
+        "y": 96.0,
+        "z": 544980.0
+      },
+      "rel": {
+        "x": 8582.0,
+        "y": -27.0,
+        "z": 32980.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:05:23.6751658Z"
+    },
+    {
+      "abs": {
+        "x": 520598.0,
+        "y": 49.0,
+        "z": 544872.0
+      },
+      "rel": {
+        "x": 8601.0,
+        "y": -74.0,
+        "z": 32872.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:05:26.9540163Z"
+    },
+    {
+      "abs": {
+        "x": 520614.0,
+        "y": 61.0,
+        "z": 544876.0
+      },
+      "rel": {
+        "x": 8617.0,
+        "y": -62.0,
+        "z": 32876.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:05:38.0488115Z"
     },
     {
       "abs": {
@@ -35712,6 +40472,40 @@
     },
     {
       "abs": {
+        "x": 520716.0,
+        "y": 34.0,
+        "z": 543356.0
+      },
+      "rel": {
+        "x": 8719.0,
+        "y": -89.0,
+        "z": 31356.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:47:15.7729758Z"
+    },
+    {
+      "abs": {
+        "x": 520735.0,
+        "y": 18.0,
+        "z": 543858.0
+      },
+      "rel": {
+        "x": 8738.0,
+        "y": -105.0,
+        "z": 31858.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:38:35.4408783Z"
+    },
+    {
+      "abs": {
         "x": 520741.0,
         "y": 73.0,
         "z": 538620.0
@@ -35726,6 +40520,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:15:35.9792739Z"
+    },
+    {
+      "abs": {
+        "x": 520748.0,
+        "y": 12.0,
+        "z": 543391.0
+      },
+      "rel": {
+        "x": 8751.0,
+        "y": -111.0,
+        "z": 31391.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:50:02.2218965Z"
     },
     {
       "abs": {
@@ -35780,6 +40591,91 @@
     },
     {
       "abs": {
+        "x": 520811.0,
+        "y": 13.0,
+        "z": 543869.0
+      },
+      "rel": {
+        "x": 8814.0,
+        "y": -110.0,
+        "z": 31869.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:38:37.7241433Z"
+    },
+    {
+      "abs": {
+        "x": 520833.0,
+        "y": 19.0,
+        "z": 543457.0
+      },
+      "rel": {
+        "x": 8836.0,
+        "y": -104.0,
+        "z": 31457.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:49:09.9818535Z"
+    },
+    {
+      "abs": {
+        "x": 520841.0,
+        "y": 14.0,
+        "z": 544058.0
+      },
+      "rel": {
+        "x": 8844.0,
+        "y": -109.0,
+        "z": 32058.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:39:02.9403853Z"
+    },
+    {
+      "abs": {
+        "x": 520846.0,
+        "y": 16.0,
+        "z": 543726.0
+      },
+      "rel": {
+        "x": 8849.0,
+        "y": -107.0,
+        "z": 31726.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:38:38.2738796Z"
+    },
+    {
+      "abs": {
+        "x": 520856.0,
+        "y": 12.0,
+        "z": 543443.0
+      },
+      "rel": {
+        "x": 8859.0,
+        "y": -111.0,
+        "z": 31443.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:49:42.6506941Z"
+    },
+    {
+      "abs": {
         "x": 520877.0,
         "y": 97.0,
         "z": 468814.0
@@ -35794,6 +40690,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:27:40.7883675Z"
+    },
+    {
+      "abs": {
+        "x": 520952.0,
+        "y": 12.0,
+        "z": 543509.0
+      },
+      "rel": {
+        "x": 8955.0,
+        "y": -111.0,
+        "z": 31509.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T07:50:02.2723148Z"
     },
     {
       "abs": {
@@ -36035,6 +40948,23 @@
     },
     {
       "abs": {
+        "x": 521266.0,
+        "y": 77.0,
+        "z": 538849.0
+      },
+      "rel": {
+        "x": 9269.0,
+        "y": -46.0,
+        "z": 26849.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:58.6527511Z"
+    },
+    {
+      "abs": {
         "x": 521270.0,
         "y": 64.0,
         "z": 546945.0
@@ -36049,6 +40979,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:53:32.3387334Z"
+    },
+    {
+      "abs": {
+        "x": 521271.0,
+        "y": 84.0,
+        "z": 538679.0
+      },
+      "rel": {
+        "x": 9274.0,
+        "y": -39.0,
+        "z": 26679.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:58.7030758Z"
     },
     {
       "abs": {
@@ -36103,6 +41050,23 @@
     },
     {
       "abs": {
+        "x": 521306.0,
+        "y": 66.0,
+        "z": 538613.0
+      },
+      "rel": {
+        "x": 9309.0,
+        "y": -57.0,
+        "z": 26613.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:58.708486Z"
+    },
+    {
+      "abs": {
         "x": 521317.0,
         "y": 71.0,
         "z": 552119.0
@@ -36117,6 +41081,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:08:07.7009032Z"
+    },
+    {
+      "abs": {
+        "x": 521324.0,
+        "y": 75.0,
+        "z": 538637.0
+      },
+      "rel": {
+        "x": 9327.0,
+        "y": -48.0,
+        "z": 26637.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:48.2805639Z"
     },
     {
       "abs": {
@@ -36324,6 +41305,23 @@
     },
     {
       "abs": {
+        "x": 521410.0,
+        "y": 35.0,
+        "z": 538615.0
+      },
+      "rel": {
+        "x": 9413.0,
+        "y": -88.0,
+        "z": 26615.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:44.2217155Z"
+    },
+    {
+      "abs": {
         "x": 521412.0,
         "y": 37.0,
         "z": 462651.0
@@ -36338,6 +41336,57 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:53:45.2831119Z"
+    },
+    {
+      "abs": {
+        "x": 521413.0,
+        "y": 12.0,
+        "z": 538998.0
+      },
+      "rel": {
+        "x": 9416.0,
+        "y": -111.0,
+        "z": 26998.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:48.2776619Z"
+    },
+    {
+      "abs": {
+        "x": 521416.0,
+        "y": 45.0,
+        "z": 538318.0
+      },
+      "rel": {
+        "x": 9419.0,
+        "y": -78.0,
+        "z": 26318.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:30.2727537Z"
+    },
+    {
+      "abs": {
+        "x": 521433.0,
+        "y": 12.0,
+        "z": 538987.0
+      },
+      "rel": {
+        "x": 9436.0,
+        "y": -111.0,
+        "z": 26987.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:48.2776474Z"
     },
     {
       "abs": {
@@ -36426,6 +41475,23 @@
     },
     {
       "abs": {
+        "x": 521446.0,
+        "y": 29.0,
+        "z": 538532.0
+      },
+      "rel": {
+        "x": 9449.0,
+        "y": -94.0,
+        "z": 26532.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:42.3003764Z"
+    },
+    {
+      "abs": {
         "x": 521449.0,
         "y": 30.0,
         "z": 547282.0
@@ -36457,6 +41523,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:29:20.5560509Z"
+    },
+    {
+      "abs": {
+        "x": 521458.0,
+        "y": 43.0,
+        "z": 538420.0
+      },
+      "rel": {
+        "x": 9461.0,
+        "y": -80.0,
+        "z": 26420.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:28.3715215Z"
     },
     {
       "abs": {
@@ -36508,6 +41591,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:52:52.0779196Z"
+    },
+    {
+      "abs": {
+        "x": 521485.0,
+        "y": 19.0,
+        "z": 538517.0
+      },
+      "rel": {
+        "x": 9488.0,
+        "y": -104.0,
+        "z": 26517.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:31.8185952Z"
     },
     {
       "abs": {
@@ -36664,6 +41764,23 @@
     },
     {
       "abs": {
+        "x": 521518.0,
+        "y": 66.0,
+        "z": 538161.0
+      },
+      "rel": {
+        "x": 9521.0,
+        "y": -57.0,
+        "z": 26161.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:08.1664278Z"
+    },
+    {
+      "abs": {
         "x": 521520.0,
         "y": 54.0,
         "z": 547210.0
@@ -36732,6 +41849,23 @@
     },
     {
       "abs": {
+        "x": 521540.0,
+        "y": 46.0,
+        "z": 538338.0
+      },
+      "rel": {
+        "x": 9543.0,
+        "y": -77.0,
+        "z": 26338.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:59.3899648Z"
+    },
+    {
+      "abs": {
         "x": 521543.0,
         "y": 101.0,
         "z": 504953.0
@@ -36780,6 +41914,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:49:30.96267Z"
+    },
+    {
+      "abs": {
+        "x": 521548.0,
+        "y": 49.0,
+        "z": 538527.0
+      },
+      "rel": {
+        "x": 9551.0,
+        "y": -74.0,
+        "z": 26527.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:08.1696831Z"
     },
     {
       "abs": {
@@ -36851,6 +42002,40 @@
     },
     {
       "abs": {
+        "x": 521570.0,
+        "y": 35.0,
+        "z": 538547.0
+      },
+      "rel": {
+        "x": 9573.0,
+        "y": -88.0,
+        "z": 26547.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:07.9520188Z"
+    },
+    {
+      "abs": {
+        "x": 521570.0,
+        "y": 27.0,
+        "z": 539031.0
+      },
+      "rel": {
+        "x": 9573.0,
+        "y": -96.0,
+        "z": 27031.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:58.7912819Z"
+    },
+    {
+      "abs": {
         "x": 521573.0,
         "y": 29.0,
         "z": 462517.0
@@ -36902,6 +42087,23 @@
     },
     {
       "abs": {
+        "x": 521576.0,
+        "y": 49.0,
+        "z": 538277.0
+      },
+      "rel": {
+        "x": 9579.0,
+        "y": -74.0,
+        "z": 26277.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:31.9634343Z"
+    },
+    {
+      "abs": {
         "x": 521581.0,
         "y": 73.0,
         "z": 462370.0
@@ -36919,6 +42121,23 @@
     },
     {
       "abs": {
+        "x": 521582.0,
+        "y": 46.0,
+        "z": 538232.0
+      },
+      "rel": {
+        "x": 9585.0,
+        "y": -77.0,
+        "z": 26232.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:32.1038327Z"
+    },
+    {
+      "abs": {
         "x": 521585.0,
         "y": 93.0,
         "z": 505279.0
@@ -36933,6 +42152,40 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T16:57:33.130121Z"
+    },
+    {
+      "abs": {
+        "x": 521591.0,
+        "y": 26.0,
+        "z": 538403.0
+      },
+      "rel": {
+        "x": 9594.0,
+        "y": -97.0,
+        "z": 26403.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:53:01.3506641Z"
+    },
+    {
+      "abs": {
+        "x": 521591.0,
+        "y": 14.0,
+        "z": 538981.0
+      },
+      "rel": {
+        "x": 9594.0,
+        "y": -109.0,
+        "z": 26981.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:08.2066135Z"
     },
     {
       "abs": {
@@ -36967,6 +42220,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T09:08:07.7544494Z"
+    },
+    {
+      "abs": {
+        "x": 521596.0,
+        "y": 18.0,
+        "z": 538956.0
+      },
+      "rel": {
+        "x": 9599.0,
+        "y": -105.0,
+        "z": 26956.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:55:08.0481502Z"
     },
     {
       "abs": {
@@ -37157,6 +42427,23 @@
     },
     {
       "abs": {
+        "x": 521649.0,
+        "y": 17.0,
+        "z": 538388.0
+      },
+      "rel": {
+        "x": 9652.0,
+        "y": -106.0,
+        "z": 26388.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:32.216188Z"
+    },
+    {
+      "abs": {
         "x": 521652.0,
         "y": 51.0,
         "z": 526766.0
@@ -37344,6 +42631,23 @@
     },
     {
       "abs": {
+        "x": 521717.0,
+        "y": 30.0,
+        "z": 538818.0
+      },
+      "rel": {
+        "x": 9720.0,
+        "y": -93.0,
+        "z": 26818.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:56.1434952Z"
+    },
+    {
+      "abs": {
         "x": 521721.0,
         "y": 82.0,
         "z": 462317.0
@@ -37358,6 +42662,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:49:09.5283467Z"
+    },
+    {
+      "abs": {
+        "x": 521725.0,
+        "y": 15.0,
+        "z": 538865.0
+      },
+      "rel": {
+        "x": 9728.0,
+        "y": -108.0,
+        "z": 26865.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:57.9266058Z"
     },
     {
       "abs": {
@@ -37463,6 +42784,23 @@
     },
     {
       "abs": {
+        "x": 521757.0,
+        "y": 84.0,
+        "z": 538197.0
+      },
+      "rel": {
+        "x": 9760.0,
+        "y": -39.0,
+        "z": 26197.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:20.2184817Z"
+    },
+    {
+      "abs": {
         "x": 521766.0,
         "y": 68.0,
         "z": 526637.0
@@ -37531,6 +42869,40 @@
     },
     {
       "abs": {
+        "x": 521799.0,
+        "y": 92.0,
+        "z": 538246.0
+      },
+      "rel": {
+        "x": 9802.0,
+        "y": -31.0,
+        "z": 26246.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:20.2963406Z"
+    },
+    {
+      "abs": {
+        "x": 521804.0,
+        "y": 98.0,
+        "z": 538314.0
+      },
+      "rel": {
+        "x": 9807.0,
+        "y": -25.0,
+        "z": 26314.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:20.4909932Z"
+    },
+    {
+      "abs": {
         "x": 521804.0,
         "y": 39.0,
         "z": 547869.0
@@ -37548,6 +42920,23 @@
     },
     {
       "abs": {
+        "x": 521852.0,
+        "y": 68.0,
+        "z": 538495.0
+      },
+      "rel": {
+        "x": 9855.0,
+        "y": -55.0,
+        "z": 26495.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:53:00.9337925Z"
+    },
+    {
+      "abs": {
         "x": 521854.0,
         "y": 18.0,
         "z": 547831.0
@@ -37562,6 +42951,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:52:03.5916013Z"
+    },
+    {
+      "abs": {
+        "x": 521869.0,
+        "y": 45.0,
+        "z": 538586.0
+      },
+      "rel": {
+        "x": 9872.0,
+        "y": -78.0,
+        "z": 26586.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:53:54.3648392Z"
     },
     {
       "abs": {
@@ -37596,6 +43002,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:49:09.5337862Z"
+    },
+    {
+      "abs": {
+        "x": 521883.0,
+        "y": 41.0,
+        "z": 538047.0
+      },
+      "rel": {
+        "x": 9886.0,
+        "y": -82.0,
+        "z": 26047.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:20.3793337Z"
     },
     {
       "abs": {
@@ -37973,6 +43396,23 @@
     },
     {
       "abs": {
+        "x": 522149.0,
+        "y": 21.0,
+        "z": 538648.0
+      },
+      "rel": {
+        "x": 10152.0,
+        "y": -102.0,
+        "z": 26648.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:42:40.4938519Z"
+    },
+    {
+      "abs": {
         "x": 522165.0,
         "y": 62.0,
         "z": 507792.0
@@ -38058,6 +43498,40 @@
     },
     {
       "abs": {
+        "x": 522237.0,
+        "y": 25.0,
+        "z": 539044.0
+      },
+      "rel": {
+        "x": 10240.0,
+        "y": -98.0,
+        "z": 27044.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:32:01.2613609Z"
+    },
+    {
+      "abs": {
+        "x": 522266.0,
+        "y": 35.0,
+        "z": 539035.0
+      },
+      "rel": {
+        "x": 10269.0,
+        "y": -88.0,
+        "z": 27035.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:51.5838131Z"
+    },
+    {
+      "abs": {
         "x": 522277.0,
         "y": 33.0,
         "z": 547779.0
@@ -38126,6 +43600,23 @@
     },
     {
       "abs": {
+        "x": 522331.0,
+        "y": 58.0,
+        "z": 538609.0
+      },
+      "rel": {
+        "x": 10334.0,
+        "y": -65.0,
+        "z": 26609.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:51.6218299Z"
+    },
+    {
+      "abs": {
         "x": 522360.0,
         "y": 19.0,
         "z": 540664.0
@@ -38140,6 +43631,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:51:21.0984294Z"
+    },
+    {
+      "abs": {
+        "x": 522395.0,
+        "y": 17.0,
+        "z": 538755.0
+      },
+      "rel": {
+        "x": 10398.0,
+        "y": -106.0,
+        "z": 26755.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:40.4427945Z"
     },
     {
       "abs": {
@@ -38177,6 +43685,23 @@
     },
     {
       "abs": {
+        "x": 522438.0,
+        "y": 13.0,
+        "z": 538792.0
+      },
+      "rel": {
+        "x": 10441.0,
+        "y": -110.0,
+        "z": 26792.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:40.1343444Z"
+    },
+    {
+      "abs": {
         "x": 522453.0,
         "y": 42.0,
         "z": 534887.0
@@ -38191,6 +43716,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:20:08.4822054Z"
+    },
+    {
+      "abs": {
+        "x": 522463.0,
+        "y": 24.0,
+        "z": 539094.0
+      },
+      "rel": {
+        "x": 10466.0,
+        "y": -99.0,
+        "z": 27094.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:42:40.747881Z"
     },
     {
       "abs": {
@@ -38262,6 +43804,40 @@
     },
     {
       "abs": {
+        "x": 522524.0,
+        "y": 14.0,
+        "z": 538990.0
+      },
+      "rel": {
+        "x": 10527.0,
+        "y": -109.0,
+        "z": 26990.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:51.3658909Z"
+    },
+    {
+      "abs": {
+        "x": 522533.0,
+        "y": 13.0,
+        "z": 538956.0
+      },
+      "rel": {
+        "x": 10536.0,
+        "y": -110.0,
+        "z": 26956.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:31:51.4897693Z"
+    },
+    {
+      "abs": {
         "x": 522598.0,
         "y": 47.0,
         "z": 468591.0
@@ -38327,6 +43903,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:39:42.8838027Z"
+    },
+    {
+      "abs": {
+        "x": 522672.0,
+        "y": 86.0,
+        "z": 530542.0
+      },
+      "rel": {
+        "x": 10675.0,
+        "y": -37.0,
+        "z": 18542.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:08.7694001Z"
     },
     {
       "abs": {
@@ -38446,6 +44039,23 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:19:47.1893217Z"
+    },
+    {
+      "abs": {
+        "x": 522817.0,
+        "y": 63.0,
+        "z": 530761.0
+      },
+      "rel": {
+        "x": 10820.0,
+        "y": -60.0,
+        "z": 18761.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:38:28.2726193Z"
     },
     {
       "abs": {
@@ -38585,6 +44195,23 @@
     },
     {
       "abs": {
+        "x": 523011.0,
+        "y": 61.0,
+        "z": 530237.0
+      },
+      "rel": {
+        "x": 11014.0,
+        "y": -62.0,
+        "z": 18237.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:09.4791355Z"
+    },
+    {
+      "abs": {
         "x": 523012.0,
         "y": 23.0,
         "z": 490240.0
@@ -38599,6 +44226,57 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T14:02:13.0128041Z"
+    },
+    {
+      "abs": {
+        "x": 523032.0,
+        "y": 25.0,
+        "z": 530635.0
+      },
+      "rel": {
+        "x": 11035.0,
+        "y": -98.0,
+        "z": 18635.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:38.801241Z"
+    },
+    {
+      "abs": {
+        "x": 523057.0,
+        "y": 55.0,
+        "z": 530285.0
+      },
+      "rel": {
+        "x": 11060.0,
+        "y": -68.0,
+        "z": 18285.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:41.6980582Z"
+    },
+    {
+      "abs": {
+        "x": 523062.0,
+        "y": 25.0,
+        "z": 530345.0
+      },
+      "rel": {
+        "x": 11065.0,
+        "y": -98.0,
+        "z": 18345.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:38.7651385Z"
     },
     {
       "abs": {
@@ -38684,6 +44362,40 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:53:43.8486505Z"
+    },
+    {
+      "abs": {
+        "x": 523130.0,
+        "y": 30.0,
+        "z": 530548.0
+      },
+      "rel": {
+        "x": 11133.0,
+        "y": -93.0,
+        "z": 18548.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:41.2202888Z"
+    },
+    {
+      "abs": {
+        "x": 523134.0,
+        "y": 58.0,
+        "z": 530391.0
+      },
+      "rel": {
+        "x": 11137.0,
+        "y": -65.0,
+        "z": 18391.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:20:40.2705058Z"
     },
     {
       "abs": {
@@ -40031,6 +45743,23 @@
     },
     {
       "abs": {
+        "x": 525059.0,
+        "y": 53.0,
+        "z": 536088.0
+      },
+      "rel": {
+        "x": 13062.0,
+        "y": -70.0,
+        "z": 24088.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:09.0171696Z"
+    },
+    {
+      "abs": {
         "x": 525064.0,
         "y": 64.0,
         "z": 539879.0
@@ -40045,6 +45774,23 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:25:11.3734362Z"
+    },
+    {
+      "abs": {
+        "x": 525067.0,
+        "y": 57.0,
+        "z": 535924.0
+      },
+      "rel": {
+        "x": 13070.0,
+        "y": -66.0,
+        "z": 23924.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:52:09.4268361Z"
     },
     {
       "abs": {
@@ -40286,6 +46032,23 @@
     },
     {
       "abs": {
+        "x": 525340.0,
+        "y": 42.0,
+        "z": 535672.0
+      },
+      "rel": {
+        "x": 13343.0,
+        "y": -81.0,
+        "z": 23672.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:15.2586516Z"
+    },
+    {
+      "abs": {
         "x": 525359.0,
         "y": 63.0,
         "z": 539788.0
@@ -40303,6 +46066,57 @@
     },
     {
       "abs": {
+        "x": 525364.0,
+        "y": 22.0,
+        "z": 536135.0
+      },
+      "rel": {
+        "x": 13367.0,
+        "y": -101.0,
+        "z": 24135.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:57.0931828Z"
+    },
+    {
+      "abs": {
+        "x": 525372.0,
+        "y": 81.0,
+        "z": 535190.0
+      },
+      "rel": {
+        "x": 13375.0,
+        "y": -42.0,
+        "z": 23190.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:27.9973481Z"
+    },
+    {
+      "abs": {
+        "x": 525379.0,
+        "y": 37.0,
+        "z": 535767.0
+      },
+      "rel": {
+        "x": 13382.0,
+        "y": -86.0,
+        "z": 23767.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:15.1463477Z"
+    },
+    {
+      "abs": {
         "x": 525384.0,
         "y": 67.0,
         "z": 539787.0
@@ -40317,6 +46131,142 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:35:02.8704813Z"
+    },
+    {
+      "abs": {
+        "x": 525394.0,
+        "y": 88.0,
+        "z": 535208.0
+      },
+      "rel": {
+        "x": 13397.0,
+        "y": -35.0,
+        "z": 23208.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:27.9884817Z"
+    },
+    {
+      "abs": {
+        "x": 525431.0,
+        "y": 73.0,
+        "z": 535711.0
+      },
+      "rel": {
+        "x": 13434.0,
+        "y": -50.0,
+        "z": 23711.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:05.4519872Z"
+    },
+    {
+      "abs": {
+        "x": 525434.0,
+        "y": 31.0,
+        "z": 534889.0
+      },
+      "rel": {
+        "x": 13437.0,
+        "y": -92.0,
+        "z": 22889.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:10.262668Z"
+    },
+    {
+      "abs": {
+        "x": 525448.0,
+        "y": 38.0,
+        "z": 535157.0
+      },
+      "rel": {
+        "x": 13451.0,
+        "y": -85.0,
+        "z": 23157.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:27.6949672Z"
+    },
+    {
+      "abs": {
+        "x": 525451.0,
+        "y": 86.0,
+        "z": 535701.0
+      },
+      "rel": {
+        "x": 13454.0,
+        "y": -37.0,
+        "z": 23701.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:02.5200605Z"
+    },
+    {
+      "abs": {
+        "x": 525455.0,
+        "y": 84.0,
+        "z": 534716.0
+      },
+      "rel": {
+        "x": 13458.0,
+        "y": -39.0,
+        "z": 22716.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:27.5369496Z"
+    },
+    {
+      "abs": {
+        "x": 525482.0,
+        "y": 80.0,
+        "z": 534968.0
+      },
+      "rel": {
+        "x": 13485.0,
+        "y": -43.0,
+        "z": 22968.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:08.3260447Z"
+    },
+    {
+      "abs": {
+        "x": 525488.0,
+        "y": 48.0,
+        "z": 535745.0
+      },
+      "rel": {
+        "x": 13491.0,
+        "y": -75.0,
+        "z": 23745.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:05.4543551Z"
     },
     {
       "abs": {
@@ -40354,6 +46304,91 @@
     },
     {
       "abs": {
+        "x": 525496.0,
+        "y": 80.0,
+        "z": 534894.0
+      },
+      "rel": {
+        "x": 13499.0,
+        "y": -43.0,
+        "z": 22894.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:08.306989Z"
+    },
+    {
+      "abs": {
+        "x": 525513.0,
+        "y": 24.0,
+        "z": 535612.0
+      },
+      "rel": {
+        "x": 13516.0,
+        "y": -99.0,
+        "z": 23612.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:34.4814154Z"
+    },
+    {
+      "abs": {
+        "x": 525525.0,
+        "y": 102.0,
+        "z": 534893.0
+      },
+      "rel": {
+        "x": 13528.0,
+        "y": -21.0,
+        "z": 22893.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:08.3481601Z"
+    },
+    {
+      "abs": {
+        "x": 525526.0,
+        "y": 39.0,
+        "z": 535903.0
+      },
+      "rel": {
+        "x": 13529.0,
+        "y": -84.0,
+        "z": 23903.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:15.3813719Z"
+    },
+    {
+      "abs": {
+        "x": 525538.0,
+        "y": 23.0,
+        "z": 535709.0
+      },
+      "rel": {
+        "x": 13541.0,
+        "y": -100.0,
+        "z": 23709.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:00.7337126Z"
+    },
+    {
+      "abs": {
         "x": 525556.0,
         "y": 30.0,
         "z": 538815.0
@@ -40368,6 +46403,40 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:44:00.8564131Z"
+    },
+    {
+      "abs": {
+        "x": 525566.0,
+        "y": 49.0,
+        "z": 535341.0
+      },
+      "rel": {
+        "x": 13569.0,
+        "y": -74.0,
+        "z": 23341.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:49:52.820025Z"
+    },
+    {
+      "abs": {
+        "x": 525582.0,
+        "y": 75.0,
+        "z": 535675.0
+      },
+      "rel": {
+        "x": 13585.0,
+        "y": -48.0,
+        "z": 23675.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:34.8955175Z"
     },
     {
       "abs": {
@@ -40388,6 +46457,142 @@
     },
     {
       "abs": {
+        "x": 525604.0,
+        "y": 73.0,
+        "z": 534762.0
+      },
+      "rel": {
+        "x": 13607.0,
+        "y": -50.0,
+        "z": 22762.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:15.0388775Z"
+    },
+    {
+      "abs": {
+        "x": 525604.0,
+        "y": 85.0,
+        "z": 534865.0
+      },
+      "rel": {
+        "x": 13607.0,
+        "y": -38.0,
+        "z": 22865.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:09.3905774Z"
+    },
+    {
+      "abs": {
+        "x": 525604.0,
+        "y": 87.0,
+        "z": 535484.0
+      },
+      "rel": {
+        "x": 13607.0,
+        "y": -36.0,
+        "z": 23484.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:14.2129313Z"
+    },
+    {
+      "abs": {
+        "x": 525606.0,
+        "y": 53.0,
+        "z": 535067.0
+      },
+      "rel": {
+        "x": 13609.0,
+        "y": -70.0,
+        "z": 23067.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:11.1230084Z"
+    },
+    {
+      "abs": {
+        "x": 525626.0,
+        "y": 40.0,
+        "z": 534821.0
+      },
+      "rel": {
+        "x": 13629.0,
+        "y": -83.0,
+        "z": 22821.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:09.1438434Z"
+    },
+    {
+      "abs": {
+        "x": 525647.0,
+        "y": 49.0,
+        "z": 535083.0
+      },
+      "rel": {
+        "x": 13650.0,
+        "y": -74.0,
+        "z": 23083.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:13.456802Z"
+    },
+    {
+      "abs": {
+        "x": 525656.0,
+        "y": 82.0,
+        "z": 534940.0
+      },
+      "rel": {
+        "x": 13659.0,
+        "y": -41.0,
+        "z": 22940.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:11.9049804Z"
+    },
+    {
+      "abs": {
+        "x": 525660.0,
+        "y": 61.0,
+        "z": 535431.0
+      },
+      "rel": {
+        "x": 13663.0,
+        "y": -62.0,
+        "z": 23431.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:03.4005467Z"
+    },
+    {
+      "abs": {
         "x": 525660.0,
         "y": 58.0,
         "z": 538915.0
@@ -40402,6 +46607,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:37:06.8108314Z"
+    },
+    {
+      "abs": {
+        "x": 525671.0,
+        "y": 51.0,
+        "z": 534600.0
+      },
+      "rel": {
+        "x": 13674.0,
+        "y": -72.0,
+        "z": 22600.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:43.3932996Z"
     },
     {
       "abs": {
@@ -40439,6 +46661,108 @@
     },
     {
       "abs": {
+        "x": 525715.0,
+        "y": 92.0,
+        "z": 535810.0
+      },
+      "rel": {
+        "x": 13718.0,
+        "y": -31.0,
+        "z": 23810.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:15.0475875Z"
+    },
+    {
+      "abs": {
+        "x": 525717.0,
+        "y": 67.0,
+        "z": 534628.0
+      },
+      "rel": {
+        "x": 13720.0,
+        "y": -56.0,
+        "z": 22628.0
+      },
+      "state": "broken",
+      "facing": "south",
+      "code": "statictranslocator-broken-south",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:33.3191563Z"
+    },
+    {
+      "abs": {
+        "x": 525718.0,
+        "y": 18.0,
+        "z": 535286.0
+      },
+      "rel": {
+        "x": 13721.0,
+        "y": -105.0,
+        "z": 23286.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:49:41.7654117Z"
+    },
+    {
+      "abs": {
+        "x": 525719.0,
+        "y": 40.0,
+        "z": 535481.0
+      },
+      "rel": {
+        "x": 13722.0,
+        "y": -83.0,
+        "z": 23481.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:14.1695913Z"
+    },
+    {
+      "abs": {
+        "x": 525722.0,
+        "y": 27.0,
+        "z": 534634.0
+      },
+      "rel": {
+        "x": 13725.0,
+        "y": -96.0,
+        "z": 22634.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:33.3180527Z"
+    },
+    {
+      "abs": {
+        "x": 525732.0,
+        "y": 12.0,
+        "z": 535276.0
+      },
+      "rel": {
+        "x": 13735.0,
+        "y": -111.0,
+        "z": 23276.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:49:52.2782992Z"
+    },
+    {
+      "abs": {
         "x": 525734.0,
         "y": 12.0,
         "z": 539487.0
@@ -40453,6 +46777,40 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:35:59.5684164Z"
+    },
+    {
+      "abs": {
+        "x": 525743.0,
+        "y": 35.0,
+        "z": 534712.0
+      },
+      "rel": {
+        "x": 13746.0,
+        "y": -88.0,
+        "z": 22712.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:21.1937068Z"
+    },
+    {
+      "abs": {
+        "x": 525743.0,
+        "y": 24.0,
+        "z": 535319.0
+      },
+      "rel": {
+        "x": 13746.0,
+        "y": -99.0,
+        "z": 23319.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:49:52.4271416Z"
     },
     {
       "abs": {
@@ -40504,6 +46862,40 @@
       "code": "statictranslocator-broken-west",
       "claimed": false,
       "firstSeenUtc": "2026-07-12T08:36:01.1973018Z"
+    },
+    {
+      "abs": {
+        "x": 525809.0,
+        "y": 16.0,
+        "z": 534575.0
+      },
+      "rel": {
+        "x": 13812.0,
+        "y": -107.0,
+        "z": 22575.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:45.4620456Z"
+    },
+    {
+      "abs": {
+        "x": 525811.0,
+        "y": 12.0,
+        "z": 535601.0
+      },
+      "rel": {
+        "x": 13814.0,
+        "y": -111.0,
+        "z": 23601.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:34.6402708Z"
     },
     {
       "abs": {
@@ -40575,6 +46967,57 @@
     },
     {
       "abs": {
+        "x": 525835.0,
+        "y": 63.0,
+        "z": 534627.0
+      },
+      "rel": {
+        "x": 13838.0,
+        "y": -60.0,
+        "z": 22627.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:43.4653378Z"
+    },
+    {
+      "abs": {
+        "x": 525841.0,
+        "y": 82.0,
+        "z": 535462.0
+      },
+      "rel": {
+        "x": 13844.0,
+        "y": -41.0,
+        "z": 23462.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:23.5464436Z"
+    },
+    {
+      "abs": {
+        "x": 525862.0,
+        "y": 24.0,
+        "z": 535618.0
+      },
+      "rel": {
+        "x": 13865.0,
+        "y": -99.0,
+        "z": 23618.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:51:00.8535836Z"
+    },
+    {
+      "abs": {
         "x": 525881.0,
         "y": 12.0,
         "z": 530869.0
@@ -40589,6 +47032,40 @@
       "code": "statictranslocator-broken-east",
       "claimed": false,
       "firstSeenUtc": "2026-07-11T21:20:53.4505443Z"
+    },
+    {
+      "abs": {
+        "x": 525895.0,
+        "y": 73.0,
+        "z": 534681.0
+      },
+      "rel": {
+        "x": 13898.0,
+        "y": -50.0,
+        "z": 22681.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:45.0633372Z"
+    },
+    {
+      "abs": {
+        "x": 525904.0,
+        "y": 83.0,
+        "z": 534693.0
+      },
+      "rel": {
+        "x": 13907.0,
+        "y": -40.0,
+        "z": 22693.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:43.3888477Z"
     },
     {
       "abs": {
@@ -42751,6 +49228,23 @@
     },
     {
       "abs": {
+        "x": 529919.0,
+        "y": 58.0,
+        "z": 541884.0
+      },
+      "rel": {
+        "x": 17922.0,
+        "y": -65.0,
+        "z": 29884.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:21.1144506Z"
+    },
+    {
+      "abs": {
         "x": 529974.0,
         "y": 30.0,
         "z": 509123.0
@@ -42802,6 +49296,23 @@
     },
     {
       "abs": {
+        "x": 530001.0,
+        "y": 12.0,
+        "z": 541816.0
+      },
+      "rel": {
+        "x": 18004.0,
+        "y": -111.0,
+        "z": 29816.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:10.4462985Z"
+    },
+    {
+      "abs": {
         "x": 530027.0,
         "y": 106.0,
         "z": 509223.0
@@ -42819,6 +49330,23 @@
     },
     {
       "abs": {
+        "x": 530042.0,
+        "y": 80.0,
+        "z": 541757.0
+      },
+      "rel": {
+        "x": 18045.0,
+        "y": -43.0,
+        "z": 29757.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:09.9596816Z"
+    },
+    {
+      "abs": {
         "x": 530058.0,
         "y": 37.0,
         "z": 479239.0
@@ -42833,6 +49361,23 @@
       "code": "statictranslocator-broken-south",
       "claimed": false,
       "firstSeenUtc": "2026-07-24T13:21:47.4280263Z"
+    },
+    {
+      "abs": {
+        "x": 530059.0,
+        "y": 35.0,
+        "z": 541785.0
+      },
+      "rel": {
+        "x": 18062.0,
+        "y": -88.0,
+        "z": 29785.0
+      },
+      "state": "broken",
+      "facing": "north",
+      "code": "statictranslocator-broken-north",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:09.0331593Z"
     },
     {
       "abs": {
@@ -42867,6 +49412,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T17:32:30.9958488Z"
+    },
+    {
+      "abs": {
+        "x": 530083.0,
+        "y": 48.0,
+        "z": 541797.0
+      },
+      "rel": {
+        "x": 18086.0,
+        "y": -75.0,
+        "z": 29797.0
+      },
+      "state": "broken",
+      "facing": "west",
+      "code": "statictranslocator-broken-west",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:08.4615899Z"
     },
     {
       "abs": {
@@ -43122,6 +49684,23 @@
       "code": "statictranslocator-broken-north",
       "claimed": false,
       "firstSeenUtc": "2026-07-28T17:32:33.4927422Z"
+    },
+    {
+      "abs": {
+        "x": 530291.0,
+        "y": 52.0,
+        "z": 541813.0
+      },
+      "rel": {
+        "x": 18294.0,
+        "y": -71.0,
+        "z": 29813.0
+      },
+      "state": "broken",
+      "facing": "east",
+      "code": "statictranslocator-broken-east",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:47:21.1166234Z"
     },
     {
       "abs": {

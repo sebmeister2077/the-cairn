@@ -12,8 +12,24 @@ import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Maximize2 } from "lucide-react";
 import { TLLegendButton } from "@/components/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
-import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
+import {
+  drawTraderMarker,
+  drawTLEndpoint,
+  drawTerminusMarker,
+  drawClaimDot,
+} from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  TRADER_TYPE_COLORS,
+  CLAIM_UNCLASSIFIED_COLOR,
+  type TraderType,
+} from "@/lib/trader-types";
+import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
+import { type ClaimTypeMap, TRADER_CLAIM_TYPES_QUERY_KEY } from "@/hooks/useOverlayData";
+import { submitTraderClaimTypes, type ClaimTypeSubmitItem } from "@/lib/api";
 import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
 import type {
   MapStats,
@@ -49,6 +65,10 @@ const MIN_PIXELS_PER_BLOCK = 0.0005;
 /** A single block stretched across 8 screen pixels — useful for inspecting
  * landmark details. */
 const MAX_PIXELS_PER_BLOCK = 8;
+
+/** Below this zoom the trader-claim dot field is hidden — the ~thousands of
+ *  boxes would otherwise smear into an unreadable wall when zoomed way out. */
+const CLAIM_MIN_PIXELS_PER_BLOCK = 0.02;
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -138,6 +158,16 @@ interface WebCartographerMapViewerProps {
   // ── Overlay data ────────────────────────────────────────────────────────
   overlaySegments?: WorldLineSegment[];
   overlayPoints?: WorldPointMarker[];
+  /**
+   * Static trader-claim boxes rendered as small dots. Projected + culled +
+   * hit-tested internally so the parent can pass the full (deduped) set. When
+   * {@link claimMarkingEnabled} is on, clicking a dot opens a type picker.
+   */
+  claimMarkers?: TraderClaimMarker[];
+  /** Claim id → assigned trader type, used to colour classified claim dots. */
+  claimTypes?: ClaimTypeMap;
+  /** Enable the click-to-mark type picker on claim dots. */
+  claimMarkingEnabled?: boolean;
   routeOverlay?: RouteOverlay | null;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
@@ -256,6 +286,9 @@ export function WebCartographerMapViewer({
   legend,
   overlaySegments,
   overlayPoints,
+  claimMarkers,
+  claimTypes,
+  claimMarkingEnabled = false,
   routeOverlay = null,
   highlightedSegment,
   highlightedSegments,
@@ -299,6 +332,30 @@ export function WebCartographerMapViewer({
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
   );
+
+  // ── Trader-claim marking ──────────────────────────────────────────────────
+  const canContribute = useReduxState("auth.canContribute");
+  const isAdminUser = useReduxState("auth.isAdmin");
+  const claimQueryClient = useQueryClient();
+  // Screen-projected claim dots from the last draw, for click/hover hit-tests.
+  const projectedClaimsRef = useRef<
+    Array<{ claimId: string; sx: number; sy: number; center: { x: number; y: number; z: number } }>
+  >([]);
+  const [hoveredClaimId, setHoveredClaimId] = useState<string | null>(null);
+  const hoveredClaimIdRef = useRef<string | null>(null);
+  const [claimPopover, setClaimPopover] = useState<{
+    claimId: string;
+    center: { x: number; y: number; z: number };
+    left: number;
+    top: number;
+  } | null>(null);
+  const claimMutation = useMutation({
+    mutationFn: (item: ClaimTypeSubmitItem) => submitTraderClaimTypes([item]),
+    onSuccess: () => {
+      setClaimPopover(null);
+      claimQueryClient.invalidateQueries({ queryKey: [...TRADER_CLAIM_TYPES_QUERY_KEY] });
+    },
+  });
 
   // ── Refs ─────────────────────────────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null);
@@ -997,6 +1054,41 @@ export function WebCartographerMapViewer({
         alwaysShowTLIds: activeRadiusFilter.alwaysShowTLIds,
       };
     }
+    // ── Trader-claim dots ─────────────────────────────────────────────────
+    // Drawn under the TL/trader overlays so real trader markers stay on top.
+    // Projected + viewport-culled here (rather than in a memo) so panning a
+    // large claim field never allocates thousands of objects per frame, and
+    // zoom-gated so the world isn't a wall of dots when fully zoomed out.
+    {
+      const claims = claimMarkers;
+      const projected: Array<{
+        claimId: string;
+        sx: number;
+        sy: number;
+        center: { x: number; y: number; z: number };
+      }> = [];
+      if (claims && claims.length > 0 && ppb >= CLAIM_MIN_PIXELS_PER_BLOCK) {
+        const margin = 8;
+        // zoom = 1 → constant on-screen size, matching the trader markers
+        // (which pass zoom = 1). Previously scaled with ppb, so the dots
+        // shrank the further you zoomed out.
+        const zoom = 1;
+        const types = claimTypes;
+        for (const c of claims) {
+          const sx = (c.x - cWx) * ppb + cw / 2;
+          const sy = (c.z - cWz) * ppb + ch / 2;
+          if (sx < -margin || sx > cw + margin || sy < -margin || sy > ch + margin) continue;
+          const assigned = types?.[c.claimId];
+          const color = assigned
+            ? TRADER_TYPE_COLORS[assigned.trader_type]
+            : CLAIM_UNCLASSIFIED_COLOR;
+          const isHot = c.claimId === hoveredClaimId || c.claimId === claimPopover?.claimId;
+          drawClaimDot(octx, sx, sy, zoom, color, isHot);
+          projected.push({ claimId: c.claimId, sx, sy, center: c.center });
+        }
+      }
+      projectedClaimsRef.current = projected;
+    }
     drawOverlaysScreenSpace(octx, {
       segments: projectedSegments,
       points: projectedPoints,
@@ -1056,6 +1148,10 @@ export function WebCartographerMapViewer({
     tlStyle,
     traderStyle,
     terminusStyle,
+    claimMarkers,
+    claimTypes,
+    hoveredClaimId,
+    claimPopover,
   ]);
 
   // Continuous redraw while a focused walk leg exists, so its pulsing
@@ -1438,12 +1534,34 @@ export function WebCartographerMapViewer({
       } else if (hoveredPointTooltip) {
         setHoveredPointTooltip(null);
       }
+
+      // Trader-claim dot hover (screen-space) — thickens the dot outline.
+      if (claimMarkingEnabled) {
+        const claimThreshSq = 12 * 12;
+        let hot: string | null = null;
+        let bestClaimSq = Infinity;
+        for (const c of projectedClaimsRef.current) {
+          const ddx = sx - c.sx;
+          const ddy = sy - c.sy;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < claimThreshSq && dsq < bestClaimSq) {
+            bestClaimSq = dsq;
+            hot = c.claimId;
+          }
+        }
+        if (hot !== hoveredClaimIdRef.current) {
+          hoveredClaimIdRef.current = hot;
+          setHoveredClaimId(hot);
+          scheduleRedraw();
+        }
+      }
     },
     [
       dragging,
       projectedSegments,
       projectedPoints,
       hoveredPointTooltip,
+      claimMarkingEnabled,
       unprojectScreen,
       hoveredSegmentIndex,
       onHoverCoords,
@@ -1463,6 +1581,10 @@ export function WebCartographerMapViewer({
     onHoverCoords?.(null);
     setHoveredSegmentIndex(null);
     setHoveredPointTooltip(null);
+    if (hoveredClaimIdRef.current !== null) {
+      hoveredClaimIdRef.current = null;
+      setHoveredClaimId(null);
+    }
     if (radiusFilterRef.current) scheduleRedraw();
   }, [onHoverCoords, scheduleRedraw]);
 
@@ -1484,6 +1606,27 @@ export function WebCartographerMapViewer({
         onWorldClick(Math.floor(world.x), Math.floor(world.z));
         return;
       }
+      // Trader-claim marking: a click on a claim dot opens the type picker;
+      // a click elsewhere dismisses an open picker.
+      if (claimMarkingEnabled) {
+        const claimThreshSq = 12 * 12;
+        let hit: { claimId: string; center: { x: number; y: number; z: number } } | null = null;
+        let bestSq = Infinity;
+        for (const c of projectedClaimsRef.current) {
+          const ddx = sx - c.sx;
+          const ddy = sy - c.sy;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < claimThreshSq && dsq < bestSq) {
+            bestSq = dsq;
+            hit = { claimId: c.claimId, center: c.center };
+          }
+        }
+        if (hit) {
+          setClaimPopover({ claimId: hit.claimId, center: hit.center, left: sx, top: sy });
+          return;
+        }
+        setClaimPopover(null);
+      }
       if (!onOverlaySegmentClick || !overlaySegments || overlaySegments.length === 0) return;
       if (hoveredSegmentIndex === null) {
         onOverlaySegmentClick(null);
@@ -1491,7 +1634,14 @@ export function WebCartographerMapViewer({
       }
       onOverlaySegmentClick(overlaySegments[hoveredSegmentIndex] ?? null);
     },
-    [hoveredSegmentIndex, onOverlaySegmentClick, onWorldClick, overlaySegments, unprojectScreen],
+    [
+      hoveredSegmentIndex,
+      onOverlaySegmentClick,
+      onWorldClick,
+      overlaySegments,
+      unprojectScreen,
+      claimMarkingEnabled,
+    ],
   );
 
   const handleContextMenu = useCallback(
@@ -1684,6 +1834,66 @@ export function WebCartographerMapViewer({
               X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
               &nbsp; Z: {Math.round(hoveredPointTooltip.z)}
             </div>
+          </div>
+        )}
+        {claimPopover && (
+          <div
+            className="absolute z-30 w-56 rounded-md border border-white/15 bg-slate-900/95 p-2 text-xs text-white shadow-xl"
+            style={{
+              left: Math.max(4, Math.min(claimPopover.left + 12, containerSize.w - 232)),
+              top: Math.max(4, Math.min(claimPopover.top + 12, containerSize.h - 220)),
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-semibold">{t("topsMap.claimMarkTitle")}</span>
+              <button
+                type="button"
+                aria-label={t("topsMap.claimMarkClose")}
+                className="px-1 text-white/60 hover:text-white"
+                onClick={() => setClaimPopover(null)}
+              >
+                ×
+              </button>
+            </div>
+            {claimTypes?.[claimPopover.claimId] && (
+              <div className="mb-1.5 text-[10px] text-white/60">
+                {t("topsMap.claimCurrentType")}:{" "}
+                <span className="text-white/90">
+                  {TRADER_TYPE_LABELS[claimTypes[claimPopover.claimId].trader_type]}
+                </span>
+              </div>
+            )}
+            {canContribute || isAdminUser ? (
+              <div className="grid grid-cols-1 gap-1">
+                {TRADER_TYPES.map((tt) => (
+                  <button
+                    key={tt}
+                    type="button"
+                    disabled={claimMutation.isPending}
+                    onClick={() =>
+                      claimMutation.mutate({
+                        claim_id: claimPopover.claimId,
+                        trader_type: tt,
+                        center: claimPopover.center,
+                      })
+                    }
+                    className="flex items-center gap-2 rounded px-2 py-1 text-left hover:bg-white/10 disabled:opacity-50"
+                  >
+                    <span
+                      className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/40"
+                      style={{ backgroundColor: TRADER_TYPE_COLORS[tt] }}
+                    />
+                    <span>{TRADER_TYPE_LABELS[tt]}</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="text-[11px] text-amber-300">{t("topsMap.claimSignInHint")}</div>
+            )}
+            {claimMutation.isError && (
+              <div className="mt-1 text-[11px] text-red-400">{t("topsMap.claimMarkError")}</div>
+            )}
           </div>
         )}
       </div>
