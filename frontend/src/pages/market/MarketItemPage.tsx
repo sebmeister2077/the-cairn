@@ -666,9 +666,12 @@ export function MarketItemPage() {
             {
               key: "variant",
               header: "Variant",
-              width: "minmax(6rem,1fr)",
+              width: "minmax(9rem,1fr)",
               cell: (l) => (
-                <span className="text-xs font-medium" title="In-game clutter object">
+                <span
+                  className="text-xs font-medium"
+                  title={`In-game clutter object(${l.variant ?? "—"})`}
+                >
                   {l.variant ?? "—"}
                 </span>
               ),
