@@ -83,6 +83,40 @@ def bare_code(code: str) -> str:
     return code.split(":", 1)[-1].strip()
 
 
+# Generic multi-variant blocks whose real object lives in ``attributes.type``
+# (`tapestry-north` sells 20 distinct artworks, `clutter` many objects). The
+# market groups these by ``category:base`` (see process_auction_data.type_variant),
+# so we key their wares the same way instead of the shared block code — otherwise
+# every tapestry/clutter group matches the one collapsed entry.
+SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry"}
+
+
+def _variant_base(variant: str) -> str:
+    """Group key for a type variant: the string with any trailing number stripped
+    (`ambush1` -> `ambush`, `tobias-lantern` -> `tobias-lantern`). Mirrors the
+    backend's ``_variant_base``."""
+    base = re.sub(r"\d+$", "", variant).rstrip("-_/")
+    return base or variant
+
+
+def split_category(code: str) -> Optional[str]:
+    """Split-type category for a generic block code (`tapestry-north` -> `tapestry`,
+    `clutter` -> `clutter`), else None."""
+    head = code.split("-", 1)[0].split("/", 1)[0]
+    return head if head in SPLIT_TYPE_CATEGORIES else None
+
+
+def ware_key(code: str, entry: dict) -> str:
+    """Lookup key for a ware: ``category:base`` for split-type blocks whose object
+    is in ``attributes.type``, otherwise the bare item code."""
+    cat = split_category(code)
+    if cat:
+        vtype = (entry.get("attributes") or {}).get("type")
+        if isinstance(vtype, str) and vtype.strip():
+            return f"{cat}:{_variant_base(vtype.strip())}"
+    return code
+
+
 def load_lang(assets_root: Path) -> Dict[str, str]:
     """Game English lang table (strict JSON), used for villager display names."""
     path = assets_root / "game" / "lang" / "en.json"
@@ -136,11 +170,11 @@ def parse_tradelist(path: Path, trader_type: str, out: Dict[str, Dict[str, Dict[
             price = entry.get("price") or {}
             if not raw_code or "avg" not in price:
                 continue
-            code = bare_code(raw_code)
+            key = ware_key(bare_code(raw_code), entry)
             avg = float(price.get("avg", 0))
             var = float(price.get("var", 0) or 0)
             stacksize = int(entry.get("stacksize", 1) or 1)
-            agg = out.setdefault(code, {}).setdefault(direction, {}).setdefault(trader_type, WareAgg())
+            agg = out.setdefault(key, {}).setdefault(direction, {}).setdefault(trader_type, WareAgg())
             agg.add(avg, var, stacksize)
             count += 1
     return count

@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T19:33:27.684771+00:00",
+  "generatedUtc": "2026-08-01T20:46:21.114302+00:00",
   "source": "vintagestory/assets/survival/config/tradelists",
   "traderFiles": 17,
   "wareEntries": 802,
@@ -4437,14 +4437,134 @@
         }
       ]
     },
-    "clutter": {
+    "clutter:book-big-closed": {
       "sells": [
         {
           "traderType": "villager",
           "label": "Tobias",
           "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:book-big-open": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:bookshelves/bookstand-book-closed": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:bookshelves/large-book-closed": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:bookshelves/large-book-open": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:bookshelves/large-book-standing": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:pile-tobias-gadgets": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 18.0,
+          "priceMax": 30.0,
+          "priceAvg": 24.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:tobias-ceilinglamp-lamp": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 24.0,
           "priceMax": 40.0,
-          "priceAvg": 19.5,
+          "priceAvg": 32.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:tobias-ceilinglamp-mount": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 18.0,
+          "priceMax": 30.0,
+          "priceAvg": 24.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:tobias-ceilinglamp-shaft": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clutter:tobias-lantern": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
           "stacksize": 1
         }
       ]
@@ -7777,13 +7897,68 @@
         }
       ]
     },
-    "tapestry-north": {
+    "tapestry:ambush": {
       "sells": [
         {
           "traderType": "artisan",
           "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry:nightfall": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry:salvation": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
           "priceMax": 10.0,
-          "priceAvg": 6.65,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry:seraphim": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry:tempstorm": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry:themorning": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
           "stacksize": 1
         }
       ]

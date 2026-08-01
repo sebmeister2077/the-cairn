@@ -659,6 +659,17 @@ export function MarketItemPage() {
     return getTapestryImage(variantBase(variantCodes[0]));
   }, [itemListings, variantCodes]);
 
+  // Trader/loot datasets key clutter & tapestry by their `category:base` group
+  // (e.g. only some tapestries are sold), not the shared block code every variant
+  // reports, so those must look up by the same group key the market grouped on.
+  const lookupCode = useMemo(() => {
+    const cat = itemListings[0]?.category;
+    if ((cat === "tapestry" || cat === "clutter") && variantCodes.length > 0) {
+      return `${cat}:${variantBase(variantCodes[0])}`;
+    }
+    return currentEntry?.code ?? null;
+  }, [itemListings, variantCodes, currentEntry]);
+
   const columns = useMemo<ListingColumn[]>(
     () => [
       ...(hasVariants
@@ -1030,8 +1041,8 @@ export function MarketItemPage() {
       )}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <TraderAvailabilityCard code={currentEntry?.code} />
-        <ItemRarityCard code={currentEntry?.code} />
+        <TraderAvailabilityCard code={lookupCode} />
+        <ItemRarityCard code={lookupCode} />
       </div>
 
       {tapestryImage && (
