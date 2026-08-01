@@ -1,0 +1,6242 @@
+{
+  "generatedUtc": "2026-08-01T18:38:37.658143+00:00",
+  "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
+  "poolCount": 33,
+  "items": {
+    "armor-body-antique-blackguard-broken": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 21.05
+        }
+      ]
+    },
+    "armor-body-antique-forlorn-broken": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 10.53
+        }
+      ]
+    },
+    "armor-head-antique-blackguard-broken": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 21.05
+        }
+      ]
+    },
+    "armor-head-antique-forlorn-broken": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 10.53
+        }
+      ]
+    },
+    "armor-legs-antique-blackguard-broken": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 21.05
+        }
+      ]
+    },
+    "armor-legs-antique-forlorn-broken": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 10.53
+        }
+      ]
+    },
+    "arrow-copper": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 10.96
+        }
+      ]
+    },
+    "axe-bardiche-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "axe-battle-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "axe-bearded-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "axe-double-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "axe-felling-copper": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 16.61
+        },
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 6.85
+        }
+      ]
+    },
+    "bandage-clean": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 4.3
+        }
+      ]
+    },
+    "beenade-closed": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 1.8
+        }
+      ]
+    },
+    "beeswax": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 3.7
+        }
+      ]
+    },
+    "blade-arming-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "blade-claymore-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "blade-falx-copper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 2.74
+        }
+      ]
+    },
+    "blade-forlorn-iron": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "armor",
+          "label": "Ruin armor cache",
+          "chancePct": 5.26
+        }
+      ]
+    },
+    "blade-gladius-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "blade-sabre-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "blastingpowder": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 8.8
+        }
+      ]
+    },
+    "bone": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 21.7
+        }
+      ]
+    },
+    "bow-simple": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 4.11
+        }
+      ]
+    },
+    "bowl-blue-fired": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 7.0
+        }
+      ]
+    },
+    "candle": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "chandelier-candle0": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lantern",
+          "label": "Loot cache (lanterns)",
+          "chancePct": 0.06
+        }
+      ]
+    },
+    "charcoal": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 1.4
+        }
+      ]
+    },
+    "clay-blue": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 8.11
+        }
+      ]
+    },
+    "clay-fire": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 6.96
+        }
+      ]
+    },
+    "claybricks-good-fire": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 1.66
+        }
+      ]
+    },
+    "clearquartz": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 2.8
+        }
+      ]
+    },
+    "clothes-arm-acrobat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 4.83
+        }
+      ]
+    },
+    "clothes-arm-bronze-armlet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-arm-bronze-bracelet": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 20.0
+        }
+      ]
+    },
+    "clothes-arm-copper-bracelet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 9.66
+        }
+      ]
+    },
+    "clothes-arm-fortuneteller": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 4.83
+        }
+      ]
+    },
+    "clothes-arm-gem-studded-bracelet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 5.88
+        }
+      ]
+    },
+    "clothes-arm-hornedbracelet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-arm-japamala": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 0.97
+        }
+      ]
+    },
+    "clothes-arm-large-silver-bracelets": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 5.88
+        }
+      ]
+    },
+    "clothes-arm-leather-bracers": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 9.66
+        }
+      ]
+    },
+    "clothes-arm-long-gem-studded-bracelet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-arm-merchant-bracelet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-arm-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-arm-prisoner-binds": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 4.83
+        }
+      ]
+    },
+    "clothes-arm-rosary": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 9.66
+        },
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        }
+      ]
+    },
+    "clothes-arm-ruralfarmer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-arm-rusty-wrist-manacles": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 0.97
+        }
+      ]
+    },
+    "clothes-arm-silver-bracelet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 5.88
+        }
+      ]
+    },
+    "clothes-arm-silver-chain": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 11.76
+        }
+      ]
+    },
+    "clothes-arm-squire-bracers": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-butterflypin-acadianhairstreak": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-alchemical": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 0.99
+        }
+      ]
+    },
+    "clothes-butterflypin-bandedpeacock": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-bluekallima": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-bluemorpho": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-bluepansy": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-bogcopper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-bronzecopper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-cabbagewhite": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-clipper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-coloradohairstreak": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-comma": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 3.96
+        }
+      ]
+    },
+    "clothes-butterflypin-commonbrimstone": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-darkbluepansy": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-desertorangetip": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-easterntigerswallowtail": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-godartsnumberwing": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-goldbandedforester": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-greatpurplehairstreak": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-greencharaxes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-largewhite": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 5.94
+        }
+      ]
+    },
+    "clothes-butterflypin-littlemetalmark": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-littlewoodsatyr": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-malachite": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-marbledwhite": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-milbertstortoiseshell": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-mourningcloak": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-oakblue": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-paintedbeauty": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-pallidnawab": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-peacock": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-pipevineswallowtail": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-purpleemperor": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-redadmiral": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-redglider": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 0.4
+        }
+      ]
+    },
+    "clothes-butterflypin-redpostman": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-resplendantforester": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-ringlet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-rot": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-butterflypin-rust": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-butterflypin-rustytippedpage": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-silveryblue": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-smallheath": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 3.96
+        }
+      ]
+    },
+    "clothes-butterflypin-speckledwood": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-temporal": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 0.4
+        }
+      ]
+    },
+    "clothes-butterflypin-whiteadmiral": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-whitepeacock": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-zebraheliconan": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-zebraswallowtail": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-butterflypin-zeredaskipper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "butterfly",
+          "label": "Butterfly jar",
+          "chancePct": 1.98
+        }
+      ]
+    },
+    "clothes-emblem-blue-seal": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 4.83
+        }
+      ]
+    },
+    "clothes-emblem-brass-ruby-brooch": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-emblem-cloak-clasp": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-emblem-cloak-clasp-beads": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.76
+        }
+      ]
+    },
+    "clothes-emblem-cloak-clasp-chain": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-emblem-falcon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-emblem-fibula": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-emblem-lily": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-emblem-messenger-pin": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-emblem-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-emblem-royal-pin": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-emblem-silver-brooch": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-emblem-silver-pin": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-emblem-silver-star": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-emblem-squire-emblem": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-emblem-starburst": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.76
+        }
+      ]
+    },
+    "clothes-face-acrobat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-face-cat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-corroded": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-crow": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-festivecat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-face-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-face-forlorn-veil": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-face-funeralmask1": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask2": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask3": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask4": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask5": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask6": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask7": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-funeralmask8": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "clothes-face-glasses": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-face-glasses-clockmaker": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "clothes-face-hummingbird": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-marketeer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 2.9
+        }
+      ]
+    },
+    "clothes-face-miner": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-face-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 0.48
+        }
+      ]
+    },
+    "clothes-face-sheepskull": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-face-snow-goggles": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-face-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 2.0
+        }
+      ]
+    },
+    "clothes-face-surgeonhood": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-face-survivor": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-foot-acrobat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-foot-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-foot-aristocrat-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-foot-beggar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-centurion": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-farmhand": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-foot-forlorn-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-foot-fortuneteller": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-foot-fur-lined-reindeer-herder-shoes": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-foot-great-steppe-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.62
+        }
+      ]
+    },
+    "clothes-foot-high-leather-boots": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-foot-hobnailboots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-foot-jailor-boots": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.06
+        }
+      ]
+    },
+    "clothes-foot-jester": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-foot-knee-high-fur-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-foot-lackey-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.06
+        }
+      ]
+    },
+    "clothes-foot-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-foot-merchant-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-foot-messenger-shoes": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-foot-metalcap-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.16
+        }
+      ]
+    },
+    "clothes-foot-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-foot-minstrel-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-foot-noble-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-foot-nomad-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-foot-peasent-slippers": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-foot-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-prince-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-foot-prisoner-binds": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-foot-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-foot-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-foot-ruralfarmer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-ruralhunter": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-rusty-ankle-manacles": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 0.97
+        }
+      ]
+    },
+    "clothes-foot-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-foot-shepherd-sandals": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-foot-soldier-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-foot-squire-boots": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-foot-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-foot-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-foot-temptress-velvet-shoes": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-foot-tigh-high-boots": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-foot-wanderer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-warrior": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-foot-wool-lined-knee-high-boots": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-foot-worn-leather-boots": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-hand-beggar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-hand-deep": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-hand-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-hand-forlorn-bracer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-hand-fur-gloves": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-hand-heavy-leather-gloves": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-hand-laced-handsome-gloves": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-hand-lackey-gloves": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-hand-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-hand-minstrel-gloves": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.41
+        }
+      ]
+    },
+    "clothes-hand-noble-riding-gloves": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.02
+        }
+      ]
+    },
+    "clothes-hand-prince-gloves": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-hand-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-hand-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-hand-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-hand-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-head-acrobat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 2.9
+        }
+      ]
+    },
+    "clothes-head-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-head-broadbrim": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-head-bucket": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-head-bycocket": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-head-bycocketfeather": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-head-capotain": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-head-crown-byzantine": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 1.32
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-head-embroidered-coif": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-head-emeraldreindeerherder": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-head-fancy-head-dress": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-head-fortune-tellers-scarf": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-head-gem-encrusted-fur-hat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-head-gold-coronet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-head-jailors-hat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-head-jester": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-head-lackey-hat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-head-litham": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-head-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-head-merchant-hat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-head-messengers-hat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-head-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-head-minstrel-hat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-head-noble-fillet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-head-peasent-head-scarf": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-head-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-head-roll-hat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-head-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-head-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-head-ruralhunter": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-head-shepherds-cowl": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-head-silver-diadem": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.76
+        }
+      ]
+    },
+    "clothes-head-squire-hood": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-head-temptress": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-head-thrumcap": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-lowerbody-acrobat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-aristocrat-leggings": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-lowerbody-beggar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-centurion": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-deep": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-lowerbody-dirty-linen-trousers": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-lowerbody-embroideredpantaloons": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-lowerbody-emeraldreindeerherder": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-lowerbody-farmhand": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-fine-trousers": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 6.78
+        }
+      ]
+    },
+    "clothes-lowerbody-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-lowerbody-forlorn-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-lowerbody-jailor-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.41
+        }
+      ]
+    },
+    "clothes-lowerbody-jester": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-lackey-breeches": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-lowerbody-merchant-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-messenger-trousers": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-lowerbody-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-minstrel-pants": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-lowerbody-noble-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-lowerbody-nomad-trousers": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-prince-breeches": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-lowerbody-raw-hide-trousers": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-reindeer-herder-trousers": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-lowerbody-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-lowerbody-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-lowerbody-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-shepherd-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-lowerbody-squire-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-lowerbody-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-lowerbody-tattered-peasent-gown": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 4.69
+        }
+      ]
+    },
+    "clothes-lowerbody-torn-riding-pants": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-lowerbody-wanderer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-warm-woolen-pants": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.16
+        }
+      ]
+    },
+    "clothes-lowerbody-warrior": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-lowerbody-woolen-leggings": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-lowerbody-workmans-gown": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-neck-bronze-gem-necklace": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-neck-bronzeamulet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 3.0
+        }
+      ]
+    },
+    "clothes-neck-copper-torc": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 9.66
+        }
+      ]
+    },
+    "clothes-neck-deep": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-fancy-cross": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-fancy-royal-collar": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-neck-forlorn-talisman": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-neck-gear-amulet-gold": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-gear-amulet-temporal": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 1.32
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-golden-necklace": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.76
+        }
+      ]
+    },
+    "clothes-neck-gorget": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-gorget-vulture": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-jade-amulet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-neck-japamala": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "clothes-neck-lunula": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-neck-merchant-amulet": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "clothes-neck-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-neck-nazar1": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 5.26
+        },
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "clothes-neck-nazar2": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 5.26
+        },
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "clothes-neck-nazar3": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 5.26
+        },
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "clothes-neck-noble-necklace": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-neck-pearl-necklace": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 9.66
+        }
+      ]
+    },
+    "clothes-neck-pillory": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 7.89
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 0.97
+        }
+      ]
+    },
+    "clothes-neck-pomander": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 2.9
+        }
+      ]
+    },
+    "clothes-neck-ruralfarmer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-neck-simple-cross": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "clothes-neck-teardrop-amulet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "clothes-shoulder-acrobat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-shoulder-aristocrat-mantle": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-shoulder-artisans-scarf": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-shoulder-blacksmith-apron": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-shoulder-embroidered-collar": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-shoulder-emeraldreindeerherder": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-forlorn-sash": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-shoulder-hooded-cape": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-shoulder-hunter-poncho": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-shoulder-jord-robe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-shoulder-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-shoulder-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-shoulder-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-minstrel-coat": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.41
+        }
+      ]
+    },
+    "clothes-shoulder-noble-fur-collar": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.02
+        }
+      ]
+    },
+    "clothes-shoulder-owlponcho": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-patchwork": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-shoulder-peasent-kaftan": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-shoulder-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-shoulder-royal-fur": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-shoulder-ruralhunter": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-shoulder-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-shoulder-squire-tunic": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-shoulder-stained-leather-poncho": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.16
+        }
+      ]
+    },
+    "clothes-shoulder-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-shoulder-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-shoulder-wanderer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-shoulder-woolen-scarf": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbody-acrobat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbody-aristocrat-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-upperbody-beggar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-centurion": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-classicaltunic": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-upperbody-deep": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-upperbody-earth-toned-robe": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.34
+        }
+      ]
+    },
+    "clothes-upperbody-farmhand": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbody-forlorn-tunic": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbody-great-steppe-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-hunter-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-upperbody-hunters-green": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-jailor-tunic": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 2.41
+        }
+      ]
+    },
+    "clothes-upperbody-jester": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-lackey-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbody-linen-tunic": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-upperbody-merchant-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 3.44
+        }
+      ]
+    },
+    "clothes-upperbody-messenger-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbody-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-minstrel-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-upperbody-noble-shirt": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 6.78
+        }
+      ]
+    },
+    "clothes-upperbody-pearl-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.16
+        }
+      ]
+    },
+    "clothes-upperbody-peasent-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-upperbody-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-prince-tunic": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-upperbody-rawhidemantle": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-upperbody-reindeer-herder-collared-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-upperbody-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-upperbody-ruralfarmer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-ruralhunter": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbody-shepherd-tunic": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-upperbody-squire-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-upperbody-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbody-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbody-tattered-crimson-tunic": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-upperbody-tattered-linen-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 4.69
+        }
+      ]
+    },
+    "clothes-upperbody-temptress-velvet-shirt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 3.39
+        }
+      ]
+    },
+    "clothes-upperbody-wanderer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-warrior": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-upperbody-woolen-shirt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.16
+        }
+      ]
+    },
+    "clothes-upperbodyover-cerise-embroidered-reindeer-herder-coat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-upperbodyover-emeraldreindeerherder": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbodyover-forgotten": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-fortuneteller": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbodyover-fur-coat": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbodyover-great-steppe-mantle": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.62
+        }
+      ]
+    },
+    "clothes-upperbodyover-huntsmans-tunic": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 3.12
+        }
+      ]
+    },
+    "clothes-upperbodyover-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-upperbodyover-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-upperbodyover-peliconburgundy": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-peliconpurple": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-quiltedcorsage": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-quilteddoublet": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-rotwalker": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-upperbodyover-surgeon": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-upperbodyover-temptress": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-upperbodyover-warm-robe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 3.44
+        }
+      ]
+    },
+    "clothes-waist-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-waist-aristocrat-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-waist-beggar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-bronzebelt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-waist-centurion": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-cerise-embroidered-reindeer-herder-waistband": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.31
+        }
+      ]
+    },
+    "clothes-waist-fancy-royal-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.02
+        }
+      ]
+    },
+    "clothes-waist-farmhand": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-forlorn-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-waist-fortune-teller-hip-scarf": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-waist-gold-waist-chain": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-waist-heavy-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-waist-heavy-tool-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-waist-jailor-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-waist-jambiya-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 0.59
+        }
+      ]
+    },
+    "clothes-waist-linen-rope": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-waist-marketeer": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.94
+        }
+      ]
+    },
+    "clothes-waist-merchant-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.03
+        }
+      ]
+    },
+    "clothes-waist-messenger-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-waist-midsummer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-miner": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "clothes-waist-noble-sash": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "clothes-waist-peasant-strap": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 1.56
+        }
+      ]
+    },
+    "clothes-waist-popinjay": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-prince-waistband": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-waist-regalwrap": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 1.18
+        }
+      ]
+    },
+    "clothes-waist-reindeer-herder-waistband": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-waist-rottenking": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 0.68
+        }
+      ]
+    },
+    "clothes-waist-ruralfarmer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-ruralhunter": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-scribe": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "clothes-waist-squire-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 0.69
+        }
+      ]
+    },
+    "clothes-waist-sturdy-belt": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 3.44
+        }
+      ]
+    },
+    "clothes-waist-sturdy-leather-belt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.47
+        }
+      ]
+    },
+    "clothes-waist-wanderer": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "clothes-waist-warrior": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "theater",
+          "label": "Theater cache",
+          "chancePct": 2.13
+        }
+      ]
+    },
+    "club-flanged-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "club-morningstar-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "club-spiked-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "club-warhammer-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "coke": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 0.3
+        }
+      ]
+    },
+    "crock-blue-fired": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 3.5
+        }
+      ]
+    },
+    "drygrass": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 20.3
+        }
+      ]
+    },
+    "firewood": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 16.4
+        }
+      ]
+    },
+    "flaxfibers": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 12.2
+        }
+      ]
+    },
+    "flaxtwine": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 5.5
+        }
+      ]
+    },
+    "flint": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 10.5
+        }
+      ]
+    },
+    "gear-rusty": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "gear",
+          "label": "Loot cache (temporal gears)",
+          "chancePct": 99.03
+        }
+      ]
+    },
+    "gear-temporal": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "gear",
+          "label": "Loot cache (temporal gears)",
+          "chancePct": 0.32
+        }
+      ]
+    },
+    "hammer-copper": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 7.97
+        }
+      ]
+    },
+    "hoe-copper": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 9.97
+        }
+      ]
+    },
+    "hoovedwearables-blanket-alchemist": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-mediumstatus",
+          "label": "Medium-status ruin chest (clothing)",
+          "chancePct": 1.72
+        }
+      ]
+    },
+    "hoovedwearables-blanket-deepnoble": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "hoovedwearables-blanket-prince": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "cloth-highstatus",
+          "label": "High-status ruin chest (clothing)",
+          "chancePct": 1.69
+        }
+      ]
+    },
+    "hoovedwearables-blanket-survivor": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "cloth-lowstatus",
+          "label": "Low-status ruin chest (clothing)",
+          "chancePct": 0.78
+        }
+      ]
+    },
+    "hoovedwearables-face-face10": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "hoovedwearables-face-face11": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "hoovedwearables-face-face14": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 1.0
+        }
+      ]
+    },
+    "hoovedwearables-face-face15": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "hoovedwearables-face-face16": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "lazaret",
+          "label": "Lazaret cache",
+          "chancePct": 2.63
+        },
+        {
+          "pool": "accessory-lowstatus",
+          "label": "Low-status ruin chest (accessory)",
+          "chancePct": 1.93
+        }
+      ]
+    },
+    "hoovedwearables-face-face6": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "accessory-mediumstatus",
+          "label": "Medium-status ruin chest (accessory)",
+          "chancePct": 5.0
+        }
+      ]
+    },
+    "hoovedwearables-face-face8": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "hoovedwearables-face-face9": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "accessory-highstatus",
+          "label": "High-status ruin chest (accessory)",
+          "chancePct": 2.94
+        }
+      ]
+    },
+    "ingot-bismuth": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 1.04
+        }
+      ]
+    },
+    "ingot-bismuthbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "ingot-blackbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "ingot-brass": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 3.65
+        }
+      ]
+    },
+    "ingot-copper": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 16.67
+        }
+      ]
+    },
+    "ingot-gold": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 0.26
+        }
+      ]
+    },
+    "ingot-lead": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 28.65
+        }
+      ]
+    },
+    "ingot-molybdochalkos": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 4.17
+        }
+      ]
+    },
+    "ingot-silver": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 0.26
+        }
+      ]
+    },
+    "ingot-tin": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 23.96
+        }
+      ]
+    },
+    "ingot-tinbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "ingot-zinc": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ingot",
+          "label": "Loot cache (metal ingots)",
+          "chancePct": 19.79
+        }
+      ]
+    },
+    "jonasframes-gearbox01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-gearbox02": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-gears01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-gears02": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-joint01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-oscillator01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasframes-spring01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasframes",
+          "label": "Jonas locus (frames)",
+          "chancePct": 14.29
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-connector01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-cylinder01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-cylinder02": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-tank01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-tank02": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jonasparts-valve01": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "jonasparts",
+          "label": "Jonas locus (parts)",
+          "chancePct": 16.67
+        },
+        {
+          "pool": "alljonas",
+          "label": "Jonas locus",
+          "chancePct": 7.69
+        }
+      ]
+    },
+    "jug-gray-fired": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 2.6
+        }
+      ]
+    },
+    "knife-baselard-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "knife-dagger-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "knife-khanjar-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "knife-stiletto-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "lantern-large-up": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "lantern",
+          "label": "Loot cache (lanterns)",
+          "chancePct": 54.51
+        }
+      ]
+    },
+    "leather-normal-plain": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 0.8
+        }
+      ]
+    },
+    "lime": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 12.3
+        }
+      ]
+    },
+    "log-placed-aged-ud": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 14.14
+        }
+      ]
+    },
+    "lore-book-aged-orangebrown": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "lore-research",
+          "label": "Ruin bookshelf (research)",
+          "chancePct": 100.0
+        },
+        {
+          "pool": "lore-jonas",
+          "label": "Ruin bookshelf (Jonas lore)",
+          "chancePct": 100.0
+        }
+      ]
+    },
+    "lore-paper": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "lore-tobias",
+          "label": "Ruin bookshelf (Tobias' notes)",
+          "chancePct": 100.0
+        }
+      ]
+    },
+    "lore-scroll": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "lore-villager",
+          "label": "Ruin bookshelf (villager lore)",
+          "chancePct": 100.0
+        },
+        {
+          "pool": "lore-diaries",
+          "label": "Ruin bookshelf (diaries)",
+          "chancePct": 100.0
+        }
+      ]
+    },
+    "metal-parts": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 3.64
+        },
+        {
+          "pool": "gear",
+          "label": "Loot cache (temporal gears)",
+          "chancePct": 0.65
+        }
+      ]
+    },
+    "metal-scraps": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 10.4
+        },
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 10.0
+        },
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 8.0
+        }
+      ]
+    },
+    "metalnailsandstrips-copper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 4.89
+        }
+      ]
+    },
+    "ore-anthracite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 0.4
+        }
+      ]
+    },
+    "ore-bituminouscoal": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 2.9
+        }
+      ]
+    },
+    "ore-borax": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 4.0
+        }
+      ]
+    },
+    "ore-cinnabar": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 2.8
+        }
+      ]
+    },
+    "ore-lapislazuli": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 2.8
+        }
+      ]
+    },
+    "ore-lignite": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 13.99
+        },
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 5.8
+        }
+      ]
+    },
+    "ore-medium-galena-claystone": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 8.74
+        }
+      ]
+    },
+    "ore-medium-nativecopper-andesite": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 13.99
+        }
+      ]
+    },
+    "ore-medium-quartz_nativegold-andesite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 0.17
+        }
+      ]
+    },
+    "ore-medium-quartz_nativesilver-andesite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 0.17
+        }
+      ]
+    },
+    "ore-medium-sphalerite-andesite": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 6.99
+        }
+      ]
+    },
+    "ore-olivine": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 4.0
+        }
+      ]
+    },
+    "ore-poor-hematite-granite": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 8.74
+        }
+      ]
+    },
+    "ore-poor-limonite-shale": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 10.49
+        }
+      ]
+    },
+    "ore-poor-magnetite-andesite": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 8.74
+        }
+      ]
+    },
+    "ore-poor-malachite-limestone": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 13.99
+        }
+      ]
+    },
+    "ore-quartz": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "lantern",
+          "label": "Loot cache (lanterns)",
+          "chancePct": 45.43
+        },
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 32.79
+        },
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 17.5
+        },
+        {
+          "pool": "ore",
+          "label": "Loot cache (ore)",
+          "chancePct": 13.99
+        }
+      ]
+    },
+    "ore-sulfur": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 0.9
+        }
+      ]
+    },
+    "ore-sylvite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 0.3
+        }
+      ]
+    },
+    "padlock-bismuthbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.21
+        }
+      ]
+    },
+    "padlock-blackbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.21
+        }
+      ]
+    },
+    "padlock-tinbronze": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.21
+        }
+      ]
+    },
+    "painting-elk-north": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 19.67
+        }
+      ]
+    },
+    "painting-fishandtherain-north": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 1.64
+        }
+      ]
+    },
+    "painting-forestdawn-north": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 9.84
+        }
+      ]
+    },
+    "painting-howl-north": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 14.75
+        }
+      ]
+    },
+    "painting-lastday-north": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 3.28
+        }
+      ]
+    },
+    "painting-oldvillage-north": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 3.93
+        }
+      ]
+    },
+    "painting-prey-north": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 6.56
+        }
+      ]
+    },
+    "painting-sleepingwolf-north": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 2.62
+        }
+      ]
+    },
+    "painting-underwater-north": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "painting",
+          "label": "Loot cache (paintings)",
+          "chancePct": 4.92
+        }
+      ]
+    },
+    "peatbrick": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 15.9
+        }
+      ]
+    },
+    "pickaxe-copper": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "planks-aged-ud": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 15.38
+        }
+      ]
+    },
+    "prospectingpick-copper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 2.66
+        }
+      ]
+    },
+    "quicklime": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 3.01
+        }
+      ]
+    },
+    "redmeat-vintage": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 0.8
+        }
+      ]
+    },
+    "rope": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 10.4
+        }
+      ]
+    },
+    "rot": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 26.1
+        }
+      ]
+    },
+    "saltpeter": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 9.2
+        }
+      ]
+    },
+    "saw-copper": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 0.33
+        }
+      ]
+    },
+    "scythe-copper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 3.32
+        }
+      ]
+    },
+    "seeds-cabbage": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "seeds-carrot": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 19.87
+        }
+      ]
+    },
+    "seeds-flax": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 2.65
+        }
+      ]
+    },
+    "seeds-onion": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 3.97
+        }
+      ]
+    },
+    "seeds-parsnip": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 6.62
+        }
+      ]
+    },
+    "seeds-pumpkin": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "seeds-rice": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "seeds-rye": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 21.19
+        }
+      ]
+    },
+    "seeds-soybean": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 0.66
+        }
+      ]
+    },
+    "seeds-spelt": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 26.49
+        }
+      ]
+    },
+    "seeds-turnip": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "seed",
+          "label": "Loot cache (seeds)",
+          "chancePct": 16.56
+        }
+      ]
+    },
+    "shears-copper": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 1.99
+        }
+      ]
+    },
+    "shovel-copper": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 26.58
+        }
+      ]
+    },
+    "spear-boar-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "spear-fork-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "spear-generic-copper": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 34.25
+        }
+      ]
+    },
+    "spear-ranseur-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "spear-voulge-ruined": {
+      "rarity": "rare",
+      "sources": [
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 3.33
+        }
+      ]
+    },
+    "stick": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "copperweapon",
+          "label": "Ruined weapon cache (copper)",
+          "chancePct": 41.1
+        },
+        {
+          "pool": "ruinedweapon",
+          "label": "Ruined weapon cache",
+          "chancePct": 33.33
+        },
+        {
+          "pool": "coppertool",
+          "label": "Ruined tool cache (copper)",
+          "chancePct": 29.9
+        },
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 18.4
+        },
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 18.3
+        }
+      ]
+    },
+    "stone-chalk": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 17.15
+        },
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 11.0
+        }
+      ]
+    },
+    "stone-halite": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 5.3
+        }
+      ]
+    },
+    "stone-limestone": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 17.15
+        },
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 11.0
+        }
+      ]
+    },
+    "stonebricks-andesite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-basalt": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-bauxite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-chalk": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-chert": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-claystone": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-conglomerate": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-granite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-limestone": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-peridotite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-phyllite": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-sandstone": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-shale": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "stonebricks-slate": {
+      "rarity": "very_rare",
+      "sources": [
+        {
+          "pool": "materials-building",
+          "label": "Loot cache (building materials)",
+          "chancePct": 0.52
+        }
+      ]
+    },
+    "thatch": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "fuel",
+          "label": "Loot cache (fuel)",
+          "chancePct": 18.3
+        }
+      ]
+    },
+    "torch-basic-extinct-up": {
+      "rarity": "common",
+      "sources": [
+        {
+          "pool": "materials-mining",
+          "label": "Loot cache (mining materials)",
+          "chancePct": 18.8
+        },
+        {
+          "pool": "kitchen",
+          "label": "Loot cache (kitchenware)",
+          "chancePct": 15.7
+        },
+        {
+          "pool": "resource",
+          "label": "Loot cache (resources)",
+          "chancePct": 14.1
+        }
+      ]
+    },
+    "tuningcylinder-1": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-10": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-2": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-3": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-4": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-5": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-6": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-7": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-8": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    },
+    "tuningcylinder-9": {
+      "rarity": "uncommon",
+      "sources": [
+        {
+          "pool": "tuningcylinder",
+          "label": "Loot cache (tuning cylinders)",
+          "chancePct": 10.0
+        }
+      ]
+    }
+  }
+}

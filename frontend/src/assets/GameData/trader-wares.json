@@ -1,0 +1,5550 @@
+{
+  "generatedUtc": "2026-08-01T18:52:53.627537+00:00",
+  "source": "vintagestory/assets/survival/config/tradelists",
+  "traderFiles": 9,
+  "wareEntries": 579,
+  "items": {
+    "armor-body-antique-blackguard-broken": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 34.5,
+          "priceMax": 57.5,
+          "priceAvg": 46.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-body-antique-forlorn-broken": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 39.0,
+          "priceMax": 65.0,
+          "priceAvg": 52.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-body-sewn-linen": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 25.5,
+          "priceMax": 42.5,
+          "priceAvg": 34.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-head-antique-blackguard-broken": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 19.5,
+          "priceMax": 32.5,
+          "priceAvg": 26.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-head-antique-forlorn-broken": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 22.5,
+          "priceMax": 37.5,
+          "priceAvg": 30.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-head-sewn-linen": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-legs-antique-blackguard-broken": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 25.5,
+          "priceMax": 42.5,
+          "priceAvg": 34.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-legs-antique-forlorn-broken": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 31.5,
+          "priceMax": 52.5,
+          "priceAvg": 42.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-legs-sewn-linen": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "arrow-bismuthbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "arrow-blackbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "arrow-gold": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "arrow-silver": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "arrow-tinbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "axe-felling-bismuthbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "axe-felling-blackbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "axe-felling-tinbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "backpack-normal": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "barrel": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bed-hay-head-north": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bed-wood-head-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "beeswax": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        },
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 2
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 6
+        }
+      ]
+    },
+    "blade-falx-bismuthbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "blade-falx-blackbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "blade-falx-silver": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 45.0,
+          "priceMax": 75.0,
+          "priceAvg": 60.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "blade-falx-tinbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "blade-forlorn-iron": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 24.0,
+          "priceMax": 40.0,
+          "priceAvg": 32.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "blastingpowder": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "bomb-ore": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 6
+        }
+      ]
+    },
+    "bookshelf": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bow-long": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bow-recurve": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bow-simple": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bowl-blue-fired": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "bowl-cream-fired": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 6
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "bread-flax-perfect": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "bread-rice-perfect": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "bread-rye-perfect": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "bread-spelt-perfect": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "burnedbrick-brown": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "burnedbrick-fire": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "burnedbrick-red": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "burnedplanks-narrow-charred-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "burnedplanks-narrow-scorched-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "burnedplanks-normal-blackened-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "burnedplanks-normal-charred-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "candle": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "chair-plain": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "chandelier-candle0": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "charcoal": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 12
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 12
+        }
+      ]
+    },
+    "cheese-blue-4slice": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "cheese-waxedcheddar-4slice": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "chest-east": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "clothing",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "commodities",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clay-blue": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 64
+        }
+      ]
+    },
+    "clay-fire": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "clayplanter-amber": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-ashforest": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-copper": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-cream-fired": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-cthonic": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-earthern": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-loam": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-ochre": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-rime": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-seasalt": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-tenmoku": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clayplanter-undergrowth": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "claytile-fired-center-red": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "claytile-fired-circle-red": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "claytile-fired-plain-red": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "clothes-arm-bronze-armlet": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-copper-bracelet": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-leather-bracers": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-merchant-bracelet": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-silver-bracelet": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-silver-chain": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-arm-squire-bracers": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-face-snow-goggles": {
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-aristocrat-shoes": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-high-leather-boots": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-knee-high-fur-boots": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-lackey-shoes": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-merchant-shoes": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-messenger-shoes": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-minstrel-boots": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-noble-shoes": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-nomad-boots": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-prince-boots": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-shepherd-sandals": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-squire-boots": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-tigh-high-boots": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-foot-wool-lined-knee-high-boots": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-fur-gloves": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-heavy-leather-gloves": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-lackey-gloves": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-minstrel-gloves": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-noble-riding-gloves": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-hand-prince-gloves": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-gem-encrusted-fur-hat": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-gold-coronet": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-lackey-hat": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-merchant-hat": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-messengers-hat": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-minstrel-hat": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-noble-fillet": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-shepherds-cowl": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-silver-diadem": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-head-squire-hood": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-aristocrat-leggings": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-lackey-breeches": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-merchant-pants": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-messenger-trousers": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-minstrel-pants": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-noble-pants": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-nomad-trousers": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-prince-breeches": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-shepherd-pants": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-squire-pants": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-woolen-leggings": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-lowerbody-workmans-gown": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-bronze-gem-necklace": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-copper-torc": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-fancy-royal-collar": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-golden-necklace": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-merchant-amulet": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-noble-necklace": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-neck-pearl-necklace": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-aristocrat-mantle": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-artisans-scarf": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-blacksmith-apron": {
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-embroidered-collar": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-embroidered-tartarean-scarf": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-hooded-cape": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-jord-robe": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-minstrel-coat": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-mooncloth-robe": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-noble-fur-collar": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-royal-fur": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-squire-tunic": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-stained-leather-poncho": {
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-shoulder-woolen-scarf": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-aristocrat-shirt": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-lackey-shirt": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-merchant-shirt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-messenger-shirt": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-minstrel-shirt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-noble-shirt": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-prince-tunic": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-reindeer-herder-collared-shirt": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-scarlet-ornate-linen-tunic": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-shepherd-tunic": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-squire-shirt": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbody-woolen-shirt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-fur-coat": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-huntsmans-tunic": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-nomad-mantle": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-reindeer-herder-fur-coat": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-spice-merchants-coat": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-travelers-earthrobe": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-upperbodyover-warm-robe": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-aristocrat-belt": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-fancy-royal-belt": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-gold-waist-chain": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-heavy-tool-belt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "furniture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-merchant-belt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-messenger-belt": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-moss-embroidered-belt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-noble-sash": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-prince-waistband": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-squire-belt": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-waist-sturdy-leather-belt": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "compost": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "crate": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "building_materials",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "commodities",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "creature-wolf-eurasian-baby-male": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "crock-blue-fired": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "crock-cream-fired": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "door-sleek-windowed-acacia": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-baldcypress": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-birch": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-ebony": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-kapok": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-larch": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-maple": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-oak": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-pine": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-purpleheart": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-redwood": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "door-sleek-windowed-walnut": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "fat": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 3
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "feather": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "flaxtwine": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 6
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "flowerpot-amber": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-boneash": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-celadon": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-copper": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-earthern": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-moss": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-ochre": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-red-fired": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-rutile": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-seasalt": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "flowerpot-tenmoku": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "fruit-blueberry": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "fruit-cranberry": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "fruit-saguaro": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "gear-temporal": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "gem-diamond-rough": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 15.0,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.0,
+          "priceMax": 15.0,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "gem-emerald-rough": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 9.0,
+          "priceMax": 20.0,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 9.0,
+          "priceMax": 20.0,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "gem-olivine_peridot-rough": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 15.0,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 15.0,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "glass-blue": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "glass-brown": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "glass-green": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "glass-plain": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "glass-red": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "glass-violet": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "glass-yellow": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "hammer-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hammer-blackbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hammer-tinbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoe-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoe-blackbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoe-tinbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "honeycomb": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-alchemist": {
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-blackguard": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-forlorn": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-herder": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-lackey": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-merchant": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-messenger": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-prince": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-squire": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-blanket-wool": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-face-face12": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-face-face2": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 18.0,
+          "priceMax": 30.0,
+          "priceAvg": 24.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-face-face3": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "hoovedwearables-face-face4": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ingot-copper": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ingot-gold": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ingot-silver": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ingot-steel": {
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ingot-tin": {
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ironfence-base-ew": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ironfence-top-ew": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "knife-generic-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "knife-generic-blackbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "knife-generic-tinbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ladder-wood-oak-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "lantern-large-up": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 8.25,
+          "priceMax": 17.5,
+          "priceAvg": 13.2,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.75,
+          "priceMax": 11.25,
+          "priceAvg": 7.25,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lantern-small-up": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 3.75,
+          "priceMax": 11.25,
+          "priceAvg": 7.25,
+          "stacksize": 1
+        }
+      ]
+    },
+    "leather-normal-plain": {
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "legume-soybean": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "lime": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "linen-diamond-down": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "linen-normal-down": {
+      "sells": [
+        {
+          "traderType": "clothing",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        },
+        {
+          "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "clothing",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        },
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "linen-offset-down": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "linen-square-down": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "linensack": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "locatormap-treasures": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-farming": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-food": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-forage": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-ore": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-seed": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lootvessel-tool": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "commodities",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lore-book-aged-orange": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "lore-scroll": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "metal-parts": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 4
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "metal-scraps": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 5
+        }
+      ]
+    },
+    "metaldoor-sleek-windowed-iron": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "metalnailsandstrips-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "metalnailsandstrips-blackbronze": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "metalnailsandstrips-copper": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "metalnailsandstrips-tinbronze": {
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "nugget-bismuthinite": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 5
+        }
+      ]
+    },
+    "nugget-cassiterite": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 5
+        }
+      ]
+    },
+    "nugget-nativecopper": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "nugget-sphalerite": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 5
+        }
+      ]
+    },
+    "omokpiece-copper": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 30
+        }
+      ]
+    },
+    "omokpiece-lead": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 30
+        }
+      ]
+    },
+    "omoktabletop": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ore-alum": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "ore-lapislazuli": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 6
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 10
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "ore-sulfur": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "painting-bogfort-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-castleruin-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-cow-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-elk-north": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-fishandtherain-north": {
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-forestdawn-north": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-howl-north": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-hunterintheforest-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-prey-north": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-seraph-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-sunkenruin-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-traveler-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-underwater-north": {
+      "sells": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "paper-parchment": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 5
+        },
+        {
+          "traderType": "commodities",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 5
+        }
+      ]
+    },
+    "peatbrick": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 16
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 12
+        }
+      ]
+    },
+    "pickaxe-bismuthbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "pickaxe-blackbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "pickaxe-tinbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "planks-birch-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "planks-maple-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "planks-oak-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "planks-pine-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "plaster-plain": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 32
+        }
+      ]
+    },
+    "potash": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 10
+        }
+      ]
+    },
+    "pumpkin-fruit-4": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "quartzpillar-ud": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "quicklime": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "redmeat-cooked": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "resin": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "resonator-north": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 22.5,
+          "priceMax": 37.5,
+          "priceAvg": 30.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "rockpolished-andesite": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-basalt": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-chalk": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-claystone": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-granite": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-sandstone": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rockpolished-shale": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "rushmat": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "saltpeter": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "saw-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "saw-blackbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "saw-tinbronze": {
+      "buys": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "scythe-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "scythe-blackbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "scythe-tinbronze": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "seeds-cabbage": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "seeds-flax": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "seeds-parsnip": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "sewingkit": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shelf-normal-east": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shield-woodmetal": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shield-woodmetalleather": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 15.0,
+          "priceMax": 30.0,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shingle-burned-brown": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 9
+        }
+      ]
+    },
+    "shingle-burned-fire": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 9
+        }
+      ]
+    },
+    "shingle-burned-gray": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 9
+        }
+      ]
+    },
+    "shingle-burned-red": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 9
+        }
+      ]
+    },
+    "shovel-bismuthbronze": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shovel-blackbronze": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "shovel-tinbronze": {
+      "buys": [
+        {
+          "traderType": "treasure_hunter",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "skep-reed-empty-east": {
+      "buys": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "smallcarpet-blue": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "smallcarpet-brown": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "smallcarpet-red": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "smallcarpet-turqoise": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "furniture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "spear-generic-bismuthbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "spear-generic-blackbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "spear-generic-ornategold": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 21.0,
+          "priceMax": 35.0,
+          "priceAvg": 28.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "spear-generic-ornatesilver": {
+      "sells": [
+        {
+          "traderType": "luxuries",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "spear-generic-tinbronze": {
+      "sells": [
+        {
+          "traderType": "survival_goods",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "stone-halite": {
+      "sells": [
+        {
+          "traderType": "commodities",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 16
+        },
+        {
+          "traderType": "survival_goods",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "storagevessel-ashforest": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-beehive": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-chthonic": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "luxuries",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-cloisonne": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-copper": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-cornflower": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-cowrie": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-earthen": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-harvest": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-honeydew": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-loam": {
+      "buys": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-oxblood": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-rain": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-red-fired": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-rime": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-rutile": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-seasalt": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-springflowers": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-talik": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-undergrowth": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-volcanic": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "table-normal": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "tapestry-north": {
+      "sells": [
+        {
+          "traderType": "artisan",
+          "priceMin": 3.75,
+          "priceMax": 10.0,
+          "priceAvg": 6.65,
+          "stacksize": 1
+        }
+      ]
+    },
+    "torchholder-brass-empty-north": {
+      "sells": [
+        {
+          "traderType": "furniture",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "treeseed-kapok": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "treeseed-maple": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "treeseed-oak": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "treeseed-pine": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "treeseed-redwood": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "vegetable-parsnip": {
+      "sells": [
+        {
+          "traderType": "agriculture",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 8
+        }
+      ]
+    },
+    "wallpaper-blue4": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-brown": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-darkpurple": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-green1": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-grey1": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-lightgreen": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-pink": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-walnut": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    },
+    "wallpaper-yellow": {
+      "sells": [
+        {
+          "traderType": "building_materials",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 16
+        }
+      ]
+    }
+  }
+}

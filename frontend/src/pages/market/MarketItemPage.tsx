@@ -71,6 +71,8 @@ import { useMarketPriceMode } from "./useMarketPriceMode";
 import { PriceModeInfo } from "./PriceModeInfo";
 import { MetalContentCard } from "./MetalContentCard";
 import { ItemConcentrationSection } from "./ItemConcentrationSection";
+import { TraderAvailabilityCard } from "./TraderAvailabilityCard";
+import { ItemRarityCard } from "./ItemRarityCard";
 import { Sparkline } from "./Sparkline";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
@@ -1023,6 +1025,11 @@ export function MarketItemPage() {
           </CardContent>
         </Card>
       )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TraderAvailabilityCard code={currentEntry?.code} />
+        <ItemRarityCard code={currentEntry?.code} />
+      </div>
 
       {tapestryImage && (
         <figure className="w-fit rounded-md border bg-muted/30 p-3">
