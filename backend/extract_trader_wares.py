@@ -43,6 +43,20 @@ TRADER_TYPE_BY_FILE: Dict[str, str] = {
     "trader-treasurehunter": "treasure_hunter",
 }
 
+# Named village NPCs (the "Nadiya" village) that also trade. Same file format as
+# the profession traders; each is labelled by its in-game name (Alba, Tobias, ...).
+# `arzhur` reuses `villager-liga`, so it isn't listed separately.
+VILLAGER_FILES = [
+    "villager-agnieszka",
+    "villager-alba",
+    "villager-beata",
+    "villager-gerhardt",
+    "villager-liga",
+    "villager-tad",
+    "villager-tobias",
+    "villager-wall",
+]
+
 
 def default_assets_root() -> Optional[Path]:
     """Best-effort location of the installed game assets on Windows."""
@@ -67,6 +81,15 @@ def load_lenient_json(path: Path) -> dict:
 def bare_code(code: str) -> str:
     """Strip the asset domain prefix (``game:ingot-copper`` -> ``ingot-copper``)."""
     return code.split(":", 1)[-1].strip()
+
+
+def load_lang(assets_root: Path) -> Dict[str, str]:
+    """Game English lang table (strict JSON), used for villager display names."""
+    path = assets_root / "game" / "lang" / "en.json"
+    if not path.is_file():
+        print(f"[warn] lang file not found at {path} — villager names fall back to codes")
+        return {}
+    return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
 def round2(x: float) -> float:
@@ -128,8 +151,12 @@ def build(assets_root: Path) -> dict:
     if not tradelists_dir.is_dir():
         raise SystemExit(f"tradelists dir not found: {tradelists_dir}")
 
-    # code -> direction -> traderType -> WareAgg
+    lang = load_lang(assets_root)
+
+    # code -> direction -> traderKey -> WareAgg
     agg: Dict[str, Dict[str, Dict[str, WareAgg]]] = {}
+    # traderKey -> {"traderType": str, "label": Optional[str]}
+    meta: Dict[str, Dict[str, Optional[str]]] = {}
     seen_files = 0
     total = 0
     for file_stem, trader_type in TRADER_TYPE_BY_FILE.items():
@@ -138,7 +165,19 @@ def build(assets_root: Path) -> dict:
             print(f"[warn] missing tradelist: {path.name}")
             continue
         seen_files += 1
+        meta[trader_type] = {"traderType": trader_type, "label": None}
         total += parse_tradelist(path, trader_type, agg)
+
+    for file_stem in VILLAGER_FILES:
+        path = tradelists_dir / f"{file_stem}.json"
+        if not path.is_file():
+            print(f"[warn] missing villager tradelist: {path.name}")
+            continue
+        seen_files += 1
+        suffix = file_stem.split("-", 1)[1]
+        name = lang.get(f"nametag-{suffix}") or suffix.title()
+        meta[file_stem] = {"traderType": "villager", "label": name}
+        total += parse_tradelist(path, file_stem, agg)
 
     items: Dict[str, dict] = {}
     for code in sorted(agg):
@@ -148,9 +187,12 @@ def build(assets_root: Path) -> dict:
             if not by_trader:
                 continue
             rows = []
-            for trader_type in sorted(by_trader):
-                row = {"traderType": trader_type}
-                row.update(by_trader[trader_type].result())
+            for trader_key in sorted(by_trader):
+                m = meta[trader_key]
+                row: Dict[str, object] = {"traderType": m["traderType"]}
+                if m["label"]:
+                    row["label"] = m["label"]
+                row.update(by_trader[trader_key].result())
                 rows.append(row)
             record[direction] = rows
         items[code] = record

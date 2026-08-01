@@ -1,8 +1,8 @@
 {
-  "generatedUtc": "2026-08-01T19:17:00.218406+00:00",
+  "generatedUtc": "2026-08-01T19:33:27.684771+00:00",
   "source": "vintagestory/assets/survival/config/tradelists",
-  "traderFiles": 9,
-  "wareEntries": 579,
+  "traderFiles": 17,
+  "wareEntries": 802,
   "items": {
     "armor-body-antique-blackguard-broken": {
       "sells": [
@@ -22,6 +22,30 @@
           "priceMin": 39.0,
           "priceMax": 65.0,
           "priceAvg": 52.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-body-brigandine-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 42.0,
+          "priceMax": 70.0,
+          "priceAvg": 56.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-body-chain-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 51.0,
+          "priceMax": 85.0,
+          "priceAvg": 68.0,
           "stacksize": 1
         }
       ]
@@ -59,6 +83,30 @@
         }
       ]
     },
+    "armor-head-brigandine-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 22.5,
+          "priceMax": 37.5,
+          "priceAvg": 30.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-head-chain-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 33.0,
+          "priceMax": 55.0,
+          "priceAvg": 44.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "armor-head-sewn-linen": {
       "sells": [
         {
@@ -88,6 +136,30 @@
           "priceMin": 31.5,
           "priceMax": 52.5,
           "priceAvg": 42.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-legs-brigandine-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 31.5,
+          "priceMax": 52.5,
+          "priceAvg": 42.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "armor-legs-chain-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 40.5,
+          "priceMax": 67.5,
+          "priceAvg": 54.0,
           "stacksize": 1
         }
       ]
@@ -133,6 +205,18 @@
           "priceMax": 3.75,
           "priceAvg": 3.0,
           "stacksize": 1
+        }
+      ]
+    },
+    "arrow-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 4
         }
       ]
     },
@@ -198,6 +282,18 @@
         }
       ]
     },
+    "axe-felling-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "axe-felling-tinbronze": {
       "sells": [
         {
@@ -225,6 +321,18 @@
           "priceMin": 3.75,
           "priceMax": 6.25,
           "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "bandage-alcoholed": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
           "stacksize": 1
         }
       ]
@@ -329,6 +437,18 @@
         }
       ]
     },
+    "blade-falx-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "blade-falx-silver": {
       "sells": [
         {
@@ -411,6 +531,14 @@
           "priceMin": 6.75,
           "priceMax": 11.25,
           "priceAvg": 9.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
           "stacksize": 1
         }
       ],
@@ -546,6 +674,22 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 8
+        },
+        {
+          "traderType": "villager",
+          "label": "Beata",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
         }
       ],
       "buys": [
@@ -573,6 +717,22 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 8
+        },
+        {
+          "traderType": "villager",
+          "label": "Beata",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
         }
       ],
       "buys": [
@@ -738,6 +898,18 @@
         }
       ]
     },
+    "cheese-blue-1slice": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "cheese-blue-4slice": {
       "sells": [
         {
@@ -745,6 +917,18 @@
           "priceMin": 6.0,
           "priceMax": 10.0,
           "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "cheese-cheddar-1slice": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
           "stacksize": 1
         }
       ]
@@ -1778,6 +1962,1734 @@
         }
       ]
     },
+    "clothes-nadiya-arm-barber-pouch": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-bronze-lapis-bracelet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-copper-armlet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-copper-lapis-bracelet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-coral-bracelet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-guard-bracers": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-musician-bangles": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-arm-seashell-bracelet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-grain": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-face-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.75,
+          "priceMax": 26.25,
+          "priceAvg": 21.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-peasantbeige": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-peasantblue": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-peasantbrown": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-peasantwhite": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-foot-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-gloves": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-miner-clean": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-peasant1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-peasant2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-hand-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasantbeige": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasantblue": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasantbrown": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasantred": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasanttan": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-peasantwhite": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-head-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant-skirt1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant-skirt2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant-skirt3": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-peasant3": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-lowerbody-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-copper-lapis-necklace": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-feather-amulet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-flint-amulet": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-fur-shawl": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-lapis-necklace": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 18.75,
+          "priceMax": 31.25,
+          "priceAvg": 25.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-necklace-coral": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 17.25,
+          "priceMax": 28.75,
+          "priceAvg": 23.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-necklace-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-necklace-seashells": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 17.25,
+          "priceMax": 28.75,
+          "priceAvg": 23.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-neck-necklace-teeth": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 18.0,
+          "priceMax": 30.0,
+          "priceAvg": 24.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-peasant1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-peasant2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-peasant3": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.75,
+          "priceMax": 16.25,
+          "priceAvg": 13.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-shoulder-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 14.25,
+          "priceMax": 23.75,
+          "priceAvg": 19.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-blacksmith": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.75,
+          "priceMax": 26.25,
+          "priceAvg": 21.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.75,
+          "priceMax": 21.25,
+          "priceAvg": 17.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 18.75,
+          "priceMax": 31.25,
+          "priceAvg": 25.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-peasant1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-peasant2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-peasant3": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-peasant4": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbody-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 18.0,
+          "priceMax": 30.0,
+          "priceAvg": 24.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-coat-long": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 15.0,
+          "priceMax": 25.0,
+          "priceAvg": 20.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-coat-short": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-coat-verylong": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-miner-clean": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 18.75,
+          "priceMax": 31.25,
+          "priceAvg": 25.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 19.5,
+          "priceMax": 32.5,
+          "priceAvg": 26.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 16.5,
+          "priceMax": 27.5,
+          "priceAvg": 22.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-upperbodyover-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 17.25,
+          "priceMax": 28.75,
+          "priceAvg": 23.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-alchemist": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-barber": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-beekeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-fisher": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-guard": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-hunter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 5.25,
+          "priceMax": 8.75,
+          "priceAvg": 7.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-innkeeper": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-innkeeper-accessories": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-miner": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 6.0,
+          "priceMax": 10.0,
+          "priceAvg": 8.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-miner-accessories": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 13.5,
+          "priceMax": 22.5,
+          "priceAvg": 18.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-musician": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 10.5,
+          "priceMax": 17.5,
+          "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-shepherd": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 3.75,
+          "priceMax": 6.25,
+          "priceAvg": 5.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-tailor": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-winter1": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "clothes-nadiya-waist-winter2": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "clothes-neck-bronze-gem-necklace": {
       "sells": [
         {
@@ -2525,6 +4437,18 @@
         }
       ]
     },
+    "clutter": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tobias",
+          "priceMin": 9.0,
+          "priceMax": 40.0,
+          "priceAvg": 19.5,
+          "stacksize": 1
+        }
+      ]
+    },
     "compost": {
       "sells": [
         {
@@ -2759,6 +4683,14 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 3
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 2
         }
       ],
       "buys": [
@@ -2815,6 +4747,30 @@
           "priceMax": 1.25,
           "priceAvg": 1.0,
           "stacksize": 8
+        }
+      ]
+    },
+    "flower-cornflower-free": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
+        }
+      ]
+    },
+    "flower-horsetail-free": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 4
         }
       ]
     },
@@ -2954,6 +4910,14 @@
       "sells": [
         {
           "traderType": "agriculture",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 8
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
           "priceMin": 0.75,
           "priceMax": 1.25,
           "priceAvg": 1.0,
@@ -3278,6 +5242,14 @@
           "priceMax": 1.25,
           "priceAvg": 1.0,
           "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
         }
       ]
     },
@@ -3500,6 +5472,18 @@
         }
       ]
     },
+    "ingot-iron": {
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 3.0,
+          "priceMax": 5.0,
+          "priceAvg": 4.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "ingot-silver": {
       "buys": [
         {
@@ -3551,6 +5535,72 @@
           "priceMin": 1.5,
           "priceMax": 2.5,
           "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "jug-brown-fired": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "jug-red-fired": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "jug-tan-fired": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ],
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
           "stacksize": 1
         }
       ]
@@ -3640,6 +5690,16 @@
       ]
     },
     "leather-normal-plain": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 12.0,
+          "priceMax": 20.0,
+          "priceAvg": 16.0,
+          "stacksize": 4
+        }
+      ],
       "buys": [
         {
           "traderType": "clothing",
@@ -3708,6 +5768,14 @@
         },
         {
           "traderType": "commodities",
+          "priceMin": 4.5,
+          "priceMax": 7.5,
+          "priceAvg": 6.0,
+          "stacksize": 2
+        },
+        {
+          "traderType": "villager",
+          "label": "Alba",
           "priceMin": 4.5,
           "priceMax": 7.5,
           "priceAvg": 6.0,
@@ -3962,6 +6030,18 @@
         }
       ]
     },
+    "metalchain-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 22.5,
+          "priceMax": 37.5,
+          "priceAvg": 30.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "metaldoor-sleek-windowed-iron": {
       "sells": [
         {
@@ -4003,6 +6083,14 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 2
+        },
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
         }
       ],
       "buys": [
@@ -4023,6 +6111,54 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 2
+        }
+      ]
+    },
+    "metalplate-iron": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 21.0,
+          "priceMax": 35.0,
+          "priceAvg": 28.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "mushroom-chanterelle-normal": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
+        }
+      ]
+    },
+    "mushroom-flyagaric-normal": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "mushroom-reishi-normal-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 3
         }
       ]
     },
@@ -4121,6 +6257,52 @@
           "priceAvg": 6.0,
           "stacksize": 8
         }
+      ],
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 1.5,
+          "priceMax": 2.5,
+          "priceAvg": 2.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ore-bituminouscoal": {
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
+    "ore-borax": {
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ore-cinnabar": {
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
       ]
     },
     "ore-lapislazuli": {
@@ -4147,6 +6329,26 @@
           "priceMax": 1.25,
           "priceAvg": 1.0,
           "stacksize": 4
+        },
+        {
+          "traderType": "villager",
+          "label": "Alba",
+          "priceMin": 2.25,
+          "priceMax": 3.75,
+          "priceAvg": 3.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "ore-lignite": {
+      "buys": [
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
         }
       ]
     },
@@ -4172,6 +6374,18 @@
         }
       ]
     },
+    "painting-butterfly-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "painting-castleruin-north": {
       "sells": [
         {
@@ -4191,6 +6405,14 @@
           "priceMax": 11.25,
           "priceAvg": 9.0,
           "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
         }
       ]
     },
@@ -4207,6 +6429,18 @@
       "buys": [
         {
           "traderType": "luxuries",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-family1-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
           "priceMin": 6.75,
           "priceMax": 11.25,
           "priceAvg": 9.0,
@@ -4276,6 +6510,18 @@
         }
       ]
     },
+    "painting-iris-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "painting-prey-north": {
       "sells": [
         {
@@ -4307,6 +6553,18 @@
         }
       ]
     },
+    "painting-sodhouse-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 6.75,
+          "priceMax": 11.25,
+          "priceAvg": 9.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "painting-sunkenruin-north": {
       "sells": [
         {
@@ -4325,6 +6583,18 @@
           "priceMin": 7.5,
           "priceMax": 12.5,
           "priceAvg": 10.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "painting-uncle1-north": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
           "stacksize": 1
         }
       ]
@@ -4513,6 +6783,30 @@
         }
       ]
     },
+    "poultice-linen-honey-sulfur": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "poultice-linen-horsetail": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Wall",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
+        }
+      ]
+    },
     "pumpkin-fruit-4": {
       "buys": [
         {
@@ -4554,6 +6848,14 @@
           "priceMax": 2.5,
           "priceAvg": 2.0,
           "stacksize": 8
+        },
+        {
+          "traderType": "villager",
+          "label": "Liga",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 2
         }
       ],
       "buys": [
@@ -4563,6 +6865,18 @@
           "priceMax": 1.25,
           "priceAvg": 1.0,
           "stacksize": 8
+        }
+      ]
+    },
+    "redmeat-cured": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 1
         }
       ]
     },
@@ -4662,6 +6976,18 @@
           "priceMax": 7.5,
           "priceAvg": 6.0,
           "stacksize": 16
+        }
+      ]
+    },
+    "rope": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Gerhardt",
+          "priceMin": 0.75,
+          "priceMax": 1.25,
+          "priceAvg": 1.0,
+          "stacksize": 6
         }
       ]
     },
@@ -4839,6 +7165,14 @@
           "priceMax": 12.5,
           "priceAvg": 10.0,
           "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 7.5,
+          "priceMax": 12.5,
+          "priceAvg": 10.0,
+          "stacksize": 1
         }
       ]
     },
@@ -4856,6 +7190,14 @@
           "priceMin": 9.75,
           "priceMax": 16.25,
           "priceAvg": 13.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 11.25,
+          "priceMax": 18.75,
+          "priceAvg": 15.0,
           "stacksize": 1
         }
       ],
@@ -5056,6 +7398,14 @@
           "priceMax": 15.0,
           "priceAvg": 12.0,
           "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Agnieszka",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
+          "stacksize": 1
         }
       ]
     },
@@ -5132,6 +7482,18 @@
         }
       ]
     },
+    "storagevessel-caveaurora": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "storagevessel-chthonic": {
       "buys": [
         {
@@ -5157,6 +7519,26 @@
           "priceMin": 8.25,
           "priceMax": 13.75,
           "priceAvg": 11.0,
+          "stacksize": 1
+        },
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-collonade": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 9.0,
+          "priceMax": 15.0,
+          "priceAvg": 12.0,
           "stacksize": 1
         }
       ]
@@ -5260,6 +7642,18 @@
         }
       ]
     },
+    "storagevessel-rattlesnake": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
     "storagevessel-red-fired": {
       "sells": [
         {
@@ -5344,6 +7738,30 @@
           "priceMin": 10.5,
           "priceMax": 17.5,
           "priceAvg": 14.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-waves": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
+          "stacksize": 1
+        }
+      ]
+    },
+    "storagevessel-wintersea": {
+      "sells": [
+        {
+          "traderType": "villager",
+          "label": "Tad",
+          "priceMin": 8.25,
+          "priceMax": 13.75,
+          "priceAvg": 11.0,
           "stacksize": 1
         }
       ]

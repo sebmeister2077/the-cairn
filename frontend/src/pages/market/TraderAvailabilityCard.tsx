@@ -1,8 +1,19 @@
 import { Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { lookupTraderInfo } from "@/lib/trader-wares";
-import { TRADER_TYPE_COLORS, TRADER_TYPE_LABELS } from "@/lib/trader-types";
+import { TRADER_TYPE_COLORS, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
 import type { TraderWarePrice } from "@/models/trader-wares";
+
+// Named village NPCs (Nadiya villagers like Alba, Tobias) share one colour.
+const VILLAGER_COLOR = "#6366f1"; // indigo-500
+
+function traderName(w: TraderWarePrice): string {
+  return w.label ?? TRADER_TYPE_LABELS[w.traderType as TraderType];
+}
+
+function traderColor(w: TraderWarePrice): string {
+  return w.traderType === "villager" ? VILLAGER_COLOR : TRADER_TYPE_COLORS[w.traderType];
+}
 
 /** In-game gears range: prices are whole gears, so the realised span is
  *  floor(min)..ceil(max) — matching what the game/handbook shows. */
@@ -18,10 +29,10 @@ function WareRow({ ware }: { ware: TraderWarePrice }) {
     <div className="flex items-center gap-2 text-sm">
       <span
         className="size-2.5 shrink-0 rounded-full"
-        style={{ backgroundColor: TRADER_TYPE_COLORS[ware.traderType] }}
+        style={{ backgroundColor: traderColor(ware) }}
         aria-hidden
       />
-      <span className="min-w-0 flex-1 truncate">{TRADER_TYPE_LABELS[ware.traderType]}</span>
+      <span className="min-w-0 flex-1 truncate">{traderName(ware)}</span>
       {qty ? (
         <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
           ×{qty}
@@ -39,7 +50,7 @@ function Direction({ label, wares }: { label: string; wares: TraderWarePrice[] }
         {label}
       </div>
       {wares.map((w) => (
-        <WareRow key={`${label}-${w.traderType}`} ware={w} />
+        <WareRow key={`${label}-${w.traderType}-${w.label ?? ""}`} ware={w} />
       ))}
     </div>
   );

@@ -6,7 +6,10 @@ import type { TraderType } from "@/lib/trader-types";
 
 /** One trader profession's price interval (in gears) for an item. */
 export interface TraderWarePrice {
-    traderType: TraderType;
+    /** A profession key, or "villager" for a named village NPC (see `label`). */
+    traderType: TraderType | "villager";
+    /** Display name override — the villager's name (e.g. "Alba", "Tobias"). */
+    label?: string;
     /** Lowest realised price (avg − var). */
     priceMin: number;
     /** Highest realised price (avg + var). */
