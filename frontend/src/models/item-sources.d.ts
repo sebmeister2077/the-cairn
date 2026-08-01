@@ -10,6 +10,8 @@ export interface ItemLootSource {
     label: string;
     /** Drop chance within this pool, in percent. */
     chancePct: number;
+    /** Lazaret chest: lootable only once per server, so this source is one-shot. */
+    oncePerServer?: boolean;
 }
 
 export interface ItemSourceInfo {
@@ -17,6 +19,8 @@ export interface ItemSourceInfo {
     sources: ItemLootSource[];
     /** True when this (dungeon-loot clothing) item also has a crafting recipe. */
     craftable?: boolean;
+    /** Handed to every player for completing the Lore — not rare loot. */
+    loreReward?: boolean;
 }
 
 export interface ItemSourcesData {

@@ -27,6 +27,8 @@ export const RARITY_COLORS: Record<Rarity, string> = {
 export function lookupItemSources(code: string | null | undefined): ItemSourceInfo | null {
     if (!code) return null;
     const info = DATA.items[bareItemCode(code)];
-    if (!info || !info.sources.length) return null;
+    if (!info) return null;
+    // Lore-reward items have no loot sources but still render (a chip).
+    if (!info.sources.length && !info.loreReward) return null;
     return info;
 }

@@ -42,6 +42,20 @@ RARITY_THRESHOLDS = [
     (0.0, "legendary"),
 ]
 
+# The Lazaret chest can only be looted once per server, so an item found ONLY
+# there is effectively legendary. When the same item also drops from another
+# pool (e.g. the Jade amulet is in Accessory (High status) too), that other pool
+# drives the rarity and the Lazaret line is kept only as an annotated source.
+LAZARET_POOL = "lazaret"
+
+# Items handed to every player as a reward for completing the Lore (not random
+# loot), so they aren't rare despite appearing in a randomizer pool. Extend as
+# more are found; these render a "Lore reward" chip instead of a rarity/drop %.
+LORE_REWARD_CODES = {
+    "clothes-butterflypin-alchemical",
+    "clothes-butterflypin-darkbluepansy",
+}
+
 
 def default_assets_root() -> Optional[Path]:
     appdata = os.environ.get("APPDATA")
@@ -180,8 +194,18 @@ def build(assets_root: Path) -> dict:
     items: Dict[str, dict] = {}
     for code in sorted(sources):
         rows = sorted(sources[code], key=lambda r: r["chancePct"], reverse=True)
-        max_pct = rows[0]["chancePct"]
-        entry: Dict[str, object] = {"rarity": rarity_for(max_pct), "sources": rows}
+        # Lore-reward items aren't rare loot: show a chip, hide rarity + drop %.
+        if code in LORE_REWARD_CODES:
+            items[code] = {"loreReward": True, "rarity": "common", "sources": []}
+            continue
+        for r in rows:
+            if r["pool"] == LAZARET_POOL:
+                r["oncePerServer"] = True
+        # Lazaret-only -> legendary (once per server); otherwise the non-Lazaret
+        # pools decide the tier so a still-findable item keeps its real rarity.
+        non_lazaret = [r for r in rows if r["pool"] != LAZARET_POOL]
+        rarity = rarity_for(max(r["chancePct"] for r in non_lazaret)) if non_lazaret else "legendary"
+        entry: Dict[str, object] = {"rarity": rarity, "sources": rows}
         # Craftable flag only for dungeon-loot clothing that has a recipe.
         if code.startswith("clothes-") and is_craftable(code, craft_exact, craft_patterns):
             entry["craftable"] = True

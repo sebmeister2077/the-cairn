@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T19:59:21.500813+00:00",
+  "generatedUtc": "2026-08-01T21:17:05.364511+00:00",
   "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
   "poolCount": 33,
   "items": {
@@ -406,12 +406,13 @@
       "craftable": true
     },
     "clothes-arm-japamala": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
@@ -444,12 +445,13 @@
       "craftable": true
     },
     "clothes-arm-long-gem-studded-bracelet": {
-      "rarity": "rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "cloth-highstatus",
@@ -503,7 +505,8 @@
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         }
       ],
       "craftable": true
@@ -520,12 +523,13 @@
       "craftable": true
     },
     "clothes-arm-rusty-wrist-manacles": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
@@ -579,14 +583,9 @@
       ]
     },
     "clothes-butterflypin-alchemical": {
-      "rarity": "very_rare",
-      "sources": [
-        {
-          "pool": "butterfly",
-          "label": "Butterfly pin randomizer",
-          "chancePct": 0.99
-        }
-      ]
+      "loreReward": true,
+      "rarity": "common",
+      "sources": []
     },
     "clothes-butterflypin-bandedpeacock": {
       "rarity": "rare",
@@ -699,14 +698,9 @@
       ]
     },
     "clothes-butterflypin-darkbluepansy": {
-      "rarity": "rare",
-      "sources": [
-        {
-          "pool": "butterfly",
-          "label": "Butterfly pin randomizer",
-          "chancePct": 1.98
-        }
-      ]
+      "loreReward": true,
+      "rarity": "common",
+      "sources": []
     },
     "clothes-butterflypin-desertorangetip": {
       "rarity": "rare",
@@ -1119,12 +1113,13 @@
       ]
     },
     "clothes-emblem-falcon": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -1304,82 +1299,90 @@
       ]
     },
     "clothes-face-funeralmask1": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask2": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask3": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask4": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask5": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask6": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask7": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
     "clothes-face-funeralmask8": {
-      "rarity": "very_rare",
+      "rarity": "legendary",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 0.66
+          "chancePct": 0.66,
+          "oncePerServer": true
         }
       ]
     },
@@ -1394,12 +1397,13 @@
       ]
     },
     "clothes-face-glasses-clockmaker": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-mediumstatus",
@@ -1855,12 +1859,13 @@
       ]
     },
     "clothes-foot-rusty-ankle-manacles": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
@@ -2230,7 +2235,8 @@
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 1.32
+          "chancePct": 1.32,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -2970,12 +2976,13 @@
       ]
     },
     "clothes-neck-fancy-cross": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3015,12 +3022,13 @@
       ]
     },
     "clothes-neck-gear-amulet-gold": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3035,7 +3043,8 @@
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 1.32
+          "chancePct": 1.32,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3056,12 +3065,13 @@
       ]
     },
     "clothes-neck-gorget": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3071,12 +3081,13 @@
       ]
     },
     "clothes-neck-gorget-vulture": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3086,12 +3097,13 @@
       ]
     },
     "clothes-neck-jade-amulet": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -3101,12 +3113,13 @@
       ]
     },
     "clothes-neck-japamala": {
-      "rarity": "uncommon",
+      "rarity": "rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
@@ -3146,12 +3159,13 @@
       ]
     },
     "clothes-neck-nazar1": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 5.26
+          "chancePct": 5.26,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-mediumstatus",
@@ -3161,12 +3175,13 @@
       ]
     },
     "clothes-neck-nazar2": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 5.26
+          "chancePct": 5.26,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-mediumstatus",
@@ -3176,12 +3191,13 @@
       ]
     },
     "clothes-neck-nazar3": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 5.26
+          "chancePct": 5.26,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-mediumstatus",
@@ -3211,12 +3227,13 @@
       ]
     },
     "clothes-neck-pillory": {
-      "rarity": "uncommon",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 7.89
+          "chancePct": 7.89,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
@@ -4341,12 +4358,13 @@
       ]
     },
     "clothes-waist-jambiya-belt": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-highstatus",
@@ -4777,12 +4795,13 @@
       ]
     },
     "hoovedwearables-face-face14": {
-      "rarity": "rare",
+      "rarity": "very_rare",
       "sources": [
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-mediumstatus",
@@ -4807,7 +4826,8 @@
         {
           "pool": "lazaret",
           "label": "Lazaret randomizer",
-          "chancePct": 2.63
+          "chancePct": 2.63,
+          "oncePerServer": true
         },
         {
           "pool": "accessory-lowstatus",
