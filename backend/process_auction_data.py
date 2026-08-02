@@ -1226,6 +1226,38 @@ def build_wealth_concentration(
     }
 
 
+def _parse_utc(ts: Optional[str]) -> Optional[datetime]:
+    if not ts:
+        return None
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+# Gap (seconds) that separates one board-capture sweep from the next. The
+# exporter re-dumps the whole live board in a burst (seconds/minutes apart);
+# real gaps between sweeps are hours/days. 30 min cleanly splits them.
+BOARD_SWEEP_GAP_SECONDS = 30 * 60
+
+
+def latest_board_cutoff(records: List[Dict[str, Any]]) -> Optional[datetime]:
+    """Start time of the most recent board sweep. Auctions last observed at/after
+    this are still on the live board; older ones have since left it (resolved),
+    so their last-known "Sold" state is stale and must not be trusted."""
+    times = sorted(
+        t for t in (_parse_utc(r.get("lastObservedUtc")) for r in records) if t
+    )
+    if not times:
+        return None
+    cutoff = times[-1]
+    for prev, cur in zip(times[-1:0:-1], times[-2::-1]):
+        if (prev - cur).total_seconds() > BOARD_SWEEP_GAP_SECONDS:
+            break
+        cutoff = cur
+    return cutoff
+
+
 def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     clean = [r for r in records if not r["spam"]]
     sold = [r for r in clean if r["sold"]]
@@ -1277,6 +1309,16 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     buyers: Dict[str, Dict[str, Any]] = defaultdict(
         lambda: {"name": None, "spent": 0.0, "bought": 0}
     )
+    # Buyers who bought but haven't collected the item yet. An item is only
+    # genuinely uncollected if it's STILL on the live board: state "Sold" (not
+    # "SoldRetrieved") on an auction re-observed in the latest board sweep. Once
+    # an auction leaves the board its last-known "Sold" state is stale (the buyer
+    # has since collected), so restrict to the current sweep.
+    board_cutoff = latest_board_cutoff(clean)
+    uncollected: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {"name": None, "count": 0, "gears": 0.0, "delivered": 0,
+                 "oldestPostedHours": None}
+    )
     for r in clean:
         if r["sellerUid"]:
             s = sellers[r["sellerUid"]]
@@ -1290,6 +1332,21 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
             b["name"] = r["buyerName"]
             b["bought"] += 1
             b["spent"] += r["price"]
+        if r["state"] == "Sold" and r["buyerUid"]:
+            observed = _parse_utc(r.get("lastObservedUtc"))
+            on_board = board_cutoff is not None and observed is not None and observed >= board_cutoff
+            if on_board:
+                u = uncollected[r["buyerUid"]]
+                u["name"] = r["buyerName"]
+                u["count"] += 1
+                u["gears"] += r["price"]
+                if r["delivered"]:
+                    u["delivered"] += 1
+                posted = r["postedTotalHours"]
+                if posted is not None and (
+                    u["oldestPostedHours"] is None or posted < u["oldestPostedHours"]
+                ):
+                    u["oldestPostedHours"] = posted
 
     top_sellers = sorted(
         ({"uid": k, **v} for k, v in sellers.items()),
@@ -1299,6 +1356,11 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     top_buyers = sorted(
         ({"uid": k, **v} for k, v in buyers.items()),
         key=lambda x: x["spent"],
+        reverse=True,
+    )[:50]
+    top_uncollected = sorted(
+        ({"uid": k, **v} for k, v in uncollected.items()),
+        key=lambda x: x["count"],
         reverse=True,
     )[:50]
     biggest_sales = sorted(sold, key=lambda r: r["price"], reverse=True)[:50]
@@ -1377,6 +1439,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "itemStats": item_stats,
         "topSellers": top_sellers,
         "topBuyers": top_buyers,
+        "topUncollected": top_uncollected,
         "biggestSales": [
             {
                 "auctionId": r["auctionId"],

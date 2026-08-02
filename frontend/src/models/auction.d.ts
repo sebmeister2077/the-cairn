@@ -150,6 +150,26 @@ export interface BuyerLeader {
     bought: number;
 }
 
+/**
+ * A buyer who bought auctions but hasn't yet collected them. Counts only items
+ * still on the live board (state "Sold", not "SoldRetrieved", on an auction
+ * re-observed in the latest board sweep) — once an auction leaves the board the
+ * buyer has collected it, so stale "Sold" snapshots are excluded.
+ */
+export interface UncollectedBuyer {
+    uid: string;
+    name: string | null;
+    /** Number of bought-but-uncollected auctions. */
+    count: number;
+    /** Total gears value of those uncollected purchases. */
+    gears: number;
+    /** How many of the uncollected purchases opted into delivery. */
+    delivered: number;
+    /** Earliest posting time (in-game total hours) among the uncollected
+     *  purchases — how long the oldest one has sat. Null when unknown. */
+    oldestPostedHours: number | null;
+}
+
 export interface BiggestSale {
     auctionId: number;
     name: string;
@@ -326,6 +346,9 @@ export interface AuctionSummary {
     recordingStartGameHours: number | null;
     topSellers: SellerLeader[];
     topBuyers: BuyerLeader[];
+    /** Buyers with bought-but-uncollected auctions, most first. Optional —
+     *  absent in data generated before this metric existed (and any stale cache). */
+    topUncollected?: UncollectedBuyer[];
     biggestSales: BiggestSale[];
     sellHeatmap: HeatmapBin[];
     buyHeatmap: HeatmapBin[];

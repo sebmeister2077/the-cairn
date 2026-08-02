@@ -1,3 +1,4 @@
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Table,
@@ -10,6 +11,8 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
+import { formatGameDate } from "./VirtualListingsTable";
+import type { UncollectedBuyer } from "@/models/auction";
 
 export function MarketLeaderboardsPage() {
   const { data, isPending, isError } = useAuctionSummary();
@@ -157,6 +160,86 @@ export function MarketLeaderboardsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <UncollectedCard rows={data.topUncollected ?? []} />
     </div>
+  );
+}
+
+type UncollectedSort = "count" | "gears" | "oldest";
+
+function UncollectedCard({ rows }: { rows: UncollectedBuyer[] }) {
+  const [sort, setSort] = useState<UncollectedSort>("count");
+
+  const sorted = useMemo(() => {
+    const copy = [...rows];
+    copy.sort((a, b) => {
+      if (sort === "gears") return b.gears - a.gears;
+      if (sort === "oldest") {
+        // Oldest first = smallest posting time; nulls sink to the bottom.
+        const av = a.oldestPostedHours ?? Infinity;
+        const bv = b.oldestPostedHours ?? Infinity;
+        return av - bv;
+      }
+      return b.count - a.count;
+    });
+    return copy;
+  }, [rows, sort]);
+
+  if (rows.length === 0) return null;
+
+  const sortButton = (key: UncollectedSort, label: string) => (
+    <button
+      type="button"
+      onClick={() => setSort(key)}
+      className={sort === key ? "font-semibold text-foreground" : "hover:underline"}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <h2 className="font-semibold mb-1">Uncollected purchases</h2>
+        <p className="text-xs text-muted-foreground mb-2">
+          Buyers with items still sitting on the auction board, sold but not yet
+          picked up as of the latest snapshot.
+        </p>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Buyer</TableHead>
+              <TableHead className="text-right">{sortButton("count", "Uncollected")}</TableHead>
+              <TableHead className="text-right">{sortButton("gears", "Value")}</TableHead>
+              <TableHead className="text-right">Delivery</TableHead>
+              <TableHead className="text-right">{sortButton("oldest", "Waiting since")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.slice(0, 25).map((u) => (
+              <TableRow key={u.uid}>
+                <TableCell>
+                  <Link
+                    to={`/market/players/${encodeURIComponent(u.uid)}`}
+                    className="hover:underline"
+                  >
+                    {u.name ?? "—"}
+                  </Link>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{u.count}</TableCell>
+                <TableCell className="text-right tabular-nums">{formatGears(u.gears)}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {u.delivered > 0 ? `${u.delivered}/${u.count}` : "—"}
+                </TableCell>
+                <TableCell className="text-right tabular-nums text-xs">
+                  {formatGameDate(u.oldestPostedHours)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }
