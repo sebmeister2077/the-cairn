@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, lazy, Suspense } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
@@ -48,7 +48,9 @@ import {
   useCurrentGameHours,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
+import type { ChiselDesign } from "@/models/auction";
 import { getTapestryImage } from "./tapestryImages";
+import { chiselColor } from "./chiselColors";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -246,6 +248,39 @@ const BIN_OPTIONS = [
   { label: "Fine", bins: 48 },
   { label: "Ultra-fine", bins: 96 },
 ] as const;
+
+// The 3D chiseled-block viewer pulls in three.js — lazy-load it so it never
+// weighs on the main market bundle.
+const ChiseledBlockViewer = lazy(() => import("./ChiseledBlockViewer"));
+
+/** Stable key for a chisel design (materials + geometry), used to tell apart
+ * distinct builds that share one named group (e.g. several "l-dungeon" variants). */
+function chiselSignatureOf(d: ChiselDesign): string {
+  return (
+    d.materials.join("|") +
+    "#" +
+    d.boxes.map((b) => `${b.x0}${b.y0}${b.z0}${b.x1}${b.y1}${b.z1}.${b.mat}`).join(",")
+  );
+}
+
+/** Compact, WebGL-free preview of a listing's design: one colour chip per
+ * material plus the box count, so rows in a mixed group are distinguishable. */
+function ChiselSwatches({ design }: { design: ChiselDesign | null | undefined }) {
+  if (!design) return <span className="text-xs text-muted-foreground">—</span>;
+  const codes = Array.from(new Set(design.materials));
+  return (
+    <span className="inline-flex items-center gap-1" title={codes.join(", ")}>
+      {codes.slice(0, 6).map((code, i) => (
+        <span
+          key={i}
+          className="inline-block size-3 rounded-sm border"
+          style={{ background: chiselColor(code) }}
+        />
+      ))}
+      <span className="ml-1 text-xs text-muted-foreground">{design.boxes.length}p</span>
+    </span>
+  );
+}
 
 export function MarketItemPage() {
   const { itemId } = useParams<{ itemId: string }>();
@@ -659,6 +694,31 @@ export function MarketItemPage() {
     return getTapestryImage(variantBase(variantCodes[0]));
   }, [itemListings, variantCodes]);
 
+  // Chiseled/microblocks carry a decoded voxel design (geometry + material codes
+  // + optional custom name). Use the catalog's representative design, else the
+  // first listing that has one, to drive the 3D viewer in the header.
+  const chiselDesign = useMemo<ChiselDesign | null>(() => {
+    if (currentEntry?.chisel) return currentEntry.chisel;
+    return itemListings.find((l) => l.chisel)?.chisel ?? null;
+  }, [currentEntry, itemListings]);
+
+  // Description lines a player may have appended after the block's name (the
+  // first line is the name and already the page title).
+  const chiselDescription = useMemo(() => {
+    const name = chiselDesign?.blockName;
+    if (!name) return null;
+    const rest = name.split(/\r?\n/).slice(1).join("\n").trim();
+    return rest || null;
+  }, [chiselDesign]);
+
+  // Distinct builds within this item's listings — a named group like "l-dungeon"
+  // can bundle several designs. When it does, the listings table shows a preview.
+  const hasChiselVariants = useMemo(() => {
+    const sigs = new Set<string>();
+    for (const l of itemListings) if (l.chisel) sigs.add(chiselSignatureOf(l.chisel));
+    return sigs.size > 1;
+  }, [itemListings]);
+
   // Trader/loot datasets key clutter & tapestry by their `category:base` group
   // (e.g. only some tapestries are sold), not the shared block code every variant
   // reports, so those must look up by the same group key the market grouped on.
@@ -703,6 +763,16 @@ export function MarketItemPage() {
                   {oreGroup.rockByItemId.get(l.itemId) ?? "—"}
                 </span>
               ),
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(hasChiselVariants
+        ? [
+            {
+              key: "design",
+              header: "Design",
+              width: "minmax(6rem,1fr)",
+              cell: (l) => <ChiselSwatches design={l.chisel} />,
             } satisfies ListingColumn,
           ]
         : []),
@@ -846,7 +916,15 @@ export function MarketItemPage() {
         },
       },
     ],
-    [hasVariants, combineOres, oreGroup, hasTextListings, hasToolAttrs, currentGameHours],
+    [
+      hasVariants,
+      combineOres,
+      oreGroup,
+      hasChiselVariants,
+      hasTextListings,
+      hasToolAttrs,
+      currentGameHours,
+    ],
   );
 
   // Report the real item name (never a ``#id`` fallback) so the admin usage
@@ -1057,6 +1135,48 @@ export function MarketItemPage() {
             In-game tapestry artwork (assembled from all pieces)
           </figcaption>
         </figure>
+      )}
+
+      {chiselDesign && (
+        <Card>
+          <CardContent className="space-y-3 py-4">
+            <Suspense
+              fallback={
+                <div className="flex h-72 items-center justify-center gap-2 rounded-md border bg-muted/30 text-sm text-muted-foreground">
+                  <Spinner /> Loading 3D preview…
+                </div>
+              }
+            >
+              <ChiseledBlockViewer design={chiselDesign} />
+            </Suspense>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <span>Drag to rotate · scroll to zoom</span>
+              {chiselDesign.materials.length > 0 && (
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>Materials:</span>
+                  {Array.from(new Set(chiselDesign.materials)).map((code) => (
+                    <span key={code} className="inline-flex items-center gap-1">
+                      <span
+                        className="inline-block size-3 rounded-sm border"
+                        style={{ background: chiselColor(code) }}
+                      />
+                      {code}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+            {chiselDescription && (
+              <p className="whitespace-pre-line text-sm text-muted-foreground">
+                {chiselDescription}
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Rendered from the block&apos;s chisel data. Colours approximate each material — the
+              exact in-game textures aren&apos;t available here.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Time-range window (shared with the Insights page) */}

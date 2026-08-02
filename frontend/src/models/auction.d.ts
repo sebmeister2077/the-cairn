@@ -2,6 +2,31 @@
 // produced by `backend/process_auction_data.py` and served from
 // `frontend/public/auction/{listings,summary,items}.json`.
 
+/** One packed voxel cuboid of a chiseled/microblock design. Coordinates are in
+ *  the game's 16-per-block voxel grid; `mat` indexes into the design's
+ *  `materials` array. */
+export interface ChiselBox {
+    x0: number;
+    y0: number;
+    z0: number;
+    x1: number;
+    y1: number;
+    z1: number;
+    mat: number;
+}
+
+/** Decoded render payload for a chiseled/microblock: its geometry, the material
+ *  block codes that skin each voxel, an optional custom name and Y rotation. */
+export interface ChiselDesign {
+    /** Player-assigned custom name (may include a description on later lines). */
+    blockName: string | null;
+    /** Y rotation in degrees (0/90/180/270). */
+    rotationY: number;
+    /** Block codes indexed by each box's `mat`. */
+    materials: string[];
+    boxes: ChiselBox[];
+}
+
 /** One deduplicated auction (latest observed state). */
 export interface AuctionListing {
     auctionId: number;
@@ -14,6 +39,8 @@ export interface AuctionListing {
      * Null for non-clutter items and generic clutter without a `type` attr.
      */
     variant?: string | null;
+    /** Decoded chiseled/microblock render payload; null for everything else. */
+    chisel?: ChiselDesign | null;
     category: string;
     classType: "Item" | "Block";
     attrs: Record<string, unknown> | null;
@@ -370,6 +397,9 @@ export interface ItemCatalogEntry {
      * clutter/tapestry variant groups that don't map to a single registry id.
      */
     maxStackSize?: number | null;
+    /** Representative chiseled/microblock design for this item (geometry +
+     *  materials + name), when it is a chiseled/microblock group. */
+    chisel?: ChiselDesign | null;
 }
 
 export type ItemCatalog = Record<string, ItemCatalogEntry>;

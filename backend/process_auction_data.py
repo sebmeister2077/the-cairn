@@ -142,7 +142,16 @@ ATTR_DOUBLE = 3
 ATTR_FLOAT = 4
 ATTR_STRING = 5
 ATTR_TREE = 6
+ATTR_ITEMSTACK = 7
+ATTR_BYTES = 8
 ATTR_BOOL = 9
+ATTR_STRING_ARRAY = 10
+ATTR_INT_ARRAY = 11
+ATTR_FLOAT_ARRAY = 12
+ATTR_DOUBLE_ARRAY = 13
+ATTR_TREE_ARRAY = 14
+ATTR_LONG_ARRAY = 15
+ATTR_BOOL_ARRAY = 16
 
 
 class _Reader:
@@ -161,6 +170,9 @@ class _Reader:
 
     def byte(self) -> int:
         return self._take(1)[0]
+
+    def uint16(self) -> int:
+        return struct.unpack("<H", self._take(2))[0]
 
     def int32(self) -> int:
         return struct.unpack("<i", self._take(4))[0]
@@ -210,8 +222,34 @@ def _read_tree(r: _Reader) -> Dict[str, Any]:
             out[key] = bool(r.byte())
         elif attr_id == ATTR_TREE:
             out[key] = _read_tree(r)
+        elif attr_id == ATTR_BYTES:
+            # ByteArrayAttribute uses a 2-byte (ushort) length prefix, unlike
+            # every other array type which uses a 4-byte int length.
+            n = r.uint16()
+            out[key] = [r.byte() for _ in range(n)]
+        elif attr_id == ATTR_INT_ARRAY:
+            n = r.int32()
+            out[key] = [r.int32() for _ in range(n)]
+        elif attr_id == ATTR_LONG_ARRAY:
+            n = r.int32()
+            out[key] = [r.int64() for _ in range(n)]
+        elif attr_id == ATTR_FLOAT_ARRAY:
+            n = r.int32()
+            out[key] = [round(r.float32(), 6) for _ in range(n)]
+        elif attr_id == ATTR_DOUBLE_ARRAY:
+            n = r.int32()
+            out[key] = [r.double() for _ in range(n)]
+        elif attr_id == ATTR_BOOL_ARRAY:
+            n = r.int32()
+            out[key] = [bool(r.byte()) for _ in range(n)]
+        elif attr_id == ATTR_STRING_ARRAY:
+            n = r.int32()
+            out[key] = [r.string() for _ in range(n)]
+        elif attr_id == ATTR_TREE_ARRAY:
+            n = r.int32()
+            out[key] = [_read_tree(r) for _ in range(n)]
         else:
-            # Unknown / complex type (ItemstackAttribute, arrays…). We can't
+            # ItemstackAttribute (nested stack) and any unknown type: can't
             # reliably advance past it, so stop attribute parsing here.
             out["_partial"] = True
             break
@@ -442,6 +480,119 @@ def type_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optio
     variant = variant.strip()
     base = _variant_base(variant)
     return _variant_synth_id(f"{category}:{base}"), _humanize_variant(base), variant
+
+
+# --------------------------------------------------------------------------- #
+# Chiseled / microblock splitting
+# --------------------------------------------------------------------------- #
+# Chiseled and microblocks are all one block id (chiseledblock=648, microblock=650,
+# plus -snow variants) but each carries a player-built voxel design in its
+# attributes (`cuboids` = packed geometry, `materials` = block ids that skin it,
+# `blockName` = an optional custom name). Collapsing every design into one market
+# item is useless because their prices vary enormously by design. We split them:
+#   * named designs  -> grouped by `blockName` (all "l-dungeon" aggregate together)
+#   * unnamed designs -> grouped by a stable (materials, cuboids) signature so
+#                        identical builds aggregate but different builds stay apart.
+CHISEL_CATEGORIES = {"chiseledblock", "microblock"}
+
+
+def _bare(code: Optional[str]) -> Optional[str]:
+    """Strip an asset-domain prefix ("game:chiseledblock" -> "chiseledblock")."""
+    if not code:
+        return None
+    return code.split(":", 1)[-1]
+
+
+def decode_chisel(
+    attrs: Optional[Dict[str, Any]],
+    registry: Dict[str, Dict[str, str]],
+) -> Optional[Dict[str, Any]]:
+    """Decode a chiseled/microblock's render payload from its stack attributes, or
+    ``None`` if the geometry is missing. `materials` block ids are resolved to
+    codes via the game registry so the frontend can colour each voxel."""
+    if not attrs:
+        return None
+    cuboids = attrs.get("cuboids")
+    if not isinstance(cuboids, list) or not cuboids:
+        return None
+    materials = attrs.get("materials")
+    mat_ids = [int(m) for m in materials] if isinstance(materials, list) else []
+    block_reg = registry.get("Block", {})
+    mat_codes = [_bare(block_reg.get(str(mid))) or f"#{mid}" for mid in mat_ids]
+
+    boxes: List[Dict[str, int]] = []
+    for raw in cuboids:
+        v = int(raw) & 0xFFFFFFFF
+        boxes.append(
+            {
+                "x0": v & 0xF,
+                "y0": (v >> 4) & 0xF,
+                "z0": (v >> 8) & 0xF,
+                "x1": ((v >> 12) & 0xF) + 1,
+                "y1": ((v >> 16) & 0xF) + 1,
+                "z1": ((v >> 20) & 0xF) + 1,
+                "mat": (v >> 24) & 0xFF,
+            }
+        )
+
+    block_name = attrs.get("blockName")
+    block_name = block_name.strip() if isinstance(block_name, str) and block_name.strip() else None
+    rotation = attrs.get("rotation")
+    rotation_y = ((int(rotation) >> 10) - 360) % 360 if isinstance(rotation, int) else 0
+
+    return {
+        "blockName": block_name,
+        "rotationY": rotation_y,
+        "materials": mat_codes,
+        "boxes": boxes,
+    }
+
+
+def _chisel_signature(chisel: Dict[str, Any]) -> str:
+    """Stable short id for a chisel design (materials + geometry), used to group
+    identical unnamed builds and to label them on the item page."""
+    payload = "|".join(chisel["materials"]) + "#" + ",".join(
+        f"{b['x0']}{b['y0']}{b['z0']}{b['x1']}{b['y1']}{b['z1']}.{b['mat']}"
+        for b in chisel["boxes"]
+    )
+    return f"{zlib.crc32(payload.encode('utf-8')) & 0xFFFFFFFF:08x}"
+
+
+def chisel_variant(
+    item: Dict[str, Any],
+    attrs: Optional[Dict[str, Any]],
+    registry: Dict[str, Dict[str, str]],
+) -> Optional[Tuple[int, str, Dict[str, Any]]]:
+    """If this item is a chiseled/microblock, return ``(synthetic_item_id,
+    group_display_name, chisel_payload)``; else ``None``. Named designs group by
+    their custom name; unnamed designs group by a (materials, cuboids) signature."""
+    if item.get("category") not in CHISEL_CATEGORIES:
+        return None
+    chisel = decode_chisel(attrs, registry)
+    if chisel is None:
+        return None
+
+    base_kind = item.get("category")  # "chiseledblock" | "microblock"
+    name_line = None
+    if chisel["blockName"]:
+        name_line = chisel["blockName"].splitlines()[0].strip() or None
+
+    # Only the special creative "l-dungeon" block is collapsed by name (per user
+    # request). Every other design groups by its exact geometry so distinct builds
+    # stay separate; identical builds still aggregate. Named designs keep their
+    # name as the display label but are NOT merged just for sharing a name.
+    if name_line and name_line.lower() == "l-dungeon":
+        key = f"{base_kind}:name:l-dungeon"
+        name = name_line
+    else:
+        sig = _chisel_signature(chisel)
+        key = f"{base_kind}:sig:{sig}"
+        if name_line:
+            name = name_line
+        else:
+            label = "Microblock" if base_kind == "microblock" else "Chiseled"
+            name = f"{label} design #{sig[:6]}"
+    return _variant_synth_id(key), name, chisel
 
 
 # --------------------------------------------------------------------------- #
@@ -744,6 +895,14 @@ def build_records(
         if cv is not None:
             item["itemId"], item["name"], variant = cv
 
+        # Chiseled/microblocks are one block id hiding player-built voxel designs.
+        # Split them per design (named designs group by name, unnamed by geometry
+        # signature) and carry the decoded render payload for the 3D viewer.
+        chisel = None
+        ch = chisel_variant(item, attrs, registry)
+        if ch is not None:
+            item["itemId"], item["name"], chisel = ch
+
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
@@ -751,6 +910,8 @@ def build_records(
             "classType": item["classType"],
             "maxStackSize": item.get("maxStackSize"),
         }
+        if chisel is not None:
+            items_catalog[str(item["itemId"])]["chisel"] = chisel
 
         price = float(row.get("Price") or 0)
         stack_size = stack["stackSize"]
@@ -797,6 +958,9 @@ def build_records(
                 # Exact clutter object for this listing (e.g. "toy7"); null for
                 # non-clutter items and generic clutter without a `type` attr.
                 "variant": variant,
+                # Decoded chiseled/microblock render payload (geometry + material
+                # codes + name); null for everything else.
+                "chisel": chisel,
                 "attrs": attrs,
                 "price": price,
                 "qty": stack_size,

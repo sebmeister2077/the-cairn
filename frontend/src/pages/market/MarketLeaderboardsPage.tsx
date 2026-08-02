@@ -203,8 +203,8 @@ function UncollectedCard({ rows }: { rows: UncollectedBuyer[] }) {
       <CardContent className="py-4">
         <h2 className="font-semibold mb-1">Uncollected purchases</h2>
         <p className="text-xs text-muted-foreground mb-2">
-          Buyers with items still sitting on the auction board, sold but not yet
-          picked up as of the latest snapshot.
+          Buyers with items still sitting on the auction board, sold but not yet picked up as of the
+          latest snapshot.
         </p>
         <Table>
           <TableHeader>
