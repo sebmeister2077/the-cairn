@@ -28,6 +28,7 @@ import {
   type TraderType,
 } from "@/lib/trader-types";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
+import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import { type ClaimTypeMap, TRADER_CLAIM_TYPES_QUERY_KEY } from "@/hooks/useOverlayData";
 import { submitTraderClaimTypes, type ClaimTypeSubmitItem } from "@/lib/api";
 import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
@@ -168,6 +169,12 @@ interface WebCartographerMapViewerProps {
   claimTypes?: ClaimTypeMap;
   /** Enable the click-to-mark type picker on claim dots. */
   claimMarkingEnabled?: boolean;
+  /**
+   * Player-claim concentration heatmap (density mode). A precomputed raster
+   * blitted once per frame — panning/zooming only re-scales the image. */
+  claimDensity?: (PlayerClaimDensity & { opacity: number }) | null;
+  /** Filtered player claims drawn as footprint boxes + dots (search mode). */
+  playerClaimMarkers?: PlayerClaim[];
   routeOverlay?: RouteOverlay | null;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
@@ -289,6 +296,8 @@ export function WebCartographerMapViewer({
   claimMarkers,
   claimTypes,
   claimMarkingEnabled = false,
+  claimDensity = null,
+  playerClaimMarkers,
   routeOverlay = null,
   highlightedSegment,
   highlightedSegments,
@@ -1054,6 +1063,65 @@ export function WebCartographerMapViewer({
         alwaysShowTLIds: activeRadiusFilter.alwaysShowTLIds,
       };
     }
+    // ── Player-claim density heatmap ──────────────────────────────────────
+    // Precomputed raster (spawn-relative), blitted once. Panning only
+    // re-scales the image, so this stays cheap however far you roam.
+    if (claimDensity && claimDensity.opacity > 0) {
+      const { canvas: dcanvas, originX, originZ, blocksPerCell, cols, rows } = claimDensity;
+      const left = (originX - cWx) * ppb + cw / 2;
+      const top = (originZ - cWz) * ppb + ch / 2;
+      const w = cols * blocksPerCell * ppb;
+      const h = rows * blocksPerCell * ppb;
+      if (left < cw && top < ch && left + w > 0 && top + h > 0) {
+        octx.save();
+        octx.globalAlpha = claimDensity.opacity;
+        octx.imageSmoothingEnabled = true;
+        octx.drawImage(dcanvas, left, top, w, h);
+        octx.restore();
+      }
+    }
+
+    // ── Player-claim search markers ───────────────────────────────────────
+    // Filtered to a single owner upstream, so this set is tiny; draw the
+    // footprint box + centre dot, and label each when the set is small.
+    if (playerClaimMarkers && playerClaimMarkers.length > 0) {
+      const showLabels = playerClaimMarkers.length <= 60;
+      octx.save();
+      octx.font = "600 11px system-ui, sans-serif";
+      octx.textAlign = "center";
+      octx.textBaseline = "bottom";
+      for (const m of playerClaimMarkers) {
+        const sx = (m.x - cWx) * ppb + cw / 2;
+        const sy = (m.z - cWz) * ppb + ch / 2;
+        if (sx < -40 || sx > cw + 40 || sy < -40 || sy > ch + 40) continue;
+        const bx = (m.minX - cWx) * ppb + cw / 2;
+        const by = (m.minZ - cWz) * ppb + ch / 2;
+        const bw = Math.max(4, (m.maxX - m.minX) * ppb);
+        const bh = Math.max(4, (m.maxZ - m.minZ) * ppb);
+        octx.fillStyle = "rgba(244, 114, 182, 0.28)";
+        octx.fillRect(bx, by, bw, bh);
+        octx.lineWidth = 1.5;
+        octx.strokeStyle = "rgba(236, 72, 153, 0.95)";
+        octx.strokeRect(bx, by, bw, bh);
+        octx.beginPath();
+        octx.arc(sx, sy, 3, 0, Math.PI * 2);
+        octx.fillStyle = "rgba(236, 72, 153, 1)";
+        octx.fill();
+        octx.lineWidth = 1;
+        octx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+        octx.stroke();
+        if (showLabels && (m.owner || m.description)) {
+          const label = m.owner || m.description;
+          const tw = octx.measureText(label).width;
+          octx.fillStyle = "rgba(15, 23, 42, 0.78)";
+          octx.fillRect(sx - tw / 2 - 4, sy - 20, tw + 8, 15);
+          octx.fillStyle = "#fff";
+          octx.fillText(label, sx, sy - 6);
+        }
+      }
+      octx.restore();
+    }
+
     // ── Trader-claim dots ─────────────────────────────────────────────────
     // Drawn under the TL/trader overlays so real trader markers stay on top.
     // Projected + viewport-culled here (rather than in a memo) so panning a
@@ -1150,6 +1218,8 @@ export function WebCartographerMapViewer({
     terminusStyle,
     claimMarkers,
     claimTypes,
+    claimDensity,
+    playerClaimMarkers,
     hoveredClaimId,
     claimPopover,
   ]);

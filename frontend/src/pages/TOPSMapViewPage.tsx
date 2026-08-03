@@ -128,6 +128,7 @@ import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
+import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
@@ -516,6 +517,31 @@ export function TOPSMapViewPage() {
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullscreen = useReduxState("mapView.isFullscreen");
+  // Player-claims overlay (fullscreen-only): a claim-concentration heatmap
+  // (density mode) or an owner-name filter (search mode). Advanced-only
+  // opt-in; the bundled JSON only loads once visible, and the density raster
+  // is precomputed once so panning stays cheap.
+  const showPlayerClaims = useAppSelector((s) => s.mapView.showPlayerClaims);
+  const playerClaimsMode = useAppSelector((s) => s.mapView.playerClaimsMode);
+  const playerClaimsSearch = useAppSelector((s) => s.mapView.playerClaimsSearch);
+  const playerClaimsOpacity = useAppSelector((s) => s.mapView.playerClaimsOpacity);
+  const playerClaimsVisible = showPlayerClaims && isFullscreen && showAdvancedMapOptions;
+  const playerClaimsQuery = usePlayerClaims(playerClaimsVisible);
+  const playerClaimDensity = useMemo(() => {
+    if (!playerClaimsVisible || playerClaimsMode !== "density") return null;
+    // Drop claims within 1000 blocks of spawn (centres are spawn-relative, so
+    // spawn is 0,0) — the dense spawn cluster otherwise dominates the ramp.
+    const R2 = 1000 * 1000;
+    const claims = (playerClaimsQuery.data ?? []).filter((c) => c.x * c.x + c.z * c.z > R2);
+    const built = buildPlayerClaimDensity(claims);
+    return built ? { ...built, opacity: playerClaimsOpacity } : null;
+  }, [playerClaimsVisible, playerClaimsMode, playerClaimsQuery.data, playerClaimsOpacity]);
+  const playerClaimMarkers = useMemo(() => {
+    if (!playerClaimsVisible || playerClaimsMode !== "search") return undefined;
+    const q = playerClaimsSearch.trim().toLowerCase();
+    if (!q) return undefined;
+    return (playerClaimsQuery.data ?? []).filter((c) => c.owner.toLowerCase().includes(q));
+  }, [playerClaimsVisible, playerClaimsMode, playerClaimsSearch, playerClaimsQuery.data]);
   // Animated cosmos background behind the map tiles. User-toggleable from
   // the AccountPage Appearance card; persisted in localStorage.
   const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
@@ -2494,6 +2520,8 @@ export function TOPSMapViewPage() {
               claimMarkers={traderClaimsVisible ? traderClaimsQuery.data : undefined}
               claimTypes={traderClaimTypesQuery.data?.data}
               claimMarkingEnabled={traderClaimsVisible}
+              claimDensity={playerClaimDensity}
+              playerClaimMarkers={playerClaimMarkers}
               radiusFilter={radiusFilter}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}

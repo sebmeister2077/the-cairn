@@ -177,6 +177,23 @@ export interface MapViewState {
      * showAdvancedMapOptions}. Default OFF — opt-in.
      */
     showTraderClaims: boolean;
+    /**
+     * When true, render the player land-claim overlay (from the frontend
+     * bundle, `map-features.playerclaims.json`). Has two mutually-exclusive
+     * sub-modes ({@link playerClaimsMode}). Fullscreen-only + gated behind
+     * {@link showAdvancedMapOptions}. Default OFF — opt-in.
+     */
+    showPlayerClaims: boolean;
+    /**
+     * Player-claims render mode. "density" paints a precomputed claim
+     * concentration heatmap; "search" filters claims by owner name
+     * ({@link playerClaimsSearch}) and draws only the matches as markers.
+     */
+    playerClaimsMode: "density" | "search";
+    /** Case-insensitive owner-name filter used when `playerClaimsMode === "search"`. */
+    playerClaimsSearch: string;
+    /** Player-claims density heatmap opacity (0..1). */
+    playerClaimsOpacity: number;
     /** Rock-strata overlay enable flag (rockstratafinder mod export). */
     showRockStrata: boolean;
     /** Which rockstratafinder layer to render: rocks vs geological provinces. */
@@ -307,6 +324,10 @@ export function loadInitialMapViewState(): MapViewState {
         showOceans: false,
         showRecordedBrokenTLs: false,
         showTraderClaims: false,
+        showPlayerClaims: false,
+        playerClaimsMode: "density",
+        playerClaimsSearch: "",
+        playerClaimsOpacity: 0.7,
         showRockStrata: false,
         rockStrataKind: "rock",
         rockStrataKeepCodes: null,
@@ -404,6 +425,20 @@ export const mapViewSlice = createSlice({
         },
         setShowTraderClaims(state, action: PayloadAction<boolean>) {
             state.showTraderClaims = action.payload;
+        },
+        setShowPlayerClaims(state, action: PayloadAction<boolean>) {
+            state.showPlayerClaims = action.payload;
+        },
+        setPlayerClaimsMode(state, action: PayloadAction<"density" | "search">) {
+            state.playerClaimsMode = action.payload;
+        },
+        setPlayerClaimsSearch(state, action: PayloadAction<string>) {
+            state.playerClaimsSearch = action.payload;
+        },
+        setPlayerClaimsOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.playerClaimsOpacity = Math.max(0, Math.min(1, v));
         },
         setShowRockStrata(state, action: PayloadAction<boolean>) {
             state.showRockStrata = action.payload;
@@ -567,6 +602,10 @@ export const {
     setShowOceans,
     setShowRecordedBrokenTLs,
     setShowTraderClaims,
+    setShowPlayerClaims,
+    setPlayerClaimsMode,
+    setPlayerClaimsSearch,
+    setPlayerClaimsOpacity,
     setShowRockStrata,
     setRockStrataKind,
     setRockStrataKeepCodes,
