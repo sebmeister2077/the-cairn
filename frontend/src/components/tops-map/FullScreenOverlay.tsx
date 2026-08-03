@@ -618,74 +618,74 @@ export function FullscreenControlsOverlay({
           </div>
           {showPlayerClaims && (
             <div className="flex flex-col gap-2 pt-1">
-                <div className="flex rounded-md border p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setPlayerClaimsMode("density")}
-                    className={cn(
-                      "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                      playerClaimsMode === "density"
-                        ? "bg-foreground text-background"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    {t("topsMap.playerClaimsDensityMode")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPlayerClaimsMode("search")}
-                    className={cn(
-                      "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                      playerClaimsMode === "search"
-                        ? "bg-foreground text-background"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    {t("topsMap.playerClaimsSearchMode")}
-                  </button>
+              <div className="flex rounded-md border p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setPlayerClaimsMode("density")}
+                  className={cn(
+                    "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                    playerClaimsMode === "density"
+                      ? "bg-foreground text-background"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  {t("topsMap.playerClaimsDensityMode")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPlayerClaimsMode("search")}
+                  className={cn(
+                    "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                    playerClaimsMode === "search"
+                      ? "bg-foreground text-background"
+                      : "hover:bg-muted",
+                  )}
+                >
+                  {t("topsMap.playerClaimsSearchMode")}
+                </button>
+              </div>
+              {playerClaimsMode === "density" ? (
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground">
+                    {t("topsMap.playerClaimsOpacity")}
+                  </Label>
+                  <Slider
+                    className="flex-1 px-2"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={playerClaimsOpacity}
+                    onValueChange={(v) => setPlayerClaimsOpacity(v)}
+                    aria-label={t("topsMap.playerClaimsOpacity")}
+                  />
                 </div>
-                {playerClaimsMode === "density" ? (
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">
-                      {t("topsMap.playerClaimsOpacity")}
-                    </Label>
-                    <Slider
-                      className="flex-1 px-2"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={playerClaimsOpacity}
-                      onValueChange={(v) => setPlayerClaimsOpacity(v)}
-                      aria-label={t("topsMap.playerClaimsOpacity")}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="player-claim-search"
-                      className="flex items-center gap-1 text-xs text-muted-foreground"
-                    >
-                      <Search className="size-3" />
-                      {t("topsMap.playerClaimsSearchPlaceholder")}
-                    </Label>
-                    <Combobox
-                      id="player-claim-search"
-                      placeholder={t("topsMap.typeToSearch")}
-                      value={playerClaimsSearch}
-                      suggestions={playerClaimOwners}
-                      onChange={setPlayerClaimsSearch}
-                      onSelect={setPlayerClaimsSearch}
-                      dropUp
-                    />
-                    {playerClaimsSearch.trim() ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t("topsMap.playerClaimsMatchCount", {
-                          count: playerClaimMatchCount.toLocaleString(),
-                        })}
-                      </span>
-                    ) : null}
-                  </div>
-                )}
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <Label
+                    htmlFor="player-claim-search"
+                    className="flex items-center gap-1 text-xs text-muted-foreground"
+                  >
+                    <Search className="size-3" />
+                    {t("topsMap.playerClaimsSearchPlaceholder")}
+                  </Label>
+                  <Combobox
+                    id="player-claim-search"
+                    placeholder={t("topsMap.typeToSearch")}
+                    value={playerClaimsSearch}
+                    suggestions={playerClaimOwners}
+                    onChange={setPlayerClaimsSearch}
+                    onSelect={setPlayerClaimsSearch}
+                    dropUp
+                  />
+                  {playerClaimsSearch.trim() ? (
+                    <span className="text-xs text-muted-foreground">
+                      {t("topsMap.playerClaimsMatchCount", {
+                        count: playerClaimMatchCount.toLocaleString(),
+                      })}
+                    </span>
+                  ) : null}
+                </div>
+              )}
             </div>
           )}
         </div>

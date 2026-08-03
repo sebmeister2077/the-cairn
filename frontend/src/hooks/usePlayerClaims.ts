@@ -171,7 +171,7 @@ function boxBlur(grid: Float32Array, cols: number, rows: number, radius: number)
  */
 export function buildPlayerClaimDensity(
     claims: PlayerClaim[],
-    maxDim = 512,
+    maxDim = 1024,
 ): PlayerClaimDensity | null {
     if (claims.length === 0) return null;
     let minX = Infinity;
@@ -202,9 +202,18 @@ export function buildPlayerClaimDensity(
         grid[gz * cols + gx] += 1;
     }
     const blurred = boxBlur(grid, cols, rows, 1);
-    let peak = 0;
-    for (let i = 0; i < blurred.length; i++) if (blurred[i] > peak) peak = blurred[i];
-    if (peak <= 0) return null;
+    // Normalise to a high percentile of the non-empty cells rather than the
+    // absolute peak, so the ultra-dense spawn region saturates to the top of
+    // the ramp instead of compressing the rest of the world into the low
+    // (near-transparent) end and reading as "spawn boiling, nothing else".
+    const nonZero: number[] = [];
+    for (let i = 0; i < blurred.length; i++) if (blurred[i] > 0) nonZero.push(blurred[i]);
+    if (nonZero.length === 0) return null;
+    nonZero.sort((a, b) => a - b);
+    const norm =
+        nonZero[Math.min(nonZero.length - 1, Math.floor(nonZero.length * 0.98))] ||
+        nonZero[nonZero.length - 1];
+    if (norm <= 0) return null;
 
     const canvas = document.createElement("canvas");
     canvas.width = cols;
@@ -213,8 +222,9 @@ export function buildPlayerClaimDensity(
     if (!ctx) return null;
     const img = ctx.createImageData(cols, rows);
     for (let i = 0; i < blurred.length; i++) {
-        // sqrt keeps low-density areas visible without washing out hotspots.
-        const t = Math.sqrt(blurred[i] / peak);
+        // sqrt keeps low-density areas visible without washing out hotspots;
+        // sampleRamp clamps t so anything above the percentile pins to red.
+        const t = Math.sqrt(blurred[i] / norm);
         const [r, g, b, a] = sampleRamp(t);
         const o = i * 4;
         img.data[o] = r;
