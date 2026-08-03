@@ -40,6 +40,7 @@ export const en = {
             apiKey: "API Key",
             tools: "Tools",
             toolsTitle: "Builder tools (tunnel previewer, etc.)",
+            menu: "Menu",
         },
         nav: {
             categories: {
@@ -310,26 +311,53 @@ export const en = {
     },
     generalPage: {
         title: "Cairn",
+        tagline: "Your community atlas for Vintage Story",
         disclaimer:
             "<strong>Unofficial fan project.</strong> This site is not affiliated with, endorsed by, or sponsored by Anego Studios, the developers of <em>Vintage Story</em>. \"Vintage Story\" is a trademark of Anego Studios.",
         cairnDefinition:
             "<strong><link>cairn</link></strong> <noun>(noun)</noun>: what your ancestors built when they ran out of dye and signs but still needed to mark the spot where they died to a drifter. We've upgraded the tech a little.",
         intro:
-            "A web toolkit for managing Vintage Story waypoints and map data. Choose a category above to get started.",
-        singleplayerTitle: "Singleplayer",
+            "Cairn is a community-driven web map and toolkit for Vintage Story. Explore a shared, player-built server map, plan routes across the translocator network, keep an eye on the auction market, and manage your own waypoints — all in one place. Pick a category above to dive in.",
+        featuresTitle: "What's inside",
+        features: {
+            mapTitle: "Community server map",
+            mapBody:
+                "Explore a shared, continuously updated global map built from player contributions, with overlays for translocators, traders, landmarks and Terminus teleporters.",
+            routingTitle: "Route planning",
+            routingBody:
+                "Plan the fastest trip across the translocator and teleporter network, complete with distance and travel-time estimates.",
+            marketTitle: "Auction market",
+            marketBody:
+                "Browse auction-house data — prices, listings, item history and player leaderboards from across the server.",
+            waypointsTitle: "Waypoint tools",
+            waypointsBody:
+                "Extract, import, generate or clean up waypoints straight from your save files. Your world data is processed in memory and never stored.",
+            contributeTitle: "Contribute",
+            contributeBody:
+                "Upload your map cache to help build and refine the shared community map for your server.",
+        },
+        quickLinksTitle: "Jump in",
+        quickLinks: {
+            map: "Open the map",
+            market: "Browse the market",
+            extract: "Extract waypoints",
+            contribute: "Contribute your map",
+        },
+        singleplayerTitle: "Singleplayer tools",
         extractDescription: "pull waypoints out of your <code>.vcdbs</code> save file into JSON.",
         importDescription: "write waypoints back into a save file (append or replace).",
         commandsDescription:
             "generate <code>/waypoint addati</code> chat commands from a JSON list.",
         deleteDescription: "remove matching waypoints from a save file by name, icon, or colour.",
         singleplayerNote:
-            "Singleplayer tools only touch the waypoints table of the <code>.vcdbs</code> file you upload - nothing else is read or modified, and the uploaded file is held in memory only for the duration of the request, then discarded. Your world data never leaves your machine permanently.",
-        multiplayerTitle: "Multiplayer",
+            "Singleplayer tools only touch the waypoints table of the <code>.vcdbs</code> file you upload — nothing else is read or modified, and the uploaded file is held in memory only for the duration of the request, then discarded. Your world data never leaves your machine permanently.",
+        multiplayerTitle: "Multiplayer tools",
         identifyMapsDescription:
             "figure out which <code>.db</code> map cache files belong to which server using your client log.",
         localMapViewerDescription:
             "render and explore a cached map <code>.db</code> file as an interactive image.",
-        topsMapViewerDescription: "explore the community-contributed global server map.",
+        topsMapViewerDescription:
+            "explore the shared community server map with translocator, trader and landmark overlays.",
         contributeDescription:
             "upload your map cache to help build a shared community map for your server.",
     },
@@ -515,6 +543,8 @@ export const en = {
             uploadForReview: "Upload for Review",
             uploading: "Uploading...",
             uploadFailed: "Upload failed",
+            "disabledBadge": "Disabled",
+            "disabledNotice": "Map contributions are temporarily disabled. Please check back later."
         },
         pending: {
             title: "Pending Contributions",
@@ -1260,6 +1290,13 @@ export const en = {
         viewerTitle: "TOPS Map Viewer",
         viewerDescription:
             "Explore the community-contributed global server map built from player contributions.",
+        layerGroups: {
+            layers: "Map layers",
+            translocators: "Translocators",
+            landmarks: "Landmarks & POIs",
+            traders: "Traders",
+            advanced: "Advanced layers",
+        },
         readingGlobalServerMap: "Reading global server map...",
         loadingMapChunks: "Loading map chunks...",
         buildingPng: "Building PNG...",

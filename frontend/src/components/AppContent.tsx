@@ -3,6 +3,8 @@ import { Routes, Route, NavLink, Navigate, useLocation, useNavigate } from "reac
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/assets/Logo";
@@ -329,6 +331,7 @@ export function AppContent() {
   const { t } = useTranslation();
   const tStatic = t as (path: StaticNavLabelKey) => string;
   const [keyOpen, setKeyOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
   const [passkeyDialog, setPasskeyDialog] = useState<{
     mode: PasskeyDialogMode;
@@ -582,128 +585,199 @@ export function AppContent() {
               e.preventDefault();
               navigate("/");
             }}
-            className="flex flex-col items-start gap-1"
+            className="flex min-w-0 flex-col items-start gap-1"
           >
             <Logo className="h-10 w-auto" />
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <span className="max-w-full truncate text-[10px] uppercase tracking-wide text-muted-foreground">
               {t("app.header.tagline")}
             </span>
           </a>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {isAdmin && (
               <Badge variant="default" className="bg-amber-500 text-white hover:bg-amber-500">
                 {t("app.header.admin")}
               </Badge>
             )}
-            <NavLink to="/general">
-              <Button variant="ghost" size="sm" title={t("app.header.aboutTitle")}>
-                <span aria-hidden="true" className="mr-1">
-                  &#9432;
-                </span>
-                {t("app.header.about")}
-              </Button>
-            </NavLink>
-            <NavLink to="/tools">
-              <Button variant="ghost" size="sm" title={t("app.header.toolsTitle")}>
-                {t("app.header.tools")}
-              </Button>
-            </NavLink>
-            <NavLink to="/account">
-              <Button variant="ghost" size="sm" className="relative">
-                {t("app.header.account")}
-                {needsRegister && (
-                  <span
-                    aria-label={t("app.header.accountSetupRequired")}
-                    title={t("app.header.finishAccountSetup")}
-                    className="absolute -top-0.5 -right-0.5 flex size-2.5"
-                  >
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+            {/* Full action row — desktop only. */}
+            <div className="hidden items-center gap-2 md:flex">
+              <NavLink to="/general">
+                <Button variant="ghost" size="sm" title={t("app.header.aboutTitle")}>
+                  <span aria-hidden="true" className="mr-1">
+                    &#9432;
                   </span>
-                )}
+                  {t("app.header.about")}
+                </Button>
+              </NavLink>
+              <NavLink to="/tools">
+                <Button variant="ghost" size="sm" title={t("app.header.toolsTitle")}>
+                  {t("app.header.tools")}
+                </Button>
+              </NavLink>
+              <NavLink to="/account">
+                <Button variant="ghost" size="sm" className="relative">
+                  {t("app.header.account")}
+                  {needsRegister && (
+                    <span
+                      aria-label={t("app.header.accountSetupRequired")}
+                      title={t("app.header.finishAccountSetup")}
+                      className="absolute -top-0.5 -right-0.5 flex size-2.5"
+                    >
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex size-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                    </span>
+                  )}
+                </Button>
+              </NavLink>
+              <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
+                {t("app.header.apiKey")}
               </Button>
-            </NavLink>
-            <Button variant="ghost" size="sm" onClick={() => setKeyOpen(true)}>
-              {t("app.header.apiKey")}
-            </Button>
-            <div className="ml-1 flex items-center gap-1.5 border-l border-border pl-2">
+            </div>
+            {/* Collapsed menu — mobile only. */}
+            <Popover open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="relative md:hidden"
+                    aria-label={t("app.header.menu")}
+                  >
+                    <Menu className="size-5" />
+                    {needsRegister && (
+                      <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full bg-amber-500 ring-2 ring-background" />
+                    )}
+                  </Button>
+                }
+              />
+              <PopoverContent side="bottom" align="end" className="w-60 p-1.5">
+                <nav className="flex flex-col">
+                  <NavLink
+                    to="/general"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    {t("app.header.about")}
+                  </NavLink>
+                  <NavLink
+                    to="/account"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    {t("app.header.account")}
+                    {needsRegister && (
+                      <span className="size-2 rounded-full bg-amber-500" aria-hidden="true" />
+                    )}
+                  </NavLink>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setKeyOpen(true);
+                    }}
+                    className="rounded-md px-3 py-2 text-left text-sm hover:bg-muted"
+                  >
+                    {t("app.header.apiKey")}
+                  </button>
+                  {/* Theme + language live in the menu on mobile, where the
+                      inline switchers don't fit. */}
+                  <div className="my-1 border-t border-border" />
+                  <div className="flex flex-col gap-1.5 px-3 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t("common.theme")}
+                    </span>
+                    <ThemeSwitcher />
+                  </div>
+                  <div className="flex flex-col gap-1.5 px-3 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {t("common.language")}
+                    </span>
+                    <LanguageSwitcher />
+                  </div>
+                </nav>
+              </PopoverContent>
+            </Popover>
+            <div className="ml-1 hidden items-center gap-1.5 border-l border-border pl-2 md:flex">
               <ThemeSwitcher />
               <LanguageSwitcher />
             </div>
           </div>
         </div>
         <nav className="container mx-auto px-4 pb-2 flex flex-col gap-1">
-          <Tabs value={activeCategory}>
-            <TabsList>
-              {categories.map((c) => {
-                const pending = getPendingCountFor(c.value, pendingCounts);
-                return (
-                  <NavLink key={c.value} to={c.value} end={false}>
-                    {() => (
-                      <TabsTrigger value={c.value} className="relative">
-                        {tStatic(c.labelKey as StaticNavLabelKey)}
-                        {pending > 0 && (
-                          <Badge
-                            variant="default"
-                            aria-label={t("app.nav.pendingReviewAria", { count: pending })}
-                            title={t("app.nav.pendingReviewTitle", { count: pending })}
-                            className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
-                          >
-                            {formatPendingCount(pending)}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </TabsList>
-          </Tabs>
+          <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Tabs value={activeCategory}>
+              <TabsList>
+                {categories.map((c) => {
+                  const pending = getPendingCountFor(c.value, pendingCounts);
+                  return (
+                    <NavLink key={c.value} to={c.value} end={false}>
+                      {() => (
+                        <TabsTrigger value={c.value} className="relative">
+                          {tStatic(c.labelKey as StaticNavLabelKey)}
+                          {pending > 0 && (
+                            <Badge
+                              variant="default"
+                              aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                              title={t("app.nav.pendingReviewTitle", { count: pending })}
+                              className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                            >
+                              {formatPendingCount(pending)}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                      )}
+                    </NavLink>
+                  );
+                })}
+              </TabsList>
+            </Tabs>
+          </div>
           {activeSubs.length > 0 && (
             <div className="flex items-center justify-between gap-2">
-              <Tabs value={activeSub}>
-                <TabsList variant="line">
-                  {activeSubs.map((tab) => {
-                    const pending = getPendingCountFor(tab.value, pendingCounts);
-                    const showOrdersDot =
-                      tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
-                    return (
-                      <NavLink key={tab.value} to={tab.value} end>
-                        {() => (
-                          <TabsTrigger value={tab.value} className="relative">
-                            {tStatic(tab.labelKey as StaticNavLabelKey)}
-                            {shouldShowChip(tab) && (
-                              <Badge
-                                variant="default"
-                                className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
-                              >
-                                {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
-                              </Badge>
-                            )}
-                            {showOrdersDot && (
-                              <span
-                                aria-label={t("app.nav.ordersUnreadAria")}
-                                title={t("app.nav.ordersUnreadAria")}
-                                className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
-                              />
-                            )}
-                            {pending > 0 && (
-                              <Badge
-                                variant="default"
-                                aria-label={t("app.nav.pendingReviewAria", { count: pending })}
-                                title={t("app.nav.pendingReviewTitle", { count: pending })}
-                                className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
-                              >
-                                {formatPendingCount(pending)}
-                              </Badge>
-                            )}
-                          </TabsTrigger>
-                        )}
-                      </NavLink>
-                    );
-                  })}
-                </TabsList>
-              </Tabs>
+              <div className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                <Tabs value={activeSub}>
+                  <TabsList variant="line">
+                    {activeSubs.map((tab) => {
+                      const pending = getPendingCountFor(tab.value, pendingCounts);
+                      const showOrdersDot =
+                        tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
+                      return (
+                        <NavLink key={tab.value} to={tab.value} end>
+                          {() => (
+                            <TabsTrigger value={tab.value} className="relative">
+                              {tStatic(tab.labelKey as StaticNavLabelKey)}
+                              {shouldShowChip(tab) && (
+                                <Badge
+                                  variant="default"
+                                  className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                                >
+                                  {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
+                                </Badge>
+                              )}
+                              {showOrdersDot && (
+                                <span
+                                  aria-label={t("app.nav.ordersUnreadAria")}
+                                  title={t("app.nav.ordersUnreadAria")}
+                                  className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
+                                />
+                              )}
+                              {pending > 0 && (
+                                <Badge
+                                  variant="default"
+                                  aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                                  title={t("app.nav.pendingReviewTitle", { count: pending })}
+                                  className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                                >
+                                  {formatPendingCount(pending)}
+                                </Badge>
+                              )}
+                            </TabsTrigger>
+                          )}
+                        </NavLink>
+                      );
+                    })}
+                  </TabsList>
+                </Tabs>
+              </div>
               {activeCategory === "/market" && shouldShowAdminOnLeaveChip() && (
                 <Tooltip>
                   <TooltipTrigger

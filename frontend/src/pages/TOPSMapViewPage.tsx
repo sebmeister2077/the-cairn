@@ -76,6 +76,7 @@ import {
   RefreshCw,
   Search,
   Settings,
+  SlidersHorizontal,
   Sparkles,
   Waypoints,
   X,
@@ -156,6 +157,7 @@ import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/Selecte
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
+import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
@@ -2163,285 +2165,298 @@ export function TOPSMapViewPage() {
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Switch
-                checked={showTranslocators}
-                onCheckedChange={setShowTranslocators}
-                aria-label={t("topsMap.showTranslocatorOverlay")}
-              />
-              <Label>{t("topsMap.showTranslocators")}</Label>
-              <span className="text-xs text-muted-foreground ml-2">
-                {t("topsMap.translocatorsFound")}{" "}
-                <span className="font-medium text-foreground">
-                  {filteringActive
-                    ? t("topsMap.translocatorsShown", {
-                        visible: (visibleTranslocatorSegments?.length ?? 0).toLocaleString(),
-                        total: translocatorCount.toLocaleString(),
-                      })
-                    : translocatorCount.toLocaleString()}
-                </span>
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="ml-auto"
-                onClick={() => setGroupingsOpen(true)}
-              >
-                <Layers className="size-4 mr-1" />
-                {t("topsMap.groupings")}
-                {activeGroupingIds.size > 0 && (
-                  <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                    {activeGroupingIds.size}
+            <CollapsibleSection
+              title={t("topsMap.layerGroups.layers")}
+              icon={<Layers className="size-4 text-muted-foreground" />}
+              defaultOpen
+            >
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showTranslocators}
+                  onCheckedChange={setShowTranslocators}
+                  aria-label={t("topsMap.showTranslocatorOverlay")}
+                />
+                <Label>{t("topsMap.showTranslocators")}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.translocatorsFound")}{" "}
+                  <span className="font-medium text-foreground">
+                    {filteringActive
+                      ? t("topsMap.translocatorsShown", {
+                          visible: (visibleTranslocatorSegments?.length ?? 0).toLocaleString(),
+                          total: translocatorCount.toLocaleString(),
+                        })
+                      : translocatorCount.toLocaleString()}
                   </span>
-                )}
-              </Button>
-              <Button
-                type="button"
-                variant={
-                  // Active route wins over "panel-open" so the button
-                  // visually advertises the route even after the user
-                  // collapses the planner. Fall back to the original
-                  // open/closed states otherwise.
-                  routes.length > 0 ? "default" : routePlannerOpen ? "default" : "outline"
-                }
-                size="sm"
-                onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
-                className={
-                  routes.length > 0
-                    ? "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                    : undefined
-                }
-                aria-label={
-                  routes.length > 0
-                    ? t("routePlanner.routeActiveAria", {
-                        duration: formatDuration(
-                          (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                        ),
-                        action: routePlannerOpen
-                          ? t("routePlanner.routePlannerHide")
-                          : t("routePlanner.routePlannerShow"),
-                      })
-                    : routePlannerOpen
-                      ? t("routePlanner.routePlannerHide")
-                      : t("routePlanner.routePlannerShow")
-                }
-                title={
-                  routes.length > 0
-                    ? t("routePlanner.routeActiveTitle", {
-                        duration: formatDuration(
-                          (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                        ),
-                        count: t("routePlanner.tlHops", {
-                          count: (routes[routeSelectedIndex] ?? routes[0]).tlHops,
-                        }),
-                      })
-                    : undefined
-                }
-              >
-                <Waypoints className="size-4 mr-1" />
-                {t("routePlanner.routeButton")}
-                {routes.length > 0 ? (
-                  // Inline ETA pill — visible whether the planner is open
-                  // or collapsed, so the user always knows a route is
-                  // currently being displayed on the map and roughly how
-                  // long it takes.
-                  <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
-                    {formatDuration((routes[routeSelectedIndex] ?? routes[0]).totalSeconds)}
-                  </span>
-                ) : routeFrom || routeTo ? (
-                  // Endpoints picked but no route yet — a small pulsing
-                  // dot signals "planning in progress" without competing
-                  // with the loaded-route ETA pill above.
-                  <span
-                    className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
-                    aria-hidden="true"
-                  />
-                ) : null}
-              </Button>
-            </div>
-            {/* {!usingWebCartographer && ( */}
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Switch
-                checked={showRecentlyAddedTLs}
-                onCheckedChange={toggleShowRecentlyAddedTLs}
-                aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
-              />
-              <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
-              <span className="text-xs text-muted-foreground ml-2">
-                {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
-              </span>
-            </div>
-            {/* )} */}
-            <GroupEditingInfo
-              editingGrouping={editingGrouping}
-              setEditingGroupingId={setEditingGroupingId}
-            />
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Switch
-                checked={showLandmarks}
-                onCheckedChange={setShowLandmarks}
-                aria-label={t("topsMap.showLandmarksOverlay")}
-              />
-              <Label>{t("topsMap.showLandmarks")}</Label>
-              <span className="text-xs text-muted-foreground ml-2">
-                {t("topsMap.landmarksFound")}{" "}
-                <span className="font-medium text-foreground">
-                  {landmarkCount.toLocaleString()}
                 </span>
-              </span>
-            </div>
-            <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-              <Switch
-                checked={showTerminus}
-                onCheckedChange={setShowTerminus}
-                aria-label={t("topsMap.showTerminusTeleportersOverlay")}
-              />
-              <Label>{t("topsMap.showTerminusTeleporters")}</Label>
-              <span className="text-xs text-muted-foreground ml-2">
-                {t("topsMap.terminusMapped")}{" "}
-                <span className="font-medium text-foreground">
-                  {terminusCount.toLocaleString()}
-                </span>
-              </span>
-            </div>
-            {tradersQuery.data && (
-              <div className={cn("flex flex-col rounded-md border px-3 py-2 text-sm")}>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={showTraders}
-                    onCheckedChange={setShowTraders}
-                    aria-label={t("topsMap.showTradersOverlay")}
-                  />
-                  <Label>{t("topsMap.showTraders")}</Label>
-                  <span className="text-xs text-muted-foreground ml-2">
-                    {t("topsMap.tradersMapped")}{" "}
-                    <span className="font-medium text-foreground">
-                      {traderCount.toLocaleString()}
-                    </span>
-                  </span>
-                </div>
-                <div
-                  className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-                  style={{
-                    gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
-                  }}
-                  aria-hidden={!(showTraders && traderCount > 0)}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => setGroupingsOpen(true)}
                 >
-                  <div className="overflow-hidden min-h-0">
-                    <div className="flex flex-wrap gap-1 pt-3">
-                      {TRADER_TYPES.map((t, i) => {
-                        const active = traderTypeFilterSet.has(t);
-                        return (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => toggleTraderType(t)}
-                            tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+                  <Layers className="size-4 mr-1" />
+                  {t("topsMap.groupings")}
+                  {activeGroupingIds.size > 0 && (
+                    <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                      {activeGroupingIds.size}
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    // Active route wins over "panel-open" so the button
+                    // visually advertises the route even after the user
+                    // collapses the planner. Fall back to the original
+                    // open/closed states otherwise.
+                    routes.length > 0 ? "default" : routePlannerOpen ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
+                  className={
+                    routes.length > 0
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700"
+                      : undefined
+                  }
+                  aria-label={
+                    routes.length > 0
+                      ? t("routePlanner.routeActiveAria", {
+                          duration: formatDuration(
+                            (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
+                          ),
+                          action: routePlannerOpen
+                            ? t("routePlanner.routePlannerHide")
+                            : t("routePlanner.routePlannerShow"),
+                        })
+                      : routePlannerOpen
+                        ? t("routePlanner.routePlannerHide")
+                        : t("routePlanner.routePlannerShow")
+                  }
+                  title={
+                    routes.length > 0
+                      ? t("routePlanner.routeActiveTitle", {
+                          duration: formatDuration(
+                            (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
+                          ),
+                          count: t("routePlanner.tlHops", {
+                            count: (routes[routeSelectedIndex] ?? routes[0]).tlHops,
+                          }),
+                        })
+                      : undefined
+                  }
+                >
+                  <Waypoints className="size-4 mr-1" />
+                  {t("routePlanner.routeButton")}
+                  {routes.length > 0 ? (
+                    // Inline ETA pill — visible whether the planner is open
+                    // or collapsed, so the user always knows a route is
+                    // currently being displayed on the map and roughly how
+                    // long it takes.
+                    <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+                      {formatDuration((routes[routeSelectedIndex] ?? routes[0]).totalSeconds)}
+                    </span>
+                  ) : routeFrom || routeTo ? (
+                    // Endpoints picked but no route yet — a small pulsing
+                    // dot signals "planning in progress" without competing
+                    // with the loaded-route ETA pill above.
+                    <span
+                      className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+                      aria-hidden="true"
+                    />
+                  ) : null}
+                </Button>
+              </div>
+              {/* {!usingWebCartographer && ( */}
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showRecentlyAddedTLs}
+                  onCheckedChange={toggleShowRecentlyAddedTLs}
+                  aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
+                />
+                <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
+                </span>
+              </div>
+              {/* )} */}
+              <GroupEditingInfo
+                editingGrouping={editingGrouping}
+                setEditingGroupingId={setEditingGroupingId}
+              />
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showLandmarks}
+                  onCheckedChange={setShowLandmarks}
+                  aria-label={t("topsMap.showLandmarksOverlay")}
+                />
+                <Label>{t("topsMap.showLandmarks")}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.landmarksFound")}{" "}
+                  <span className="font-medium text-foreground">
+                    {landmarkCount.toLocaleString()}
+                  </span>
+                </span>
+              </div>
+              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                <Switch
+                  checked={showTerminus}
+                  onCheckedChange={setShowTerminus}
+                  aria-label={t("topsMap.showTerminusTeleportersOverlay")}
+                />
+                <Label>{t("topsMap.showTerminusTeleporters")}</Label>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {t("topsMap.terminusMapped")}{" "}
+                  <span className="font-medium text-foreground">
+                    {terminusCount.toLocaleString()}
+                  </span>
+                </span>
+              </div>
+              {tradersQuery.data && (
+                <div className={cn("flex flex-col rounded-md border px-3 py-2 text-sm")}>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={showTraders}
+                      onCheckedChange={setShowTraders}
+                      aria-label={t("topsMap.showTradersOverlay")}
+                    />
+                    <Label>{t("topsMap.showTraders")}</Label>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {t("topsMap.tradersMapped")}{" "}
+                      <span className="font-medium text-foreground">
+                        {traderCount.toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                  <div
+                    className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+                    style={{
+                      gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
+                    }}
+                    aria-hidden={!(showTraders && traderCount > 0)}
+                  >
+                    <div className="overflow-hidden min-h-0">
+                      <div className="flex flex-wrap gap-1 pt-3">
+                        {TRADER_TYPES.map((t, i) => {
+                          const active = traderTypeFilterSet.has(t);
+                          return (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => toggleTraderType(t)}
+                              tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+                              className={cn(
+                                "rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                                showTraders &&
+                                  traderCount > 0 &&
+                                  "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                                "transition-colors duration-150",
+                                active ? "bg-foreground text-background" : "bg-background",
+                              )}
+                              style={{
+                                borderColor: TRADER_TYPE_COLORS[t],
+                                animationDelay: `${i * 35}ms`,
+                                animationDuration: "260ms",
+                              }}
+                              aria-pressed={active}
+                            >
+                              <span
+                                aria-hidden
+                                className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                                style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                              />
+                              {TRADER_TYPE_LABELS[t]}
+                            </button>
+                          );
+                        })}
+                        {traderTypeFilterSet.size > 0 && (
+                          <span
                             className={cn(
-                              "rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                              "text-xs text-muted-foreground ml-1 self-center",
                               showTraders &&
                                 traderCount > 0 &&
-                                "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
-                              "transition-colors duration-150",
-                              active ? "bg-foreground text-background" : "bg-background",
+                                "animate-in fade-in-0 fill-mode-both",
                             )}
                             style={{
-                              borderColor: TRADER_TYPE_COLORS[t],
-                              animationDelay: `${i * 35}ms`,
+                              animationDelay: `${TRADER_TYPES.length * 35}ms`,
                               animationDuration: "260ms",
                             }}
-                            aria-pressed={active}
                           >
-                            <span
-                              aria-hidden
-                              className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                              style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
-                            />
-                            {TRADER_TYPE_LABELS[t]}
-                          </button>
-                        );
-                      })}
-                      {traderTypeFilterSet.size > 0 && (
-                        <span
-                          className={cn(
-                            "text-xs text-muted-foreground ml-1 self-center",
-                            showTraders && traderCount > 0 && "animate-in fade-in-0 fill-mode-both",
-                          )}
-                          style={{
-                            animationDelay: `${TRADER_TYPES.length * 35}ms`,
-                            animationDuration: "260ms",
-                          }}
-                        >
-                          {t("topsMap.showingTypes", {
-                            shown: traderTypeFilterSet.size,
-                            total: TRADER_TYPES.length,
-                          })}
-                        </span>
-                      )}
+                            {t("topsMap.showingTypes", {
+                              shown: traderTypeFilterSet.size,
+                              total: TRADER_TYPES.length,
+                            })}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </CollapsibleSection>
             {showAdvancedMapOptions && (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showRecordedBrokenTLs}
-                  onCheckedChange={setShowRecordedBrokenTLs}
-                  aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
+              <CollapsibleSection
+                title={t("topsMap.layerGroups.advanced")}
+                icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
+              >
+                {showAdvancedMapOptions && (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <Switch
+                      checked={showRecordedBrokenTLs}
+                      onCheckedChange={setShowRecordedBrokenTLs}
+                      aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
+                    />
+                    <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {t("topsMap.recordedBrokenTLsFound")}{" "}
+                      <span className="font-medium text-foreground">
+                        {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {showAdvancedMapOptions && (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <Switch
+                      checked={showTraderClaims}
+                      onCheckedChange={setShowTraderClaims}
+                      aria-label={t("topsMap.showTraderClaimsOverlay")}
+                    />
+                    <Label>{t("topsMap.showTraderClaims")}</Label>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {t("topsMap.traderClaimsFound")}{" "}
+                      <span className="font-medium text-foreground">
+                        {(traderClaimsQuery.data?.length ?? 0).toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                <AuctionHeatmapControl
+                  layer={auctionLayer}
+                  onLayerChange={setAuctionLayer}
+                  opacity={auctionOpacity}
+                  onOpacityChange={setAuctionOpacity}
                 />
-                <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.recordedBrokenTLsFound")}{" "}
-                  <span className="font-medium text-foreground">
-                    {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
-                  </span>
-                </span>
-              </div>
-            )}
-            {showAdvancedMapOptions && (
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showTraderClaims}
-                  onCheckedChange={setShowTraderClaims}
-                  aria-label={t("topsMap.showTraderClaimsOverlay")}
+                <RockStrataLegendPanel
+                  enabled={showRockStrata}
+                  onEnabledChange={setShowRockStrata}
+                  layerKind={rockStrataKind}
+                  onLayerKindChange={setRockStrataKind}
+                  halfBlocks={rockStrataHalfBlocks}
+                  onHalfBlocksChange={setRockStrataHalfBlocks}
+                  opacity={rockStrataOpacity}
+                  onOpacityChange={setRockStrataOpacity}
+                  keepCodes={rockStrataKeepCodes}
+                  onKeepCodesChange={setRockStrataKeepCodes}
+                  legend={rockStrataOverlay.legend}
+                  warnBlocky={rockStrataOverlay.warnBlocky}
+                  sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
+                  status={rockStrataOverlay.status}
+                  error={rockStrataOverlay.error}
                 />
-                <Label>{t("topsMap.showTraderClaims")}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.traderClaimsFound")}{" "}
-                  <span className="font-medium text-foreground">
-                    {(traderClaimsQuery.data?.length ?? 0).toLocaleString()}
-                  </span>
-                </span>
-              </div>
+              </CollapsibleSection>
             )}
-            <AuctionHeatmapControl
-              layer={auctionLayer}
-              onLayerChange={setAuctionLayer}
-              opacity={auctionOpacity}
-              onOpacityChange={setAuctionOpacity}
-            />
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
-            {showAdvancedMapOptions && (
-              <RockStrataLegendPanel
-                enabled={showRockStrata}
-                onEnabledChange={setShowRockStrata}
-                layerKind={rockStrataKind}
-                onLayerKindChange={setRockStrataKind}
-                halfBlocks={rockStrataHalfBlocks}
-                onHalfBlocksChange={setRockStrataHalfBlocks}
-                opacity={rockStrataOpacity}
-                onOpacityChange={setRockStrataOpacity}
-                keepCodes={rockStrataKeepCodes}
-                onKeepCodesChange={setRockStrataKeepCodes}
-                legend={rockStrataOverlay.legend}
-                warnBlocky={rockStrataOverlay.warnBlocky}
-                sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
-                status={rockStrataOverlay.status}
-                error={rockStrataOverlay.error}
-              />
-            )}
             {hasMap && (
               <div className="flex flex-col gap-1">
                 <Label htmlFor="landmark-search" className="text-sm">

@@ -36,6 +36,7 @@ export function ContributeUploadCard({
   cooldownDays,
   nextAllowed,
   reason,
+  disabled,
 }: {
   contributionInfo: ContributeInfo | null;
   isAdmin: boolean;
@@ -45,6 +46,7 @@ export function ContributeUploadCard({
 
   nextAllowed: Date | null;
   reason: "pending" | "cooldown" | null;
+  disabled: boolean;
 }) {
   const { t } = useTranslation();
   // Current account — used to honour the user's "Show Contributions" preference.
@@ -95,9 +97,12 @@ export function ContributeUploadCard({
   const queryClient = useQueryClient();
 
   const availableLevels = topsStatsQuery.data?.resolutions ?? [];
+  // When the feature is disabled every interactive control is locked and the
+  // per-account cooldown/permission checks become irrelevant.
+  const fieldsDisabled = disabled || (!isAdmin && contributionInfo?.can_contribute === false);
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!dbFile) return;
+    if (disabled || !dbFile) return;
 
     setUploading(true);
     setUploadProgress(0);
@@ -131,9 +136,19 @@ export function ContributeUploadCard({
           <Upload className="h-5 w-5" />
           {t("contributePage.upload.title")}
           <MaintenanceChip component="tops_contribute_map" />
+          {disabled && (
+            <Badge variant="destructive" className="ml-auto">
+              {t("contributePage.upload.disabledBadge")}
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {disabled && (
+          <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+            {t("contributePage.upload.disabledNotice")}
+          </div>
+        )}
         <p className="text-sm text-muted-foreground">
           {t("contributePage.upload.descriptionPrefix")}{" "}
           <NavLink
@@ -227,7 +242,7 @@ export function ContributeUploadCard({
             accept=".db"
             required
             onChange={setDbFile}
-            disabled={!isAdmin && contributionInfo?.can_contribute === false}
+            disabled={fieldsDisabled}
           />
 
           <div className="space-y-2">
@@ -239,7 +254,7 @@ export function ContributeUploadCard({
                 value={contributor}
                 onChange={(e) => setContributor(e.target.value)}
                 maxLength={50}
-                disabled={!isAdmin && contributionInfo?.can_contribute === false}
+                disabled={fieldsDisabled}
                 className="flex-1"
               />
               {accountQuery.data?.user?.display_name && (
@@ -248,10 +263,7 @@ export function ContributeUploadCard({
                   variant="outline"
                   size="sm"
                   onClick={() => setContributor(accountQuery.data?.user?.display_name ?? "")}
-                  disabled={
-                    (!isAdmin && contributionInfo?.can_contribute === false) ||
-                    contributor === accountQuery.data.user.display_name
-                  }
+                  disabled={fieldsDisabled || contributor === accountQuery.data.user.display_name}
                   title={t("contributePage.upload.useMyNameTitle")}
                 >
                   {t("contributePage.upload.useMyName")}
@@ -269,7 +281,7 @@ export function ContributeUploadCard({
               onModeChange={setMode}
               region={region}
               onRegionChange={setRegion}
-              disabled={uploading}
+              disabled={uploading || disabled}
             />
           )}
 
@@ -278,7 +290,7 @@ export function ContributeUploadCard({
             disabled={
               !dbFile ||
               uploading ||
-              (!isAdmin && contributionInfo?.can_contribute === false) ||
+              fieldsDisabled ||
               !isRegionSelectionValid(
                 mode,
                 region,

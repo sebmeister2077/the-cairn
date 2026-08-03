@@ -218,6 +218,7 @@ export function ContributePage() {
         cooldownDays={cooldownDays}
         nextAllowed={nextAllowed}
         reason={reason}
+        disabled
       />
 
       {/* Pending contributions */}

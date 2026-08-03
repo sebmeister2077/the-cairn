@@ -1,4 +1,4 @@
-import { Layers, Minimize2, Search, Waypoints } from "lucide-react";
+import { Layers, Minimize2, Search, SlidersHorizontal, Waypoints } from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
@@ -51,6 +51,7 @@ import {
 } from "@/lib/trader-types";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
+import { CollapsibleSection } from "./CollapsibleSection";
 import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapControl";
 import type { LegendEntry } from "@/lib/rockstrata/types";
 import type { ClimateLayerMeta } from "@/lib/climate/types";
@@ -343,8 +344,10 @@ export function FullscreenControlsOverlay({
         </Button>
       </div>
 
-      {/* Top-right: stacked toggles + groupings. */}
-      <div className="pointer-events-auto absolute top-16 right-6 flex w-80 flex-col gap-2">
+      {/* Top-right: stacked toggles + groupings. Capped height + internal
+          scroll so the column never runs off-screen (e.g. zoomed in on a
+          laptop); width shrinks on small viewports. */}
+      <div className="pointer-events-auto absolute top-16 right-3 sm:right-6 flex max-h-[calc(100dvh-8rem)] w-[min(85vw,20rem)] flex-col gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pb-2 pr-1">
         <div
           onClick={() => setShowServerLandmarks(!showServerLandmarks)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
@@ -558,261 +561,281 @@ export function FullscreenControlsOverlay({
           opacity={auctionOpacity}
           onOpacityChange={onAuctionOpacityChange}
         />
-        <div
-          onClick={() => setShowOceans(!showOceans)}
-          className={cn(
-            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <Switch checked={showOceans} aria-label={t("topsMap.showOceansOverlay")} />
-          <Label className="cursor-pointer">{t("topsMap.oceans")}</Label>
-          <span className="text-xs text-muted-foreground">
-            {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowRecordedBrokenTLs(!showRecordedBrokenTLs)}
-          className={cn(
-            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <Switch
-            checked={showRecordedBrokenTLs}
-            aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
-          />
-          <Label className="cursor-pointer">{t("topsMap.showRecordedBrokenTLs")}</Label>
-          <span className="text-xs text-muted-foreground">
-            {t("topsMap.totalCount", {
-              count: (recordedFeatures?.brokenTLs.length ?? 0).toLocaleString(),
-            })}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowTraderClaims(!showTraderClaims)}
-          className={cn(
-            "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <Switch checked={showTraderClaims} aria-label={t("topsMap.showTraderClaimsOverlay")} />
-          <Label className="cursor-pointer">{t("topsMap.showTraderClaims")}</Label>
-          <span className="text-xs text-muted-foreground">
-            {t("topsMap.totalCount", {
-              count: (traderClaimsQuery.data?.length ?? 0).toLocaleString(),
-            })}
-          </span>
-        </div>
-        <div
-          className={cn(
-            "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <div
-            onClick={() => setShowPlayerClaims(!showPlayerClaims)}
-            className="cursor-pointer flex items-center gap-2"
-          >
-            <Switch checked={showPlayerClaims} aria-label={t("topsMap.showPlayerClaimsOverlay")} />
-            <Label className="cursor-pointer">{t("topsMap.showPlayerClaims")}</Label>
-            <span className="text-xs text-muted-foreground">
-              {t("topsMap.totalCount", {
-                count: (playerClaimsQuery.data?.length ?? 0).toLocaleString(),
-              })}
-            </span>
-          </div>
-          <div
-            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-            style={{ gridTemplateRows: showPlayerClaims ? "1fr" : "0fr" }}
-            aria-hidden={!showPlayerClaims}
-            onTransitionEnd={() => {
-              if (showPlayerClaims) setPlayerClaimsPanelExpanded(true);
-            }}
+        {showAdvancedMapOptions && (
+          <CollapsibleSection
+            title={t("topsMap.layerGroups.advanced")}
+            icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
+            className="shadow-md backdrop-blur"
+            contentClassName="px-2 pb-2"
           >
             <div
+              onClick={() => setShowOceans(!showOceans)}
               className={cn(
-                "min-h-0",
-                playerClaimsPanelExpanded ? "overflow-visible" : "overflow-hidden",
+                "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
               )}
             >
-              <div className="flex flex-col gap-2 pt-1">
-                <div className="flex rounded-md border p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setPlayerClaimsMode("density")}
-                    className={cn(
-                      "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                      playerClaimsMode === "density"
-                        ? "bg-foreground text-background"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    {t("topsMap.playerClaimsDensityMode")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPlayerClaimsMode("search")}
-                    className={cn(
-                      "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                      playerClaimsMode === "search"
-                        ? "bg-foreground text-background"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    {t("topsMap.playerClaimsSearchMode")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPlayerClaimsMode("all")}
-                    className={cn(
-                      "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                      playerClaimsMode === "all"
-                        ? "bg-foreground text-background"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    {t("topsMap.playerClaimsAllMode")}
-                  </button>
-                </div>
-                {playerClaimsMode === "density" ? (
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">
-                      {t("topsMap.playerClaimsOpacity")}
-                    </Label>
-                    <Slider
-                      className="flex-1 px-2"
-                      min={0}
-                      max={1}
-                      step={0.05}
-                      value={playerClaimsOpacity}
-                      onValueChange={(v) => setPlayerClaimsOpacity(v)}
-                      aria-label={t("topsMap.playerClaimsOpacity")}
-                    />
-                  </div>
-                ) : playerClaimsMode === "all" ? (
-                  <span className="text-xs text-muted-foreground">
-                    {t("topsMap.playerClaimsAllHint")}
-                  </span>
-                ) : (
-                  <div className="flex flex-col gap-1">
-                    <Label
-                      htmlFor="player-claim-search"
-                      className="flex items-center gap-1 text-xs text-muted-foreground"
-                    >
-                      <Search className="size-3" />
-                      {t("topsMap.playerClaimsSearchPlaceholder")}
-                    </Label>
-                    <Combobox
-                      id="player-claim-search"
-                      placeholder={t("topsMap.typeToSearch")}
-                      value={playerClaimsSearch}
-                      suggestions={playerClaimOwners}
-                      onChange={setPlayerClaimsSearch}
-                      onSelect={setPlayerClaimsSearch}
-                      dropUp
-                    />
-                    {playerClaimsSearch.trim() ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t("topsMap.playerClaimsMatchCount", {
-                          count: playerClaimMatchCount.toLocaleString(),
-                        })}
-                      </span>
-                    ) : null}
-                  </div>
-                )}
-              </div>
+              <Switch checked={showOceans} aria-label={t("topsMap.showOceansOverlay")} />
+              <Label className="cursor-pointer">{t("topsMap.oceans")}</Label>
+              <span className="text-xs text-muted-foreground">
+                {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
+              </span>
             </div>
-          </div>
-        </div>
-        <div
-          className={cn(
-            "flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            !showAdvancedMapOptions && "hidden",
-          )}
-        >
-          <div
-            onClick={() => setShowRockStrata(!showRockStrata)}
-            className="cursor-pointer flex items-center gap-2"
-          >
-            <Switch checked={showRockStrata} aria-label={t("topsMap.showRockStrataOverlay")} />
-            <Label className="cursor-pointer">{t("topsMap.rockStrata")}</Label>
-          </div>
-          <div
-            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-            style={{
-              gridTemplateRows:
-                showRockStrata && rockStrataLegend && rockStrataLegend.length > 0 ? "1fr" : "0fr",
-            }}
-            aria-hidden={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
-          >
-            <div className="overflow-hidden min-h-0">
-              <div className="flex flex-wrap gap-1 pt-2 max-h-56 overflow-y-auto pr-1">
-                {(rockStrataLegend ?? []).map((e, i) => {
-                  const active = rockStrataKeptSet.has(e.code);
-                  return (
-                    <button
-                      key={e.code}
-                      type="button"
-                      onClick={(ev) => {
-                        ev.stopPropagation();
-                        toggleRockStrataCode(e.code);
-                      }}
-                      tabIndex={showRockStrata ? 0 : -1}
-                      className={cn(
-                        "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
-                        showRockStrata && "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
-                        "transition-colors duration-150",
-                        active ? "bg-foreground text-background" : "bg-background",
-                      )}
-                      style={{
-                        borderColor: e.hexcolor,
-                        animationDelay: `${i * 15}ms`,
-                        animationDuration: "260ms",
-                      }}
-                      aria-pressed={active}
-                      title={`${e.code} — ${e.pixelCount.toLocaleString()}`}
-                    >
-                      <span
-                        aria-hidden
-                        className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                        style={{ backgroundColor: e.hexcolor }}
-                      />
-                      {e.code}
-                    </button>
-                  );
+            <div
+              onClick={() => setShowRecordedBrokenTLs(!showRecordedBrokenTLs)}
+              className={cn(
+                "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
+              )}
+            >
+              <Switch
+                checked={showRecordedBrokenTLs}
+                aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
+              />
+              <Label className="cursor-pointer">{t("topsMap.showRecordedBrokenTLs")}</Label>
+              <span className="text-xs text-muted-foreground">
+                {t("topsMap.totalCount", {
+                  count: (recordedFeatures?.brokenTLs.length ?? 0).toLocaleString(),
                 })}
-                {(rockStrataLegend ?? []).length > 0 && (
-                  <button
-                    type="button"
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setRockStrataKeepCodes(rockStrataKeepCodes == null ? [] : null);
-                    }}
-                    tabIndex={showRockStrata ? 0 : -1}
-                    className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
-                    title={
-                      rockStrataKeepCodes == null
-                        ? t("topsMap.rockStrataClearAll")
-                        : t("topsMap.rockStrataSelectAll")
-                    }
-                  >
-                    {rockStrataKeepCodes == null
-                      ? t("topsMap.rockStrataClearAll")
-                      : t("topsMap.rockStrataSelectAll")}
-                  </button>
-                )}
+              </span>
+            </div>
+            <div
+              onClick={() => setShowTraderClaims(!showTraderClaims)}
+              className={cn(
+                "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
+              )}
+            >
+              <Switch
+                checked={showTraderClaims}
+                aria-label={t("topsMap.showTraderClaimsOverlay")}
+              />
+              <Label className="cursor-pointer">{t("topsMap.showTraderClaims")}</Label>
+              <span className="text-xs text-muted-foreground">
+                {t("topsMap.totalCount", {
+                  count: (traderClaimsQuery.data?.length ?? 0).toLocaleString(),
+                })}
+              </span>
+            </div>
+            <div
+              className={cn(
+                "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
+              )}
+            >
+              <div
+                onClick={() => setShowPlayerClaims(!showPlayerClaims)}
+                className="cursor-pointer flex items-center gap-2"
+              >
+                <Switch
+                  checked={showPlayerClaims}
+                  aria-label={t("topsMap.showPlayerClaimsOverlay")}
+                />
+                <Label className="cursor-pointer">{t("topsMap.showPlayerClaims")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {t("topsMap.totalCount", {
+                    count: (playerClaimsQuery.data?.length ?? 0).toLocaleString(),
+                  })}
+                </span>
+              </div>
+              <div
+                className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+                style={{ gridTemplateRows: showPlayerClaims ? "1fr" : "0fr" }}
+                aria-hidden={!showPlayerClaims}
+                onTransitionEnd={() => {
+                  if (showPlayerClaims) setPlayerClaimsPanelExpanded(true);
+                }}
+              >
+                <div
+                  className={cn(
+                    "min-h-0",
+                    playerClaimsPanelExpanded ? "overflow-visible" : "overflow-hidden",
+                  )}
+                >
+                  <div className="flex flex-col gap-2 pt-1">
+                    <div className="flex rounded-md border p-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setPlayerClaimsMode("density")}
+                        className={cn(
+                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                          playerClaimsMode === "density"
+                            ? "bg-foreground text-background"
+                            : "hover:bg-muted",
+                        )}
+                      >
+                        {t("topsMap.playerClaimsDensityMode")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerClaimsMode("search")}
+                        className={cn(
+                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                          playerClaimsMode === "search"
+                            ? "bg-foreground text-background"
+                            : "hover:bg-muted",
+                        )}
+                      >
+                        {t("topsMap.playerClaimsSearchMode")}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPlayerClaimsMode("all")}
+                        className={cn(
+                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
+                          playerClaimsMode === "all"
+                            ? "bg-foreground text-background"
+                            : "hover:bg-muted",
+                        )}
+                      >
+                        {t("topsMap.playerClaimsAllMode")}
+                      </button>
+                    </div>
+                    {playerClaimsMode === "density" ? (
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-muted-foreground">
+                          {t("topsMap.playerClaimsOpacity")}
+                        </Label>
+                        <Slider
+                          className="flex-1 px-2"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={playerClaimsOpacity}
+                          onValueChange={(v) => setPlayerClaimsOpacity(v)}
+                          aria-label={t("topsMap.playerClaimsOpacity")}
+                        />
+                      </div>
+                    ) : playerClaimsMode === "all" ? (
+                      <span className="text-xs text-muted-foreground">
+                        {t("topsMap.playerClaimsAllHint")}
+                      </span>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <Label
+                          htmlFor="player-claim-search"
+                          className="flex items-center gap-1 text-xs text-muted-foreground"
+                        >
+                          <Search className="size-3" />
+                          {t("topsMap.playerClaimsSearchPlaceholder")}
+                        </Label>
+                        <Combobox
+                          id="player-claim-search"
+                          placeholder={t("topsMap.typeToSearch")}
+                          value={playerClaimsSearch}
+                          suggestions={playerClaimOwners}
+                          onChange={setPlayerClaimsSearch}
+                          onSelect={setPlayerClaimsSearch}
+                          dropUp
+                        />
+                        {playerClaimsSearch.trim() ? (
+                          <span className="text-xs text-muted-foreground">
+                            {t("topsMap.playerClaimsMatchCount", {
+                              count: playerClaimMatchCount.toLocaleString(),
+                            })}
+                          </span>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
-        <div className={cn(!showAdvancedMapOptions && "hidden", !usingWebCartographer && "hidden")}>
-          <ClimateControlsPanel
-            layerMeta={climateLayerMeta}
-            status={climateStatus}
-            error={climateError}
-          />
-        </div>
+            <div
+              className={cn(
+                "flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
+              )}
+            >
+              <div
+                onClick={() => setShowRockStrata(!showRockStrata)}
+                className="cursor-pointer flex items-center gap-2"
+              >
+                <Switch checked={showRockStrata} aria-label={t("topsMap.showRockStrataOverlay")} />
+                <Label className="cursor-pointer">{t("topsMap.rockStrata")}</Label>
+              </div>
+              <div
+                className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+                style={{
+                  gridTemplateRows:
+                    showRockStrata && rockStrataLegend && rockStrataLegend.length > 0
+                      ? "1fr"
+                      : "0fr",
+                }}
+                aria-hidden={!(showRockStrata && rockStrataLegend && rockStrataLegend.length > 0)}
+              >
+                <div className="overflow-hidden min-h-0">
+                  <div className="flex flex-wrap gap-1 pt-2 max-h-56 overflow-y-auto pr-1">
+                    {(rockStrataLegend ?? []).map((e, i) => {
+                      const active = rockStrataKeptSet.has(e.code);
+                      return (
+                        <button
+                          key={e.code}
+                          type="button"
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            toggleRockStrataCode(e.code);
+                          }}
+                          tabIndex={showRockStrata ? 0 : -1}
+                          className={cn(
+                            "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                            showRockStrata &&
+                              "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                            "transition-colors duration-150",
+                            active ? "bg-foreground text-background" : "bg-background",
+                          )}
+                          style={{
+                            borderColor: e.hexcolor,
+                            animationDelay: `${i * 15}ms`,
+                            animationDuration: "260ms",
+                          }}
+                          aria-pressed={active}
+                          title={`${e.code} — ${e.pixelCount.toLocaleString()}`}
+                        >
+                          <span
+                            aria-hidden
+                            className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                            style={{ backgroundColor: e.hexcolor }}
+                          />
+                          {e.code}
+                        </button>
+                      );
+                    })}
+                    {(rockStrataLegend ?? []).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={(ev) => {
+                          ev.stopPropagation();
+                          setRockStrataKeepCodes(rockStrataKeepCodes == null ? [] : null);
+                        }}
+                        tabIndex={showRockStrata ? 0 : -1}
+                        className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
+                        title={
+                          rockStrataKeepCodes == null
+                            ? t("topsMap.rockStrataClearAll")
+                            : t("topsMap.rockStrataSelectAll")
+                        }
+                      >
+                        {rockStrataKeepCodes == null
+                          ? t("topsMap.rockStrataClearAll")
+                          : t("topsMap.rockStrataSelectAll")}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              className={cn(!showAdvancedMapOptions && "hidden", !usingWebCartographer && "hidden")}
+            >
+              <ClimateControlsPanel
+                layerMeta={climateLayerMeta}
+                status={climateStatus}
+                error={climateError}
+              />
+            </div>
+          </CollapsibleSection>
+        )}
         <Button
           type="button"
           variant="secondary"

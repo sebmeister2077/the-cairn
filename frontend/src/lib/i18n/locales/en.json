@@ -434,7 +434,9 @@
       "useMyNameTitle": "Fill in your account display name",
       "uploadForReview": "Upload for Review",
       "uploading": "Uploading...",
-      "uploadFailed": "Upload failed"
+      "uploadFailed": "Upload failed",
+      "disabledBadge": "Disabled",
+      "disabledNotice": "Map contributions are temporarily disabled. Please check back later."
     },
     "pending": {
       "title": "Pending Contributions",
