@@ -537,11 +537,14 @@ export function TOPSMapViewPage() {
     return built ? { ...built, opacity: playerClaimsOpacity } : null;
   }, [playerClaimsVisible, playerClaimsMode, playerClaimsQuery.data, playerClaimsOpacity]);
   const playerClaimMarkers = useMemo(() => {
-    if (!playerClaimsVisible || playerClaimsMode !== "search") return undefined;
+    if (!playerClaimsVisible) return undefined;
+    if (playerClaimsMode === "all") return playerClaimsQuery.data ?? undefined;
+    if (playerClaimsMode !== "search") return undefined;
     const q = playerClaimsSearch.trim().toLowerCase();
     if (!q) return undefined;
     return (playerClaimsQuery.data ?? []).filter((c) => c.owner.toLowerCase().includes(q));
   }, [playerClaimsVisible, playerClaimsMode, playerClaimsSearch, playerClaimsQuery.data]);
+  const playerClaimLabelMode = playerClaimsMode === "all" ? "hover" : "always";
   // Animated cosmos background behind the map tiles. User-toggleable from
   // the AccountPage Appearance card; persisted in localStorage.
   const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
@@ -2522,6 +2525,7 @@ export function TOPSMapViewPage() {
               claimMarkingEnabled={traderClaimsVisible}
               claimDensity={playerClaimDensity}
               playerClaimMarkers={playerClaimMarkers}
+              playerClaimLabelMode={playerClaimLabelMode}
               radiusFilter={radiusFilter}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}

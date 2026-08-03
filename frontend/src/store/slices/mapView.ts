@@ -187,9 +187,10 @@ export interface MapViewState {
     /**
      * Player-claims render mode. "density" paints a precomputed claim
      * concentration heatmap; "search" filters claims by owner name
-     * ({@link playerClaimsSearch}) and draws only the matches as markers.
+     * ({@link playerClaimsSearch}) and draws only the matches as markers;
+     * "all" draws every claim as a marker (owner label on hover only).
      */
-    playerClaimsMode: "density" | "search";
+    playerClaimsMode: "density" | "search" | "all";
     /** Case-insensitive owner-name filter used when `playerClaimsMode === "search"`. */
     playerClaimsSearch: string;
     /** Player-claims density heatmap opacity (0..1). */
@@ -429,7 +430,7 @@ export const mapViewSlice = createSlice({
         setShowPlayerClaims(state, action: PayloadAction<boolean>) {
             state.showPlayerClaims = action.payload;
         },
-        setPlayerClaimsMode(state, action: PayloadAction<"density" | "search">) {
+        setPlayerClaimsMode(state, action: PayloadAction<"density" | "search" | "all">) {
             state.playerClaimsMode = action.payload;
         },
         setPlayerClaimsSearch(state, action: PayloadAction<string>) {

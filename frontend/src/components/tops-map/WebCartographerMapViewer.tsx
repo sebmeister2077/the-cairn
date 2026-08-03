@@ -175,6 +175,9 @@ interface WebCartographerMapViewerProps {
   claimDensity?: (PlayerClaimDensity & { opacity: number }) | null;
   /** Filtered player claims drawn as footprint boxes + dots (search mode). */
   playerClaimMarkers?: PlayerClaim[];
+  /** "always" labels every marker (search); "hover" labels only the hovered
+   *  claim (all mode). */
+  playerClaimLabelMode?: "always" | "hover";
   routeOverlay?: RouteOverlay | null;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
@@ -298,6 +301,7 @@ export function WebCartographerMapViewer({
   claimMarkingEnabled = false,
   claimDensity = null,
   playerClaimMarkers,
+  playerClaimLabelMode = "always",
   routeOverlay = null,
   highlightedSegment,
   highlightedSegments,
@@ -352,6 +356,17 @@ export function WebCartographerMapViewer({
   >([]);
   const [hoveredClaimId, setHoveredClaimId] = useState<string | null>(null);
   const hoveredClaimIdRef = useRef<string | null>(null);
+  // Screen-projected player-claim markers from the last draw + the currently
+  // hovered one (all-mode owner-label-on-hover).
+  const projectedPlayerClaimsRef = useRef<
+    Array<{ sx: number; sy: number; x: number; z: number; label: string }>
+  >([]);
+  const [hoveredPlayerClaim, setHoveredPlayerClaim] = useState<{
+    x: number;
+    z: number;
+    label: string;
+  } | null>(null);
+  const hoveredPlayerClaimRef = useRef<{ x: number; z: number; label: string } | null>(null);
   const [claimPopover, setClaimPopover] = useState<{
     claimId: string;
     center: { x: number; y: number; z: number };
@@ -1081,11 +1096,13 @@ export function WebCartographerMapViewer({
       }
     }
 
-    // ── Player-claim search markers ───────────────────────────────────────
-    // Filtered to a single owner upstream, so this set is tiny; draw the
-    // footprint box + centre dot, and label each when the set is small.
+    // ── Player-claim markers (search / all modes) ──────────────────────
+    // In "search" the set is a single owner (labels always on); in "all" it's
+    // every claim (owner label on hover only). Viewport-culled; hover-mode
+    // positions are stashed for the pointer hit-test.
     if (playerClaimMarkers && playerClaimMarkers.length > 0) {
-      const showLabels = playerClaimMarkers.length <= 60;
+      const alwaysLabel = playerClaimLabelMode === "always" && playerClaimMarkers.length <= 60;
+      const projected: Array<{ sx: number; sy: number; x: number; z: number; label: string }> = [];
       octx.save();
       octx.font = "600 11px system-ui, sans-serif";
       octx.textAlign = "center";
@@ -1110,16 +1127,33 @@ export function WebCartographerMapViewer({
         octx.lineWidth = 1;
         octx.strokeStyle = "rgba(255, 255, 255, 0.9)";
         octx.stroke();
-        if (showLabels && (m.owner || m.description)) {
-          const label = m.owner || m.description;
+        const label = m.owner || m.description;
+        if (alwaysLabel && label) {
           const tw = octx.measureText(label).width;
           octx.fillStyle = "rgba(15, 23, 42, 0.78)";
           octx.fillRect(sx - tw / 2 - 4, sy - 20, tw + 8, 15);
           octx.fillStyle = "#fff";
           octx.fillText(label, sx, sy - 6);
         }
+        if (playerClaimLabelMode === "hover" && label) {
+          projected.push({ sx, sy, x: m.x, z: m.z, label });
+        }
+      }
+      // Hovered owner label on top (all-mode).
+      if (playerClaimLabelMode === "hover" && hoveredPlayerClaim) {
+        const hsx = (hoveredPlayerClaim.x - cWx) * ppb + cw / 2;
+        const hsy = (hoveredPlayerClaim.z - cWz) * ppb + ch / 2;
+        const label = hoveredPlayerClaim.label;
+        const tw = octx.measureText(label).width;
+        octx.fillStyle = "rgba(15, 23, 42, 0.9)";
+        octx.fillRect(hsx - tw / 2 - 4, hsy - 20, tw + 8, 15);
+        octx.fillStyle = "#fff";
+        octx.fillText(label, hsx, hsy - 6);
       }
       octx.restore();
+      projectedPlayerClaimsRef.current = projected;
+    } else {
+      projectedPlayerClaimsRef.current = [];
     }
 
     // ── Trader-claim dots ─────────────────────────────────────────────────
@@ -1220,6 +1254,8 @@ export function WebCartographerMapViewer({
     claimTypes,
     claimDensity,
     playerClaimMarkers,
+    playerClaimLabelMode,
+    hoveredPlayerClaim,
     hoveredClaimId,
     claimPopover,
   ]);
@@ -1625,6 +1661,35 @@ export function WebCartographerMapViewer({
           scheduleRedraw();
         }
       }
+
+      // Player-claim hover (all-mode): surface the owner label for the
+      // nearest claim within ~14px.
+      if (playerClaimMarkers && playerClaimMarkers.length > 0 && playerClaimLabelMode === "hover") {
+        const threshSq = 14 * 14;
+        let hot: { x: number; z: number; label: string } | null = null;
+        let bestSq = Infinity;
+        for (const c of projectedPlayerClaimsRef.current) {
+          const ddx = sx - c.sx;
+          const ddy = sy - c.sy;
+          const dsq = ddx * ddx + ddy * ddy;
+          if (dsq < threshSq && dsq < bestSq) {
+            bestSq = dsq;
+            hot = { x: c.x, z: c.z, label: c.label };
+          }
+        }
+        const prev = hoveredPlayerClaimRef.current;
+        const key = hot ? `${hot.x},${hot.z},${hot.label}` : null;
+        const prevKey = prev ? `${prev.x},${prev.z},${prev.label}` : null;
+        if (key !== prevKey) {
+          hoveredPlayerClaimRef.current = hot;
+          setHoveredPlayerClaim(hot);
+          scheduleRedraw();
+        }
+      } else if (hoveredPlayerClaimRef.current !== null) {
+        hoveredPlayerClaimRef.current = null;
+        setHoveredPlayerClaim(null);
+        scheduleRedraw();
+      }
     },
     [
       dragging,
@@ -1632,6 +1697,8 @@ export function WebCartographerMapViewer({
       projectedPoints,
       hoveredPointTooltip,
       claimMarkingEnabled,
+      playerClaimMarkers,
+      playerClaimLabelMode,
       unprojectScreen,
       hoveredSegmentIndex,
       onHoverCoords,
@@ -1654,6 +1721,10 @@ export function WebCartographerMapViewer({
     if (hoveredClaimIdRef.current !== null) {
       hoveredClaimIdRef.current = null;
       setHoveredClaimId(null);
+    }
+    if (hoveredPlayerClaimRef.current !== null) {
+      hoveredPlayerClaimRef.current = null;
+      setHoveredPlayerClaim(null);
     }
     if (radiusFilterRef.current) scheduleRedraw();
   }, [onHoverCoords, scheduleRedraw]);
