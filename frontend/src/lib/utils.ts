@@ -1,5 +1,8 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { formatDateTime } from "@/lib/dateFormat"
+import { LOCALE_META } from "@/lib/i18n"
+import { store } from "@/store"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -13,7 +16,6 @@ export function formatBytes(n: number): string {
 
 export function formatTimestamp(s: string | number | null | undefined): string {
   if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s.toString();
-  return d.toLocaleString();
+  const { i18n, dateFormat } = store.getState();
+  return formatDateTime(s, dateFormat.pref, LOCALE_META[i18n.locale].intlCode);
 }

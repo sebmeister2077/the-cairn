@@ -33,6 +33,7 @@ import {
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
+import { DateFormatSwitcher } from "@/components/DateFormatSwitcher";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import {
@@ -445,6 +446,16 @@ export function AccountPage() {
               </p>
             </div>
             <MarkerStylePicker />
+          </div>
+          <Separator className="my-3" />
+          <div className="space-y-2">
+            <div className="space-y-0.5">
+              <Label>{t("account.appearance.dateFormatTitle")}</Label>
+              <p className="text-xs text-muted-foreground">
+                {t("account.appearance.dateFormatDescription")}
+              </p>
+            </div>
+            <DateFormatSwitcher />
           </div>
         </CardContent>
       </Card>

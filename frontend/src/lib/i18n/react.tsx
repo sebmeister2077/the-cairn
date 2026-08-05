@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocale } from "@/store/slices/i18n";
+import { formatWithOptions } from "@/lib/dateFormat";
 import { translate } from "./core";
 import { DEFAULT_LOCALE, fallbackDictionary, LOCALE_LOADERS, LOCALE_META } from "./registry";
 import type {
@@ -175,13 +176,14 @@ export function useTranslation() {
 
 export function useFormat() {
   const ctx = useI18nContext();
+  const dateFormatPref = useAppSelector((state) => state.dateFormat.pref);
   return {
     locale: ctx.locale,
     intlCode: ctx.intlCode,
     number: (value: number, options?: Intl.NumberFormatOptions) =>
       new Intl.NumberFormat(ctx.intlCode, options).format(value),
     dateTime: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) =>
-      new Intl.DateTimeFormat(ctx.intlCode, options).format(new Date(value)),
+      formatWithOptions(value, options ?? {}, dateFormatPref, ctx.intlCode),
   };
 }
 

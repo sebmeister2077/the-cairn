@@ -7,6 +7,12 @@ export const en = {
         theme: "Theme",
         selectTheme: "Select theme",
         selectLanguage: "Select language",
+        dateFormat: "Date format",
+        selectDateFormat: "Select date format",
+        dateFormatSystem: "System default",
+        dateFormatDMY: "Day Month Year",
+        dateFormatMDY: "Month Day Year",
+        dateFormatYMD: "Year Month Day",
         english: "English",
         russian: "Russian",
         copyPath: "Copy path",
@@ -190,6 +196,9 @@ export const en = {
             markerIconsTitle: "Map marker icons",
             markerIconsDescription:
                 "Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the map. Changes apply immediately and are saved to your browser.",
+            dateFormatTitle: "Date format",
+            dateFormatDescription:
+                "Choose how dates are shown across Cairn. System follows your browser/OS locale; the other options render the month as a 3-letter abbreviation in your chosen field order.",
             traderIcon: "Trader icon",
             traderIconDescription: "How merchants and traveling traders appear on the map.",
             translocatorEndpoint: "Translocator endpoint",

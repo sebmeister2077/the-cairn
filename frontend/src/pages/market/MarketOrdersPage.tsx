@@ -23,6 +23,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getMyAccountSafe } from "@/lib/api";
 import { formatGears } from "@/lib/auction";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useOrdersList, useOrdersUnreadIds } from "@/lib/orders";
 import type { Order, OrderFilters, OrderSide, OrderSort, TraderMobility } from "@/models/orders";
 import { MOBILITY_SHORT, priceUnitLabel, unitTotalHint } from "./orders/ordersShared";
@@ -216,6 +217,7 @@ export function MarketOrdersPage() {
 }
 
 function OrderCard({ order, unread }: { order: Order; unread: boolean }) {
+  const { formatDate, formatDateTime } = useDateFormat();
   const sideLabel = order.side === "sell" ? "Selling" : "Buying";
   const sideClass =
     order.side === "sell"
@@ -262,13 +264,13 @@ function OrderCard({ order, unread }: { order: Order; unread: boolean }) {
             </span>
           )}
           {order.created_at && (
-            <span title={`Posted ${new Date(order.created_at).toLocaleString()}`}>
-              · Posted {new Date(order.created_at).toLocaleDateString()}
+            <span title={`Posted ${formatDateTime(order.created_at)}`}>
+              · Posted {formatDate(order.created_at)}
             </span>
           )}
           {order.updated_at && order.updated_at !== order.created_at && (
-            <span title={`Updated ${new Date(order.updated_at).toLocaleString()}`}>
-              · Updated {new Date(order.updated_at).toLocaleDateString()}
+            <span title={`Updated ${formatDateTime(order.updated_at)}`}>
+              · Updated {formatDate(order.updated_at)}
             </span>
           )}
           {order.status === "fulfilled" && <Badge variant="outline">Fulfilled</Badge>}
