@@ -7,6 +7,7 @@ export const en = {
         theme: "Theme",
         selectTheme: "Select theme",
         selectLanguage: "Select language",
+        example: "Example",
         dateFormat: "Date format",
         selectDateFormat: "Select date format",
         dateFormatSystem: "System default",
