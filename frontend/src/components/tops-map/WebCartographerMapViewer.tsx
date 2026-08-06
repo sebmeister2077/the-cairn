@@ -455,6 +455,12 @@ export function WebCartographerMapViewer({
   // really just panning the map — spawn-dense regions have almost no
   // empty space to drag from. Reset on each mousedown.
   const dragMaxDistRef = useRef(0);
+  // Active pointers (touch/pen/mouse) keyed by pointerId — drives both
+  // single-pointer pan and two-finger pinch-zoom on touch devices.
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  // Live pinch gesture: distance + per-block scale captured when the second
+  // finger lands, so subsequent moves scale relative to the gesture start.
+  const pinchRef = useRef<{ startDist: number; startPpb: number } | null>(null);
   const [hoverCoords, setHoverCoords] = useState<{ x: number; z: number } | null>(null);
   const [hoveredSegmentIndex, setHoveredSegmentIndex] = useState<number | null>(null);
   // Per-marker hover tooltip (X/Y/Z) for point markers that carry a `tooltip`
@@ -1508,13 +1514,35 @@ export function WebCartographerMapViewer({
     return () => el.removeEventListener("wheel", onWheel);
   }, [zoomToward, cancelFlyAnim]);
 
-  // ── Mouse interaction ────────────────────────────────────────────────────
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+  // ── Pointer interaction (mouse / touch / pen) ────────────────────────────
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      // Mouse: only the primary (left) button drags. Touch/pen always pass.
+      if (e.pointerType === "mouse" && e.button !== 0) return;
       if (interactionsLockedRef.current) return;
       if (cursorModeRef.current === "pick") return;
+      const container = containerRef.current;
+      container?.setPointerCapture?.(e.pointerId);
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
       cancelFlyAnim();
+
+      if (pointersRef.current.size >= 2) {
+        // Second finger down — start a pinch and suspend panning.
+        const pts = Array.from(pointersRef.current.values());
+        const dx = pts[0].x - pts[1].x;
+        const dy = pts[0].y - pts[1].y;
+        pinchRef.current = {
+          startDist: Math.hypot(dx, dy) || 1,
+          startPpb: pixelsPerBlockRef.current,
+        };
+        setDragging(false);
+        dragStartRef.current = null;
+        // Treat the gesture as a drag so the trailing click (fired on the
+        // last finger's release) doesn't pin a random TL / claim.
+        dragMaxDistRef.current = 999;
+        return;
+      }
+
       setDragging(true);
       dragMaxDistRef.current = 0;
       dragStartRef.current = {
@@ -1527,13 +1555,31 @@ export function WebCartographerMapViewer({
     [cancelFlyAnim],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
       const container = containerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
+
+      // Keep the tracked pointer position fresh for pinch math.
+      if (pointersRef.current.has(e.pointerId)) {
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      }
+
+      // Two-finger pinch: scale relative to the gesture start, pinned to the
+      // midpoint between the fingers. Skips all the hover hit-testing below.
+      if (pinchRef.current && pointersRef.current.size >= 2) {
+        const pts = Array.from(pointersRef.current.values());
+        const dx = pts[0].x - pts[1].x;
+        const dy = pts[0].y - pts[1].y;
+        const dist = Math.hypot(dx, dy) || 1;
+        const focalX = (pts[0].x + pts[1].x) / 2 - rect.left;
+        const focalY = (pts[0].y + pts[1].y) / 2 - rect.top;
+        zoomToward(focalX, focalY, pinchRef.current.startPpb * (dist / pinchRef.current.startDist));
+        return;
+      }
 
       if (dragging && dragStartRef.current) {
         const dx = e.clientX - dragStartRef.current.x;
@@ -1703,16 +1749,32 @@ export function WebCartographerMapViewer({
       hoveredSegmentIndex,
       onHoverCoords,
       scheduleRedraw,
+      zoomToward,
     ],
   );
 
-  const handleMouseUp = useCallback(() => {
-    setDragging(false);
-    dragStartRef.current = null;
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    containerRef.current?.releasePointerCapture?.(e.pointerId);
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    if (pointersRef.current.size === 1) {
+      // One finger lifted mid-pinch — resume panning from the survivor so
+      // the map doesn't jump.
+      const [only] = Array.from(pointersRef.current.values());
+      setDragging(true);
+      dragMaxDistRef.current = 0;
+      dragStartRef.current = {
+        x: only.x,
+        y: only.y,
+        cwX: centerWorldXRef.current,
+        cwZ: centerWorldZRef.current,
+      };
+    } else if (pointersRef.current.size === 0) {
+      setDragging(false);
+      dragStartRef.current = null;
+    }
   }, []);
-  const handleMouseLeave = useCallback(() => {
-    setDragging(false);
-    dragStartRef.current = null;
+  const handlePointerLeave = useCallback(() => {
     setHoverCoords(null);
     cursorWorldRef.current = null;
     onHoverCoords?.(null);
@@ -1879,7 +1941,7 @@ export function WebCartographerMapViewer({
         >
           <Crosshair className="size-4" />
         </Button>
-        <span className="text-xs text-muted-foreground ml-2">
+        <span className="hidden sm:inline text-xs text-muted-foreground ml-2">
           {t("topsMap.scrollToZoomDragToPan")}
         </span>
         <div className="ml-auto flex items-center gap-2">
@@ -1887,6 +1949,8 @@ export function WebCartographerMapViewer({
             <Button
               type="button"
               variant="default"
+              size="sm"
+              className="hidden sm:inline-flex"
               onClick={() => setIsFullscreen(true)}
               title={t("topsMap.enterFullscreenMapView")}
             >
@@ -1923,15 +1987,35 @@ export function WebCartographerMapViewer({
                   : "grab",
           touchAction: "none",
         }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
         aria-label={alt}
         role="img"
       >
+        {showFullscreenControl && !isFullscreen && (
+          // Mobile: a floating fullscreen button on the map itself, so it's
+          // always reachable without hunting through the wrapped toolbar.
+          // `stopPropagation` on pointerdown keeps the container's drag
+          // handler from pointer-capturing the tap (which would swallow the
+          // button's click on touch).
+          <Button
+            type="button"
+            variant="default"
+            size="icon"
+            className="sm:hidden absolute top-2 right-2 z-20 shadow-lg"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => setIsFullscreen(true)}
+            aria-label={t("topsMap.enterFullscreenMapView")}
+            title={t("topsMap.enterFullscreenMapView")}
+          >
+            <Maximize2 className="size-5" />
+          </Button>
+        )}
         {(overlay || overlayRender) && (
           // Rendered BEFORE the canvas in DOM order so it stacks below the
           // tile layer — but above the container's background. WC tiles are

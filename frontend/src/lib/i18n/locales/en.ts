@@ -16,6 +16,7 @@ export const en = {
         dateFormatYMD: "Year Month Day",
         english: "English",
         russian: "Russian",
+        close: "Close",
         copyPath: "Copy path",
         copyPathForLabel: "Copy {label} path",
         size: "Size",

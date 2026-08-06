@@ -2007,7 +2007,7 @@ export function TOPSMapViewPage() {
           <p className="text-sm text-muted-foreground">{t("topsMap.viewerDescription")}</p>
         </CardHeader>
       )}
-      <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid gap-4"}>
+      <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid grid-cols-1 gap-4"}>
         {!isFullscreen && (
           <>
             <div className="rounded-lg border bg-muted/30 p-3">
@@ -2023,7 +2023,7 @@ export function TOPSMapViewPage() {
               {!loading && hasMap && !usingWebCartographer && (
                 <>
                   {/* Group 1 — Map data actions */}
-                  <div className="inline-flex items-center gap-1">
+                  <div className="inline-flex flex-wrap items-center gap-1">
                     <Button
                       type="button"
                       variant="outline"
@@ -2061,7 +2061,7 @@ export function TOPSMapViewPage() {
                   <div aria-hidden="true" className="hidden sm:block h-6 w-px bg-border" />
 
                   {/* Group 2 — Navigation */}
-                  <div className="inline-flex items-center gap-1">
+                  <div className="inline-flex flex-wrap items-center gap-1">
                     <HomePositionControls
                       favorite={favoriteStartingPosition}
                       canSaveCurrent={lastViewportRef.current != null}
@@ -2085,7 +2085,7 @@ export function TOPSMapViewPage() {
               {/* WebCartographer mode: no download/reload (it's an external host),
                   but navigation is still useful. */}
               {usingWebCartographer && (
-                <div className="inline-flex items-center gap-1">
+                <div className="inline-flex flex-wrap items-center gap-1">
                   <HomePositionControls
                     favorite={favoriteStartingPosition}
                     canSaveCurrent={lastViewportRef.current != null}
@@ -2170,7 +2170,7 @@ export function TOPSMapViewPage() {
               icon={<Layers className="size-4 text-muted-foreground" />}
               defaultOpen
             >
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
                 <Switch
                   checked={showTranslocators}
                   onCheckedChange={setShowTranslocators}

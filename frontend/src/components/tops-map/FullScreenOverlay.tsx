@@ -1,4 +1,4 @@
-import { Layers, Minimize2, Search, SlidersHorizontal, Waypoints } from "lucide-react";
+import { Layers, Minimize2, Search, SlidersHorizontal, Waypoints, X } from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
@@ -309,10 +309,15 @@ export function FullscreenControlsOverlay({
   const routeFrom = useAppSelector((s) => s.routePlanner.from);
   const routeTo = useAppSelector((s) => s.routePlanner.to);
   const activeRoute = routes.length > 0 ? (routes[routeSelectedIndex] ?? routes[0]) : null;
+  // On phones the floating panels cover most of the map, so they collapse
+  // behind FABs by default. On `sm+` viewports they're always shown and the
+  // FABs are hidden (see the `sm:` utility classes below).
+  const [controlsOpen, setControlsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
-      <div className="pointer-events-auto absolute top-16 left-6  flex items-center gap-2">
+      <div className="pointer-events-auto absolute top-16 left-3 sm:left-6 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2">
         <Button
           type="button"
           variant="default"
@@ -346,8 +351,29 @@ export function FullscreenControlsOverlay({
 
       {/* Top-right: stacked toggles + groupings. Capped height + internal
           scroll so the column never runs off-screen (e.g. zoomed in on a
-          laptop); width shrinks on small viewports. */}
-      <div className="pointer-events-auto absolute top-16 right-3 sm:right-6 flex max-h-[calc(100dvh-8rem)] w-[min(85vw,20rem)] flex-col gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pb-2 pr-1">
+          laptop); width shrinks on small viewports. On phones it's collapsed
+          behind the FAB below and only shown when `controlsOpen`. */}
+      <div
+        className={cn(
+          "pointer-events-auto absolute top-16 right-3 sm:right-6 flex-col gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pb-2 pr-1",
+          "max-h-[calc(100dvh-8rem)] w-[min(85vw,20rem)]",
+          controlsOpen ? "flex" : "hidden",
+          "sm:flex",
+        )}
+      >
+        {/* Mobile-only header to dismiss the panel. */}
+        <div className="flex sm:hidden justify-end">
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon-sm"
+            className="shadow-md"
+            onClick={() => setControlsOpen(false)}
+            aria-label={t("common.close")}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
         <div
           onClick={() => setShowServerLandmarks(!showServerLandmarks)}
           className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
@@ -897,24 +923,78 @@ export function FullscreenControlsOverlay({
         </Button>
       </div>
 
-      {/* Bottom-left: landmark search. */}
-      <div className="pointer-events-auto absolute bottom-6 left-6 w-72 rounded-md border bg-background/95 p-2 shadow-md backdrop-blur">
-        <Label
-          htmlFor="landmark-search-fullscreen"
-          className="mb-1 flex items-center gap-1 text-xs text-muted-foreground"
-        >
-          <Search className="size-3" />
-          {t("topsMap.searchLandmark")}
-        </Label>
+      {/* Bottom-left: landmark search. Collapsed behind a FAB on phones. */}
+      <div
+        className={cn(
+          "pointer-events-auto absolute bottom-6 left-3 sm:left-6 w-[min(90vw,18rem)] rounded-md border bg-background/95 p-2 shadow-md backdrop-blur",
+          searchOpen ? "block" : "hidden",
+          "sm:block",
+        )}
+      >
+        <div className="mb-1 flex items-center justify-between">
+          <Label
+            htmlFor="landmark-search-fullscreen"
+            className="flex items-center gap-1 text-xs text-muted-foreground"
+          >
+            <Search className="size-3" />
+            {t("topsMap.searchLandmark")}
+          </Label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="sm:hidden -mr-1"
+            onClick={() => setSearchOpen(false)}
+            aria-label={t("common.close")}
+          >
+            <X className="size-4" />
+          </Button>
+        </div>
         <Combobox
           id="landmark-search-fullscreen"
           placeholder={t("topsMap.typeToSearch")}
           value={landmarkSearch}
           suggestions={landmarkSuggestions}
           onChange={onLandmarkSearchChange}
-          onSelect={onLandmarkSelect}
+          onSelect={(name) => {
+            onLandmarkSelect(name);
+            setSearchOpen(false);
+          }}
           dropUp
         />
+      </div>
+
+      {/* Mobile-only FABs: toggle the map controls panel and the landmark
+          search. Hidden on `sm+` where the panels are always visible. */}
+      <div className="pointer-events-auto absolute bottom-6 right-4 flex flex-col gap-3 sm:hidden">
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="size-12 rounded-full shadow-lg"
+          onClick={() => {
+            setSearchOpen((v) => !v);
+            setControlsOpen(false);
+          }}
+          aria-label={t("topsMap.searchLandmark")}
+          aria-pressed={searchOpen}
+        >
+          <Search className="size-5" />
+        </Button>
+        <Button
+          type="button"
+          variant="default"
+          size="icon"
+          className="size-12 rounded-full shadow-lg"
+          onClick={() => {
+            setControlsOpen((v) => !v);
+            setSearchOpen(false);
+          }}
+          aria-label={t("topsMap.layerGroups.layers")}
+          aria-pressed={controlsOpen}
+        >
+          <SlidersHorizontal className="size-5" />
+        </Button>
       </div>
     </div>
   );
