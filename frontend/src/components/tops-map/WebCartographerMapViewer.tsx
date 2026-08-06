@@ -1975,6 +1975,7 @@ export function WebCartographerMapViewer({
       <div
         ref={containerRef}
         className={canvasClass}
+        draggable={false}
         style={{
           height,
           cursor:
@@ -1986,6 +1987,8 @@ export function WebCartographerMapViewer({
                   ? "pointer"
                   : "grab",
           touchAction: "none",
+          userSelect: "none",
+          WebkitUserSelect: "none",
         }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -1994,6 +1997,10 @@ export function WebCartographerMapViewer({
         onPointerLeave={handlePointerLeave}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        // A native drag (of the overlay SVG/img children) would fire
+        // pointercancel and abort the pan; suppress it so mouse drags pan
+        // continuously.
+        onDragStart={(e) => e.preventDefault()}
         aria-label={alt}
         role="img"
       >
