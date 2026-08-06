@@ -69,7 +69,7 @@ export function ClimateHoverReadout({
   const tt = t as (k: string) => string;
 
   const containerClass = floating
-    ? "pointer-events-none absolute left-6 bottom-26 z-20 w-72 max-w-[calc(100vw-3rem)] rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur tabular-nums"
+    ? "pointer-events-none absolute left-3 sm:left-6 bottom-6 sm:bottom-26 z-20 w-72 max-w-[calc(100vw-3rem)] rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur tabular-nums"
     : "rounded-md border px-3 py-2 text-xs tabular-nums";
 
   return (
