@@ -230,16 +230,6 @@ function buildEnvelopeForState(state: RootState): Envelope {
     return { version: ENVELOPE_VERSION, slices };
 }
 
-function writeEnvelope(state: RootState) {
-    try {
-        const env = buildEnvelopeForState(state);
-        lsWrite(PERSIST_KEY, JSON.stringify(env));
-    } catch {
-        // ignore quota / serialization errors — runtime state is still
-        // correct, only the next reload would be off.
-    }
-}
-
 /**
  * Set up the persistence subscriber + cross-tab listener. Call once,
  * after the store is constructed.
@@ -250,14 +240,27 @@ function writeEnvelope(state: RootState) {
  */
 export function installRootPersistence(store: Store<RootState>) {
     let scheduled = false;
-    let lastWrittenState: RootState | null = null;
+    // Dedupe by serialized envelope CONTENT, not object identity. A cross-tab
+    // `hydrateRoot` (and the follow-up effects it triggers) re-derives the same
+    // logical state with fresh object references, so an identity check would
+    // treat it as a change and echo it back to the other tab — an infinite
+    // ping-pong whenever two tabs are open. Comparing the serialized bytes lets
+    // us skip writes that don't actually change what's stored.
+    let lastWrittenJson: string | null = null;
 
     const flush = () => {
         scheduled = false;
-        const s = store.getState();
-        if (s === lastWrittenState) return;
-        lastWrittenState = s;
-        writeEnvelope(s);
+        let json: string;
+        try {
+            json = JSON.stringify(buildEnvelopeForState(store.getState()));
+        } catch {
+            // ignore quota / serialization errors — runtime state is still
+            // correct, only the next reload would be off.
+            return;
+        }
+        if (json === lastWrittenJson) return;
+        lastWrittenJson = json;
+        lsWrite(PERSIST_KEY, json);
     };
 
     store.subscribe(() => {
@@ -280,11 +283,15 @@ export function installRootPersistence(store: Store<RootState>) {
                 | undefined;
             payload[key as string] = normalize ? normalize(raw) : raw;
         }
-        // Mark this state as "already written" so our own subscriber
-        // doesn't immediately echo the same envelope back to storage.
-        lastWrittenState = null;
         store.dispatch(hydrateRoot(payload));
-        lastWrittenState = store.getState();
+        // Record the post-hydrate serialization as "already written" so our own
+        // subscriber (and any effects the hydrate re-triggers) don't echo an
+        // identical envelope back to storage and bounce it between tabs.
+        try {
+            lastWrittenJson = JSON.stringify(buildEnvelopeForState(store.getState()));
+        } catch {
+            lastWrittenJson = null;
+        }
     });
 }
 
