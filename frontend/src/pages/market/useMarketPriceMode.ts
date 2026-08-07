@@ -7,6 +7,7 @@
 // them, and persisted to localStorage so it survives reloads.
 
 import { useSyncExternalStore } from "react";
+import { writeIfConsented } from "@/lib/consent";
 
 export type MarketPriceMode = "median" | "weighted";
 
@@ -35,11 +36,7 @@ function subscribe(cb: () => void): () => void {
 export function setMarketPriceMode(mode: MarketPriceMode): void {
     if (mode === current) return;
     current = mode;
-    try {
-        localStorage.setItem(STORAGE_KEY, mode);
-    } catch {
-        /* ignore persistence failures */
-    }
+    writeIfConsented(STORAGE_KEY, mode);
     listeners.forEach((l) => l());
 }
 

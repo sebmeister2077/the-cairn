@@ -5,6 +5,7 @@
 // remembers its filters.
 
 import { useSyncExternalStore } from "react";
+import { writeIfConsented } from "@/lib/consent";
 
 export type ItemSort = "gears" | "sold" | "listings" | "name";
 
@@ -57,11 +58,7 @@ function subscribe(cb: () => void): () => void {
 
 function commit(next: ItemSearchState): void {
     current = next;
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-        /* ignore persistence failures */
-    }
+    writeIfConsented(STORAGE_KEY, JSON.stringify(next));
     listeners.forEach((l) => l());
 }
 

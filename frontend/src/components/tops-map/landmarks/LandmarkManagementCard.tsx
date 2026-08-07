@@ -15,7 +15,7 @@
 
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, Loader2, MapPin, Pencil, Plus, UserPlus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { Badge } from "@/components/ui/badge";
@@ -121,6 +121,7 @@ function SignedInCard({
   const [isDeleting, setIsDeleting] = useState<LandmarkFeature | null>(null);
   const [browseQuery, setBrowseQuery] = useState("");
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
+  const contentId = useId();
 
   const featuresQuery = useQuery(landmarkQueries.geojsonFeatures);
 
@@ -160,15 +161,21 @@ function SignedInCard({
   return (
     <>
       <Card className="gap-0">
-        <CardHeader className="cursor-pointer select-none" onClick={() => setIsExpanded((v) => !v)}>
-          <CardTitle className="flex items-center justify-between text-sm">
-            <span className="flex items-center gap-2">
+        <CardHeader className="select-none">
+          <CardTitle className="flex items-center justify-between gap-2 text-sm">
+            <button
+              type="button"
+              onClick={() => setIsExpanded((v) => !v)}
+              aria-expanded={isExpanded}
+              aria-controls={contentId}
+              className="flex flex-1 cursor-pointer items-center gap-2 rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
               {isExpanded ? (
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4" aria-hidden />
               ) : (
-                <ChevronRight className="size-4" />
+                <ChevronRight className="size-4" aria-hidden />
               )}
-              <MapPin className="size-4" /> {t("topsMap.landmarksCard.title")}
+              <MapPin className="size-4" aria-hidden /> {t("topsMap.landmarksCard.title")}
               {myFeatures.length > 0 && (
                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">
                   {myFeatures.length}
@@ -181,21 +188,15 @@ function SignedInCard({
                   })}
                 </Badge>
               )}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsAddOpen(true);
-              }}
-            >
+            </button>
+            <Button size="sm" variant="outline" onClick={() => setIsAddOpen(true)}>
               <Plus className="size-3 mr-1" />
               {t("topsMap.landmarksCard.add")}
             </Button>
           </CardTitle>
         </CardHeader>
         <div
+          id={contentId}
           className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
             isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
           }`}

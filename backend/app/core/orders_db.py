@@ -319,6 +319,28 @@ def reopen_order(
     return {"ok": True, "order": get_order(order_id)}
 
 
+def delete_order(order_id: str, actor_key_id: Optional[str], is_admin: bool = False) -> bool:
+    """Permanently delete an order and its whole negotiation thread + fills.
+
+    ``ON DELETE CASCADE`` on ``order_requests`` / ``order_negotiation_messages``
+    / ``order_fills`` removes the children. Owners may delete their own order;
+    admins may delete any order (moderation). Returns True when a row was
+    removed.
+    """
+    if not db.is_available():
+        raise RuntimeError("Database not configured")
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            if is_admin:
+                cur.execute("DELETE FROM orders WHERE id = %s", (order_id,))
+            else:
+                cur.execute(
+                    "DELETE FROM orders WHERE id = %s AND author_api_key_id = %s",
+                    (order_id, actor_key_id),
+                )
+            return cur.rowcount > 0
+
+
 def get_order(order_id: str) -> Optional[dict]:
     if not db.is_available():
         return None

@@ -5,6 +5,7 @@
 // localStorage so the choice survives reloads.
 
 import { useSyncExternalStore } from "react";
+import { writeIfConsented } from "@/lib/consent";
 import type { InsightsVolumeMode } from "./useFilteredInsights";
 
 const STORAGE_KEY = "market.volumeMode";
@@ -32,11 +33,7 @@ function subscribe(cb: () => void): () => void {
 export function setMarketVolumeMode(mode: InsightsVolumeMode): void {
     if (mode === current) return;
     current = mode;
-    try {
-        localStorage.setItem(STORAGE_KEY, mode);
-    } catch {
-        /* ignore persistence failures */
-    }
+    writeIfConsented(STORAGE_KEY, mode);
     listeners.forEach((l) => l());
 }
 

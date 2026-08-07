@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { TermsPageRu } from "./TermsPage.ru";
 
-const LAST_UPDATED = "May 15, 2026";
+const LAST_UPDATED = "August 7, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function TermsPage() {
@@ -103,9 +103,14 @@ export function TermsPage() {
               any other information of any kind to other users or to the public — including, but not
               limited to, embedding such content in your account display name, in-game name (IGN),
               waypoint titles, or any other free-text field. The Service is a tool for map and
-              waypoint data, not a messaging platform. The operator may, at its sole discretion and
-              depending on the nature of the content, edit or remove the offending field, revoke
-              your API key, and ban your account without notice.
+              waypoint data, not a general messaging platform.{" "}
+              <strong>
+                The one exception is a feature expressly built for it — the Orders marketplace
+              </strong>
+              , where structured trade requests and negotiation messages are allowed but must stay
+              on-topic and follow section 6a. The operator may, at its sole discretion and depending
+              on the nature of the content, edit or remove the offending field, revoke your API key,
+              and ban your account without notice.
             </li>
           </ul>
         </section>
@@ -163,6 +168,47 @@ export function TermsPage() {
             <li>
               The operator may reject, delete, or roll back pending contributions at any time
               without notice.
+            </li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">
+            6a. Community marketplace (Orders)
+          </h2>
+          <p>
+            If the <strong>Orders</strong> marketplace is enabled, you may post buy/sell listings
+            and negotiate trades with other users. By using it you agree that:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              You are solely responsible for everything you post — order details, free-text notes,
+              and negotiation messages — and for your conduct with other users.
+            </li>
+            <li>
+              <strong>Trades are arranged directly between users.</strong> The operator is{" "}
+              <strong>not a party</strong> to any trade and provides no escrow, payment processing,
+              delivery, or verification of users, items, prices, or in-game currency. You transact{" "}
+              <strong>entirely at your own risk</strong>, and the operator is not liable for
+              non-delivery, scams, disputes, or any loss arising from a trade.
+            </li>
+            <li>
+              You grant the operator a non-exclusive, worldwide, royalty-free licence to store,
+              display, and transmit the orders and messages you create as needed to operate the
+              feature (for example, showing your open order publicly and delivering your negotiation
+              messages to the other participant).
+            </li>
+            <li>
+              You must not use the marketplace for fraud or scams, harassment or abuse, spam,
+              advertising of unrelated products or services, real-money trading or anything that
+              violates Vintage Story's EULA, illegal goods or services, impersonation, or posting
+              another person's private information.
+            </li>
+            <li>
+              The operator and admins may edit, hide, close, or <strong>permanently delete</strong>{" "}
+              any order, negotiation message, or other marketplace content at any time, with or
+              without notice. You can delete your own orders at any time; deletion is permanent and
+              also removes the order's negotiation history.
             </li>
           </ul>
         </section>

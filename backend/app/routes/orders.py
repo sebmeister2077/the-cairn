@@ -388,6 +388,26 @@ async def reopen_order(
     return result["order"]
 
 
+@router.delete("/{order_id}")
+async def delete_order(
+    order_id: str,
+    ctx: dict = Depends(require_active_user),
+):
+    """Permanently delete an order and its negotiation thread + fills.
+
+    Owners may delete their own order; admins may delete any order for
+    moderation. Cascades to requests / messages / fills at the DB level.
+    """
+    _ensure_enabled()
+    is_admin = bool((ctx.get("info") or {}).get("is_admin"))
+    actor_kid = None if is_admin else _key_id_for(ctx["key"])
+    if not odb.delete_order(order_id, actor_kid, is_admin=is_admin):
+        raise HTTPException(status_code=404, detail="Order not found or not yours")
+    if is_admin:
+        logger.info("admin deleted order %s", order_id)
+    return {"ok": True}
+
+
 @router.post("/{order_id}/seen")
 async def mark_order_seen(
     order_id: str,

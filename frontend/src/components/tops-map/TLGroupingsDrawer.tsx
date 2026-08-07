@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Download, Globe, Plus, Upload } from "lucide-react";
+import { Database, Download, Globe, Plus, Upload } from "lucide-react";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import {
 import { useGroupingSubscriptions } from "@/hooks/useGroupingLibrary";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { consumeDialogStateSnapshot } from "@/store/slices/topsMapPreview";
+import { setStoredConsent } from "@/lib/consent";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { GroupingLibraryDialog } from "./library/GroupingLibraryDialog";
 import { PublishGroupingDialog } from "./library/PublishGroupingDialog";
@@ -83,6 +84,9 @@ export function TLGroupingsDrawer({
   const isAdmin = useAppSelector((s) => s.auth.isAdmin);
   const apiKey = useAppSelector((s) => s.auth.apiKey);
   const signedIn = Boolean(apiKey);
+  // TL groupings persist to localStorage, so the whole feature is gated on
+  // the user having accepted browser storage. Other map overlays are not.
+  const storageConsented = useAppSelector((s) => s.consent.value === "accepted");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingImport, setPendingImport] = useState<string | null>(null);
@@ -184,112 +188,137 @@ export function TLGroupingsDrawer({
             <SheetDescription>{t("topsMap.groupingsDrawer.description")}</SheetDescription>
           </SheetHeader>
 
-          <div className="flex flex-col gap-1">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              {t("topsMap.groupingsDrawer.viewMode")}
-            </Label>
-            <div className="inline-flex w-full overflow-hidden rounded-md border">
-              {(
-                [
-                  { value: "all", label: t("topsMap.groupingsDrawer.modes.all") },
-                  { value: "filter", label: t("topsMap.groupingsDrawer.modes.filter") },
-                  { value: "highlight", label: t("topsMap.groupingsDrawer.modes.highlight") },
-                ] as const
-              ).map((opt) => {
-                const active = viewMode === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => onViewModeChange(opt.value)}
-                    className={`flex-1 px-2 py-1.5 text-xs transition-colors cursor-pointer ${
-                      active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              {viewMode === "all" && t("topsMap.groupingsDrawer.modeHelp.all")}
-              {viewMode === "filter" && t("topsMap.groupingsDrawer.modeHelp.filter")}
-              {viewMode === "highlight" && t("topsMap.groupingsDrawer.modeHelp.highlight")}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={handleImportClick}>
-              <Download className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.import")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={handleExport}
-              disabled={groupings.length === 0}
-            >
-              <Upload className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.export")}
-            </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="application/json"
-              hidden
-              onChange={handleFileChange}
-            />
-          </div>
-          {importError && <p className="text-xs text-destructive">{importError}</p>}
-
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="relative"
-            onClick={() => setLibraryOpen(true)}
-          >
-            <Globe className="size-4 mr-1" />
-            {t("topsMap.groupingsDrawer.library.browse")}
-            {updateCount > 0 && (
-              <Badge className="ml-2" variant="default">
-                {updateCount}
-              </Badge>
-            )}
-          </Button>
-
-          <div className="flex-1 overflow-y-auto -mx-4 px-4">
-            {groupings.length === 0 && (
-              <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-                {t("topsMap.groupingsDrawer.empty")}
+          {!storageConsented ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+              <Database className="size-8 text-muted-foreground" aria-hidden />
+              <p className="text-sm font-medium text-foreground">
+                {t("topsMap.groupingsDrawer.consentTitle")}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t("topsMap.groupingsDrawer.consentBody")}
+              </p>
+              <div className="flex flex-col items-center gap-2">
+                <Button type="button" onClick={() => setStoredConsent("accepted")}>
+                  {t("topsMap.groupingsDrawer.consentAccept")}
+                </Button>
+                <a
+                  href="/privacy"
+                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                >
+                  {t("app.footer.privacy")}
+                </a>
               </div>
-            )}
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {t("topsMap.groupingsDrawer.viewMode")}
+                </Label>
+                <div className="inline-flex w-full overflow-hidden rounded-md border">
+                  {(
+                    [
+                      { value: "all", label: t("topsMap.groupingsDrawer.modes.all") },
+                      { value: "filter", label: t("topsMap.groupingsDrawer.modes.filter") },
+                      { value: "highlight", label: t("topsMap.groupingsDrawer.modes.highlight") },
+                    ] as const
+                  ).map((opt) => {
+                    const active = viewMode === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => onViewModeChange(opt.value)}
+                        className={`flex-1 px-2 py-1.5 text-xs transition-colors cursor-pointer ${
+                          active ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {viewMode === "all" && t("topsMap.groupingsDrawer.modeHelp.all")}
+                  {viewMode === "filter" && t("topsMap.groupingsDrawer.modeHelp.filter")}
+                  {viewMode === "highlight" && t("topsMap.groupingsDrawer.modeHelp.highlight")}
+                </p>
+              </div>
 
-            <ul className="flex flex-col gap-2">
-              {groupings.map((g) => (
-                <TLGroupingListItem
-                  key={g.id}
-                  grouping={g}
-                  isActive={activeGroupingIds.has(g.id)}
-                  isEditing={editingGroupingId === g.id}
-                  loadedTLIdSet={loadedTLIdSet}
-                  signedIn={signedIn}
-                  allSegments={allSegments}
-                  onToggleActive={onToggleActive}
-                  onStartEditing={onStartEditing}
-                  onStopEditing={onStopEditing}
-                  onRename={renameGrouping}
-                  onSetColor={setColor}
-                  onRequestDelete={setConfirmDelete}
-                  onRequestPublish={setPublishTarget}
-                  onRequestMarkElk={setMarkElkTarget}
+              <div className="flex items-center gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={handleImportClick}>
+                  <Download className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.import")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={handleExport}
+                  disabled={groupings.length === 0}
+                >
+                  <Upload className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.export")}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="application/json"
+                  hidden
+                  onChange={handleFileChange}
                 />
-              ))}
-            </ul>
-          </div>
+              </div>
+              {importError && <p className="text-xs text-destructive">{importError}</p>}
 
-          <Button type="button" onClick={handleCreate}>
-            <Plus className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.newGrouping")}
-          </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="relative"
+                onClick={() => setLibraryOpen(true)}
+              >
+                <Globe className="size-4 mr-1" />
+                {t("topsMap.groupingsDrawer.library.browse")}
+                {updateCount > 0 && (
+                  <Badge className="ml-2" variant="default">
+                    {updateCount}
+                  </Badge>
+                )}
+              </Button>
+
+              <div className="flex-1 overflow-y-auto -mx-4 px-4">
+                {groupings.length === 0 && (
+                  <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    {t("topsMap.groupingsDrawer.empty")}
+                  </div>
+                )}
+
+                <ul className="flex flex-col gap-2">
+                  {groupings.map((g) => (
+                    <TLGroupingListItem
+                      key={g.id}
+                      grouping={g}
+                      isActive={activeGroupingIds.has(g.id)}
+                      isEditing={editingGroupingId === g.id}
+                      loadedTLIdSet={loadedTLIdSet}
+                      signedIn={signedIn}
+                      allSegments={allSegments}
+                      onToggleActive={onToggleActive}
+                      onStartEditing={onStartEditing}
+                      onStopEditing={onStopEditing}
+                      onRename={renameGrouping}
+                      onSetColor={setColor}
+                      onRequestDelete={setConfirmDelete}
+                      onRequestPublish={setPublishTarget}
+                      onRequestMarkElk={setMarkElkTarget}
+                    />
+                  ))}
+                </ul>
+              </div>
+
+              <Button type="button" onClick={handleCreate}>
+                <Plus className="size-4 mr-1" /> {t("topsMap.groupingsDrawer.newGrouping")}
+              </Button>
+            </>
+          )}
         </SheetContent>
       </Sheet>
 

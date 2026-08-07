@@ -21,6 +21,7 @@ import type { Store } from "@reduxjs/toolkit";
 import { lsRead, lsRemove, lsWrite } from "./persistence";
 import { hydrateRoot } from "./rootActions";
 import type { RootState } from "./index";
+import { apiKeyOnlyAuthState } from "./slices/auth";
 import { loadInitialMapViewState } from "./slices/mapView";
 import { DEFAULT_ADMIN_USAGE_FILTERS, DEFAULT_PAGES_FILTERS } from "./slices/adminUsageFilters";
 import { initialRoutePlannerState } from "./slices/routePlanner";
@@ -216,7 +217,8 @@ export function loadPersistedRoot(): Partial<RootState> | null {
 
 /**
  * Build the envelope payload from current state, omitting blacklisted
- * slices and applying per-slice transient strippers.
+ * slices and applying per-slice transient strippers. Used once the user
+ * has accepted browser storage (`consent.value === "accepted"`).
  */
 function buildEnvelopeForState(state: RootState): Envelope {
     const slices: Envelope["slices"] = {};
@@ -228,6 +230,38 @@ function buildEnvelopeForState(state: RootState): Envelope {
         slices[key] = (strip ? strip(state[key]) : state[key]) as unknown;
     }
     return { version: ENVELOPE_VERSION, slices };
+}
+
+/**
+ * Build the pre-consent envelope. The only things we're entitled to store
+ * before the user accepts are the API key (rate-limiting continuity, see
+ * `apiKeyOnlyAuthState`) and the consent decision itself.
+ *
+ * We must not *destroy* data a returning user stored under the previous
+ * (pre-banner) behaviour just because they haven't clicked yet, so while the
+ * choice is still undecided we preserve whatever is already on disk and only
+ * refresh the essentials on top. An explicit **decline** purges everything
+ * non-essential.
+ */
+function buildMinimalEnvelope(state: RootState, existing: Envelope | null): Envelope {
+    const essentials: Envelope["slices"] = {
+        auth: apiKeyOnlyAuthState(state.auth.apiKey) as unknown,
+        consent: state.consent as unknown,
+    };
+    const base = state.consent.value === "declined" ? {} : (existing?.slices ?? {});
+    return { version: ENVELOPE_VERSION, slices: { ...base, ...essentials } };
+}
+
+/**
+ * Serialize the state we're allowed to persist given the current consent
+ * decision. Shared by the store subscriber and the cross-tab listener so
+ * both agree on what "already written" means.
+ */
+function serializeForStorage(state: RootState): string {
+    if (state.consent.value === "accepted") {
+        return JSON.stringify(buildEnvelopeForState(state));
+    }
+    return JSON.stringify(buildMinimalEnvelope(state, parseEnvelope(lsRead(PERSIST_KEY))));
 }
 
 /**
@@ -252,7 +286,7 @@ export function installRootPersistence(store: Store<RootState>) {
         scheduled = false;
         let json: string;
         try {
-            json = JSON.stringify(buildEnvelopeForState(store.getState()));
+            json = serializeForStorage(store.getState());
         } catch {
             // ignore quota / serialization errors — runtime state is still
             // correct, only the next reload would be off.
@@ -288,7 +322,7 @@ export function installRootPersistence(store: Store<RootState>) {
         // subscriber (and any effects the hydrate re-triggers) don't echo an
         // identical envelope back to storage and bounce it between tabs.
         try {
-            lastWrittenJson = JSON.stringify(buildEnvelopeForState(store.getState()));
+            lastWrittenJson = serializeForStorage(store.getState());
         } catch {
             lastWrittenJson = null;
         }

@@ -133,7 +133,9 @@ export const en = {
             privacy: "Privacy",
             terms: "Terms",
             contact: "Contact",
+            cookies: "Cookie settings",
         },
+        skipToContent: "Skip to main content",
     },
     account: {
         noApiKey: {
@@ -143,7 +145,7 @@ export const en = {
         register: {
             title: "Create your account",
             description:
-                "Accept the terms and a random display name will be generated for you. Creating an account is not needed for viewing and contributing to the map.",
+                "Accept our Terms of Use and Privacy Policy and a random display name will be generated for you. Accepting also enables the browser storage (cookies) we use to keep you signed in — so you won't be asked separately. Creating an account is not needed for viewing and contributing to the map.",
             submit: "Accept terms and create account",
             submitting: "Creating...",
         },
@@ -1546,6 +1548,10 @@ export const en = {
             title: "Favorite TL groupings",
             description:
                 "Save sets of translocators you care about and reduce on-map clutter. Stored locally in this browser.",
+            consentTitle: "Accept cookies to use TL groupings",
+            consentBody:
+                "TL groupings are saved in your browser (cookies / local storage), so you need to accept cookies before you can create and keep them. Other map overlays keep working without accepting \u2014 they just won't be remembered after a reload.",
+            consentAccept: "Accept cookies",
             viewMode: "View mode",
             modes: {
                 all: "All TLs",

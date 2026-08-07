@@ -17,6 +17,7 @@ import {
   type AccountMeResponse,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { setStoredConsent } from "@/lib/consent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -102,6 +103,11 @@ export function AccountPage() {
   const registerMut = useMutation({
     mutationFn: registerAccount,
     onSuccess: () => {
+      // Creating an account persists your API key, and registering already
+      // requires accepting the Terms + Privacy Policy — so treat it as the
+      // single consent step and grant browser-storage consent too. Avoids a
+      // separate cookie banner after "Accept terms".
+      setStoredConsent("accepted");
       queryClient.invalidateQueries({ queryKey: ["account-me"] });
     },
   });

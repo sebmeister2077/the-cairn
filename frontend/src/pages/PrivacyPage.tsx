@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { PrivacyPageRu } from "./PrivacyPage.ru";
 
-const LAST_UPDATED = "May 25, 2026";
+const LAST_UPDATED = "August 7, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
@@ -77,6 +77,13 @@ export function PrivacyPage() {
               return.
             </li>
           </ul>
+          <p>
+            Until you accept our storage notice, we keep <strong>only your API key</strong> in your
+            browser (needed so the Service can authenticate and rate-limit you). Other preferences
+            and cached data are stored only <strong>after you accept</strong>; some features that
+            rely on saved data, such as favourite translocator groupings, stay unavailable until
+            then.
+          </p>
           <p>
             You can clear this data at any time using your browser's site-data controls. Doing so
             will sign you out and reset your preferences.
@@ -258,6 +265,75 @@ export function PrivacyPage() {
         </section>
 
         <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">
+            4e. Community marketplace (Orders)
+          </h2>
+          <p>
+            If the <strong>Orders</strong> marketplace is enabled, account holders can post buy/sell
+            listings and negotiate trades. This feature stores content <strong>you</strong> create:
+          </p>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              <strong>Orders you post</strong> &mdash; the item, side (buy/sell), unit price,
+              quantity, and any free text you type into the short preview and notes fields. Open
+              orders are <strong>public</strong> and shown next to your public display name (or
+              in-game name if you enabled that).
+            </li>
+            <li>
+              An optional <strong>trader location</strong> (in-game X/Z coordinates, an optional
+              label, or a reference to one of your landmarks) and an availability setting, if you
+              choose to add them.
+            </li>
+            <li>
+              <strong>Requests and negotiation messages</strong> &mdash; when you open or respond to
+              a request, we store the proposed quantity/price and any free-text note. A negotiation
+              thread is visible only to its two participants (the requester and the order owner),
+              not to the general public.
+            </li>
+            <li>
+              <strong>Post-trade fills</strong> the order owner logs (quantity, an optional price,
+              and whether to publish it) to power the per-order price chart.
+            </li>
+          </ul>
+          <p>
+            Please do not put personal information into these free-text fields. You can{" "}
+            <strong>delete your own orders at any time</strong> from the order page, which
+            permanently removes the order together with its entire negotiation history. Admins may
+            also remove any order or message that breaks the Terms. Because trades are arranged
+            directly between users, the operator is not a party to them &mdash; see the{" "}
+            <a href="/terms" className="underline">
+              Terms of Use
+            </a>
+            .
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">
+            4f. Auction House &amp; market data
+          </h2>
+          <p>
+            The <strong>Auction House</strong> and related market pages (screener, item and player
+            pages, leaderboards, rarity pricing) display statistics compiled from in-game auction
+            records contributed to the project. This game-world data can include{" "}
+            <strong>in-game character names</strong> and the prices and quantities they traded, and
+            these may appear on public pages such as player profiles and leaderboards. It reflects
+            public in-game activity, not information you provide to us. If you believe a character
+            name that identifies you should be removed, contact us at the address in section 13.
+          </p>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">4g. Tools &amp; calculators</h2>
+          <p>
+            The <strong>Tools</strong> (e.g. the tunnel planner and waypoint macro builder) and the{" "}
+            <strong>rarity</strong> calculators run in your browser. They do not require an account
+            and do not collect personal data beyond the standard request metadata and internal usage
+            log described in sections 4 and 4c.
+          </p>
+        </section>
+
+        <section className="space-y-2">
           <h2 className="text-base font-semibold text-foreground">5. Server-side records</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
@@ -321,6 +397,16 @@ export function PrivacyPage() {
             </li>
             <li>Pending community-map contributions: kept until approved or rejected.</li>
             <li>
+              <strong>Orders marketplace</strong> content (orders, requests, negotiation messages,
+              fills): kept until you delete the order or an admin removes it. Deleting an order also
+              deletes its negotiation history. Deleting your account does not automatically delete
+              orders you left up &mdash; remove them first, or ask us to.
+            </li>
+            <li>
+              Auction House / market data: retained as part of the shared market dataset so trends
+              stay comparable over time.
+            </li>
+            <li>
               Approved community-map contributions: <strong>retained indefinitely</strong> as part
               of the shared map and cannot be individually withdrawn.
             </li>
@@ -368,7 +454,9 @@ export function PrivacyPage() {
               <strong>Erasure:</strong> the <strong>Account</strong> page lets you self-delete your
               account at any time (also available via{" "}
               <code className="rounded bg-muted px-1 text-xs">DELETE /api/account/me</code>), which
-              performs the soft-delete described in section 8.
+              performs the soft-delete described in section 8. You can also{" "}
+              <strong>delete any order you posted</strong> (and its negotiation history) directly
+              from its order page.
             </li>
           </ul>
           <p>

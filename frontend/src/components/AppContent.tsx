@@ -53,6 +53,8 @@ import { OrderDetailPage } from "@/pages/market/OrderDetailPage";
 import { AccountPage } from "@/pages/AccountPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
+import { CookieConsent } from "@/components/CookieConsent";
+import { openCookieSettings } from "@/lib/consent";
 import { GeneralPage } from "@/pages/GeneralPage";
 import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
 import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
@@ -577,6 +579,12 @@ export function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background overflow-x-clip">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-100 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:ring-2 focus:ring-ring"
+      >
+        {t("app.skipToContent")}
+      </a>
       <header className="border-b">
         <div className="container mx-auto flex items-center justify-between px-4 py-3">
           <a
@@ -798,8 +806,10 @@ export function AppContent() {
         </nav>
       </header>
       <main
+        id="main-content"
+        tabIndex={-1}
         className={cn(
-          "container mx-auto px-4 py-6 max-w-6xl flex-1 w-full",
+          "container mx-auto px-4 py-6 max-w-6xl flex-1 w-full outline-none",
           // isTopsPage && "max-w-6xl",
           isToolsPage && "max-w-8xl",
         )}
@@ -1228,6 +1238,13 @@ export function AppContent() {
             >
               {t("app.footer.contact")}
             </button>
+            <button
+              type="button"
+              onClick={openCookieSettings}
+              className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
+            >
+              {t("app.footer.cookies")}
+            </button>
           </span>
         </div>
       </footer>
@@ -1282,6 +1299,7 @@ export function AppContent() {
           </Card>
         </div>
       )}
+      <CookieConsent />
     </div>
   );
 }

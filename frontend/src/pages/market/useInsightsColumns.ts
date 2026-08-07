@@ -5,6 +5,7 @@
 // persisted to localStorage. The "Item" column is never hideable.
 
 import { useSyncExternalStore } from "react";
+import { writeIfConsented } from "@/lib/consent";
 
 const STORAGE_KEY = "market.insightsHiddenCols";
 
@@ -48,11 +49,7 @@ function subscribe(cb: () => void): () => void {
 
 function commit(next: string[]): void {
     current = next;
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-        /* ignore persistence failures */
-    }
+    writeIfConsented(STORAGE_KEY, JSON.stringify(next));
     listeners.forEach((l) => l());
 }
 

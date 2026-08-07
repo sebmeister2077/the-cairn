@@ -4,18 +4,18 @@
 // their own trade as false.
 
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, MapPin } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { getMyAccountSafe } from "@/lib/api";
 import { ordersApi, useInvalidateOrders, useMarkOrderSeen, useOrderDetail } from "@/lib/orders";
 import {
-  formatQtyInUnit,
   MOBILITY_LABELS,
   priceUnitLabel,
   SELL_UNIT_MANY,
@@ -34,9 +34,11 @@ function formatGears(n: number): string {
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: order, isPending, isError, featureDisabled } = useOrderDetail(id);
   const accountQuery = useQuery({ queryKey: ["account-me"], queryFn: getMyAccountSafe });
   const myId = accountQuery.data?.user?.api_key_id ?? null;
+  const isAdmin = accountQuery.data?.is_admin ?? false;
   const isLoggedIn = Boolean(accountQuery.data?.user);
   const invalidate = useInvalidateOrders();
   const markOrderSeen = useMarkOrderSeen();
@@ -44,6 +46,7 @@ export function OrderDetailPage() {
   const [requestOpen, setRequestOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [reopenOpen, setReopenOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // Clear this order's unread dot once the user opens it.
   useEffect(() => {
@@ -54,6 +57,14 @@ export function OrderDetailPage() {
   const close = useMutation({
     mutationFn: () => ordersApi.close(id!),
     onSuccess: invalidate,
+  });
+
+  const del = useMutation({
+    mutationFn: () => ordersApi.remove(id!),
+    onSuccess: () => {
+      invalidate();
+      navigate("/market/orders");
+    },
   });
 
   if (featureDisabled) {
@@ -231,6 +242,17 @@ export function OrderDetailPage() {
               to send a request or negotiate.
             </p>
           )}
+          {(isOwner || isAdmin) && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => setConfirmDelete(true)}
+              disabled={del.isPending}
+            >
+              {del.isPending ? <Spinner /> : null}
+              {isOwner ? "Delete" : "Delete (admin)"}
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -256,6 +278,20 @@ export function OrderDetailPage() {
       <OrderRequestDialog order={order} open={requestOpen} onOpenChange={setRequestOpen} />
       <EditOrderDialog order={order} open={editOpen} onOpenChange={setEditOpen} />
       <ReopenOrderDialog order={order} open={reopenOpen} onOpenChange={setReopenOpen} />
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Delete this order?"
+        description={
+          isOwner
+            ? "This permanently removes your order and its entire negotiation history. This cannot be undone."
+            : "As an admin, this permanently removes this order and its entire negotiation history. This cannot be undone."
+        }
+        confirmLabel="Delete"
+        variant="destructive"
+        loading={del.isPending}
+        onConfirm={() => del.mutate()}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

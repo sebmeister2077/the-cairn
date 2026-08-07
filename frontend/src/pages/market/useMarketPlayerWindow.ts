@@ -8,6 +8,7 @@
 // localStorage pattern, just under its own key.
 
 import { useSyncExternalStore } from "react";
+import { writeIfConsented } from "@/lib/consent";
 import { INSIGHTS_WINDOWS, type InsightsWindowKey } from "./useMarketInsights";
 
 const STORAGE_KEY = "market.playerWindowKey";
@@ -35,11 +36,7 @@ function subscribe(cb: () => void): () => void {
 export function setPlayerWindow(key: InsightsWindowKey): void {
     if (key === current) return;
     current = key;
-    try {
-        localStorage.setItem(STORAGE_KEY, key);
-    } catch {
-        /* ignore persistence failures */
-    }
+    writeIfConsented(STORAGE_KEY, key);
     listeners.forEach((l) => l());
 }
 

@@ -57,6 +57,23 @@ export function loadInitialAuthState(): AuthState {
     };
 }
 
+/**
+ * The only auth data persisted before the user accepts browser storage:
+ * just the API key. A key is always minted (rate limiting is keyed to it),
+ * so keeping it across reloads is strictly necessary; every other auth
+ * field resets to its default until consent is granted.
+ */
+export function apiKeyOnlyAuthState(apiKey: string): AuthState {
+    return {
+        apiKey,
+        isAdmin: false,
+        canContribute: false,
+        adminSessionToken: null,
+        adminSessionExpiresAt: null,
+        rejectedApiKey: null,
+    };
+}
+
 const initialState: AuthState = loadInitialAuthState();
 
 export const authSlice = createSlice({

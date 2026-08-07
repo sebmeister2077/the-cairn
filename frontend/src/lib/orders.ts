@@ -43,7 +43,7 @@ async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 async function sendJson<T>(
     path: string,
-    method: "POST" | "PATCH" | "PUT",
+    method: "POST" | "PATCH" | "PUT" | "DELETE",
     body?: unknown,
 ): Promise<T> {
     const res = await fetch(`${API_BASE}/orders${path}`, {
@@ -84,6 +84,7 @@ export const ordersApi = {
     update: (id: string, payload: Partial<CreateOrderPayload> & { clear_location?: boolean }) =>
         sendJson<Order>(`/${encodeURIComponent(id)}`, "PATCH", payload),
     close: (id: string) => sendJson<{ ok: boolean }>(`/${encodeURIComponent(id)}/close`, "POST"),
+    remove: (id: string) => sendJson<{ ok: boolean }>(`/${encodeURIComponent(id)}`, "DELETE"),
     reopen: (id: string, addQuantity: number) =>
         sendJson<Order>(`/${encodeURIComponent(id)}/reopen`, "POST", { add_quantity: addQuantity }),
     createRequest: (

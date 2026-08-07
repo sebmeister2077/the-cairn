@@ -12,6 +12,7 @@ import {
   PERSISTED_QUERY_CACHE_KEY,
   ApiError,
 } from "@/lib/api";
+import { hasAcceptedStorage } from "@/lib/consent";
 import "./index.css";
 
 const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;
@@ -155,6 +156,10 @@ export default function App() {
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;
+            // Gate persistence on the user having accepted browser storage.
+            // Until then, opted-in queries (e.g. TOPS map overlays) live in
+            // memory only and are never written to localStorage.
+            if (!hasAcceptedStorage()) return false;
             // Gate persistence on having an API key in storage so that
             // queries fetched while logged in don't outlive logout /
             // account deletion / a 401 wipe.

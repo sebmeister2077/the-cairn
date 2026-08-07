@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Database } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,7 +27,9 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { ApiError } from "@/lib/api";
+import { setStoredConsent } from "@/lib/consent";
 import { ORDERS_KEY, ordersApi, useTraderProfile } from "@/lib/orders";
+import { useAppSelector } from "@/store/hooks";
 import type { CreateOrderPayload, OrderLocation, OrderSide, TraderMobility } from "@/models/orders";
 import { MOBILITY_LABELS, SIDE_LABELS, STACKS_PER_CRATE, useItemPicker } from "./ordersShared";
 import { TraderLocationField } from "./TraderLocationField";
@@ -317,12 +320,40 @@ function CreateOrderForm({ initialLocation, initialMobility, onClose }: CreateOr
 }
 
 export function CreateOrderDialog({ open, onOpenChange }: CreateOrderDialogProps) {
-  const { data: profile, isPending: profilePending } = useTraderProfile(open);
+  // Posting content is gated on cookie/storage consent, matching the TL
+  // groupings drawer. Browsing orders stays open to everyone.
+  const storageConsented = useAppSelector((s) => s.consent.value === "accepted");
+  const { data: profile, isPending: profilePending } = useTraderProfile(open && storageConsented);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
-        {open && profilePending ? (
+        {!storageConsented ? (
+          <>
+            <DialogHeader>
+              <DialogTitle>Accept cookies to post an order</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <Database className="size-8 text-muted-foreground" aria-hidden />
+              <p className="text-sm text-muted-foreground">
+                Posting an order and negotiating with other traders needs cookies enabled, so we can
+                keep you signed in and tie the order to your account. You can keep browsing orders
+                without accepting.
+              </p>
+              <div className="flex flex-col items-center gap-2">
+                <Button type="button" onClick={() => setStoredConsent("accepted")}>
+                  Accept cookies
+                </Button>
+                <a
+                  href="/privacy"
+                  className="text-xs text-muted-foreground underline hover:text-foreground"
+                >
+                  Privacy Policy
+                </a>
+              </div>
+            </div>
+          </>
+        ) : open && profilePending ? (
           <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
             <Spinner /> Loading…
           </div>

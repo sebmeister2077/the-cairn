@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { API_BASE, getStoredApiKey } from "@/lib/api";
+import { hasAcceptedStorage } from "@/lib/consent";
 import { describePath, type PathDescriptor } from "@/lib/pageTracking";
 
 /**
@@ -46,6 +47,9 @@ export function PageViewTracker(): null {
   };
 
   const enqueue = (entry: PathDescriptor) => {
+    // Usage analytics is not strictly necessary, so hold off until the user
+    // has accepted storage/consent. Before then nothing is buffered or sent.
+    if (!hasAcceptedStorage()) return;
     // Collapse same-entry-as-last-queued so a re-render that re-fires the
     // same route (and ref) doesn't double-count.
     const key = entry.ref ? `${entry.template}\u0000${entry.ref}` : entry.template;
