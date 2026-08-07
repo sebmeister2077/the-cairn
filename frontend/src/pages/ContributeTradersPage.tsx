@@ -38,12 +38,12 @@ import {
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
-  TRADER_TYPE_COLORS,
   isTraderType,
   type TraderCandidate,
   type TraderType,
 } from "@/lib/trader-types";
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import { MaintenanceChip } from "@/components/MaintenanceChip";
 import { FilePathHelp, type FilePathHelpItem } from "@/components/FilePathHelp";
 import { useTranslation } from "@/lib/i18n";
@@ -147,6 +147,7 @@ function TraderEditorRow({
   labelReadOnly = false,
 }: TraderEditorRowProps) {
   const { t } = useTranslation();
+  const traderColors = useTraderColors();
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded border px-2 py-1.5">
@@ -204,7 +205,7 @@ function TraderEditorRow({
         className="inline-block h-3 w-3 rounded-full border"
         style={{
           backgroundColor: candidate.trader_type
-            ? TRADER_TYPE_COLORS[candidate.trader_type]
+            ? traderColors[candidate.trader_type]
             : "transparent",
         }}
       />
@@ -709,6 +710,7 @@ function ManualTraderEntryFlow() {
 
 function MyTradersList() {
   const { t } = useTranslation();
+  const traderColors = useTraderColors();
   const query = useQuery({
     queryKey: [...MY_TRADERS_QUERY_KEY],
     queryFn: () => getMyTraderContributions({ limit: 100 }),
@@ -777,7 +779,7 @@ function MyTradersList() {
                       aria-hidden
                       className="inline-block h-3 w-3 rounded-full"
                       style={{
-                        backgroundColor: TRADER_TYPE_COLORS[r.trader_type],
+                        backgroundColor: traderColors[r.trader_type],
                       }}
                     />
                   )}

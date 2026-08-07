@@ -129,6 +129,7 @@ import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import {
   useLandmarksOverlay,
@@ -146,7 +147,6 @@ import { notifyWCTileCacheVersion } from "@/lib/wcTileCache";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
-  TRADER_TYPE_COLORS,
   isTraderType,
   type TraderType,
 } from "@/lib/trader-types";
@@ -614,6 +614,8 @@ export function TOPSMapViewPage() {
   const landmarksQuery = useLandmarksOverlay();
   const translocatorsQuery = useTranslocatorsOverlay();
   const tradersQuery = useTradersOverlay();
+  // Effective per-type trader colors (defaults + user Preferences overrides).
+  const traderColors = useTraderColors();
   // When the WebCartographer source is selected we fetch translocators and
   // landmarks from the WC host's own geojson exports instead of using ours.
   // Our backend landmarks are still loaded so we can surface Terminus
@@ -1262,7 +1264,7 @@ export function TOPSMapViewPage() {
             z: t.z,
             kind: "Trader",
             // label: t.label,
-            color: t.color,
+            color: traderColors[t.trader_type],
           });
         }
       }
@@ -1309,7 +1311,7 @@ export function TOPSMapViewPage() {
             }
             if (duplicate) continue;
           }
-          base.push(m);
+          base.push(m.traderType ? { ...m, color: traderColors[m.traderType] } : m);
         }
       }
 
@@ -1365,7 +1367,7 @@ export function TOPSMapViewPage() {
             x: c.x,
             z: c.z,
             kind: "Trader",
-            color: TRADER_TYPE_COLORS[assigned.trader_type],
+            color: traderColors[assigned.trader_type],
           });
         }
       }
@@ -1412,6 +1414,7 @@ export function TOPSMapViewPage() {
     showTerminus,
     showTraders,
     allTraders,
+    traderColors,
     traderTypeFilterSet,
     recordedBrokenTLsVisible,
     recordedFeatures,
@@ -2358,7 +2361,7 @@ export function TOPSMapViewPage() {
                                 active ? "bg-foreground text-background" : "bg-background",
                               )}
                               style={{
-                                borderColor: TRADER_TYPE_COLORS[t],
+                                borderColor: traderColors[t],
                                 animationDelay: `${i * 35}ms`,
                                 animationDuration: "260ms",
                               }}
@@ -2367,7 +2370,7 @@ export function TOPSMapViewPage() {
                               <span
                                 aria-hidden
                                 className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                                style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                                style={{ backgroundColor: traderColors[t] }}
                               />
                               {TRADER_TYPE_LABELS[t]}
                             </button>

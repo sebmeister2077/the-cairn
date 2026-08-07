@@ -21,12 +21,8 @@ import {
   useTradersOverlay,
   useTranslocatorsOverlay,
 } from "@/hooks/useOverlayData";
-import {
-  TRADER_TYPES,
-  TRADER_TYPE_COLORS,
-  TRADER_TYPE_LABELS,
-  type TraderType,
-} from "@/lib/trader-types";
+import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import { buildAddCommands, DEFAULT_WAYPOINT_Y, type WaypointRecord } from "@/lib/waypoint-macro";
 import { WaypointRecordTable } from "./WaypointRecordTable";
 
@@ -80,6 +76,7 @@ export function ImportMode({ onCommandsChange }: ImportModeProps) {
   const landmarks = useLandmarksOverlay();
   const traders = useTradersOverlay();
   const translocators = useTranslocatorsOverlay();
+  const traderColors = useTraderColors();
 
   const active =
     source === "landmarks" ? landmarks : source === "traders" ? traders : translocators;
@@ -147,7 +144,7 @@ export function ImportMode({ onCommandsChange }: ImportModeProps) {
               name: m.label ?? TRADER_TYPE_LABELS[m.trader_type],
               x: m.x,
               z: m.z,
-              color: recolor(m.color ?? TRADER_TYPE_COLORS[m.trader_type] ?? fallback),
+              color: recolor(traderColors[m.trader_type] ?? m.color ?? fallback),
               icon,
             },
           }),
@@ -187,6 +184,7 @@ export function ImportMode({ onCommandsChange }: ImportModeProps) {
     traderTypes,
     applyColor,
     debouncedColor,
+    traderColors,
     landmarks.data,
     traders.data,
     translocators.data,
@@ -280,7 +278,7 @@ export function ImportMode({ onCommandsChange }: ImportModeProps) {
                         >
                           <span
                             className="mr-1.5 inline-block size-2.5 rounded-full ring-1 ring-foreground/20"
-                            style={{ backgroundColor: TRADER_TYPE_COLORS[tt] }}
+                            style={{ backgroundColor: traderColors[tt] }}
                           />
                           {TRADER_TYPE_LABELS[tt]}
                         </Button>

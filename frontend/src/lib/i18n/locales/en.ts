@@ -202,6 +202,11 @@ export const en = {
             markerIconsTitle: "Map marker icons",
             markerIconsDescription:
                 "Pick how Traders, Translocator endpoints, and Terminus waypoints are drawn on the map. Changes apply immediately and are saved to your browser.",
+            traderColorsTitle: "Trader colors",
+            traderColorsDescription:
+                "Set the marker color for each trader profession. Applies across the map, legends and the waypoint-macro tool. Saved to your browser once you've accepted storage.",
+            traderColorsResetAll: "Reset all",
+            traderColorsResetOne: "Reset",
             dateFormatTitle: "Date format",
             dateFormatDescription:
                 "Choose how dates are shown across Cairn. System follows your browser/OS locale; the other options render the month as a 3-letter abbreviation in your chosen field order.",

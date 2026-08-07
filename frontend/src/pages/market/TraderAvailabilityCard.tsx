@@ -1,7 +1,8 @@
 import { Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { lookupTraderInfo } from "@/lib/trader-wares";
-import { TRADER_TYPE_COLORS, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import { TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import type { TraderWarePrice } from "@/models/trader-wares";
 
 // Named village NPCs (Nadiya villagers like Alba, Tobias) share one colour.
@@ -11,8 +12,8 @@ function traderName(w: TraderWarePrice): string {
   return w.label ?? TRADER_TYPE_LABELS[w.traderType as TraderType];
 }
 
-function traderColor(w: TraderWarePrice): string {
-  return w.traderType === "villager" ? VILLAGER_COLOR : TRADER_TYPE_COLORS[w.traderType];
+function traderColor(w: TraderWarePrice, colors: Record<TraderType, string>): string {
+  return w.traderType === "villager" ? VILLAGER_COLOR : colors[w.traderType];
 }
 
 /** In-game gears range: prices are whole gears, so the realised span is
@@ -24,12 +25,13 @@ function priceRange(w: TraderWarePrice): string {
 }
 
 function WareRow({ ware }: { ware: TraderWarePrice }) {
+  const traderColors = useTraderColors();
   const qty = ware.stacksize && ware.stacksize > 1 ? ware.stacksize : null;
   return (
     <div className="flex items-center gap-2 text-sm">
       <span
         className="size-2.5 shrink-0 rounded-full"
-        style={{ backgroundColor: traderColor(ware) }}
+        style={{ backgroundColor: traderColor(ware, traderColors) }}
         aria-hidden
       />
       <span className="min-w-0 flex-1 truncate">{traderName(ware)}</span>

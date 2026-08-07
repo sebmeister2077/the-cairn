@@ -35,8 +35,13 @@ export const TRADER_TYPE_LABELS: Record<TraderType, string> = {
 };
 
 /**
- * Per-type marker color, chosen to be distinguishable on the brown / green
- * TOPS rock tiles. Loosely keyed to the trader's wares.
+ * Per-type *default* marker color, chosen to be distinguishable on the brown /
+ * green TOPS rock tiles. Loosely keyed to the trader's wares. Users can
+ * override any of these from Preferences → Appearance (see
+ * {@link resolveTraderColors}); this record is the fallback palette.
+ *
+ * `survival_goods` used to be green-600 (`#16a34a`) which sat too close to
+ * `agriculture` (lime-600) on the map — it's now blue-600 for a clear hue gap.
  */
 export const TRADER_TYPE_COLORS: Record<TraderType, string> = {
     agriculture: "#65a30d", // lime-600
@@ -46,12 +51,50 @@ export const TRADER_TYPE_COLORS: Record<TraderType, string> = {
     commodities: "#0891b2", // cyan-600
     furniture: "#a16207", // yellow-700
     luxuries: "#7c3aed", // violet-600
-    survival_goods: "#16a34a", // green-600
+    survival_goods: "#2563eb", // blue-600
     treasure_hunter: "#eab308", // yellow-500
 };
 
 export function isTraderType(s: unknown): s is TraderType {
     return typeof s === "string" && (TRADER_TYPES as readonly string[]).includes(s);
+}
+
+/** User overrides for {@link TRADER_TYPE_COLORS}. Partial — any missing type
+ *  falls back to its default. Persisted in the `mapView` Redux slice. */
+export type TraderColorOverrides = Partial<Record<TraderType, string>>;
+
+/** Matches a 3- or 6-digit CSS hex color (`#rgb` / `#rrggbb`). */
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+export function isHexColor(s: unknown): s is string {
+    return typeof s === "string" && HEX_COLOR_RE.test(s);
+}
+
+/**
+ * Keep only well-formed `{ traderType: hexColor }` pairs from an untrusted
+ * source (e.g. a persisted envelope written by an older/newer build). Unknown
+ * keys and non-hex values are dropped so downstream code always deals with a
+ * clean override map.
+ */
+export function sanitizeTraderColors(raw: unknown): TraderColorOverrides {
+    if (typeof raw !== "object" || raw === null) return {};
+    const out: TraderColorOverrides = {};
+    for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+        if (isTraderType(key) && isHexColor(value)) out[key] = value;
+    }
+    return out;
+}
+
+/**
+ * Merge the user's overrides over the default palette, returning a full
+ * color for every trader type. Pass the (sanitized) overrides from the
+ * `mapView.traderColors` slice; omit them to get the defaults.
+ */
+export function resolveTraderColors(
+    overrides?: TraderColorOverrides | null,
+): Record<TraderType, string> {
+    if (!overrides) return { ...TRADER_TYPE_COLORS };
+    return { ...TRADER_TYPE_COLORS, ...sanitizeTraderColors(overrides) };
 }
 
 /**

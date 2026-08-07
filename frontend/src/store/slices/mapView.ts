@@ -11,6 +11,13 @@ import {
     type TLStyle,
     type TraderStyle,
 } from "@/lib/markerStyles";
+import {
+    isHexColor,
+    isTraderType,
+    sanitizeTraderColors,
+    type TraderColorOverrides,
+    type TraderType,
+} from "@/lib/trader-types";
 import type {
     ClimateSubToggle,
     ClimateTempVariant,
@@ -281,6 +288,14 @@ export interface MapViewState {
     traderStyle: TraderStyle;
     tlStyle: TLStyle;
     terminusStyle: TerminusStyle;
+    /**
+     * User overrides for the per-trader-type marker colors. Sparse — only
+     * types the user explicitly recoloured appear here; everything else
+     * falls back to the default palette (`TRADER_TYPE_COLORS`). Edited from
+     * the Preferences → Appearance panel and persisted via the root
+     * envelope (so it only survives reloads once storage consent is given).
+     */
+    traderColors: TraderColorOverrides;
     /** Active map tile source. See {@link MapSource}. */
     mapSource: MapSource;
     /** Configured WebCartographer host URL (used when mapSource === "webcartographer"). */
@@ -359,6 +374,7 @@ export function loadInitialMapViewState(): MapViewState {
         traderStyle: DEFAULT_TRADER_STYLE,
         tlStyle: DEFAULT_TL_STYLE,
         terminusStyle: DEFAULT_TERMINUS_STYLE,
+        traderColors: {},
         mapSource: readMapSource(),
         webCartographerUrl: readWebCartographerUrl(),
     };
@@ -571,6 +587,26 @@ export const mapViewSlice = createSlice({
         setTerminusStyle(state, action: PayloadAction<TerminusStyle>) {
             state.terminusStyle = action.payload;
         },
+        /**
+         * Set or clear one trader type's custom color. A `null`/invalid color
+         * removes the override so the type reverts to its palette default.
+         */
+        setTraderColor(
+            state,
+            action: PayloadAction<{ type: TraderType; color: string | null }>,
+        ) {
+            const { type, color } = action.payload;
+            if (!isTraderType(type)) return;
+            if (color && isHexColor(color)) {
+                state.traderColors[type] = color;
+            } else {
+                delete state.traderColors[type];
+            }
+        },
+        /** Drop every custom trader color, reverting to the default palette. */
+        resetTraderColors(state) {
+            state.traderColors = {};
+        },
         setMapSource(state, action: PayloadAction<MapSource>) {
             state.mapSource = action.payload;
         },
@@ -595,6 +631,9 @@ export const mapViewSlice = createSlice({
             if (merged.mapSource !== "cairn" && merged.mapSource !== "webcartographer") {
                 merged.mapSource = "webcartographer";
             }
+            // Strip any malformed trader-color overrides a hand-edited or
+            // older/newer envelope may carry.
+            merged.traderColors = sanitizeTraderColors(merged.traderColors);
             return merged;
         });
     },
@@ -644,6 +683,8 @@ export const {
     setTraderStyle,
     setTLStyle,
     setTerminusStyle,
+    setTraderColor,
+    resetTraderColors,
     setMapSource,
     setWebCartographerUrl,
 } = mapViewSlice.actions;

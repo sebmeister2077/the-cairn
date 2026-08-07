@@ -43,12 +43,8 @@ import { useTranslation } from "@/lib/i18n";
 // because server size is fixed and we don't want to ship the ~1 MB JSON
 // to clients just to read its length.
 const OCEANS_TOTAL_COUNT = 1236;
-import {
-  TRADER_TYPES,
-  TRADER_TYPE_LABELS,
-  TRADER_TYPE_COLORS,
-  type TraderType,
-} from "@/lib/trader-types";
+import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -131,6 +127,7 @@ export function FullscreenControlsOverlay({
 }: FullscreenControlsOverlayProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const traderColors = useTraderColors();
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
   const setShowTranslocators = useCallback(
     (next: boolean) => dispatch(setShowTranslocatorsAction(next)),
@@ -543,7 +540,7 @@ export function FullscreenControlsOverlay({
                         active ? "bg-foreground text-background" : "bg-background",
                       )}
                       style={{
-                        borderColor: TRADER_TYPE_COLORS[t],
+                        borderColor: traderColors[t],
                         animationDelay: `${i * 35}ms`,
                         animationDuration: "260ms",
                       }}
@@ -553,7 +550,7 @@ export function FullscreenControlsOverlay({
                       <span
                         aria-hidden
                         className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                        style={{ backgroundColor: TRADER_TYPE_COLORS[t] }}
+                        style={{ backgroundColor: traderColors[t] }}
                       />
                       {TRADER_TYPE_LABELS[t]}
                     </button>

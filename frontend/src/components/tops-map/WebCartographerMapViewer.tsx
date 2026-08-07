@@ -23,13 +23,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
-  TRADER_TYPE_COLORS,
   CLAIM_UNCLASSIFIED_COLOR,
   type TraderType,
 } from "@/lib/trader-types";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import { type ClaimTypeMap, TRADER_CLAIM_TYPES_QUERY_KEY } from "@/hooks/useOverlayData";
+import { useTraderColors } from "@/hooks/useTraderColors";
 import { submitTraderClaimTypes, type ClaimTypeSubmitItem } from "@/lib/api";
 import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
 import type {
@@ -341,6 +341,7 @@ export function WebCartographerMapViewer({
   const traderStyle = useReduxState("mapView.traderStyle");
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
+  const traderColors = useTraderColors();
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
@@ -1187,9 +1188,7 @@ export function WebCartographerMapViewer({
           const sy = (c.z - cWz) * ppb + ch / 2;
           if (sx < -margin || sx > cw + margin || sy < -margin || sy > ch + margin) continue;
           const assigned = types?.[c.claimId];
-          const color = assigned
-            ? TRADER_TYPE_COLORS[assigned.trader_type]
-            : CLAIM_UNCLASSIFIED_COLOR;
+          const color = assigned ? traderColors[assigned.trader_type] : CLAIM_UNCLASSIFIED_COLOR;
           const isHot = c.claimId === hoveredClaimId || c.claimId === claimPopover?.claimId;
           drawClaimDot(octx, sx, sy, zoom, color, isHot);
           projected.push({ claimId: c.claimId, sx, sy, center: c.center });
@@ -1256,6 +1255,7 @@ export function WebCartographerMapViewer({
     tlStyle,
     traderStyle,
     terminusStyle,
+    traderColors,
     claimMarkers,
     claimTypes,
     claimDensity,
@@ -2114,7 +2114,7 @@ export function WebCartographerMapViewer({
                   >
                     <span
                       className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/40"
-                      style={{ backgroundColor: TRADER_TYPE_COLORS[tt] }}
+                      style={{ backgroundColor: traderColors[tt] }}
                     />
                     <span>{TRADER_TYPE_LABELS[tt]}</span>
                   </button>

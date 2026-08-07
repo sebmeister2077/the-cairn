@@ -3,6 +3,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
+import { TraderColorPicker } from "@/components/account/TraderColorPicker";
 import { DateFormatSwitcher } from "@/components/DateFormatSwitcher";
 import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
@@ -90,6 +91,8 @@ export function PreferencesPage() {
             </div>
             <MarkerStylePicker />
           </div>
+          <Separator className="my-3" />
+          <TraderColorPicker />
           <Separator className="my-3" />
           <div className="space-y-2">
             <div className="space-y-0.5">

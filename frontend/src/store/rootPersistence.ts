@@ -37,6 +37,7 @@ import {
     isTLStyle,
     isTraderStyle,
 } from "@/lib/markerStyles";
+import { sanitizeTraderColors } from "@/lib/trader-types";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;
@@ -136,6 +137,8 @@ const NORMALIZE_ON_READ: {
             terminusStyle: isTerminusStyle(merged.terminusStyle)
                 ? merged.terminusStyle
                 : DEFAULT_TERMINUS_STYLE,
+            // Drop malformed/unknown trader-color overrides.
+            traderColors: sanitizeTraderColors(merged.traderColors),
         };
     },
     // Same defensive merge for the admin Usage filters slice: the `pages`
