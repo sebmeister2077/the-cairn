@@ -10,6 +10,7 @@ import {
   deleteMyAccount,
   registerAccount,
   getStoredApiKey,
+  setApiKey,
   clearStoredAuthFlags,
   clearAdminSession,
   clearPersistedQueryCache,
@@ -33,15 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { AdminPasskeyPanel } from "@/components/AdminPasskeyPanel";
 import { MyTranslocatorContributionsCard } from "@/components/account/MyTranslocatorContributionsCard";
-import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
-import { DateFormatSwitcher } from "@/components/DateFormatSwitcher";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
-import {
-  setStarfieldEnabled,
-  setShowAdvancedMapOptions,
-  setWCTileCacheEnabled,
-} from "@/store/slices/mapView";
 import { clearRejectedMarker } from "@/store/slices/auth";
 
 // localStorage keys preserved when the user clicks "Clear local cache":
@@ -76,9 +70,6 @@ export function AccountPage() {
   const queryClient = useQueryClient();
   const apiKey = useReduxState("auth.apiKey");
   const dispatch = useAppDispatch();
-  const starfieldEnabled = useReduxState("mapView.starfieldEnabled");
-  const showAdvancedMapOptions = useReduxState("mapView.showAdvancedMapOptions");
-  const wcTileCacheEnabled = useReduxState("mapView.wcTileCacheEnabled");
   const [showKey, setShowKey] = useState(false);
   const [inGameName, setInGameName] = useState("");
   const [confirmDelete, setConfirmDelete] = useState("");
@@ -130,6 +121,12 @@ export function AccountPage() {
       // session, the in-memory React Query cache, and the persisted
       // query cache in localStorage. Then hard-navigate so any in-memory
       // page state is dropped too.
+      //
+      // Clearing the key in the Redux store (not just the legacy
+      // `api_key` localStorage entry) is what actually removes it from the
+      // persisted state envelope (`vsw:state:v1`). Without this the deleted
+      // key is rehydrated on the next load and every request 401s.
+      setApiKey("");
       localStorage.removeItem("api_key");
       clearStoredAuthFlags();
       clearAdminSession();
@@ -342,7 +339,7 @@ export function AccountPage() {
       </Card>
 
       {/* Preferences */}
-      <Card>
+      {/* <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base">{t("account.preferences.title")}</CardTitle>
         </CardHeader>
@@ -389,82 +386,11 @@ export function AccountPage() {
             />
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Appearance */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">{t("account.appearance.title")}</CardTitle>
-          <CardDescription>{t("account.appearance.description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <Label htmlFor="starfield-toggle">{t("account.appearance.starfieldLabel")}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t("account.appearance.starfieldDescription")}
-              </p>
-            </div>
-            <Switch
-              id="starfield-toggle"
-              checked={starfieldEnabled}
-              onCheckedChange={(v) => dispatch(setStarfieldEnabled(v))}
-            />
-          </div>
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <Label htmlFor="advanced-map-options-toggle">
-                {t("account.appearance.advancedMapOptionsLabel")}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {t("account.appearance.advancedMapOptionsDescription")}
-              </p>
-            </div>
-            <Switch
-              id="advanced-map-options-toggle"
-              checked={showAdvancedMapOptions}
-              onCheckedChange={(v) => dispatch(setShowAdvancedMapOptions(v))}
-            />
-          </div>
-          <Separator className="my-3" />
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <Label htmlFor="wc-tile-cache-toggle">
-                {t("account.appearance.wcTileCacheLabel")}
-              </Label>
-              <p className="text-xs text-muted-foreground">
-                {t("account.appearance.wcTileCacheDescription")}
-              </p>
-            </div>
-            <Switch
-              id="wc-tile-cache-toggle"
-              checked={wcTileCacheEnabled}
-              onCheckedChange={(v) => dispatch(setWCTileCacheEnabled(v))}
-            />
-          </div>
-          <Separator className="my-3" />
-          <div className="space-y-2">
-            <div className="space-y-0.5">
-              <Label>{t("account.appearance.markerIconsTitle")}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t("account.appearance.markerIconsDescription")}
-              </p>
-            </div>
-            <MarkerStylePicker />
-          </div>
-          <Separator className="my-3" />
-          <div className="space-y-2">
-            <div className="space-y-0.5">
-              <Label>{t("account.appearance.dateFormatTitle")}</Label>
-              <p className="text-xs text-muted-foreground">
-                {t("account.appearance.dateFormatDescription")}
-              </p>
-            </div>
-            <DateFormatSwitcher />
-          </div>
-        </CardContent>
-      </Card>
+      {/* Appearance / webmap look-and-feel preferences now live on their
+          own /preferences page so users don't need an account to change
+          them. */}
 
       {/* API Key */}
       <Card>

@@ -42,6 +42,8 @@ const ru = {
             apiKey: "API-ключ",
             tools: "Инструменты",
             toolsTitle: "Инструменты строителя (превью туннелей и др.)",
+            preferences: "Настройки",
+            preferencesTitle: "Настройте внешний вид карты и сайта",
         },
         nav: {
             categories: {
@@ -282,6 +284,11 @@ const ru = {
             confirmPlaceholder: "DELETE",
             deleteAccount: "Удалить мой аккаунт",
         },
+    },
+    preferencesPage: {
+        title: "Настройки",
+        description:
+            "Настройте внешний вид карты и сайта. Эти настройки сохраняются в этом браузере — аккаунт не требуется.",
     },
     generalPage: {
         title: "Cairn",

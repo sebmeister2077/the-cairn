@@ -43,6 +43,8 @@ const nl = {
             apiKey: "API‑sleutel",
             tools: "Gereedschap",
             toolsTitle: "Bouwer‑gereedschap (tunnel‑previewer, enz.)",
+            preferences: "Voorkeuren",
+            preferencesTitle: "Pas aan hoe de kaart en site eruitzien",
         },
         nav: {
             categories: {
@@ -280,6 +282,11 @@ const nl = {
             confirmPlaceholder: "DELETE",
             deleteAccount: "Verwijder mijn account",
         },
+    },
+    preferencesPage: {
+        title: "Voorkeuren",
+        description:
+            "Pas aan hoe de kaart en site eruitzien. Deze instellingen worden in deze browser opgeslagen — geen account nodig.",
     },
     generalPage: {
         title: "Cairn",

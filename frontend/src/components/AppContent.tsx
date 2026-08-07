@@ -51,6 +51,7 @@ import { MarketMapPage } from "@/pages/market/MarketMapPage";
 import { MarketOrdersPage } from "@/pages/market/MarketOrdersPage";
 import { OrderDetailPage } from "@/pages/market/OrderDetailPage";
 import { AccountPage } from "@/pages/AccountPage";
+import { PreferencesPage } from "@/pages/PreferencesPage";
 import { PrivacyPage } from "@/pages/PrivacyPage";
 import { TermsPage } from "@/pages/TermsPage";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -616,9 +617,10 @@ export function AppContent() {
                   {t("app.header.about")}
                 </Button>
               </NavLink>
-              <NavLink to="/tools">
-                <Button variant="ghost" size="sm" title={t("app.header.toolsTitle")}>
-                  {t("app.header.tools")}
+
+              <NavLink to="/preferences">
+                <Button variant="ghost" size="sm" title={t("app.header.preferencesTitle")}>
+                  {t("app.header.preferences")}
                 </Button>
               </NavLink>
               <NavLink to="/account">
@@ -665,6 +667,13 @@ export function AppContent() {
                     className="rounded-md px-3 py-2 text-sm hover:bg-muted"
                   >
                     {t("app.header.about")}
+                  </NavLink>
+                  <NavLink
+                    to="/preferences"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="rounded-md px-3 py-2 text-sm hover:bg-muted"
+                  >
+                    {t("app.header.preferences")}
                   </NavLink>
                   <NavLink
                     to="/account"
@@ -1164,6 +1173,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Account failed" resetKeys={[location.pathname]}>
                 <AccountPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/preferences"
+            element={
+              <ErrorBoundary title="Preferences failed" resetKeys={[location.pathname]}>
+                <PreferencesPage />
               </ErrorBoundary>
             }
           />

@@ -48,6 +48,8 @@ export const en = {
             apiKey: "API Key",
             tools: "Tools",
             toolsTitle: "Builder tools (tunnel previewer, etc.)",
+            preferences: "Preferences",
+            preferencesTitle: "Customize how the map and site look",
             menu: "Menu",
         },
         nav: {
@@ -321,6 +323,11 @@ export const en = {
             confirmPlaceholder: "DELETE",
             deleteAccount: "Delete my account",
         },
+    },
+    preferencesPage: {
+        title: "Preferences",
+        description:
+            "Customize how the map and site look. These settings are saved in this browser — no account required.",
     },
     generalPage: {
         title: "Cairn",

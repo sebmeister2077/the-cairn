@@ -40,7 +40,9 @@ const es = {
             "finishAccountSetup": "Finalizar configuración de tu cuenta",
             "apiKey": "Clave API",
             "tools": "Herramientas",
-            "toolsTitle": "Herramientas de construcción (vista previa de túneles, etc.)"
+            "toolsTitle": "Herramientas de construcción (vista previa de túneles, etc.)",
+            "preferences": "Preferencias",
+            "preferencesTitle": "Personaliza la apariencia del mapa y del sitio"
         },
         "nav": {
             "categories": {
@@ -309,6 +311,10 @@ const es = {
             "confirmPlaceholder": "ELIMINAR",
             "deleteAccount": "Eliminar mi cuenta"
         }
+    },
+    "preferencesPage": {
+        "title": "Preferencias",
+        "description": "Personaliza la apariencia del mapa y del sitio. Estos ajustes se guardan en este navegador — no se necesita cuenta."
     },
     "generalPage": {
         "title": "Cairn",
