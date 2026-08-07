@@ -1,24 +1,24 @@
-import climateRootJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.json";
+import climateRootJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.json";
 
-import tempavgPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempavg.png?url";
-import tempavgRawPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempavg.raw.png?url";
-import tempavgWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempavg.world.json";
+import tempavgPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempavg.png?url";
+import tempavgRawPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempavg.raw.png?url";
+import tempavgWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempavg.world.json";
 
-import tempminPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmin.png?url";
-import tempminRawPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmin.raw.png?url";
-import tempminWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmin.world.json";
+import tempminPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmin.png?url";
+import tempminRawPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmin.raw.png?url";
+import tempminWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmin.world.json";
 
-import tempmaxPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmax.png?url";
-import tempmaxRawPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmax.raw.png?url";
-import tempmaxWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.tempmax.world.json";
+import tempmaxPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmax.png?url";
+import tempmaxRawPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmax.raw.png?url";
+import tempmaxWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.tempmax.world.json";
 
-import rainfallPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.rainfall.png?url";
-import rainfallRawPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.rainfall.raw.png?url";
-import rainfallWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.rainfall.world.json";
+import rainfallPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.rainfall.png?url";
+import rainfallRawPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.rainfall.raw.png?url";
+import rainfallWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.rainfall.world.json";
 
-import geoactivityPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.geoactivity.png?url";
-import geoactivityRawPngUrl from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.geoactivity.raw.png?url";
-import geoactivityWorldJson from "@/assets/Climate/climate_20260608_001141/climate_20260608_001141.geoactivity.world.json";
+import geoactivityPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.geoactivity.png?url";
+import geoactivityRawPngUrl from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.geoactivity.raw.png?url";
+import geoactivityWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.geoactivity.world.json";
 
 import { decodeKindFor, decoderFor } from "./decode";
 import { decodePng } from "../png";
