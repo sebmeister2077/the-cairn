@@ -1,6 +1,8 @@
 import { useTranslation } from "@/lib/i18n";
 import type { ClimateLayerKind } from "@/lib/climate/types";
 import type { ClimateSampleResult } from "@/hooks/useClimateOverlay";
+import { CLIMATE_SEA_LEVEL } from "@/lib/climate/altitude";
+import { coldestNight, hottestDay } from "@/lib/climate/extremes";
 
 interface ClimateHoverReadoutProps {
   /** The cursor's centered (TOPS) world coords, or null if outside map. */
@@ -9,6 +11,10 @@ interface ClimateHoverReadoutProps {
   sample: ClimateSampleResult | null;
   /** Whether the climate overlay is visible. The readout is hidden when off. */
   visible: boolean;
+  /** World Y the temperature/rainfall values are restated for. Shown as a
+   *  hint when it differs from sea level so users know the numbers reflect
+   *  their chosen build height, not the sea-level map colors. */
+  altitudeY?: number;
   /** Render as a floating overlay panel pinned to the bottom-left of the
    *  parent (used in fullscreen mode), instead of the default inline
    *  block layout used inside the controls column. */
@@ -45,14 +51,6 @@ function layerLabel(kind: ClimateLayerKind, t: (k: never) => string): string {
   }
 }
 
-/** Approximate diurnal swing applied to estimate in-game extremes from
- *  the exporter's seasonal `tempmin` / `tempmax` values. The exporter
- *  manifest documents the diurnal swing as 5..18 °C; in practice the
- *  effective amplitude users see in temperate biomes sits near the
- *  bottom of that range, so we use 6 °C as the one-number estimate.
- *  Both directions are labeled "approx" in the UI to set expectations. */
-const APPROX_DIURNAL_SWING_C = 6;
-
 /** Inline climate readout shown in the controls column. Displays the
  *  precise sampled value at the cursor's world position so users can
  *  verify the overlay against the in-game `/climate` command without
@@ -62,11 +60,15 @@ export function ClimateHoverReadout({
   hoverCoords,
   sample,
   visible,
+  altitudeY,
   floating = false,
 }: ClimateHoverReadoutProps) {
   const { t } = useTranslation();
   if (!visible) return null;
   const tt = t as (k: string) => string;
+
+  const primaryIsClimate = sample != null && sample.primary.kind !== "geoactivity";
+  const showAltitude = altitudeY != null && altitudeY !== CLIMATE_SEA_LEVEL && primaryIsClimate;
 
   const containerClass = floating
     ? "pointer-events-none absolute left-3 sm:left-6 bottom-6 sm:bottom-26 z-20 w-72 max-w-[calc(100vw-3rem)] rounded-md border bg-background/95 px-3 py-2 text-xs shadow-md backdrop-blur tabular-nums"
@@ -78,6 +80,12 @@ export function ClimateHoverReadout({
         <span>{tt("topsMap.climateReadout")}</span>
         <span>{hoverCoords ? `${hoverCoords.x}, ${hoverCoords.z}` : "—, —"}</span>
       </div>
+      {showAltitude && (
+        <div className="flex items-center justify-between gap-3 text-[10px] text-muted-foreground">
+          <span>{tt("topsMap.climateAtAltitude")}</span>
+          <span className="tabular-nums">Y {altitudeY}</span>
+        </div>
+      )}
       {hoverCoords && sample ? (
         <>
           <div className="mt-1 flex items-baseline justify-between gap-3">
@@ -91,70 +99,63 @@ export function ClimateHoverReadout({
           {sample.primary.kind === "tempmin" && (
             <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
               <span>{tt("topsMap.climateApproxNightLow")}</span>
-              <span>{formatValue("tempmin", sample.primary.value - APPROX_DIURNAL_SWING_C)}</span>
+              <span>{formatValue("tempmin", coldestNight(sample.primary.value))}</span>
             </div>
           )}
           {sample.primary.kind === "tempmax" && (
             <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
               <span>{tt("topsMap.climateApproxDayHigh")}</span>
-              <span>{formatValue("tempmax", sample.primary.value + APPROX_DIURNAL_SWING_C)}</span>
+              <span>{formatValue("tempmax", hottestDay(sample.primary.value))}</span>
             </div>
           )}
-          {sample.cropCheck && (
-            <div className="mt-1 border-t pt-1 flex flex-col gap-0.5">
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-muted-foreground">{tt("topsMap.climateTempMin")}</span>
-                <span
-                  className={
-                    sample.cropCheck.tempmin >= sample.cropCheck.cropMin
-                      ? "text-emerald-600"
-                      : "text-red-500"
-                  }
-                >
-                  {formatValue("tempmin", sample.cropCheck.tempmin)}
-                  <span className="ml-1 text-[10px] text-muted-foreground">
-                    {sample.cropCheck.tempmin >= sample.cropCheck.cropMin ? "\u2265" : "<"}{" "}
-                    {formatValue("tempmin", sample.cropCheck.cropMin)}
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
-                <span>{tt("topsMap.climateApproxNightLow")}</span>
-                <span>
-                  {formatValue("tempmin", sample.cropCheck.tempmin - APPROX_DIURNAL_SWING_C)}
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="text-muted-foreground">{tt("topsMap.climateTempMax")}</span>
-                <span
-                  className={
-                    sample.cropCheck.tempmax <= sample.cropCheck.cropMax
-                      ? "text-emerald-600"
-                      : "text-red-500"
-                  }
-                >
-                  {formatValue("tempmax", sample.cropCheck.tempmax)}
-                  <span className="ml-1 text-[10px] text-muted-foreground">
-                    {sample.cropCheck.tempmax <= sample.cropCheck.cropMax ? "\u2264" : ">"}{" "}
-                    {formatValue("tempmax", sample.cropCheck.cropMax)}
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
-                <span>{tt("topsMap.climateApproxDayHigh")}</span>
-                <span>
-                  {formatValue("tempmax", sample.cropCheck.tempmax + APPROX_DIURNAL_SWING_C)}
-                </span>
-              </div>
-              <div className="text-[10px] mt-0.5">
-                {sample.cropCheck.pass ? (
-                  <span className="text-emerald-600">{tt("topsMap.climateCropPass")}</span>
-                ) : (
-                  <span className="text-red-500">{tt("topsMap.climateCropFail")}</span>
-                )}
-              </div>
-            </div>
-          )}
+          {sample.cropCheck &&
+            (() => {
+              const coldNight = coldestNight(sample.cropCheck.tempmin);
+              const hotDay = hottestDay(sample.cropCheck.tempmax);
+              const coldOk = coldNight >= sample.cropCheck.cropMin;
+              const hotOk = hotDay <= sample.cropCheck.cropMax;
+              return (
+                <div className="mt-1 border-t pt-1 flex flex-col gap-0.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {tt("topsMap.climateApproxNightLow")}
+                    </span>
+                    <span className={coldOk ? "text-emerald-600" : "text-red-500"}>
+                      {formatValue("tempmin", coldNight)}
+                      <span className="ml-1 text-[10px] text-muted-foreground">
+                        {coldOk ? "\u2265" : "<"} {formatValue("tempmin", sample.cropCheck.cropMin)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-muted-foreground">
+                      {tt("topsMap.climateApproxDayHigh")}
+                    </span>
+                    <span className={hotOk ? "text-emerald-600" : "text-red-500"}>
+                      {formatValue("tempmax", hotDay)}
+                      <span className="ml-1 text-[10px] text-muted-foreground">
+                        {hotOk ? "\u2264" : ">"} {formatValue("tempmax", sample.cropCheck.cropMax)}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3 text-[10px] text-muted-foreground">
+                    <span>{tt("topsMap.climateSeasonalMean")}</span>
+                    <span>
+                      {formatValue("tempmin", sample.cropCheck.tempmin)}
+                      {" \u2026 "}
+                      {formatValue("tempmax", sample.cropCheck.tempmax)}
+                    </span>
+                  </div>
+                  <div className="text-[10px] mt-0.5">
+                    {sample.cropCheck.pass ? (
+                      <span className="text-emerald-600">{tt("topsMap.climateCropPass")}</span>
+                    ) : (
+                      <span className="text-red-500">{tt("topsMap.climateCropFail")}</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
         </>
       ) : (
         <div className="mt-1 text-muted-foreground">

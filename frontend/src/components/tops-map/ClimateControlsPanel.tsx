@@ -12,6 +12,7 @@ import {
   setClimateThresholdMode as setClimateThresholdModeAction,
   setClimateCropId as setClimateCropIdAction,
   setClimateCustomRange as setClimateCustomRangeAction,
+  setClimateAltitudeY as setClimateAltitudeYAction,
   setClimateOpacity as setClimateOpacityAction,
 } from "@/store/slices/mapView";
 import {
@@ -24,6 +25,7 @@ import {
   type CropTolerance,
 } from "@/lib/climate/types";
 import { useTranslation } from "@/lib/i18n";
+import { CLIMATE_SEA_LEVEL } from "@/lib/climate/altitude";
 import { cn } from "@/lib/utils";
 
 interface ClimateControlsPanelProps {
@@ -158,6 +160,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   const cropId = useAppSelector((s) => s.mapView.climateCropId);
   const customMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const customMax = useAppSelector((s) => s.mapView.climateCustomMax);
+  const altitudeY = useAppSelector((s) => s.mapView.climateAltitudeY);
   const opacity = useAppSelector((s) => s.mapView.climateOpacity);
 
   const setSubToggle = useCallback(
@@ -178,6 +181,10 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   );
   const setCustomRange = useCallback(
     (min: number | null, max: number | null) => dispatch(setClimateCustomRangeAction({ min, max })),
+    [dispatch],
+  );
+  const setAltitudeY = useCallback(
+    (next: number) => dispatch(setClimateAltitudeYAction(next)),
     [dispatch],
   );
   const setOpacity = useCallback(
@@ -446,6 +453,58 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
 
             {/* Legend gradient + opacity (shared across all sub-toggles) */}
             {layerMeta && <GradientLegend meta={layerMeta} />}
+
+            {/* Altitude readout adjustment — temperature & rainfall shift
+                with build height in-game. Geologic activity does not. */}
+            {(subToggle === "temperature" || subToggle === "rainfall") && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {t("topsMap.climateAltitude")}
+                  </span>
+                  {altitudeY !== CLIMATE_SEA_LEVEL && (
+                    <button
+                      type="button"
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setAltitudeY(CLIMATE_SEA_LEVEL);
+                      }}
+                      className="text-[10px] text-muted-foreground hover:text-foreground underline"
+                    >
+                      {t("topsMap.climateAltitudeReset")}
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Slider
+                    value={altitudeY}
+                    min={-60}
+                    max={320}
+                    step={1}
+                    onValueChange={setAltitudeY}
+                    aria-label={t("topsMap.climateAltitude")}
+                    className="flex-1"
+                  />
+                  <input
+                    type="number"
+                    step="1"
+                    value={altitudeY}
+                    onClick={(ev) => ev.stopPropagation()}
+                    onChange={(e) => {
+                      const n = parseInt(e.target.value, 10);
+                      if (Number.isFinite(n)) setAltitudeY(n);
+                    }}
+                    aria-label={t("topsMap.climateAltitude")}
+                    className="w-16 rounded border bg-background px-2 py-0.5 text-xs tabular-nums focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  {altitudeY === CLIMATE_SEA_LEVEL
+                    ? t("topsMap.climateAltitudeHintSea")
+                    : t("topsMap.climateAltitudeHint")}
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground w-12 shrink-0">

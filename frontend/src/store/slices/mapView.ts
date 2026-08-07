@@ -18,6 +18,10 @@ import type {
     CropId,
 } from "@/lib/climate/types";
 
+/** World sea level = the Y the climate rasters are baked at (anchorY in
+ *  the export manifest). Default for the altitude readout = no adjustment. */
+const CLIMATE_SEA_LEVEL = 110;
+
 const SELECTED_LEVEL_LS = "tops-map-selected-level";
 const VIEW_MODE_LS = "tops-map-tl-groupings-view-mode";
 const ACTIVE_LS = "tops-map-tl-groupings-active";
@@ -225,6 +229,10 @@ export interface MapViewState {
     climateCustomMin: number | null;
     /** Custom-mode upper bound. `null` = unbounded. */
     climateCustomMax: number | null;
+    /** World Y the hover readout restates temperature/rainfall for. The
+     *  rasters are baked at sea level; this lets users see what to expect
+     *  at their own build height. Defaults to sea level (no adjustment). */
+    climateAltitudeY: number;
     /** Climate overlay opacity (0..1). */
     climateOpacity: number;
     /**
@@ -340,6 +348,7 @@ export function loadInitialMapViewState(): MapViewState {
         climateCropId: null,
         climateCustomMin: null,
         climateCustomMax: null,
+        climateAltitudeY: CLIMATE_SEA_LEVEL,
         climateOpacity: 0.7,
         auctionHeatmapOpacity: 0.75,
         showAdvancedMapOptions: false,
@@ -516,6 +525,12 @@ export const mapViewSlice = createSlice({
             state.climateCustomMin = min == null || !Number.isFinite(min) ? null : min;
             state.climateCustomMax = max == null || !Number.isFinite(max) ? null : max;
         },
+        setClimateAltitudeY(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            // Clamp to a sane world-height window (below-sea caves .. peaks).
+            state.climateAltitudeY = Math.max(-100, Math.min(400, Math.round(v)));
+        },
         setClimateOpacity(state, action: PayloadAction<number>) {
             const v = action.payload;
             if (!Number.isFinite(v)) return;
@@ -617,6 +632,7 @@ export const {
     setClimateThresholdMode,
     setClimateCropId,
     setClimateCustomRange,
+    setClimateAltitudeY,
     setClimateOpacity,
     setAuctionHeatmapOpacity,
     setShowAdvancedMapOptions,

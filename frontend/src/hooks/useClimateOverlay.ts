@@ -7,6 +7,8 @@ import type {
     ThresholdResponse,
 } from "@/workers/climate-threshold.worker";
 import { encodeRgbaToPngUrl } from "@/lib/rockstrata/crop";
+import { adjustRainfallNormForY, adjustTemperatureForY } from "@/lib/climate/altitude";
+import { COLD_SNAP_DROP_C, HEAT_PEAK_RISE_C, coldestNight, hottestDay } from "@/lib/climate/extremes";
 import {
     getClimateLayerMeta,
     getClimateWorld,
@@ -44,6 +46,10 @@ export interface UseClimateOverlayParams {
     customMin: number | null;
     /** Custom-mode upper bound on the active layer's units. */
     customMax: number | null;
+    /** World Y the readout should restate temperature/rainfall for. The
+     *  rasters are baked at sea level, so this shifts sampled values by
+     *  the in-game lapse rate. */
+    altitudeY: number;
     /** Debounce window for threshold re-renders (ms). Default 200. */
     debounceMs?: number;
 }
@@ -96,6 +102,17 @@ function findCrop(id: CropId | null): CropTolerance | null {
     return CROPS.find((c) => c.id === id) ?? null;
 }
 
+/** Restate a raw sea-level raster value at world height `y`. Temperature
+ *  layers get the lapse rate; rainfall gets the altitude humidity curve;
+ *  geoactivity is height-independent. */
+function adjustForKind(kind: ClimateLayerKind, value: number, y: number): number {
+    if (kind === "tempavg" || kind === "tempmin" || kind === "tempmax") {
+        return adjustTemperatureForY(value, y);
+    }
+    if (kind === "rainfall") return adjustRainfallNormForY(value, y);
+    return value;
+}
+
 /** Translate a UI threshold mode into a worker op. Crop mode is
  *  variant-independent: the dual-layer mask always operates on tempmin +
  *  tempmax, so the user can browse the avg/min/max gradient legend
@@ -110,10 +127,15 @@ function resolveOp(
     if (mode === "crop") {
         const crop = findCrop(cropId);
         if (!crop) return null;
+        // Compare against the momentary winter-night / summer-day extremes,
+        // not the seasonal means: a place survives iff its coldest night
+        // stays >= the crop min and its hottest day stays <= the crop max.
+        // Shifting the raster thresholds is equivalent and keeps the mask
+        // consistent with the cursor readout.
         return {
             kind: "crop_band",
-            minThreshold: crop.minTempC,
-            maxThreshold: crop.maxTempC,
+            minThreshold: crop.minTempC + COLD_SNAP_DROP_C,
+            maxThreshold: crop.maxTempC - HEAT_PEAK_RISE_C,
         };
     }
     if (mode === "custom") {
@@ -231,6 +253,7 @@ export function useClimateOverlay({
     cropId,
     customMin,
     customMax,
+    altitudeY,
     debounceMs = 200,
 }: UseClimateOverlayParams): UseClimateOverlayResult {
     const activeKind = enabled ? resolveActiveKind(subToggle, tempVariant) : null;
@@ -252,6 +275,12 @@ export function useClimateOverlay({
     const tempminRawRef = useRef<LoadedClimateRaw | null>(null);
     const tempmaxRawRef = useRef<LoadedClimateRaw | null>(null);
     const activeCropRef = useRef<CropTolerance | null>(null);
+
+    /** Latest altitude Y for `sampleAt`. Kept in a ref so the callback
+     *  identity stays stable across altitude changes (the readout polls
+     *  it on every mousemove). */
+    const altitudeYRef = useRef(altitudeY);
+    altitudeYRef.current = altitudeY;
 
     const layerMeta = useMemo(
         () => (activeKind ? getClimateLayerMeta(activeKind) : null),
@@ -478,7 +507,9 @@ export function useClimateOverlay({
             const pz = Math.floor((absZ - w.originBlockZ) / w.blocksPerPixelZ);
             if (px < 0 || pz < 0 || px >= raw.width || pz >= raw.height) return null;
             const offset = (pz * raw.width + px) * 4;
-            const value = raw.decode(raw.rgba[offset], raw.rgba[offset + 1]);
+            const rawValue = raw.decode(raw.rgba[offset], raw.rgba[offset + 1]);
+            const y = altitudeYRef.current;
+            const value = adjustForKind(raw.kind, rawValue, y);
             const out: ClimateSampleResult = {
                 primary: { kind: raw.kind, value },
             };
@@ -495,7 +526,7 @@ export function useClimateOverlay({
                     const ipz = Math.floor((absZ - wr.originBlockZ) / wr.blocksPerPixelZ);
                     if (ipx < 0 || ipz < 0 || ipx >= r.width || ipz >= r.height) return null;
                     const o = (ipz * r.width + ipx) * 4;
-                    return r.decode(r.rgba[o], r.rgba[o + 1]);
+                    return adjustForKind(r.kind, r.decode(r.rgba[o], r.rgba[o + 1]), y);
                 };
                 const vmin = sample(tmin);
                 const vmax = sample(tmax);
@@ -505,7 +536,11 @@ export function useClimateOverlay({
                         tempmax: vmax,
                         cropMin: crop.minTempC,
                         cropMax: crop.maxTempC,
-                        pass: vmin >= crop.minTempC && vmax <= crop.maxTempC,
+                        // Survival is decided by the momentary extremes, not
+                        // the seasonal means the rasters store.
+                        pass:
+                            coldestNight(vmin) >= crop.minTempC &&
+                            hottestDay(vmax) <= crop.maxTempC,
                     };
                 }
             }

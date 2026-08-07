@@ -492,6 +492,7 @@ export function TOPSMapViewPage() {
   const climateCropId = useAppSelector((s) => s.mapView.climateCropId);
   const climateCustomMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const climateCustomMax = useAppSelector((s) => s.mapView.climateCustomMax);
+  const climateAltitudeY = useAppSelector((s) => s.mapView.climateAltitudeY);
   const climateOpacity = useAppSelector((s) => s.mapView.climateOpacity);
   const climateVisible = climateSubToggle !== "off" && showAdvancedMapOptions;
   const climateOverlay = useClimateOverlay({
@@ -502,6 +503,7 @@ export function TOPSMapViewPage() {
     cropId: climateCropId,
     customMin: climateCustomMin,
     customMax: climateCustomMax,
+    altitudeY: climateAltitudeY,
   });
   // Cursor coords (centered TOPS world space) for the climate hover
   // readout. Mirrored out of WebCartographerMapViewer's internal hover
@@ -513,7 +515,9 @@ export function TOPSMapViewPage() {
   const climateHoverSample = useMemo(() => {
     if (!climateVisible || !climateHoverCoords) return null;
     return climateSampleAt(climateHoverCoords.x, climateHoverCoords.z);
-  }, [climateVisible, climateHoverCoords, climateSampleAt]);
+    // `climateAltitudeY` is read via a ref inside `sampleAt`; list it here
+    // so the readout re-samples live while the altitude slider is dragged.
+  }, [climateVisible, climateHoverCoords, climateSampleAt, climateAltitudeY]);
 
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
@@ -2732,6 +2736,7 @@ export function TOPSMapViewPage() {
               hoverCoords={climateHoverCoords}
               sample={climateHoverSample}
               visible={climateVisible}
+              altitudeY={climateAltitudeY}
               floating
             />
           )}
