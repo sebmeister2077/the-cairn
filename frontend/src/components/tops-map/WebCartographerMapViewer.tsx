@@ -174,6 +174,13 @@ interface WebCartographerMapViewerProps {
   /** Enable the click-to-mark type picker on claim dots. */
   claimMarkingEnabled?: boolean;
   /**
+   * Whether the current user has an account. Marking a claim type requires a
+   * real account (the API key's contribute permission is not enough — the
+   * backend `/trader-claim-types` route returns 403 without a user), so the
+   * picker only opens when this is true.
+   */
+  claimMarkingHasAccount?: boolean;
+  /**
    * Player-claim concentration heatmap (density mode). A precomputed raster
    * blitted once per frame — panning/zooming only re-scales the image. */
   claimDensity?: (PlayerClaimDensity & { opacity: number }) | null;
@@ -303,6 +310,7 @@ export function WebCartographerMapViewer({
   claimMarkers,
   claimTypes,
   claimMarkingEnabled = false,
+  claimMarkingHasAccount = false,
   claimDensity = null,
   playerClaimMarkers,
   playerClaimLabelMode = "always",
@@ -352,14 +360,16 @@ export function WebCartographerMapViewer({
   );
 
   // ── Trader-claim marking ──────────────────────────────────────────────────
-  const canContribute = useReduxState("auth.canContribute");
   const isAdminUser = useReduxState("auth.isAdmin");
+  // Marking a claim type needs a real account (admins have one too); the
+  // API key's contribute permission alone yields a 403 from the backend.
   // Mirrored into a ref so the stable `handleClick` closure can gate the
-  // type-picker on auth without needing canContribute/isAdmin as deps.
-  const canMarkClaimsRef = useRef(canContribute || isAdminUser);
+  // type-picker on auth without needing these as deps.
+  const canMarkClaims = claimMarkingHasAccount || isAdminUser;
+  const canMarkClaimsRef = useRef(canMarkClaims);
   useEffect(() => {
-    canMarkClaimsRef.current = canContribute || isAdminUser;
-  }, [canContribute, isAdminUser]);
+    canMarkClaimsRef.current = canMarkClaims;
+  }, [canMarkClaims]);
   const claimQueryClient = useQueryClient();
   // Screen-projected claim dots from the last draw, for click/hover hit-tests.
   const projectedClaimsRef = useRef<
@@ -2127,7 +2137,7 @@ export function WebCartographerMapViewer({
                 </span>
               </div>
             )}
-            {canContribute || isAdminUser ? (
+            {canMarkClaims ? (
               <div className="grid grid-cols-1 gap-1">
                 {TRADER_TYPES.map((tt) => (
                   <button

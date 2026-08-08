@@ -2545,6 +2545,7 @@ export function TOPSMapViewPage() {
               claimMarkers={traderClaimsVisible ? traderClaimsQuery.data : undefined}
               claimTypes={traderClaimTypesQuery.data?.data}
               claimMarkingEnabled={traderClaimsVisible}
+              claimMarkingHasAccount={Boolean(accountMeQuery.data?.user)}
               claimDensity={playerClaimDensity}
               playerClaimMarkers={playerClaimMarkers}
               playerClaimLabelMode={playerClaimLabelMode}
