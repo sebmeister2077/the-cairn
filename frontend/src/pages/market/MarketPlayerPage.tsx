@@ -6,8 +6,8 @@ import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuctionListings, formatGears } from "@/lib/auction";
-import { INSIGHTS_WINDOWS, filterListingsByWindow } from "./useMarketInsights";
+import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
+import { INSIGHTS_WINDOWS, filterListingsByWindow, resolveWindowDays } from "./useMarketInsights";
 import { usePlayerWindow } from "./useMarketPlayerWindow";
 import { usePlayerProfile } from "./usePlayerProfile";
 import { PlayerPricingChart, PlayerActivityChart } from "./PlayerCharts";
@@ -23,6 +23,7 @@ const LOCATION_CLUSTER_RADIUS = 12;
 export function MarketPlayerPage() {
   const { uid } = useParams<{ uid: string }>();
   const { data, isLoading } = useAuctionListings();
+  const { data: summary } = useAuctionSummary();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -31,8 +32,8 @@ export function MarketPlayerPage() {
   // disturbs the range selected elsewhere.
   const [windowKey, setWindowKey] = usePlayerWindow();
   const windowDays = useMemo(
-    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
-    [windowKey],
+    () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
+    [windowKey, summary?.recordingStartGameHours],
   );
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";

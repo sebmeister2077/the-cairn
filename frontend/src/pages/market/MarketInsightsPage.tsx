@@ -42,7 +42,7 @@ import {
   formatRealTimeToSell,
 } from "@/lib/auction";
 import { formatGameDate } from "./VirtualListingsTable";
-import { INSIGHTS_WINDOWS, useMarketInsights } from "./useMarketInsights";
+import { INSIGHTS_WINDOWS, resolveWindowDays, useMarketInsights } from "./useMarketInsights";
 import { ScreenerTable, type ScreenerColumn } from "./InsightsScreenerTable";
 import { InsightsFilterBar } from "./InsightsFilterBar";
 import { useFilteredInsights, rowPrice } from "./useFilteredInsights";
@@ -600,8 +600,8 @@ export function MarketInsightsPage() {
   const hiddenColumns = useInsightsHiddenColumns();
 
   const windowDays = useMemo(
-    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
-    [windowKey],
+    () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
+    [windowKey, summary?.recordingStartGameHours],
   );
   const insights = useMarketInsights(listings, windowDays);
 

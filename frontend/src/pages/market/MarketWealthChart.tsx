@@ -247,7 +247,14 @@ export function MarketWealthChart({
     const hasSold = !!wealth?.saleGearsEliteSoldDelta;
     const windowDays = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null;
     const latest = ts[ts.length - 1].gameHours + GAME_HOURS_PER_WINDOW_DAY;
-    const cutoff = windowDays == null ? -Infinity : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
+    // "Since recording" uses an absolute cutoff (capture start); fixed windows
+    // measure back from the latest recorded month; "all" keeps everything.
+    const cutoff =
+      windowKey === "recording" && recordingStart != null
+        ? recordingStart
+        : windowDays == null
+          ? -Infinity
+          : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
 
     const aggMax = new Float64Array(len);
     const aggMin = new Float64Array(len);
@@ -336,7 +343,7 @@ export function MarketWealthChart({
       totalWealth: wealthPrefix[windowPlayers.length],
       gini: giniFromValues(aggWealth),
     };
-  }, [wealth?.timeSeries, players, windowKey]);
+  }, [wealth?.timeSeries, wealth?.saleGearsEliteSoldDelta, players, windowKey, recordingStart]);
 
   // Snap the real-world "started recording" moment onto the monthly x-axis by
   // picking the bucket whose in-game clock is closest (mirrors MarketTrendsChart).
@@ -385,6 +392,9 @@ export function MarketWealthChart({
   const hasDirection = esPrefix != null;
   const eliteSold = hasDirection ? Math.min(mixed, Math.max(0, esPrefix[k])) : 0;
   const eliteBought = hasDirection ? Math.max(0, mixed - eliteSold) : 0;
+  // Net direction of the elite ↔ rest flow: >0 = elite are net sellers (gears
+  // flow to them, concentrating wealth upward); <0 = net buyers (redistributing).
+  const netToElite = eliteSold - eliteBought;
   const segments = hasDirection ? SEGMENTS_SPLIT : SEGMENTS_COMBINED;
   const values: Record<FlowKey, number> = {
     elite: ee,
@@ -441,6 +451,7 @@ export function MarketWealthChart({
         eliteSold: number;
         eliteBought: number;
         rest: number;
+        net: number;
         gini: number | null;
       }[];
     }
@@ -468,6 +479,7 @@ export function MarketWealthChart({
         eliteSold: overTimeCumulative ? csold : bsold,
         eliteBought: overTimeCumulative ? cbought : bbought,
         rest: overTimeCumulative ? crest : brest,
+        net: overTimeCumulative ? csold - cbought : bsold - bbought,
         gini: b.gini,
       };
     });
@@ -483,7 +495,9 @@ export function MarketWealthChart({
             Player wealth = net seller revenue + buyer spend. Choose how the “elite” are defined,
             then the bar splits gears traded (sold auctions with a known buyer and seller) by
             whether the elite were selling to, buying from, on both sides of, or absent from each
-            trade.
+            trade. Selling to the rest means the elite{" "}
+            <span className="text-foreground">earned</span> those gears; buying from the rest means
+            they <span className="text-foreground">paid</span> them out.
           </p>
         </div>
 
@@ -676,6 +690,28 @@ export function MarketWealthChart({
           })}
         </div>
 
+        {hasDirection && mixed > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {netToElite > 0 ? (
+              <>
+                The {eliteLabel} are{" "}
+                <span className="font-medium text-foreground">net sellers</span> —{" "}
+                {formatGears(Math.abs(netToElite))} more flowed{" "}
+                <span className="text-foreground">to</span> them than they spent, so trade is
+                concentrating wealth upward.
+              </>
+            ) : netToElite < 0 ? (
+              <>
+                The {eliteLabel} are <span className="font-medium text-foreground">net buyers</span>{" "}
+                — they paid out {formatGears(Math.abs(netToElite))} more than they earned,
+                redistributing wealth downward.
+              </>
+            ) : (
+              <>The {eliteLabel} buy from and sell to the rest in near-perfect balance.</>
+            )}
+          </p>
+        )}
+
         {usingWindow && (
           <p className="text-xs text-muted-foreground">
             In a time range the elite are re-ranked by the wealth they earned{" "}
@@ -695,8 +731,11 @@ export function MarketWealthChart({
                 <div className="text-sm font-medium">Over time</div>
                 <p className="text-xs text-muted-foreground">
                   {overTimeCumulative ? "Cumulative" : "Per in-game month"} gears traded, split by
-                  your elite cutoff ({eliteLabel}), with cumulative wealth inequality (Gini) on the
-                  right.
+                  your elite cutoff ({eliteLabel})
+                  {hasDirection
+                    ? ", with the net flow to the elite (above zero = they're net sellers)"
+                    : ""}
+                  , and cumulative wealth inequality (Gini) on the right.
                 </p>
               </div>
               <Button
@@ -755,7 +794,12 @@ export function MarketWealthChart({
                       formatter={(value, name) =>
                         name === "Wealth inequality (Gini)"
                           ? [value == null ? "—" : Number(value).toFixed(3), name]
-                          : [formatGears(Number(value)), name]
+                          : name === "Net flow to elite"
+                            ? [
+                                `${Number(value) >= 0 ? "+" : "−"}${formatGears(Math.abs(Number(value)))}`,
+                                name,
+                              ]
+                            : [formatGears(Number(value)), name]
                       }
                     />
                     {segments.map((s) => (
@@ -782,6 +826,25 @@ export function MarketWealthChart({
                       connectNulls
                       name="Wealth inequality (Gini)"
                     />
+                    {hasDirection && (
+                      <ReferenceLine
+                        yAxisId="gears"
+                        y={0}
+                        stroke="hsl(var(--border))"
+                        strokeWidth={1}
+                      />
+                    )}
+                    {hasDirection && (
+                      <Line
+                        yAxisId="gears"
+                        type="monotone"
+                        dataKey="net"
+                        stroke="#e11d48"
+                        strokeWidth={2}
+                        dot={false}
+                        name="Net flow to elite"
+                      />
+                    )}
                     {recordingLabel != null && (
                       <ReferenceLine
                         yAxisId="gears"
@@ -805,6 +868,29 @@ export function MarketWealthChart({
               <p className="py-8 text-center text-sm text-muted-foreground">
                 No dated sales in this time range.
               </p>
+            )}
+
+            {/* Legend for the two overlaid line series (the stacked areas are
+                already labelled by the flow legend above the chart). */}
+            {overTimeData.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-0.5 w-4 shrink-0 rounded-full"
+                    style={{ background: "#8b5cf6" }}
+                  />
+                  Wealth inequality (Gini)
+                </span>
+                {hasDirection && (
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      className="h-0.5 w-4 shrink-0 rounded-full"
+                      style={{ background: "#e11d48" }}
+                    />
+                    Net flow to elite (above zero = net sellers)
+                  </span>
+                )}
+              </div>
             )}
           </div>
         )}

@@ -43,15 +43,38 @@ import type {
  * sec → 720 in-game hours = 30 in-game days = one in-game month per real day). */
 const GAME_HOURS_PER_REAL_DAY = 720;
 
-/** Selectable insight windows (days), plus "all" for the full dataset. */
+/** Selectable insight windows (days), plus "since recording" and "all". */
 export const INSIGHTS_WINDOWS = [
     { key: "7", label: "Last 7 days", days: 7 },
     { key: "14", label: "Last 14 days", days: 14 },
     { key: "30", label: "Last 30 days", days: 30 },
+    { key: "recording", label: "Since recording", days: null },
     { key: "all", label: "All time", days: null },
 ] as const;
 
 export type InsightsWindowKey = (typeof INSIGHTS_WINDOWS)[number]["key"];
+
+/**
+ * Effective look-back days for a window key. The special "recording" window is
+ * the span from when capture began (`recordingStartHours`, an absolute in-game
+ * hour from the summary) to the live in-game clock, expressed as days so it
+ * reuses the same days-based windowing as the fixed presets. Returns null (no
+ * cutoff, i.e. all time) for the "all" key or when the recording start is
+ * unknown — unlike "all", "recording" excludes sales that predate capture and
+ * whose timing is inferred (and thus less reliable).
+ */
+export function resolveWindowDays(
+    windowKey: string,
+    recordingStartHours?: number | null,
+): number | null {
+    if (windowKey === "recording") {
+        if (recordingStartHours == null) return null;
+        const days = (getCurrentGameHours() - recordingStartHours) / GAME_HOURS_PER_REAL_DAY;
+        return days > 0 ? days : null;
+    }
+    return INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null;
+}
+
 
 /** In-game hour at which a sold auction concluded: posting time plus the
  * (in-game) time it took to sell. Used to order and date sales by in-game time,

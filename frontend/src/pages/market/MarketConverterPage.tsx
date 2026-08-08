@@ -28,12 +28,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuctionListings, formatGears, formatRealTimeToSell } from "@/lib/auction";
+import {
+  useAuctionListings,
+  useAuctionSummary,
+  formatGears,
+  formatRealTimeToSell,
+} from "@/lib/auction";
 import { cn } from "@/lib/utils";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
   confidenceFor,
+  resolveWindowDays,
   type InsightsWindowKey,
 } from "./useMarketInsights";
 import { useMarketWindow } from "./useMarketWindow";
@@ -467,6 +473,7 @@ function ItemStatsLine({ row, basis }: { row: InsightsRow; basis: PriceBasis }) 
 
 export function MarketConverterPage() {
   const { data: listings, isPending, isError } = useAuctionListings();
+  const { data: summary } = useAuctionSummary();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [windowKey, setWindowKey] = useMarketWindow();
@@ -532,8 +539,8 @@ export function MarketConverterPage() {
     });
 
   const windowDays = useMemo(
-    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
-    [windowKey],
+    () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
+    [windowKey, summary?.recordingStartGameHours],
   );
 
   const insights = useMemo(

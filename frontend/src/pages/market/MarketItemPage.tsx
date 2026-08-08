@@ -29,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { StatCard } from "@/components/usage/StatCard";
 import {
   useAuctionListings,
+  useAuctionSummary,
   formatGears,
   formatRealTimeToSell,
   percentileSorted,
@@ -66,6 +67,7 @@ import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
   filterListingsByWindow,
+  resolveWindowDays,
   saleGameHours,
 } from "./useMarketInsights";
 import { useMarketWindow } from "./useMarketWindow";
@@ -290,12 +292,13 @@ export function MarketItemPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const currentGameHours = useCurrentGameHours();
+  const { data: summary } = useAuctionSummary();
 
   // Shared market time-range window (kept in sync with the Insights page).
   const [windowKey, setWindowKey] = useMarketWindow();
   const windowDays = useMemo(
-    () => INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null,
-    [windowKey],
+    () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
+    [windowKey, summary?.recordingStartGameHours],
   );
 
   // Shared price mode (median vs quantity-weighted), synced across market pages.
