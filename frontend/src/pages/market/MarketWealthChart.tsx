@@ -12,10 +12,14 @@
 //                   players join a server.
 //   * "Net worth" — everyone worth at least X gears. Stable regardless of how
 //                   many players join, so it stays meaningful as a server grows.
-// For a chosen elite of the top `k` traders, the three flow buckets are:
+// For a chosen elite of the top `k` traders, the flow buckets are:
 //   elite ↔ elite     = sum(saleGearsByMaxRank.slice(0, k))
 //   rest  ↔ rest      = sum(saleGearsByMinRank.slice(k))
 //   elite ↔ everyone  = matchedGears − the two above
+// The elite ↔ everyone flow is further split by direction using the backend's
+// `saleGearsEliteSoldDelta` (a difference array). Prefix-summing it to `k`
+// gives the gears the elite SOLD to the rest; the rest is what the elite BOUGHT.
+// Older snapshots lack that array and fall back to a single combined bucket.
 
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -57,17 +61,47 @@ import type { WealthConcentration, WealthPlayer } from "@/models/auction";
 import { formatGameDate } from "./VirtualListingsTable";
 import { INSIGHTS_WINDOWS } from "./useMarketInsights";
 
-const SEGMENTS = [
-  { key: "elite", label: "Between elite seraphs", color: "bg-amber-500" },
-  { key: "mixed", label: "Elite ↔ everyone else", color: "bg-sky-500" },
-  { key: "rest", label: "Among the rest", color: "bg-slate-400 dark:bg-slate-500" },
-] as const;
+const ELITE_SEG = {
+  key: "elite",
+  label: "Between elite seraphs",
+  color: "bg-amber-500",
+} as const;
+const REST_SEG = {
+  key: "rest",
+  label: "Among the rest",
+  color: "bg-slate-400 dark:bg-slate-500",
+} as const;
+// The "elite ↔ everyone else" flow: a single combined bucket for old snapshots,
+// or its two directional halves (two shades of the same blue so they read as
+// the old bar split in two) when the backend ships the elite-sold array.
+const MIXED_SEG = {
+  key: "mixed",
+  label: "Elite ↔ everyone else",
+  color: "bg-sky-500",
+} as const;
+const ELITE_SOLD_SEG = {
+  key: "eliteSold",
+  label: "Elite selling to the rest",
+  color: "bg-sky-500",
+} as const;
+const ELITE_BOUGHT_SEG = {
+  key: "eliteBought",
+  label: "Elite buying from the rest",
+  color: "bg-sky-800",
+} as const;
 
-// Hex equivalents of the SEGMENTS tailwind colors, for the recharts area fills
+const SEGMENTS_SPLIT = [ELITE_SEG, ELITE_SOLD_SEG, ELITE_BOUGHT_SEG, REST_SEG] as const;
+const SEGMENTS_COMBINED = [ELITE_SEG, MIXED_SEG, REST_SEG] as const;
+type FlowSegment = (typeof SEGMENTS_SPLIT | typeof SEGMENTS_COMBINED)[number];
+type FlowKey = FlowSegment["key"];
+
+// Hex equivalents of the segment tailwind colors, for the recharts area fills
 // (CSS var()/tailwind classes don't resolve inside SVG presentation attrs).
-const SEGMENT_HEX: Record<(typeof SEGMENTS)[number]["key"], string> = {
+const SEGMENT_HEX: Record<FlowKey, string> = {
   elite: "#f59e0b", // amber-500
   mixed: "#0ea5e9", // sky-500
+  eliteSold: "#0ea5e9", // sky-500
+  eliteBought: "#075985", // sky-800
   rest: "#94a3b8", // slate-400
 };
 
@@ -162,7 +196,16 @@ export function MarketWealthChart({
     // wealthPrefix[k] = total wealth of the richest k players.
     const wealthPrefix = new Float64Array(len + 1);
     for (let i = 0; i < len; i++) wealthPrefix[i + 1] = wealthPrefix[i] + players[i].wealth;
-    return { eePrefix, rrSuffix, wealthPrefix };
+    // esPrefix[k] = gears the elite (top k) SOLD to non-elite (sellerRank < k <=
+    // buyerRank), from prefix-summing the backend's difference array. Null for
+    // pre-split snapshots, which fall back to a single combined mixed bucket.
+    const soldDelta = wealth.saleGearsEliteSoldDelta;
+    let esPrefix: Float64Array | null = null;
+    if (soldDelta && soldDelta.length >= len) {
+      esPrefix = new Float64Array(len + 1);
+      for (let i = 0; i < len; i++) esPrefix[i + 1] = esPrefix[i] + (soldDelta[i] ?? 0);
+    }
+    return { eePrefix, rrSuffix, wealthPrefix, esPrefix };
   }, [wealth, players]);
 
   // Log-scale mapping for the net-worth slider (wealth is heavily skewed, so a
@@ -199,12 +242,16 @@ export function MarketWealthChart({
     const ts = wealth?.timeSeries;
     if (!ts || ts.length === 0 || !players || players.length === 0) return null;
     const len = players.length;
+    // Direction split is available only when the buckets carry the elite-sold
+    // array (fresh snapshots); else the over-time area stays a combined mixed.
+    const hasSold = !!wealth?.saleGearsEliteSoldDelta;
     const windowDays = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.days ?? null;
     const latest = ts[ts.length - 1].gameHours + GAME_HOURS_PER_WINDOW_DAY;
     const cutoff = windowDays == null ? -Infinity : latest - windowDays * GAME_HOURS_PER_WINDOW_DAY;
 
     const aggMax = new Float64Array(len);
     const aggMin = new Float64Array(len);
+    const aggSold = new Float64Array(len);
     const aggWealth = new Float64Array(len);
     const running = new Float64Array(len);
     let matched = 0;
@@ -212,6 +259,7 @@ export function MarketWealthChart({
       label: string;
       eePrefix: Float64Array;
       rrSuffix: Float64Array;
+      esPrefix: Float64Array;
       matched: number;
       gini: number | null;
     }[] = [];
@@ -220,15 +268,19 @@ export function MarketWealthChart({
       if (b.gameHours < cutoff) continue;
       const maxR = b.saleGearsByMaxRank ?? [];
       const minR = b.saleGearsByMinRank ?? [];
+      const soldR = b.saleGearsEliteSoldDelta ?? [];
       const wR = b.wealthByRank ?? [];
       const bl = maxR.length;
       const eePrefix = new Float64Array(bl + 1);
       for (let i = 0; i < bl; i++) eePrefix[i + 1] = eePrefix[i] + (maxR[i] ?? 0);
       const rrSuffix = new Float64Array(bl + 1);
       for (let i = bl - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + (minR[i] ?? 0);
+      const esPrefix = new Float64Array(bl + 1);
+      for (let i = 0; i < bl; i++) esPrefix[i + 1] = esPrefix[i] + (soldR[i] ?? 0);
       for (let i = 0; i < len; i++) {
         aggMax[i] += maxR[i] ?? 0;
         aggMin[i] += minR[i] ?? 0;
+        aggSold[i] += soldR[i] ?? 0;
         const dv = wR[i] ?? 0;
         aggWealth[i] += dv;
         running[i] += dv;
@@ -238,6 +290,7 @@ export function MarketWealthChart({
         label: formatGameDate(b.gameHours),
         eePrefix,
         rrSuffix,
+        esPrefix,
         matched: b.matchedGears,
         gini: giniFromValues(running),
       });
@@ -252,6 +305,12 @@ export function MarketWealthChart({
     for (let i = 0; i < len; i++) eePrefix[i + 1] = eePrefix[i] + aggMax[i];
     const rrSuffix = new Float64Array(len + 1);
     for (let i = len - 1; i >= 0; i--) rrSuffix[i] = rrSuffix[i + 1] + aggMin[i];
+    // Window-total elite-sold prefix (null when the range's buckets lack it).
+    let esPrefix: Float64Array | null = null;
+    if (hasSold) {
+      esPrefix = new Float64Array(len + 1);
+      for (let i = 0; i < len; i++) esPrefix[i + 1] = esPrefix[i] + aggSold[i];
+    }
 
     // Re-rank every trader by the wealth they earned *in this window* (identity
     // comes from the all-time roster at the same index). Drives the windowed
@@ -269,6 +328,7 @@ export function MarketWealthChart({
       buckets,
       eePrefix,
       rrSuffix,
+      esPrefix,
       windowPlayers,
       wealthPrefix,
       activeCount: windowPlayers.length,
@@ -319,7 +379,20 @@ export function MarketWealthChart({
   const rest = usingWindow ? overTime.rrSuffix[k] : sums.rrSuffix[k];
   const total = usingWindow ? overTime.matched : wealth.matchedGears;
   const mixed = Math.max(0, total - ee - rest);
-  const values: Record<(typeof SEGMENTS)[number]["key"], number> = { elite: ee, mixed, rest };
+  // Directional split of the mixed flow, when the backend ships the elite-sold
+  // array: eliteSold = elite selling to the rest; eliteBought = the remainder.
+  const esPrefix = usingWindow ? overTime.esPrefix : sums.esPrefix;
+  const hasDirection = esPrefix != null;
+  const eliteSold = hasDirection ? Math.min(mixed, Math.max(0, esPrefix[k])) : 0;
+  const eliteBought = hasDirection ? Math.max(0, mixed - eliteSold) : 0;
+  const segments = hasDirection ? SEGMENTS_SPLIT : SEGMENTS_COMBINED;
+  const values: Record<FlowKey, number> = {
+    elite: ee,
+    mixed,
+    eliteSold,
+    eliteBought,
+    rest,
+  };
   const pct = (v: number) => (total > 0 ? (v / total) * 100 : 0);
 
   const eliteWealth = usingWindow ? overTime.wealthPrefix[k] : sums.wealthPrefix[k];
@@ -365,25 +438,35 @@ export function MarketWealthChart({
         label: string;
         elite: number;
         mixed: number;
+        eliteSold: number;
+        eliteBought: number;
         rest: number;
         gini: number | null;
       }[];
     }
     let cee = 0;
     let cmix = 0;
+    let csold = 0;
+    let cbought = 0;
     let crest = 0;
     return overTime.buckets.map((b) => {
       const kk = Math.min(k, b.eePrefix.length - 1);
       const bee = b.eePrefix[kk];
       const brest = b.rrSuffix[kk];
       const bmix = Math.max(0, b.matched - bee - brest);
+      const bsold = hasDirection ? Math.min(bmix, Math.max(0, b.esPrefix[kk])) : 0;
+      const bbought = hasDirection ? Math.max(0, bmix - bsold) : 0;
       cee += bee;
       cmix += bmix;
+      csold += bsold;
+      cbought += bbought;
       crest += brest;
       return {
         label: b.label,
         elite: overTimeCumulative ? cee : bee,
         mixed: overTimeCumulative ? cmix : bmix,
+        eliteSold: overTimeCumulative ? csold : bsold,
+        eliteBought: overTimeCumulative ? cbought : bbought,
         rest: overTimeCumulative ? crest : brest,
         gini: b.gini,
       };
@@ -399,7 +482,8 @@ export function MarketWealthChart({
           <p className="text-xs text-muted-foreground">
             Player wealth = net seller revenue + buyer spend. Choose how the “elite” are defined,
             then the bar splits gears traded (sold auctions with a known buyer and seller) by
-            whether the elite were on one side, both, or neither.
+            whether the elite were selling to, buying from, on both sides of, or absent from each
+            trade.
           </p>
         </div>
 
@@ -560,7 +644,7 @@ export function MarketWealthChart({
 
         {/* 100% stacked flow bar */}
         <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
-          {SEGMENTS.map((s) => {
+          {segments.map((s) => {
             const share = pct(values[s.key]);
             if (share <= 0) return null;
             return (
@@ -574,8 +658,8 @@ export function MarketWealthChart({
           })}
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-3">
-          {SEGMENTS.map((s) => {
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {segments.map((s) => {
             const v = values[s.key];
             return (
               <div key={s.key} className="flex items-start gap-2">
@@ -596,10 +680,10 @@ export function MarketWealthChart({
           <p className="text-xs text-muted-foreground">
             In a time range the elite are re-ranked by the wealth they earned{" "}
             <span className="text-foreground">in that range</span>. The flow split above (and the
-            area chart below) can only be broken down by <span className="text-foreground">all-time</span>{" "}
-            wealth rank, so it shows trades among the {k.toLocaleString()} richest{" "}
-            <span className="text-foreground">all-time</span> traders rather than this range&apos;s
-            top {k.toLocaleString()}.
+            area chart below) can only be broken down by{" "}
+            <span className="text-foreground">all-time</span> wealth rank, so it shows trades among
+            the {k.toLocaleString()} richest <span className="text-foreground">all-time</span>{" "}
+            traders rather than this range&apos;s top {k.toLocaleString()}.
           </p>
         )}
 
@@ -674,7 +758,7 @@ export function MarketWealthChart({
                           : [formatGears(Number(value)), name]
                       }
                     />
-                    {SEGMENTS.map((s) => (
+                    {segments.map((s) => (
                       <Area
                         key={s.key}
                         yAxisId="gears"

@@ -152,7 +152,12 @@ export default function App() {
         // panel (stats, flow bar and chart) can be scoped to a time window
         // client-side. A stale v9 snapshot lacks `wealthByRank`, so windowed
         // Gini/elite-share would read blank until it refetches.
-        buster: "v10-2026-07-28-auction-wealth-window",
+        //
+        // 2026-08-08 — v11: the `wealth` block (and each `timeSeries` bucket)
+        // gained `saleGearsEliteSoldDelta`, splitting the "elite ↔ everyone
+        // else" flow into elite-selling vs elite-buying. Stale snapshots lack
+        // it and fall back to the single combined bucket until they refetch.
+        buster: "v11-2026-08-08-auction-wealth-flow-direction",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

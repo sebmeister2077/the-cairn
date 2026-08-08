@@ -1269,6 +1269,14 @@ def build_wealth_concentration(
         rest  ↔ rest        = sum(saleGearsByMinRank[k:])   (both ranks >= k)
         elite ↔ everyone     = matchedGears − the two above
 
+    The ``elite ↔ everyone`` flow is split by direction via one more cutoff-
+    independent array, ``saleGearsEliteSoldDelta`` (a difference array). Prefix-
+    summing it to ``k`` gives the gears the elite *sold* to non-elite
+    (sellerRank < k <= buyerRank); the elite-*bought* half is the remainder:
+
+        elite sold to rest  = prefixsum(saleGearsEliteSoldDelta)[k]
+        elite bought        = (elite ↔ everyone) − elite sold to rest
+
     Self-trades (same player on both sides) and sales with an unknown party are
     counted in ``unmatchedGears`` and excluded from the flows.
     """
@@ -1298,6 +1306,9 @@ def build_wealth_concentration(
     # Cutoff-independent flow bins (see the docstring). Length == trader count.
     by_max_rank = [0.0] * n
     by_min_rank = [0.0] * n
+    # Difference array for the directional (elite-sold) split of the mixed flow;
+    # see the matched-sale loop below. Prefix-summed on the client.
+    elite_sold_delta = [0.0] * n
     matched_gears = 0.0
     unmatched_gears = 0.0
 
@@ -1317,6 +1328,7 @@ def build_wealth_concentration(
             b = month_bins[month] = {
                 "by_max": [0.0] * n,
                 "by_min": [0.0] * n,
+                "elite_sold": [0.0] * n,
                 "matched": 0.0,
             }
         return b
@@ -1348,11 +1360,22 @@ def build_wealth_concentration(
         by_max_rank[max(rs, rb)] += r["price"]
         by_min_rank[min(rs, rb)] += r["price"]
         matched_gears += r["price"]
+        # Directional split of the "elite ↔ everyone else" flow, as a difference
+        # array: prefix-summing to cutoff k yields the gears the elite (top k)
+        # SOLD to non-elite (sellerRank < k <= buyerRank). Only sales where the
+        # seller outranks the buyer can be elite-sold; the buyer-elite half is
+        # recovered client-side as mixed − this.
+        if rs < rb:
+            elite_sold_delta[rs] += r["price"]
+            elite_sold_delta[rb] -= r["price"]
         if month is not None:
             b = ensure_month(month)
             b["by_max"][max(rs, rb)] += r["price"]
             b["by_min"][min(rs, rb)] += r["price"]
             b["matched"] += r["price"]
+            if rs < rb:
+                b["elite_sold"][rs] += r["price"]
+                b["elite_sold"][rb] -= r["price"]
 
     # Emit one point per month in chronological order, carrying a running
     # Emit one point per month in chronological order. Each bucket carries its
@@ -1373,6 +1396,9 @@ def build_wealth_concentration(
                 "matchedGears": round(b["matched"], 2) if b else 0.0,
                 "saleGearsByMaxRank": [round(x, 2) for x in b["by_max"]] if b else [],
                 "saleGearsByMinRank": [round(x, 2) for x in b["by_min"]] if b else [],
+                "saleGearsEliteSoldDelta": (
+                    [round(x, 2) for x in b["elite_sold"]] if b else []
+                ),
                 "wealthByRank": [round(x, 2) for x in wealth_by_rank],
             }
         )
@@ -1386,6 +1412,7 @@ def build_wealth_concentration(
         "players": players,
         "saleGearsByMaxRank": [round(x, 2) for x in by_max_rank],
         "saleGearsByMinRank": [round(x, 2) for x in by_min_rank],
+        "saleGearsEliteSoldDelta": [round(x, 2) for x in elite_sold_delta],
         "timeSeries": time_series,
     }
 

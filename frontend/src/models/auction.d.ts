@@ -250,6 +250,11 @@ export interface WealthTimePoint {
     saleGearsByMaxRank: number[];
     /** This bucket's matched gears binned by the poorer party's rank (length = traderCount). */
     saleGearsByMinRank: number[];
+    /** Difference array for this bucket's directional split of the mixed flow.
+     *  Prefix-summing to cutoff `k` gives the gears the elite (top `k`) sold to
+     *  non-elite (sellerRank < k <= buyerRank); the elite-bought half is the
+     *  remainder of the bucket's mixed flow. Absent in pre-split snapshots. */
+    saleGearsEliteSoldDelta?: number[];
     /** Wealth each trader *earned this month* (net seller revenue + buyer spend),
      *  indexed by their global wealth rank (0 = richest; length = traderCount).
      *  Summing a window's buckets recovers per-rank wealth for that range, which
@@ -289,6 +294,12 @@ export interface WealthConcentration {
     saleGearsByMaxRank?: number[];
     /** Matched-sale gears binned by the poorer party's rank (length = traderCount). */
     saleGearsByMinRank?: number[];
+    /** Difference array splitting the `elite ↔ everyone` flow by direction.
+     *  Prefix-summing to cutoff `k` yields the gears the elite (top `k`) sold to
+     *  non-elite (sellerRank < k <= buyerRank); the elite-bought half is
+     *  `mixed − this`. Absent in data generated before this field existed (and
+     *  any stale cache), which falls back to a single combined mixed bucket. */
+    saleGearsEliteSoldDelta?: number[];
     /** Per-in-game-month flow buckets for the wealth-over-time chart. Absent in
      *  data generated before this field existed (and any stale cache). */
     timeSeries?: WealthTimePoint[];
