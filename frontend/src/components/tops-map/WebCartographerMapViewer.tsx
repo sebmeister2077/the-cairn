@@ -28,7 +28,11 @@ import {
 } from "@/lib/trader-types";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
-import { type ClaimTypeMap, TRADER_CLAIM_TYPES_QUERY_KEY } from "@/hooks/useOverlayData";
+import {
+  type ClaimTypeMap,
+  type CachedOverlay,
+  TRADER_CLAIM_TYPES_QUERY_KEY,
+} from "@/hooks/useOverlayData";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { submitTraderClaimTypes, type ClaimTypeSubmitItem } from "@/lib/api";
 import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
@@ -350,6 +354,12 @@ export function WebCartographerMapViewer({
   // ── Trader-claim marking ──────────────────────────────────────────────────
   const canContribute = useReduxState("auth.canContribute");
   const isAdminUser = useReduxState("auth.isAdmin");
+  // Mirrored into a ref so the stable `handleClick` closure can gate the
+  // type-picker on auth without needing canContribute/isAdmin as deps.
+  const canMarkClaimsRef = useRef(canContribute || isAdminUser);
+  useEffect(() => {
+    canMarkClaimsRef.current = canContribute || isAdminUser;
+  }, [canContribute, isAdminUser]);
   const claimQueryClient = useQueryClient();
   // Screen-projected claim dots from the last draw, for click/hover hit-tests.
   const projectedClaimsRef = useRef<
@@ -376,9 +386,25 @@ export function WebCartographerMapViewer({
   } | null>(null);
   const claimMutation = useMutation({
     mutationFn: (item: ClaimTypeSubmitItem) => submitTraderClaimTypes([item]),
-    onSuccess: () => {
+    onSuccess: (_result, item) => {
+      // Patch the in-memory claim-type overlay so the dot recolours instantly,
+      // instead of reloading the whole trader_claim_types.json (which the R2
+      // bucket may not even reflect yet).
+      claimQueryClient.setQueryData<CachedOverlay<ClaimTypeMap>>(
+        [...TRADER_CLAIM_TYPES_QUERY_KEY],
+        (prev) => {
+          const next: ClaimTypeMap = {
+            ...(prev?.data ?? {}),
+            [item.claim_id]: { trader_type: item.trader_type, source: "manual" },
+          };
+          return {
+            etag: prev?.etag ?? "__empty__",
+            expiresAt: prev?.expiresAt ?? Date.now() + 5 * 60_000,
+            data: next,
+          };
+        },
+      );
       setClaimPopover(null);
-      claimQueryClient.invalidateQueries({ queryKey: [...TRADER_CLAIM_TYPES_QUERY_KEY] });
     },
   });
 
@@ -1810,8 +1836,9 @@ export function WebCartographerMapViewer({
         return;
       }
       // Trader-claim marking: a click on a claim dot opens the type picker;
-      // a click elsewhere dismisses an open picker.
-      if (claimMarkingEnabled) {
+      // a click elsewhere dismisses an open picker. Only users who can
+      // contribute (or admins) may open the picker at all.
+      if (claimMarkingEnabled && canMarkClaimsRef.current) {
         const claimThreshSq = 12 * 12;
         let hit: { claimId: string; center: { x: number; y: number; z: number } } | null = null;
         let bestSq = Infinity;
@@ -2075,6 +2102,10 @@ export function WebCartographerMapViewer({
               left: Math.max(4, Math.min(claimPopover.left + 12, containerSize.w - 232)),
               top: Math.max(4, Math.min(claimPopover.top + 12, containerSize.h - 220)),
             }}
+            // Keep the container from pointer-capturing the press, which would
+            // otherwise swallow the picker buttons' click (so the mutation
+            // never fires). Same guard the mobile fullscreen button uses.
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-1 flex items-center justify-between">
