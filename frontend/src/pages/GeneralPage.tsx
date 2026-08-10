@@ -1,7 +1,8 @@
-import { Map, Route, Store, Upload, Waypoints, type LucideIcon } from "lucide-react";
+import { Heart, Map, Route, Store, Upload, Waypoints, type LucideIcon } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { KOFI_URL, hasSupport } from "@/lib/support-links";
 import {
   Trans,
   useTranslation,
@@ -124,6 +125,29 @@ export function GeneralPage() {
           ))}
         </div>
       </section>
+
+      {/* Support the project */}
+      {hasSupport && KOFI_URL && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("app.support.cardTitle")}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>{t("app.support.cardBody")}</p>
+            <Button
+              size="sm"
+              title={t("app.support.openInNew")}
+              render={
+                <a href={KOFI_URL} target="_blank" rel="noopener noreferrer">
+                  <Heart className="size-4 mr-1.5" />
+                  {t("app.support.kofi")}
+                </a>
+              }
+            />
+            <p className="text-xs italic">{t("app.support.disclaimer")}</p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Detailed tool overview */}
       <div className="grid gap-4 sm:grid-cols-2">

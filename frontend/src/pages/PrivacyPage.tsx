@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { PrivacyPageRu } from "./PrivacyPage.ru";
 
-const LAST_UPDATED = "August 7, 2026";
+const LAST_UPDATED = "August 10, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function PrivacyPage() {
@@ -371,6 +371,11 @@ export function PrivacyPage() {
             </li>
             <li>
               <strong>Supabase</strong> &mdash; PostgreSQL database for contribution metadata.
+            </li>
+            <li>
+              <strong>Ko-fi</strong> &mdash; if you choose to make a voluntary donation, clicking
+              the donation link takes you to Ko-fi, which processes the payment under its own terms
+              and privacy policy. We do <strong>not</strong> receive or store your payment details.
             </li>
           </ul>
           <p>

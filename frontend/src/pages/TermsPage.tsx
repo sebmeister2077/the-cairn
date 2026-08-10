@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTranslation } from "@/lib/i18n";
 import { TermsPageRu } from "./TermsPage.ru";
 
-const LAST_UPDATED = "August 7, 2026";
+const LAST_UPDATED = "August 10, 2026";
 const CONTACT_EMAIL = "vswaypoint.jokingly672@passinbox.com";
 
 export function TermsPage() {
@@ -312,7 +312,35 @@ export function TermsPage() {
         </section>
 
         <section className="space-y-2">
-          <h2 className="text-base font-semibold text-foreground">14. Contact</h2>
+          <h2 className="text-base font-semibold text-foreground">14. Donations</h2>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>
+              The Service may display an optional link to make a <strong>voluntary donation</strong>{" "}
+              through a third-party platform (currently <strong>Ko-fi</strong>). Donations help
+              cover the Service's hosting and running costs.
+            </li>
+            <li>
+              Donations are <strong>gifts, not purchases</strong>. They are{" "}
+              <strong>voluntary and non-refundable</strong>, and they do <strong>not</strong> grant
+              you any goods, services, benefits, priority support, additional access, features, or
+              ownership of any kind. Nothing about the Service is gated behind a donation, and
+              donating does not change the &ldquo;AS IS&rdquo; nature of the Service or the
+              disclaimers and limitations in sections 8 and 9.
+            </li>
+            <li>
+              Payments are processed entirely by the third-party platform under its own terms and
+              privacy policy. The operator does <strong>not</strong> receive or store your card or
+              payment details.
+            </li>
+            <li>
+              Donating does not create any partnership, employment, or other relationship with the
+              operator, and does not make you a customer entitled to any deliverable.
+            </li>
+          </ul>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-base font-semibold text-foreground">15. Contact</h2>
           <p>
             Questions:{" "}
             <a href={`mailto:${CONTACT_EMAIL}`} className="underline">

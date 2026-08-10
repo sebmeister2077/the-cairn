@@ -136,6 +136,20 @@ export const en = {
             terms: "Terms",
             contact: "Contact",
             cookies: "Cookie settings",
+            support: "Support",
+        },
+        support: {
+            buttonTitle: "Support the project",
+            dialogTitle: "Support the project",
+            dialogDescription:
+                "Cairn is a free, unofficial fan project. If it is useful to you, a voluntary donation helps cover its hosting and running costs.",
+            kofi: "Donate on Ko-fi",
+            openInNew: "Opens in a new tab",
+            disclaimer:
+                "Donations are voluntary and never buy access, features, or support. Cairn is not affiliated with or endorsed by Anego Studios.",
+            cardTitle: "Support the project",
+            cardBody:
+                "Cairn is free to use and always will be — it is an unofficial fan project run as a hobby. If you would like to help cover its hosting and running costs, you can leave a voluntary donation. It is entirely optional and never unlocks anything.",
         },
         skipToContent: "Skip to main content",
     },

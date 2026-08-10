@@ -13,6 +13,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
 import { ContactDialog, useContactDialog } from "@/components/ContactDialog";
+import { SupportDialog, useSupportDialog } from "@/components/SupportDialog";
+import { hasSupport } from "@/lib/support-links";
 import { ExtractPage } from "@/pages/ExtractPage";
 import { ImportPage } from "@/pages/ImportPage";
 import { CommandsPage } from "@/pages/CommandsPage";
@@ -357,6 +359,7 @@ export function AppContent() {
     undefined,
   );
   const contact = useContactDialog();
+  const support = useSupportDialog();
   // Reactive mirror of "is an API key currently stored?" so banners and
   // the auto-claim effect re-evaluate the moment a key is saved.
   const [hasApiKey, setHasApiKey] = useState(() => !!getStoredApiKey());
@@ -1255,6 +1258,15 @@ export function AppContent() {
             >
               {t("app.footer.contact")}
             </button>
+            {hasSupport && (
+              <button
+                type="button"
+                onClick={support.openDialog}
+                className="hover:text-foreground underline-offset-2 hover:underline cursor-pointer"
+              >
+                {t("app.footer.support")}
+              </button>
+            )}
             <button
               type="button"
               onClick={openCookieSettings}
@@ -1266,6 +1278,7 @@ export function AppContent() {
         </div>
       </footer>
       <ContactDialog open={contact.open} onClose={contact.closeDialog} />
+      <SupportDialog open={support.open} onClose={support.closeDialog} />
       <ApiKeyDialog
         open={keyOpen}
         onClose={() => setKeyOpen(false)}
