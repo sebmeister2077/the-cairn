@@ -254,6 +254,40 @@ class Settings:
     def R2_ENDPOINT_URL(self) -> str:
         return f"https://{self.R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
+    # --- Auction contribution ingest + rebuild ---
+    # PRIVATE bucket holding per-contributor raw auction-events files. These
+    # carry player UIDs + item RawHex and must never be publicly readable; only
+    # the computed artifacts go to the public bucket.
+    R2_PRIVATE_BUCKET_NAME: str = os.environ.get(
+        "R2_PRIVATE_BUCKET_NAME", "vs-tops-auction-raw"
+    )
+    # Public bucket the rebuild publishes computed listings/summary/items to
+    # (server-side path; the local dev flow still uses .env.local/.env.prod).
+    AUCTION_PUBLIC_BUCKET: str = os.environ.get(
+        "AUCTION_PUBLIC_BUCKET", os.environ.get("R2_BUCKET_NAME", "vs-waypoints")
+    )
+    AUCTION_RAW_PREFIX: str = os.environ.get("AUCTION_RAW_PREFIX", "auction/raw")
+    # Source pinning: the only game server we accept auction data from. The
+    # proxy asserts its upstream host via X-Upstream-Host; a mismatch is
+    # rejected. Empty disables the check.
+    AUCTION_PINNED_UPSTREAM_HOST: str = os.environ.get(
+        "AUCTION_PINNED_UPSTREAM_HOST", "tops.vintagestory.at"
+    )
+    # Plausibility bound: absolute world coordinate cap (blocks). tops' world is
+    # ~1.024M blocks per side; anything well outside is fabricated/garbage.
+    AUCTION_MAX_WORLD_COORD: float = float(
+        os.environ.get("AUCTION_MAX_WORLD_COORD", "1100000")
+    )
+    # Rebuild coalescer: quiet window after the last ingest before rebuilding,
+    # and a hard cap so a steady stream still rebuilds periodically.
+    AUCTION_REBUILD_DEBOUNCE_SECONDS: int = int(
+        os.environ.get("AUCTION_REBUILD_DEBOUNCE_SECONDS", "45")
+    )
+    AUCTION_REBUILD_MAX_INTERVAL_SECONDS: int = int(
+        os.environ.get("AUCTION_REBUILD_MAX_INTERVAL_SECONDS", "600")
+    )
+
+
     # Supabase PostgreSQL
     SUPABASE_DB_URL: str = os.environ.get("SUPABASE_DB_URL", "")
 

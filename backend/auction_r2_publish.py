@@ -142,3 +142,66 @@ def publish_auction_files(
                 log(f"[r2] {env}:   {key}  ({size_kb:,.1f} KB)")
             except Exception as exc:  # noqa: BLE001 - best-effort per file
                 log(f"[r2] {env}:   FAILED {key}: {exc}")
+
+
+def _client_from_env():
+    """R2 client from process env vars (R2_ACCOUNT_ID/ACCESS_KEY_ID/SECRET).
+
+    Used by the server-side rebuild on Render, where credentials come from the
+    environment rather than the local ``.env.local`` / ``.env.prod`` files.
+    """
+    import os
+
+    return _client_for(
+        {
+            "R2_ACCOUNT_ID": os.environ.get("R2_ACCOUNT_ID", ""),
+            "R2_ACCESS_KEY_ID": os.environ.get("R2_ACCESS_KEY_ID", ""),
+            "R2_SECRET_ACCESS_KEY": os.environ.get("R2_SECRET_ACCESS_KEY", ""),
+        }
+    )
+
+
+def publish_files_to_bucket(
+    files: Iterable[Path],
+    *,
+    bucket: str,
+    prefix: str = "auction",
+    manifest_name: str = "manifest.json",
+    log: Callable[[str], None] = print,
+) -> None:
+    """Upload ``files`` to ``prefix/`` of a single bucket using env credentials.
+
+    The programmatic entry point for the server-side rebuild — it targets one
+    (public) bucket whose name is configured at runtime, unlike
+    :func:`publish_auction_files` which reads the local dev/prod env files.
+    """
+    resolved: List[Path] = [Path(f) for f in files if Path(f).is_file()]
+    if not resolved:
+        log("[r2] no auction files to publish — skipping.")
+        return
+    if not bucket:
+        log("[r2] no target bucket configured — skipping.")
+        return
+    # Upload the manifest last (see publish_auction_files).
+    resolved.sort(key=lambda p: p.name == manifest_name)
+
+    client = _client_from_env()
+    log(f"[r2] env: uploading {len(resolved)} file(s) -> {bucket}/{prefix}/")
+    for f in resolved:
+        key = f"{prefix}/{f.name}"
+        cache = _MANIFEST_CACHE if f.name == manifest_name else _IMMUTABLE_CACHE
+        try:
+            with f.open("rb") as fh:
+                client.upload_fileobj(
+                    fh,
+                    bucket,
+                    key,
+                    ExtraArgs={
+                        "ContentType": _content_type(f),
+                        "CacheControl": cache,
+                    },
+                )
+            size_kb = f.stat().st_size / 1024
+            log(f"[r2] env:   {key}  ({size_kb:,.1f} KB)")
+        except Exception as exc:  # noqa: BLE001 - best-effort per file
+            log(f"[r2] env:   FAILED {key}: {exc}")

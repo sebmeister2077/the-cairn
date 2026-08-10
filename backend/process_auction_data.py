@@ -1691,6 +1691,25 @@ def write_manifest(out_dir: Path, files: List[Path]) -> Path:
     return path
 
 
+def build_artifacts(
+    rows: List[Dict[str, Any]],
+    *,
+    item_map: Optional[Dict[str, Dict[str, str]]] = None,
+    registry: Optional[Dict[str, Dict[str, str]]] = None,
+) -> "tuple[List[Dict[str, Any]], Dict[str, Any], Dict[str, Any]]":
+    """Dedup + decode + summarise raw auction-event rows into the published
+    artifacts. Returns ``(records, summary, items_catalog)``. Reused by both the
+    CLI and the server-side rebuild so both produce byte-identical output."""
+    deduped = dedup_latest(rows)
+    if item_map is None:
+        item_map = load_item_map(DEFAULT_ITEM_MAP)
+    if registry is None:
+        registry = load_registry(DEFAULT_REGISTRY)
+    records, items_catalog = build_records(deduped, item_map, registry)
+    summary = build_summary(records)
+    return records, summary, items_catalog
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input", type=Path, default=DEFAULT_INPUT)
@@ -1729,7 +1748,6 @@ def main() -> None:
 
     summary = build_summary(records)
     print(f"  spam-filtered {summary['totals']['spamFiltered']:,} listings")
-
     print("Writing artifacts…")
     listings_path = args.out / "listings.json"
     summary_path = args.out / "summary.json"

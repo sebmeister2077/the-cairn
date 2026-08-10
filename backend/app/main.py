@@ -45,6 +45,8 @@ from .routes import admin_translocators_screenshots as admin_translocators_scree
 from .routes import contribute_traders as contribute_traders_routes
 from .routes import trader_claim_types as trader_claim_types_routes
 from .routes import contribute_auctions as contribute_auctions_routes
+from .routes import contribute_auction_events as contribute_auction_events_routes
+from .routes import admin_auction_sources as admin_auction_sources_routes
 from .routes import admin_traders as admin_traders_routes
 from .routes import admin_usage as admin_usage_routes
 from .routes import usage_ingest as usage_ingest_routes
@@ -390,6 +392,19 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("tl_screenshot_worker startup kick failed (non-fatal): %s", exc)
 
+    # Debounced coalescer that rebuilds + republishes the public Auction House
+    # artifacts after auction contributions are ingested.
+    step_started = perf_counter()
+    try:
+        from .core import auction_rebuild
+        auction_rebuild.start()
+        logger.info(
+            "Startup step auction_rebuild coalescer started in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("auction_rebuild coalescer failed to start (non-fatal): %s", exc)
+
     logger.info("Startup complete in %.3fs", perf_counter() - startup_started)
 
     try:
@@ -409,6 +424,11 @@ async def lifespan(app: FastAPI):
         try:
             from .tasks import weekly_backup
             weekly_backup.stop()
+        except Exception:
+            pass
+        try:
+            from .core import auction_rebuild
+            await auction_rebuild.stop()
         except Exception:
             pass
         try:
@@ -650,6 +670,8 @@ app.include_router(admin_translocators_routes.router, prefix="/api")
 app.include_router(contribute_traders_routes.router, prefix="/api")
 app.include_router(trader_claim_types_routes.router, prefix="/api")
 app.include_router(contribute_auctions_routes.router, prefix="/api")
+app.include_router(contribute_auction_events_routes.router, prefix="/api")
+app.include_router(admin_auction_sources_routes.router, prefix="/api")
 app.include_router(admin_traders_routes.router, prefix="/api")
 app.include_router(admin_translocators_screenshots_routes.router, prefix="/api")
 app.include_router(admin_usage_routes.router, prefix="/api")

@@ -598,6 +598,33 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
 -- ``feature_flags.get_int`` and alembic 0018_feature_flag_value_int.
 ALTER TABLE feature_flags
 ADD COLUMN IF NOT EXISTS value_int INTEGER;
+
+-- Auction contributor keys: a client-side VsClayProxy that POSTs its full
+-- auction-events.jsonl to /api/contribute-auction-events. The raw file lives
+-- in the PRIVATE R2 bucket at ``auction/raw/<key_id>.jsonl.gz``; the server is
+-- the only holder of R2 credentials. ``auction_hmac_secret`` is the per-key
+-- shared secret used to sign the request body (never derived from public
+-- values like the upstream host). ``auction_trusted`` marks a fully-trusted
+-- source; untrusted sources still merge but are tagged and can be revoked +
+-- re-derived. The last four columns are ingest telemetry for the admin view.
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_contributor BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_trusted BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_hmac_secret TEXT;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_label TEXT;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_last_utc TIMESTAMPTZ;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_id_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_size_bytes BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS auction_fingerprint JSONB;
+CREATE INDEX IF NOT EXISTS idx_api_keys_auction_contributor
+    ON api_keys (auction_contributor) WHERE auction_contributor;
 """
 
 # ---------------------------------------------------------------------------
@@ -2147,6 +2174,108 @@ def revoke_api_key(key: str):
         api_key_cache.invalidate(key)
     except Exception:
         pass
+
+
+# ---------------------------------------------------------------------------
+# Auction contributor keys (VsClayProxy → /api/contribute-auction-events)
+# ---------------------------------------------------------------------------
+def get_api_key_by_id(key_id) -> Optional[dict]:
+    """Return the api_keys row for a UUID ``id``, or None."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM api_keys WHERE id = %s", (str(key_id),))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_auction_contributors() -> List[dict]:
+    """All api_keys flagged as auction contributors (newest first)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM api_keys WHERE auction_contributor ORDER BY created_at DESC"
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def create_auction_contributor(
+    key: str,
+    name: str,
+    hmac_secret: str,
+    *,
+    trusted: bool = False,
+    label: Optional[str] = None,
+) -> dict:
+    """Insert a new auction-contributor api_key (permissions stay 'read')."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO api_keys
+                       (key, name, permissions, auction_contributor,
+                        auction_trusted, auction_hmac_secret, auction_label)
+                   VALUES (%s, %s, 'read', TRUE, %s, %s, %s)
+                   RETURNING *""",
+                (key, name, trusted, hmac_secret, label),
+            )
+            return dict(cur.fetchone())
+
+
+def set_auction_contributor(
+    key: str,
+    *,
+    trusted: Optional[bool] = None,
+    label: Optional[str] = None,
+    hmac_secret: Optional[str] = None,
+) -> None:
+    """Update mutable auction-contributor fields on an existing key."""
+    sets, params = [], []
+    if trusted is not None:
+        sets.append("auction_trusted = %s")
+        params.append(trusted)
+    if label is not None:
+        sets.append("auction_label = %s")
+        params.append(label)
+    if hmac_secret is not None:
+        sets.append("auction_hmac_secret = %s")
+        params.append(hmac_secret)
+    if not sets:
+        return
+    params.append(key)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(f"UPDATE api_keys SET {', '.join(sets)} WHERE key = %s", params)
+    try:
+        from . import api_key_cache
+        api_key_cache.invalidate(key)
+    except Exception:
+        pass
+
+
+def update_auction_source_stats(
+    key_id,
+    *,
+    id_count: int,
+    size_bytes: int,
+    fingerprint: Optional[dict],
+) -> None:
+    """Record per-ingest telemetry for the admin view (keyed by api_keys.id)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE api_keys
+                       SET auction_last_utc = now(),
+                           auction_id_count = %s,
+                           auction_size_bytes = %s,
+                           auction_fingerprint = %s
+                     WHERE id = %s""",
+                (
+                    int(id_count),
+                    int(size_bytes),
+                    psycopg2.extras.Json(fingerprint) if fingerprint is not None else None,
+                    str(key_id),
+                ),
+            )
+
 
 
 def set_tops_map_stats(stats: dict):
