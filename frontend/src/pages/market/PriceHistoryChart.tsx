@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import {
   ComposedChart,
   Line,
+  Scatter,
   XAxis,
   YAxis,
   Tooltip as ChartTooltip,
@@ -149,16 +150,7 @@ export function PriceHistoryChart({
             <ReferenceLine y={median} stroke="#10b981" strokeDasharray="4 4" />
             <ReferenceLine y={min} stroke="#94a3b8" strokeDasharray="2 3" />
             <ReferenceLine y={max} stroke="#94a3b8" strokeDasharray="2 3" />
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke="#6366f1"
-              strokeWidth={1.5}
-              dot={{ r: 2 }}
-              activeDot={{ r: 4 }}
-              name="Sale"
-              isAnimationActive={false}
-            />
+            <Scatter dataKey="price" fill="#6366f1" name="Sale" isAnimationActive={false} />
             <Line
               type="monotone"
               dataKey="ma"
@@ -173,7 +165,7 @@ export function PriceHistoryChart({
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
         <li className="flex items-center gap-2">
-          <span className="inline-block h-0.5 w-3 shrink-0 bg-[#6366f1]" />
+          <span className="inline-block size-2 shrink-0 rounded-full bg-[#6366f1]" />
           <span>
             <span className="text-foreground">Sales</span> — each recorded sale, per {unit}.
           </span>
