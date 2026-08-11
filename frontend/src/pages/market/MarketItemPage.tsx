@@ -78,8 +78,8 @@ import { ItemConcentrationSection } from "./ItemConcentrationSection";
 import { TraderAvailabilityCard } from "./TraderAvailabilityCard";
 import { ItemRarityCard } from "./ItemRarityCard";
 import { Sparkline } from "./Sparkline";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { patchAuctionFilters } from "@/store/slices/auctionFilters";
+import { ExternalTradeToggle } from "./ExternalTradeToggle";
+import { useAppSelector } from "@/store/hooks";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -303,8 +303,7 @@ export function MarketItemPage() {
     [windowKey, summary?.recordingStartGameHours],
   );
 
-  // Shared "hide external trades" toggle (synced with the Listings/Insights pages).
-  const dispatch = useAppDispatch();
+  // Shared "hide off-platform trades" toggle (synced across market pages).
   const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
 
   // Shared price mode (median vs quantity-weighted), synced across market pages.
@@ -1209,16 +1208,8 @@ export function MarketItemPage() {
         <span className="ml-1 text-xs text-muted-foreground">1 real day ≈ 1 in-game month</span>
       </div>
 
-      {/* Hide external trades (synced with the Listings & Insights pages) */}
-      <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-        <Checkbox
-          checked={excludeExternalTrades}
-          onCheckedChange={(v) =>
-            dispatch(patchAuctionFilters({ excludeExternalTrades: v === true }))
-          }
-        />
-        Hide external trades
-      </label>
+      {/* Hide off-platform trades (synced across the market pages) */}
+      <ExternalTradeToggle className="w-fit text-muted-foreground" />
 
       {/* Price basis (shared with the Insights & Converter pages) */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

@@ -28,7 +28,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   useAuctionListings,
   useAuctionSummary,
@@ -36,8 +35,8 @@ import {
   formatRealTimeToSell,
 } from "@/lib/auction";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { patchAuctionFilters } from "@/store/slices/auctionFilters";
+import { useAppSelector } from "@/store/hooks";
+import { ExternalTradeToggle } from "./ExternalTradeToggle";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
@@ -546,8 +545,7 @@ export function MarketConverterPage() {
     [windowKey, summary?.recordingStartGameHours],
   );
 
-  // Shared "hide external trades" toggle (synced with the other market pages).
-  const dispatch = useAppDispatch();
+  // Shared "hide off-platform trades" toggle (synced across market pages).
   const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
 
   const insights = useMemo(
@@ -687,15 +685,7 @@ export function MarketConverterPage() {
             </SelectContent>
           </Select>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox
-            checked={excludeExternalTrades}
-            onCheckedChange={(v) =>
-              dispatch(patchAuctionFilters({ excludeExternalTrades: v === true }))
-            }
-          />
-          Hide external trades
-        </label>
+        <ExternalTradeToggle className="text-muted-foreground" />
       </div>
 
       {/* Quick picks: popular target items */}

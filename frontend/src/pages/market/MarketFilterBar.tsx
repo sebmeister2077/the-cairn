@@ -18,6 +18,7 @@ import {
   type AuctionSortKey,
   type AuctionStateFilter,
 } from "@/store/slices/auctionFilters";
+import { ExternalTradeToggle } from "./ExternalTradeToggle";
 
 // Sentinel for "no category" — base-ui Select can't hold an empty-string value.
 const ALL_CATEGORIES = "__all__";
@@ -184,13 +185,7 @@ export function MarketFilterBar({ categories }: { categories: string[] }) {
         Hide spam
       </label>
 
-      <label className="flex items-center gap-2 text-sm cursor-pointer h-9">
-        <Checkbox
-          checked={f.excludeExternalTrades}
-          onCheckedChange={(v) => dispatch(patchAuctionFilters({ excludeExternalTrades: !!v }))}
-        />
-        Hide external trades
-      </label>
+      <ExternalTradeToggle className="h-9" />
 
       <Button
         variant="ghost"
