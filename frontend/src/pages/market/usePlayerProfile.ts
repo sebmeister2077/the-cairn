@@ -110,7 +110,7 @@ export function usePlayerProfile(
     windowDays: number | null,
 ): PlayerProfile {
     return useMemo(() => {
-        const clean = (listings ?? []).filter((l) => !l.spam);
+        const clean = (listings ?? []).filter((l) => !l.spam && !l.externalTrade);
         const windowed = filterListingsByWindow(clean, windowDays);
 
         const asSeller = windowed.filter((l) => l.sellerUid === uid);

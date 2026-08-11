@@ -603,7 +603,8 @@ export function MarketInsightsPage() {
     () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
     [windowKey, summary?.recordingStartGameHours],
   );
-  const insights = useMarketInsights(listings, windowDays);
+  const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
+  const insights = useMarketInsights(listings, windowDays, excludeExternalTrades);
 
   // Screener rows: items with at least one sale in the window carry meaningful
   // stats; drop the rest so the table isn't padded with empty indicators.

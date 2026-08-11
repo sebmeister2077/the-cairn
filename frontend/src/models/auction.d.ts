@@ -78,6 +78,13 @@ export interface AuctionListing {
      *  pickup listings. */
     deliveryFee: number;
     spam: boolean;
+    /**
+     * External/barter trade: the item was moved over the Auction House for a
+     * token 1-gear price while the real payment happened off-platform. Excluded
+     * from every price statistic. See `EXTERNAL_TRADE_PRICE` in
+     * `backend/process_auction_data.py`.
+     */
+    externalTrade: boolean;
     sellerName: string | null;
     sellerUid: string | null;
     buyerName: string | null;
@@ -325,6 +332,7 @@ export interface MarketTotals {
     uniqueItems: number;
     sellThrough: number;
     spamFiltered: number;
+    externalTradesFiltered: number;
 }
 
 /**

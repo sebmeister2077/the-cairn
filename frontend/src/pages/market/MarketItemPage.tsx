@@ -78,6 +78,8 @@ import { ItemConcentrationSection } from "./ItemConcentrationSection";
 import { TraderAvailabilityCard } from "./TraderAvailabilityCard";
 import { ItemRarityCard } from "./ItemRarityCard";
 import { Sparkline } from "./Sparkline";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -301,6 +303,10 @@ export function MarketItemPage() {
     [windowKey, summary?.recordingStartGameHours],
   );
 
+  // Shared "hide external trades" toggle (synced with the Listings/Insights pages).
+  const dispatch = useAppDispatch();
+  const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
+
   // Shared price mode (median vs quantity-weighted), synced across market pages.
   const [priceMode, setPriceMode] = useMarketPriceMode();
 
@@ -421,15 +427,20 @@ export function MarketItemPage() {
   const metalWindowListings = useMemo(() => {
     if (!metal) return [];
     const ids = metal.unitsByItemId;
-    const family = (listingsQ.data ?? []).filter((l) => ids.has(l.itemId));
+    let family = (listingsQ.data ?? []).filter((l) => ids.has(l.itemId));
+    if (excludeExternalTrades) family = family.filter((l) => !l.externalTrade);
     return filterListingsByWindow(family, windowDays);
-  }, [metal, listingsQ.data, windowDays]);
+  }, [metal, listingsQ.data, windowDays, excludeExternalTrades]);
 
   const itemListings = useMemo(() => {
     const all = listingsQ.data ?? [];
-    if (combineOres && oreGroup) return all.filter((l) => oreGroup.ids.has(l.itemId));
-    return all.filter((l) => l.itemId === id);
-  }, [listingsQ.data, id, combineOres, oreGroup]);
+    let base =
+      combineOres && oreGroup
+        ? all.filter((l) => oreGroup.ids.has(l.itemId))
+        : all.filter((l) => l.itemId === id);
+    if (excludeExternalTrades) base = base.filter((l) => !l.externalTrade);
+    return base;
+  }, [listingsQ.data, id, combineOres, oreGroup, excludeExternalTrades]);
 
   // Listings that feed the price/market figures (fair price, distribution,
   // sell-through, trend…). For ores that exist both as a standalone item and as
@@ -471,8 +482,8 @@ export function MarketItemPage() {
       combineOres && oreGroup
         ? priceListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
         : priceListings;
-    return computeMarketInsights(src, windowDays).rows[0] ?? null;
-  }, [priceListings, windowDays, combineOres, oreGroup, id]);
+    return computeMarketInsights(src, windowDays, excludeExternalTrades).rows[0] ?? null;
+  }, [priceListings, windowDays, combineOres, oreGroup, id, excludeExternalTrades]);
 
   const trend = insight?.trend ?? null;
 
@@ -1197,6 +1208,17 @@ export function MarketItemPage() {
         ))}
         <span className="ml-1 text-xs text-muted-foreground">1 real day ≈ 1 in-game month</span>
       </div>
+
+      {/* Hide external trades (synced with the Listings & Insights pages) */}
+      <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+        <Checkbox
+          checked={excludeExternalTrades}
+          onCheckedChange={(v) =>
+            dispatch(patchAuctionFilters({ excludeExternalTrades: v === true }))
+          }
+        />
+        Hide external trades
+      </label>
 
       {/* Price basis (shared with the Insights & Converter pages) */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

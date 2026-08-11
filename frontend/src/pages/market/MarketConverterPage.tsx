@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   useAuctionListings,
   useAuctionSummary,
@@ -35,6 +36,8 @@ import {
   formatRealTimeToSell,
 } from "@/lib/auction";
 import { cn } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
@@ -543,9 +546,16 @@ export function MarketConverterPage() {
     [windowKey, summary?.recordingStartGameHours],
   );
 
+  // Shared "hide external trades" toggle (synced with the other market pages).
+  const dispatch = useAppDispatch();
+  const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
+
   const insights = useMemo(
-    () => (listings && listings.length ? computeMarketInsights(listings, windowDays) : null),
-    [listings, windowDays],
+    () =>
+      listings && listings.length
+        ? computeMarketInsights(listings, windowDays, excludeExternalTrades)
+        : null,
+    [listings, windowDays, excludeExternalTrades],
   );
 
   // Resolve item names to their best insights row. Item names can repeat across
@@ -677,6 +687,15 @@ export function MarketConverterPage() {
             </SelectContent>
           </Select>
         </div>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+          <Checkbox
+            checked={excludeExternalTrades}
+            onCheckedChange={(v) =>
+              dispatch(patchAuctionFilters({ excludeExternalTrades: v === true }))
+            }
+          />
+          Hide external trades
+        </label>
       </div>
 
       {/* Quick picks: popular target items */}

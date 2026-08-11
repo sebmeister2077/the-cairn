@@ -17,6 +17,7 @@ import {
   isDefaultInsightsFilters,
   type InsightsFilters,
 } from "@/store/slices/insightsFilters";
+import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 
 interface Option {
   value: string;
@@ -135,6 +136,7 @@ export function InsightsFilterBar({ categories }: { categories: string[] }) {
   const dispatch = useAppDispatch();
   const f = useAppSelector((s) => s.insightsFilters);
   const favoritesCount = useAppSelector((s) => s.marketFavorites.ids.length);
+  const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
   const categoryOptions: Option[] = categories.map((c) => ({ value: c, label: c }));
 
   return (
@@ -303,6 +305,14 @@ export function InsightsFilterBar({ categories }: { categories: string[] }) {
           onCheckedChange={(v) => dispatch(patchInsightsFilters({ upperBoundUnknownOnly: !!v }))}
         />
         Unknown upper bound
+      </label>
+
+      <label className="flex items-center gap-2 text-sm cursor-pointer h-9">
+        <Checkbox
+          checked={excludeExternalTrades}
+          onCheckedChange={(v) => dispatch(patchAuctionFilters({ excludeExternalTrades: !!v }))}
+        />
+        Hide external trades
       </label>
 
       <Button

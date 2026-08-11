@@ -112,6 +112,16 @@ DEPOSIT_FEE_BY_WEEKS = {
     25: 5,
 }
 
+# Total price (in gears) that marks a listing as an external/barter trade: the
+# item is moved over the Auction House for a token 1-gear price while the real
+# payment happens off-platform. These are excluded from every price statistic.
+EXTERNAL_TRADE_PRICE = 1
+# Pre-arranged barter trades sell almost instantly (the buyer is standing by), so
+# only 1-gear sales that concluded within this many in-game hours are treated as
+# external trades — a genuinely cheap item usually sits on the board longer.
+# 20 in-game hours ≈ 40 real minutes (1 real hour ≈ 30 in-game hours).
+EXTERNAL_TRADE_MAX_HOURS = 20
+
 
 def duration_weeks_for_hours(initial_duration_hours: Any) -> Optional[int]:
     """The listing length in whole in-game weeks the seller chose, derived from
@@ -792,6 +802,7 @@ def compute_reference_prices(records: List[Dict[str, Any]]) -> None:
         if (
             not rec["sold"]
             or rec["spam"]
+            or rec["externalTrade"]
             or _has_written_text(rec)
             or rec.get("postedTotalHours") is None
         ):
@@ -867,6 +878,23 @@ def flag_spam(records: List[Dict[str, Any]]) -> None:
 
     for rec in records:
         rec["spam"] = rec.get("sellerUid") in spammy_sellers
+
+
+def flag_external_trades(records: List[Dict[str, Any]]) -> None:
+    """Mark listings as external/barter trades so they are kept out of every price
+    statistic. A record qualifies only when it SOLD (not cancelled) at the token
+    `EXTERNAL_TRADE_PRICE` and concluded within `EXTERNAL_TRADE_MAX_HOURS` in-game
+    hours — the near-instant sell that a pre-arranged off-platform swap produces.
+    Mutates each record's `externalTrade` flag."""
+    for rec in records:
+        tts = rec.get("timeToSellHours")
+        rec["externalTrade"] = bool(
+            rec["sold"]
+            and not rec["cancelled"]
+            and rec["price"] == EXTERNAL_TRADE_PRICE
+            and tts is not None
+            and tts < EXTERNAL_TRADE_MAX_HOURS
+        )
 
 
 # --------------------------------------------------------------------------- #
@@ -1004,6 +1032,7 @@ def build_records(
         )
 
     flag_spam(records)
+    flag_external_trades(records)
     compute_reference_prices(records)
     return records, items_catalog
 
@@ -1450,7 +1479,7 @@ def latest_board_cutoff(records: List[Dict[str, Any]]) -> Optional[datetime]:
 
 
 def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
-    clean = [r for r in records if not r["spam"]]
+    clean = [r for r in records if not r["spam"] and not r["externalTrade"]]
     sold = [r for r in clean if r["sold"]]
 
     # --- Per-item stats (fair-price from sold listings only) -------------- #
@@ -1616,6 +1645,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         if sold
         else 0,
         "spamFiltered": sum(1 for r in records if r["spam"]),
+        "externalTradesFiltered": sum(1 for r in records if r["externalTrade"]),
     }
 
     # --- Time series (bucketed by in-game posting month) ------------------ #
@@ -1748,6 +1778,9 @@ def main() -> None:
 
     summary = build_summary(records)
     print(f"  spam-filtered {summary['totals']['spamFiltered']:,} listings")
+    print(
+        f"  external-trade-filtered {summary['totals']['externalTradesFiltered']:,} listings"
+    )
     print("Writing artifacts…")
     listings_path = args.out / "listings.json"
     summary_path = args.out / "summary.json"

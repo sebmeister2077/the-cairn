@@ -210,11 +210,13 @@ function rankNormalize(values: number[]): Map<number, number> {
 
 /**
  * Compute every Market Insights indicator per item for the given window.
- * `windowDays === null` means all-time. Spam listings are always excluded.
+ * `windowDays === null` means all-time. Spam is always excluded; external
+ * (1-gear barter) trades are excluded when `excludeExternalTrades` is set.
  */
 export function computeMarketInsights(
     listings: AuctionListing[],
     windowDays: number | null,
+    excludeExternalTrades = true,
 ): MarketInsights {
     // Ensure the module-cached reference clocks reflect this dataset even when it
     // was restored from a persisted query cache (whose queryFn never ran).
@@ -225,7 +227,9 @@ export function computeMarketInsights(
     const windowStartGameHours =
         windowDays == null ? -Infinity : currentGameHours - windowDays * GAME_HOURS_PER_REAL_DAY;
 
-    const clean = listings.filter((l) => !l.spam);
+    const clean = listings.filter(
+        (l) => !l.spam && (!excludeExternalTrades || !l.externalTrade),
+    );
 
     // In-game span (as real days) used to turn all-time counts into per-day rates.
     let earliestPosted = currentGameHours;
@@ -523,9 +527,10 @@ export function computeMarketInsights(
 export function useMarketInsights(
     listings: AuctionListing[] | undefined,
     windowDays: number | null,
+    excludeExternalTrades = true,
 ): MarketInsights | null {
     return useMemo(() => {
         if (!listings || listings.length === 0) return null;
-        return computeMarketInsights(listings, windowDays);
-    }, [listings, windowDays]);
+        return computeMarketInsights(listings, windowDays, excludeExternalTrades);
+    }, [listings, windowDays, excludeExternalTrades]);
 }

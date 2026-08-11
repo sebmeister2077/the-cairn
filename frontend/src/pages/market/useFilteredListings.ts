@@ -20,6 +20,7 @@ export function filterListings(
 
     const rows = listings.filter((l) => {
         if (f.excludeSpam && l.spam) return false;
+        if (f.excludeExternalTrades && l.externalTrade) return false;
         if (f.category && l.category !== f.category) return false;
         if (f.deliveredOnly && !l.delivered) return false;
         // Match against the derived, display-level status so the filter agrees
