@@ -1,6 +1,6 @@
 import { useMemo, useState, lazy, Suspense } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
-import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert } from "lucide-react";
+import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert, ChevronDown } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
 import {
   ComposedChart,
@@ -78,6 +78,7 @@ import { ItemConcentrationSection } from "./ItemConcentrationSection";
 import { TraderAvailabilityCard } from "./TraderAvailabilityCard";
 import { ItemRarityCard } from "./ItemRarityCard";
 import { Sparkline } from "./Sparkline";
+import { PriceHistoryChart, type SalePoint } from "./PriceHistoryChart";
 import { ExternalTradeToggle } from "./ExternalTradeToggle";
 import { useAppSelector } from "@/store/hooks";
 
@@ -315,6 +316,8 @@ export function MarketItemPage() {
   const [soldOnly, setSoldOnly] = useState(false);
   // Volume-over-time series unit: total gears vs total units.
   const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
+  // Whether the expanded, hoverable price-history chart is shown under the title.
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // Ores are a single ore type embedded in different host rocks — a distinct
   // block id per rock (e.g. "Ore bountiful hematite granite" vs "…peridotite")
@@ -500,6 +503,23 @@ export function MarketItemPage() {
     () => pricedWindowListings.filter((l) => l.sold).map((l) => l.pricePerUnit),
     [pricedWindowListings],
   );
+
+  // Timestamped sold sales feeding the expandable price-history chart: real
+  // per-unit prices dated by in-game sale time (host-rock/text/external/window
+  // filters already applied upstream), so a hover can read the exact price at an
+  // exact moment — unlike the header sparkline's downsampled value-only series.
+  const salePoints = useMemo<SalePoint[]>(() => {
+    return pricedWindowListings
+      .filter((l) => l.sold && saleGameHours(l) != null)
+      .map((l) => ({
+        t: saleGameHours(l)!,
+        ppu: l.pricePerUnit,
+        qty: l.qty,
+        price: l.price,
+        observedUtc: l.observedUtc ?? l.lastObservedUtc ?? null,
+      }))
+      .sort((a, b) => a.t - b.t);
+  }, [pricedWindowListings]);
 
   // The market never revealed a price ceiling when no expired listing was ever
   // priced above the highest one that actually sold. With no evidence that any
@@ -1036,6 +1056,25 @@ export function MarketItemPage() {
                 />
               )}
               <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
+              {salePoints.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => setHistoryExpanded((v) => !v)}
+                  aria-expanded={historyExpanded}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-input px-3 py-1 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  title={
+                    historyExpanded
+                      ? "Hide price history"
+                      : "Show a bigger, hoverable price history"
+                  }
+                >
+                  <ChevronDown
+                    className={`size-4 transition-transform duration-300 ${historyExpanded ? "rotate-180" : ""}`}
+                    aria-hidden
+                  />
+                  {historyExpanded ? "Hide history" : "Price history"}
+                </button>
+              )}
             </span>
           )}
           {upperBoundUnknown && <UpperBoundUnknownBadge />}
@@ -1105,6 +1144,29 @@ export function MarketItemPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Height/fade transition on toggle; kept mounted so it animates both ways. */}
+      <div
+        className={`grid overflow-hidden transition-all duration-300 ease-out ${
+          historyExpanded && salePoints.length >= 2
+            ? "grid-rows-[1fr] opacity-100"
+            : "grid-rows-[0fr] opacity-0 mt-0!"
+        }`}
+      >
+        <div className="min-h-0 overflow-hidden">
+          {salePoints.length >= 2 && (
+            <Card>
+              <CardContent className="py-4">
+                <PriceHistoryChart
+                  points={salePoints}
+                  stackSize={stackSize}
+                  defaultPerUnit={perUnitUseful}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {related && (
