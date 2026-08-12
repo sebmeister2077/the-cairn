@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Download } from "lucide-react";
 import {
   Table,
@@ -30,7 +30,20 @@ export function MarketListingsPage() {
   const isAdmin = useAppSelector((s) => s.auth.isAdmin);
   const rows = useFilteredListings(data, filters, isAdmin);
   const showAuctionId = isAdmin && filters.showAuctionId;
-  const [page, setPage] = useState(0);
+  // Keep the page in the URL so it survives navigating to an item and back.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(0, (Number(searchParams.get("page")) || 1) - 1);
+  const setPage = (next: number) => {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (next <= 0) p.delete("page");
+        else p.set("page", String(next + 1));
+        return p;
+      },
+      { replace: true },
+    );
+  };
   // The raw CSV is published to the R2 bucket's `auction/` folder alongside the
   // JSON data; the download link points straight at it.
   const csvUrl = useAuctionCsvUrl();
