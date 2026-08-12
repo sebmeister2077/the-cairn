@@ -46,7 +46,13 @@ const SORT_LABELS: Record<string, string> = {
   name: "Name",
 };
 
-export function MarketFilterBar({ categories }: { categories: string[] }) {
+export function MarketFilterBar({
+  categories,
+  isAdmin = false,
+}: {
+  categories: string[];
+  isAdmin?: boolean;
+}) {
   const dispatch = useAppDispatch();
   const f = useAppSelector((s) => s.auctionFilters);
 
@@ -186,6 +192,32 @@ export function MarketFilterBar({ categories }: { categories: string[] }) {
       </label>
 
       <ExternalTradeToggle className="h-9" />
+
+      {isAdmin && (
+        <label
+          className="flex items-center gap-2 text-sm cursor-pointer h-9"
+          title="Admin only: expired/cancelled listings still on the board that the seller hasn't retrieved yet (buyable due to a game bug)"
+        >
+          <Checkbox
+            checked={f.unpickedExpiredOnly}
+            onCheckedChange={(v) => dispatch(patchAuctionFilters({ unpickedExpiredOnly: !!v }))}
+          />
+          Unretrieved expired
+        </label>
+      )}
+
+      {isAdmin && (
+        <label
+          className="flex items-center gap-2 text-sm cursor-pointer h-9"
+          title="Admin only: show the raw AuctionId column"
+        >
+          <Checkbox
+            checked={f.showAuctionId}
+            onCheckedChange={(v) => dispatch(patchAuctionFilters({ showAuctionId: !!v }))}
+          />
+          Show AuctionId
+        </label>
+      )}
 
       <Button
         variant="ghost"

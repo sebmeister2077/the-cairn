@@ -27,7 +27,9 @@ export function MarketListingsPage() {
   const { data, isPending, isError } = useAuctionListings();
   const currentGameHours = useCurrentGameHours();
   const filters = useAppSelector((s) => s.auctionFilters);
-  const rows = useFilteredListings(data, filters);
+  const isAdmin = useAppSelector((s) => s.auth.isAdmin);
+  const rows = useFilteredListings(data, filters, isAdmin);
+  const showAuctionId = isAdmin && filters.showAuctionId;
   const [page, setPage] = useState(0);
   // The raw CSV is published to the R2 bucket's `auction/` folder alongside the
   // JSON data; the download link points straight at it.
@@ -75,13 +77,14 @@ export function MarketListingsPage() {
         </div>
       </div>
 
-      <MarketFilterBar categories={categories} />
+      <MarketFilterBar categories={categories} isAdmin={isAdmin} />
 
       <div className="rounded-md border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Item</TableHead>
+              {showAuctionId && <TableHead className="text-right">AuctionId</TableHead>}
               <TableHead>Game date</TableHead>
               <TableHead className="text-right">Price</TableHead>
               <TableHead className="text-right">/ unit</TableHead>
@@ -105,6 +108,11 @@ export function MarketListingsPage() {
                     {l.variant || l.name}
                   </Link>
                 </TableCell>
+                {showAuctionId && (
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {l.auctionId}
+                  </TableCell>
+                )}
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                   <span title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}>
                     {formatGameDate(l.postedTotalHours)}
@@ -162,7 +170,10 @@ export function MarketListingsPage() {
             ))}
             {pageRows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={10} className="text-center text-muted-foreground py-8">
+                <TableCell
+                  colSpan={showAuctionId ? 11 : 10}
+                  className="text-center text-muted-foreground py-8"
+                >
                   No listings match your filters.
                 </TableCell>
               </TableRow>

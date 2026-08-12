@@ -25,6 +25,14 @@ export interface AuctionFilters {
     deliveredOnly: boolean;
     excludeSpam: boolean;
     excludeExternalTrades: boolean;
+    /**
+     * Admin-only: show only expired/cancelled listings that are still sitting on
+     * the live board (observed in the latest capture sweep), i.e. not yet
+     * retrieved by the seller — these are still buyable due to a game bug.
+     */
+    unpickedExpiredOnly: boolean;
+    /** Admin-only display toggle: show the raw AuctionId column. */
+    showAuctionId: boolean;
     /** Comma-separated buyer/seller names to hide from the listings. */
     excludePlayers: string;
     sort: AuctionSortKey;
@@ -40,6 +48,8 @@ export const DEFAULT_AUCTION_FILTERS: AuctionFilters = {
     deliveredOnly: false,
     excludeSpam: true,
     excludeExternalTrades: true,
+    unpickedExpiredOnly: false,
+    showAuctionId: false,
     excludePlayers: "",
     sort: "date",
     sortDir: "desc",

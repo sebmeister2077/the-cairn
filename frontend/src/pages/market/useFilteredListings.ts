@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus } from "@/lib/auction";
+import { deriveListingStatus, getLatestSweepStartMs } from "@/lib/auction";
 import type { AuctionFilters } from "@/store/slices/auctionFilters";
 
-/** Apply the current filter/sort state to the raw listings array. */
+/** Apply the current filter/sort state to the raw listings array. The
+ * `isAdmin` flag gates admin-only filters (e.g. `unpickedExpiredOnly`). */
 export function filterListings(
     listings: AuctionListing[],
     f: AuctionFilters,
+    isAdmin = false,
 ): AuctionListing[] {
     const q = f.q.trim().toLowerCase();
     const priceMin = f.priceMin === "" ? null : Number(f.priceMin);
@@ -18,11 +20,24 @@ export function filterListings(
             .filter(Boolean),
     );
 
+    // Earliest observation timestamp still belonging to the most recent capture
+    // sweep; a listing observed at/after this is still on the live board.
+    const sweepStartMs = getLatestSweepStartMs();
+
     const rows = listings.filter((l) => {
         if (f.excludeSpam && l.spam) return false;
         if (f.excludeExternalTrades && l.externalTrade) return false;
         if (f.category && l.category !== f.category) return false;
         if (f.deliveredOnly && !l.delivered) return false;
+        // Admin-only: expired/cancelled listings the seller hasn't retrieved yet
+        // (still present in the latest sweep) — buyable due to a game bug.
+        if (isAdmin && f.unpickedExpiredOnly) {
+            const expiredOrCancelled = l.state === "Expired" || l.cancelled === true;
+            const lastMs = l.lastObservedUtc ? Date.parse(l.lastObservedUtc) : NaN;
+            const stillOnBoard =
+                sweepStartMs > 0 && !Number.isNaN(lastMs) && lastMs >= sweepStartMs;
+            if (!expiredOrCancelled || !stillOnBoard) return false;
+        }
         // Match against the derived, display-level status so the filter agrees
         // with the status badge (e.g. an "Active"-state row that dropped off the
         // board renders — and filters — as "Removed", not "Active").
@@ -83,9 +98,10 @@ export function filterListings(
 export function useFilteredListings(
     listings: AuctionListing[] | undefined,
     filters: AuctionFilters,
+    isAdmin = false,
 ): AuctionListing[] {
     return useMemo(
-        () => (listings ? filterListings(listings, filters) : []),
-        [listings, filters],
+        () => (listings ? filterListings(listings, filters, isAdmin) : []),
+        [listings, filters, isAdmin],
     );
 }
