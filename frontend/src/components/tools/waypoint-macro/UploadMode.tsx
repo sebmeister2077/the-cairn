@@ -103,6 +103,34 @@ export function UploadMode({ onCommandsChange }: UploadModeProps) {
           <CardTitle className="text-base">Upload chat log</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="rounded-md border border-border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Before you upload, capture your waypoints in-game:</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-muted-foreground">
+              <li>
+                Join the server, open the chat box and run{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-foreground">
+                  /waypoint list d
+                </code>{" "}
+                (the <code className="rounded bg-muted px-1 py-0.5 text-foreground">d</code> is
+                short for <em>details</em>). This prints all of your waypoints into the chat, which
+                the game writes to your{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-foreground">
+                  client-chat.log
+                </code>{" "}
+                file.
+              </li>
+              <li>
+                Find that log file in your Vintage Story data folder under{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-foreground">Logs</code> (on
+                Windows:{" "}
+                <code className="rounded bg-muted px-1 py-0.5 text-foreground">
+                  %appdata%\VintagestoryData\Logs\client-chat.log
+                </code>
+                ).
+              </li>
+              <li>Upload it below to extract the waypoints.</li>
+            </ol>
+          </div>
           <FileUpload
             id="chatlog"
             label="client-chat.log"
