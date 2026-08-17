@@ -130,6 +130,9 @@ const NORMALIZE_ON_READ: {
         // so a typo or rolled-back schema can't crash the canvas draw.
         return {
             ...merged,
+            // Advanced map options are always on now; never let a stale
+            // persisted `false` disable them.
+            showAdvancedMapOptions: true,
             traderStyle: isTraderStyle(merged.traderStyle)
                 ? merged.traderStyle
                 : DEFAULT_TRADER_STYLE,

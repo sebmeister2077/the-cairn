@@ -62,6 +62,7 @@ export function PreferencesPage() {
             <Switch
               id="advanced-map-options-toggle"
               checked={showAdvancedMapOptions}
+              disabled
               onCheckedChange={(v) => dispatch(setShowAdvancedMapOptions(v))}
             />
           </div>
