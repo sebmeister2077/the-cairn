@@ -251,10 +251,10 @@ export interface MapViewState {
     auctionHeatmapOpacity: number;
     /**
      * Account-level preference ("Show additional options on Map") that
-     * gates advanced/experimental map controls. When OFF (default), the
+     * gates advanced/experimental map controls. When OFF, the
      * fullscreen Oceans toggle is hidden and the Oceans overlay image is
-     * never rendered, regardless of `showOceans`. Toggled from the
-     * Account → Appearance panel.
+     * never rendered, regardless of `showOceans`. Defaults to ON. Toggled
+     * from the Account → Appearance panel.
      */
     showAdvancedMapOptions: boolean;
     isFullscreen: boolean;
@@ -366,7 +366,7 @@ export function loadInitialMapViewState(): MapViewState {
         climateAltitudeY: CLIMATE_SEA_LEVEL,
         climateOpacity: 0.7,
         auctionHeatmapOpacity: 0.75,
-        showAdvancedMapOptions: false,
+        showAdvancedMapOptions: true,
         isFullscreen: false,
         starfieldEnabled: true,
         wcTileCacheEnabled: true,

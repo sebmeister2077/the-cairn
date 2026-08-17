@@ -5,7 +5,7 @@ import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
 import { Combobox } from "../ui/combobox";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   setSelectedLevel as setSelectedLevelAction,
   setGroupingsViewMode as setGroupingsViewModeAction,
@@ -19,10 +19,6 @@ import {
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
   setShowTraderClaims as setShowTraderClaimsAction,
-  setShowPlayerClaims as setShowPlayerClaimsAction,
-  setPlayerClaimsMode as setPlayerClaimsModeAction,
-  setPlayerClaimsSearch as setPlayerClaimsSearchAction,
-  setPlayerClaimsOpacity as setPlayerClaimsOpacityAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
   toggleTraderTypeFilter as toggleTraderTypeFilterAction,
@@ -34,7 +30,6 @@ import {
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
-import { usePlayerClaims } from "@/hooks/usePlayerClaims";
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
 
@@ -42,11 +37,12 @@ import { useTranslation } from "@/lib/i18n";
 // (`frontend/src/assets/Oceans/oceans.json` -> `bodies.length`). Hardcoded
 // because server size is fixed and we don't want to ship the ~1 MB JSON
 // to clients just to read its length.
-const OCEANS_TOTAL_COUNT = 1236;
+export const OCEANS_TOTAL_COUNT = 1236;
 import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
+import { PlayerClaimsControl } from "./PlayerClaimsControl";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapControl";
 import type { LegendEntry } from "@/lib/rockstrata/types";
@@ -171,26 +167,6 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowTraderClaimsAction(next)),
     [dispatch],
   );
-  const showPlayerClaims = useAppSelector((s) => s.mapView.showPlayerClaims);
-  const setShowPlayerClaims = useCallback(
-    (next: boolean) => dispatch(setShowPlayerClaimsAction(next)),
-    [dispatch],
-  );
-  const playerClaimsMode = useAppSelector((s) => s.mapView.playerClaimsMode);
-  const setPlayerClaimsMode = useCallback(
-    (next: "density" | "search" | "all") => dispatch(setPlayerClaimsModeAction(next)),
-    [dispatch],
-  );
-  const playerClaimsSearch = useAppSelector((s) => s.mapView.playerClaimsSearch);
-  const setPlayerClaimsSearch = useCallback(
-    (next: string) => dispatch(setPlayerClaimsSearchAction(next)),
-    [dispatch],
-  );
-  const playerClaimsOpacity = useAppSelector((s) => s.mapView.playerClaimsOpacity);
-  const setPlayerClaimsOpacity = useCallback(
-    (next: number) => dispatch(setPlayerClaimsOpacityAction(next)),
-    [dispatch],
-  );
   const showRockStrata = useAppSelector((s) => s.mapView.showRockStrata);
   const setShowRockStrata = useCallback(
     (next: boolean) => dispatch(setShowRockStrataAction(next)),
@@ -230,29 +206,6 @@ export function FullscreenControlsOverlay({
   // Shares the React Query cache with the page's loader (same query key), so
   // this only surfaces the deduped count — no extra fetch.
   const traderClaimsQuery = useTraderClaims(showAdvancedMapOptions && showTraderClaims);
-  // Shares the page loader's query key — surfaces owners + count without an
-  // extra fetch.
-  const playerClaimsQuery = usePlayerClaims(showAdvancedMapOptions && showPlayerClaims);
-  const playerClaimOwners = useMemo(() => {
-    const set = new Set<string>();
-    for (const c of playerClaimsQuery.data ?? []) if (c.owner) set.add(c.owner);
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [playerClaimsQuery.data]);
-  const playerClaimMatchCount = useMemo(() => {
-    const q = playerClaimsSearch.trim().toLowerCase();
-    if (!q) return 0;
-    let n = 0;
-    for (const c of playerClaimsQuery.data ?? []) {
-      if (c.owner.toLowerCase().includes(q)) n++;
-    }
-    return n;
-  }, [playerClaimsQuery.data, playerClaimsSearch]);
-  // Keep the panel's overflow clipped while it animates open/shut; only reveal
-  // it once fully expanded so the search dropdown can escape the card.
-  const [playerClaimsPanelExpanded, setPlayerClaimsPanelExpanded] = useState(false);
-  useEffect(() => {
-    if (!showPlayerClaims) setPlayerClaimsPanelExpanded(false);
-  }, [showPlayerClaims]);
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
   const toggleTraderType = useCallback(
@@ -640,129 +593,8 @@ export function FullscreenControlsOverlay({
                 })}
               </span>
             </div>
-            <div
-              className={cn(
-                "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-                !showAdvancedMapOptions && "hidden",
-              )}
-            >
-              <div
-                onClick={() => setShowPlayerClaims(!showPlayerClaims)}
-                className="cursor-pointer flex items-center gap-2"
-              >
-                <Switch
-                  checked={showPlayerClaims}
-                  aria-label={t("topsMap.showPlayerClaimsOverlay")}
-                />
-                <Label className="cursor-pointer">{t("topsMap.showPlayerClaims")}</Label>
-                <span className="text-xs text-muted-foreground">
-                  {t("topsMap.totalCount", {
-                    count: (playerClaimsQuery.data?.length ?? 0).toLocaleString(),
-                  })}
-                </span>
-              </div>
-              <div
-                className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-                style={{ gridTemplateRows: showPlayerClaims ? "1fr" : "0fr" }}
-                aria-hidden={!showPlayerClaims}
-                onTransitionEnd={() => {
-                  if (showPlayerClaims) setPlayerClaimsPanelExpanded(true);
-                }}
-              >
-                <div
-                  className={cn(
-                    "min-h-0",
-                    playerClaimsPanelExpanded ? "overflow-visible" : "overflow-hidden",
-                  )}
-                >
-                  <div className="flex flex-col gap-2 pt-1">
-                    <div className="flex rounded-md border p-0.5">
-                      <button
-                        type="button"
-                        onClick={() => setPlayerClaimsMode("density")}
-                        className={cn(
-                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                          playerClaimsMode === "density"
-                            ? "bg-foreground text-background"
-                            : "hover:bg-muted",
-                        )}
-                      >
-                        {t("topsMap.playerClaimsDensityMode")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerClaimsMode("search")}
-                        className={cn(
-                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                          playerClaimsMode === "search"
-                            ? "bg-foreground text-background"
-                            : "hover:bg-muted",
-                        )}
-                      >
-                        {t("topsMap.playerClaimsSearchMode")}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPlayerClaimsMode("all")}
-                        className={cn(
-                          "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                          playerClaimsMode === "all"
-                            ? "bg-foreground text-background"
-                            : "hover:bg-muted",
-                        )}
-                      >
-                        {t("topsMap.playerClaimsAllMode")}
-                      </button>
-                    </div>
-                    {playerClaimsMode === "density" ? (
-                      <div className="flex items-center gap-2">
-                        <Label className="text-xs text-muted-foreground">
-                          {t("topsMap.playerClaimsOpacity")}
-                        </Label>
-                        <Slider
-                          className="flex-1 px-2"
-                          min={0}
-                          max={1}
-                          step={0.05}
-                          value={playerClaimsOpacity}
-                          onValueChange={(v) => setPlayerClaimsOpacity(v)}
-                          aria-label={t("topsMap.playerClaimsOpacity")}
-                        />
-                      </div>
-                    ) : playerClaimsMode === "all" ? (
-                      <span className="text-xs text-muted-foreground">
-                        {t("topsMap.playerClaimsAllHint")}
-                      </span>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <Label
-                          htmlFor="player-claim-search"
-                          className="flex items-center gap-1 text-xs text-muted-foreground"
-                        >
-                          <Search className="size-3" />
-                          {t("topsMap.playerClaimsSearchPlaceholder")}
-                        </Label>
-                        <Combobox
-                          id="player-claim-search"
-                          placeholder={t("topsMap.typeToSearch")}
-                          value={playerClaimsSearch}
-                          suggestions={playerClaimOwners}
-                          onChange={setPlayerClaimsSearch}
-                          onSelect={setPlayerClaimsSearch}
-                          dropUp
-                        />
-                        {playerClaimsSearch.trim() ? (
-                          <span className="text-xs text-muted-foreground">
-                            {t("topsMap.playerClaimsMatchCount", {
-                              count: playerClaimMatchCount.toLocaleString(),
-                            })}
-                          </span>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+            <div className={cn(!showAdvancedMapOptions && "hidden")}>
+              <PlayerClaimsControl variant="fullscreen" />
             </div>
             <div
               className={cn(

@@ -122,6 +122,8 @@ import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayL
 import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
+import { ClimateControlsPanel } from "@/components/tops-map/ClimateControlsPanel";
+import { PlayerClaimsControl } from "@/components/tops-map/PlayerClaimsControl";
 import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
@@ -156,7 +158,7 @@ import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
-import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
+import { FullscreenControlsOverlay, OCEANS_TOTAL_COUNT } from "@/components/tops-map/FullScreenOverlay";
 import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
@@ -531,7 +533,7 @@ export function TOPSMapViewPage() {
   const playerClaimsMode = useAppSelector((s) => s.mapView.playerClaimsMode);
   const playerClaimsSearch = useAppSelector((s) => s.mapView.playerClaimsSearch);
   const playerClaimsOpacity = useAppSelector((s) => s.mapView.playerClaimsOpacity);
-  const playerClaimsVisible = showPlayerClaims && isFullscreen && showAdvancedMapOptions;
+  const playerClaimsVisible = showPlayerClaims && showAdvancedMapOptions;
   const playerClaimsQuery = usePlayerClaims(playerClaimsVisible);
   const playerClaimDensity = useMemo(() => {
     if (!playerClaimsVisible || playerClaimsMode !== "density") return null;
@@ -2409,6 +2411,19 @@ export function TOPSMapViewPage() {
                 {showAdvancedMapOptions && (
                   <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                     <Switch
+                      checked={showOceans}
+                      onCheckedChange={setShowOceans}
+                      aria-label={t("topsMap.showOceansOverlay")}
+                    />
+                    <Label>{t("topsMap.oceans")}</Label>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
+                    </span>
+                  </div>
+                )}
+                {showAdvancedMapOptions && (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <Switch
                       checked={showRecordedBrokenTLs}
                       onCheckedChange={setShowRecordedBrokenTLs}
                       aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
@@ -2438,6 +2453,7 @@ export function TOPSMapViewPage() {
                     </span>
                   </div>
                 )}
+                <PlayerClaimsControl />
                 <AuctionHeatmapControl
                   layer={auctionLayer}
                   onLayerChange={setAuctionLayer}
@@ -2461,6 +2477,21 @@ export function TOPSMapViewPage() {
                   status={rockStrataOverlay.status}
                   error={rockStrataOverlay.error}
                 />
+                {usingWebCartographer && (
+                  <ClimateControlsPanel
+                    layerMeta={climateOverlay.layerMeta}
+                    status={climateOverlay.status}
+                    error={climateOverlay.error}
+                  />
+                )}
+                {climateVisible && (
+                  <ClimateHoverReadout
+                    hoverCoords={climateHoverCoords}
+                    sample={climateHoverSample}
+                    visible={climateVisible}
+                    altitudeY={climateAltitudeY}
+                  />
+                )}
               </CollapsibleSection>
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
