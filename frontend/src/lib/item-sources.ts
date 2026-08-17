@@ -50,7 +50,7 @@ export function lookupItemSources(code: string | null | undefined): ItemSourceIn
 // and trader-bought items are handled separately in `marketRarity`.
 const COMMON_STAPLE_EXACT = new Set<string>(["coke", "gear-temporal", "gear-rusty"]);
 const COMMON_STAPLE_PREFIXES = ["ingot-", "metalbit-", "nugget-", "chandelier", 'padlock-'];
-const COMMON_STAPLE_SUFFIXES = ["-ingot", "-nugget", "-tinbronze", "-blackbronze", "-copper", "-bismuthbronze", "-iron", "-steel"];
+const COMMON_STAPLE_SUFFIXES = ["-ingot", "-nugget", "-tinbronze", "-blackbronze", "-copper", "-bismuthbronze", "-iron", "-steel", "-sylvite"];
 
 function isCommonStaple(bare: string): boolean {
     return COMMON_STAPLE_EXACT.has(bare) ||
