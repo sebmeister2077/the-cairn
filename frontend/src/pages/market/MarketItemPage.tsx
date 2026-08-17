@@ -975,6 +975,36 @@ export function MarketItemPage() {
     );
   }
   if (itemListings.length === 0) {
+    // Catalogue item with no auction activity yet: still surface its rarity and trader
+    // availability so people can research it before hunting one down.
+    if (currentEntry) {
+      return (
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 -ml-2"
+            onClick={() =>
+              location.key !== "default" ? navigate(-1) : navigate("/market/listings")
+            }
+          >
+            <ArrowLeft className="size-4" /> Back
+          </Button>
+          <div>
+            <h1 className="text-2xl font-semibold">{currentEntry.name}</h1>
+            <p className="text-sm text-muted-foreground">{currentEntry.category}</p>
+          </div>
+          <Card>
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              Not yet listed on the Auction House — no price data yet. Its rarity and trader
+              availability are shown below.
+            </CardContent>
+          </Card>
+          <TraderAvailabilityCard code={lookupCode} />
+          <ItemRarityCard code={lookupCode} />
+        </div>
+      );
+    }
     return (
       <div className="py-12 text-center space-y-2">
         <p className="text-muted-foreground">No data for this item.</p>

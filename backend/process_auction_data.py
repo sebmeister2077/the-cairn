@@ -43,7 +43,7 @@ import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # --------------------------------------------------------------------------- #
 # Paths
@@ -57,6 +57,11 @@ DEFAULT_ITEM_MAP = REPO_ROOT / "backend" / "auction_item_map.json"
 DEFAULT_REGISTRY = (
     REPO_ROOT / "frontend" / "src" / "assets" / "Auction" / "registry-tops.vintagestory.at.json"
 )
+# Curated known-item datasets (bare-code keyed): items with a loot rarity and items
+# sold by traders. Their codes are added to the catalogue even when never auctioned,
+# so the Item Search page lists them (and their rarity) before anyone lists one.
+DEFAULT_ITEM_SOURCES = REPO_ROOT / "frontend" / "src" / "assets" / "GameData" / "item-sources.json"
+DEFAULT_TRADER_WARES = REPO_ROOT / "frontend" / "src" / "assets" / "GameData" / "trader-wares.json"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "frontend" / "public" / "auction"
 
 # States that mean the auction actually sold.
@@ -413,6 +418,80 @@ def resolve_item(
         "classType": class_type,
         "maxStackSize": max_stack,
     }
+
+
+# --------------------------------------------------------------------------- #
+# Curated catalogue augmentation (rarity + trader items never auctioned)
+# --------------------------------------------------------------------------- #
+def load_known_item_codes(
+    item_sources_path: Path = DEFAULT_ITEM_SOURCES,
+    trader_wares_path: Path = DEFAULT_TRADER_WARES,
+) -> Set[str]:
+    """Bare item codes that should always appear in the catalogue: everything with a
+    loot rarity (item-sources) or sold by a trader (trader-wares). Both datasets key
+    their ``items`` map by bare code."""
+    codes: Set[str] = set()
+    for path in (item_sources_path, trader_wares_path):
+        if not path.exists():
+            print(f"[warn] known-item dataset not found at {path} — skipping")
+            continue
+        data = json.loads(path.read_text(encoding="utf-8"))
+        codes.update((data.get("items") or {}).keys())
+    return codes
+
+
+def _build_code_index(registry: Dict[str, Dict[str, str]]) -> Dict[str, Tuple[int, str]]:
+    """Reverse registry: bare code -> (raw_id, classType). Items win over Blocks on a
+    code collision (loot/trader items are overwhelmingly Items)."""
+    index: Dict[str, Tuple[int, str]] = {}
+    for class_type in ("Block", "Item"):  # Item last so it overrides on collision
+        for id_str, code in (registry.get(class_type) or {}).items():
+            bare = code.split(":", 1)[-1]
+            try:
+                index[bare] = (int(id_str), class_type)
+            except (TypeError, ValueError):
+                continue
+    return index
+
+
+def augment_catalog_with_known_items(
+    items_catalog: Dict[str, Dict[str, Any]],
+    registry: Dict[str, Dict[str, str]],
+    known_codes: Set[str],
+) -> None:
+    """Add catalogue entries for curated codes not already auctioned, so the Item
+    Search page lists every rarity/trader item. Mutates ``items_catalog`` in place."""
+    index = _build_code_index(registry)
+    added = skipped_missing = 0
+    for bare in sorted(known_codes):
+        # clutter/tapestry trader keys use synthetic ids, not real registry ids — defer.
+        if ":" in bare:
+            continue
+        entry = index.get(bare)
+        if entry is None:
+            skipped_missing += 1
+            continue
+        raw_id, class_type = entry
+        iid = namespace_item_id(raw_id, class_type)
+        key = str(iid)
+        if key in items_catalog:
+            continue  # already present from an auction
+        code = registry.get(class_type, {}).get(str(raw_id))
+        name = registry.get(f"{class_type}Names", {}).get(str(raw_id)) or (
+            humanize_code(code) if code else bare
+        )
+        items_catalog[key] = {
+            "name": name,
+            "category": _category_from_code(code) if code else "unknown",
+            "code": code,
+            "classType": class_type,
+            "maxStackSize": registry.get(f"{class_type}Stack", {}).get(str(raw_id)),
+        }
+        added += 1
+    print(
+        f"  catalogue augmented: +{added:,} curated items "
+        f"({skipped_missing:,} codes not in registry)"
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -1034,6 +1113,7 @@ def build_records(
     flag_spam(records)
     flag_external_trades(records)
     compute_reference_prices(records)
+    augment_catalog_with_known_items(items_catalog, registry, load_known_item_codes())
     return records, items_catalog
 
 

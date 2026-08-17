@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuctionSummary, useItemCatalog, formatGears } from "@/lib/auction";
+import { lookupItemSources, RARITY_LABELS, RARITY_COLORS } from "@/lib/item-sources";
+import type { Rarity } from "@/models/item-sources";
 import {
   useItemSearch,
   patchItemSearch,
@@ -56,6 +58,7 @@ interface SearchRow {
   gearsTraded: number;
   median: number | null;
   weighted: number | null;
+  rarity: Rarity | null;
 }
 
 function sortRows(rows: SearchRow[], key: SortKey): SearchRow[] {
@@ -108,6 +111,7 @@ export function MarketItemsPage() {
         gearsTraded: st?.gearsTraded ?? 0,
         median: st?.priceStats?.median ?? null,
         weighted: st?.weightedPricePerUnit ?? null,
+        rarity: lookupItemSources(entry.code)?.rarity ?? null,
       };
     });
   }, [catalogQ.data, summaryQ.data]);
@@ -158,7 +162,8 @@ export function MarketItemsPage() {
       <div>
         <h1 className="text-2xl font-semibold">Item Search</h1>
         <p className="text-sm text-muted-foreground">
-          Search {rows.length.toLocaleString()} items traded on the Auction House.
+          Search {rows.length.toLocaleString()} items in the catalogue — including ones not yet
+          listed on the Auction House, so you can check rarity before hunting them down.
         </p>
       </div>
 
@@ -243,6 +248,7 @@ export function MarketItemsPage() {
             <TableRow>
               <TableHead>Item</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Rarity</TableHead>
               <TableHead className="text-right">Fair price</TableHead>
               <TableHead className="text-right">Weighted price</TableHead>
               <TableHead className="text-right">Units sold</TableHead>
@@ -259,6 +265,21 @@ export function MarketItemsPage() {
                   </Link>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{it.category}</TableCell>
+                <TableCell>
+                  {it.rarity ? (
+                    <span
+                      className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+                      style={{
+                        color: RARITY_COLORS[it.rarity],
+                        backgroundColor: `${RARITY_COLORS[it.rarity]}1a`,
+                      }}
+                    >
+                      {RARITY_LABELS[it.rarity]}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
                 <TableCell className="text-right tabular-nums">
                   {it.median != null ? formatGears(it.median) : "—"}
                 </TableCell>
@@ -274,7 +295,7 @@ export function MarketItemsPage() {
             ))}
             {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                   No items match your search.
                 </TableCell>
               </TableRow>
