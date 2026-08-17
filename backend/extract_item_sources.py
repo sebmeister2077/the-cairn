@@ -75,6 +75,9 @@ def load_vs_json(path: Path) -> dict:
     # Quote bare identifier keys that follow '{' or ',' (skips already-quoted keys).
     text = re.sub(r"([{,]\s*)([A-Za-z_][A-Za-z0-9_]*)(\s*):", r'\1"\2"\3:', text)
     text = re.sub(r",(\s*[}\]])", r"\1", text)
+    # VS embeds literal tabs/control chars inside strings (e.g. ingredientPattern
+    # "C\tA"); strict JSON forbids those, so neutralise them (newlines kept).
+    text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\t]", " ", text)
     return json.loads(text)
 
 
@@ -114,16 +117,17 @@ def _collect_output_codes(node: object, out: set) -> None:
             _collect_output_codes(v, out)
 
 
-def load_craftable_clothes(assets_root: Path):
-    """Set of exact + wildcard-regex clothes codes that have a crafting recipe
-    (from ``survival/recipes/grid/clothes/*.json``)."""
-    recipe_dir = assets_root / "survival" / "recipes" / "grid" / "clothes"
+def load_craftable_codes(assets_root: Path):
+    """Set of exact codes + wildcard-regex patterns for every item/block that has a
+    grid crafting recipe (``survival/recipes/grid/**/*.json``). Used to suppress the
+    loot rarity of craftable items on the market browsing pages."""
+    recipe_dir = assets_root / "survival" / "recipes" / "grid"
     exact: set = set()
     patterns: list = []
     if not recipe_dir.is_dir():
-        print(f"[warn] clothes recipes not found at {recipe_dir} — craftable flag skipped")
+        print(f"[warn] grid recipes not found at {recipe_dir} — craftable flag skipped")
         return exact, patterns
-    for path in sorted(recipe_dir.glob("*.json")):
+    for path in sorted(recipe_dir.rglob("*.json")):
         try:
             data = load_vs_json(path)
         except Exception as exc:  # noqa: BLE001 - a single bad file shouldn't abort
@@ -133,8 +137,6 @@ def load_craftable_clothes(assets_root: Path):
         _collect_output_codes(data, codes)
         for raw in codes:
             code = bare_code(raw)
-            if not code.startswith("clothes-"):
-                continue
             if "{" in code:
                 # `{color}` variant placeholder -> match any variant token.
                 parts = re.split(r"\{[^}]*\}", code)
@@ -163,7 +165,7 @@ def build(assets_root: Path) -> dict:
     data = load_vs_json(path)
     by_type = data.get("attributesByType") or {}
     lang = load_lang(assets_root)
-    craft_exact, craft_patterns = load_craftable_clothes(assets_root)
+    craft_exact, craft_patterns = load_craftable_codes(assets_root)
 
     # code -> list of {pool, label, chancePct}
     sources: Dict[str, List[dict]] = defaultdict(list)
@@ -207,8 +209,9 @@ def build(assets_root: Path) -> dict:
         repeatable = [r for r in rows if not r.get("oncePerServer")]
         rarity = rarity_for(max(r["chancePct"] for r in repeatable)) if repeatable else "unique"
         entry: Dict[str, object] = {"rarity": rarity, "sources": rows}
-        # Craftable flag only for dungeon-loot clothing that has a recipe.
-        if code.startswith("clothes-") and is_craftable(code, craft_exact, craft_patterns):
+        # Craftable items are trivially obtainable, so the market pages hide their
+        # loot rarity (the detail page still shows it).
+        if is_craftable(code, craft_exact, craft_patterns):
             entry["craftable"] = True
         items[code] = entry
 

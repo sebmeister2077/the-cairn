@@ -38,6 +38,7 @@ import { StatCard } from "@/components/usage/StatCard";
 import {
   useAuctionListings,
   useAuctionSummary,
+  useItemCatalog,
   formatGears,
   formatRealTimeToSell,
 } from "@/lib/auction";
@@ -57,6 +58,8 @@ import {
   useInsightsHiddenColumns,
 } from "./useInsightsColumns";
 import { PriceModeInfo } from "./PriceModeInfo";
+import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
+import type { Rarity } from "@/models/item-sources";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
 import { toggleFavorite } from "@/store/slices/marketFavorites";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
@@ -598,6 +601,17 @@ export function MarketInsightsPage() {
   const [volumeMode, setVolumeMode] = useMarketVolumeMode();
   const [priceMode, setPriceMode] = useMarketPriceMode();
   const hiddenColumns = useInsightsHiddenColumns();
+  const catalogQ = useItemCatalog();
+
+  // itemId -> loot rarity (resolved from the catalogue's item code), for the
+  // optional Rarity column.
+  const rarityById = useMemo(() => {
+    const map = new Map<number, Rarity | null>();
+    for (const [idStr, entry] of Object.entries(catalogQ.data ?? {})) {
+      map.set(Number(idStr), marketRarity(entry.code));
+    }
+    return map;
+  }, [catalogQ.data]);
 
   const windowDays = useMemo(
     () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
@@ -707,6 +721,31 @@ export function MarketInsightsPage() {
           </span>
         ),
         sortValue: (r) => r.name.toLowerCase(),
+      },
+      {
+        key: "rarity",
+        header: "Rarity",
+        width: "minmax(6rem,0.8fr)",
+        cell: (r) => {
+          const rarity = rarityById.get(r.itemId) ?? null;
+          if (!rarity) return <span className="text-muted-foreground">{DASH}</span>;
+          return (
+            <span
+              className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium"
+              style={{
+                color: RARITY_COLORS[rarity],
+                backgroundColor: `${RARITY_COLORS[rarity]}1a`,
+              }}
+            >
+              {RARITY_LABELS[rarity]}
+            </span>
+          );
+        },
+        sortValue: (r) => {
+          const rarity = rarityById.get(r.itemId) ?? null;
+          return rarity ? RARITY_RANK[rarity] : null;
+        },
+        title: "Loot-table rarity (rarest first)",
       },
       {
         key: "volume",
@@ -857,7 +896,7 @@ export function MarketInsightsPage() {
         title: "In-game date of the most recent sale",
       },
     ],
-    [volumeMode, priceMode],
+    [volumeMode, priceMode, rarityById],
   );
 
   // The "Item" column is always shown; the rest respect the persisted picker.

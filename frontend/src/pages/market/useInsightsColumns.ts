@@ -7,10 +7,16 @@
 import { useSyncExternalStore } from "react";
 import { writeIfConsented } from "@/lib/consent";
 
-const STORAGE_KEY = "market.insightsHiddenCols";
+// v2 bumped when `rarity` was added as a default-hidden column; the migration in
+// `load()` folds any legacy (v1) hidden set in and forces rarity off by default.
+const STORAGE_KEY = "market.insightsHiddenCols.v2";
+const LEGACY_STORAGE_KEY = "market.insightsHiddenCols";
+// Columns hidden until the user opts in via the Columns picker.
+const DEFAULT_HIDDEN = ["rarity"];
 
 /** Hideable screener columns, in display order, with their picker labels. */
 export const HIDEABLE_INSIGHTS_COLUMNS: { key: string; label: string }[] = [
+    { key: "rarity", label: "Rarity" },
     { key: "volume", label: "Volume" },
     { key: "median", label: "Median/unit" },
     { key: "volatility", label: "Volatility" },
@@ -26,17 +32,27 @@ export const HIDEABLE_INSIGHTS_COLUMNS: { key: string; label: string }[] = [
     { key: "lastSale", label: "Last sale" },
 ];
 
+function parseHidden(raw: string | null): string[] | null {
+    if (!raw) return null;
+    try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.filter((x): x is string => typeof x === "string") : null;
+    } catch {
+        return null;
+    }
+}
+
 function load(): string[] {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const arr = JSON.parse(raw);
-            if (Array.isArray(arr)) return arr.filter((x): x is string => typeof x === "string");
-        }
+        const v2 = parseHidden(localStorage.getItem(STORAGE_KEY));
+        if (v2) return v2;
+        // Migrate: keep any legacy hidden columns, but force the new opt-in ones off.
+        const legacy = parseHidden(localStorage.getItem(LEGACY_STORAGE_KEY)) ?? [];
+        return Array.from(new Set([...legacy, ...DEFAULT_HIDDEN]));
     } catch {
-        /* localStorage unavailable / malformed — fall back to showing everything */
+        /* localStorage unavailable / malformed — fall back to the default-hidden set */
     }
-    return [];
+    return [...DEFAULT_HIDDEN];
 }
 
 let current: string[] = load();

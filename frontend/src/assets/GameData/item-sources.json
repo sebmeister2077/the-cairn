@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-08-01T21:28:15.382467+00:00",
+  "generatedUtc": "2026-08-17T08:45:06.644139+00:00",
   "source": "vintagestory/assets/survival/itemtypes/meta/stackrandomizer.json",
   "poolCount": 33,
   "items": {
@@ -71,7 +71,8 @@
           "label": "Weapon randomizer (Copper)",
           "chancePct": 10.96
         }
-      ]
+      ],
+      "craftable": true
     },
     "axe-bardiche-ruined": {
       "rarity": "rare",
@@ -81,7 +82,8 @@
           "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
-      ]
+      ],
+      "craftable": true
     },
     "axe-battle-ruined": {
       "rarity": "rare",
@@ -91,7 +93,8 @@
           "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
-      ]
+      ],
+      "craftable": true
     },
     "axe-bearded-ruined": {
       "rarity": "rare",
@@ -101,7 +104,8 @@
           "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
-      ]
+      ],
+      "craftable": true
     },
     "axe-double-ruined": {
       "rarity": "rare",
@@ -111,7 +115,8 @@
           "label": "Stack randomizer (Ruined weapons)",
           "chancePct": 3.33
         }
-      ]
+      ],
+      "craftable": true
     },
     "axe-felling-copper": {
       "rarity": "common",
@@ -126,7 +131,8 @@
           "label": "Weapon randomizer (Copper)",
           "chancePct": 6.85
         }
-      ]
+      ],
+      "craftable": true
     },
     "bandage-clean": {
       "rarity": "rare",
@@ -136,7 +142,8 @@
           "label": "Resource randomizer",
           "chancePct": 4.3
         }
-      ]
+      ],
+      "craftable": true
     },
     "beenade-closed": {
       "rarity": "rare",
@@ -186,7 +193,8 @@
           "label": "Weapon randomizer (Copper)",
           "chancePct": 2.74
         }
-      ]
+      ],
+      "craftable": true
     },
     "blade-forlorn-iron": {
       "rarity": "uncommon",
@@ -226,7 +234,8 @@
           "label": "Mining materials randomizer",
           "chancePct": 8.8
         }
-      ]
+      ],
+      "craftable": true
     },
     "bone": {
       "rarity": "common",
@@ -246,7 +255,8 @@
           "label": "Weapon randomizer (Copper)",
           "chancePct": 4.11
         }
-      ]
+      ],
+      "craftable": true
     },
     "bowl-blue-fired": {
       "rarity": "uncommon",
@@ -306,7 +316,8 @@
           "label": "Building materials randomizer",
           "chancePct": 6.96
         }
-      ]
+      ],
+      "craftable": true
     },
     "claybricks-good-fire": {
       "rarity": "rare",
@@ -316,7 +327,8 @@
           "label": "Building materials randomizer",
           "chancePct": 1.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "clearquartz": {
       "rarity": "rare",
@@ -326,7 +338,8 @@
           "label": "Mining materials randomizer",
           "chancePct": 2.8
         }
-      ]
+      ],
+      "craftable": true
     },
     "clothes-arm-acrobat": {
       "rarity": "rare",
@@ -4652,7 +4665,8 @@
           "label": "Fuel randomizer",
           "chancePct": 20.3
         }
-      ]
+      ],
+      "craftable": true
     },
     "firewood": {
       "rarity": "common",
@@ -4662,7 +4676,8 @@
           "label": "Fuel randomizer",
           "chancePct": 16.4
         }
-      ]
+      ],
+      "craftable": true
     },
     "flaxfibers": {
       "rarity": "common",
@@ -4682,7 +4697,8 @@
           "label": "Resource randomizer",
           "chancePct": 5.5
         }
-      ]
+      ],
+      "craftable": true
     },
     "flint": {
       "rarity": "uncommon",
@@ -4702,7 +4718,8 @@
           "label": "Gear randomizer",
           "chancePct": 99.03
         }
-      ]
+      ],
+      "craftable": true
     },
     "gear-temporal": {
       "rarity": "legendary",
@@ -4712,7 +4729,8 @@
           "label": "Gear randomizer",
           "chancePct": 0.32
         }
-      ]
+      ],
+      "craftable": true
     },
     "hammer-copper": {
       "rarity": "uncommon",
@@ -4722,7 +4740,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 7.97
         }
-      ]
+      ],
+      "craftable": true
     },
     "hoe-copper": {
       "rarity": "uncommon",
@@ -4732,7 +4751,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 9.97
         }
-      ]
+      ],
+      "craftable": true
     },
     "hoovedwearables-blanket-alchemist": {
       "rarity": "rare",
@@ -4884,7 +4904,8 @@
           "label": "Ingot randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "ingot-blackbronze": {
       "rarity": "very_rare",
@@ -4894,7 +4915,8 @@
           "label": "Ingot randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "ingot-brass": {
       "rarity": "rare",
@@ -4914,7 +4936,8 @@
           "label": "Ingot randomizer",
           "chancePct": 16.67
         }
-      ]
+      ],
+      "craftable": true
     },
     "ingot-gold": {
       "rarity": "legendary",
@@ -4974,7 +4997,8 @@
           "label": "Ingot randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "ingot-zinc": {
       "rarity": "common",
@@ -5239,7 +5263,8 @@
           "label": "Lantern randomizer",
           "chancePct": 54.51
         }
-      ]
+      ],
+      "craftable": true
     },
     "leather-normal-plain": {
       "rarity": "very_rare",
@@ -5249,7 +5274,8 @@
           "label": "Resource randomizer",
           "chancePct": 0.8
         }
-      ]
+      ],
+      "craftable": true
     },
     "lime": {
       "rarity": "common",
@@ -5479,7 +5505,8 @@
           "label": "Mining materials randomizer",
           "chancePct": 4.0
         }
-      ]
+      ],
+      "craftable": true
     },
     "ore-poor-hematite-granite": {
       "rarity": "uncommon",
@@ -5704,7 +5731,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 0.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "planks-aged-ud": {
       "rarity": "common",
@@ -5714,7 +5742,8 @@
           "label": "Building materials randomizer",
           "chancePct": 15.38
         }
-      ]
+      ],
+      "craftable": true
     },
     "prospectingpick-copper": {
       "rarity": "rare",
@@ -5724,7 +5753,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 2.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "quicklime": {
       "rarity": "rare",
@@ -5754,7 +5784,8 @@
           "label": "Resource randomizer",
           "chancePct": 10.4
         }
-      ]
+      ],
+      "craftable": true
     },
     "rot": {
       "rarity": "common",
@@ -5784,7 +5815,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 0.33
         }
-      ]
+      ],
+      "craftable": true
     },
     "scythe-copper": {
       "rarity": "rare",
@@ -5794,7 +5826,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 3.32
         }
-      ]
+      ],
+      "craftable": true
     },
     "seeds-cabbage": {
       "rarity": "very_rare",
@@ -5854,7 +5887,8 @@
           "label": "Seed randomizer",
           "chancePct": 0.66
         }
-      ]
+      ],
+      "craftable": true
     },
     "seeds-rice": {
       "rarity": "very_rare",
@@ -5924,7 +5958,8 @@
           "label": "Tool randomizer (Copper)",
           "chancePct": 26.58
         }
-      ]
+      ],
+      "craftable": true
     },
     "spear-boar-ruined": {
       "rarity": "rare",
@@ -5954,7 +5989,8 @@
           "label": "Weapon randomizer (Copper)",
           "chancePct": 34.25
         }
-      ]
+      ],
+      "craftable": true
     },
     "spear-ranseur-ruined": {
       "rarity": "rare",
@@ -6054,7 +6090,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-basalt": {
       "rarity": "very_rare",
@@ -6064,7 +6101,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-bauxite": {
       "rarity": "very_rare",
@@ -6074,7 +6112,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-chalk": {
       "rarity": "very_rare",
@@ -6084,7 +6123,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-chert": {
       "rarity": "very_rare",
@@ -6094,7 +6134,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-claystone": {
       "rarity": "very_rare",
@@ -6104,7 +6145,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-conglomerate": {
       "rarity": "very_rare",
@@ -6114,7 +6156,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-granite": {
       "rarity": "very_rare",
@@ -6124,7 +6167,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-limestone": {
       "rarity": "very_rare",
@@ -6134,7 +6178,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-peridotite": {
       "rarity": "very_rare",
@@ -6144,7 +6189,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-phyllite": {
       "rarity": "very_rare",
@@ -6154,7 +6200,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-sandstone": {
       "rarity": "very_rare",
@@ -6164,7 +6211,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-shale": {
       "rarity": "very_rare",
@@ -6174,7 +6222,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "stonebricks-slate": {
       "rarity": "very_rare",
@@ -6184,7 +6233,8 @@
           "label": "Building materials randomizer",
           "chancePct": 0.52
         }
-      ]
+      ],
+      "craftable": true
     },
     "thatch": {
       "rarity": "common",
@@ -6194,7 +6244,8 @@
           "label": "Fuel randomizer",
           "chancePct": 18.3
         }
-      ]
+      ],
+      "craftable": true
     },
     "torch-basic-extinct-up": {
       "rarity": "common",
@@ -6214,7 +6265,8 @@
           "label": "Resource randomizer",
           "chancePct": 14.1
         }
-      ]
+      ],
+      "craftable": true
     },
     "tuningcylinder-1": {
       "rarity": "uncommon",

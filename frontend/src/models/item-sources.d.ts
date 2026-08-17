@@ -17,7 +17,7 @@ export interface ItemLootSource {
 export interface ItemSourceInfo {
     rarity: Rarity;
     sources: ItemLootSource[];
-    /** True when this (dungeon-loot clothing) item also has a crafting recipe. */
+    /** True when this item also has a crafting (grid) recipe. */
     craftable?: boolean;
     /** Handed to every player for completing the Lore — not rare loot. */
     loreReward?: boolean;

@@ -26,7 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuctionSummary, useItemCatalog, formatGears } from "@/lib/auction";
-import { lookupItemSources, RARITY_LABELS, RARITY_COLORS } from "@/lib/item-sources";
+import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
 import type { Rarity } from "@/models/item-sources";
 import {
   useItemSearch,
@@ -34,6 +34,7 @@ import {
   resetItemSearch,
   isDefaultItemSearch,
   ALL_CATEGORIES,
+  ALL_RARITIES,
   type ItemSort,
 } from "./useItemSearch";
 
@@ -47,6 +48,7 @@ const SORT_LABELS: Record<SortKey, string> = {
   sold: "Units sold",
   listings: "Listings",
   name: "Name",
+  rarity: "Rarity",
 };
 
 interface SearchRow {
@@ -73,6 +75,12 @@ function sortRows(rows: SearchRow[], key: SortKey): SearchRow[] {
     case "listings":
       sorted.sort((a, b) => b.listings - a.listings || a.name.localeCompare(b.name));
       break;
+    case "rarity": {
+      // Rarest first; items with no known rarity sort last.
+      const rank = (r: SearchRow) => (r.rarity ? RARITY_RANK[r.rarity] : 0);
+      sorted.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
+      break;
+    }
     case "gears":
     default:
       sorted.sort((a, b) => b.gearsTraded - a.gearsTraded || a.name.localeCompare(b.name));
@@ -90,7 +98,7 @@ export function MarketItemsPage() {
   const catalogQ = useItemCatalog();
   const summaryQ = useAuctionSummary();
   const search = useItemSearch();
-  const { q, category, sort } = search;
+  const { q, category, rarity, sort } = search;
 
   // Master list: every catalog item, enriched with stats where we have them.
   const rows = useMemo<SearchRow[]>(() => {
@@ -111,7 +119,7 @@ export function MarketItemsPage() {
         gearsTraded: st?.gearsTraded ?? 0,
         median: st?.priceStats?.median ?? null,
         weighted: st?.weightedPricePerUnit ?? null,
-        rarity: lookupItemSources(entry.code)?.rarity ?? null,
+        rarity: marketRarity(entry.code),
       };
     });
   }, [catalogQ.data, summaryQ.data]);
@@ -128,6 +136,7 @@ export function MarketItemsPage() {
     const needle = q.trim().toLowerCase();
     const filtered = rows.filter((r) => {
       if (category !== ALL_CATEGORIES && r.category !== category) return false;
+      if (rarity !== ALL_RARITIES && r.rarity !== rarity) return false;
       // Match the item name OR its category, so a search like "tapestry" surfaces
       // every grouped tapestry (named "Ambush", "Rot", …) not just a literal name.
       if (
@@ -139,7 +148,7 @@ export function MarketItemsPage() {
       return true;
     });
     return sortRows(filtered, sort);
-  }, [rows, q, category, sort]);
+  }, [rows, q, category, rarity, sort]);
 
   const isPending = catalogQ.isPending || summaryQ.isPending;
   const isError = catalogQ.isError || summaryQ.isError;
@@ -198,6 +207,32 @@ export function MarketItemsPage() {
               {categories.map((c) => (
                 <SelectItem key={c.value} value={c.value}>
                   {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <Label className="text-xs text-muted-foreground">Rarity</Label>
+          <Select
+            value={rarity}
+            onValueChange={(v) => patchItemSearch({ rarity: v ?? ALL_RARITIES })}
+          >
+            <SelectTrigger className="h-9 w-40">
+              <SelectValue>
+                {(value) =>
+                  value === ALL_RARITIES
+                    ? "All rarities"
+                    : (RARITY_LABELS[value as Rarity] ?? "All rarities")
+                }
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_RARITIES}>All rarities</SelectItem>
+              {(Object.keys(RARITY_LABELS) as Rarity[]).map((r) => (
+                <SelectItem key={r} value={r}>
+                  {RARITY_LABELS[r]}
                 </SelectItem>
               ))}
             </SelectContent>
