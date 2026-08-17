@@ -10,7 +10,8 @@ import {
   setClimateSubToggle as setClimateSubToggleAction,
   setClimateTempVariant as setClimateTempVariantAction,
   setClimateThresholdMode as setClimateThresholdModeAction,
-  setClimateCropId as setClimateCropIdAction,
+  toggleClimateCropId as toggleClimateCropIdAction,
+  clearClimateCropIds as clearClimateCropIdsAction,
   setClimateCustomRange as setClimateCustomRangeAction,
   setClimateAltitudeY as setClimateAltitudeYAction,
   setClimateOpacity as setClimateOpacityAction,
@@ -157,7 +158,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   const subToggle = useAppSelector((s) => s.mapView.climateSubToggle);
   const tempVariant = useAppSelector((s) => s.mapView.climateTempVariant);
   const thresholdMode = useAppSelector((s) => s.mapView.climateThresholdMode);
-  const cropId = useAppSelector((s) => s.mapView.climateCropId);
+  const cropIds = useAppSelector((s) => s.mapView.climateCropIds);
   const customMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const customMax = useAppSelector((s) => s.mapView.climateCustomMax);
   const altitudeY = useAppSelector((s) => s.mapView.climateAltitudeY);
@@ -175,10 +176,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
     (next: ClimateThresholdMode) => dispatch(setClimateThresholdModeAction(next)),
     [dispatch],
   );
-  const setCropId = useCallback(
-    (next: CropId | null) => dispatch(setClimateCropIdAction(next)),
+  const toggleCropId = useCallback(
+    (id: CropId) => dispatch(toggleClimateCropIdAction(id)),
     [dispatch],
   );
+  const clearCropIds = useCallback(() => dispatch(clearClimateCropIdsAction()), [dispatch]);
   const setCustomRange = useCallback(
     (min: number | null, max: number | null) => dispatch(setClimateCustomRangeAction({ min, max })),
     [dispatch],
@@ -204,14 +206,13 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
   );
 
   const isTempMode = subToggle === "temperature";
-  const cropActive = thresholdMode === "crop" && cropId != null;
+  const cropActive = thresholdMode === "crop" && cropIds.length > 0;
 
   const toggleCrop = useCallback(
     (id: CropId) => {
-      // Click the active chip a second time to clear it.
-      setCropId(cropId === id ? null : id);
+      toggleCropId(id);
     },
-    [cropId, setCropId],
+    [toggleCropId],
   );
 
   // CROPS is already alphabetical by id; keep it as-is for stable ordering.
@@ -348,7 +349,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                   </span>
                   <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
                     {sortedCrops.map((crop) => {
-                      const active = cropId === crop.id;
+                      const active = cropIds.includes(crop.id);
                       const isLinen = crop.kind === "linen";
                       const label = cropLabel(crop.id, t as never);
                       const tooltip = `${label} \u2014 ${formatTempRange(crop)}${
@@ -390,7 +391,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                         type="button"
                         onClick={(ev) => {
                           ev.stopPropagation();
-                          setCropId(null);
+                          clearCropIds();
                         }}
                         className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
                       >
@@ -400,7 +401,11 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                   </div>
                   {cropActive && (
                     <span className="text-[10px] text-muted-foreground tabular-nums">
-                      {formatTempRange(sortedCrops.find((c) => c.id === cropId) ?? sortedCrops[0])}
+                      {cropIds
+                        .map((id) => sortedCrops.find((c) => c.id === id))
+                        .filter((c): c is CropTolerance => c != null)
+                        .map((c) => `${cropLabel(c.id, t as never)}: ${formatTempRange(c)}`)
+                        .join("  \u2022  ")}
                     </span>
                   )}
                 </div>

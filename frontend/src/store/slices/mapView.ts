@@ -228,10 +228,12 @@ export interface MapViewState {
     climateTempVariant: ClimateTempVariant;
     /** Active threshold/preset for the Temperature panel. */
     climateThresholdMode: ClimateThresholdMode;
-    /** Selected crop id when `climateThresholdMode === "crop"`. `null` outside
-     *  crop mode. The crop's per-species min/max temps drive a dual-layer
-     *  AND mask (tempmin >= cropMin AND tempmax <= cropMax). */
-    climateCropId: CropId | null;
+    /** Selected crop ids when `climateThresholdMode === "crop"`. Empty outside
+     *  crop mode. Each crop's per-species min/max temps drive a dual-layer
+     *  AND mask (tempmin >= cropMin AND tempmax <= cropMax); with multiple
+     *  crops selected the overlay highlights only land where EVERY one of
+     *  them can grow (AND intersection across each crop's mask). */
+    climateCropIds: CropId[];
     /** Custom-mode lower bound (active layer's units, e.g. °C). `null` = unbounded. */
     climateCustomMin: number | null;
     /** Custom-mode upper bound. `null` = unbounded. */
@@ -360,7 +362,7 @@ export function loadInitialMapViewState(): MapViewState {
         climateSubToggle: "off",
         climateTempVariant: "tempavg",
         climateThresholdMode: "none",
-        climateCropId: null,
+        climateCropIds: [],
         climateCustomMin: null,
         climateCustomMax: null,
         climateAltitudeY: CLIMATE_SEA_LEVEL,
@@ -500,7 +502,7 @@ export const mapViewSlice = createSlice({
             // the next activation starts on a clean raster.
             if (state.climateSubToggle !== "temperature") {
                 state.climateThresholdMode = "none";
-                state.climateCropId = null;
+                state.climateCropIds = [];
             }
         },
         setClimateTempVariant(state, action: PayloadAction<ClimateTempVariant>) {
@@ -509,14 +511,21 @@ export const mapViewSlice = createSlice({
         setClimateThresholdMode(state, action: PayloadAction<ClimateThresholdMode>) {
             state.climateThresholdMode = action.payload;
             if (action.payload !== "crop") {
-                state.climateCropId = null;
+                state.climateCropIds = [];
             }
         },
-        setClimateCropId(state, action: PayloadAction<CropId | null>) {
-            const nextId = action.payload;
-            state.climateCropId = nextId;
-            if (nextId == null) {
-                // Clearing the crop drops back to the raw temperature
+        /** Toggle one crop in/out of the multi-select. Selecting the first
+         *  crop enters crop mode; clearing the last one drops back to "none". */
+        toggleClimateCropId(state, action: PayloadAction<CropId>) {
+            const id = action.payload;
+            const idx = state.climateCropIds.indexOf(id);
+            if (idx >= 0) {
+                state.climateCropIds.splice(idx, 1);
+            } else {
+                state.climateCropIds.push(id);
+            }
+            if (state.climateCropIds.length === 0) {
+                // Clearing every crop drops back to the raw temperature
                 // gradient. Don't auto-switch the variant — the user may
                 // have been viewing tempmin/avg/max independently.
                 if (state.climateThresholdMode === "crop") {
@@ -531,6 +540,12 @@ export const mapViewSlice = createSlice({
                 // "why are my numbers ignored" confusion when toggling back.
                 state.climateCustomMin = null;
                 state.climateCustomMax = null;
+            }
+        },
+        clearClimateCropIds(state) {
+            state.climateCropIds = [];
+            if (state.climateThresholdMode === "crop") {
+                state.climateThresholdMode = "none";
             }
         },
         setClimateCustomRange(
@@ -669,7 +684,8 @@ export const {
     setClimateSubToggle,
     setClimateTempVariant,
     setClimateThresholdMode,
-    setClimateCropId,
+    toggleClimateCropId,
+    clearClimateCropIds,
     setClimateCustomRange,
     setClimateAltitudeY,
     setClimateOpacity,

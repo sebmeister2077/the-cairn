@@ -158,7 +158,10 @@ import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
-import { FullscreenControlsOverlay, OCEANS_TOTAL_COUNT } from "@/components/tops-map/FullScreenOverlay";
+import {
+  FullscreenControlsOverlay,
+  OCEANS_TOTAL_COUNT,
+} from "@/components/tops-map/FullScreenOverlay";
 import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
@@ -491,7 +494,7 @@ export function TOPSMapViewPage() {
   const climateSubToggle = useAppSelector((s) => s.mapView.climateSubToggle);
   const climateTempVariant = useAppSelector((s) => s.mapView.climateTempVariant);
   const climateThresholdMode = useAppSelector((s) => s.mapView.climateThresholdMode);
-  const climateCropId = useAppSelector((s) => s.mapView.climateCropId);
+  const climateCropIds = useAppSelector((s) => s.mapView.climateCropIds);
   const climateCustomMin = useAppSelector((s) => s.mapView.climateCustomMin);
   const climateCustomMax = useAppSelector((s) => s.mapView.climateCustomMax);
   const climateAltitudeY = useAppSelector((s) => s.mapView.climateAltitudeY);
@@ -502,7 +505,7 @@ export function TOPSMapViewPage() {
     subToggle: climateSubToggle,
     tempVariant: climateTempVariant,
     thresholdMode: climateThresholdMode,
-    cropId: climateCropId,
+    cropIds: climateCropIds,
     customMin: climateCustomMin,
     customMax: climateCustomMax,
     altitudeY: climateAltitudeY,

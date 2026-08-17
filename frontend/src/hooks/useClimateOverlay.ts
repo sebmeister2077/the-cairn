@@ -40,8 +40,8 @@ export interface UseClimateOverlayParams {
     subToggle: ClimateSubToggle;
     tempVariant: ClimateTempVariant;
     thresholdMode: ClimateThresholdMode;
-    /** Selected crop id when `thresholdMode === "crop"`. */
-    cropId: CropId | null;
+    /** Selected crop ids when `thresholdMode === "crop"`. Empty otherwise. */
+    cropIds: CropId[];
     /** Custom-mode lower bound on the active layer's units (°C or 0..1). */
     customMin: number | null;
     /** Custom-mode upper bound on the active layer's units. */
@@ -58,14 +58,16 @@ export interface ClimateSampleResult {
     /** The layer the user is currently looking at on the legend. */
     primary: { kind: ClimateLayerKind; value: number };
     /** Populated when crop mode is active so the readout can show both
-     *  the cold-tolerance check and the heat-tolerance check side by side. */
-    cropCheck?: {
+     *  the cold-tolerance check and the heat-tolerance check side by side,
+     *  one entry per selected crop. */
+    cropChecks?: Array<{
+        cropId: CropId;
         tempmin: number;
         tempmax: number;
         cropMin: number;
         cropMax: number;
         pass: boolean;
-    };
+    }>;
 }
 
 export interface UseClimateOverlayResult {
@@ -97,9 +99,11 @@ function resolveActiveKind(
     return tempVariant;
 }
 
-function findCrop(id: CropId | null): CropTolerance | null {
-    if (!id) return null;
-    return CROPS.find((c) => c.id === id) ?? null;
+function findCrops(ids: CropId[]): CropTolerance[] {
+    if (ids.length === 0) return [];
+    return ids
+        .map((id) => CROPS.find((c) => c.id === id))
+        .filter((c): c is CropTolerance => c != null);
 }
 
 /** Restate a raw sea-level raster value at world height `y`. Temperature
@@ -116,17 +120,19 @@ function adjustForKind(kind: ClimateLayerKind, value: number, y: number): number
 /** Translate a UI threshold mode into a worker op. Crop mode is
  *  variant-independent: the dual-layer mask always operates on tempmin +
  *  tempmax, so the user can browse the avg/min/max gradient legend
- *  without disturbing the active crop selection. */
+ *  without disturbing the active crop selection. With multiple crops
+ *  selected, a location passes only if it satisfies EVERY selected
+ *  crop's band (logical AND intersection across each crop's mask). */
 function resolveOp(
     mode: ClimateThresholdMode,
-    cropId: CropId | null,
+    cropIds: CropId[],
     customMin: number | null,
     customMax: number | null,
 ): ThresholdOp | null {
     if (mode === "none") return null;
     if (mode === "crop") {
-        const crop = findCrop(cropId);
-        if (!crop) return null;
+        const crops = findCrops(cropIds);
+        if (crops.length === 0) return null;
         // Compare against the momentary winter-night / summer-day extremes,
         // not the seasonal means: a place survives iff its coldest night
         // stays >= the crop min and its hottest day stays <= the crop max.
@@ -134,8 +140,10 @@ function resolveOp(
         // consistent with the cursor readout.
         return {
             kind: "crop_band",
-            minThreshold: crop.minTempC + COLD_SNAP_DROP_C,
-            maxThreshold: crop.maxTempC - HEAT_PEAK_RISE_C,
+            bands: crops.map((crop) => ({
+                minThreshold: crop.minTempC + COLD_SNAP_DROP_C,
+                maxThreshold: crop.maxTempC - HEAT_PEAK_RISE_C,
+            })),
         };
     }
     if (mode === "custom") {
@@ -250,7 +258,7 @@ export function useClimateOverlay({
     subToggle,
     tempVariant,
     thresholdMode,
-    cropId,
+    cropIds,
     customMin,
     customMax,
     altitudeY,
@@ -274,7 +282,7 @@ export function useClimateOverlay({
     const activeRawRef = useRef<LoadedClimateRaw | null>(null);
     const tempminRawRef = useRef<LoadedClimateRaw | null>(null);
     const tempmaxRawRef = useRef<LoadedClimateRaw | null>(null);
-    const activeCropRef = useRef<CropTolerance | null>(null);
+    const activeCropsRef = useRef<CropTolerance[]>([]);
 
     /** Latest altitude Y for `sampleAt`. Kept in a ref so the callback
      *  identity stays stable across altitude changes (the readout polls
@@ -300,8 +308,8 @@ export function useClimateOverlay({
 
     const op = useMemo(
         () =>
-            activeKind ? resolveOp(thresholdMode, cropId, customMin, customMax) : null,
-        [activeKind, thresholdMode, cropId, customMin, customMax],
+            activeKind ? resolveOp(thresholdMode, cropIds, customMin, customMax) : null,
+        [activeKind, thresholdMode, cropIds, customMin, customMax],
     );
 
     // Debounce custom-mode re-renders so dragging the dual slider doesn't
@@ -335,7 +343,7 @@ export function useClimateOverlay({
             activeRawRef.current = null;
             tempminRawRef.current = null;
             tempmaxRawRef.current = null;
-            activeCropRef.current = null;
+            activeCropsRef.current = [];
             return;
         }
 
@@ -344,7 +352,7 @@ export function useClimateOverlay({
         setStatus("loading");
 
         const isCrop = debouncedOp?.kind === "crop_band";
-        activeCropRef.current = isCrop ? findCrop(cropId) : null;
+        activeCropsRef.current = isCrop ? findCrops(cropIds) : [];
 
         // Always load raw for the active layer so the cursor probe can
         // sample values regardless of whether we're rendering the
@@ -479,7 +487,7 @@ export function useClimateOverlay({
         return () => {
             abortFlag.aborted = true;
         };
-    }, [activeKind, debouncedOp, cropId]);
+    }, [activeKind, debouncedOp, cropIds]);
 
     // Revoke the last derived URL on unmount.
     useEffect(() => {
@@ -513,10 +521,10 @@ export function useClimateOverlay({
             const out: ClimateSampleResult = {
                 primary: { kind: raw.kind, value },
             };
-            const crop = activeCropRef.current;
+            const crop = activeCropsRef.current;
             const tmin = tempminRawRef.current;
             const tmax = tempmaxRawRef.current;
-            if (crop && tmin && tmax) {
+            if (crop.length > 0 && tmin && tmax) {
                 // Both temp rasters share the same georef as `raw`, but
                 // re-project against their own world transforms in case
                 // they ever drift in a future export.
@@ -531,17 +539,16 @@ export function useClimateOverlay({
                 const vmin = sample(tmin);
                 const vmax = sample(tmax);
                 if (vmin != null && vmax != null) {
-                    out.cropCheck = {
+                    out.cropChecks = crop.map((c) => ({
+                        cropId: c.id,
                         tempmin: vmin,
                         tempmax: vmax,
-                        cropMin: crop.minTempC,
-                        cropMax: crop.maxTempC,
+                        cropMin: c.minTempC,
+                        cropMax: c.maxTempC,
                         // Survival is decided by the momentary extremes, not
                         // the seasonal means the rasters store.
-                        pass:
-                            coldestNight(vmin) >= crop.minTempC &&
-                            hottestDay(vmax) <= crop.maxTempC,
-                    };
+                        pass: coldestNight(vmin) >= c.minTempC && hottestDay(vmax) <= c.maxTempC,
+                    }));
                 }
             }
             return out;

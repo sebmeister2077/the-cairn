@@ -27,10 +27,11 @@ export type ThresholdOp =
     | { kind: "max_le"; threshold: number }
     | { kind: "avg_band"; lo: number; hi: number }
     | { kind: "custom"; lo: number | null; hi: number | null }
-    /** Dual-layer AND mask. Pass iff tempmin (rawBuffer) >= minThreshold
+    /** Dual-layer AND mask, intersected across one or more crop bands.
+     *  Pass iff for EVERY band, tempmin (rawBuffer) >= minThreshold
      *  and tempmax (secondRawBuffer) <= maxThreshold. Requires
      *  `secondRawBuffer` and `secondDecode` on the request. */
-    | { kind: "crop_band"; minThreshold: number; maxThreshold: number }
+    | { kind: "crop_band"; bands: Array<{ minThreshold: number; maxThreshold: number }> }
     /** Render the raw raster as a colorized PNG using a piecewise-linear
      *  gradient. Used to replace the static (and often poorly-stretched)
      *  bundled color asset for unit-range layers like geoactivity, where
@@ -145,11 +146,19 @@ self.onmessage = (ev: MessageEvent<ThresholdRequest>) => {
         }
         const src2 = new Uint8ClampedArray(secondRawBuffer);
         const dec2 = decodeFn(secondDecode);
+        const bands = op.bands;
         for (let i = 0; i < len; i++) {
             const o = i * 4;
             const vmin = dec(src[o], src[o + 1]);
             const vmax = dec2(src2[o], src2[o + 1]);
-            if (vmin >= op.minThreshold && vmax <= op.maxThreshold) {
+            let matched = true;
+            for (let b = 0; b < bands.length; b++) {
+                if (vmin < bands[b].minThreshold || vmax > bands[b].maxThreshold) {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) {
                 out[o] = tr;
                 out[o + 1] = tg;
                 out[o + 2] = tb;
