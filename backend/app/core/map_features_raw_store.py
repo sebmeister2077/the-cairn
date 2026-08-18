@@ -1,7 +1,7 @@
 """Private R2 store for per-contributor raw map-features documents.
 
 Each map-features contributor's full combined export (the ``MapExportDocument``
-the VsClayProxy ``--map-export`` writer accumulates: translocators, traders,
+the VSProxy ``--map-export`` writer accumulates: translocators, traders,
 rapids, trader claims, player claims) is stored as one gzipped JSON object at
 ``<MAP_FEATURES_RAW_PREFIX>/<source_id>.json.gz`` in a PRIVATE bucket. A
 contribution overwrites only its own object (atomic per-object PUT), so N

@@ -1,6 +1,6 @@
 // React Query loader for the static player land-claim boxes bundled with the
 // frontend (`frontend/src/assets/MapFeaturesJson/map-features.playerclaims.json`,
-// emitted by the VsClayProxy `--map-export` split writer). These are the ~5k
+// emitted by the VSProxy `--map-export` split writer). These are the ~5k
 // player-owned claim volumes across the explored world.
 //
 // center/min/max X/Z are spawn-relative (matching the in-game HUD) and are used

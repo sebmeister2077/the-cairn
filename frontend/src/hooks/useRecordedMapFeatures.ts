@@ -4,7 +4,7 @@
 // (`frontend/src/assets/MapFeaturesJson/map-features.translocators.json` and
 // `…/map-features.traders.json`). Each file is a self-describing envelope
 // (`{ generatedUtc, upstream, worldSpawn, category, count, features[] }`)
-// emitted verbatim by the VsClayProxy `--map-export` split writer. We pull them
+// emitted verbatim by the VSProxy `--map-export` split writer. We pull them
 // in via dynamic `import()` — this keeps them out of the main bundle and only
 // downloads the chunks once a user actually enables one of the recorded-features
 // toggles.

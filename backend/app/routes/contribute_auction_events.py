@@ -1,6 +1,6 @@
-"""Auction contribution ingest — VsClayProxy → private R2 + rebuild trigger.
+"""Auction contribution ingest — VSProxy → private R2 + rebuild trigger.
 
-POST /api/contribute-auction-events — a client-side VsClayProxy pushes its FULL
+POST /api/contribute-auction-events — a client-side VSProxy pushes its FULL
 cumulative ``auction-events.jsonl`` (one collapsed record per AuctionId). The
 server is the only holder of R2 credentials: it authenticates the contributor,
 pins the source to the configured game server, drops implausible records, stores

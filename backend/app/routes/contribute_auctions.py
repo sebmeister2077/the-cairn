@@ -22,7 +22,7 @@ Wire contract (produced by the mod's ``Net/WebhookClient.cs``):
 The accepted auctions are converted to the shared record schema and stored as
 one private object per server (``auction/raw/mod-<serverId>.jsonl.gz``), then the
 public rebuild is triggered — so the mod's cron export flows into the same
-merged/published data as the VsClayProxy contributions (which post JSONL to
+merged/published data as the VSProxy contributions (which post JSONL to
 ``/api/contribute-auction-events`` with a per-key ``X-API-Key`` instead of HMAC).
 """
 

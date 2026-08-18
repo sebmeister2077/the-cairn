@@ -1,6 +1,6 @@
 // React Query loader for the static trader-*claim* boxes bundled with the
 // frontend (`frontend/src/assets/MapFeaturesJson/map-features.traderclaims.json`,
-// emitted by the VsClayProxy `--map-export` split writer). These are the ~56k
+// emitted by the VSProxy `--map-export` split writer). These are the ~56k
 // land-claim volumes owned by traders across the explored world — far more
 // than the individual trader NPCs we've actually recorded, and with NO trader
 // type of their own.

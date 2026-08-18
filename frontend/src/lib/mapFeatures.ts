@@ -1,5 +1,5 @@
 // Runtime loader for the recorded map-features datasets (broken translocators,
-// traders, trader claims, player claims). These are produced by the VsClayProxy
+// traders, trader claims, player claims). These are produced by the VSProxy
 // `--map-export` writer, contributed to the backend, merged across all
 // contributors, and published to the public R2 bucket as one self-describing
 // envelope per category (`map-features.<category>.json`).

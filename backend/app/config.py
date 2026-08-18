@@ -71,6 +71,12 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
+    # PEM PKCS#8 private key (P-256) used to sign VSProxy license tokens.
+    # The client embeds the matching public key. Keep secret; never commit.
+    LICENSE_SIGNING_PRIVATE_KEY: str = os.environ.get(
+        "LICENSE_SIGNING_PRIVATE_KEY", ""
+    ).replace("\\n", "\n")
+
     # Per-contribution archived .db retention (days). Recent Contributions
     # grid previews are kept forever; these values govern only the
     # ``archived/<id>.db`` lifetime in R2 (used to power per-contribution

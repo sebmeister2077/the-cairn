@@ -4,6 +4,8 @@ __pycache__/
 .env.local
 .env.prod
 .env.*.local
+.license_signing_private_key.pem
+*.pem
 venv/
 .venv/
 

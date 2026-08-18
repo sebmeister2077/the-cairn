@@ -1,6 +1,6 @@
-"""Map-features contribution ingest — VsClayProxy → private R2 + rebuild trigger.
+"""Map-features contribution ingest — VSProxy → private R2 + rebuild trigger.
 
-POST /api/contribute-map-features — a client-side VsClayProxy pushes its FULL
+POST /api/contribute-map-features — a client-side VSProxy pushes its FULL
 combined map export (the ``MapExportDocument``: translocators, traders, rapids,
 trader claims, player claims). The server is the only holder of R2 credentials:
 it authenticates the contributor, pins the source to the configured game server,

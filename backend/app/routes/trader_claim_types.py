@@ -11,7 +11,7 @@ which auth dependency guards them:
 * ``manual``        — a logged-in user's guess. ``POST /trader-claim-types``,
   requires an account, gated by ``trader_claims_manual`` and rate-limited by
   ``trader_claims_manual_daily_cap`` (default 30/day).
-* ``authoritative`` — the VsClayProxy, derived from the in-game trader entity
+* ``authoritative`` — the VSProxy, derived from the in-game trader entity
   code (``game:trader-{gender}-{type}-{climate}``). ``POST
   /trader-claim-types/authoritative``, requires an admin key or a key with the
   ``trader_claims_publish`` permission, gated by ``trader_claims_authoritative``.

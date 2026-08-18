@@ -599,7 +599,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
 ALTER TABLE feature_flags
 ADD COLUMN IF NOT EXISTS value_int INTEGER;
 
--- Auction contributor keys: a client-side VsClayProxy that POSTs its full
+-- Auction contributor keys: a client-side VSProxy that POSTs its full
 -- auction-events.jsonl to /api/contribute-auction-events. The raw file lives
 -- in the PRIVATE R2 bucket at ``auction/raw/<key_id>.jsonl.gz``; the server is
 -- the only holder of R2 credentials. ``auction_hmac_secret`` is the per-key
@@ -2177,7 +2177,134 @@ def revoke_api_key(key: str):
 
 
 # ---------------------------------------------------------------------------
-# Auction contributor keys (VsClayProxy → /api/contribute-auction-events)
+# VSProxy licenses (online activation gate — see app/routes/licenses.py)
+# ---------------------------------------------------------------------------
+def create_license(
+    license_code: str,
+    label: Optional[str],
+    max_activations: int,
+    expires_at=None,
+    notes: Optional[str] = None,
+) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO licenses (license_code, label, max_activations, expires_at, notes)
+                   VALUES (%s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (license_code, label, max_activations, expires_at, notes),
+            )
+            return dict(cur.fetchone())
+
+
+def get_license(license_code: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM licenses WHERE license_code = %s", (license_code,)
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_licenses() -> List[dict]:
+    """All licenses (newest first) with their current active-activation count."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT l.*,
+                          COALESCE(a.active_count, 0) AS active_activations
+                     FROM licenses l
+                     LEFT JOIN (
+                         SELECT license_code, COUNT(*) AS active_count
+                           FROM license_activations
+                          WHERE NOT revoked
+                          GROUP BY license_code
+                     ) a ON a.license_code = l.license_code
+                    ORDER BY l.created_at DESC"""
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def revoke_license(license_code: str) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE licenses SET status = 'revoked' WHERE license_code = %s",
+                (license_code,),
+            )
+
+
+def list_license_activations(license_code: str) -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM license_activations
+                    WHERE license_code = %s
+                    ORDER BY first_seen ASC""",
+                (license_code,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def count_active_activations(license_code: str) -> int:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM license_activations
+                    WHERE license_code = %s AND NOT revoked""",
+                (license_code,),
+            )
+            return int(cur.fetchone()[0])
+
+
+def get_activation(license_code: str, fingerprint: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM license_activations
+                    WHERE license_code = %s AND fingerprint = %s""",
+                (license_code, fingerprint),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def upsert_activation(
+    license_code: str, fingerprint: str, app_version: Optional[str]
+) -> dict:
+    """Bind a machine to a license (or refresh ``last_seen`` if already bound).
+
+    Caller must enforce the activation cap *before* inserting a NEW fingerprint;
+    an existing (even revoked) row is refreshed without consuming a new slot.
+    """
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO license_activations (license_code, fingerprint, app_version)
+                   VALUES (%s, %s, %s)
+                   ON CONFLICT (license_code, fingerprint)
+                   DO UPDATE SET last_seen = now(),
+                                 app_version = EXCLUDED.app_version
+                   RETURNING *""",
+                (license_code, fingerprint, app_version),
+            )
+            return dict(cur.fetchone())
+
+
+def revoke_activation(license_code: str, fingerprint: str) -> None:
+    """Unbind a single machine so its slot frees up for another."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE license_activations SET revoked = TRUE
+                    WHERE license_code = %s AND fingerprint = %s""",
+                (license_code, fingerprint),
+            )
+
+
+# ---------------------------------------------------------------------------
+# Auction contributor keys (VSProxy → /api/contribute-auction-events)
 # ---------------------------------------------------------------------------
 def get_api_key_by_id(key_id) -> Optional[dict]:
     """Return the api_keys row for a UUID ``id``, or None."""

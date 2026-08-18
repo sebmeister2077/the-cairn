@@ -4,7 +4,7 @@ Revision ID: 0036_auction_contributor_keys
 Revises: 0035_trader_claim_types
 Create Date: 2026-08-10
 
-Adds the columns backing auction contributor keys (VsClayProxy →
+Adds the columns backing auction contributor keys (VSProxy →
 ``POST /api/contribute-auction-events``). Mirrors the idempotent DDL in
 ``database._MIGRATIONS_SQL`` so both the alembic and legacy ensure_schema
 startup paths converge on the same schema. See
