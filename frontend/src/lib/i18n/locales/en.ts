@@ -86,6 +86,7 @@ export const en = {
                 traders: "Traders",
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
+                licenses: "Licenses",
                 tunnelPreviewer: "Tunnel Previewer",
                 waypointMacro: "Waypoint Macros",
                 marketOverview: "Overview",

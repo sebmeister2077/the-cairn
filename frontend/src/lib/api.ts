@@ -2028,6 +2028,85 @@ export async function revokeApiKey(key: string): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Admin — VSProxy licenses
+// ---------------------------------------------------------------------------
+
+export interface License {
+    license_code: string;
+    label: string | null;
+    status: string;
+    max_activations: number;
+    expires_at: string | null;
+    created_at: string;
+    active_activations: number;
+    notes: string | null;
+}
+
+export interface LicenseActivation {
+    license_code: string;
+    fingerprint: string;
+    app_version: string | null;
+    revoked: boolean;
+    first_seen: string;
+    last_seen: string;
+}
+
+export async function adminListLicenses(): Promise<{ items: License[] }> {
+    const res = await fetch(`${API_BASE}/admin/licenses`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateLicense(data: {
+    label?: string | null;
+    max_activations: number;
+    expires_at?: string | null;
+    notes?: string | null;
+}): Promise<{
+    license_code: string;
+    label: string | null;
+    max_activations: number;
+    expires_at: string | null;
+}> {
+    const res = await fetch(`${API_BASE}/admin/licenses`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(data),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListLicenseActivations(
+    licenseCode: string,
+): Promise<{ items: LicenseActivation[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/activations`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRevokeLicense(licenseCode: string): Promise<void> {
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/revoke`,
+        { method: "POST", headers: authHeaders() },
+    );
+    await handleResponse(res);
+}
+
+export async function adminRevokeLicenseActivation(
+    licenseCode: string,
+    fingerprint: string,
+): Promise<void> {
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/activations/${encodeURIComponent(fingerprint)}/revoke`,
+        { method: "POST", headers: authHeaders() },
+    );
+    await handleResponse(res);
+}
+
+// ---------------------------------------------------------------------------
 // Admin � invite links
 // ---------------------------------------------------------------------------
 
