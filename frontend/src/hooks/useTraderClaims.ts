@@ -14,6 +14,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import { claimIdFromCenter } from "@/lib/trader-types";
+import { loadMapFeatures } from "@/lib/mapFeatures";
 
 interface RecordedVec3 {
     x: number;
@@ -29,10 +30,6 @@ interface RecordedTraderClaim {
     rel?: Partial<RecordedVec3>;
     min?: Partial<RecordedVec3>;
     max?: Partial<RecordedVec3>;
-}
-
-interface RecordedClaimFile {
-    features?: RecordedTraderClaim[];
 }
 
 export interface TraderClaimMarker {
@@ -80,7 +77,7 @@ function parseTraderClaims(features: RecordedTraderClaim[]): TraderClaimMarker[]
 
 /**
  * Load + dedupe the static trader-claim boxes. Pass `enabled: false` to keep
- * the (large) dynamic import from downloading until the overlay toggle is on.
+ * the (large) fetch from running until the overlay toggle is on.
  */
 export function useTraderClaims(enabled: boolean): UseQueryResult<TraderClaimMarker[]> {
     return useQuery<TraderClaimMarker[]>({
@@ -88,11 +85,9 @@ export function useTraderClaims(enabled: boolean): UseQueryResult<TraderClaimMar
         enabled,
         staleTime: Infinity,
         gcTime: Infinity,
-        queryFn: async () => {
-            const mod = (await import(
-                "@/assets/MapFeaturesJson/map-features.traderclaims.json"
-            )) as { default: RecordedClaimFile };
-            return parseTraderClaims(mod.default?.features ?? []);
+        queryFn: async ({ signal }) => {
+            const features = await loadMapFeatures<RecordedTraderClaim>("traderclaims", signal);
+            return parseTraderClaims(features);
         },
     });
 }

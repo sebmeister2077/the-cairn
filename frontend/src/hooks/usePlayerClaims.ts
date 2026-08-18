@@ -9,6 +9,7 @@
 // absolute world height and is not used for positioning.
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { loadMapFeatures } from "@/lib/mapFeatures";
 
 interface RawVec3 {
     x: number;
@@ -24,10 +25,6 @@ interface RawPlayerClaim {
     center?: Partial<RawVec3>;
     min?: Partial<RawVec3>;
     max?: Partial<RawVec3>;
-}
-
-interface RawClaimFile {
-    features?: RawPlayerClaim[];
 }
 
 export interface PlayerClaim {
@@ -79,7 +76,7 @@ function parsePlayerClaims(features: RawPlayerClaim[]): PlayerClaim[] {
 
 /**
  * Load + parse the static player-claim boxes. Pass `enabled: false` to keep the
- * (large) dynamic import from downloading until the overlay toggle is on.
+ * (large) fetch from running until the overlay toggle is on.
  */
 export function usePlayerClaims(enabled: boolean): UseQueryResult<PlayerClaim[]> {
     return useQuery<PlayerClaim[]>({
@@ -87,11 +84,9 @@ export function usePlayerClaims(enabled: boolean): UseQueryResult<PlayerClaim[]>
         enabled,
         staleTime: Infinity,
         gcTime: Infinity,
-        queryFn: async () => {
-            const mod = (await import(
-                "@/assets/MapFeaturesJson/map-features.playerclaims.json"
-            )) as { default: RawClaimFile };
-            return parsePlayerClaims(mod.default?.features ?? []);
+        queryFn: async ({ signal }) => {
+            const features = await loadMapFeatures<RawPlayerClaim>("playerclaims", signal);
+            return parsePlayerClaims(features);
         },
     });
 }

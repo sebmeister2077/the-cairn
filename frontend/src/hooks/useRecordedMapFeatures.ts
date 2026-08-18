@@ -17,6 +17,7 @@
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { WorldPointMarker } from "@/components/MapViewer";
 import { TRADER_TYPE_COLORS, mapExportTraderType, type TraderType } from "@/lib/trader-types";
+import { loadMapFeatures } from "@/lib/mapFeatures";
 
 interface RecordedVec3 {
     x: number;
@@ -40,11 +41,6 @@ interface RecordedTrader {
     code?: string;
 }
 
-/** A single split map-feature file: the self-describing envelope the proxy
- *  writes per category. Only `features[]` is consumed here. */
-interface RecordedMapFeatureFile<T> {
-    features?: T[];
-}
 
 export interface RecordedTraderMarker extends WorldPointMarker {
     /** Canonical trader type (mapped from the export code), or `null` when
@@ -109,9 +105,9 @@ function parseRecordedMapFeatures(
 
 /**
  * Load + parse the recorded map-features assets. Pass `enabled: false` to keep
- * the dynamic imports (and their network chunks) from loading until a toggle is
- * on. The two split files are fetched in parallel and each is missing-safe (a
- * category with no data still resolves to an empty `features[]`).
+ * the network fetches from running until a toggle is on. The two split files are
+ * fetched in parallel (from R2 when configured, else the committed bundle) and
+ * each is missing-safe (a category with no data resolves to an empty list).
  */
 export function useRecordedMapFeatures(enabled: boolean): UseQueryResult<RecordedMapFeatures> {
     return useQuery<RecordedMapFeatures>({
@@ -119,19 +115,12 @@ export function useRecordedMapFeatures(enabled: boolean): UseQueryResult<Recorde
         enabled,
         staleTime: Infinity,
         gcTime: Infinity,
-        queryFn: async () => {
-            const [translocatorMod, traderMod] = await Promise.all([
-                import("@/assets/MapFeaturesJson/map-features.translocators.json") as Promise<{
-                    default: RecordedMapFeatureFile<RecordedTranslocator>;
-                }>,
-                import("@/assets/MapFeaturesJson/map-features.traders.json") as Promise<{
-                    default: RecordedMapFeatureFile<RecordedTrader>;
-                }>,
+        queryFn: async ({ signal }) => {
+            const [translocatorFeatures, traderFeatures] = await Promise.all([
+                loadMapFeatures<RecordedTranslocator>("translocators", signal),
+                loadMapFeatures<RecordedTrader>("traders", signal),
             ]);
-            return parseRecordedMapFeatures(
-                translocatorMod.default?.features ?? [],
-                traderMod.default?.features ?? [],
-            );
+            return parseRecordedMapFeatures(translocatorFeatures, traderFeatures);
         },
     });
 }

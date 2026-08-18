@@ -287,6 +287,42 @@ class Settings:
         os.environ.get("AUCTION_REBUILD_MAX_INTERVAL_SECONDS", "600")
     )
 
+    # --- Map-features contribution pipeline (translocators/traders/claims) ----
+    # Public bucket the merged per-category map-features files are published to
+    # (defaults to the same public bucket the auction artifacts use).
+    MAP_FEATURES_PUBLIC_BUCKET: str = os.environ.get(
+        "MAP_FEATURES_PUBLIC_BUCKET",
+        os.environ.get("AUCTION_PUBLIC_BUCKET", os.environ.get("R2_BUCKET_NAME", "vs-waypoints")),
+    )
+    # Folder prefix in both the public bucket and the private raw store.
+    MAP_FEATURES_PREFIX: str = os.environ.get("MAP_FEATURES_PREFIX", "map-features")
+    MAP_FEATURES_RAW_PREFIX: str = os.environ.get(
+        "MAP_FEATURES_RAW_PREFIX", "map-features/raw"
+    )
+    # Only accept map-features uploads pinned to this game server (empty = off).
+    MAP_FEATURES_PINNED_UPSTREAM_HOST: str = os.environ.get(
+        "MAP_FEATURES_PINNED_UPSTREAM_HOST",
+        os.environ.get("AUCTION_PINNED_UPSTREAM_HOST", "tops.vintagestory.at"),
+    )
+    # Absolute world-coordinate cap for plausibility filtering.
+    MAP_FEATURES_MAX_WORLD_COORD: float = float(
+        os.environ.get(
+            "MAP_FEATURES_MAX_WORLD_COORD", os.environ.get("AUCTION_MAX_WORLD_COORD", "1100000")
+        )
+    )
+    # Max UNCOMPRESSED contribution size (bytes). The combined map export is a
+    # few MB of JSON; allow generous headroom.
+    MAP_FEATURES_MAX_BODY_BYTES: int = int(
+        os.environ.get("MAP_FEATURES_MAX_BODY_BYTES", str(64 * 1024 * 1024))
+    )
+    # Rebuild coalescer timings (same shape as the auction coalescer).
+    MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS: int = int(
+        os.environ.get("MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS", "45")
+    )
+    MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS: int = int(
+        os.environ.get("MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS", "600")
+    )
+
 
     # Supabase PostgreSQL
     SUPABASE_DB_URL: str = os.environ.get("SUPABASE_DB_URL", "")
