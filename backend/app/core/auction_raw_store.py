@@ -63,6 +63,39 @@ def object_key(source_id: str) -> str:
     return f"{_prefix()}/{source_id}.jsonl.gz"
 
 
+def _registry_key() -> str:
+    """Key of the shared game registry object (id -> code/name), kept OUTSIDE the
+    raw-events prefix so ``list_raw_ids`` never treats it as a contributor source."""
+    prefix = _prefix()
+    base = prefix.rsplit("/", 1)[0] if "/" in prefix else prefix
+    return f"{base}/registry.json.gz"
+
+
+def put_registry(gz_bytes: bytes) -> None:
+    """Store (overwrite) the gzipped game registry JSON used to resolve item names
+    during the server-side rebuild. The frontend/ registry file isn't deployed to
+    the API host, so the rebuild reads this instead."""
+    _client().put_object(
+        Bucket=_bucket(),
+        Key=_registry_key(),
+        Body=gz_bytes,
+        ContentType="application/json",
+        ContentEncoding="gzip",
+        CacheControl="no-store",
+    )
+
+
+def get_registry_bytes() -> Optional[bytes]:
+    """Return the gzipped registry object bytes, or None if it hasn't been seeded."""
+    try:
+        resp = _client().get_object(Bucket=_bucket(), Key=_registry_key())
+        return resp["Body"].read()
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+            return None
+        raise
+
+
 def put_raw(source_id: str, gz_bytes: bytes) -> None:
     """Store (overwrite) a contributor's gzipped auction-events file."""
     _client().put_object(

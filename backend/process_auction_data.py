@@ -324,8 +324,15 @@ def load_registry(path: Path) -> Dict[str, Dict[str, str]]:
     """
     if not path.exists():
         print(f"[warn] registry not found at {path} — item names will fall back to ids")
-        return {"Item": {}, "Block": {}, "ItemNames": {}, "BlockNames": {}, "ItemStack": {}, "BlockStack": {}}
-    data = json.loads(path.read_text(encoding="utf-8"))
+        return registry_from_dict({})
+    return registry_from_dict(json.loads(path.read_text(encoding="utf-8")))
+
+
+def registry_from_dict(data: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    """Shape a raw exported registry dict (``Items``/``Blocks``/``*Names``/
+    ``*StackSizes``) into the class-keyed maps the decoder looks ids up in. An
+    empty ``data`` yields empty maps (the id-fallback path). Shared by the file
+    loader and the server-side rebuild, which fetches the registry from R2."""
     return {
         "Item": {str(k): v for k, v in (data.get("Items") or {}).items()},
         "Block": {str(k): v for k, v in (data.get("Blocks") or {}).items()},

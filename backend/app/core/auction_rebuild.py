@@ -14,13 +14,14 @@ artifacts to the PUBLIC bucket. The raw files never leave the private bucket.
 from __future__ import annotations
 
 import asyncio
+import gzip
 import json
 import logging
 import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from ..config import settings
 from . import auction_merge, auction_raw_store, database
@@ -91,12 +92,42 @@ def _merge(exclude_ids: Set[str] | None = None) -> List[Dict[str, Any]]:
     return merged
 
 
+def _load_registry(pad) -> Optional[Dict[str, Any]]:
+    """Fetch the shared game registry from the private bucket and shape it for the
+    decoder. Returns None when it hasn't been seeded, so ``build_artifacts`` uses
+    its local-file fallback (which is empty on the API host, i.e. id-only names)."""
+    try:
+        gz = auction_raw_store.get_registry_bytes()
+    except Exception as exc:  # noqa: BLE001 — never fail a rebuild over telemetry
+        logger.warning("[auction-rebuild] registry fetch failed (names fall back to ids): %s", exc)
+        return None
+    if not gz:
+        logger.warning(
+            "[auction-rebuild] no registry object in the private bucket — item names "
+            "will fall back to ids. Seed it with seed_auction_raw.py --registry <file>."
+        )
+        return None
+    try:
+        data = json.loads(gzip.decompress(gz).decode("utf-8"))
+    except (OSError, ValueError) as exc:
+        logger.warning("[auction-rebuild] registry decode failed (names fall back to ids): %s", exc)
+        return None
+    registry = pad.registry_from_dict(data)
+    logger.info(
+        "[auction-rebuild] registry loaded: %d items, %d blocks",
+        len(registry.get("Item", {})),
+        len(registry.get("Block", {})),
+    )
+    return registry
+
+
 def _build_and_publish() -> Dict[str, int]:
     import auction_r2_publish  # noqa: WPS433 — backend/ module
     import process_auction_data as pad  # noqa: WPS433 — backend/ module
 
     merged = _merge()
-    records, summary, items = pad.build_artifacts(merged)
+    registry = _load_registry(pad)
+    records, summary, items = pad.build_artifacts(merged, registry=registry)
 
     with tempfile.TemporaryDirectory(prefix="auction-rebuild-") as tmp:
         out = Path(tmp)

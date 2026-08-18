@@ -24,13 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
@@ -74,8 +68,7 @@ function ActivationsPanel({ licenseCode }: { licenseCode: string }) {
   });
 
   const unbindMut = useMutation({
-    mutationFn: (fingerprint: string) =>
-      adminRevokeLicenseActivation(licenseCode, fingerprint),
+    mutationFn: (fingerprint: string) => adminRevokeLicenseActivation(licenseCode, fingerprint),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-license-activations", licenseCode] });
       queryClient.invalidateQueries({ queryKey: ["admin-licenses"] });
@@ -173,11 +166,7 @@ function LicenseCard({ lic }: { lic: License }) {
               Machines
             </Button>
             {!revoked && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => setConfirmRevoke(true)}
-              >
+              <Button size="sm" variant="destructive" onClick={() => setConfirmRevoke(true)}>
                 Revoke
               </Button>
             )}
@@ -197,18 +186,15 @@ function LicenseCard({ lic }: { lic: License }) {
         title="Revoke this license?"
         description={
           <>
-            <span className="font-mono">{lic.label || lic.license_code}</span> will stop
-            working on the next online check (within ~24h of any cached token expiring).
-            This cannot be undone.
+            <span className="font-mono">{lic.label || lic.license_code}</span> will stop working on
+            the next online check (within ~24h of any cached token expiring). This cannot be undone.
           </>
         }
         confirmLabel="Revoke"
         variant="destructive"
         loading={revokeMut.isPending}
         onCancel={() => setConfirmRevoke(false)}
-        onConfirm={() =>
-          revokeMut.mutate(undefined, { onSettled: () => setConfirmRevoke(false) })
-        }
+        onConfirm={() => revokeMut.mutate(undefined, { onSettled: () => setConfirmRevoke(false) })}
       />
     </Card>
   );
@@ -253,9 +239,9 @@ export function AdminLicensesPage() {
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">VSProxy Licenses</h1>
         <p className="text-sm text-muted-foreground">
-          Issue a per-friend key, see which machines each key is bound to, and revoke keys
-          or individual machines. Each key is checked online at startup and locked to at
-          most its activation limit.
+          Issue a per-friend key, see which machines each key is bound to, and revoke keys or
+          individual machines. Each key is checked online at startup and locked to at most its
+          activation limit.
         </p>
       </div>
 
@@ -326,9 +312,7 @@ export function AdminLicensesPage() {
           </div>
 
           {createMut.isError && (
-            <p className="text-sm text-destructive">
-              {(createMut.error as Error).message}
-            </p>
+            <p className="text-sm text-destructive">{(createMut.error as Error).message}</p>
           )}
 
           {createdCode && (
@@ -341,8 +325,8 @@ export function AdminLicensesPage() {
                 <CopyButton value={createdCode} label="Copy code" />
               </div>
               <p className="text-xs text-muted-foreground">
-                Send this to the friend. They put it in a <code>license.key</code> file next
-                to the exe (or pass <code>--license</code>).
+                Send this to the friend. They put it in a <code>license.key</code> file next to the
+                exe (or pass <code>--license</code>).
               </p>
             </div>
           )}
