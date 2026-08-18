@@ -85,17 +85,26 @@ _configure_app_access_logger()
 
 
 def _configure_temp_dir() -> None:
-    """Point ``tempfile.mkstemp`` at the persistent Render disk when one is
+    """Point ``tempfile.mkstemp`` at the persistent disk when one is
     mounted, so multi-GB pending uploads + the combined map can coexist
     without exhausting the small ephemeral ``/tmp`` of the dyno.
 
-    Honours the standard ``$TMPDIR`` env var. Render disks mount at the
-    path you choose (e.g. ``/var/data``); set ``TMPDIR=/var/data/tmp`` in
-    the service env vars and this function will create the directory and
-    rewire Python's ``tempfile`` module to use it. No-op when the env var
-    is unset (local dev keeps using the OS default).
+    Honours the standard ``$TMPDIR`` env var (Render disks mount at the
+    path you choose, e.g. ``/var/data``). On Railway, prefer the volume
+    mount path exposed at *runtime* via ``$RAILWAY_VOLUME_MOUNT_PATH`` — do
+    NOT set ``TMPDIR`` as a Railway service variable, because it also leaks
+    into the build phase (before the volume is mounted) and breaks the
+    railpack/mise install. This function creates the directory and rewires
+    Python's ``tempfile`` module. No-op when neither var is set (local dev
+    keeps using the OS default).
     """
     tmpdir = os.environ.get("TMPDIR", "").strip()
+    if not tmpdir:
+        # Railway exposes the volume mount only at runtime, so derive the
+        # temp dir from it instead of a build-visible TMPDIR variable.
+        mount = os.environ.get("RAILWAY_VOLUME_MOUNT_PATH", "").strip()
+        if mount:
+            tmpdir = os.path.join(mount, "tmp")
     if not tmpdir:
         return
     try:
