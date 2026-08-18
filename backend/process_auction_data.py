@@ -1827,6 +1827,41 @@ def build_artifacts(
     return records, summary, items_catalog
 
 
+def _merge_external_sources(args) -> List[Dict[str, Any]]:
+    """Publish-time safety: fold every other contributor's events (from the
+    private R2 bucket) into the local capture so ``--publish-r2`` can't drop other
+    users. Uploads the local file as the trusted ``seed`` (so future server-side
+    rebuilds include it too), then reuses the server's DB-aware merge, giving a
+    result identical to a server rebuild. Aborts rather than falling back to a
+    local-only publish if the private sources can't be reached."""
+    import gzip
+    import os
+    import sys as _sys
+
+    # The merge's contributor filter reads the backend DB where contributor keys
+    # are registered (prod), so pin APP_ENV before app.config loads its env file.
+    os.environ["APP_ENV"] = args.merge_env
+    if args.private_bucket:
+        os.environ["R2_PRIVATE_BUCKET_NAME"] = args.private_bucket
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    try:
+        from app.core import auction_raw_store, auction_rebuild, database
+
+        database.init_db()
+        auction_raw_store.put_raw(
+            auction_raw_store.SEED_ID, gzip.compress(args.input.read_bytes(), mtime=0)
+        )
+        merged = auction_rebuild._merge()
+    except Exception as exc:  # noqa: BLE001 — surface + abort, never publish local-only
+        raise SystemExit(
+            f"[abort] pre-publish merge failed ({exc.__class__.__name__}: {exc}). "
+            "Not publishing, to avoid overwriting the public data with your local-only "
+            "file. Fix the connection (R2/DB creds, DB not paused), or pass "
+            "--no-merge-private to deliberately publish local-only (drops other contributors)."
+        )
+    return merged
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input", type=Path, default=DEFAULT_INPUT)
@@ -1845,12 +1880,35 @@ def main() -> None:
         help="Like --publish-r2, but upload only to the dev (local) R2 bucket, "
         "leaving prod untouched.",
     )
+    ap.add_argument(
+        "--no-merge-private",
+        action="store_true",
+        help="When publishing, do NOT first merge other contributors' events from "
+        "the private R2 bucket. WARNING: this publishes your local file ONLY, which "
+        "overwrites the public data and drops every other contributor until the next "
+        "server-side rebuild. Only use for an isolated local test.",
+    )
+    ap.add_argument(
+        "--merge-env",
+        default="prod",
+        help="Backend env (APP_ENV) whose DB + private bucket the pre-publish merge "
+        "uses. Must be where the contributor keys are registered (default: prod).",
+    )
+    ap.add_argument(
+        "--private-bucket",
+        default="",
+        help="Override R2_PRIVATE_BUCKET_NAME for the pre-publish merge.",
+    )
     args = ap.parse_args()
 
     print(f"Reading {args.input}…")
     raw_lines = [l for l in args.input.read_text(encoding="utf-8").splitlines() if l.strip()]
     rows = [json.loads(l) for l in raw_lines]
     print(f"  {len(rows):,} raw rows")
+
+    if (args.publish_r2 or args.publish_r2_dev) and not args.no_merge_private:
+        rows = _merge_external_sources(args)
+        print(f"  merged with {args.merge_env} private contributors -> {len(rows):,} rows")
 
     deduped = dedup_latest(rows)
     print(f"  {len(deduped):,} unique auctions after dedup")
