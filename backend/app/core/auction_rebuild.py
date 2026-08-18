@@ -14,6 +14,7 @@ artifacts to the PUBLIC bucket. The raw files never leave the private bucket.
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import sys
 import tempfile
@@ -40,8 +41,19 @@ _build_lock: asyncio.Lock | None = None
 # --------------------------------------------------------------------------- #
 # Source gathering + merge (sync — runs in a thread executor)
 # --------------------------------------------------------------------------- #
+def _has_publish_permission(row: Dict[str, Any]) -> bool:
+    extras = row.get("extra_permissions")
+    if isinstance(extras, str):
+        try:
+            extras = json.loads(extras)
+        except ValueError:
+            extras = None
+    return bool(isinstance(extras, dict) and extras.get("map_features_publish"))
+
+
 def _active_source_ids(exclude_ids: Set[str]) -> List[str]:
-    """Raw object ids to include: the seed + every non-revoked contributor."""
+    """Raw object ids to include: the seed + every non-revoked contributor (a key
+    with the ``map_features_publish`` permission or a legacy ``auction_contributor``)."""
     out: List[str] = []
     for sid in auction_raw_store.list_raw_ids():
         if sid in exclude_ids:
@@ -49,8 +61,15 @@ def _active_source_ids(exclude_ids: Set[str]) -> List[str]:
         if sid == auction_raw_store.SEED_ID:
             out.append(sid)
             continue
+        # Snapshots from the VsAuctionExport mod are stored under "mod"/"mod-<server>"
+        # and are trusted (written only by the global-secret authenticated webhook).
+        if sid == "mod" or sid.startswith("mod-"):
+            out.append(sid)
+            continue
         row = database.get_api_key_by_id(sid)
-        if not row or row.get("revoked") or not row.get("auction_contributor"):
+        if not row or row.get("revoked"):
+            continue
+        if not (row.get("auction_contributor") or _has_publish_permission(row)):
             continue
         out.append(sid)
     return out

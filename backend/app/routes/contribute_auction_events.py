@@ -30,17 +30,14 @@ Wire contract (produced by the proxy's ``AuctionContributor.cs``):
 from __future__ import annotations
 
 import gzip
-import hashlib
-import hmac
 import io
 import json
 import logging
-import time
-from collections import OrderedDict
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
+from ..auth import is_admin_key, verify_api_key, verify_permission
 from ..config import settings
 from ..core import auction_raw_store, database
 from ..core import auction_rebuild
@@ -49,73 +46,20 @@ logger = logging.getLogger("uvicorn.error")
 router = APIRouter(tags=["contribute-auction-events"])
 
 _VALID_STATES = {"", "Active", "Sold", "SoldRetrieved", "Expired"}
-
-# Bounded nonce cache (X-Snapshot-Id) for replay protection within the skew
-# window. Timestamp-skew already caps how long a captured request stays valid;
-# this stops re-posting the exact same signed body inside that window.
-_SEEN_NONCES: "OrderedDict[str, float]" = OrderedDict()
-_NONCE_CACHE_MAX = 4096
+_PUBLISH_PERMISSION = "map_features_publish"
 
 
-def _remember_nonce(nonce: str) -> bool:
-    """Return False if the nonce was already seen (a replay); True otherwise."""
-    now = time.time()
-    ttl = 2 * max(1, settings.AUCTION_WEBHOOK_MAX_SKEW_SECONDS)
-    # Evict expired entries lazily.
-    for key in list(_SEEN_NONCES.keys()):
-        if now - _SEEN_NONCES[key] > ttl:
-            _SEEN_NONCES.pop(key, None)
-        else:
-            break
-    if nonce in _SEEN_NONCES:
-        return False
-    _SEEN_NONCES[nonce] = now
-    while len(_SEEN_NONCES) > _NONCE_CACHE_MAX:
-        _SEEN_NONCES.popitem(last=False)
-    return True
-
-
-def _resolve_contributor(x_api_key: Optional[str]) -> Dict[str, Any]:
-    if not x_api_key:
-        raise HTTPException(status_code=401, detail="missing X-API-Key")
+def _resolve_contributor(x_api_key: str) -> Dict[str, Any]:
     row = database.get_api_key(x_api_key)
     if not row or row.get("revoked"):
         raise HTTPException(status_code=401, detail="invalid API key")
-    if not row.get("auction_contributor"):
-        raise HTTPException(
-            status_code=403, detail="key is not an auction contributor"
-        )
-    if not (row.get("auction_hmac_secret") or "").strip():
-        raise HTTPException(
-            status_code=403, detail="contributor key has no signing secret configured"
-        )
+    if not (
+        is_admin_key(x_api_key)
+        or verify_permission(x_api_key, _PUBLISH_PERMISSION)
+        or row.get("auction_contributor")
+    ):
+        raise HTTPException(status_code=403, detail="key cannot contribute auctions")
     return row
-
-
-def _verify_signature(
-    raw_jsonl: bytes,
-    secret: str,
-    x_timestamp: Optional[str],
-    x_signature: Optional[str],
-    x_snapshot_id: Optional[str],
-) -> None:
-    if not x_timestamp or not x_signature:
-        raise HTTPException(status_code=401, detail="missing X-Timestamp / X-Signature")
-    try:
-        ts = int(x_timestamp)
-    except ValueError:
-        raise HTTPException(status_code=401, detail="invalid X-Timestamp")
-    if abs(int(time.time()) - ts) > settings.AUCTION_WEBHOOK_MAX_SKEW_SECONDS:
-        raise HTTPException(status_code=401, detail="stale X-Timestamp")
-
-    provided = x_signature.split("=", 1)[1] if "=" in x_signature else x_signature
-    signed = x_timestamp.encode("utf-8") + b"." + raw_jsonl
-    expected = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(provided.lower(), expected):
-        raise HTTPException(status_code=401, detail="bad signature")
-
-    if x_snapshot_id and not _remember_nonce(x_snapshot_id):
-        raise HTTPException(status_code=401, detail="replayed X-Snapshot-Id")
 
 
 def _check_upstream(x_upstream_host: Optional[str]) -> None:
@@ -169,10 +113,7 @@ def _plausible(rec: Dict[str, Any]) -> bool:
 @router.post("/contribute-auction-events")
 async def receive_auction_events(
     request: Request,
-    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
-    x_timestamp: Optional[str] = Header(default=None, alias="X-Timestamp"),
-    x_signature: Optional[str] = Header(default=None, alias="X-Signature"),
-    x_snapshot_id: Optional[str] = Header(default=None, alias="X-Snapshot-Id"),
+    x_api_key: str = Depends(verify_api_key),
     x_upstream_host: Optional[str] = Header(default=None, alias="X-Upstream-Host"),
     x_server_fingerprint: Optional[str] = Header(
         default=None, alias="X-Server-Fingerprint"
@@ -181,11 +122,8 @@ async def receive_auction_events(
 ) -> Dict[str, Any]:
     """Ingest one contributor's full auction-events file; trigger a rebuild."""
     row = _resolve_contributor(x_api_key)
-    raw_jsonl = await _read_body(request, content_encoding)
-    _verify_signature(
-        raw_jsonl, row["auction_hmac_secret"], x_timestamp, x_signature, x_snapshot_id
-    )
     _check_upstream(x_upstream_host)
+    raw_jsonl = await _read_body(request, content_encoding)
 
     received = 0
     accepted: List[Dict[str, Any]] = []

@@ -19,11 +19,11 @@ Wire contract (produced by the mod's ``Net/WebhookClient.cs``):
     - None mode: no auth headers (allowed only when the receiver has no
       secret/token configured and ``AUCTION_WEBHOOK_REQUIRE_AUTH`` is off).
 
-**Local-testing behaviour:** this endpoint deliberately does **not** persist
-anything to the database or R2. It validates + decodes the payload and then
-`console-logs` (via the ``uvicorn.error`` logger, which prints to the
-terminal) a summary plus a sample of the decoded auctions. Swap the
-``_handle_snapshot`` body for real persistence once the contract is verified.
+The accepted auctions are converted to the shared record schema and stored as
+one private object per server (``auction/raw/mod-<serverId>.jsonl.gz``), then the
+public rebuild is triggered — so the mod's cron export flows into the same
+merged/published data as the VsClayProxy contributions (which post JSONL to
+``/api/contribute-auction-events`` with a per-key ``X-API-Key`` instead of HMAC).
 """
 
 from __future__ import annotations
@@ -31,8 +31,10 @@ from __future__ import annotations
 import gzip
 import hashlib
 import hmac
+import io
 import json
 import logging
+import re
 import time
 from typing import Any, List, Optional
 
@@ -40,6 +42,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..config import settings
+from ..core import auction_raw_store, auction_rebuild
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -183,69 +186,66 @@ async def _read_json_body(request: Request, content_encoding: Optional[str]) -> 
 
 
 # --------------------------------------------------------------------------- #
-# Handler — local test: log instead of persist
+# Handler — persist the snapshot into the shared raw-store + trigger a rebuild
 # --------------------------------------------------------------------------- #
 _SAMPLE_LOG_COUNT = 5
+# The mod authenticates with the GLOBAL webhook secret (not a per-key API key),
+# so its snapshot is stored under a stable, trusted source id derived from the
+# server id (one object per server, overwritten each snapshot).
+_SOURCE_PREFIX = "mod"
 
 
-def _handle_snapshot(envelope: SnapshotEnvelope, snapshot_id_header: Optional[str]) -> None:
-    """Local-testing sink: console-log the snapshot instead of persisting it.
+def _source_id_for(server_id: str) -> str:
+    sid = re.sub(r"[^A-Za-z0-9._-]", "-", (server_id or "").strip()).strip("-")
+    return f"{_SOURCE_PREFIX}-{sid}" if sid else _SOURCE_PREFIX
 
-    Replace this with real DB / R2 persistence once the contract is verified.
-    """
-    auctions = envelope.auctions
+
+def _plausible(rec: dict) -> bool:
+    """Cheap sanity gate anchored to the pinned world; drops obvious garbage."""
+    if not isinstance(rec.get("AuctionId"), int):
+        return False
+    cap = settings.AUCTION_MAX_WORLD_COORD
+    for k in ("SrcX", "SrcZ", "DstX", "DstZ"):
+        v = rec.get(k)
+        if v is not None and (not isinstance(v, (int, float)) or abs(v) > cap):
+            return False
+    return True
+
+
+def _persist_snapshot(envelope: SnapshotEnvelope, snapshot_id_header: Optional[str]) -> dict[str, Any]:
+    """Convert the snapshot's auctions to the shared record schema, store them as
+    one gzipped private object, and signal the rebuild coalescer."""
+    accepted: List[dict] = []
     states: dict[str, int] = {}
-    for a in auctions:
+    for a in envelope.auctions:
         states[a.State] = states.get(a.State, 0) + 1
+        rec = a.model_dump(exclude_none=True)
+        if _plausible(rec):
+            accepted.append(rec)
 
     logger.info(
-        "[auctions] ===== snapshot received (LOCAL TEST — not persisted) =====",
-    )
-    logger.info(
-        "[auctions] serverId=%s snapshotId=%s (header=%s) snapshotUtc=%s schema=%d",
+        "[auctions] snapshot serverId=%s snapshotId=%s (header=%s) count=%d accepted=%d states=%s",
         envelope.serverId,
         envelope.snapshotId,
         snapshot_id_header or "-",
-        envelope.snapshotUtc,
-        envelope.schemaVersion,
-    )
-    logger.info(
-        "[auctions] declared count=%d received=%d configFingerprint=%s",
-        envelope.count,
-        len(auctions),
-        envelope.configFingerprint,
-    )
-    logger.info(
-        "[auctions] state breakdown: %s",
+        len(envelope.auctions),
+        len(accepted),
         ", ".join(f"{k}={v}" for k, v in sorted(states.items())) or "(none)",
     )
 
-    sample = auctions[:_SAMPLE_LOG_COUNT]
-    for a in sample:
-        item = a.Item
-        item_desc = "-"
-        if item is not None:
-            item_desc = f"{item.Name or item.Code or item.Id} x{item.StackSize}"
-        logger.info(
-            "[auctions]   #%d state=%s price=%s seller=%s item=%s",
-            a.AuctionId,
-            a.State,
-            a.Price if a.Price is not None else "-",
-            a.SellerName or a.SellerUid or "-",
-            item_desc,
-        )
-    if len(auctions) > _SAMPLE_LOG_COUNT:
-        logger.info("[auctions]   … and %d more", len(auctions) - _SAMPLE_LOG_COUNT)
+    if not accepted:
+        return {"received": len(envelope.auctions), "accepted": 0}
 
-    # Full pretty dump for deep inspection during local testing. Kept at
-    # DEBUG so it doesn't spam INFO logs unless the developer opts in.
-    if logger.isEnabledFor(logging.DEBUG):
-        logger.debug(
-            "[auctions] full payload:\n%s",
-            json.dumps(envelope.model_dump(exclude_none=True), indent=2, default=str),
-        )
+    buf = io.BytesIO()
+    with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as gz:
+        for rec in accepted:
+            gz.write((json.dumps(rec, separators=(",", ":")) + "\n").encode("utf-8"))
 
-    logger.info("[auctions] ===== end snapshot =====")
+    source_id = _source_id_for(envelope.serverId)
+    auction_raw_store.put_raw(source_id, buf.getvalue())
+    auction_rebuild.request_rebuild()
+    logger.info("[auctions] stored %d record(s) as %s; rebuild requested", len(accepted), source_id)
+    return {"received": len(envelope.auctions), "accepted": len(accepted), "source": source_id}
 
 
 @router.post("/contribute-auctions")
@@ -260,8 +260,8 @@ async def receive_auction_snapshot(
     """Receive one auction snapshot from the VsAuctionExport mod.
 
     On success returns ``200`` with ``{"status": "ok", "received": <n>}``.
-    In this local-testing build the payload is logged to the terminal and
-    **not** written to any store.
+    The snapshot is converted to the shared record schema, stored as one private
+    object per server, and the public rebuild is triggered.
     """
     raw_json = await _read_json_body(request, content_encoding)
 
@@ -278,6 +278,6 @@ async def receive_auction_snapshot(
     except Exception as exc:  # pydantic ValidationError → 422-style 400
         raise HTTPException(status_code=400, detail=f"schema validation failed: {exc}")
 
-    _handle_snapshot(envelope, x_snapshot_id)
+    result = _persist_snapshot(envelope, x_snapshot_id)
 
-    return {"status": "ok", "received": len(envelope.auctions)}
+    return {"status": "ok", **result}
