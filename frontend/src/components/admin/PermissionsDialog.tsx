@@ -16,9 +16,9 @@ const KEY_PERMISSIONS: { key: KeyPermission; label: string; help: string }[] = [
     help: "Allow this contributor to submit region-restricted updates that overwrite existing chunks.",
   },
   {
-    key: "trader_claims_publish",
-    label: "Trader claim types (authoritative)",
-    help: "Allow this key to publish authoritative trader-claim types (used by the VsProxy). Requires the trader_claims_authoritative feature flag.",
+    key: "map_features_publish",
+    label: "Map features export (VsProxy)",
+    help: "Allow this key to publish the general map-features export (translocators, traders, land claims and authoritative trader-claim types) via the VsProxy.",
   },
 ];
 

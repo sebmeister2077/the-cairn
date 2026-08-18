@@ -2736,7 +2736,7 @@ export async function adminClearMaintenanceNotice(
 
 // --- Admin: per-key granular permissions (Phase 0c) ---
 
-export type KeyPermission = "region_overwrite" | "trader_claims_publish";
+export type KeyPermission = "region_overwrite" | "map_features_publish";
 
 export async function adminGetKeyPermissions(
     apiKey: string,

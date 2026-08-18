@@ -127,7 +127,11 @@ _AUTHORITATIVE_FLAG = "trader_claims_authoritative"
 _MANUAL_DAILY_CAP_FLAG = "trader_claims_manual_daily_cap"
 _MANUAL_MAX_PER_DAY_DEFAULT = 30
 _DAY_SECONDS = 86400
-_PUBLISH_PERMISSION = "trader_claims_publish"
+# The authoritative publish is now part of the general map-features export, so the general
+# ``map_features_publish`` permission grants it. The legacy ``trader_claims_publish`` is still
+# accepted for keys granted before the unification.
+_PUBLISH_PERMISSION = "map_features_publish"
+_LEGACY_PUBLISH_PERMISSION = "trader_claims_publish"
 
 
 # ---------------------------------------------------------------------------
@@ -364,7 +368,11 @@ async def publish_claim_types(
                 "message": "Authoritative claim-type publishing is currently disabled.",
             },
         )
-    if not (is_admin_key(x_api_key) or verify_permission(x_api_key, _PUBLISH_PERMISSION)):
+    if not (
+        is_admin_key(x_api_key)
+        or verify_permission(x_api_key, _PUBLISH_PERMISSION)
+        or verify_permission(x_api_key, _LEGACY_PUBLISH_PERMISSION)
+    ):
         raise HTTPException(
             status_code=403,
             detail="This API key cannot publish authoritative claim types.",
