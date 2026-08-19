@@ -317,9 +317,16 @@ class Settings:
         )
     )
     # Max UNCOMPRESSED contribution size (bytes). The combined map export is a
-    # few MB of JSON; allow generous headroom.
+    # few MB of JSON; allow generous headroom. The compressed body is capped at
+    # the same value, and gzip is inflated incrementally so a decompression bomb
+    # can't materialise more than this in RAM.
     MAP_FEATURES_MAX_BODY_BYTES: int = int(
         os.environ.get("MAP_FEATURES_MAX_BODY_BYTES", str(64 * 1024 * 1024))
+    )
+    # Max simultaneous ingest requests that may hold a decoded document in RAM.
+    # Bounds peak heap = this * (decompressed + parsed) instead of unbounded.
+    MAP_FEATURES_MAX_CONCURRENT_INGEST: int = max(
+        1, int(os.environ.get("MAP_FEATURES_MAX_CONCURRENT_INGEST", "2"))
     )
     # Rebuild coalescer timings (same shape as the auction coalescer).
     MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS: int = int(

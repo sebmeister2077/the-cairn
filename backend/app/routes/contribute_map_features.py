@@ -29,10 +29,12 @@ Wire contract (produced by the proxy's ``MapFeaturesContributor.cs``):
 
 from __future__ import annotations
 
+import asyncio
 import gzip
 import io
 import json
 import logging
+import zlib
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -50,6 +52,17 @@ _PUBLISH_PERMISSION = "map_features_publish"
 # Coordinate fields that may appear on a feature; any present point is bounds-checked.
 _POINT_FIELDS = ("abs", "center", "min", "max")
 
+# Caps how many requests may simultaneously hold a decoded document in RAM.
+# Created lazily inside the running loop (avoids binding to the wrong loop).
+_ingest_semaphore: asyncio.Semaphore | None = None
+
+
+def _get_ingest_semaphore() -> asyncio.Semaphore:
+    global _ingest_semaphore
+    if _ingest_semaphore is None:
+        _ingest_semaphore = asyncio.Semaphore(settings.MAP_FEATURES_MAX_CONCURRENT_INGEST)
+    return _ingest_semaphore
+
 
 def _check_upstream(x_upstream_host: Optional[str]) -> None:
     pinned = (settings.MAP_FEATURES_PINNED_UPSTREAM_HOST or "").strip().lower()
@@ -63,15 +76,45 @@ def _check_upstream(x_upstream_host: Optional[str]) -> None:
         )
 
 
-async def _read_body(request: Request, content_encoding: Optional[str]) -> bytes:
-    raw = await request.body()
-    if content_encoding and "gzip" in content_encoding.lower():
-        try:
-            raw = gzip.decompress(raw)
-        except (OSError, EOFError) as exc:
-            raise HTTPException(status_code=400, detail=f"invalid gzip body: {exc}")
-    if len(raw) > settings.MAP_FEATURES_MAX_BODY_BYTES:
+def _decompress_gzip_capped(raw: bytes, cap: int) -> bytes:
+    """Inflate a gzip stream incrementally, aborting once output exceeds ``cap``.
+
+    Unlike ``gzip.decompress`` this never materialises more than ~``cap`` bytes,
+    so a decompression bomb (tiny body -> multi-GB output) is rejected instead of
+    OOMing the process."""
+    dec = zlib.decompressobj(16 + zlib.MAX_WBITS)  # 16 => gzip header
+    out = bytearray()
+    to_feed = raw
+    try:
+        while True:
+            piece = dec.decompress(to_feed, 1 << 20)
+            to_feed = dec.unconsumed_tail
+            if piece:
+                out += piece
+                if len(out) > cap:
+                    raise HTTPException(status_code=413, detail="contribution body too large")
+            elif not to_feed:
+                break
+        out += dec.flush()
+    except zlib.error as exc:
+        raise HTTPException(status_code=400, detail=f"invalid gzip body: {exc}")
+    if len(out) > cap:
         raise HTTPException(status_code=413, detail="contribution body too large")
+    return bytes(out)
+
+
+async def _read_body(request: Request, content_encoding: Optional[str]) -> bytes:
+    cap = settings.MAP_FEATURES_MAX_BODY_BYTES
+    # Reject before buffering the whole body when the client declares its size.
+    clen = request.headers.get("content-length")
+    if clen and clen.isdigit() and int(clen) > cap:
+        raise HTTPException(status_code=413, detail="contribution body too large")
+    raw = await request.body()
+    # Bound the compressed payload too (request.body() buffers it entirely).
+    if len(raw) > cap:
+        raise HTTPException(status_code=413, detail="contribution body too large")
+    if content_encoding and "gzip" in content_encoding.lower():
+        raw = _decompress_gzip_capped(raw, cap)
     return raw
 
 
@@ -133,28 +176,32 @@ async def receive_map_features(
 
     _check_upstream(x_upstream_host)
 
-    raw = await _read_body(request, content_encoding)
-    try:
-        doc = json.loads(raw.decode("utf-8", errors="replace"))
-    except (json.JSONDecodeError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=f"invalid JSON body: {exc}")
-    if not isinstance(doc, dict):
-        raise HTTPException(status_code=422, detail="body must be a MapExportDocument object")
+    # Serialise the memory-heavy decode/parse/re-encode so concurrent uploads
+    # can't stack multiple decompressed documents in RAM at once.
+    async with _get_ingest_semaphore():
+        raw = await _read_body(request, content_encoding)
+        try:
+            doc = json.loads(raw.decode("utf-8", errors="replace"))
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise HTTPException(status_code=400, detail=f"invalid JSON body: {exc}")
+        if not isinstance(doc, dict):
+            raise HTTPException(status_code=422, detail="body must be a MapExportDocument object")
 
-    filtered, received, accepted = _filter_document(doc)
-    if accepted == 0:
-        raise HTTPException(status_code=422, detail="no plausible features in contribution")
+        filtered, received, accepted = _filter_document(doc)
+        del doc, raw  # release the largest allocations before the R2 upload
+        if accepted == 0:
+            raise HTTPException(status_code=422, detail="no plausible features in contribution")
 
-    buf = io.BytesIO()
-    with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as gz:
-        gz.write(json.dumps(filtered, separators=(",", ":")).encode("utf-8"))
-    gz_bytes = buf.getvalue()
+        buf = io.BytesIO()
+        with gzip.GzipFile(fileobj=buf, mode="wb", mtime=0) as gz:
+            gz.write(json.dumps(filtered, separators=(",", ":")).encode("utf-8"))
+        gz_bytes = buf.getvalue()
 
-    key_id = str(row["id"])
-    map_features_raw_store.put_raw(key_id, gz_bytes)
-    map_features_rebuild.request_rebuild()
+        key_id = str(row["id"])
+        map_features_raw_store.put_raw(key_id, gz_bytes)
+        map_features_rebuild.request_rebuild()
 
-    counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
+        counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
     logger.info(
         "[map-features-ingest] key=%s actor=%s received=%d accepted=%d bytes=%d %s",
         key_id,
