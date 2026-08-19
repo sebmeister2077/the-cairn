@@ -22,7 +22,7 @@ import os
 import sys
 import tempfile
 import time
-import tracemalloc
+from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
@@ -32,23 +32,31 @@ from . import map_features_merge, map_features_raw_store, database
 
 logger = logging.getLogger("uvicorn.error")
 
-# Opt-in leak hunt: set MAP_FEATURES_TRACEMALLOC=1 to log the top growing
-# allocations between rebuilds (small overhead; off by default).
+# Opt-in leak hunt: set MAP_FEATURES_TRACEMALLOC=1 to log which object TYPES grew
+# between rebuilds. Uses a gc census (runs once per rebuild, ~1/min) instead of
+# tracemalloc — no per-allocation overhead, so it can't slow ingests.
 _TRACE = os.environ.get("MAP_FEATURES_TRACEMALLOC", "").strip().lower() in ("1", "true", "yes")
-_prev_snapshot: "tracemalloc.Snapshot | None" = None
-if _TRACE and not tracemalloc.is_tracing():
-    tracemalloc.start(10)
+_prev_type_counts: "Counter | None" = None
 
 
-def _log_tracemalloc_delta() -> None:
-    global _prev_snapshot
+def _log_gc_type_delta() -> None:
+    """Log the object types whose live count grew most since the last rebuild."""
+    global _prev_type_counts
     if not _TRACE:
         return
-    snap = tracemalloc.take_snapshot()
-    if _prev_snapshot is not None:
-        for stat in snap.compare_to(_prev_snapshot, "lineno")[:8]:
-            logger.info("[map-features-mem] %s", stat)
-    _prev_snapshot = snap
+    counts: "Counter" = Counter(type(o).__name__ for o in gc.get_objects())
+    if _prev_type_counts is not None:
+        deltas = sorted(
+            ((counts[k] - _prev_type_counts.get(k, 0), k) for k in counts),
+            reverse=True,
+        )
+        for delta, name in deltas[:10]:
+            if delta > 0:
+                logger.info(
+                    "[map-features-mem] +%d %s (live=%d)", delta, name, counts[name]
+                )
+    _prev_type_counts = counts
+
 
 
 
@@ -259,7 +267,7 @@ async def _worker() -> None:
                 cur,
                 lim,
             )
-            _log_tracemalloc_delta()
+            _log_gc_type_delta()
         except Exception as exc:  # noqa: BLE001 — never crash the worker loop
             logger.warning(
                 "[map-features-rebuild] failed (will retry on next request): %s", exc
