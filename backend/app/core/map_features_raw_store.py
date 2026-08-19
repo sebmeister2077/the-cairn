@@ -18,6 +18,7 @@ from __future__ import annotations
 import gzip
 import json
 import logging
+import threading
 from typing import Any, Dict, List, Optional
 
 import boto3
@@ -31,24 +32,37 @@ logger = logging.getLogger("uvicorn.error")
 # The seed object holds the historical merged export; always included, no key.
 SEED_ID = "seed"
 
+# Reuse ONE boto3 client process-wide. Creating a client per call leaked memory
+# (~one client's worth of botocore/urllib3 state each rebuild+ingest cycle);
+# botocore clients are thread-safe, so a shared singleton is safe here.
+_client_singleton = None
+_client_lock = threading.Lock()
+
 
 def _client():
+    global _client_singleton
+    if _client_singleton is not None:
+        return _client_singleton
     if not (
         settings.R2_ACCOUNT_ID
         and settings.R2_ACCESS_KEY_ID
         and settings.R2_SECRET_ACCESS_KEY
     ):
         raise RuntimeError("R2 credentials not configured (R2_ACCOUNT_ID/KEY/SECRET)")
-    return boto3.client(
-        "s3",
-        endpoint_url=settings.R2_ENDPOINT_URL,
-        aws_access_key_id=settings.R2_ACCESS_KEY_ID,
-        aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
-        config=BotoConfig(
-            signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"}
-        ),
-        region_name="auto",
-    )
+    with _client_lock:
+        if _client_singleton is None:
+            _client_singleton = boto3.client(
+                "s3",
+                endpoint_url=settings.R2_ENDPOINT_URL,
+                aws_access_key_id=settings.R2_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+                config=BotoConfig(
+                    signature_version="s3v4",
+                    retries={"max_attempts": 3, "mode": "standard"},
+                ),
+                region_name="auto",
+            )
+    return _client_singleton
 
 
 def _bucket() -> str:

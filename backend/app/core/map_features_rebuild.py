@@ -18,9 +18,11 @@ import asyncio
 import gc
 import json
 import logging
+import os
 import sys
 import tempfile
 import time
+import tracemalloc
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
@@ -29,6 +31,25 @@ from ..config import settings
 from . import map_features_merge, map_features_raw_store, database
 
 logger = logging.getLogger("uvicorn.error")
+
+# Opt-in leak hunt: set MAP_FEATURES_TRACEMALLOC=1 to log the top growing
+# allocations between rebuilds (small overhead; off by default).
+_TRACE = os.environ.get("MAP_FEATURES_TRACEMALLOC", "").strip().lower() in ("1", "true", "yes")
+_prev_snapshot: "tracemalloc.Snapshot | None" = None
+if _TRACE and not tracemalloc.is_tracing():
+    tracemalloc.start(10)
+
+
+def _log_tracemalloc_delta() -> None:
+    global _prev_snapshot
+    if not _TRACE:
+        return
+    snap = tracemalloc.take_snapshot()
+    if _prev_snapshot is not None:
+        for stat in snap.compare_to(_prev_snapshot, "lineno")[:8]:
+            logger.info("[map-features-mem] %s", stat)
+    _prev_snapshot = snap
+
 
 
 def _rss_mb() -> float:
@@ -238,6 +259,7 @@ async def _worker() -> None:
                 cur,
                 lim,
             )
+            _log_tracemalloc_delta()
         except Exception as exc:  # noqa: BLE001 — never crash the worker loop
             logger.warning(
                 "[map-features-rebuild] failed (will retry on next request): %s", exc

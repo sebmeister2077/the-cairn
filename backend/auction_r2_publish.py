@@ -26,6 +26,7 @@ though they share the same account/keys and differ only in ``R2_BUCKET_NAME``.
 from __future__ import annotations
 
 import mimetypes
+import threading
 from pathlib import Path
 from typing import Callable, Iterable, List
 
@@ -34,6 +35,10 @@ from botocore.config import Config as BotoConfig
 from dotenv import dotenv_values
 
 _BACKEND_DIR = Path(__file__).resolve().parent
+
+# Cached env-credential client (see _client_from_env) — reused across rebuilds.
+_ENV_CLIENT = None
+_ENV_CLIENT_LOCK = threading.Lock()
 
 # env label -> env file. "local" is the dev bucket, "prod" is the prod bucket.
 _ENV_FILES = {
@@ -149,16 +154,23 @@ def _client_from_env():
 
     Used by the server-side rebuild on Render, where credentials come from the
     environment rather than the local ``.env.local`` / ``.env.prod`` files.
-    """
+    Cached process-wide: creating a fresh client on every publish leaked memory
+    across the ~1/min rebuild cadence (botocore/urllib3 state per client)."""
+    global _ENV_CLIENT
+    if _ENV_CLIENT is not None:
+        return _ENV_CLIENT
     import os
 
-    return _client_for(
-        {
-            "R2_ACCOUNT_ID": os.environ.get("R2_ACCOUNT_ID", ""),
-            "R2_ACCESS_KEY_ID": os.environ.get("R2_ACCESS_KEY_ID", ""),
-            "R2_SECRET_ACCESS_KEY": os.environ.get("R2_SECRET_ACCESS_KEY", ""),
-        }
-    )
+    with _ENV_CLIENT_LOCK:
+        if _ENV_CLIENT is None:
+            _ENV_CLIENT = _client_for(
+                {
+                    "R2_ACCOUNT_ID": os.environ.get("R2_ACCOUNT_ID", ""),
+                    "R2_ACCESS_KEY_ID": os.environ.get("R2_ACCESS_KEY_ID", ""),
+                    "R2_SECRET_ACCESS_KEY": os.environ.get("R2_SECRET_ACCESS_KEY", ""),
+                }
+            )
+    return _ENV_CLIENT
 
 
 def publish_files_to_bucket(
