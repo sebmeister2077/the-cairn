@@ -15,6 +15,7 @@ The raw documents never leave the private bucket.
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import logging
 import sys
@@ -28,6 +29,19 @@ from ..config import settings
 from . import map_features_merge, map_features_raw_store, database
 
 logger = logging.getLogger("uvicorn.error")
+
+
+def _rss_mb() -> float:
+    """Resident set size in MB (Linux); 0.0 where /proc is unavailable."""
+    try:
+        with open("/proc/self/status", "r") as fh:
+            for line in fh:
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1]) / 1024.0
+    except OSError:
+        pass
+    return 0.0
+
 
 # backend/ dir holds the standalone process_auction_data.py / auction_r2_publish.py
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
@@ -181,8 +195,17 @@ async def _worker() -> None:
             if time.monotonic() - first_requested >= max_interval:
                 break
         try:
+            rss_before = _rss_mb()
             result = await rebuild_now()
-            logger.info("[map-features-rebuild] published %s", result)
+            # Release the merge/encode graph promptly so RSS doesn't ratchet up
+            # across the ~1/min rebuild cadence.
+            gc.collect()
+            logger.info(
+                "[map-features-rebuild] published %s rss=%.0fMB (was %.0fMB)",
+                result,
+                _rss_mb(),
+                rss_before,
+            )
         except Exception as exc:  # noqa: BLE001 — never crash the worker loop
             logger.warning(
                 "[map-features-rebuild] failed (will retry on next request): %s", exc

@@ -1771,7 +1771,10 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 def write_json(path: Path, data: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    # Stream the encode straight to disk — json.dumps() on a 20+MB document
+    # would build the whole string in RAM first (doubling peak memory).
+    with path.open("w", encoding="utf-8") as fh:
+        json.dump(data, fh, indent=2, ensure_ascii=False)
     size_kb = path.stat().st_size / 1024
     try:
         shown = path.relative_to(REPO_ROOT)
@@ -1790,7 +1793,10 @@ def _content_version(paths: List[Path]) -> str:
     for p in sorted(paths, key=lambda x: x.name):
         if p.is_file():
             h.update(p.name.encode("utf-8"))
-            h.update(p.read_bytes())
+            # Read in chunks so hashing a 20+MB file doesn't load it all at once.
+            with p.open("rb") as fh:
+                for chunk in iter(lambda: fh.read(1 << 20), b""):
+                    h.update(chunk)
     return h.hexdigest()[:12]
 
 

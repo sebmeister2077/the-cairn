@@ -203,12 +203,13 @@ async def receive_map_features(
 
         counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
     logger.info(
-        "[map-features-ingest] key=%s actor=%s received=%d accepted=%d bytes=%d %s",
+        "[map-features-ingest] key=%s actor=%s received=%d accepted=%d bytes=%d rss=%.0fMB %s",
         key_id,
         (x_actor_name or row.get("name") or "-"),
         received,
         accepted,
         len(gz_bytes),
+        map_features_rebuild._rss_mb(),
         counts,
     )
     return {
