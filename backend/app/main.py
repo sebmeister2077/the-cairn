@@ -64,6 +64,26 @@ from .routes import licenses as licenses_routes
 logger = logging.getLogger("uvicorn.error")
 
 
+def _install_crash_diagnostics() -> None:
+    """Best-effort: dump a C-level traceback on a fatal native fault
+    (SIGSEGV/SIGFPE/SIGABRT/SIGBUS) which uvicorn does NOT handle, so a native
+    crash leaves evidence in the Railway logs instead of a silent restart.
+    SIGKILL (OOM) cannot be caught — its absence here, combined with a cgroup
+    memory spike in the rebuild logs, is the tell that it was an OOM kill.
+    Does not touch SIGTERM (uvicorn already logs its own graceful shutdown)."""
+    try:
+        import faulthandler
+
+        faulthandler.enable()
+    except Exception as exc:  # pragma: no cover
+        logger.warning("faulthandler.enable failed: %s", exc)
+
+
+_install_crash_diagnostics()
+
+
+
+
 def _configure_app_access_logger() -> None:
     """Attach a stdout handler to the ``app.access`` logger so per-request
     log lines show up in the terminal / Render logs alongside uvicorn's own

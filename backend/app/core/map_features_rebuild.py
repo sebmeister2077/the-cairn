@@ -43,6 +43,35 @@ def _rss_mb() -> float:
     return 0.0
 
 
+def _cgroup_mem_mb() -> Tuple[float, float]:
+    """(current, limit) container memory in MB from the cgroup; (0,0) if absent.
+
+    Unlike RSS this includes page cache + tmpfs — i.e. what the OOM killer
+    actually accounts against the container limit, which the Railway dashboard's
+    sampled process metric can under-report."""
+
+    def _read(paths: List[str]) -> int:
+        for p in paths:
+            try:
+                with open(p, "r") as fh:
+                    v = fh.read().strip()
+                if v and v != "max":
+                    return int(v)
+            except (OSError, ValueError):
+                continue
+        return 0
+
+    cur = _read(
+        ["/sys/fs/cgroup/memory.current", "/sys/fs/cgroup/memory/memory.usage_in_bytes"]
+    )
+    lim = _read(
+        ["/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"]
+    )
+    mb = 1 << 20
+    return cur / mb, lim / mb
+
+
+
 # backend/ dir holds the standalone process_auction_data.py / auction_r2_publish.py
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 if str(_BACKEND_DIR) not in sys.path:
@@ -200,11 +229,14 @@ async def _worker() -> None:
             # Release the merge/encode graph promptly so RSS doesn't ratchet up
             # across the ~1/min rebuild cadence.
             gc.collect()
+            cur, lim = _cgroup_mem_mb()
             logger.info(
-                "[map-features-rebuild] published %s rss=%.0fMB (was %.0fMB)",
+                "[map-features-rebuild] published %s rss=%.0fMB (was %.0fMB) cgroup=%.0f/%.0fMB",
                 result,
                 _rss_mb(),
                 rss_before,
+                cur,
+                lim,
             )
         except Exception as exc:  # noqa: BLE001 — never crash the worker loop
             logger.warning(
