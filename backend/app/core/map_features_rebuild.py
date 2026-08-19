@@ -15,6 +15,8 @@ The raw documents never leave the private bucket.
 from __future__ import annotations
 
 import asyncio
+import ctypes
+import ctypes.util
 import gc
 import json
 import logging
@@ -31,6 +33,27 @@ from ..config import settings
 from . import map_features_merge, map_features_raw_store, database
 
 logger = logging.getLogger("uvicorn.error")
+
+# glibc malloc_trim(0): return freed heap to the OS. Python frees the big
+# transient JSON buffers after each rebuild/ingest, but glibc keeps them in its
+# arenas so RSS only ratchets up. None=untried, False=unavailable, else callable.
+_libc_malloc_trim: Any = None
+
+
+def _malloc_trim() -> None:
+    global _libc_malloc_trim
+    if _libc_malloc_trim is None:
+        try:
+            libc = ctypes.CDLL(ctypes.util.find_library("c") or "libc.so.6")
+            _libc_malloc_trim = getattr(libc, "malloc_trim", False)
+        except Exception:
+            _libc_malloc_trim = False
+    if _libc_malloc_trim:
+        try:
+            _libc_malloc_trim(0)
+        except Exception:
+            pass
+
 
 # Opt-in leak hunt: set MAP_FEATURES_TRACEMALLOC=1 to log which object TYPES grew
 # between rebuilds. Uses a gc census (runs once per rebuild, ~1/min) instead of
@@ -255,9 +278,10 @@ async def _worker() -> None:
         try:
             rss_before = _rss_mb()
             result = await rebuild_now()
-            # Release the merge/encode graph promptly so RSS doesn't ratchet up
-            # across the ~1/min rebuild cadence.
+            # Release the merge/encode graph AND hand the freed heap back to the
+            # OS — glibc otherwise keeps it in-arena and RSS only grows.
             gc.collect()
+            _malloc_trim()
             cur, lim = _cgroup_mem_mb()
             logger.info(
                 "[map-features-rebuild] published %s rss=%.0fMB (was %.0fMB) cgroup=%.0f/%.0fMB",

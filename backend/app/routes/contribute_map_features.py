@@ -202,6 +202,8 @@ async def receive_map_features(
         map_features_rebuild.request_rebuild()
 
         counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
+    # Hand the freed parse buffers back to the OS (glibc keeps them in-arena).
+    map_features_rebuild._malloc_trim()
     logger.info(
         "[map-features-ingest] key=%s actor=%s received=%d accepted=%d bytes=%d rss=%.0fMB %s",
         key_id,
