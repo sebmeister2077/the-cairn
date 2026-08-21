@@ -1224,9 +1224,10 @@ def build_time_series(
     posting time, so the frontend can chart how market activity evolved.
 
     Buckets are keyed by ``monthIndex = floor(postedTotalHours / 720)``.
-    Every metric is attributed to the auction's posting month, including its
-    sale outcome, so per-bucket cumulative sums line up with the market totals.
-    Auctions without a known posting time are skipped.
+    Every metric is attributed to the auction's posting month, except
+    ``gearsTraded``, which is attributed to the month the auction was *bought*
+    (its retrievable moment) so the curve reflects when money actually changed
+    hands. Auctions without a known posting time are skipped.
 
     ``missing`` counts auctions we never captured: auction ids are assigned
     sequentially and (verified) strictly increase with posting time, so every
@@ -1295,8 +1296,14 @@ def build_time_series(
         if r["sold"]:
             b["sold"] += 1
             b["unitsSold"] += r["qty"]
-            b["gearsTraded"] += r["price"]
             b["feesPaid"] += r["traderCut"] or 0
+            # Gears traded belong to when the auction was bought, not posted.
+            # The sale moment is the posting time plus how long it took to sell;
+            # fall back to the posting bucket when we never captured a sale time.
+            tts = r.get("timeToSellHours")
+            sold_hours = posted + tts if tts is not None else posted
+            sold_month = int(sold_hours // TIME_SERIES_BUCKET_HOURS)
+            ensure_bucket(sold_month)["gearsTraded"] += r["price"]
             if r.get("buyerUid"):
                 buyers_by_bucket[month].add(r["buyerUid"])
             if r["delivered"]:
