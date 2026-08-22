@@ -562,11 +562,11 @@ function deriveArchetypes(i: ArchetypeInput): PlayerArchetype[] {
     }
     // 🐉 Dragon's Hoard: the extreme tier above Monopolist — a near-total grip.
     const monopolies = i.dominance.filter((d) => d.tier === "monopoly");
-    if (monopolies.length >= 2 || monopolies.some((d) => d.share >= 0.9)) {
+    if (monopolies.length >= 2) {
         labels.push("dragons-hoard");
     }
     // 🎨 Master Chiseler: sells a pile of hand-chiseled art blocks.
-    if (i.chiselCount >= 6) labels.push("master-chiseler");
+    if (i.chiselCount >= 12) labels.push("master-chiseler");
     // 🥾 Legwork: buys plenty but skips delivery — collects the goods in person.
     if (i.pickupSample >= 10 && i.pickupCount >= 8 && i.pickupShare != null && i.pickupShare >= 0.5) {
         labels.push("legwork");
