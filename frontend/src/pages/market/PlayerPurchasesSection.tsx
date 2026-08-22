@@ -4,13 +4,12 @@
 
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useCurrentGameHours, formatRealTimeToSell, listingHasText } from "@/lib/auction";
+import { formatRealTimeToSell, listingHasText } from "@/lib/auction";
 import type { AuctionListing } from "@/models/auction";
 import {
   VirtualListingsTable,
   formatListingDate,
   formatGameDate,
-  ListingStateBadge,
   DeliveryFeeCell,
   ListingNotesCell,
   type ListingColumn,
@@ -23,8 +22,6 @@ import {
  * @param listings This player's confirmed purchases (already windowed).
  */
 export function PlayerPurchasesSection({ listings }: { listings: AuctionListing[] }) {
-  const currentGameHours = useCurrentGameHours();
-
   // Newest first by in-game posting time.
   const sorted = useMemo(
     () => [...listings].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0)),
@@ -125,14 +122,8 @@ export function PlayerPurchasesSection({ listings }: { listings: AuctionListing[
             } satisfies ListingColumn,
           ]
         : []),
-      {
-        key: "status",
-        header: "Status",
-        width: "5rem",
-        cell: (l) => <ListingStateBadge listing={l} currentGameHours={currentGameHours} />,
-      },
     ],
-    [currentGameHours, hasText],
+    [hasText],
   );
 
   return (

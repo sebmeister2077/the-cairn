@@ -18,7 +18,9 @@ import { cn } from "@/lib/utils";
  * appeared in the most recent capture sweep of the live Auction House AND its
  * listing duration hasn't elapsed. A listing last seen "Active" that either
  * dropped out of the latest sweep (not observed since) or whose duration is now
- * due is definitely no longer visible in-game, so it renders as "Removed".
+ * due is definitely no longer visible in-game, so it renders as "Untracked"
+ * (its sold/expired outcome was never recorded in time). A listing the seller
+ * pulled early renders as "Cancelled".
  *
  * `currentGameHours` is the estimated current in-game clock (see
  * `useCurrentGameHours`); it defaults to the module-cached value so callers that
@@ -31,6 +33,11 @@ export function ListingStateBadge({
   listing: AuctionListing;
   currentGameHours?: number;
 }) {
+  // A cancelled listing (seller pulled it early) takes precedence over its
+  // derived state so the Status column carries the amber "Cancelled" badge.
+  if (listing.cancelled) {
+    return <CancelledCell listing={listing} />;
+  }
   const status = deriveListingStatus(listing, currentGameHours);
   switch (status) {
     case "sold":
@@ -42,9 +49,9 @@ export function ListingStateBadge({
         <Badge
           variant="secondary"
           className="border border-dashed border-muted-foreground/40"
-          title="No longer listed on the Auction House — it dropped out of the latest capture or its listing duration has elapsed"
+          title="Its final outcome (sold or expired) was never recorded in time — the listing left the Auction House before we could capture the result"
         >
-          Removed
+          Untracked
         </Badge>
       );
     case "unconfirmed":

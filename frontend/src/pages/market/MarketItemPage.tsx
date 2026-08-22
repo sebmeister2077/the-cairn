@@ -919,31 +919,30 @@ export function MarketItemPage() {
         cell: (l) => <DurationCell listing={l} />,
       },
       {
-        key: "cancelled",
-        header: "Cancelled",
-        width: "minmax(5rem,0.7fr)",
-        cell: (l) => <CancelledCell listing={l} />,
-      },
-      {
         key: "status",
         header: "Status",
         width: "5rem",
         cell: (l) => {
-          // Shared status derivation so this matches the player-profile table:
-          // a last-seen-Active listing that dropped out of the latest sweep (or
-          // whose duration elapsed) reads "removed", not "active?".
+          // A cancelled listing carries the amber "Cancelled" badge; otherwise
+          // the shared status derivation so this matches the player-profile
+          // table: a last-seen-Active listing that dropped out of the latest
+          // sweep (or whose duration elapsed) reads "untracked", not "active?".
+          if (l.cancelled) return <CancelledCell listing={l} />;
           const status = deriveListingStatus(l, currentGameHours);
           const unconfirmed = status === "unconfirmed";
+          const untracked = status === "removed";
           return (
             <span
               className="text-xs text-muted-foreground"
               title={
                 unconfirmed
                   ? "Final outcome never recorded — last observed state, not a confirmed live listing"
-                  : undefined
+                  : untracked
+                    ? "Its final outcome (sold or expired) was never recorded in time — the listing left the Auction House before we could capture the result"
+                    : undefined
               }
             >
-              {unconfirmed ? "active?" : status}
+              {unconfirmed ? "active?" : untracked ? "untracked" : status}
             </span>
           );
         },
