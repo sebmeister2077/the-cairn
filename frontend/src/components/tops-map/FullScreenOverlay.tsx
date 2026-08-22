@@ -18,6 +18,7 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
+  setShowRapids as setShowRapidsAction,
   setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKeepCodes as setRockStrataKeepCodesAction,
@@ -29,6 +30,7 @@ import {
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
+import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
@@ -162,6 +164,11 @@ export function FullscreenControlsOverlay({
     (next: boolean) => dispatch(setShowRecordedBrokenTLsAction(next)),
     [dispatch],
   );
+  const showRapids = useAppSelector((s) => s.mapView.showRapids);
+  const setShowRapids = useCallback(
+    (next: boolean) => dispatch(setShowRapidsAction(next)),
+    [dispatch],
+  );
   const showTraderClaims = useAppSelector((s) => s.mapView.showTraderClaims);
   const setShowTraderClaims = useCallback(
     (next: boolean) => dispatch(setShowTraderClaimsAction(next)),
@@ -204,7 +211,8 @@ export function FullscreenControlsOverlay({
   );
   const recordedFeatures = recordedFeaturesQuery.data;
   // Shares the React Query cache with the page's loader (same query key), so
-  // this only surfaces the deduped count — no extra fetch.
+  // this only surfaces the count — no extra fetch.
+  const rapidsQuery = useRapidsOverlay(showAdvancedMapOptions && showRapids);
   const traderClaimsQuery = useTraderClaims(showAdvancedMapOptions && showTraderClaims);
   const traderTypeFilter = useAppSelector((s) => s.mapView.traderTypeFilter);
   const traderTypeFilterSet = useMemo(() => new Set<string>(traderTypeFilter), [traderTypeFilter]);
@@ -572,6 +580,21 @@ export function FullscreenControlsOverlay({
               <span className="text-xs text-muted-foreground">
                 {t("topsMap.totalCount", {
                   count: (recordedFeatures?.brokenTLs.length ?? 0).toLocaleString(),
+                })}
+              </span>
+            </div>
+            <div
+              onClick={() => setShowRapids(!showRapids)}
+              className={cn(
+                "cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+                !showAdvancedMapOptions && "hidden",
+              )}
+            >
+              <Switch checked={showRapids} aria-label={t("topsMap.showRapidsOverlay")} />
+              <Label className="cursor-pointer">{t("topsMap.showRapids")}</Label>
+              <span className="text-xs text-muted-foreground">
+                {t("topsMap.totalCount", {
+                  count: (rapidsQuery.data?.length ?? 0).toLocaleString(),
                 })}
               </span>
             </div>

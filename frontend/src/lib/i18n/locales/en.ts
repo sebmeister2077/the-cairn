@@ -232,6 +232,11 @@ export const en = {
             terminusIcon: "Terminus icon",
             terminusIconDescription:
                 "One-way death-return waypoints. Icon-only - no label is rendered.",
+            rapidsIcon: "Rapids icon",
+            rapidsIconDescription:
+                "Fast-water source blocks. Colour marks whether the rapid sits inside a land claim.",
+            rapidsUnclaimed: "Unclaimed",
+            rapidsClaimed: "Claimed (haloed)",
             markerOption: {
                 "gear-stack": { label: "Gear Stack", hint: "Two overlapping rusty gears (default)." },
                 "rusty-gear": { label: "Rusty Gear", hint: "Single gear with rust-tinted hub." },
@@ -1392,6 +1397,9 @@ export const en = {
         showRecordedBrokenTLsOverlay: "Show recorded broken translocators overlay",
         showRecordedBrokenTLs: "Show recorded broken translocators",
         recordedBrokenTLsFound: "Recorded broken translocators:",
+        showRapidsOverlay: "Show rapids overlay",
+        showRapids: "Show rapids",
+        rapidsFound: "Rapids:",
         showRecordedTradersOverlay: "Show recorded traders overlay",
         showRecordedTraders: "Show recorded traders",
         recordedTradersFound: "Recorded traders:",

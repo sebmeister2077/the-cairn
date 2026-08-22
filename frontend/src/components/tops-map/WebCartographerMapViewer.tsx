@@ -16,6 +16,7 @@ import {
   drawTraderMarker,
   drawTLEndpoint,
   drawTerminusMarker,
+  drawRapidsMarker,
   drawClaimDot,
 } from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
@@ -353,6 +354,7 @@ export function WebCartographerMapViewer({
   const traderStyle = useReduxState("mapView.traderStyle");
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
+  const rapidsStyle = useReduxState("mapView.rapidsStyle");
   const traderColors = useTraderColors();
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
@@ -509,6 +511,8 @@ export function WebCartographerMapViewer({
     x: number;
     y: number;
     z: number;
+    kind?: string;
+    claimed?: boolean;
   } | null>(null);
   // Live cursor world position kept in a ref so the per-frame draw can
   // read it without forcing the projectedSegments memo to re-run on every
@@ -774,6 +778,7 @@ export function WebCartographerMapViewer({
         kind?: string;
         color?: string;
         tooltip?: { x: number; y: number; z: number };
+        claimed?: boolean;
       }>;
     }
     const out: Array<{
@@ -783,6 +788,7 @@ export function WebCartographerMapViewer({
       kind?: string;
       color?: string;
       tooltip?: { x: number; y: number; z: number };
+      claimed?: boolean;
     }> = [];
     for (const p of overlayPoints) {
       const s = projectWorld(p.x, p.z);
@@ -794,6 +800,7 @@ export function WebCartographerMapViewer({
         kind: p.kind,
         color: p.color,
         tooltip: p.tooltip,
+        claimed: p.claimed,
       });
     }
     return out;
@@ -1242,6 +1249,7 @@ export function WebCartographerMapViewer({
       tlStyle,
       traderStyle,
       terminusStyle,
+      rapidsStyle,
       radiusCull,
     });
 
@@ -1291,6 +1299,7 @@ export function WebCartographerMapViewer({
     tlStyle,
     traderStyle,
     terminusStyle,
+    rapidsStyle,
     traderColors,
     claimMarkers,
     claimTypes,
@@ -1705,6 +1714,8 @@ export function WebCartographerMapViewer({
         const threshold = 14;
         const thresholdSq = threshold * threshold;
         let bestTip: { x: number; y: number; z: number } | null = null;
+        let bestKind: string | undefined;
+        let bestClaimed: boolean | undefined;
         let bestDistSq = Infinity;
         for (const p of projectedPoints) {
           if (!p.tooltip) continue;
@@ -1714,10 +1725,22 @@ export function WebCartographerMapViewer({
           if (dsq < thresholdSq && dsq < bestDistSq) {
             bestDistSq = dsq;
             bestTip = p.tooltip;
+            bestKind = p.kind;
+            bestClaimed = p.claimed;
           }
         }
         setHoveredPointTooltip(
-          bestTip ? { left: sx, top: sy, x: bestTip.x, y: bestTip.y, z: bestTip.z } : null,
+          bestTip
+            ? {
+                left: sx,
+                top: sy,
+                x: bestTip.x,
+                y: bestTip.y,
+                z: bestTip.z,
+                kind: bestKind,
+                claimed: bestClaimed,
+              }
+            : null,
         );
       } else if (hoveredPointTooltip) {
         setHoveredPointTooltip(null);
@@ -2096,8 +2119,21 @@ export function WebCartographerMapViewer({
               top: hoveredPointTooltip.top + 14,
             }}
           >
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-red-300">
-              Broken TL
+            <div
+              className={
+                "text-[10px] font-semibold uppercase tracking-wide " +
+                (hoveredPointTooltip.kind === "Rapids"
+                  ? hoveredPointTooltip.claimed
+                    ? "text-orange-300"
+                    : "text-teal-300"
+                  : "text-red-300")
+              }
+            >
+              {hoveredPointTooltip.kind === "Rapids"
+                ? hoveredPointTooltip.claimed
+                  ? "Rapids · claimed"
+                  : "Rapids · unclaimed"
+                : "Broken TL"}
             </div>
             <div>
               X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}
@@ -2216,7 +2252,14 @@ interface OverlayDrawArgs {
      *  color (and a derived translucent glow) instead. */
     color?: string;
   }>;
-  points: Array<{ x: number; y: number; label?: string; kind?: string; color?: string }>;
+  points: Array<{
+    x: number;
+    y: number;
+    label?: string;
+    kind?: string;
+    color?: string;
+    claimed?: boolean;
+  }>;
   route: {
     tlSegs: Array<{ x1: number; y1: number; x2: number; y2: number }>;
     walkLegs: Array<{
@@ -2238,6 +2281,7 @@ interface OverlayDrawArgs {
   tlStyle: string;
   traderStyle: string;
   terminusStyle: string;
+  rapidsStyle: string;
   /**
    * Optional cursor-radius cull. When non-null, segments whose `tlId`
    * is not in `alwaysShowTLIds` AND whose endpoints are both farther
@@ -2276,6 +2320,7 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
     tlStyle,
     traderStyle,
     terminusStyle,
+    rapidsStyle,
     radiusCull,
   } = args;
 
@@ -2422,7 +2467,8 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
         p.kind === "Trader" ||
         p.kind === "Home" ||
         p.kind === "Terminus" ||
-        p.kind === "BrokenTL"
+        p.kind === "BrokenTL" ||
+        p.kind === "Rapids"
       )
         continue;
       ctx.beginPath();
@@ -2436,7 +2482,8 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
         p.kind === "Trader" ||
         p.kind === "Home" ||
         p.kind === "Terminus" ||
-        p.kind === "BrokenTL"
+        p.kind === "BrokenTL" ||
+        p.kind === "Rapids"
       )
         continue;
       ctx.beginPath();
@@ -2537,6 +2584,21 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
       ctx.moveTo(p.x + d, p.y - d);
       ctx.lineTo(p.x - d, p.y + d);
       ctx.stroke();
+    }
+
+    // Rapids source markers — user-selected glyph, coloured + haloed by
+    // claimed state (see useRapidsOverlay + drawRapidsMarker).
+    for (const p of points) {
+      if (p.kind !== "Rapids") continue;
+      drawRapidsMarker(
+        ctx,
+        p.x,
+        p.y,
+        1,
+        rapidsStyle as never,
+        p.color ?? "rgba(45, 212, 191, 0.95)",
+        p.claimed,
+      );
     }
   }
 

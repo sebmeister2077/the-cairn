@@ -4,9 +4,11 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { lsRead, lsReadJson, lsWrite, lsWriteJson } from "../persistence";
 import { hydrateRoot } from "../rootActions";
 import {
+    DEFAULT_RAPIDS_STYLE,
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
     DEFAULT_TRADER_STYLE,
+    type RapidsStyle,
     type TerminusStyle,
     type TLStyle,
     type TraderStyle,
@@ -181,6 +183,14 @@ export interface MapViewState {
      */
     showRecordedBrokenTLs: boolean;
     /**
+     * When true, render the recorded (in-game session export) *rapids*
+     * sources as point markers on the map, coloured by their `claimed`
+     * state (claimed vs unclaimed). Data ships from the frontend bundle
+     * (`map-features.rapids.json`) / public R2. Gated behind {@link
+     * showAdvancedMapOptions}. Default OFF — opt-in.
+     */
+    showRapids: boolean;
+    /**
      * When true, render the static trader *claim* boxes (from the frontend
      * bundle, `map-features.traderclaims.json`) as small dots — white/grey
      * when unclassified, or the trader-type colour once a type has been
@@ -290,6 +300,8 @@ export interface MapViewState {
     traderStyle: TraderStyle;
     tlStyle: TLStyle;
     terminusStyle: TerminusStyle;
+    /** User-picked icon style for rapids source markers. */
+    rapidsStyle: RapidsStyle;
     /**
      * User overrides for the per-trader-type marker colors. Sparse — only
      * types the user explicitly recoloured appear here; everything else
@@ -349,6 +361,7 @@ export function loadInitialMapViewState(): MapViewState {
         tlRadiusBlocks: 1000,
         showOceans: false,
         showRecordedBrokenTLs: false,
+        showRapids: false,
         showTraderClaims: false,
         showPlayerClaims: false,
         playerClaimsMode: "density",
@@ -376,6 +389,7 @@ export function loadInitialMapViewState(): MapViewState {
         traderStyle: DEFAULT_TRADER_STYLE,
         tlStyle: DEFAULT_TL_STYLE,
         terminusStyle: DEFAULT_TERMINUS_STYLE,
+        rapidsStyle: DEFAULT_RAPIDS_STYLE,
         traderColors: {},
         mapSource: readMapSource(),
         webCartographerUrl: readWebCartographerUrl(),
@@ -450,6 +464,9 @@ export const mapViewSlice = createSlice({
         },
         setShowRecordedBrokenTLs(state, action: PayloadAction<boolean>) {
             state.showRecordedBrokenTLs = action.payload;
+        },
+        setShowRapids(state, action: PayloadAction<boolean>) {
+            state.showRapids = action.payload;
         },
         setShowTraderClaims(state, action: PayloadAction<boolean>) {
             state.showTraderClaims = action.payload;
@@ -602,6 +619,9 @@ export const mapViewSlice = createSlice({
         setTerminusStyle(state, action: PayloadAction<TerminusStyle>) {
             state.terminusStyle = action.payload;
         },
+        setRapidsStyle(state, action: PayloadAction<RapidsStyle>) {
+            state.rapidsStyle = action.payload;
+        },
         /**
          * Set or clear one trader type's custom color. A `null`/invalid color
          * removes the override so the type reverts to its palette default.
@@ -671,6 +691,7 @@ export const {
     setTLRadiusBlocks,
     setShowOceans,
     setShowRecordedBrokenTLs,
+    setShowRapids,
     setShowTraderClaims,
     setShowPlayerClaims,
     setPlayerClaimsMode,
@@ -699,6 +720,7 @@ export const {
     setTraderStyle,
     setTLStyle,
     setTerminusStyle,
+    setRapidsStyle,
     setTraderColor,
     resetTraderColors,
     setMapSource,

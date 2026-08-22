@@ -4,7 +4,12 @@ import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2, Maximize2 } from "lucid
 import { TLLegendButton } from "@/components/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
-import { drawTraderMarker, drawTLEndpoint, drawTerminusMarker } from "@/lib/markerStyles";
+import {
+  drawTraderMarker,
+  drawTLEndpoint,
+  drawTerminusMarker,
+  drawRapidsMarker,
+} from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 
 // Marker icon styles are user-selectable from the Account → Appearance panel
@@ -118,15 +123,20 @@ export interface WorldPointMarker {
    *  house glyph (used for the user's saved favorite position); `"Terminus"`
    *  is drawn using the currently selected Terminus icon style; `"BrokenTL"`
    *  is drawn as a distinct broken-portal glyph (recorded session exports);
+   *  `"Rapids"` is drawn as a distinct water glyph coloured by claimed state;
    *  other kinds use the built-in landmark palette (cyan dot for Base/Misc,
    *  gold star for Server). */
-  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus" | "BrokenTL";
+  kind?: "Base" | "Server" | "Misc" | "Trader" | "Home" | "Terminus" | "BrokenTL" | "Rapids";
   /** Optional fill color for `"Trader"` markers. Hex string (e.g. "#16a34a"). */
   color?: string;
   /** Optional per-marker hover tooltip. When present, hovering the marker
-   *  shows an X/Y/Z readout at the cursor. Used by `"BrokenTL"` markers to
-   *  surface the recorded coordinate (relative X/Z, absolute Y). */
+   *  shows an X/Y/Z readout at the cursor. Used by `"BrokenTL"` and
+   *  `"Rapids"` markers to surface the recorded coordinate (relative X/Z,
+   *  absolute Y). */
   tooltip?: { x: number; y: number; z: number };
+  /** Claimed state for `"Rapids"` markers — drives the marker colour + halo
+   *  and the hover-tooltip label. */
+  claimed?: boolean;
   /** `"user"` when this landmark was contributed by a player (backend
    *  stamps `origin: "user"` on the feature's properties), otherwise
    *  undefined for seed / official data. Used to distinguish
@@ -425,6 +435,8 @@ export function MapViewer({
     x: number;
     y: number;
     z: number;
+    kind?: string;
+    claimed?: boolean;
   } | null>(null);
   // Natural pixel size of the blob-mode `<img>`. In tile mode we derive
   // dimensions from the tileSet directly (see `imgNatural` below).
@@ -520,6 +532,7 @@ export function MapViewer({
   const traderStyle = useReduxState("mapView.traderStyle");
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
+  const rapidsStyle = useReduxState("mapView.rapidsStyle");
   const setIsFullscreen = useCallback(
     (next: boolean) => dispatch(setShowFullscreenAction(next)),
     [dispatch],
@@ -709,6 +722,7 @@ export function MapViewer({
         kind?: string;
         color?: string;
         tooltip?: { x: number; y: number; z: number };
+        claimed?: boolean;
       }>;
     }
 
@@ -722,6 +736,7 @@ export function MapViewer({
       kind?: string;
       color?: string;
       tooltip?: { x: number; y: number; z: number };
+      claimed?: boolean;
     }> = [];
     for (const pt of overlayPoints) {
       const x = toImgX(pt.x);
@@ -734,6 +749,7 @@ export function MapViewer({
         kind: pt.kind,
         color: pt.color,
         tooltip: pt.tooltip,
+        claimed: pt.claimed,
       });
     }
 
@@ -1200,7 +1216,8 @@ export function MapViewer({
           pt.kind === "Trader" ||
           pt.kind === "Home" ||
           pt.kind === "Terminus" ||
-          pt.kind === "BrokenTL"
+          pt.kind === "BrokenTL" ||
+          pt.kind === "Rapids"
         )
           continue;
         ctx.beginPath();
@@ -1215,7 +1232,8 @@ export function MapViewer({
           pt.kind === "Trader" ||
           pt.kind === "Home" ||
           pt.kind === "Terminus" ||
-          pt.kind === "BrokenTL"
+          pt.kind === "BrokenTL" ||
+          pt.kind === "Rapids"
         )
           continue;
         ctx.beginPath();
@@ -1330,6 +1348,22 @@ export function MapViewer({
         ctx.moveTo(pt.x + d, pt.y - d);
         ctx.lineTo(pt.x - d, pt.y + d);
         ctx.stroke();
+      }
+
+      // Rapids markers (recorded session exports) — drawn with the user's
+      // selected rapids glyph; `pt.color` + `pt.claimed` encode ownership
+      // (orange/haloed = claimed, teal = free).
+      for (const pt of projectedOverlayPoints) {
+        if (pt.kind !== "Rapids") continue;
+        drawRapidsMarker(
+          ctx,
+          pt.x,
+          pt.y,
+          zoom,
+          rapidsStyle,
+          pt.color ?? "rgba(45, 212, 191, 0.95)",
+          pt.claimed,
+        );
       }
     }
 
@@ -1539,6 +1573,7 @@ export function MapViewer({
     traderStyle,
     tlStyle,
     terminusStyle,
+    rapidsStyle,
     pulseTick,
   ]);
 
@@ -1892,6 +1927,8 @@ export function MapViewer({
           const pxThreshold = 14 / Math.max(zoomRef.current, 0.1);
           const pxThresholdSq = pxThreshold * pxThreshold;
           let bestTip: { x: number; y: number; z: number } | null = null;
+          let bestKind: string | undefined;
+          let bestClaimed: boolean | undefined;
           let bestDistSq = Infinity;
           for (const pt of projectedOverlayPoints) {
             if (!pt.tooltip) continue;
@@ -1901,6 +1938,8 @@ export function MapViewer({
             if (distSq < pxThresholdSq && distSq < bestDistSq) {
               bestDistSq = distSq;
               bestTip = pt.tooltip;
+              bestKind = pt.kind;
+              bestClaimed = pt.claimed;
             }
           }
           if (bestTip) {
@@ -1910,6 +1949,8 @@ export function MapViewer({
               x: bestTip.x,
               y: bestTip.y,
               z: bestTip.z,
+              kind: bestKind,
+              claimed: bestClaimed,
             });
           } else {
             setHoveredPointTooltip(null);
@@ -2208,8 +2249,21 @@ export function MapViewer({
               top: hoveredPointTooltip.top + 14,
             }}
           >
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-red-300">
-              Broken TL
+            <div
+              className={
+                "text-[10px] font-semibold uppercase tracking-wide " +
+                (hoveredPointTooltip.kind === "Rapids"
+                  ? hoveredPointTooltip.claimed
+                    ? "text-orange-300"
+                    : "text-teal-300"
+                  : "text-red-300")
+              }
+            >
+              {hoveredPointTooltip.kind === "Rapids"
+                ? hoveredPointTooltip.claimed
+                  ? "Rapids · claimed"
+                  : "Rapids · unclaimed"
+                : "Broken TL"}
             </div>
             <div>
               X: {Math.round(hoveredPointTooltip.x)} &nbsp; Y: {Math.round(hoveredPointTooltip.y)}

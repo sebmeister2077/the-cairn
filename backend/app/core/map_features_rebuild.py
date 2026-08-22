@@ -18,6 +18,7 @@ import asyncio
 import ctypes
 import ctypes.util
 import gc
+import hashlib
 import json
 import logging
 import os
@@ -185,6 +186,40 @@ def _merge(exclude_ids: Set[str] | None = None) -> Dict[str, Any]:
     return merged
 
 
+# Content hash of the last dataset published to R2, so an unchanged dataset is
+# never rewritten. ``None`` until the first publish or a baseline read from R2.
+_last_published_hash: "str | None" = None
+_baseline_seeded = False
+
+
+def _stable_data_hash(merged: Dict[str, Any]) -> str:
+    """Short content hash over the merged feature payload only — deliberately
+    excludes ``generatedUtc`` so an identical dataset hashes identically across
+    rebuilds. Keyed by category in a fixed order for determinism."""
+    payload: Dict[str, Any] = {
+        "upstream": merged.get("upstream"),
+        "worldSpawn": merged.get("worldSpawn"),
+    }
+    for doc_key, _cat in map_features_merge.CATEGORIES:
+        payload[doc_key] = merged.get(doc_key, [])
+    blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+
+
+def _published_version_on_r2(auction_r2_publish) -> "str | None":
+    """The ``version`` of the currently-published manifest, or None if absent."""
+    data = auction_r2_publish.read_bytes_from_bucket(
+        bucket=settings.MAP_FEATURES_PUBLIC_BUCKET,
+        key=f"{settings.MAP_FEATURES_PREFIX}/manifest.json",
+    )
+    if not data:
+        return None
+    try:
+        return json.loads(data).get("version")
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
 def _feature_file(cat: str, merged: Dict[str, Any], doc_key: str, now_iso: str) -> Dict[str, Any]:
     """One self-describing per-category envelope (matches the proxy split writer
     and what the frontend loads)."""
@@ -203,10 +238,29 @@ def _feature_file(cat: str, merged: Dict[str, Any], doc_key: str, now_iso: str) 
 
 
 def _build_and_publish() -> Dict[str, int]:
+    global _last_published_hash, _baseline_seeded
     import auction_r2_publish  # noqa: WPS433 — backend/ module (shared R2 uploader)
     import process_auction_data as pad  # noqa: WPS433 — backend/ module (write_json/manifest)
 
     merged = _merge()
+    data_hash = _stable_data_hash(merged)
+    counts = {c: len(merged.get(k, [])) for k, c in map_features_merge.CATEGORIES}
+
+    # Seed the baseline from whatever is already published (once per process) so
+    # a restart never republishes an unchanged dataset.
+    if not _baseline_seeded:
+        _last_published_hash = _published_version_on_r2(auction_r2_publish)
+        _baseline_seeded = True
+
+    # Change-detection: skip the R2 write entirely when the merged features are
+    # byte-for-byte the same as what's already published (the proxy re-uploads
+    # its full export ~1/min, so most rebuilds carry no new data).
+    if data_hash == _last_published_hash:
+        logger.info(
+            "[map-features-rebuild] data unchanged (v=%s) — skipping R2 publish.", data_hash
+        )
+        return counts
+
     now_iso = datetime.now(timezone.utc).isoformat()
 
     with tempfile.TemporaryDirectory(prefix="map-features-rebuild-") as tmp:
@@ -223,14 +277,26 @@ def _build_and_publish() -> Dict[str, int]:
         pad.write_json(combined_path, combined)
         files.append(combined_path)
 
-        manifest_path = pad.write_manifest(out, files)
+        # Manifest version is the stable data hash (not a hash of the timestamped
+        # files) so the frontend's ``?v=`` only flips when features actually
+        # change — keeping the CDN cache warm between real updates.
+        manifest_path = out / "manifest.json"
+        pad.write_json(
+            manifest_path,
+            {
+                "version": data_hash,
+                "generatedUtc": now_iso,
+                "files": sorted(p.name for p in files),
+            },
+        )
         auction_r2_publish.publish_files_to_bucket(
             files + [manifest_path],
             bucket=settings.MAP_FEATURES_PUBLIC_BUCKET,
             prefix=settings.MAP_FEATURES_PREFIX,
             log=lambda m: logger.info("%s", m),
         )
-    return {c: len(merged.get(k, [])) for k, c in map_features_merge.CATEGORIES}
+    _last_published_hash = data_hash
+    return counts
 
 
 def source_impact(key_id: str) -> Dict[str, int]:

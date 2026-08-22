@@ -173,6 +173,29 @@ def _client_from_env():
     return _ENV_CLIENT
 
 
+def read_bytes_from_bucket(*, bucket: str, key: str) -> "bytes | None":
+    """GET one object from ``bucket`` using env credentials; None if missing.
+
+    Best-effort read used by the map-features rebuild to fetch the currently
+    published manifest so it can skip republishing an unchanged dataset. Any
+    error (missing object, transient failure) resolves to None."""
+    if not bucket:
+        return None
+    client = _client_from_env()
+    try:
+        resp = client.get_object(Bucket=bucket, Key=key)
+    except Exception:  # noqa: BLE001 - best-effort; treat any failure as "absent"
+        return None
+    body = resp["Body"]
+    try:
+        return body.read()
+    finally:
+        try:
+            body.close()
+        except Exception:
+            pass
+
+
 def publish_files_to_bucket(
     files: Iterable[Path],
     *,

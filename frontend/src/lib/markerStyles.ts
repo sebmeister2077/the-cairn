@@ -39,11 +39,18 @@ export type TerminusStyle =
     | "tombstone"
     | "cross"
     | "rift";
+export type RapidsStyle =
+    | "droplet"
+    | "wave"
+    | "ripple"
+    | "swirl"
+    | "chevrons";
 
 /** Default selections used for new users (and as fallbacks). */
 export const DEFAULT_TRADER_STYLE: TraderStyle = "gear-stack";
 export const DEFAULT_TL_STYLE: TLStyle = "spiral";
 export const DEFAULT_TERMINUS_STYLE: TerminusStyle = "tombstone";
+export const DEFAULT_RAPIDS_STYLE: RapidsStyle = "droplet";
 
 /** Option lists for the Account-tab picker UI. */
 export const TRADER_STYLE_OPTIONS: ReadonlyArray<{
@@ -85,6 +92,18 @@ export const TERMINUS_STYLE_OPTIONS: ReadonlyArray<{
         { id: "rift", label: "Rift", hint: "Vertical jagged crack." },
     ];
 
+export const RAPIDS_STYLE_OPTIONS: ReadonlyArray<{
+    id: RapidsStyle;
+    label: string;
+    hint: string;
+}> = [
+        { id: "droplet", label: "Droplet", hint: "Water-drop teardrop (default)." },
+        { id: "wave", label: "Wave", hint: "Disc with a white wave crest." },
+        { id: "ripple", label: "Ripple", hint: "Concentric water ripples." },
+        { id: "swirl", label: "Swirl", hint: "Whirlpool spiral." },
+        { id: "chevrons", label: "Chevrons", hint: "Downstream flow chevrons." },
+    ];
+
 /** Narrowing helpers for persisted/untrusted input. */
 export function isTraderStyle(v: unknown): v is TraderStyle {
     return TRADER_STYLE_OPTIONS.some((o) => o.id === v);
@@ -94,6 +113,9 @@ export function isTLStyle(v: unknown): v is TLStyle {
 }
 export function isTerminusStyle(v: unknown): v is TerminusStyle {
     return TERMINUS_STYLE_OPTIONS.some((o) => o.id === v);
+}
+export function isRapidsStyle(v: unknown): v is RapidsStyle {
+    return RAPIDS_STYLE_OPTIONS.some((o) => o.id === v);
 }
 
 // ---------------------------------------------------------------------------
@@ -746,5 +768,135 @@ export function drawTerminusMarker(
         ctx.lineTo(x - jag * 0.1, y + h * 0.75);
         ctx.stroke();
         return;
+    }
+}
+
+// ---- Rapids -------------------------------------------------------------
+
+function rapidsSize(zoom: number) {
+    const outer = Math.max(4.0, 6.2 / Math.max(zoom, 0.1));
+    const stroke = Math.max(0.6, 1.1 / Math.max(zoom, 0.1));
+    return { outer, stroke };
+}
+
+const RAPIDS_GLYPH = "rgba(255, 255, 255, 0.98)";
+
+/**
+ * Rapids (fast-water source) marker. `color` encodes the claimed state
+ * (teal = unclaimed, orange = claimed — see useRapidsOverlay); when `claimed`
+ * is true a halo ring is added so ownership reads at a glance regardless of
+ * the chosen glyph.
+ */
+export function drawRapidsMarker(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    style: RapidsStyle,
+    color: string,
+    claimed = false,
+) {
+    const { outer, stroke } = rapidsSize(zoom);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    // Claimed halo: a ring drawn behind the glyph so it never obscures it.
+    if (claimed) {
+        ctx.beginPath();
+        ctx.arc(x, y, outer * 1.45, 0, Math.PI * 2);
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = Math.max(1.2, stroke * 2.4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, outer * 1.45, 0, Math.PI * 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(0.7, stroke * 1.3);
+        ctx.stroke();
+    }
+
+    if (style === "droplet") {
+        const r = outer;
+        ctx.beginPath();
+        ctx.moveTo(x, y - r * 1.35);
+        ctx.bezierCurveTo(x + r * 1.15, y - r * 0.15, x + r * 0.9, y + r * 0.95, x, y + r * 0.95);
+        ctx.bezierCurveTo(x - r * 0.9, y + r * 0.95, x - r * 1.15, y - r * 0.15, x, y - r * 1.35);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.strokeStyle = OUTLINE;
+        ctx.lineWidth = stroke;
+        ctx.stroke();
+        // Highlight glint.
+        ctx.beginPath();
+        ctx.arc(x - r * 0.28, y + r * 0.25, r * 0.28, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.fill();
+        return;
+    }
+
+    // The remaining styles share a filled disc base coloured by claimed state.
+    ctx.beginPath();
+    ctx.arc(x, y, outer, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = OUTLINE;
+    ctx.lineWidth = stroke;
+    ctx.stroke();
+
+    ctx.strokeStyle = RAPIDS_GLYPH;
+    ctx.lineWidth = Math.max(0.8, stroke * 1.5);
+
+    if (style === "wave") {
+        const w = outer * 0.66;
+        const h = outer * 0.3;
+        for (const dy of [-h * 1.1, h * 1.1]) {
+            ctx.beginPath();
+            ctx.moveTo(x - w, y + dy);
+            ctx.quadraticCurveTo(x - w / 2, y + dy - h, x, y + dy);
+            ctx.quadraticCurveTo(x + w / 2, y + dy + h, x + w, y + dy);
+            ctx.stroke();
+        }
+        return;
+    }
+
+    if (style === "ripple") {
+        for (const rr of [outer * 0.32, outer * 0.62]) {
+            ctx.beginPath();
+            ctx.arc(x, y, rr, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(0.6, outer * 0.12), 0, Math.PI * 2);
+        ctx.fillStyle = RAPIDS_GLYPH;
+        ctx.fill();
+        return;
+    }
+
+    if (style === "swirl") {
+        ctx.beginPath();
+        const turns = 2.2;
+        const steps = 26;
+        for (let i = 0; i <= steps; i++) {
+            const tt = i / steps;
+            const ang = tt * turns * Math.PI * 2;
+            const rad = outer * 0.72 * (1 - tt);
+            const px = x + Math.cos(ang) * rad;
+            const py = y + Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        return;
+    }
+
+    // chevrons — two downstream (rightward) chevrons.
+    const cw = outer * 0.5;
+    const chh = outer * 0.55;
+    for (const off of [-outer * 0.32, outer * 0.28]) {
+        ctx.beginPath();
+        ctx.moveTo(x + off - cw * 0.5, y - chh);
+        ctx.lineTo(x + off + cw * 0.5, y);
+        ctx.lineTo(x + off - cw * 0.5, y + chh);
+        ctx.stroke();
     }
 }

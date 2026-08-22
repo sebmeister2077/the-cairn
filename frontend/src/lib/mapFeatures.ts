@@ -22,6 +22,7 @@ const MAP_FEATURES_BASE = `${publicBucketOrigin}/map-features`;
 export type MapFeatureCategory =
     | "translocators"
     | "traders"
+    | "rapids"
     | "traderclaims"
     | "playerclaims";
 
@@ -41,6 +42,7 @@ interface MapFeaturesManifest {
 const BUNDLED: Record<MapFeatureCategory, () => Promise<{ default: unknown }>> = {
     translocators: () => import("@/assets/MapFeaturesJson/map-features.translocators.json"),
     traders: () => import("@/assets/MapFeaturesJson/map-features.traders.json"),
+    rapids: () => import("@/assets/MapFeaturesJson/map-features.rapids.json"),
     traderclaims: () => import("@/assets/MapFeaturesJson/map-features.traderclaims.json"),
     playerclaims: () => import("@/assets/MapFeaturesJson/map-features.playerclaims.json"),
 };

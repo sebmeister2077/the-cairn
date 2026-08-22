@@ -1,0 +1,5504 @@
+{
+  "generatedUtc": "2026-08-19T07:39:57.6707453Z",
+  "upstream": "tops.vintagestory.at",
+  "worldSpawn": {
+    "x": 511997.0,
+    "y": 123.0,
+    "z": 512000.0
+  },
+  "category": "rapids",
+  "count": 323,
+  "features": [
+    {
+      "abs": {
+        "x": 502192.0,
+        "y": 135.0,
+        "z": 524134.0
+      },
+      "rel": {
+        "x": -9805.0,
+        "y": 12.0,
+        "z": 12134.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:48:33.7832082Z"
+    },
+    {
+      "abs": {
+        "x": 503350.0,
+        "y": 201.0,
+        "z": 530579.0
+      },
+      "rel": {
+        "x": -8647.0,
+        "y": 78.0,
+        "z": 18579.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:50:26.7294519Z"
+    },
+    {
+      "abs": {
+        "x": 503368.0,
+        "y": 142.0,
+        "z": 530629.0
+      },
+      "rel": {
+        "x": -8629.0,
+        "y": 19.0,
+        "z": 18629.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:50:13.3492721Z"
+    },
+    {
+      "abs": {
+        "x": 503496.0,
+        "y": 229.0,
+        "z": 530602.0
+      },
+      "rel": {
+        "x": -8501.0,
+        "y": 106.0,
+        "z": 18602.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:50:15.6482726Z"
+    },
+    {
+      "abs": {
+        "x": 503560.0,
+        "y": 153.0,
+        "z": 530714.0
+      },
+      "rel": {
+        "x": -8437.0,
+        "y": 30.0,
+        "z": 18714.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:49:56.16908Z"
+    },
+    {
+      "abs": {
+        "x": 503626.0,
+        "y": 209.0,
+        "z": 530800.0
+      },
+      "rel": {
+        "x": -8371.0,
+        "y": 86.0,
+        "z": 18800.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:49:41.0598029Z"
+    },
+    {
+      "abs": {
+        "x": 503637.0,
+        "y": 215.0,
+        "z": 530776.0
+      },
+      "rel": {
+        "x": -8360.0,
+        "y": 92.0,
+        "z": 18776.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:49:43.0183308Z"
+    },
+    {
+      "abs": {
+        "x": 503891.0,
+        "y": 131.0,
+        "z": 513126.0
+      },
+      "rel": {
+        "x": -8106.0,
+        "y": 8.0,
+        "z": 1126.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T08:26:06.8818993Z"
+    },
+    {
+      "abs": {
+        "x": 503909.0,
+        "y": 135.0,
+        "z": 531417.0
+      },
+      "rel": {
+        "x": -8088.0,
+        "y": 12.0,
+        "z": 19417.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T09:28:11.4368977Z"
+    },
+    {
+      "abs": {
+        "x": 505915.0,
+        "y": 159.0,
+        "z": 529831.0
+      },
+      "rel": {
+        "x": -6082.0,
+        "y": 36.0,
+        "z": 17831.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:54:48.0183286Z"
+    },
+    {
+      "abs": {
+        "x": 505947.0,
+        "y": 139.0,
+        "z": 530002.0
+      },
+      "rel": {
+        "x": -6050.0,
+        "y": 16.0,
+        "z": 18002.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:53:14.7138167Z"
+    },
+    {
+      "abs": {
+        "x": 505969.0,
+        "y": 142.0,
+        "z": 529915.0
+      },
+      "rel": {
+        "x": -6028.0,
+        "y": 19.0,
+        "z": 17915.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:54:29.0115067Z"
+    },
+    {
+      "abs": {
+        "x": 506032.0,
+        "y": 156.0,
+        "z": 529878.0
+      },
+      "rel": {
+        "x": -5965.0,
+        "y": 33.0,
+        "z": 17878.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:54:38.9676641Z"
+    },
+    {
+      "abs": {
+        "x": 506094.0,
+        "y": 154.0,
+        "z": 529910.0
+      },
+      "rel": {
+        "x": -5903.0,
+        "y": 31.0,
+        "z": 17910.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:54:29.5426363Z"
+    },
+    {
+      "abs": {
+        "x": 506126.0,
+        "y": 188.0,
+        "z": 529926.0
+      },
+      "rel": {
+        "x": -5871.0,
+        "y": 65.0,
+        "z": 17926.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:53:48.1737874Z"
+    },
+    {
+      "abs": {
+        "x": 506169.0,
+        "y": 138.0,
+        "z": 529834.0
+      },
+      "rel": {
+        "x": -5828.0,
+        "y": 15.0,
+        "z": 17834.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:57:38.2481564Z"
+    },
+    {
+      "abs": {
+        "x": 506314.0,
+        "y": 214.0,
+        "z": 530170.0
+      },
+      "rel": {
+        "x": -5683.0,
+        "y": 91.0,
+        "z": 18170.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T12:52:31.9566561Z"
+    },
+    {
+      "abs": {
+        "x": 506774.0,
+        "y": 140.0,
+        "z": 531053.0
+      },
+      "rel": {
+        "x": -5223.0,
+        "y": 17.0,
+        "z": 19053.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-22T19:35:49.7288484Z"
+    },
+    {
+      "abs": {
+        "x": 507181.0,
+        "y": 159.0,
+        "z": 511881.0
+      },
+      "rel": {
+        "x": -4816.0,
+        "y": 36.0,
+        "z": -119.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T08:34:55.5938886Z"
+    },
+    {
+      "abs": {
+        "x": 507322.0,
+        "y": 153.0,
+        "z": 512292.0
+      },
+      "rel": {
+        "x": -4675.0,
+        "y": 30.0,
+        "z": 292.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T08:29:18.2657036Z"
+    },
+    {
+      "abs": {
+        "x": 507475.0,
+        "y": 136.0,
+        "z": 512241.0
+      },
+      "rel": {
+        "x": -4522.0,
+        "y": 13.0,
+        "z": 241.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T08:29:20.903544Z"
+    },
+    {
+      "abs": {
+        "x": 507889.0,
+        "y": 142.0,
+        "z": 508909.0
+      },
+      "rel": {
+        "x": -4108.0,
+        "y": 19.0,
+        "z": -3091.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:33.5468784Z"
+    },
+    {
+      "abs": {
+        "x": 508295.0,
+        "y": 199.0,
+        "z": 508822.0
+      },
+      "rel": {
+        "x": -3702.0,
+        "y": 76.0,
+        "z": -3178.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:32.4577458Z"
+    },
+    {
+      "abs": {
+        "x": 508305.0,
+        "y": 209.0,
+        "z": 508904.0
+      },
+      "rel": {
+        "x": -3692.0,
+        "y": 86.0,
+        "z": -3096.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:32:32.9344504Z"
+    },
+    {
+      "abs": {
+        "x": 508533.0,
+        "y": 138.0,
+        "z": 520850.0
+      },
+      "rel": {
+        "x": -3464.0,
+        "y": 15.0,
+        "z": 8850.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-25T09:28:26.7164938Z"
+    },
+    {
+      "abs": {
+        "x": 508566.0,
+        "y": 150.0,
+        "z": 520954.0
+      },
+      "rel": {
+        "x": -3431.0,
+        "y": 27.0,
+        "z": 8954.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-25T09:29:01.2609206Z"
+    },
+    {
+      "abs": {
+        "x": 508629.0,
+        "y": 192.0,
+        "z": 520984.0
+      },
+      "rel": {
+        "x": -3368.0,
+        "y": 69.0,
+        "z": 8984.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-25T09:30:33.3686241Z"
+    },
+    {
+      "abs": {
+        "x": 508661.0,
+        "y": 191.0,
+        "z": 520821.0
+      },
+      "rel": {
+        "x": -3336.0,
+        "y": 68.0,
+        "z": 8821.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-25T09:22:42.6850261Z"
+    },
+    {
+      "abs": {
+        "x": 508795.0,
+        "y": 150.0,
+        "z": 553004.0
+      },
+      "rel": {
+        "x": -3202.0,
+        "y": 27.0,
+        "z": 41004.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-05T20:59:56.3711118Z"
+    },
+    {
+      "abs": {
+        "x": 508813.0,
+        "y": 149.0,
+        "z": 553032.0
+      },
+      "rel": {
+        "x": -3184.0,
+        "y": 26.0,
+        "z": 41032.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-05T21:03:41.9429446Z"
+    },
+    {
+      "abs": {
+        "x": 508854.0,
+        "y": 138.0,
+        "z": 525003.0
+      },
+      "rel": {
+        "x": -3143.0,
+        "y": 15.0,
+        "z": 13003.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-25T09:01:07.8260348Z"
+    },
+    {
+      "abs": {
+        "x": 508981.0,
+        "y": 201.0,
+        "z": 552684.0
+      },
+      "rel": {
+        "x": -3016.0,
+        "y": 78.0,
+        "z": 40684.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-05T21:01:49.830302Z"
+    },
+    {
+      "abs": {
+        "x": 508982.0,
+        "y": 136.0,
+        "z": 563246.0
+      },
+      "rel": {
+        "x": -3015.0,
+        "y": 13.0,
+        "z": 51246.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T10:21:36.4716274Z"
+    },
+    {
+      "abs": {
+        "x": 509108.0,
+        "y": 149.0,
+        "z": 552756.0
+      },
+      "rel": {
+        "x": -2889.0,
+        "y": 26.0,
+        "z": 40756.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-05T21:04:15.9341134Z"
+    },
+    {
+      "abs": {
+        "x": 509402.0,
+        "y": 232.0,
+        "z": 528876.0
+      },
+      "rel": {
+        "x": -2595.0,
+        "y": 109.0,
+        "z": 16876.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T09:40:05.3080877Z"
+    },
+    {
+      "abs": {
+        "x": 509812.0,
+        "y": 131.0,
+        "z": 528932.0
+      },
+      "rel": {
+        "x": -2185.0,
+        "y": 8.0,
+        "z": 16932.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:39:09.5834059Z"
+    },
+    {
+      "abs": {
+        "x": 509872.0,
+        "y": 131.0,
+        "z": 528911.0
+      },
+      "rel": {
+        "x": -2125.0,
+        "y": 8.0,
+        "z": 16911.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:39:02.5053185Z"
+    },
+    {
+      "abs": {
+        "x": 510153.0,
+        "y": 136.0,
+        "z": 529555.0
+      },
+      "rel": {
+        "x": -1844.0,
+        "y": 13.0,
+        "z": 17555.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:27:25.7072007Z"
+    },
+    {
+      "abs": {
+        "x": 510219.0,
+        "y": 185.0,
+        "z": 527753.0
+      },
+      "rel": {
+        "x": -1778.0,
+        "y": 62.0,
+        "z": 15753.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:21:35.7655077Z"
+    },
+    {
+      "abs": {
+        "x": 510249.0,
+        "y": 194.0,
+        "z": 527848.0
+      },
+      "rel": {
+        "x": -1748.0,
+        "y": 71.0,
+        "z": 15848.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:21:35.1389658Z"
+    },
+    {
+      "abs": {
+        "x": 510285.0,
+        "y": 141.0,
+        "z": 510223.0
+      },
+      "rel": {
+        "x": -1712.0,
+        "y": 18.0,
+        "z": -1777.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:08:06.6052896Z"
+    },
+    {
+      "abs": {
+        "x": 510343.0,
+        "y": 191.0,
+        "z": 527852.0
+      },
+      "rel": {
+        "x": -1654.0,
+        "y": 68.0,
+        "z": 15852.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:21:08.1308271Z"
+    },
+    {
+      "abs": {
+        "x": 510373.0,
+        "y": 144.0,
+        "z": 527817.0
+      },
+      "rel": {
+        "x": -1624.0,
+        "y": 21.0,
+        "z": 15817.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:21:03.8491101Z"
+    },
+    {
+      "abs": {
+        "x": 510388.0,
+        "y": 147.0,
+        "z": 510697.0
+      },
+      "rel": {
+        "x": -1609.0,
+        "y": 24.0,
+        "z": -1303.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:26:43.5424755Z"
+    },
+    {
+      "abs": {
+        "x": 510392.0,
+        "y": 135.0,
+        "z": 510831.0
+      },
+      "rel": {
+        "x": -1605.0,
+        "y": 12.0,
+        "z": -1169.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:26:43.5674607Z"
+    },
+    {
+      "abs": {
+        "x": 510504.0,
+        "y": 138.0,
+        "z": 515220.0
+      },
+      "rel": {
+        "x": -1493.0,
+        "y": 15.0,
+        "z": 3220.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:33:05.5416581Z"
+    },
+    {
+      "abs": {
+        "x": 510565.0,
+        "y": 136.0,
+        "z": 529170.0
+      },
+      "rel": {
+        "x": -1432.0,
+        "y": 13.0,
+        "z": 17170.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:32:47.3407275Z"
+    },
+    {
+      "abs": {
+        "x": 510572.0,
+        "y": 138.0,
+        "z": 529359.0
+      },
+      "rel": {
+        "x": -1425.0,
+        "y": 15.0,
+        "z": 17359.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:32:26.6820768Z"
+    },
+    {
+      "abs": {
+        "x": 510587.0,
+        "y": 172.0,
+        "z": 529328.0
+      },
+      "rel": {
+        "x": -1410.0,
+        "y": 49.0,
+        "z": 17328.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-23T08:32:27.2575754Z"
+    },
+    {
+      "abs": {
+        "x": 510764.0,
+        "y": 137.0,
+        "z": 577299.0
+      },
+      "rel": {
+        "x": -1233.0,
+        "y": 14.0,
+        "z": 65299.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T10:25:14.0992402Z"
+    },
+    {
+      "abs": {
+        "x": 510831.0,
+        "y": 160.0,
+        "z": 516120.0
+      },
+      "rel": {
+        "x": -1166.0,
+        "y": 37.0,
+        "z": 4120.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:07:12.7152066Z"
+    },
+    {
+      "abs": {
+        "x": 510906.0,
+        "y": 141.0,
+        "z": 516058.0
+      },
+      "rel": {
+        "x": -1091.0,
+        "y": 18.0,
+        "z": 4058.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:07:12.5836011Z"
+    },
+    {
+      "abs": {
+        "x": 510918.0,
+        "y": 138.0,
+        "z": 516055.0
+      },
+      "rel": {
+        "x": -1079.0,
+        "y": 15.0,
+        "z": 4055.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:07:11.8106825Z"
+    },
+    {
+      "abs": {
+        "x": 510995.0,
+        "y": 144.0,
+        "z": 516491.0
+      },
+      "rel": {
+        "x": -1002.0,
+        "y": 21.0,
+        "z": 4491.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:07:05.9556469Z"
+    },
+    {
+      "abs": {
+        "x": 511155.0,
+        "y": 162.0,
+        "z": 516526.0
+      },
+      "rel": {
+        "x": -842.0,
+        "y": 39.0,
+        "z": 4526.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:43.1349294Z"
+    },
+    {
+      "abs": {
+        "x": 511269.0,
+        "y": 187.0,
+        "z": 516783.0
+      },
+      "rel": {
+        "x": -728.0,
+        "y": 64.0,
+        "z": 4783.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:35.6346763Z"
+    },
+    {
+      "abs": {
+        "x": 511323.0,
+        "y": 226.0,
+        "z": 516904.0
+      },
+      "rel": {
+        "x": -674.0,
+        "y": 103.0,
+        "z": 4904.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:09:41.2013331Z"
+    },
+    {
+      "abs": {
+        "x": 511382.0,
+        "y": 132.0,
+        "z": 509643.0
+      },
+      "rel": {
+        "x": -615.0,
+        "y": 9.0,
+        "z": -2357.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-06T18:26:23.4751639Z"
+    },
+    {
+      "abs": {
+        "x": 511404.0,
+        "y": 213.0,
+        "z": 516876.0
+      },
+      "rel": {
+        "x": -593.0,
+        "y": 90.0,
+        "z": 4876.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:48.858583Z"
+    },
+    {
+      "abs": {
+        "x": 511431.0,
+        "y": 158.0,
+        "z": 516837.0
+      },
+      "rel": {
+        "x": -566.0,
+        "y": 35.0,
+        "z": 4837.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:28.3331157Z"
+    },
+    {
+      "abs": {
+        "x": 511434.0,
+        "y": 187.0,
+        "z": 516663.0
+      },
+      "rel": {
+        "x": -563.0,
+        "y": 64.0,
+        "z": 4663.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:15.4211427Z"
+    },
+    {
+      "abs": {
+        "x": 511441.0,
+        "y": 148.0,
+        "z": 516625.0
+      },
+      "rel": {
+        "x": -556.0,
+        "y": 25.0,
+        "z": 4625.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:15.4235537Z"
+    },
+    {
+      "abs": {
+        "x": 511466.0,
+        "y": 198.0,
+        "z": 516661.0
+      },
+      "rel": {
+        "x": -531.0,
+        "y": 75.0,
+        "z": 4661.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:09.1581332Z"
+    },
+    {
+      "abs": {
+        "x": 511474.0,
+        "y": 214.0,
+        "z": 516758.0
+      },
+      "rel": {
+        "x": -523.0,
+        "y": 91.0,
+        "z": 4758.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:06.4836937Z"
+    },
+    {
+      "abs": {
+        "x": 511497.0,
+        "y": 219.0,
+        "z": 516745.0
+      },
+      "rel": {
+        "x": -500.0,
+        "y": 96.0,
+        "z": 4745.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:59.8238903Z"
+    },
+    {
+      "abs": {
+        "x": 511514.0,
+        "y": 238.0,
+        "z": 516760.0
+      },
+      "rel": {
+        "x": -483.0,
+        "y": 115.0,
+        "z": 4760.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:59.8252085Z"
+    },
+    {
+      "abs": {
+        "x": 511576.0,
+        "y": 136.0,
+        "z": 513617.0
+      },
+      "rel": {
+        "x": -421.0,
+        "y": 13.0,
+        "z": 1617.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T21:14:51.1583415Z"
+    },
+    {
+      "abs": {
+        "x": 511620.0,
+        "y": 131.0,
+        "z": 512776.0
+      },
+      "rel": {
+        "x": -377.0,
+        "y": 8.0,
+        "z": 776.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-13T21:51:33.1890637Z"
+    },
+    {
+      "abs": {
+        "x": 511621.0,
+        "y": 140.0,
+        "z": 503707.0
+      },
+      "rel": {
+        "x": -376.0,
+        "y": 17.0,
+        "z": -8293.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:55:59.7610775Z"
+    },
+    {
+      "abs": {
+        "x": 511626.0,
+        "y": 137.0,
+        "z": 513595.0
+      },
+      "rel": {
+        "x": -371.0,
+        "y": 14.0,
+        "z": 1595.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T21:14:42.5403039Z"
+    },
+    {
+      "abs": {
+        "x": 511657.0,
+        "y": 172.0,
+        "z": 516361.0
+      },
+      "rel": {
+        "x": -340.0,
+        "y": 49.0,
+        "z": 4361.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:45:09.4151043Z"
+    },
+    {
+      "abs": {
+        "x": 511668.0,
+        "y": 150.0,
+        "z": 516612.0
+      },
+      "rel": {
+        "x": -329.0,
+        "y": 27.0,
+        "z": 4612.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:44.3280344Z"
+    },
+    {
+      "abs": {
+        "x": 511686.0,
+        "y": 143.0,
+        "z": 513991.0
+      },
+      "rel": {
+        "x": -311.0,
+        "y": 20.0,
+        "z": 1991.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T21:15:00.0437669Z"
+    },
+    {
+      "abs": {
+        "x": 511748.0,
+        "y": 134.0,
+        "z": 513003.0
+      },
+      "rel": {
+        "x": -249.0,
+        "y": 11.0,
+        "z": 1003.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-13T21:52:20.6275442Z"
+    },
+    {
+      "abs": {
+        "x": 511748.0,
+        "y": 216.0,
+        "z": 516857.0
+      },
+      "rel": {
+        "x": -249.0,
+        "y": 93.0,
+        "z": 4857.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:45.0912836Z"
+    },
+    {
+      "abs": {
+        "x": 511755.0,
+        "y": 241.0,
+        "z": 516885.0
+      },
+      "rel": {
+        "x": -242.0,
+        "y": 118.0,
+        "z": 4885.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:46.3210795Z"
+    },
+    {
+      "abs": {
+        "x": 511764.0,
+        "y": 152.0,
+        "z": 516331.0
+      },
+      "rel": {
+        "x": -233.0,
+        "y": 29.0,
+        "z": 4331.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:57:39.7462579Z"
+    },
+    {
+      "abs": {
+        "x": 511765.0,
+        "y": 154.0,
+        "z": 516331.0
+      },
+      "rel": {
+        "x": -232.0,
+        "y": 31.0,
+        "z": 4331.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:57:39.7463126Z"
+    },
+    {
+      "abs": {
+        "x": 511766.0,
+        "y": 166.0,
+        "z": 515611.0
+      },
+      "rel": {
+        "x": -231.0,
+        "y": 43.0,
+        "z": 3611.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:41:21.8027105Z"
+    },
+    {
+      "abs": {
+        "x": 511799.0,
+        "y": 181.0,
+        "z": 515639.0
+      },
+      "rel": {
+        "x": -198.0,
+        "y": 58.0,
+        "z": 3639.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:41:21.8279135Z"
+    },
+    {
+      "abs": {
+        "x": 511816.0,
+        "y": 149.0,
+        "z": 524272.0
+      },
+      "rel": {
+        "x": -181.0,
+        "y": 26.0,
+        "z": 12272.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:46.4312815Z"
+    },
+    {
+      "abs": {
+        "x": 511819.0,
+        "y": 239.0,
+        "z": 517001.0
+      },
+      "rel": {
+        "x": -178.0,
+        "y": 116.0,
+        "z": 5001.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:59:53.179134Z"
+    },
+    {
+      "abs": {
+        "x": 511828.0,
+        "y": 226.0,
+        "z": 516906.0
+      },
+      "rel": {
+        "x": -169.0,
+        "y": 103.0,
+        "z": 4906.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:57:33.2044993Z"
+    },
+    {
+      "abs": {
+        "x": 511830.0,
+        "y": 143.0,
+        "z": 500198.0
+      },
+      "rel": {
+        "x": -167.0,
+        "y": 20.0,
+        "z": -11802.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T11:03:14.4791349Z"
+    },
+    {
+      "abs": {
+        "x": 511831.0,
+        "y": 203.0,
+        "z": 530709.0
+      },
+      "rel": {
+        "x": -166.0,
+        "y": 80.0,
+        "z": 18709.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:17.6878605Z"
+    },
+    {
+      "abs": {
+        "x": 511845.0,
+        "y": 170.0,
+        "z": 530692.0
+      },
+      "rel": {
+        "x": -152.0,
+        "y": 47.0,
+        "z": 18692.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:15.4072145Z"
+    },
+    {
+      "abs": {
+        "x": 511859.0,
+        "y": 136.0,
+        "z": 530794.0
+      },
+      "rel": {
+        "x": -138.0,
+        "y": 13.0,
+        "z": 18794.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:28.3449202Z"
+    },
+    {
+      "abs": {
+        "x": 511864.0,
+        "y": 197.0,
+        "z": 515605.0
+      },
+      "rel": {
+        "x": -133.0,
+        "y": 74.0,
+        "z": 3605.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:41:13.6160334Z"
+    },
+    {
+      "abs": {
+        "x": 511864.0,
+        "y": 153.0,
+        "z": 530861.0
+      },
+      "rel": {
+        "x": -133.0,
+        "y": 30.0,
+        "z": 18861.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:28.5030142Z"
+    },
+    {
+      "abs": {
+        "x": 511866.0,
+        "y": 212.0,
+        "z": 510508.0
+      },
+      "rel": {
+        "x": -131.0,
+        "y": 89.0,
+        "z": -1492.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-06T18:23:54.5900792Z"
+    },
+    {
+      "abs": {
+        "x": 511883.0,
+        "y": 165.0,
+        "z": 506362.0
+      },
+      "rel": {
+        "x": -114.0,
+        "y": 42.0,
+        "z": -5638.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:51:22.3594074Z"
+    },
+    {
+      "abs": {
+        "x": 511888.0,
+        "y": 163.0,
+        "z": 524421.0
+      },
+      "rel": {
+        "x": -109.0,
+        "y": 40.0,
+        "z": 12421.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:55.3779024Z"
+    },
+    {
+      "abs": {
+        "x": 511889.0,
+        "y": 220.0,
+        "z": 516948.0
+      },
+      "rel": {
+        "x": -108.0,
+        "y": 97.0,
+        "z": 4948.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:58:24.5938095Z"
+    },
+    {
+      "abs": {
+        "x": 511890.0,
+        "y": 188.0,
+        "z": 516602.0
+      },
+      "rel": {
+        "x": -107.0,
+        "y": 65.0,
+        "z": 4602.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:42.805835Z"
+    },
+    {
+      "abs": {
+        "x": 511893.0,
+        "y": 139.0,
+        "z": 501541.0
+      },
+      "rel": {
+        "x": -104.0,
+        "y": 16.0,
+        "z": -10459.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T10:47:49.6867152Z"
+    },
+    {
+      "abs": {
+        "x": 511897.0,
+        "y": 132.0,
+        "z": 502710.0
+      },
+      "rel": {
+        "x": -100.0,
+        "y": 9.0,
+        "z": -9290.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:10.666587Z"
+    },
+    {
+      "abs": {
+        "x": 511908.0,
+        "y": 208.0,
+        "z": 522889.0
+      },
+      "rel": {
+        "x": -89.0,
+        "y": 85.0,
+        "z": 10889.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:06:58.4047951Z"
+    },
+    {
+      "abs": {
+        "x": 511909.0,
+        "y": 229.0,
+        "z": 516884.0
+      },
+      "rel": {
+        "x": -88.0,
+        "y": 106.0,
+        "z": 4884.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:45.5024259Z"
+    },
+    {
+      "abs": {
+        "x": 511909.0,
+        "y": 215.0,
+        "z": 516938.0
+      },
+      "rel": {
+        "x": -88.0,
+        "y": 92.0,
+        "z": 4938.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:58:24.5911152Z"
+    },
+    {
+      "abs": {
+        "x": 511913.0,
+        "y": 151.0,
+        "z": 526669.0
+      },
+      "rel": {
+        "x": -84.0,
+        "y": 28.0,
+        "z": 14669.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:13:23.497596Z"
+    },
+    {
+      "abs": {
+        "x": 511917.0,
+        "y": 139.0,
+        "z": 507280.0
+      },
+      "rel": {
+        "x": -80.0,
+        "y": 16.0,
+        "z": -4720.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:50:13.8947424Z"
+    },
+    {
+      "abs": {
+        "x": 511920.0,
+        "y": 152.0,
+        "z": 510446.0
+      },
+      "rel": {
+        "x": -77.0,
+        "y": 29.0,
+        "z": -1554.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-06T18:24:10.7986915Z"
+    },
+    {
+      "abs": {
+        "x": 511923.0,
+        "y": 145.0,
+        "z": 515629.0
+      },
+      "rel": {
+        "x": -74.0,
+        "y": 22.0,
+        "z": 3629.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:41:16.1421209Z"
+    },
+    {
+      "abs": {
+        "x": 511925.0,
+        "y": 144.0,
+        "z": 510612.0
+      },
+      "rel": {
+        "x": -72.0,
+        "y": 21.0,
+        "z": -1388.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-06T18:23:31.7922311Z"
+    },
+    {
+      "abs": {
+        "x": 511926.0,
+        "y": 173.0,
+        "z": 505190.0
+      },
+      "rel": {
+        "x": -71.0,
+        "y": 50.0,
+        "z": -6810.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:52:48.237669Z"
+    },
+    {
+      "abs": {
+        "x": 511927.0,
+        "y": 149.0,
+        "z": 526667.0
+      },
+      "rel": {
+        "x": -70.0,
+        "y": 26.0,
+        "z": 14667.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:13:23.497497Z"
+    },
+    {
+      "abs": {
+        "x": 511931.0,
+        "y": 207.0,
+        "z": 522738.0
+      },
+      "rel": {
+        "x": -66.0,
+        "y": 84.0,
+        "z": 10738.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:06:43.4885449Z"
+    },
+    {
+      "abs": {
+        "x": 511942.0,
+        "y": 134.0,
+        "z": 512582.0
+      },
+      "rel": {
+        "x": -55.0,
+        "y": 11.0,
+        "z": 582.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-13T21:50:48.7898031Z"
+    },
+    {
+      "abs": {
+        "x": 511944.0,
+        "y": 204.0,
+        "z": 500922.0
+      },
+      "rel": {
+        "x": -53.0,
+        "y": 81.0,
+        "z": -11078.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T10:59:05.0358884Z"
+    },
+    {
+      "abs": {
+        "x": 511949.0,
+        "y": 140.0,
+        "z": 506134.0
+      },
+      "rel": {
+        "x": -48.0,
+        "y": 17.0,
+        "z": -5866.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:51:39.1177173Z"
+    },
+    {
+      "abs": {
+        "x": 511949.0,
+        "y": 142.0,
+        "z": 526678.0
+      },
+      "rel": {
+        "x": -48.0,
+        "y": 19.0,
+        "z": 14678.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:13:23.4955451Z"
+    },
+    {
+      "abs": {
+        "x": 511952.0,
+        "y": 247.0,
+        "z": 502629.0
+      },
+      "rel": {
+        "x": -45.0,
+        "y": 124.0,
+        "z": -9371.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:25.5857391Z"
+    },
+    {
+      "abs": {
+        "x": 511957.0,
+        "y": 220.0,
+        "z": 516944.0
+      },
+      "rel": {
+        "x": -40.0,
+        "y": 97.0,
+        "z": 4944.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:58:24.5873475Z"
+    },
+    {
+      "abs": {
+        "x": 511957.0,
+        "y": 176.0,
+        "z": 522791.0
+      },
+      "rel": {
+        "x": -40.0,
+        "y": 53.0,
+        "z": 10791.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:06:49.9165124Z"
+    },
+    {
+      "abs": {
+        "x": 511960.0,
+        "y": 158.0,
+        "z": 516645.0
+      },
+      "rel": {
+        "x": -37.0,
+        "y": 35.0,
+        "z": 4645.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:43.7946865Z"
+    },
+    {
+      "abs": {
+        "x": 511976.0,
+        "y": 164.0,
+        "z": 517060.0
+      },
+      "rel": {
+        "x": -21.0,
+        "y": 41.0,
+        "z": 5060.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:59:59.922006Z"
+    },
+    {
+      "abs": {
+        "x": 511979.0,
+        "y": 132.0,
+        "z": 516602.0
+      },
+      "rel": {
+        "x": -18.0,
+        "y": 9.0,
+        "z": 4602.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:44:44.1469203Z"
+    },
+    {
+      "abs": {
+        "x": 511986.0,
+        "y": 149.0,
+        "z": 505226.0
+      },
+      "rel": {
+        "x": -11.0,
+        "y": 26.0,
+        "z": -6774.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:52:45.8970019Z"
+    },
+    {
+      "abs": {
+        "x": 511995.0,
+        "y": 176.0,
+        "z": 524147.0
+      },
+      "rel": {
+        "x": -2.0,
+        "y": 53.0,
+        "z": 12147.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:34.9688671Z"
+    },
+    {
+      "abs": {
+        "x": 512004.0,
+        "y": 115.0,
+        "z": 530791.0
+      },
+      "rel": {
+        "x": 7.0,
+        "y": -8.0,
+        "z": 18791.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:28.3223892Z"
+    },
+    {
+      "abs": {
+        "x": 512011.0,
+        "y": 146.0,
+        "z": 530195.0
+      },
+      "rel": {
+        "x": 14.0,
+        "y": 23.0,
+        "z": 18195.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:26:23.7343963Z"
+    },
+    {
+      "abs": {
+        "x": 512020.0,
+        "y": 133.0,
+        "z": 502376.0
+      },
+      "rel": {
+        "x": 23.0,
+        "y": 10.0,
+        "z": -9624.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:39.1392559Z"
+    },
+    {
+      "abs": {
+        "x": 512022.0,
+        "y": 142.0,
+        "z": 530796.0
+      },
+      "rel": {
+        "x": 25.0,
+        "y": 19.0,
+        "z": 18796.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:27:28.3255167Z"
+    },
+    {
+      "abs": {
+        "x": 512025.0,
+        "y": 134.0,
+        "z": 507192.0
+      },
+      "rel": {
+        "x": 28.0,
+        "y": 11.0,
+        "z": -4808.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:50:14.1493518Z"
+    },
+    {
+      "abs": {
+        "x": 512036.0,
+        "y": 203.0,
+        "z": 522970.0
+      },
+      "rel": {
+        "x": 39.0,
+        "y": 80.0,
+        "z": 10970.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:07:03.5787474Z"
+    },
+    {
+      "abs": {
+        "x": 512040.0,
+        "y": 132.0,
+        "z": 530119.0
+      },
+      "rel": {
+        "x": 43.0,
+        "y": 9.0,
+        "z": 18119.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T22:26:13.0858273Z"
+    },
+    {
+      "abs": {
+        "x": 512071.0,
+        "y": 205.0,
+        "z": 504006.0
+      },
+      "rel": {
+        "x": 74.0,
+        "y": 82.0,
+        "z": -7994.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:54:51.6510205Z"
+    },
+    {
+      "abs": {
+        "x": 512071.0,
+        "y": 183.0,
+        "z": 524299.0
+      },
+      "rel": {
+        "x": 74.0,
+        "y": 60.0,
+        "z": 12299.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:46.2066776Z"
+    },
+    {
+      "abs": {
+        "x": 512084.0,
+        "y": 190.0,
+        "z": 523150.0
+      },
+      "rel": {
+        "x": 87.0,
+        "y": 67.0,
+        "z": 11150.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:07:17.0743069Z"
+    },
+    {
+      "abs": {
+        "x": 512089.0,
+        "y": 154.0,
+        "z": 526574.0
+      },
+      "rel": {
+        "x": 92.0,
+        "y": 31.0,
+        "z": 14574.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:13:16.3830424Z"
+    },
+    {
+      "abs": {
+        "x": 512090.0,
+        "y": 167.0,
+        "z": 524555.0
+      },
+      "rel": {
+        "x": 93.0,
+        "y": 44.0,
+        "z": 12555.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:09:04.4895976Z"
+    },
+    {
+      "abs": {
+        "x": 512101.0,
+        "y": 179.0,
+        "z": 524260.0
+      },
+      "rel": {
+        "x": 104.0,
+        "y": 56.0,
+        "z": 12260.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:45.8397415Z"
+    },
+    {
+      "abs": {
+        "x": 512119.0,
+        "y": 149.0,
+        "z": 502262.0
+      },
+      "rel": {
+        "x": 122.0,
+        "y": 26.0,
+        "z": -9738.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:42.7459662Z"
+    },
+    {
+      "abs": {
+        "x": 512120.0,
+        "y": 166.0,
+        "z": 512473.0
+      },
+      "rel": {
+        "x": 123.0,
+        "y": 43.0,
+        "z": 473.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-30T13:31:52.4205744Z"
+    },
+    {
+      "abs": {
+        "x": 512142.0,
+        "y": 136.0,
+        "z": 507563.0
+      },
+      "rel": {
+        "x": 145.0,
+        "y": 13.0,
+        "z": -4437.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:49:47.2728189Z"
+    },
+    {
+      "abs": {
+        "x": 512164.0,
+        "y": 236.0,
+        "z": 502614.0
+      },
+      "rel": {
+        "x": 167.0,
+        "y": 113.0,
+        "z": -9386.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:25.8619697Z"
+    },
+    {
+      "abs": {
+        "x": 512170.0,
+        "y": 134.0,
+        "z": 525560.0
+      },
+      "rel": {
+        "x": 173.0,
+        "y": 11.0,
+        "z": 13560.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:10:25.234827Z"
+    },
+    {
+      "abs": {
+        "x": 512173.0,
+        "y": 156.0,
+        "z": 502310.0
+      },
+      "rel": {
+        "x": 176.0,
+        "y": 33.0,
+        "z": -9690.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:42.780537Z"
+    },
+    {
+      "abs": {
+        "x": 512185.0,
+        "y": 179.0,
+        "z": 524389.0
+      },
+      "rel": {
+        "x": 188.0,
+        "y": 56.0,
+        "z": 12389.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:08:58.1105241Z"
+    },
+    {
+      "abs": {
+        "x": 512198.0,
+        "y": 167.0,
+        "z": 502404.0
+      },
+      "rel": {
+        "x": 201.0,
+        "y": 44.0,
+        "z": -9596.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:39.23529Z"
+    },
+    {
+      "abs": {
+        "x": 512209.0,
+        "y": 152.0,
+        "z": 502389.0
+      },
+      "rel": {
+        "x": 212.0,
+        "y": 29.0,
+        "z": -9611.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:59:40.4840243Z"
+    },
+    {
+      "abs": {
+        "x": 512215.0,
+        "y": 134.0,
+        "z": 507245.0
+      },
+      "rel": {
+        "x": 218.0,
+        "y": 11.0,
+        "z": -4755.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:50:15.8105527Z"
+    },
+    {
+      "abs": {
+        "x": 512235.0,
+        "y": 233.0,
+        "z": 504049.0
+      },
+      "rel": {
+        "x": 238.0,
+        "y": 110.0,
+        "z": -7951.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T08:55:05.4145041Z"
+    },
+    {
+      "abs": {
+        "x": 512237.0,
+        "y": 133.0,
+        "z": 501253.0
+      },
+      "rel": {
+        "x": 240.0,
+        "y": 10.0,
+        "z": -10747.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-18T10:58:46.3137464Z"
+    },
+    {
+      "abs": {
+        "x": 512237.0,
+        "y": 177.0,
+        "z": 524212.0
+      },
+      "rel": {
+        "x": 240.0,
+        "y": 54.0,
+        "z": 12212.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:09:04.9121549Z"
+    },
+    {
+      "abs": {
+        "x": 512263.0,
+        "y": 168.0,
+        "z": 524315.0
+      },
+      "rel": {
+        "x": 266.0,
+        "y": 45.0,
+        "z": 12315.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:25:37.8095308Z"
+    },
+    {
+      "abs": {
+        "x": 512265.0,
+        "y": 131.0,
+        "z": 524967.0
+      },
+      "rel": {
+        "x": 268.0,
+        "y": 8.0,
+        "z": 12967.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:26:18.4569599Z"
+    },
+    {
+      "abs": {
+        "x": 512276.0,
+        "y": 137.0,
+        "z": 512402.0
+      },
+      "rel": {
+        "x": 279.0,
+        "y": 14.0,
+        "z": 402.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:07:39.0373997Z"
+    },
+    {
+      "abs": {
+        "x": 512315.0,
+        "y": 220.0,
+        "z": 529737.0
+      },
+      "rel": {
+        "x": 318.0,
+        "y": 97.0,
+        "z": 17737.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T19:43:13.6995632Z"
+    },
+    {
+      "abs": {
+        "x": 512373.0,
+        "y": 179.0,
+        "z": 524460.0
+      },
+      "rel": {
+        "x": 376.0,
+        "y": 56.0,
+        "z": 12460.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:19.2561118Z"
+    },
+    {
+      "abs": {
+        "x": 512399.0,
+        "y": 133.0,
+        "z": 525136.0
+      },
+      "rel": {
+        "x": 402.0,
+        "y": 10.0,
+        "z": 13136.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:27:08.1322745Z"
+    },
+    {
+      "abs": {
+        "x": 512406.0,
+        "y": 203.0,
+        "z": 516154.0
+      },
+      "rel": {
+        "x": 409.0,
+        "y": 80.0,
+        "z": 4154.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T11:04:34.2595356Z"
+    },
+    {
+      "abs": {
+        "x": 512460.0,
+        "y": 177.0,
+        "z": 524452.0
+      },
+      "rel": {
+        "x": 463.0,
+        "y": 54.0,
+        "z": 12452.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:05.8885288Z"
+    },
+    {
+      "abs": {
+        "x": 512469.0,
+        "y": 155.0,
+        "z": 524462.0
+      },
+      "rel": {
+        "x": 472.0,
+        "y": 32.0,
+        "z": 12462.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:24:05.8855995Z"
+    },
+    {
+      "abs": {
+        "x": 512539.0,
+        "y": 144.0,
+        "z": 524551.0
+      },
+      "rel": {
+        "x": 542.0,
+        "y": 21.0,
+        "z": 12551.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:23:50.6059062Z"
+    },
+    {
+      "abs": {
+        "x": 512560.0,
+        "y": 159.0,
+        "z": 516166.0
+      },
+      "rel": {
+        "x": 563.0,
+        "y": 36.0,
+        "z": 4166.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:57:26.9199697Z"
+    },
+    {
+      "abs": {
+        "x": 512593.0,
+        "y": 163.0,
+        "z": 525207.0
+      },
+      "rel": {
+        "x": 596.0,
+        "y": 40.0,
+        "z": 13207.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:21.4196764Z"
+    },
+    {
+      "abs": {
+        "x": 512727.0,
+        "y": 133.0,
+        "z": 569646.0
+      },
+      "rel": {
+        "x": 730.0,
+        "y": 10.0,
+        "z": 57646.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T10:21:57.4531174Z"
+    },
+    {
+      "abs": {
+        "x": 512821.0,
+        "y": 133.0,
+        "z": 524852.0
+      },
+      "rel": {
+        "x": 824.0,
+        "y": 10.0,
+        "z": 12852.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:32:32.6576985Z"
+    },
+    {
+      "abs": {
+        "x": 512967.0,
+        "y": 168.0,
+        "z": 525189.0
+      },
+      "rel": {
+        "x": 970.0,
+        "y": 45.0,
+        "z": 13189.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:38:19.3356384Z"
+    },
+    {
+      "abs": {
+        "x": 512980.0,
+        "y": 147.0,
+        "z": 582799.0
+      },
+      "rel": {
+        "x": 983.0,
+        "y": 24.0,
+        "z": 70799.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T12:06:13.5913296Z"
+    },
+    {
+      "abs": {
+        "x": 513000.0,
+        "y": 137.0,
+        "z": 525159.0
+      },
+      "rel": {
+        "x": 1003.0,
+        "y": 14.0,
+        "z": 13159.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:34:36.9242649Z"
+    },
+    {
+      "abs": {
+        "x": 513107.0,
+        "y": 144.0,
+        "z": 525235.0
+      },
+      "rel": {
+        "x": 1110.0,
+        "y": 21.0,
+        "z": 13235.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:35:16.3955611Z"
+    },
+    {
+      "abs": {
+        "x": 513174.0,
+        "y": 145.0,
+        "z": 582677.0
+      },
+      "rel": {
+        "x": 1177.0,
+        "y": 22.0,
+        "z": 70677.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T12:06:11.9653017Z"
+    },
+    {
+      "abs": {
+        "x": 513210.0,
+        "y": 143.0,
+        "z": 582649.0
+      },
+      "rel": {
+        "x": 1213.0,
+        "y": 20.0,
+        "z": 70649.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T12:06:15.3976507Z"
+    },
+    {
+      "abs": {
+        "x": 513223.0,
+        "y": 187.0,
+        "z": 512808.0
+      },
+      "rel": {
+        "x": 1226.0,
+        "y": 64.0,
+        "z": 808.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T08:25:31.0523404Z"
+    },
+    {
+      "abs": {
+        "x": 513273.0,
+        "y": 191.0,
+        "z": 516537.0
+      },
+      "rel": {
+        "x": 1276.0,
+        "y": 68.0,
+        "z": 4537.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:58:29.0553181Z"
+    },
+    {
+      "abs": {
+        "x": 513327.0,
+        "y": 202.0,
+        "z": 516629.0
+      },
+      "rel": {
+        "x": 1330.0,
+        "y": 79.0,
+        "z": 4629.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:58:40.3968866Z"
+    },
+    {
+      "abs": {
+        "x": 513357.0,
+        "y": 147.0,
+        "z": 511920.0
+      },
+      "rel": {
+        "x": 1360.0,
+        "y": 24.0,
+        "z": -80.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:51:44.4712634Z"
+    },
+    {
+      "abs": {
+        "x": 513388.0,
+        "y": 133.0,
+        "z": 583144.0
+      },
+      "rel": {
+        "x": 1391.0,
+        "y": 10.0,
+        "z": 71144.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T12:04:58.6864631Z"
+    },
+    {
+      "abs": {
+        "x": 513413.0,
+        "y": 165.0,
+        "z": 511921.0
+      },
+      "rel": {
+        "x": 1416.0,
+        "y": 42.0,
+        "z": -79.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:51:57.1123632Z"
+    },
+    {
+      "abs": {
+        "x": 513413.0,
+        "y": 149.0,
+        "z": 517339.0
+      },
+      "rel": {
+        "x": 1416.0,
+        "y": 26.0,
+        "z": 5339.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T20:33:11.4157839Z"
+    },
+    {
+      "abs": {
+        "x": 513423.0,
+        "y": 135.0,
+        "z": 516825.0
+      },
+      "rel": {
+        "x": 1426.0,
+        "y": 12.0,
+        "z": 4825.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T20:31:37.3785425Z"
+    },
+    {
+      "abs": {
+        "x": 513511.0,
+        "y": 141.0,
+        "z": 512111.0
+      },
+      "rel": {
+        "x": 1514.0,
+        "y": 18.0,
+        "z": 111.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:52:09.7566057Z"
+    },
+    {
+      "abs": {
+        "x": 513519.0,
+        "y": 135.0,
+        "z": 521739.0
+      },
+      "rel": {
+        "x": 1522.0,
+        "y": 12.0,
+        "z": 9739.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:03:41.8749004Z"
+    },
+    {
+      "abs": {
+        "x": 513545.0,
+        "y": 139.0,
+        "z": 513453.0
+      },
+      "rel": {
+        "x": 1548.0,
+        "y": 16.0,
+        "z": 1453.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-03T09:28:06.9952937Z"
+    },
+    {
+      "abs": {
+        "x": 513553.0,
+        "y": 215.0,
+        "z": 511256.0
+      },
+      "rel": {
+        "x": 1556.0,
+        "y": 92.0,
+        "z": -744.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:11:35.8127885Z"
+    },
+    {
+      "abs": {
+        "x": 513582.0,
+        "y": 138.0,
+        "z": 583290.0
+      },
+      "rel": {
+        "x": 1585.0,
+        "y": 15.0,
+        "z": 71290.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T12:32:29.6706884Z"
+    },
+    {
+      "abs": {
+        "x": 513607.0,
+        "y": 132.0,
+        "z": 509754.0
+      },
+      "rel": {
+        "x": 1610.0,
+        "y": 9.0,
+        "z": -2246.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:22:33.8218301Z"
+    },
+    {
+      "abs": {
+        "x": 513689.0,
+        "y": 144.0,
+        "z": 513319.0
+      },
+      "rel": {
+        "x": 1692.0,
+        "y": 21.0,
+        "z": 1319.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-03T09:28:19.0511442Z"
+    },
+    {
+      "abs": {
+        "x": 513704.0,
+        "y": 231.0,
+        "z": 511077.0
+      },
+      "rel": {
+        "x": 1707.0,
+        "y": 108.0,
+        "z": -923.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:11:08.7848868Z"
+    },
+    {
+      "abs": {
+        "x": 513736.0,
+        "y": 224.0,
+        "z": 511211.0
+      },
+      "rel": {
+        "x": 1739.0,
+        "y": 101.0,
+        "z": -789.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:07:16.5862102Z"
+    },
+    {
+      "abs": {
+        "x": 513741.0,
+        "y": 202.0,
+        "z": 511000.0
+      },
+      "rel": {
+        "x": 1744.0,
+        "y": 79.0,
+        "z": -1000.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:11:22.2737506Z"
+    },
+    {
+      "abs": {
+        "x": 513745.0,
+        "y": 229.0,
+        "z": 511148.0
+      },
+      "rel": {
+        "x": 1748.0,
+        "y": 106.0,
+        "z": -852.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:07:16.6520521Z"
+    },
+    {
+      "abs": {
+        "x": 513772.0,
+        "y": 210.0,
+        "z": 511094.0
+      },
+      "rel": {
+        "x": 1775.0,
+        "y": 87.0,
+        "z": -906.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T21:07:03.7573878Z"
+    },
+    {
+      "abs": {
+        "x": 513975.0,
+        "y": 131.0,
+        "z": 512388.0
+      },
+      "rel": {
+        "x": 1978.0,
+        "y": 8.0,
+        "z": 388.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:54:18.2047309Z"
+    },
+    {
+      "abs": {
+        "x": 514117.0,
+        "y": 145.0,
+        "z": 524025.0
+      },
+      "rel": {
+        "x": 2120.0,
+        "y": 22.0,
+        "z": 12025.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T11:18:21.0271743Z"
+    },
+    {
+      "abs": {
+        "x": 514217.0,
+        "y": 141.0,
+        "z": 512141.0
+      },
+      "rel": {
+        "x": 2220.0,
+        "y": 18.0,
+        "z": 141.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-01T17:53:04.1642383Z"
+    },
+    {
+      "abs": {
+        "x": 514246.0,
+        "y": 140.0,
+        "z": 583946.0
+      },
+      "rel": {
+        "x": 2249.0,
+        "y": 17.0,
+        "z": 71946.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T10:25:33.7674063Z"
+    },
+    {
+      "abs": {
+        "x": 514416.0,
+        "y": 164.0,
+        "z": 522260.0
+      },
+      "rel": {
+        "x": 2419.0,
+        "y": 41.0,
+        "z": 10260.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:02:36.7134565Z"
+    },
+    {
+      "abs": {
+        "x": 514440.0,
+        "y": 200.0,
+        "z": 585236.0
+      },
+      "rel": {
+        "x": 2443.0,
+        "y": 77.0,
+        "z": 73236.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T10:36:37.7006998Z"
+    },
+    {
+      "abs": {
+        "x": 514441.0,
+        "y": 201.0,
+        "z": 522160.0
+      },
+      "rel": {
+        "x": 2444.0,
+        "y": 78.0,
+        "z": 10160.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:02:10.844761Z"
+    },
+    {
+      "abs": {
+        "x": 514454.0,
+        "y": 143.0,
+        "z": 583664.0
+      },
+      "rel": {
+        "x": 2457.0,
+        "y": 20.0,
+        "z": 71664.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T11:43:30.3091346Z"
+    },
+    {
+      "abs": {
+        "x": 514519.0,
+        "y": 135.0,
+        "z": 582418.0
+      },
+      "rel": {
+        "x": 2522.0,
+        "y": 12.0,
+        "z": 70418.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-02T11:59:08.2843197Z"
+    },
+    {
+      "abs": {
+        "x": 514523.0,
+        "y": 166.0,
+        "z": 522149.0
+      },
+      "rel": {
+        "x": 2526.0,
+        "y": 43.0,
+        "z": 10149.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:01:56.127972Z"
+    },
+    {
+      "abs": {
+        "x": 514544.0,
+        "y": 133.0,
+        "z": 509636.0
+      },
+      "rel": {
+        "x": 2547.0,
+        "y": 10.0,
+        "z": -2364.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T16:46:21.5547744Z"
+    },
+    {
+      "abs": {
+        "x": 514643.0,
+        "y": 134.0,
+        "z": 522133.0
+      },
+      "rel": {
+        "x": 2646.0,
+        "y": 11.0,
+        "z": 10133.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:00:08.1261641Z"
+    },
+    {
+      "abs": {
+        "x": 514839.0,
+        "y": 159.0,
+        "z": 508498.0
+      },
+      "rel": {
+        "x": 2842.0,
+        "y": 36.0,
+        "z": -3502.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:07:08.2355323Z"
+    },
+    {
+      "abs": {
+        "x": 514889.0,
+        "y": 168.0,
+        "z": 508784.0
+      },
+      "rel": {
+        "x": 2892.0,
+        "y": 45.0,
+        "z": -3216.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:07:17.7414674Z"
+    },
+    {
+      "abs": {
+        "x": 514930.0,
+        "y": 133.0,
+        "z": 525139.0
+      },
+      "rel": {
+        "x": 2933.0,
+        "y": 10.0,
+        "z": 13139.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:32:41.3610799Z"
+    },
+    {
+      "abs": {
+        "x": 515414.0,
+        "y": 144.0,
+        "z": 505530.0
+      },
+      "rel": {
+        "x": 3417.0,
+        "y": 21.0,
+        "z": -6470.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:44:20.3660384Z"
+    },
+    {
+      "abs": {
+        "x": 515493.0,
+        "y": 241.0,
+        "z": 532360.0
+      },
+      "rel": {
+        "x": 3496.0,
+        "y": 118.0,
+        "z": 20360.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-22T11:22:40.6977117Z"
+    },
+    {
+      "abs": {
+        "x": 515562.0,
+        "y": 225.0,
+        "z": 532361.0
+      },
+      "rel": {
+        "x": 3565.0,
+        "y": 102.0,
+        "z": 20361.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-22T11:22:40.6666542Z"
+    },
+    {
+      "abs": {
+        "x": 515674.0,
+        "y": 199.0,
+        "z": 532531.0
+      },
+      "rel": {
+        "x": 3677.0,
+        "y": 76.0,
+        "z": 20531.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-22T11:16:33.0703726Z"
+    },
+    {
+      "abs": {
+        "x": 515716.0,
+        "y": 185.0,
+        "z": 524332.0
+      },
+      "rel": {
+        "x": 3719.0,
+        "y": 62.0,
+        "z": 12332.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-21T17:34:34.4519443Z"
+    },
+    {
+      "abs": {
+        "x": 516141.0,
+        "y": 156.0,
+        "z": 525350.0
+      },
+      "rel": {
+        "x": 4144.0,
+        "y": 33.0,
+        "z": 13350.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-08T21:54:32.9210396Z"
+    },
+    {
+      "abs": {
+        "x": 516335.0,
+        "y": 251.0,
+        "z": 525225.0
+      },
+      "rel": {
+        "x": 4338.0,
+        "y": 128.0,
+        "z": 13225.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-08T21:56:57.0225722Z"
+    },
+    {
+      "abs": {
+        "x": 516360.0,
+        "y": 168.0,
+        "z": 524469.0
+      },
+      "rel": {
+        "x": 4363.0,
+        "y": 45.0,
+        "z": 12469.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:43:40.6206558Z"
+    },
+    {
+      "abs": {
+        "x": 516487.0,
+        "y": 198.0,
+        "z": 524489.0
+      },
+      "rel": {
+        "x": 4490.0,
+        "y": 75.0,
+        "z": 12489.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:43:30.8097599Z"
+    },
+    {
+      "abs": {
+        "x": 516552.0,
+        "y": 236.0,
+        "z": 524936.0
+      },
+      "rel": {
+        "x": 4555.0,
+        "y": 113.0,
+        "z": 12936.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-08T21:59:35.4142106Z"
+    },
+    {
+      "abs": {
+        "x": 516556.0,
+        "y": 199.0,
+        "z": 524775.0
+      },
+      "rel": {
+        "x": 4559.0,
+        "y": 76.0,
+        "z": 12775.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:43:27.9468052Z"
+    },
+    {
+      "abs": {
+        "x": 516565.0,
+        "y": 137.0,
+        "z": 524402.0
+      },
+      "rel": {
+        "x": 4568.0,
+        "y": 14.0,
+        "z": 12402.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T20:43:52.545686Z"
+    },
+    {
+      "abs": {
+        "x": 516646.0,
+        "y": 237.0,
+        "z": 524918.0
+      },
+      "rel": {
+        "x": 4649.0,
+        "y": 114.0,
+        "z": 12918.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-08T21:59:58.9321988Z"
+    },
+    {
+      "abs": {
+        "x": 516686.0,
+        "y": 230.0,
+        "z": 524911.0
+      },
+      "rel": {
+        "x": 4689.0,
+        "y": 107.0,
+        "z": 12911.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-08T22:04:27.7077606Z"
+    },
+    {
+      "abs": {
+        "x": 516714.0,
+        "y": 138.0,
+        "z": 502071.0
+      },
+      "rel": {
+        "x": 4717.0,
+        "y": 15.0,
+        "z": -9929.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:43:24.743499Z"
+    },
+    {
+      "abs": {
+        "x": 516999.0,
+        "y": 162.0,
+        "z": 548947.0
+      },
+      "rel": {
+        "x": 5002.0,
+        "y": 39.0,
+        "z": 36947.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T09:29:27.292403Z"
+    },
+    {
+      "abs": {
+        "x": 517066.0,
+        "y": 148.0,
+        "z": 526867.0
+      },
+      "rel": {
+        "x": 5069.0,
+        "y": 25.0,
+        "z": 14867.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:37.6944609Z"
+    },
+    {
+      "abs": {
+        "x": 517066.0,
+        "y": 152.0,
+        "z": 526906.0
+      },
+      "rel": {
+        "x": 5069.0,
+        "y": 29.0,
+        "z": 14906.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-31T11:25:37.6620139Z"
+    },
+    {
+      "abs": {
+        "x": 517198.0,
+        "y": 137.0,
+        "z": 526886.0
+      },
+      "rel": {
+        "x": 5201.0,
+        "y": 14.0,
+        "z": 14886.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:44.4442802Z"
+    },
+    {
+      "abs": {
+        "x": 517256.0,
+        "y": 140.0,
+        "z": 526863.0
+      },
+      "rel": {
+        "x": 5259.0,
+        "y": 17.0,
+        "z": 14863.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:42.3558038Z"
+    },
+    {
+      "abs": {
+        "x": 517265.0,
+        "y": 149.0,
+        "z": 526892.0
+      },
+      "rel": {
+        "x": 5268.0,
+        "y": 26.0,
+        "z": 14892.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:21:43.9639744Z"
+    },
+    {
+      "abs": {
+        "x": 517575.0,
+        "y": 147.0,
+        "z": 532379.0
+      },
+      "rel": {
+        "x": 5578.0,
+        "y": 24.0,
+        "z": 20379.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:27:00.0997397Z"
+    },
+    {
+      "abs": {
+        "x": 517581.0,
+        "y": 239.0,
+        "z": 503045.0
+      },
+      "rel": {
+        "x": 5584.0,
+        "y": 116.0,
+        "z": -8955.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:06:14.2486956Z"
+    },
+    {
+      "abs": {
+        "x": 517620.0,
+        "y": 227.0,
+        "z": 503049.0
+      },
+      "rel": {
+        "x": 5623.0,
+        "y": 104.0,
+        "z": -8951.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:06:14.0075227Z"
+    },
+    {
+      "abs": {
+        "x": 517639.0,
+        "y": 136.0,
+        "z": 532266.0
+      },
+      "rel": {
+        "x": 5642.0,
+        "y": 13.0,
+        "z": 20266.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T10:26:54.4082101Z"
+    },
+    {
+      "abs": {
+        "x": 517799.0,
+        "y": 138.0,
+        "z": 545141.0
+      },
+      "rel": {
+        "x": 5802.0,
+        "y": 15.0,
+        "z": 33141.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:32:36.7691367Z"
+    },
+    {
+      "abs": {
+        "x": 517967.0,
+        "y": 136.0,
+        "z": 506901.0
+      },
+      "rel": {
+        "x": 5970.0,
+        "y": 13.0,
+        "z": -5099.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:32:13.923854Z"
+    },
+    {
+      "abs": {
+        "x": 517988.0,
+        "y": 160.0,
+        "z": 506855.0
+      },
+      "rel": {
+        "x": 5991.0,
+        "y": 37.0,
+        "z": -5145.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:32:15.7963667Z"
+    },
+    {
+      "abs": {
+        "x": 517994.0,
+        "y": 153.0,
+        "z": 507022.0
+      },
+      "rel": {
+        "x": 5997.0,
+        "y": 30.0,
+        "z": -4978.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:32:18.6297047Z"
+    },
+    {
+      "abs": {
+        "x": 518023.0,
+        "y": 182.0,
+        "z": 506949.0
+      },
+      "rel": {
+        "x": 6026.0,
+        "y": 59.0,
+        "z": -5051.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:32:18.2998175Z"
+    },
+    {
+      "abs": {
+        "x": 518025.0,
+        "y": 134.0,
+        "z": 545734.0
+      },
+      "rel": {
+        "x": 6028.0,
+        "y": 11.0,
+        "z": 33734.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:06.8851676Z"
+    },
+    {
+      "abs": {
+        "x": 518095.0,
+        "y": 138.0,
+        "z": 506838.0
+      },
+      "rel": {
+        "x": 6098.0,
+        "y": 15.0,
+        "z": -5162.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:32:22.6824265Z"
+    },
+    {
+      "abs": {
+        "x": 518479.0,
+        "y": 138.0,
+        "z": 545882.0
+      },
+      "rel": {
+        "x": 6482.0,
+        "y": 15.0,
+        "z": 33882.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:35.1083827Z"
+    },
+    {
+      "abs": {
+        "x": 518504.0,
+        "y": 142.0,
+        "z": 545707.0
+      },
+      "rel": {
+        "x": 6507.0,
+        "y": 19.0,
+        "z": 33707.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:34.0683691Z"
+    },
+    {
+      "abs": {
+        "x": 518517.0,
+        "y": 153.0,
+        "z": 545779.0
+      },
+      "rel": {
+        "x": 6520.0,
+        "y": 30.0,
+        "z": 33779.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:34.2186395Z"
+    },
+    {
+      "abs": {
+        "x": 518535.0,
+        "y": 144.0,
+        "z": 545674.0
+      },
+      "rel": {
+        "x": 6538.0,
+        "y": 21.0,
+        "z": 33674.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:37.1528476Z"
+    },
+    {
+      "abs": {
+        "x": 518599.0,
+        "y": 143.0,
+        "z": 545840.0
+      },
+      "rel": {
+        "x": 6602.0,
+        "y": 20.0,
+        "z": 33840.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:35:42.4373358Z"
+    },
+    {
+      "abs": {
+        "x": 518714.0,
+        "y": 147.0,
+        "z": 545753.0
+      },
+      "rel": {
+        "x": 6717.0,
+        "y": 24.0,
+        "z": 33753.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:36:03.2819271Z"
+    },
+    {
+      "abs": {
+        "x": 518901.0,
+        "y": 239.0,
+        "z": 546228.0
+      },
+      "rel": {
+        "x": 6904.0,
+        "y": 116.0,
+        "z": 34228.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:36:36.4070497Z"
+    },
+    {
+      "abs": {
+        "x": 519123.0,
+        "y": 154.0,
+        "z": 546347.0
+      },
+      "rel": {
+        "x": 7126.0,
+        "y": 31.0,
+        "z": 34347.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:37:00.1193869Z"
+    },
+    {
+      "abs": {
+        "x": 519272.0,
+        "y": 149.0,
+        "z": 501611.0
+      },
+      "rel": {
+        "x": 7275.0,
+        "y": 26.0,
+        "z": -10389.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:24:44.8103874Z"
+    },
+    {
+      "abs": {
+        "x": 519635.0,
+        "y": 134.0,
+        "z": 545032.0
+      },
+      "rel": {
+        "x": 7638.0,
+        "y": 11.0,
+        "z": 33032.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T16:09:17.0247048Z"
+    },
+    {
+      "abs": {
+        "x": 519835.0,
+        "y": 156.0,
+        "z": 494959.0
+      },
+      "rel": {
+        "x": 7838.0,
+        "y": 33.0,
+        "z": -17041.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:42:17.6704414Z"
+    },
+    {
+      "abs": {
+        "x": 519846.0,
+        "y": 133.0,
+        "z": 495830.0
+      },
+      "rel": {
+        "x": 7849.0,
+        "y": 10.0,
+        "z": -16170.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:46:31.7394993Z"
+    },
+    {
+      "abs": {
+        "x": 519948.0,
+        "y": 134.0,
+        "z": 495158.0
+      },
+      "rel": {
+        "x": 7951.0,
+        "y": 11.0,
+        "z": -16842.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:35:00.5832309Z"
+    },
+    {
+      "abs": {
+        "x": 520080.0,
+        "y": 132.0,
+        "z": 495376.0
+      },
+      "rel": {
+        "x": 8083.0,
+        "y": 9.0,
+        "z": -16624.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:45:42.0413084Z"
+    },
+    {
+      "abs": {
+        "x": 520392.0,
+        "y": 137.0,
+        "z": 496497.0
+      },
+      "rel": {
+        "x": 8395.0,
+        "y": 14.0,
+        "z": -15503.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T14:05:12.2830293Z"
+    },
+    {
+      "abs": {
+        "x": 520965.0,
+        "y": 131.0,
+        "z": 538735.0
+      },
+      "rel": {
+        "x": 8968.0,
+        "y": 8.0,
+        "z": 26735.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:15:33.1366795Z"
+    },
+    {
+      "abs": {
+        "x": 521446.0,
+        "y": 158.0,
+        "z": 538764.0
+      },
+      "rel": {
+        "x": 9449.0,
+        "y": 35.0,
+        "z": 26764.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:56.1404984Z"
+    },
+    {
+      "abs": {
+        "x": 521491.0,
+        "y": 159.0,
+        "z": 526708.0
+      },
+      "rel": {
+        "x": 9494.0,
+        "y": 36.0,
+        "z": 14708.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-14T18:31:12.3716642Z"
+    },
+    {
+      "abs": {
+        "x": 521552.0,
+        "y": 132.0,
+        "z": 538756.0
+      },
+      "rel": {
+        "x": 9555.0,
+        "y": 9.0,
+        "z": 26756.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:54:54.5151847Z"
+    },
+    {
+      "abs": {
+        "x": 521701.0,
+        "y": 136.0,
+        "z": 526701.0
+      },
+      "rel": {
+        "x": 9704.0,
+        "y": 13.0,
+        "z": 14701.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-14T19:16:58.9762294Z"
+    },
+    {
+      "abs": {
+        "x": 521746.0,
+        "y": 223.0,
+        "z": 526792.0
+      },
+      "rel": {
+        "x": 9749.0,
+        "y": 100.0,
+        "z": 14792.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-14T19:17:12.6274723Z"
+    },
+    {
+      "abs": {
+        "x": 521808.0,
+        "y": 145.0,
+        "z": 547598.0
+      },
+      "rel": {
+        "x": 9811.0,
+        "y": 22.0,
+        "z": 35598.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:52:11.7308102Z"
+    },
+    {
+      "abs": {
+        "x": 521846.0,
+        "y": 165.0,
+        "z": 547367.0
+      },
+      "rel": {
+        "x": 9849.0,
+        "y": 42.0,
+        "z": 35367.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:52:26.1242398Z"
+    },
+    {
+      "abs": {
+        "x": 521875.0,
+        "y": 207.0,
+        "z": 547569.0
+      },
+      "rel": {
+        "x": 9878.0,
+        "y": 84.0,
+        "z": 35569.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:52:04.5513523Z"
+    },
+    {
+      "abs": {
+        "x": 521894.0,
+        "y": 230.0,
+        "z": 547413.0
+      },
+      "rel": {
+        "x": 9897.0,
+        "y": 107.0,
+        "z": 35413.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:52:23.821995Z"
+    },
+    {
+      "abs": {
+        "x": 522036.0,
+        "y": 237.0,
+        "z": 547573.0
+      },
+      "rel": {
+        "x": 10039.0,
+        "y": 114.0,
+        "z": 35573.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:52:02.8610507Z"
+    },
+    {
+      "abs": {
+        "x": 522166.0,
+        "y": 135.0,
+        "z": 527274.0
+      },
+      "rel": {
+        "x": 10169.0,
+        "y": 12.0,
+        "z": 15274.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-13T10:42:51.1644773Z"
+    },
+    {
+      "abs": {
+        "x": 523319.0,
+        "y": 164.0,
+        "z": 513773.0
+      },
+      "rel": {
+        "x": 11322.0,
+        "y": 41.0,
+        "z": 1773.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:33:20.5135737Z"
+    },
+    {
+      "abs": {
+        "x": 524154.0,
+        "y": 229.0,
+        "z": 508554.0
+      },
+      "rel": {
+        "x": 12157.0,
+        "y": 106.0,
+        "z": -3446.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:34:53.8334112Z"
+    },
+    {
+      "abs": {
+        "x": 524230.0,
+        "y": 232.0,
+        "z": 508594.0
+      },
+      "rel": {
+        "x": 12233.0,
+        "y": 109.0,
+        "z": -3406.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:34:59.6204052Z"
+    },
+    {
+      "abs": {
+        "x": 524694.0,
+        "y": 150.0,
+        "z": 538932.0
+      },
+      "rel": {
+        "x": 12697.0,
+        "y": 27.0,
+        "z": 26932.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:45:33.5240138Z"
+    },
+    {
+      "abs": {
+        "x": 524712.0,
+        "y": 154.0,
+        "z": 538934.0
+      },
+      "rel": {
+        "x": 12715.0,
+        "y": 31.0,
+        "z": 26934.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:45:26.8420057Z"
+    },
+    {
+      "abs": {
+        "x": 524719.0,
+        "y": 179.0,
+        "z": 539212.0
+      },
+      "rel": {
+        "x": 12722.0,
+        "y": 56.0,
+        "z": 27212.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:19:35.735661Z"
+    },
+    {
+      "abs": {
+        "x": 524730.0,
+        "y": 109.0,
+        "z": 539536.0
+      },
+      "rel": {
+        "x": 12733.0,
+        "y": -14.0,
+        "z": 27536.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:20:14.9174554Z"
+    },
+    {
+      "abs": {
+        "x": 524731.0,
+        "y": 109.0,
+        "z": 539535.0
+      },
+      "rel": {
+        "x": 12734.0,
+        "y": -14.0,
+        "z": 27535.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:20:14.9174535Z"
+    },
+    {
+      "abs": {
+        "x": 524781.0,
+        "y": 135.0,
+        "z": 539534.0
+      },
+      "rel": {
+        "x": 12784.0,
+        "y": 12.0,
+        "z": 27534.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:20:14.9120067Z"
+    },
+    {
+      "abs": {
+        "x": 524783.0,
+        "y": 210.0,
+        "z": 511152.0
+      },
+      "rel": {
+        "x": 12786.0,
+        "y": 87.0,
+        "z": -848.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:34:06.7324384Z"
+    },
+    {
+      "abs": {
+        "x": 524820.0,
+        "y": 139.0,
+        "z": 539465.0
+      },
+      "rel": {
+        "x": 12823.0,
+        "y": 16.0,
+        "z": 27465.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T09:20:01.2942974Z"
+    },
+    {
+      "abs": {
+        "x": 524855.0,
+        "y": 175.0,
+        "z": 539024.0
+      },
+      "rel": {
+        "x": 12858.0,
+        "y": 52.0,
+        "z": 27024.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:45:05.9169085Z"
+    },
+    {
+      "abs": {
+        "x": 525047.0,
+        "y": 158.0,
+        "z": 538838.0
+      },
+      "rel": {
+        "x": 13050.0,
+        "y": 35.0,
+        "z": 26838.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:43:26.2304675Z"
+    },
+    {
+      "abs": {
+        "x": 525111.0,
+        "y": 162.0,
+        "z": 537972.0
+      },
+      "rel": {
+        "x": 13114.0,
+        "y": 39.0,
+        "z": 25972.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:48:52.6278982Z"
+    },
+    {
+      "abs": {
+        "x": 525135.0,
+        "y": 145.0,
+        "z": 537968.0
+      },
+      "rel": {
+        "x": 13138.0,
+        "y": 22.0,
+        "z": 25968.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:49:01.0457711Z"
+    },
+    {
+      "abs": {
+        "x": 525175.0,
+        "y": 188.0,
+        "z": 539497.0
+      },
+      "rel": {
+        "x": 13178.0,
+        "y": 65.0,
+        "z": 27497.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:35:22.5675489Z"
+    },
+    {
+      "abs": {
+        "x": 525176.0,
+        "y": 185.0,
+        "z": 538832.0
+      },
+      "rel": {
+        "x": 13179.0,
+        "y": 62.0,
+        "z": 26832.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:43:26.0691773Z"
+    },
+    {
+      "abs": {
+        "x": 525285.0,
+        "y": 155.0,
+        "z": 534830.0
+      },
+      "rel": {
+        "x": 13288.0,
+        "y": 32.0,
+        "z": 22830.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:27.7762966Z"
+    },
+    {
+      "abs": {
+        "x": 525300.0,
+        "y": 143.0,
+        "z": 535161.0
+      },
+      "rel": {
+        "x": 13303.0,
+        "y": 20.0,
+        "z": 23161.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:37.9772806Z"
+    },
+    {
+      "abs": {
+        "x": 525332.0,
+        "y": 135.0,
+        "z": 538827.0
+      },
+      "rel": {
+        "x": 13335.0,
+        "y": 12.0,
+        "z": 26827.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:38:09.550834Z"
+    },
+    {
+      "abs": {
+        "x": 525422.0,
+        "y": 141.0,
+        "z": 538729.0
+      },
+      "rel": {
+        "x": 13425.0,
+        "y": 18.0,
+        "z": 26729.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:44:00.8183655Z"
+    },
+    {
+      "abs": {
+        "x": 525494.0,
+        "y": 155.0,
+        "z": 512646.0
+      },
+      "rel": {
+        "x": 13497.0,
+        "y": 32.0,
+        "z": 646.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:59:16.401459Z"
+    },
+    {
+      "abs": {
+        "x": 525520.0,
+        "y": 134.0,
+        "z": 512598.0
+      },
+      "rel": {
+        "x": 13523.0,
+        "y": 11.0,
+        "z": 598.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:34:14.4255938Z"
+    },
+    {
+      "abs": {
+        "x": 525589.0,
+        "y": 131.0,
+        "z": 534805.0
+      },
+      "rel": {
+        "x": 13592.0,
+        "y": 8.0,
+        "z": 22805.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:26:12.4896864Z"
+    },
+    {
+      "abs": {
+        "x": 525609.0,
+        "y": 138.0,
+        "z": 534680.0
+      },
+      "rel": {
+        "x": 13612.0,
+        "y": 15.0,
+        "z": 22680.0
+      },
+      "flow": "still",
+      "height": 7,
+      "code": "rapidwater-still-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:27:32.373327Z"
+    },
+    {
+      "abs": {
+        "x": 525828.0,
+        "y": 166.0,
+        "z": 539620.0
+      },
+      "rel": {
+        "x": 13831.0,
+        "y": 43.0,
+        "z": 27620.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:36:21.2160637Z"
+    },
+    {
+      "abs": {
+        "x": 525907.0,
+        "y": 134.0,
+        "z": 535477.0
+      },
+      "rel": {
+        "x": 13910.0,
+        "y": 11.0,
+        "z": 23477.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-29T15:50:36.1715271Z"
+    },
+    {
+      "abs": {
+        "x": 526279.0,
+        "y": 149.0,
+        "z": 487921.0
+      },
+      "rel": {
+        "x": 14282.0,
+        "y": 26.0,
+        "z": -24079.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:06:04.146909Z"
+    },
+    {
+      "abs": {
+        "x": 526299.0,
+        "y": 149.0,
+        "z": 487913.0
+      },
+      "rel": {
+        "x": 14302.0,
+        "y": 26.0,
+        "z": -24087.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:06:04.146891Z"
+    },
+    {
+      "abs": {
+        "x": 526405.0,
+        "y": 219.0,
+        "z": 487941.0
+      },
+      "rel": {
+        "x": 14408.0,
+        "y": 96.0,
+        "z": -24059.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:05:54.6213935Z"
+    },
+    {
+      "abs": {
+        "x": 526572.0,
+        "y": 234.0,
+        "z": 488908.0
+      },
+      "rel": {
+        "x": 14575.0,
+        "y": 111.0,
+        "z": -23092.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:57:54.4866045Z"
+    },
+    {
+      "abs": {
+        "x": 526608.0,
+        "y": 181.0,
+        "z": 488107.0
+      },
+      "rel": {
+        "x": 14611.0,
+        "y": 58.0,
+        "z": -23893.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:05:16.4719017Z"
+    },
+    {
+      "abs": {
+        "x": 526630.0,
+        "y": 167.0,
+        "z": 488813.0
+      },
+      "rel": {
+        "x": 14633.0,
+        "y": 44.0,
+        "z": -23187.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:58:06.9629743Z"
+    },
+    {
+      "abs": {
+        "x": 526632.0,
+        "y": 169.0,
+        "z": 488711.0
+      },
+      "rel": {
+        "x": 14635.0,
+        "y": 46.0,
+        "z": -23289.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T12:58:30.3392077Z"
+    },
+    {
+      "abs": {
+        "x": 526665.0,
+        "y": 161.0,
+        "z": 508151.0
+      },
+      "rel": {
+        "x": 14668.0,
+        "y": 38.0,
+        "z": -3849.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T16:48:50.023958Z"
+    },
+    {
+      "abs": {
+        "x": 526773.0,
+        "y": 133.0,
+        "z": 508082.0
+      },
+      "rel": {
+        "x": 14776.0,
+        "y": 10.0,
+        "z": -3918.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T16:48:40.8881257Z"
+    },
+    {
+      "abs": {
+        "x": 528377.0,
+        "y": 131.0,
+        "z": 513558.0
+      },
+      "rel": {
+        "x": 16380.0,
+        "y": 8.0,
+        "z": 1558.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-08-16T21:41:29.6729887Z"
+    },
+    {
+      "abs": {
+        "x": 528680.0,
+        "y": 133.0,
+        "z": 499590.0
+      },
+      "rel": {
+        "x": 16683.0,
+        "y": 10.0,
+        "z": -12410.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:11:46.8726689Z"
+    },
+    {
+      "abs": {
+        "x": 529964.0,
+        "y": 150.0,
+        "z": 509175.0
+      },
+      "rel": {
+        "x": 17967.0,
+        "y": 27.0,
+        "z": -2825.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:31.6648358Z"
+    },
+    {
+      "abs": {
+        "x": 529975.0,
+        "y": 184.0,
+        "z": 509048.0
+      },
+      "rel": {
+        "x": 17978.0,
+        "y": 61.0,
+        "z": -2952.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:23.9953116Z"
+    },
+    {
+      "abs": {
+        "x": 530084.0,
+        "y": 139.0,
+        "z": 508844.0
+      },
+      "rel": {
+        "x": 18087.0,
+        "y": 16.0,
+        "z": -3156.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:26.6444612Z"
+    },
+    {
+      "abs": {
+        "x": 530180.0,
+        "y": 202.0,
+        "z": 479148.0
+      },
+      "rel": {
+        "x": 18183.0,
+        "y": 79.0,
+        "z": -32852.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:21:53.0145311Z"
+    },
+    {
+      "abs": {
+        "x": 530199.0,
+        "y": 138.0,
+        "z": 509019.0
+      },
+      "rel": {
+        "x": 18202.0,
+        "y": 15.0,
+        "z": -2981.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:26.6492486Z"
+    },
+    {
+      "abs": {
+        "x": 530227.0,
+        "y": 131.0,
+        "z": 479319.0
+      },
+      "rel": {
+        "x": 18230.0,
+        "y": 8.0,
+        "z": -32681.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:21:48.9500294Z"
+    },
+    {
+      "abs": {
+        "x": 530231.0,
+        "y": 159.0,
+        "z": 508891.0
+      },
+      "rel": {
+        "x": 18234.0,
+        "y": 36.0,
+        "z": -3109.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:27.8501283Z"
+    },
+    {
+      "abs": {
+        "x": 530244.0,
+        "y": 140.0,
+        "z": 479451.0
+      },
+      "rel": {
+        "x": 18247.0,
+        "y": 17.0,
+        "z": -32549.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-24T13:21:49.6387464Z"
+    },
+    {
+      "abs": {
+        "x": 530261.0,
+        "y": 155.0,
+        "z": 508845.0
+      },
+      "rel": {
+        "x": 18264.0,
+        "y": 32.0,
+        "z": -3155.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:32:30.0311461Z"
+    },
+    {
+      "abs": {
+        "x": 532964.0,
+        "y": 135.0,
+        "z": 496238.0
+      },
+      "rel": {
+        "x": 20967.0,
+        "y": 12.0,
+        "z": -15762.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-28T17:22:42.9083938Z"
+    },
+    {
+      "abs": {
+        "x": 540149.0,
+        "y": 148.0,
+        "z": 540200.0
+      },
+      "rel": {
+        "x": 28152.0,
+        "y": 25.0,
+        "z": 28200.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:22:01.8939616Z"
+    },
+    {
+      "abs": {
+        "x": 540186.0,
+        "y": 136.0,
+        "z": 540228.0
+      },
+      "rel": {
+        "x": 28189.0,
+        "y": 13.0,
+        "z": 28228.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:22:01.95191Z"
+    },
+    {
+      "abs": {
+        "x": 547338.0,
+        "y": 157.0,
+        "z": 545363.0
+      },
+      "rel": {
+        "x": 35341.0,
+        "y": 34.0,
+        "z": 33363.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:14:37.2244468Z"
+    },
+    {
+      "abs": {
+        "x": 547462.0,
+        "y": 138.0,
+        "z": 544933.0
+      },
+      "rel": {
+        "x": 35465.0,
+        "y": 15.0,
+        "z": 32933.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:14:52.0438021Z"
+    },
+    {
+      "abs": {
+        "x": 552660.0,
+        "y": 151.0,
+        "z": 551687.0
+      },
+      "rel": {
+        "x": 40663.0,
+        "y": 28.0,
+        "z": 39687.0
+      },
+      "flow": "s",
+      "height": 7,
+      "code": "rapidwater-s-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:30.3239476Z"
+    },
+    {
+      "abs": {
+        "x": 552679.0,
+        "y": 158.0,
+        "z": 551734.0
+      },
+      "rel": {
+        "x": 40682.0,
+        "y": 35.0,
+        "z": 39734.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:31.0962575Z"
+    },
+    {
+      "abs": {
+        "x": 552694.0,
+        "y": 159.0,
+        "z": 551674.0
+      },
+      "rel": {
+        "x": 40697.0,
+        "y": 36.0,
+        "z": 39674.0
+      },
+      "flow": "d",
+      "height": 7,
+      "code": "rapidwater-d-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:30.9516466Z"
+    },
+    {
+      "abs": {
+        "x": 552886.0,
+        "y": 133.0,
+        "z": 540456.0
+      },
+      "rel": {
+        "x": 40889.0,
+        "y": 10.0,
+        "z": 28456.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:17:40.434906Z"
+    },
+    {
+      "abs": {
+        "x": 553130.0,
+        "y": 149.0,
+        "z": 540596.0
+      },
+      "rel": {
+        "x": 41133.0,
+        "y": 26.0,
+        "z": 28596.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T08:17:13.7358625Z"
+    },
+    {
+      "abs": {
+        "x": 559796.0,
+        "y": 138.0,
+        "z": 559117.0
+      },
+      "rel": {
+        "x": 47799.0,
+        "y": 15.0,
+        "z": 47117.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:13.3568724Z"
+    },
+    {
+      "abs": {
+        "x": 559827.0,
+        "y": 164.0,
+        "z": 559115.0
+      },
+      "rel": {
+        "x": 47830.0,
+        "y": 41.0,
+        "z": 47115.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:11.0512743Z"
+    },
+    {
+      "abs": {
+        "x": 559848.0,
+        "y": 158.0,
+        "z": 559027.0
+      },
+      "rel": {
+        "x": 47851.0,
+        "y": 35.0,
+        "z": 47027.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:15.4740712Z"
+    },
+    {
+      "abs": {
+        "x": 559890.0,
+        "y": 169.0,
+        "z": 559056.0
+      },
+      "rel": {
+        "x": 47893.0,
+        "y": 46.0,
+        "z": 47056.0
+      },
+      "flow": "e",
+      "height": 7,
+      "code": "rapidwater-e-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:13.1882289Z"
+    },
+    {
+      "abs": {
+        "x": 559893.0,
+        "y": 159.0,
+        "z": 559124.0
+      },
+      "rel": {
+        "x": 47896.0,
+        "y": 36.0,
+        "z": 47124.0
+      },
+      "flow": "n",
+      "height": 7,
+      "code": "rapidwater-n-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:08.3281955Z"
+    },
+    {
+      "abs": {
+        "x": 559898.0,
+        "y": 131.0,
+        "z": 559023.0
+      },
+      "rel": {
+        "x": 47901.0,
+        "y": 8.0,
+        "z": 47023.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:15.4756069Z"
+    },
+    {
+      "abs": {
+        "x": 560083.0,
+        "y": 161.0,
+        "z": 559123.0
+      },
+      "rel": {
+        "x": 48086.0,
+        "y": 38.0,
+        "z": 47123.0
+      },
+      "flow": "w",
+      "height": 7,
+      "code": "rapidwater-w-7",
+      "claimed": false,
+      "firstSeenUtc": "2026-07-12T07:59:08.4659408Z"
+    }
+  ]
+}

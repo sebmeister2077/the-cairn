@@ -30,9 +30,11 @@ import { normalizeInsightsFilters } from "./slices/insightsFilters";
 import { normalizeMarketConcentration } from "./slices/marketConcentration";
 import { normalizeMarketFavorites } from "./slices/marketFavorites";
 import {
+    DEFAULT_RAPIDS_STYLE,
     DEFAULT_TERMINUS_STYLE,
     DEFAULT_TL_STYLE,
     DEFAULT_TRADER_STYLE,
+    isRapidsStyle,
     isTerminusStyle,
     isTLStyle,
     isTraderStyle,
@@ -140,6 +142,9 @@ const NORMALIZE_ON_READ: {
             terminusStyle: isTerminusStyle(merged.terminusStyle)
                 ? merged.terminusStyle
                 : DEFAULT_TERMINUS_STYLE,
+            rapidsStyle: isRapidsStyle(merged.rapidsStyle)
+                ? merged.rapidsStyle
+                : DEFAULT_RAPIDS_STYLE,
             // Drop malformed/unknown trader-color overrides.
             traderColors: sanitizeTraderColors(merged.traderColors),
         };

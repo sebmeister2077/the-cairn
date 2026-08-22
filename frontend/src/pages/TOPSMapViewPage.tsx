@@ -21,6 +21,7 @@ import {
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
+  setShowRapids as setShowRapidsAction,
   setShowTraderClaims as setShowTraderClaimsAction,
   setShowRockStrata as setShowRockStrataAction,
   setRockStrataKind as setRockStrataKindAction,
@@ -130,6 +131,7 @@ import { LandmarkManagementCard } from "@/components/tops-map/landmarks/Landmark
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
+import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
@@ -398,6 +400,15 @@ export function TOPSMapViewPage() {
   );
   const recordedBrokenTLsVisible = showRecordedBrokenTLs && showAdvancedMapOptions;
 
+  // Recorded rapids sources — advanced-only opt-in point layer, coloured by
+  // claimed state. The (potentially large) asset only loads once the toggle
+  // is on (see `useRapidsOverlay`).
+  const showRapids = useAppSelector((s) => s.mapView.showRapids);
+  const setShowRapids = useCallback(
+    (next: boolean) => dispatch(setShowRapidsAction(next)),
+    [dispatch],
+  );
+  const rapidsVisible = showRapids && showAdvancedMapOptions;
   // "All trader claims" overlay: the full static claim-box set, coloured by
   // any assigned type. Advanced-only opt-in; the (large) asset + the type
   // overlay only load once the toggle is on.
@@ -437,6 +448,12 @@ export function TOPSMapViewPage() {
       setBrokenTLViewportBounds(viewportBoundsRef.current);
     }
   }, [recordedBrokenTLsVisible]);
+  // The rapids layer reuses the same shared viewport bounds for culling.
+  useEffect(() => {
+    if (rapidsVisible && viewportBoundsRef.current) {
+      setBrokenTLViewportBounds(viewportBoundsRef.current);
+    }
+  }, [rapidsVisible]);
 
   // Rock-strata overlay (rockstratafinder mod export). Optional opt-in
   // layer with its own legend filter, debounced re-crop on pan, and a
@@ -829,6 +846,10 @@ export function TOPSMapViewPage() {
   const recordedFeaturesQuery = useRecordedMapFeatures(recordedBrokenTLsVisible || showTraders);
   const recordedFeatures = recordedFeaturesQuery.data;
 
+  // Recorded rapids sources (advanced-only, own toggle).
+  const rapidsQuery = useRapidsOverlay(rapidsVisible);
+  const rapidsMarkers = rapidsQuery.data;
+
   // Favorite TL groupings (local-only). The groupings themselves persist via
   // `useTLGroupings`; view-mode + active-selection live in the Redux
   // mapView slice (which preloaded them from localStorage on store
@@ -1061,7 +1082,7 @@ export function TOPSMapViewPage() {
         maxZ: info.worldMaxZ,
       };
       viewportBoundsRef.current = bounds;
-      if (recordedBrokenTLsVisible) {
+      if (recordedBrokenTLsVisible || rapidsVisible) {
         setBrokenTLViewportBounds(bounds);
       }
       // Feed the rock-strata hook only while the overlay is on; setting
@@ -1083,7 +1104,7 @@ export function TOPSMapViewPage() {
         worldMaxZ: info.worldMaxZ,
       });
     },
-    [updateUrlParams, rockStrataVisible, recordedBrokenTLsVisible],
+    [updateUrlParams, rockStrataVisible, recordedBrokenTLsVisible, rapidsVisible],
   );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
@@ -1401,6 +1422,26 @@ export function TOPSMapViewPage() {
         for (const m of recordedFeatures.brokenTLs) base.push(m);
       }
     }
+    // Recorded rapids overlay (advanced-only, own toggle). Same viewport
+    // culling as the broken TLs; markers are coloured by claimed state and
+    // carry an X/Y/Z hover tooltip.
+    if (rapidsVisible && rapidsMarkers) {
+      const b = brokenTLViewportBounds;
+      if (b) {
+        const marginX = (b.maxX - b.minX) * 0.25;
+        const marginZ = (b.maxZ - b.minZ) * 0.25;
+        const minX = b.minX - marginX;
+        const maxX = b.maxX + marginX;
+        const minZ = b.minZ - marginZ;
+        const maxZ = b.maxZ + marginZ;
+        for (const m of rapidsMarkers) {
+          if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
+          base.push(m);
+        }
+      } else {
+        for (const m of rapidsMarkers) base.push(m);
+      }
+    }
     // Always-on house glyph for the user's saved favorite position. Drawn
     // last so the marker sits on top of any colocated landmark/trader dot.
     if (favoriteStartingPosition) {
@@ -1423,6 +1464,8 @@ export function TOPSMapViewPage() {
     traderTypeFilterSet,
     recordedBrokenTLsVisible,
     recordedFeatures,
+    rapidsVisible,
+    rapidsMarkers,
     traderClaimsQuery.data,
     traderClaimTypesQuery.data,
     brokenTLViewportBounds,
@@ -2436,6 +2479,22 @@ export function TOPSMapViewPage() {
                       {t("topsMap.recordedBrokenTLsFound")}{" "}
                       <span className="font-medium text-foreground">
                         {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {showAdvancedMapOptions && (
+                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <Switch
+                      checked={showRapids}
+                      onCheckedChange={setShowRapids}
+                      aria-label={t("topsMap.showRapidsOverlay")}
+                    />
+                    <Label>{t("topsMap.showRapids")}</Label>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      {t("topsMap.rapidsFound")}{" "}
+                      <span className="font-medium text-foreground">
+                        {(rapidsMarkers?.length ?? 0).toLocaleString()}
                       </span>
                     </span>
                   </div>

@@ -8,14 +8,22 @@ import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
-import { setTerminusStyle, setTLStyle, setTraderStyle } from "@/store/slices/mapView";
+import {
+  setTerminusStyle,
+  setTLStyle,
+  setTraderStyle,
+  setRapidsStyle,
+} from "@/store/slices/mapView";
 import {
   drawTerminusMarker,
   drawTLEndpoint,
   drawTraderMarker,
+  drawRapidsMarker,
+  type RapidsStyle,
   type TerminusStyle,
   type TLStyle,
   type TraderStyle,
+  RAPIDS_STYLE_OPTIONS,
   TERMINUS_STYLE_OPTIONS,
   TL_STYLE_OPTIONS,
   TRADER_STYLE_OPTIONS,
@@ -91,6 +99,8 @@ function OptionButton({
 
 const TRADER_COLOR = "rgba(34, 211, 238, 0.92)";
 const TL_COLOR = "rgba(167, 139, 250, 0.95)";
+const RAPIDS_UNCLAIMED_COLOR = "rgba(45, 212, 191, 0.95)";
+const RAPIDS_CLAIMED_COLOR = "rgba(249, 115, 22, 0.95)";
 
 export function MarkerStylePicker() {
   const { t } = useTranslation();
@@ -98,6 +108,7 @@ export function MarkerStylePicker() {
   const traderStyle = useReduxState("mapView.traderStyle");
   const tlStyle = useReduxState("mapView.tlStyle");
   const terminusStyle = useReduxState("mapView.terminusStyle");
+  const rapidsStyle = useReduxState("mapView.rapidsStyle");
 
   const optionText = {
     "gear-stack": {
@@ -241,6 +252,47 @@ export function MarkerStylePicker() {
               />
             );
           })}
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <div className="space-y-0.5">
+          <Label>{t("account.appearance.rapidsIcon")}</Label>
+          <p className="text-xs text-muted-foreground">
+            {t("account.appearance.rapidsIconDescription")}
+          </p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {RAPIDS_STYLE_OPTIONS.map((opt) => (
+            <OptionButton
+              key={opt.id}
+              label={opt.label}
+              hint={opt.hint}
+              selected={rapidsStyle === opt.id}
+              onSelect={() => dispatch(setRapidsStyle(opt.id as RapidsStyle))}
+              draw={(ctx) =>
+                drawRapidsMarker(ctx, 0, 0, SWATCH_ZOOM, opt.id, RAPIDS_UNCLAIMED_COLOR, false)
+              }
+            />
+          ))}
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="inline-block size-2.5 rounded-full"
+              style={{ backgroundColor: RAPIDS_UNCLAIMED_COLOR }}
+            />
+            {t("account.appearance.rapidsUnclaimed")}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="inline-block size-2.5 rounded-full ring-2 ring-foreground/60"
+              style={{ backgroundColor: RAPIDS_CLAIMED_COLOR }}
+            />
+            {t("account.appearance.rapidsClaimed")}
+          </span>
         </div>
       </div>
     </div>
