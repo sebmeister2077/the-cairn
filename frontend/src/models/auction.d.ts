@@ -579,7 +579,18 @@ export type PlayerArchetype =
     | "flipper"
     | "specialist"
     | "generalist"
-    | "newcomer";
+    | "newcomer"
+    // Rare, whimsical "easter-egg" labels that stack on top of the regular
+    // ones — see `EASTER_EGG_ARCHETYPES` / `deriveArchetypes`.
+    | "night-owl"
+    | "round-number-merchant"
+    | "dragons-hoard"
+    | "the-answer"
+    | "master-chiseler"
+    | "legwork"
+    | "hot-hands"
+    | "cold-feet"
+    | "lucky-sevens";
 
 /** One item where the player holds a large share of the item's market. */
 export interface PlayerDominanceRow {

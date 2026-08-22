@@ -22,7 +22,7 @@ import type {
   SpecializationTier,
 } from "@/models/auction";
 
-const ARCHETYPE: Record<PlayerArchetype, { label: string; desc: string }> = {
+const ARCHETYPE: Record<PlayerArchetype, { label: string; desc: string; egg?: true }> = {
   "price-discoverer": {
     label: "Price Discoverer",
     desc: "Lists the same items across a wide range of prices — probing for what the market will bear.",
@@ -70,6 +70,52 @@ const ARCHETYPE: Record<PlayerArchetype, { label: string; desc: string }> = {
   newcomer: {
     label: "Newcomer",
     desc: `Not enough trades yet to characterise (needs ${PLAYER_MIN_TRADES}+).`,
+  },
+  // --- Easter eggs — rare, playful bonus labels. Hidden until earned. ---
+  "night-owl": {
+    label: "🦉 Night Owl",
+    desc: "Does most of their trading after dark — posting while the drifters roam.",
+    egg: true,
+  },
+  "round-number-merchant": {
+    label: "🪙 Round-Number Merchant",
+    desc: "Can't resist a tidy price — nearly everything ends in a nice round number.",
+    egg: true,
+  },
+  "dragons-hoard": {
+    label: "🐉 Dragon's Hoard",
+    desc: "Sits on a near-total monopoly — a hoard worthy of a temporal storm.",
+    egg: true,
+  },
+  "the-answer": {
+    label: "✨ The Answer",
+    desc: "Exactly 42 trades — the answer to life, the market, and everything.",
+    egg: true,
+  },
+  "master-chiseler": {
+    label: "🎨 Master Chiseler",
+    desc: "Sells their own hand-chiseled art blocks — a true VS craftsperson.",
+    egg: true,
+  },
+  legwork: {
+    label: "🥾 Legwork",
+    desc: "Buys in volume but skips delivery — hoofs it out to collect in person.",
+    egg: true,
+  },
+  "hot-hands": {
+    label: "⚡ Hot Hands",
+    desc: "Their listings vanish almost the moment they're posted.",
+    egg: true,
+  },
+  "cold-feet": {
+    label: "🧊 Cold Feet",
+    desc: "Often pulls listings back off the block before they resolve.",
+    egg: true,
+  },
+  "lucky-sevens": {
+    label: "🎰 Lucky Sevens",
+    desc: "Exactly 777 trades — the reels lined up just right.",
+    egg: true,
   },
 };
 
@@ -270,7 +316,16 @@ export function PlayerBehaviorSection({ profile }: { profile: PlayerProfile }) {
       <div className="rounded-md border bg-muted/30 px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           {profile.archetypes.map((a) => (
-            <Badge key={a} className="text-sm">
+            <Badge
+              key={a}
+              variant={ARCHETYPE[a].egg ? "outline" : "default"}
+              className={
+                ARCHETYPE[a].egg
+                  ? "border-amber-400/60 bg-amber-100 text-amber-900 dark:border-amber-400/40 dark:bg-amber-950/40 dark:text-amber-200"
+                  : "text-sm"
+              }
+              title={ARCHETYPE[a].egg ? "A rare find" : undefined}
+            >
               {ARCHETYPE[a].label}
             </Badge>
           ))}

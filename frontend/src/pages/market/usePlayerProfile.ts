@@ -380,6 +380,52 @@ export function usePlayerProfile(
             (a, b) => a.monthIndex - b.monthIndex,
         );
 
+        // --- Easter-egg signals (rare, whimsical bonus labels) --------------- #
+        // Time-of-day of every trade the player posted (game hours wrap every 24).
+        const postHours = [...asSeller, ...asBuyer]
+            .map((l) => l.postedTotalHours)
+            .filter((h): h is number => h != null);
+        let nightCount = 0;
+        for (const h of postHours) {
+            const hod = (((h % 24) + 24) % 24) | 0;
+            if (hod >= 20 || hod < 5) nightCount += 1; // dusk-to-dawn, when drifters roam
+        }
+        const nightSample = postHours.length;
+        const nightShare = nightSample ? nightCount / nightSample : null;
+
+        // Fraction of the player's own priced listings that end in a tidy round number.
+        const roundPrices = asSeller
+            .filter((l) => !listingHasText(l))
+            .map((l) => l.pricePerUnit)
+            .filter((p) => Number.isFinite(p) && p >= 10);
+        const roundSample = roundPrices.length;
+        const roundShare = roundSample
+            ? roundPrices.filter((p) => p % 10 === 0).length / roundSample
+            : null;
+
+        // Hand-chiseled art blocks the player put up for sale.
+        const chiselCount = asSeller.filter((l) => l.chisel != null).length;
+
+        // Pickup habit across their purchases. Delivery is the norm, so buying
+        // in volume yet collecting in person is the notable behaviour.
+        const pickupSample = asBuyer.length;
+        const pickupCount = asBuyer.filter((l) => !l.delivered).length;
+        const pickupShare = pickupSample ? pickupCount / pickupSample : null;
+
+        // How quickly their sold listings moved.
+        const sellTimes = asSellerSold
+            .map((l) => l.timeToSellHours)
+            .filter((h): h is number => h != null);
+        const sellTimeSample = sellTimes.length;
+        const medianSellHours = median(sellTimes);
+
+        // How often they pull listings before a verdict lands (needs a known one).
+        const resolved = asSeller.filter((l) => l.verdictObserved);
+        const cancelSample = resolved.length;
+        const cancelShare = cancelSample
+            ? resolved.filter((l) => l.cancelled).length / cancelSample
+            : null;
+
         // --- Headline archetype ---------------------------------------------- #
         const archetypes = deriveArchetypes({
             totalTrades,
@@ -392,6 +438,18 @@ export function usePlayerProfile(
             flips,
             asSellerSold,
             specialization,
+            nightShare,
+            nightSample,
+            roundShare,
+            roundSample,
+            chiselCount,
+            pickupShare,
+            pickupSample,
+            pickupCount,
+            medianSellHours,
+            sellTimeSample,
+            cancelShare,
+            cancelSample,
         });
 
         return {
@@ -429,6 +487,24 @@ interface ArchetypeInput {
     flips: PlayerFlipRow[];
     asSellerSold: AuctionListing[];
     specialization: SpecializationTier;
+    /** Share (0–1) of trades posted at night, and the sample behind it. */
+    nightShare: number | null;
+    nightSample: number;
+    /** Share (0–1) of priced listings ending in a round number, and its sample. */
+    roundShare: number | null;
+    roundSample: number;
+    /** Count of hand-chiseled art blocks the player listed. */
+    chiselCount: number;
+    /** Share (0–1) of purchases the player picked up in person, plus counts. */
+    pickupShare: number | null;
+    pickupSample: number;
+    pickupCount: number;
+    /** Median in-game hours their sold listings took to sell, and its sample. */
+    medianSellHours: number | null;
+    sellTimeSample: number;
+    /** Share (0–1) of resolved listings the player cancelled early, and its sample. */
+    cancelShare: number | null;
+    cancelSample: number;
 }
 
 /** Pick every headline label that applies, in display-priority order. A trader
@@ -474,6 +550,39 @@ function deriveArchetypes(i: ArchetypeInput): PlayerArchetype[] {
 
     // Nothing notable stood out — fall back to a plain focus descriptor.
     if (labels.length === 0) labels.push("generalist");
+
+    // --- Easter eggs (rare, whimsical bonuses that stack on the above) ---- #
+    // 🦉 Night Owl: trades overwhelmingly after dark.
+    if (i.nightSample >= 12 && i.nightShare != null && i.nightShare >= 0.66) {
+        labels.push("night-owl");
+    }
+    // 🪙 Round-Number Merchant: can't resist a tidy price.
+    if (i.roundSample >= 12 && i.roundShare != null && i.roundShare >= 0.8) {
+        labels.push("round-number-merchant");
+    }
+    // 🐉 Dragon's Hoard: the extreme tier above Monopolist — a near-total grip.
+    const monopolies = i.dominance.filter((d) => d.tier === "monopoly");
+    if (monopolies.length >= 2 || monopolies.some((d) => d.share >= 0.9)) {
+        labels.push("dragons-hoard");
+    }
+    // 🎨 Master Chiseler: sells a pile of hand-chiseled art blocks.
+    if (i.chiselCount >= 6) labels.push("master-chiseler");
+    // 🥾 Legwork: buys plenty but skips delivery — collects the goods in person.
+    if (i.pickupSample >= 10 && i.pickupCount >= 8 && i.pickupShare != null && i.pickupShare >= 0.5) {
+        labels.push("legwork");
+    }
+    // ⚡ Hot Hands: their listings sell almost immediately.
+    if (i.sellTimeSample >= 10 && i.medianSellHours != null && i.medianSellHours <= 4) {
+        labels.push("hot-hands");
+    }
+    // 🧊 Cold Feet: often pulls listings before they resolve.
+    if (i.cancelSample >= 10 && i.cancelShare != null && i.cancelShare >= 0.4) {
+        labels.push("cold-feet");
+    }
+    // ✨ The Answer: exactly 42 trades.
+    if (i.totalTrades === 42) labels.push("the-answer");
+    // 🎰 Lucky Sevens: exactly 777 trades.
+    if (i.totalTrades === 777) labels.push("lucky-sevens");
 
     return labels;
 }
