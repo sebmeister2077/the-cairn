@@ -403,8 +403,12 @@ export function usePlayerProfile(
             ? roundPrices.filter((p) => p % 10 === 0).length / roundSample
             : null;
 
-        // Hand-chiseled art blocks the player put up for sale.
-        const chiselCount = asSeller.filter((l) => l.chisel != null).length;
+        // Genuinely creative chiseled blocks the player listed — ones combining
+        // two or more materials. Single-material chisels are excluded: converting
+        // a plain rock into its cheaper chiseled form takes no artistry.
+        const chiselCount = asSeller.filter(
+            (l) => l.chisel != null && new Set(l.chisel.materials).size >= 2,
+        ).length;
 
         // Pickup habit across their purchases. Delivery is the norm, so buying
         // in volume yet collecting in person is the notable behaviour.
@@ -565,8 +569,8 @@ function deriveArchetypes(i: ArchetypeInput): PlayerArchetype[] {
     if (monopolies.length >= 2) {
         labels.push("dragons-hoard");
     }
-    // 🎨 Master Chiseler: sells a pile of hand-chiseled art blocks.
-    if (i.chiselCount >= 12) labels.push("master-chiseler");
+    // 🎨 Master Chiseler: sells a pile of multi-material chiseled art blocks.
+    if (i.chiselCount >= 6) labels.push("master-chiseler");
     // 🥾 Legwork: buys plenty but skips delivery — collects the goods in person.
     if (i.pickupSample >= 10 && i.pickupCount >= 8 && i.pickupShare != null && i.pickupShare >= 0.5) {
         labels.push("legwork");
