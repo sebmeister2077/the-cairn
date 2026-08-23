@@ -29,7 +29,7 @@ import {
   DurationCell,
   ListingNotesCell,
   type ListingColumn,
-} from "./VirtualListingsTable";
+} from "../../components/market/VirtualListingsTable";
 
 /** Compact checkbox-popover multi-select for filtering listings by item type. */
 function TypeMultiSelect({

@@ -59,7 +59,7 @@ import {
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
 import { formatGameDate } from "./VirtualListingsTable";
-import { INSIGHTS_WINDOWS } from "./useMarketInsights";
+import { INSIGHTS_WINDOWS } from "@/hooks/useMarketInsights";
 
 const ELITE_SEG = {
   key: "elite",

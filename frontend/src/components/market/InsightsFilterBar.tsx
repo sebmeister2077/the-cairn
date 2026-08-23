@@ -17,7 +17,7 @@ import {
   isDefaultInsightsFilters,
   type InsightsFilters,
 } from "@/store/slices/insightsFilters";
-import { ExternalTradeToggle } from "./ExternalTradeToggle";
+import { ExternalTradeToggle } from "../../components/market/ExternalTradeToggle";
 
 interface Option {
   value: string;

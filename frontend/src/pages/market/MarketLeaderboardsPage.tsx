@@ -11,7 +11,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
-import { formatGameDate } from "./VirtualListingsTable";
+import { formatGameDate } from "../../components/market/VirtualListingsTable";
 import type { UncollectedBuyer } from "@/models/auction";
 
 export function MarketLeaderboardsPage() {

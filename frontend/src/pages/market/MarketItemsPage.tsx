@@ -36,7 +36,7 @@ import {
   ALL_CATEGORIES,
   ALL_RARITIES,
   type ItemSort,
-} from "./useItemSearch";
+} from "@/hooks/useItemSearch";
 
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
 const MAX_ROWS = 250;

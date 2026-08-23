@@ -4,9 +4,9 @@
 // numbers (not the badge labels) so they can be sorted/charted downstream.
 
 import type { InsightsRow } from "@/models/auction";
-import type { MarketPriceMode } from "./useMarketPriceMode";
-import type { InsightsVolumeMode } from "./useFilteredInsights";
-import { rowPrice } from "./useFilteredInsights";
+import type { MarketPriceMode } from "@/hooks/useMarketPriceMode";
+import type { InsightsVolumeMode } from "@/hooks/useFilteredInsights";
+import { rowPrice } from "@/hooks/useFilteredInsights";
 
 function csvCell(v: string | number | null | undefined): string {
     if (v == null) return "";

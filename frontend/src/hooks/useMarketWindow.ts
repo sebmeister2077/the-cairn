@@ -6,7 +6,7 @@
 
 import { useSyncExternalStore } from "react";
 import { writeIfConsented } from "@/lib/consent";
-import { INSIGHTS_WINDOWS, type InsightsWindowKey } from "./useMarketInsights";
+import { INSIGHTS_WINDOWS, type InsightsWindowKey } from "@/hooks/useMarketInsights";
 
 const STORAGE_KEY = "market.windowKey";
 const VALID = new Set<string>(INSIGHTS_WINDOWS.map((w) => w.key));

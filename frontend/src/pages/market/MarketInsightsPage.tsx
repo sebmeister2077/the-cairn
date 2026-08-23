@@ -7,7 +7,7 @@
 
 import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMarketWindow } from "./useMarketWindow";
+import { useMarketWindow } from "@/hooks/useMarketWindow";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -42,22 +42,22 @@ import {
   formatGears,
   formatRealTimeToSell,
 } from "@/lib/auction";
-import { formatGameDate } from "./VirtualListingsTable";
-import { INSIGHTS_WINDOWS, resolveWindowDays, useMarketInsights } from "./useMarketInsights";
-import { ScreenerTable, type ScreenerColumn } from "./InsightsScreenerTable";
-import { InsightsFilterBar } from "./InsightsFilterBar";
-import { useFilteredInsights, rowPrice } from "./useFilteredInsights";
-import { useMarketPriceMode } from "./useMarketPriceMode";
-import { useMarketVolumeMode } from "./useMarketVolumeMode";
-import { Sparkline } from "./Sparkline";
-import { downloadInsightsCsv } from "./insightsCsv";
+import { formatGameDate } from "@/components/market/VirtualListingsTable";
+import { INSIGHTS_WINDOWS, resolveWindowDays, useMarketInsights } from "@/hooks/useMarketInsights";
+import { ScreenerTable, type ScreenerColumn } from "@/components/market/InsightsScreenerTable";
+import { InsightsFilterBar } from "@/components/market/InsightsFilterBar";
+import { useFilteredInsights, rowPrice } from "@/hooks/useFilteredInsights";
+import { useMarketPriceMode } from "@/hooks/useMarketPriceMode";
+import { useMarketVolumeMode } from "@/hooks/useMarketVolumeMode";
+import { Sparkline } from "@/components/market/Sparkline";
+import { downloadInsightsCsv } from "@/components/market/insightsCsv";
 import {
   HIDEABLE_INSIGHTS_COLUMNS,
   showAllInsightsColumns,
   toggleInsightsColumn,
   useInsightsHiddenColumns,
-} from "./useInsightsColumns";
-import { PriceModeInfo } from "./PriceModeInfo";
+} from "@/hooks/useInsightsColumns";
+import { PriceModeInfo } from "@/components/market/PriceModeInfo";
 import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
 import type { Rarity } from "@/models/item-sources";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";

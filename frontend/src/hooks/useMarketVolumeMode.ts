@@ -6,7 +6,7 @@
 
 import { useSyncExternalStore } from "react";
 import { writeIfConsented } from "@/lib/consent";
-import type { InsightsVolumeMode } from "./useFilteredInsights";
+import type { InsightsVolumeMode } from "@/hooks/useFilteredInsights";
 
 const STORAGE_KEY = "market.volumeMode";
 const VALID = new Set<InsightsVolumeMode>(["price", "unit"]);

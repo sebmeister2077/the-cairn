@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionSummary, formatGears } from "@/lib/auction";
-import { MarketTrendsChart } from "./MarketTrendsChart";
-import { MarketWealthChart } from "./MarketWealthChart";
+import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
+import { MarketWealthChart } from "@/components/market/MarketWealthChart";
 
 function FreshnessBanner({ generatedUtc }: { generatedUtc: string }) {
   const when = new Date(generatedUtc);

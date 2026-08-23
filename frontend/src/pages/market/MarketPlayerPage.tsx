@@ -7,13 +7,17 @@ import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
-import { INSIGHTS_WINDOWS, filterListingsByWindow, resolveWindowDays } from "./useMarketInsights";
-import { usePlayerWindow } from "./useMarketPlayerWindow";
-import { usePlayerProfile } from "./usePlayerProfile";
-import { PlayerPricingChart, PlayerActivityChart } from "./PlayerCharts";
-import { PlayerListingsSection } from "./PlayerListingsSection";
-import { PlayerPurchasesSection } from "./PlayerPurchasesSection";
-import { PlayerBehaviorSection } from "./PlayerBehaviorSection";
+import {
+  INSIGHTS_WINDOWS,
+  filterListingsByWindow,
+  resolveWindowDays,
+} from "@/hooks/useMarketInsights";
+import { usePlayerWindow } from "@/hooks/useMarketPlayerWindow";
+import { usePlayerProfile } from "@/hooks/usePlayerProfile";
+import { PlayerPricingChart, PlayerActivityChart } from "@/components/market/PlayerCharts";
+import { PlayerListingsSection } from "@/components/market/PlayerListingsSection";
+import { PlayerPurchasesSection } from "@/components/market/PlayerPurchasesSection";
+import { PlayerBehaviorSection } from "@/components/market/PlayerBehaviorSection";
 
 // Auctioneer entities respawn a few blocks off (with a new entity id) after a
 // culling event, so the same physical stall shows up under slightly different

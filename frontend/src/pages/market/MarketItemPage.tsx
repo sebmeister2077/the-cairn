@@ -50,8 +50,8 @@ import {
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import type { ChiselDesign } from "@/models/auction";
-import { getTapestryImage } from "./tapestryImages";
-import { chiselColor } from "./chiselColors";
+import { getTapestryImage } from "@/components/market/tapestryImages";
+import { chiselColor } from "@/components/market/chiselColors";
 import {
   VirtualListingsTable,
   formatListingDate,
@@ -62,24 +62,24 @@ import {
   ListingNotesCell,
   ListingAttributesCell,
   type ListingColumn,
-} from "./VirtualListingsTable";
+} from "@/components/market/VirtualListingsTable";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
   filterListingsByWindow,
   resolveWindowDays,
   saleGameHours,
-} from "./useMarketInsights";
-import { useMarketWindow } from "./useMarketWindow";
-import { useMarketPriceMode } from "./useMarketPriceMode";
-import { PriceModeInfo } from "./PriceModeInfo";
-import { MetalContentCard } from "./MetalContentCard";
-import { ItemConcentrationSection } from "./ItemConcentrationSection";
-import { TraderAvailabilityCard } from "./TraderAvailabilityCard";
-import { ItemRarityCard } from "./ItemRarityCard";
-import { Sparkline } from "./Sparkline";
-import { PriceHistoryChart, type SalePoint } from "./PriceHistoryChart";
-import { ExternalTradeToggle } from "./ExternalTradeToggle";
+} from "@/hooks/useMarketInsights";
+import { useMarketWindow } from "@/hooks/useMarketWindow";
+import { useMarketPriceMode } from "@/hooks/useMarketPriceMode";
+import { PriceModeInfo } from "@/components/market/PriceModeInfo";
+import { MetalContentCard } from "@/components/market/MetalContentCard";
+import { ItemConcentrationSection } from "@/components/market/ItemConcentrationSection";
+import { TraderAvailabilityCard } from "@/components/market/TraderAvailabilityCard";
+import { ItemRarityCard } from "@/components/market/ItemRarityCard";
+import { Sparkline } from "@/components/market/Sparkline";
+import { PriceHistoryChart, type SalePoint } from "@/components/market/PriceHistoryChart";
+import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
 import { useAppSelector } from "@/store/hooks";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
@@ -256,7 +256,7 @@ const BIN_OPTIONS = [
 
 // The 3D chiseled-block viewer pulls in three.js — lazy-load it so it never
 // weighs on the main market bundle.
-const ChiseledBlockViewer = lazy(() => import("./ChiseledBlockViewer"));
+const ChiseledBlockViewer = lazy(() => import("@/components/market/ChiseledBlockViewer"));
 
 /** Stable key for a chisel design (materials + geometry), used to tell apart
  * distinct builds that share one named group (e.g. several "l-dungeon" variants). */

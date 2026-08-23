@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { formatGears, percentileSorted } from "@/lib/auction";
-import { formatGameDate, formatListingDate } from "./VirtualListingsTable";
+import { formatGameDate, formatListingDate } from "../../components/market/VirtualListingsTable";
 
 /** One sold sale: its in-game conclusion time, per-unit price, quantity, total
  * gears, and the real-world timestamp it was observed at (for the tooltip). */

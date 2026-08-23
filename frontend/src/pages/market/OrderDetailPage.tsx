@@ -26,11 +26,7 @@ import { NegotiationThread } from "./orders/NegotiationThread";
 import { OrderRequestDialog } from "./orders/OrderRequestDialog";
 import { ReopenOrderDialog } from "./orders/ReopenOrderDialog";
 import { OrderAnalyticsPanel } from "./orders/OrderAnaliticsPanel";
-
-function formatGears(n: number): string {
-  if (n !== Math.round(n)) return `${n.toFixed(2)}⚙`;
-  return `${Math.round(n).toLocaleString()}⚙`;
-}
+import { formatGears } from "@/lib/auction";
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();

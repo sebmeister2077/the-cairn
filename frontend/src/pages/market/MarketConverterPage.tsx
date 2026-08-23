@@ -36,16 +36,16 @@ import {
 } from "@/lib/auction";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
-import { ExternalTradeToggle } from "./ExternalTradeToggle";
+import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
   confidenceFor,
   resolveWindowDays,
   type InsightsWindowKey,
-} from "./useMarketInsights";
-import { useMarketWindow } from "./useMarketWindow";
-import { useMarketPriceMode, setMarketPriceMode } from "./useMarketPriceMode";
+} from "@/hooks/useMarketInsights";
+import { useMarketWindow } from "@/hooks/useMarketWindow";
+import { useMarketPriceMode, setMarketPriceMode } from "@/hooks/useMarketPriceMode";
 import type { ConfidenceTier, InsightsRow, PriceTrend } from "@/models/auction";
 
 // --------------------------------------------------------------------------- //

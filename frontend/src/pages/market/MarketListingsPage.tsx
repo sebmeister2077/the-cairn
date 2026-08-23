@@ -13,14 +13,14 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
 import { useAuctionListings, useAuctionCsvUrl, useCurrentGameHours } from "@/lib/auction";
-import { MarketFilterBar } from "./MarketFilterBar";
-import { useFilteredListings } from "./useFilteredListings";
+import { MarketFilterBar } from "../../components/market/MarketFilterBar";
+import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
   formatGameDate,
   formatListingDate,
   ListingStateBadge,
   ListingNotesCell,
-} from "./VirtualListingsTable";
+} from "../../components/market/VirtualListingsTable";
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {
