@@ -29,6 +29,7 @@ import {
     installRootPersistence,
     loadPersistedRoot,
 } from "./rootPersistence";
+import { installDrawingPersistence, hydrateDrawingIndexes } from "./drawingPersistence";
 import { adminApiKeysFiltersSlice } from "./slices/adminApiKeysFilters";
 import { adminUsageFiltersSlice } from "./slices/adminUsageFilters";
 import { routePlannerSlice } from "./slices/routePlanner";
@@ -42,6 +43,7 @@ import { marketWealthSlice } from "./slices/marketWealth";
 import { marketFavoritesSlice } from "./slices/marketFavorites";
 import { rockPricingSlice } from "./slices/rockPricing";
 import { dateFormatSlice } from "./slices/dateFormat";
+import { drawingSlice } from "./slices/drawing";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -70,6 +72,7 @@ const rootReducer = combineReducers({
     marketFavorites: marketFavoritesSlice.reducer,
     rockPricing: rockPricingSlice.reducer,
     dateFormat: dateFormatSlice.reducer,
+    drawing: drawingSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;
@@ -89,3 +92,5 @@ export const store = configureStore({
 export type AppDispatch = typeof store.dispatch;
 
 installRootPersistence(store);
+installDrawingPersistence(store);
+void hydrateDrawingIndexes(store);

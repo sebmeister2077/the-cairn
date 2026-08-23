@@ -43,6 +43,31 @@ import type {
   WorldLineSegment,
   WorldPointMarker,
 } from "@/components/MapViewer";
+import { useMapDrawing } from "@/hooks/useMapDrawing";
+import { drawElements } from "@/lib/drawing/render";
+import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
+import { DEFAULT_TOOL_STYLE, type ToolStyle } from "@/store/slices/drawing";
+import type { DrawElement, DrawTool } from "@/lib/drawing/types";
+
+const EMPTY_STRING_SET: ReadonlySet<string> = new Set();
+
+/** Props for the {@link WebCartographerMapViewer} planning-board surface. */
+export interface MapDrawingProps {
+  enabled: boolean;
+  tool: DrawTool;
+  style: ToolStyle;
+  /** Committed elements of the active board (world coords). */
+  elements: DrawElement[];
+  /** Marquee-selected element ids (dashed highlight). */
+  selectedIds: ReadonlySet<string>;
+  /** Blueprint being stamped (origin-normalised elements), or null. */
+  pasteBlueprint: { elements: DrawElement[] } | null;
+  onCommit: (el: DrawElement) => void;
+  onCommitMany: (els: DrawElement[]) => void;
+  onErase: (ids: string[]) => void;
+  onSelect: (ids: string[]) => void;
+  onRequestText: (world: { x: number; z: number }) => void;
+}
 
 /**
  * WebCartographer-compatible tile parameters.
@@ -206,13 +231,21 @@ interface WebCartographerMapViewerProps {
   // ── Interaction ─────────────────────────────────────────────────────────
   onOverlaySegmentClick?: (segment: WorldLineSegment | null) => void;
   onOverlaySegmentRightClick?: (segment: WorldLineSegment) => void;
-  cursorMode?: "default" | "pick";
+  cursorMode?: "default" | "pick" | "draw";
   onWorldClick?: (x: number, z: number) => void;
   interactionsLocked?: boolean;
   /** Receives the cursor's centered (TOPS) world coordinate on every
    *  mousemove, and `null` on mouseleave. Used by overlays (climate
    *  probe, etc.) that need a live readout. */
   onHoverCoords?: (coords: { x: number; z: number } | null) => void;
+
+  /**
+   * Planning-board drawing surface. When `enabled`, single-pointer gestures
+   * paint elements (world-anchored) instead of panning; two-finger gestures
+   * still pan/zoom. All committed elements come from Redux; the viewer only
+   * owns the in-progress gesture + rendering.
+   */
+  drawing?: MapDrawingProps;
 
   /**
    * Optional cursor-radius cull for the translocator overlay. When set,
@@ -326,6 +359,7 @@ export function WebCartographerMapViewer({
   onWorldClick,
   interactionsLocked = false,
   onHoverCoords,
+  drawing,
   focusPoint,
   focusZoom = 1,
   focusSpanBlocks,
@@ -894,6 +928,54 @@ export function WebCartographerMapViewer({
     });
   }, []);
 
+  // ── Planning-board drawing surface ────────────────────────────────────────
+  // Committed elements + tool/style come from props; the hook owns only the
+  // in-progress gesture. Mirror props through refs so the stable pointer
+  // handlers and draw loop read the latest values without re-subscribing.
+  const drawingPropsRef = useRef(drawing);
+  const drawEnabledRef = useRef<boolean>(drawing?.enabled ?? false);
+  const drawToolRef = useRef<DrawTool>(drawing?.tool ?? "pen");
+  const drawStyleRef = useRef<ToolStyle>(drawing?.style ?? DEFAULT_TOOL_STYLE);
+  const drawPasteRef = useRef<{ elements: DrawElement[] } | null>(drawing?.pasteBlueprint ?? null);
+  const drawElementsRef = useRef<DrawElement[]>(drawing?.elements ?? []);
+  const drawSelectedRef = useRef<ReadonlySet<string>>(drawing?.selectedIds ?? EMPTY_STRING_SET);
+  useEffect(() => {
+    drawingPropsRef.current = drawing;
+    drawEnabledRef.current = drawing?.enabled ?? false;
+    drawToolRef.current = drawing?.tool ?? "pen";
+    drawStyleRef.current = drawing?.style ?? DEFAULT_TOOL_STYLE;
+    drawPasteRef.current = drawing?.pasteBlueprint ?? null;
+    drawElementsRef.current = drawing?.elements ?? [];
+    drawSelectedRef.current = drawing?.selectedIds ?? EMPTY_STRING_SET;
+    scheduleRedraw();
+  }, [drawing, scheduleRedraw]);
+
+  const mapDrawing = useMapDrawing({
+    enabledRef: drawEnabledRef,
+    toolRef: drawToolRef,
+    styleRef: drawStyleRef,
+    pasteRef: drawPasteRef,
+    elementsRef: drawElementsRef,
+    ppbRef: pixelsPerBlockRef,
+    unproject: unprojectScreen,
+    scheduleRedraw,
+    onCommit: useCallback((el: DrawElement) => drawingPropsRef.current?.onCommit(el), []),
+    onCommitMany: useCallback(
+      (els: DrawElement[]) => drawingPropsRef.current?.onCommitMany(els),
+      [],
+    ),
+    onErase: useCallback((ids: string[]) => drawingPropsRef.current?.onErase(ids), []),
+    onSelect: useCallback((ids: string[]) => drawingPropsRef.current?.onSelect(ids), []),
+    onRequestText: useCallback(
+      (world: { x: number; z: number }) => drawingPropsRef.current?.onRequestText(world),
+      [],
+    ),
+  });
+  const mapDrawingRef = useRef(mapDrawing);
+  useEffect(() => {
+    mapDrawingRef.current = mapDrawing;
+  });
+
   // ── The draw routine ─────────────────────────────────────────────────────
   drawRef.current = () => {
     const canvas = canvasRef.current;
@@ -1277,6 +1359,51 @@ export function WebCartographerMapViewer({
     if (projectedPoints.length > 0) {
       drawPointLabels(octx, projectedPoints, cw, ch);
     }
+
+    // ── Planning-board drawings ───────────────────────────────────────────
+    // World-anchored strokes/shapes/text/stamps, painted above the map + its
+    // overlays. Elements + the in-progress preview all project through the
+    // same world→screen transform so they scale with zoom.
+    if (drawEnabledRef.current || drawElementsRef.current.length > 0) {
+      const project = (wx: number, wz: number) => ({
+        x: (wx - cWx) * ppb + cw / 2,
+        y: (wz - cWz) * ppb + ch / 2,
+      });
+      const pendingErase = mapDrawingRef.current.getPendingErase();
+      const committed =
+        pendingErase.size > 0
+          ? drawElementsRef.current.filter((el) => !pendingErase.has(el.id))
+          : drawElementsRef.current;
+      drawElements(octx, committed, project, ppb, mapDrawingRef.current.getPreview(), {
+        highlightIds: drawSelectedRef.current,
+      });
+
+      // Paste ghost: a translucent blueprint clone tracking the cursor.
+      const paste = drawPasteRef.current;
+      const cursor = cursorWorldRef.current;
+      if (drawEnabledRef.current && paste && cursor) {
+        const ghost = paste.elements.map((el) => translateDrawElement(el, cursor.x, cursor.z));
+        drawElements(octx, ghost, project, ppb, null, { ghost: true });
+      }
+
+      // Marquee selection rectangle (screen-space).
+      const marquee = mapDrawingRef.current.getMarquee();
+      if (marquee) {
+        octx.save();
+        octx.strokeStyle = "#38bdf8";
+        octx.fillStyle = "rgba(56, 189, 248, 0.12)";
+        octx.lineWidth = 1;
+        octx.setLineDash([5, 3]);
+        const rx = Math.min(marquee.x0, marquee.x1);
+        const ry = Math.min(marquee.y0, marquee.y1);
+        const rw = Math.abs(marquee.x1 - marquee.x0);
+        const rh = Math.abs(marquee.y1 - marquee.y0);
+        octx.fillRect(rx, ry, rw, rh);
+        octx.strokeRect(rx, ry, rw, rh);
+        octx.setLineDash([]);
+        octx.restore();
+      }
+    }
   };
 
   // Trigger redraw whenever anything that affects the picture changes.
@@ -1580,12 +1707,26 @@ export function WebCartographerMapViewer({
           startDist: Math.hypot(dx, dy) || 1,
           startPpb: pixelsPerBlockRef.current,
         };
+        // A second finger converts an in-progress stroke into a pinch.
+        if (drawEnabledRef.current) mapDrawingRef.current.cancel();
         setDragging(false);
         dragStartRef.current = null;
         // Treat the gesture as a drag so the trailing click (fired on the
         // last finger's release) doesn't pin a random TL / claim.
         dragMaxDistRef.current = 999;
         return;
+      }
+
+      // Draw mode: a single pointer paints instead of panning.
+      if (drawEnabledRef.current && cursorModeRef.current === "draw") {
+        const rect = container?.getBoundingClientRect();
+        const sx = e.clientX - (rect?.left ?? 0);
+        const sy = e.clientY - (rect?.top ?? 0);
+        if (mapDrawingRef.current.onPointerDown(sx, sy)) {
+          setDragging(false);
+          dragStartRef.current = null;
+          return;
+        }
       }
 
       setDragging(true);
@@ -1623,6 +1764,21 @@ export function WebCartographerMapViewer({
         const focalX = (pts[0].x + pts[1].x) / 2 - rect.left;
         const focalY = (pts[0].y + pts[1].y) / 2 - rect.top;
         zoomToward(focalX, focalY, pinchRef.current.startPpb * (dist / pinchRef.current.startDist));
+        return;
+      }
+
+      // Draw mode short-circuit: feed the gesture, keep the coord readout live
+      // (for the paste ghost + status bar), and skip all overlay hit-testing.
+      if (drawEnabledRef.current && cursorModeRef.current === "draw") {
+        const active = mapDrawingRef.current.isActive();
+        if (active) mapDrawingRef.current.onPointerMove(sx, sy);
+        const world = unprojectScreen(sx, sy);
+        cursorWorldRef.current = { x: world.x, z: world.z };
+        const hx = Math.floor(world.x);
+        const hz = Math.floor(world.z);
+        setHoverCoords({ x: hx, z: hz });
+        onHoverCoords?.({ x: hx, z: hz });
+        if (active || drawPasteRef.current) scheduleRedraw();
         return;
       }
 
@@ -1815,6 +1971,10 @@ export function WebCartographerMapViewer({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     containerRef.current?.releasePointerCapture?.(e.pointerId);
     pointersRef.current.delete(e.pointerId);
+    // Commit any in-progress drawing gesture before the pan bookkeeping.
+    if (drawEnabledRef.current && mapDrawingRef.current.isActive()) {
+      mapDrawingRef.current.onPointerUp();
+    }
     if (pointersRef.current.size < 2) pinchRef.current = null;
     if (pointersRef.current.size === 1) {
       // One finger lifted mid-pinch — resume panning from the survivor so
@@ -1863,6 +2023,8 @@ export function WebCartographerMapViewer({
       const wasDrag = dragMaxDistRef.current > 4;
       dragMaxDistRef.current = 0;
       if (wasDrag) return;
+      // In draw mode, clicks belong to the drawing surface — never pin TLs.
+      if (drawEnabledRef.current && cursorModeRef.current === "draw") return;
       if (cursorModeRef.current === "pick" && onWorldClick) {
         const world = unprojectScreen(sx, sy);
         onWorldClick(Math.floor(world.x), Math.floor(world.z));
@@ -2039,13 +2201,15 @@ export function WebCartographerMapViewer({
         style={{
           height,
           cursor:
-            cursorMode === "pick"
+            cursorMode === "draw"
               ? "crosshair"
-              : dragging
-                ? "grabbing"
-                : hoveredSegmentIndex !== null
-                  ? "pointer"
-                  : "grab",
+              : cursorMode === "pick"
+                ? "crosshair"
+                : dragging
+                  ? "grabbing"
+                  : hoveredSegmentIndex !== null
+                    ? "pointer"
+                    : "grab",
           touchAction: "none",
           userSelect: "none",
           WebkitUserSelect: "none",

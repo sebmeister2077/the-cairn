@@ -158,6 +158,8 @@ import { HomePositionControls } from "@/components/tops-map/HomePositionControls
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
 import { WCOfficialDownDialog } from "@/components/tops-map/WCOfficialDownDialog";
+import { useDrawingViewerProps } from "@/components/tops-map/drawing/useDrawingViewerProps";
+import { MapDrawingUi } from "@/components/tops-map/drawing/MapDrawingUi";
 import { useTranslation } from "@/lib/i18n";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/route-share";
@@ -188,6 +190,8 @@ export function TOPSMapViewPage() {
   // viewer picks the right extension when building tile URLs so both
   // hosts work without per-tile probing.
   const effectiveTileFormat = useMemo(() => inferWCTileFormat(effectiveWcUrl), [effectiveWcUrl]);
+  // Planning-board drawing surface: bridges the `drawing` slice to the viewer.
+  const drawingProps = useDrawingViewerProps();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Snapshot the URL params present on first render. They are *not* the
@@ -2048,10 +2052,11 @@ export function TOPSMapViewPage() {
                   </>
                 ) : null
               }
-              cursorMode={routePickMode ? "pick" : "default"}
+              cursorMode={routePickMode ? "pick" : drawingProps.enabled ? "draw" : "default"}
               onWorldClick={handleRouteWorldClick}
               routeOverlay={finalRouteOverlay}
               onHoverCoords={setClimateHoverCoords}
+              drawing={drawingProps}
             />
           ) : (
             <MapViewer
@@ -2204,6 +2209,7 @@ export function TOPSMapViewPage() {
               climateError={climateOverlay.error}
             />
           )}
+          <MapDrawingUi worldKey={effectiveWcUrl} />
         </div>
         <TLGroupingsDrawer
           open={groupingsOpen}

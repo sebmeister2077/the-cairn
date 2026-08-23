@@ -59,6 +59,9 @@ export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
     "contributeTLs",
     // Preview mode is a purely transient UI state.
     "topsMapPreview",
+    // Planning boards live in IndexedDB (large payloads); the Redux copy is
+    // hydrated from there on load, never from the localStorage envelope.
+    "drawing",
     // NOTE: `routePlanner` is intentionally NOT blacklisted — we want to
     // persist the user's cost-model preferences (walk speed, TL penalty,
     // kNeighbors) across reloads. Transient fields (endpoints, computed
