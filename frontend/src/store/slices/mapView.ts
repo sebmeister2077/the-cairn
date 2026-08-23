@@ -271,6 +271,15 @@ export interface MapViewState {
     showAdvancedMapOptions: boolean;
     isFullscreen: boolean;
     /**
+     * When true, the floating control panels in fullscreen mode (the
+     * right-side layer toggles and the bottom-left landmark search) are
+     * collapsed away on `sm+` viewports, leaving a clean map with only the
+     * essential top-left navigation and a "Show controls" affordance.
+     * On phones the FABs already govern panel visibility, so this flag is
+     * a no-op there. Persisted so the preference survives reloads.
+     */
+    fullscreenControlsCollapsed: boolean;
+    /**
      * When true, the TOPS map viewer renders an animated starfield behind
      * the tiles instead of a flat dark background. Pure-CSS; persists
      * across reloads. Default ON.
@@ -383,6 +392,7 @@ export function loadInitialMapViewState(): MapViewState {
         auctionHeatmapOpacity: 0.75,
         showAdvancedMapOptions: true,
         isFullscreen: false,
+        fullscreenControlsCollapsed: false,
         starfieldEnabled: true,
         wcTileCacheEnabled: true,
         favoriteStartingPosition: null,
@@ -595,6 +605,9 @@ export const mapViewSlice = createSlice({
         setShowFullscreen(state, action: PayloadAction<boolean>) {
             state.isFullscreen = action.payload;
         },
+        setFullscreenControlsCollapsed(state, action: PayloadAction<boolean>) {
+            state.fullscreenControlsCollapsed = action.payload;
+        },
         setStarfieldEnabled(state, action: PayloadAction<boolean>) {
             state.starfieldEnabled = action.payload;
         },
@@ -713,6 +726,7 @@ export const {
     setAuctionHeatmapOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,
+    setFullscreenControlsCollapsed,
     setStarfieldEnabled,
     setWCTileCacheEnabled,
     setFavoriteStartingPosition,

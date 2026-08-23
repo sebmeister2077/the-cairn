@@ -1237,6 +1237,8 @@ const ru = {
         enhancing: "Улучшается...",
         jumpToCoordinateShortcut: "Перейти к координате (Ctrl+G)",
         goToCoordinate: "Перейти к координате",
+        hideControls: "Скрыть элементы управления",
+        showControls: "Показать элементы управления",
         retry: "Повторить",
         admin: "Админ",
         worldgenResourcesOverlay: "Слой ресурсов worldgen",

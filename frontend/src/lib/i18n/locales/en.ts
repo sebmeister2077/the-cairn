@@ -1361,6 +1361,8 @@ export const en = {
         enhancing: "Enhancing...",
         jumpToCoordinateShortcut: "Jump to coordinate (Ctrl+G)",
         goToCoordinate: "Go to coordinate",
+        hideControls: "Hide controls",
+        showControls: "Show controls",
         retry: "Retry",
         admin: "Admin",
         worldgenResourcesOverlay: "Worldgen resources overlay",

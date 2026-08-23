@@ -1197,6 +1197,8 @@ const fr = {
         "enhancing": "Amélioration...",
         "jumpToCoordinateShortcut": "Aller à la coordonnée (Ctrl+G)",
         "goToCoordinate": "Aller à la coordonnée",
+        "hideControls": "Masquer les contrôles",
+        "showControls": "Afficher les contrôles",
         "retry": "Réessayer",
         "admin": "Admin",
         "worldgenResourcesOverlay": "Superposition des ressources de génération du monde",

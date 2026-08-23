@@ -1,4 +1,13 @@
-import { Layers, Minimize2, Search, SlidersHorizontal, Waypoints, X } from "lucide-react";
+import {
+  Layers,
+  Minimize2,
+  PanelRightClose,
+  PanelRightOpen,
+  Search,
+  SlidersHorizontal,
+  Waypoints,
+  X,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
@@ -27,6 +36,7 @@ import {
   toggleShowRecentlyAdded as toggleShowRecentlyAddedAction,
   setShowTLsInRadius as setShowTLsInRadiusAction,
   setTLRadiusBlocks as setTLRadiusBlocksAction,
+  setFullscreenControlsCollapsed as setFullscreenControlsCollapsedAction,
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
@@ -272,6 +282,15 @@ export function FullscreenControlsOverlay({
   // FABs are hidden (see the `sm:` utility classes below).
   const [controlsOpen, setControlsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // Persisted "declutter" toggle for `sm+` (small laptop) screens: hides the
+  // right-side layer toggles and the bottom-left landmark search so the map
+  // is unobstructed, without disabling any active overlays. A no-op on
+  // phones, where the FABs already govern panel visibility.
+  const controlsCollapsed = useAppSelector((s) => s.mapView.fullscreenControlsCollapsed);
+  const setControlsCollapsed = useCallback(
+    (next: boolean) => dispatch(setFullscreenControlsCollapsedAction(next)),
+    [dispatch],
+  );
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
       {/* Top-left: exit fullscreen. */}
@@ -305,6 +324,25 @@ export function FullscreenControlsOverlay({
           <Search className="size-4 mr-1" />
           {t("topsMap.goToCoordinate")}
         </Button>
+        {/* `sm+` declutter toggle: collapses the layer-toggle panel + landmark
+            search so the map is unobstructed. Hidden on phones, where the
+            bottom-right FABs already serve this role. */}
+        <Button
+          type="button"
+          variant={controlsCollapsed ? "default" : "secondary"}
+          size="sm"
+          onClick={() => setControlsCollapsed(!controlsCollapsed)}
+          title={controlsCollapsed ? t("topsMap.showControls") : t("topsMap.hideControls")}
+          aria-pressed={controlsCollapsed}
+          className="hidden sm:inline-flex shadow-md"
+        >
+          {controlsCollapsed ? (
+            <PanelRightOpen className="size-4 mr-1" />
+          ) : (
+            <PanelRightClose className="size-4 mr-1" />
+          )}
+          {controlsCollapsed ? t("topsMap.showControls") : t("topsMap.hideControls")}
+        </Button>
       </div>
 
       {/* Top-right: stacked toggles + groupings. Capped height + internal
@@ -316,7 +354,7 @@ export function FullscreenControlsOverlay({
           "pointer-events-auto absolute top-16 right-3 sm:right-6 flex-col gap-2 overflow-y-auto overscroll-contain [scrollbar-gutter:stable] pb-2 pr-1",
           "max-h-[calc(100dvh-8rem)] w-[min(85vw,20rem)]",
           controlsOpen ? "flex" : "hidden",
-          "sm:flex",
+          controlsCollapsed ? "sm:hidden" : "sm:flex",
         )}
       >
         {/* Mobile-only header to dismiss the panel. */}
@@ -780,7 +818,7 @@ export function FullscreenControlsOverlay({
         className={cn(
           "pointer-events-auto absolute bottom-6 left-3 sm:left-6 w-[min(90vw,18rem)] rounded-md border bg-background/95 p-2 shadow-md backdrop-blur",
           searchOpen ? "block" : "hidden",
-          "sm:block",
+          controlsCollapsed ? "sm:hidden" : "sm:block",
         )}
       >
         <div className="mb-1 flex items-center justify-between">

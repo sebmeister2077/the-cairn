@@ -1197,6 +1197,8 @@ const es = {
         "enhancing": "Mejorando...",
         "jumpToCoordinateShortcut": "Ir a coordenada (Ctrl+G)",
         "goToCoordinate": "Ir a coordenada",
+        "hideControls": "Ocultar controles",
+        "showControls": "Mostrar controles",
         "retry": "Reintentar",
         "admin": "Admin",
         "worldgenResourcesOverlay": "Superposición de recursos de generación mundial",

@@ -1254,6 +1254,8 @@ const nl = {
         enhancing: "Verbeteren...",
         jumpToCoordinateShortcut: "Naar coördinaat springen (Ctrl+G)",
         goToCoordinate: "Ga naar coördinaat",
+        hideControls: "Bedieningen verbergen",
+        showControls: "Bedieningen tonen",
         retry: "Opnieuw proberen",
         admin: "Beheerder",
         worldgenResourcesOverlay: "Worldgen‑hulpbronnen‑overlay",
