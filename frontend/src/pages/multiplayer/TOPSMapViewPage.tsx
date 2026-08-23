@@ -5,9 +5,21 @@ import {
   getTopsMapStats,
   getTopsMapLevel,
   getMyAccountSafe,
-  type TopsMapResolutionMeta,
   type TopsMapLevelChunks,
 } from "@/lib/api";
+import {
+  STALE_TIME,
+  RECENT_TL_WINDOW_MS,
+  levelInfoStaleTimeMs,
+  isLevelInfoExpired,
+  levelToTileSet,
+  type TopsMapStatsResponse,
+} from "@/lib/tops-map-view/level-info";
+import { buildLandmarkPoints } from "@/lib/tops-map-view/landmark-points";
+import { mergeLandmarks } from "@/lib/tops-map-view/merge-landmarks";
+import { buildLandmarkSuggestions, findLandmarkByLabel } from "@/lib/tops-map-view/landmark-search";
+import { buildRouteOverlay } from "@/lib/tops-map-view/route-overlay";
+import { computePreviewFocus } from "@/lib/tops-map-view/preview-focus";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
   setSelectedLevel as setSelectedLevelAction,
@@ -57,7 +69,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -68,7 +79,6 @@ import {
 import {
   Download,
   Home,
-  Layers,
   Loader2,
   Maximize2,
   Minimize2,
@@ -77,10 +87,7 @@ import {
   RefreshCw,
   Search,
   Settings,
-  SlidersHorizontal,
   Sparkles,
-  Waypoints,
-  X,
 } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import {
@@ -98,8 +105,6 @@ import {
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { useTLRoute } from "@/hooks/useTLRoute";
 import { useElkWalkable } from "@/hooks/useElkWalkable";
-import { walkLegEdgeRef, classifyWalkLeg } from "@/lib/elk-walkable";
-import { formatDuration } from "@/lib/format-duration";
 import {
   setRouteFrom,
   setRoutePickMode,
@@ -114,17 +119,11 @@ import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
 import { AuctionHeatmapOverlayLayer } from "@/components/tops-map/AuctionHeatmapOverlayLayer";
-import {
-  AuctionHeatmapControl,
-  type AuctionLayer,
-} from "@/components/tops-map/AuctionHeatmapControl";
+import { type AuctionLayer } from "@/components/tops-map/AuctionHeatmapControl";
 import { useAuctionSummary } from "@/lib/auction";
 import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayLayer";
-import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
-import { ClimateControlsPanel } from "@/components/tops-map/ClimateControlsPanel";
-import { PlayerClaimsControl } from "@/components/tops-map/PlayerClaimsControl";
 import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { useClimateOverlay } from "@/hooks/useClimateOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
@@ -148,96 +147,25 @@ import {
   WebCartographerOverlayError,
 } from "@/hooks/useWebCartographerOverlays";
 import { notifyWCTileCacheVersion } from "@/lib/wcTileCache";
-import {
-  TRADER_TYPES,
-  TRADER_TYPE_LABELS,
-  isTraderType,
-  type TraderType,
-} from "@/lib/trader-types";
+import { type TraderType } from "@/lib/trader-types";
 import type { ResourceDeposit } from "@/lib/api";
 import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
 import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
-import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
-import {
-  FullscreenControlsOverlay,
-  OCEANS_TOTAL_COUNT,
-} from "@/components/tops-map/FullScreenOverlay";
-import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
+import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
 import { WCOfficialDownDialog } from "@/components/tops-map/WCOfficialDownDialog";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
 import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/route-share";
 import { GoToDialog } from "@/components/tops-map-viewer/GoToDialog";
 import { ExitPreviewButton } from "@/components/tops-map-viewer/ExitPreviewButton";
-
-const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
-// "Recently added" window for the favourites+recent filter (request #6 from
-// the fullscreen redesign): TLs whose `meta.addedAt` is within this many ms
-// of "now" are considered fresh and union'd into the visible set when the
-// user toggles "Emphasize recently added".
-const RECENT_TL_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
-// Storage key constants moved into [store/slices/mapView.ts]; the slice
-// owns reads/writes so the page only talks to selectors + dispatch.
-
-/**
- * Compute how long (ms) the cached level info should be considered fresh based
- * on its embedded `expires_at`. We refresh a couple of minutes early so the
- * frontend never tries to render with URLs that have just expired.
- */
-function levelInfoStaleTimeMs(info: TopsMapLevelChunks | undefined): number {
-  if (!info?.expires_at) return 0;
-  const expiresAtMs = new Date(info.expires_at).getTime();
-  if (!Number.isFinite(expiresAtMs)) return 0;
-  // Refresh 2 minutes before expiry.
-  return Math.max(0, expiresAtMs - Date.now() - 2 * 60 * 1000);
-}
-
-/** Returns true if the cached level info's presigned URLs are already past expiry. */
-function isLevelInfoExpired(info: TopsMapLevelChunks | undefined): boolean {
-  if (!info?.expires_at) return false;
-  const expiresAtMs = new Date(info.expires_at).getTime();
-  if (!Number.isFinite(expiresAtMs)) return false;
-  return expiresAtMs <= Date.now();
-}
-
-/**
- * Convert a level-info payload into the tile set the viewer renders.
- * Boundary chunks use the remainder dimensions so they line up exactly with
- * the assembled image bounds.
- */
-function levelToTileSet(info: TopsMapLevelChunks): MapTileSet {
-  return {
-    // Identity is just the level number. URL rotations keep the same id so
-    // the viewer doesn't reset pan/zoom every time presigned URLs refresh.
-    id: info.level,
-    imageWidth: info.image_w,
-    imageHeight: info.image_h,
-    chunks: info.chunks.map((c) => {
-      const px = c.cx * info.chunk_w;
-      const py = c.cy * info.chunk_h;
-      return {
-        cx: c.cx,
-        cy: c.cy,
-        url: c.url,
-        px,
-        py,
-        w: Math.min(info.chunk_w, info.image_w - px),
-        h: Math.min(info.chunk_h, info.image_h - py),
-      };
-    }),
-  };
-}
-
-interface TopsMapStatsResponse extends MapStats {
-  default_level?: number | null;
-  resolutions?: TopsMapResolutionMeta[];
-}
+import { AdvancedLayersSection } from "@/components/tops-map-viewer/AdvancedLayersSection";
+import { LayersSection } from "@/components/tops-map-viewer/LayersSection";
+import { AdminSelectedDepositBar } from "@/components/tops-map-viewer/AdminSelectedDepositBar";
 
 export function TOPSMapViewPage() {
   const queryClient = useQueryClient();
@@ -743,65 +671,15 @@ export function TOPSMapViewPage() {
   }, []);
 
   const backendLandmarks = landmarksQuery.data?.data;
-  const allLandmarks = useMemo<WorldPointMarker[] | undefined>(() => {
-    if (!usingWebCartographer) return backendLandmarks;
-    // Merge rule for WC source:
-    //   - From the WC (official) export: keep "Base" landmarks, but drop
-    //     "Trader.*" entries — those duplicate the trader overlay and
-    //     clutter the map with redundant pins.
-    //   - From our backend: keep "Terminus" and "Server" (our Server set
-    //     is richer than WC's single Spawn marker), AND "Base" landmarks
-    //     that were contributed by players (`origin === "user"`).
-    //     Backend seed Bases are skipped to avoid duplicating the WC
-    //     export.
-    const wc = wcLandmarksQuery.data?.data;
-    // Backend user Bases that already appear in the WC export (the WC
-    // periodically re-ingests our contributions) would otherwise render
-    // as duplicate pins. Match by normalised label first, then accept
-    // anything within ~150 blocks of a same-named WC base — placement
-    // jitter between in-game submission and the WC re-export can easily
-    // exceed a small grid tolerance.
-    const DUPLICATE_RADIUS_BLOCKS = 200;
-    const DUPLICATE_RADIUS_SQ = DUPLICATE_RADIUS_BLOCKS * DUPLICATE_RADIUS_BLOCKS;
-    const normaliseLabel = (s: string | undefined) =>
-      (s ?? "").replace(/\s+/g, " ").trim().toLowerCase();
-    const wcBasesByLabel = new Map<string, Array<{ x: number; z: number }>>();
-    for (const p of wc ?? []) {
-      if (p.kind !== "Base") continue;
-      const label = normaliseLabel(p.label);
-      if (!label) continue;
-      const list = wcBasesByLabel.get(label) ?? [];
-      list.push({ x: p.x, z: p.z });
-      wcBasesByLabel.set(label, list);
-    }
-    const isDuplicateOfWc = (p: WorldPointMarker): boolean => {
-      const label = normaliseLabel(p.label);
-      if (!label) return false;
-      const candidates = wcBasesByLabel.get(label);
-      if (!candidates) return false;
-      for (const c of candidates) {
-        const dx = c.x - p.x;
-        const dz = c.z - p.z;
-        if (dx * dx + dz * dz <= DUPLICATE_RADIUS_SQ) return true;
-      }
-      return false;
-    };
-    const fromBackend = (backendLandmarks ?? []).filter((p) => {
-      if (p.kind === "Terminus" || p.kind === "Server") return true;
-      if (p.kind === "Base" && p.origin === "user") {
-        return !isDuplicateOfWc(p);
-      }
-      return false;
-    });
-    const fromWc = (wc ?? []).filter(
-      (p) =>
-        p.kind === "Base" &&
-        !(p.label ?? "").startsWith("Trader.") &&
-        !(p.label ?? "").toLowerCase().includes("terminus"),
-    );
-    if (!wc) return fromBackend.length > 0 ? fromBackend : undefined;
-    return [...fromWc, ...fromBackend];
-  }, [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks]);
+  const allLandmarks = useMemo<WorldPointMarker[] | undefined>(
+    () =>
+      mergeLandmarks({
+        usingWebCartographer,
+        backendLandmarks,
+        wcLandmarks: wcLandmarksQuery.data?.data,
+      }),
+    [usingWebCartographer, wcLandmarksQuery.data, backendLandmarks],
+  );
   // Single source of truth for the TL set we draw + route against. In WC
   // mode this merges the external snapshot with any recently-contributed
   // backend TLs (see `useActiveTranslocators` + `TOPS_MAP_LAST_UPDATE`).
@@ -857,6 +735,7 @@ export function TOPSMapViewPage() {
   // those specific fields change.
   const groupingsStore = useTLGroupings();
   const [groupingsOpen, setGroupingsOpen] = useState(false);
+  const openGroupings = useCallback(() => setGroupingsOpen(true), []);
   const groupingsViewMode = useAppSelector((s) => s.mapView.groupingsViewMode);
   const setGroupingsViewMode = useCallback(
     (mode: TLGroupingsViewMode) => dispatch(setGroupingsViewModeAction(mode)),
@@ -1258,247 +1137,56 @@ export function TOPSMapViewPage() {
   // landmarks (always-on POIs) — unless the dedicated Server-landmarks
   // toggle is off, in which case every Server landmark is hidden except
   // the "Spawn" anchor.
-  const landmarkPoints = useMemo<WorldPointMarker[]>(() => {
-    const base: WorldPointMarker[] = [];
-    if (allLandmarks) {
-      for (const p of allLandmarks) {
-        if (p.kind === "Terminus") {
-          if (showTerminus) base.push(p);
-          continue;
-        }
-        if (p.kind === "Server") {
-          const isSpawn = (p.label ?? "").trim().toLowerCase() === "spawn";
-          if (showServerLandmarks || isSpawn) base.push(p);
-          continue;
-        }
-        if (showLandmarks) base.push(p);
-      }
-    }
-    // Traders overlay. A single toggle (`showTraders`) shows traders from
-    // BOTH sources — the official contributed set and the recorded (session
-    // export) set — deduped, with the per-type filter applied uniformly.
-    if (showTraders) {
-      const passesTypeFilter = (type: string | null | undefined) =>
-        !(traderTypeFilterSet.size > 0 && isTraderType(type) && !traderTypeFilterSet.has(type));
-
-      // Official traders.
-      if (allTraders) {
-        for (const t of allTraders) {
-          if (!passesTypeFilter(t.trader_type)) continue;
-          base.push({
-            x: t.x,
-            z: t.z,
-            kind: "Trader",
-            // label: t.label,
-            color: traderColors[t.trader_type],
-          });
-        }
-      }
-
-      // Recorded traders — collapsed against the official set (same type
-      // within DEDUPE_RADIUS blocks) so overlapping traders don't double up.
-      // A spatial hash keyed by (type, 10-block cell) keeps this O(n): each
-      // recorded trader only tests the 3x3 neighbouring cells. Coordinates
-      // share the same space (verified against the live traders.geojson).
-      if (recordedFeatures) {
-        const DEDUPE_RADIUS = 10;
-        const DEDUPE_RADIUS_SQ = DEDUPE_RADIUS * DEDUPE_RADIUS;
-        const officialBuckets = new Map<string, Array<{ x: number; z: number }>>();
-        const cellKey = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
-        for (const ot of allTraders ?? []) {
-          if (!isTraderType(ot.trader_type)) continue;
-          const cx = Math.floor(ot.x / DEDUPE_RADIUS);
-          const cz = Math.floor(ot.z / DEDUPE_RADIUS);
-          const key = cellKey(ot.trader_type, cx, cz);
-          const bucket = officialBuckets.get(key);
-          if (bucket) bucket.push({ x: ot.x, z: ot.z });
-          else officialBuckets.set(key, [{ x: ot.x, z: ot.z }]);
-        }
-        for (const m of recordedFeatures.traders) {
-          if (!passesTypeFilter(m.traderType)) continue;
-          // Only dedupe when we know the type; unknown-type recordings always show.
-          if (m.traderType) {
-            const cx = Math.floor(m.x / DEDUPE_RADIUS);
-            const cz = Math.floor(m.z / DEDUPE_RADIUS);
-            let duplicate = false;
-            for (let dx = -1; dx <= 1 && !duplicate; dx++) {
-              for (let dz = -1; dz <= 1 && !duplicate; dz++) {
-                const existing = officialBuckets.get(cellKey(m.traderType, cx + dx, cz + dz));
-                if (!existing) continue;
-                for (const p of existing) {
-                  const ddx = p.x - m.x;
-                  const ddz = p.z - m.z;
-                  if (ddx * ddx + ddz * ddz <= DEDUPE_RADIUS_SQ) {
-                    duplicate = true;
-                    break;
-                  }
-                }
-              }
-            }
-            if (duplicate) continue;
-          }
-          base.push(m.traderType ? { ...m, color: traderColors[m.traderType] } : m);
-        }
-      }
-
-      // Classified trader claims render as normal trader markers here (part of
-      // the Traders layer), so a type you assign a claim shows up under "Show
-      // Traders" — not only the dedicated claims overlay. Positions use the
-      // claim's spawn-relative coords (same space as the official/recorded
-      // traders). Deduped against the official + recorded traders within
-      // DEDUPE_RADIUS so a claim colocated with an existing trader marker
-      // doesn't double up.
-      const claimTypeMap = traderClaimTypesQuery.data?.data;
-      const claimList = traderClaimsQuery.data;
-      if (claimTypeMap && claimList) {
-        const R = 10;
-        const R_SQ = R * R;
-        const buckets = new Map<string, Array<{ x: number; z: number }>>();
-        const cell = (type: string, cx: number, cz: number) => `${type}:${cx}:${cz}`;
-        const addBucket = (type: string, x: number, z: number) => {
-          const key = cell(type, Math.floor(x / R), Math.floor(z / R));
-          const b = buckets.get(key);
-          if (b) b.push({ x, z });
-          else buckets.set(key, [{ x, z }]);
-        };
-        for (const ot of allTraders ?? []) {
-          if (isTraderType(ot.trader_type)) addBucket(ot.trader_type, ot.x, ot.z);
-        }
-        for (const rm of recordedFeatures?.traders ?? []) {
-          if (rm.traderType) addBucket(rm.traderType, rm.x, rm.z);
-        }
-        for (const c of claimList) {
-          const assigned = claimTypeMap[c.claimId];
-          if (!assigned) continue;
-          if (!passesTypeFilter(assigned.trader_type)) continue;
-          const cx = Math.floor(c.x / R);
-          const cz = Math.floor(c.z / R);
-          let duplicate = false;
-          for (let dx = -1; dx <= 1 && !duplicate; dx++) {
-            for (let dz = -1; dz <= 1 && !duplicate; dz++) {
-              const existing = buckets.get(cell(assigned.trader_type, cx + dx, cz + dz));
-              if (!existing) continue;
-              for (const p of existing) {
-                const ddx = p.x - c.x;
-                const ddz = p.z - c.z;
-                if (ddx * ddx + ddz * ddz <= R_SQ) {
-                  duplicate = true;
-                  break;
-                }
-              }
-            }
-          }
-          if (duplicate) continue;
-          base.push({
-            x: c.x,
-            z: c.z,
-            kind: "Trader",
-            color: traderColors[assigned.trader_type],
-          });
-        }
-      }
-    }
-    // Recorded broken-translocator overlay (advanced-only, own toggle). Broken
-    // TLs carry an X/Y/Z hover tooltip (relative X/Z + absolute Y).
-    if (recordedBrokenTLsVisible && recordedFeatures) {
-      // Viewport culling for performance: only render broken TLs inside the
-      // current viewport, expanded by a margin so markers pop in slightly
-      // before they scroll into view. Until the first viewport is reported
-      // (bounds null) we render them all so visibility never depends on the
-      // debounced-bounds race; culling kicks in once bounds are known.
-      const b = brokenTLViewportBounds;
-      if (b) {
-        const marginX = (b.maxX - b.minX) * 0.25;
-        const marginZ = (b.maxZ - b.minZ) * 0.25;
-        const minX = b.minX - marginX;
-        const maxX = b.maxX + marginX;
-        const minZ = b.minZ - marginZ;
-        const maxZ = b.maxZ + marginZ;
-        for (const m of recordedFeatures.brokenTLs) {
-          if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
-          base.push(m);
-        }
-      } else {
-        for (const m of recordedFeatures.brokenTLs) base.push(m);
-      }
-    }
-    // Recorded rapids overlay (advanced-only, own toggle). Same viewport
-    // culling as the broken TLs; markers are coloured by claimed state and
-    // carry an X/Y/Z hover tooltip.
-    if (rapidsVisible && rapidsMarkers) {
-      const b = brokenTLViewportBounds;
-      if (b) {
-        const marginX = (b.maxX - b.minX) * 0.25;
-        const marginZ = (b.maxZ - b.minZ) * 0.25;
-        const minX = b.minX - marginX;
-        const maxX = b.maxX + marginX;
-        const minZ = b.minZ - marginZ;
-        const maxZ = b.maxZ + marginZ;
-        for (const m of rapidsMarkers) {
-          if (m.x < minX || m.x > maxX || m.z < minZ || m.z > maxZ) continue;
-          base.push(m);
-        }
-      } else {
-        for (const m of rapidsMarkers) base.push(m);
-      }
-    }
-    // Always-on house glyph for the user's saved favorite position. Drawn
-    // last so the marker sits on top of any colocated landmark/trader dot.
-    if (favoriteStartingPosition) {
-      base.push({
-        x: favoriteStartingPosition.x,
-        z: favoriteStartingPosition.z,
-        kind: "Home",
-        label: "Home",
-      });
-    }
-    return base;
-  }, [
-    allLandmarks,
-    showLandmarks,
-    showServerLandmarks,
-    showTerminus,
-    showTraders,
-    allTraders,
-    traderColors,
-    traderTypeFilterSet,
-    recordedBrokenTLsVisible,
-    recordedFeatures,
-    rapidsVisible,
-    rapidsMarkers,
-    traderClaimsQuery.data,
-    traderClaimTypesQuery.data,
-    brokenTLViewportBounds,
-    favoriteStartingPosition,
-  ]);
+  const landmarkPoints = useMemo<WorldPointMarker[]>(
+    () =>
+      buildLandmarkPoints({
+        allLandmarks,
+        showLandmarks,
+        showServerLandmarks,
+        showTerminus,
+        showTraders,
+        allTraders,
+        traderColors,
+        traderTypeFilterSet,
+        recordedBrokenTLsVisible,
+        recordedFeatures,
+        rapidsVisible,
+        rapidsMarkers,
+        claimList: traderClaimsQuery.data,
+        claimTypeMap: traderClaimTypesQuery.data?.data,
+        brokenTLViewportBounds,
+        favoriteStartingPosition,
+      }),
+    [
+      allLandmarks,
+      showLandmarks,
+      showServerLandmarks,
+      showTerminus,
+      showTraders,
+      allTraders,
+      traderColors,
+      traderTypeFilterSet,
+      recordedBrokenTLsVisible,
+      recordedFeatures,
+      rapidsVisible,
+      rapidsMarkers,
+      traderClaimsQuery.data,
+      traderClaimTypesQuery.data,
+      brokenTLViewportBounds,
+      favoriteStartingPosition,
+    ],
+  );
 
   function handleReload() {
     queryClient.invalidateQueries({ queryKey: ["tops-map-stats"] });
     queryClient.invalidateQueries({ queryKey: ["tops-map-level"] });
   }
 
-  const landmarkSuggestions = useMemo(() => {
-    const seen = new Set<string>();
-    const out: string[] = [];
-    for (const pt of allLandmarks ?? []) {
-      const label = pt.label?.replace(/\s+/g, " ").trim() ?? "";
-      if (!label) continue;
-      const key = label.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(label);
-    }
-    out.sort((a, b) => a.localeCompare(b));
-    return out;
-  }, [allLandmarks]);
+  const landmarkSuggestions = useMemo(() => buildLandmarkSuggestions(allLandmarks), [allLandmarks]);
 
   function handleLandmarkSelect(name: string) {
     setLandmarkSearch(name);
-    const normalised = name.replace(/\s+/g, " ").trim().toLowerCase();
-    const points = allLandmarks ?? [];
-    const match = points.find(
-      (pt) => (pt.label?.replace(/\s+/g, " ").trim().toLowerCase() ?? "") === normalised,
-    );
+    const match = findLandmarkByLabel(allLandmarks, name);
     if (match) {
       setLandmarkFocusSpanBlocks(undefined);
       setLandmarkFocusPoint({ x: match.x, z: match.z });
@@ -1814,6 +1502,10 @@ export function TOPSMapViewPage() {
 
   const routePickMode = useAppSelector((s) => s.routePlanner.pickMode);
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
+  const toggleRoutePlanner = useCallback(
+    () => dispatch(setRoutePlannerOpen(!routePlannerOpen)),
+    [dispatch, routePlannerOpen],
+  );
   const routeFrom = useAppSelector((s) => s.routePlanner.from);
   const routeTo = useAppSelector((s) => s.routePlanner.to);
   const routes = useAppSelector((s) => s.routePlanner.routes);
@@ -1849,78 +1541,33 @@ export function TOPSMapViewPage() {
   // combined overlay (highlighting every TL anyone uses) and pin the
   // meeting point as `to`; individual player positions are intentionally
   // not pinned for now (would require a separate marker layer).
-  const routeOverlay: RouteOverlay | null = useMemo(() => {
-    if (routePlannerMode === "rendezvous") {
-      if (!rendezvousResult) return null;
-      const tlSegments: WorldLineSegment[] = [];
-      const walkLegs: RouteOverlay["walkLegs"] = [];
-      for (const perPlayer of rendezvousResult.perPlayer) {
-        const legs = perPlayer.route.legs;
-        for (let i = 0; i < legs.length; i++) {
-          const leg = legs[i];
-          if (leg.kind === "tl") {
-            tlSegments.push(leg.segment);
-          } else {
-            const ref = walkLegEdgeRef(legs, i);
-            const elkState = classifyWalkLeg(
-              ref,
-              elkEdges,
-              elkPendingAttestKeys,
-              elkPendingUnattestKeys,
-              selfUserId,
-            );
-            walkLegs.push({ from: leg.from, to: leg.to, elkState });
-          }
-        }
-      }
-      return {
-        tlSegments,
-        walkLegs,
-        from: null,
-        to: { x: rendezvousResult.meeting.x, z: rendezvousResult.meeting.z },
-      };
-    }
-    const selected = routes[routeSelectedIndex] ?? routes[0] ?? null;
-    if (!selected && !routeFrom && !routeTo) return null;
-    const tlSegments: WorldLineSegment[] = [];
-    const walkLegs: RouteOverlay["walkLegs"] = [];
-    if (selected) {
-      const legs = selected.legs;
-      for (let i = 0; i < legs.length; i++) {
-        const leg = legs[i];
-        if (leg.kind === "tl") {
-          tlSegments.push(leg.segment);
-        } else {
-          const ref = walkLegEdgeRef(legs, i);
-          const elkState = classifyWalkLeg(
-            ref,
-            elkEdges,
-            elkPendingAttestKeys,
-            elkPendingUnattestKeys,
-            selfUserId,
-          );
-          walkLegs.push({ from: leg.from, to: leg.to, elkState });
-        }
-      }
-    }
-    return {
-      tlSegments,
-      walkLegs,
-      from: routeFrom?.point ?? null,
-      to: routeTo?.point ?? null,
-    };
-  }, [
-    routes,
-    routeSelectedIndex,
-    routeFrom,
-    routeTo,
-    routePlannerMode,
-    rendezvousResult,
-    elkEdges,
-    elkPendingAttestKeys,
-    elkPendingUnattestKeys,
-    selfUserId,
-  ]);
+  const routeOverlay: RouteOverlay | null = useMemo(
+    () =>
+      buildRouteOverlay({
+        routes,
+        routeSelectedIndex,
+        routeFrom,
+        routeTo,
+        routePlannerMode,
+        rendezvousResult,
+        elkEdges,
+        elkPendingAttestKeys,
+        elkPendingUnattestKeys,
+        selfUserId,
+      }),
+    [
+      routes,
+      routeSelectedIndex,
+      routeFrom,
+      routeTo,
+      routePlannerMode,
+      rendezvousResult,
+      elkEdges,
+      elkPendingAttestKeys,
+      elkPendingUnattestKeys,
+      selfUserId,
+    ],
+  );
 
   // ---------------------------------------------------------------
   // Bulk-attest-elk PREVIEW MODE
@@ -1949,34 +1596,9 @@ export function TOPSMapViewPage() {
 
   useEffect(() => {
     if (!previewActive || previewSegments.length === 0) return;
-    let cx = 0;
-    let cz = 0;
-    let span = 0;
-    if (previewFocusEdgeKey) {
-      const e = previewSegments.find((s) => s.key === previewFocusEdgeKey);
-      if (!e) return;
-      cx = (e.fromX + e.toX) / 2;
-      cz = (e.fromZ + e.toZ) / 2;
-      // 2x the longer axis + ~150b of padding keeps both endpoints
-      // and a bit of context inside the viewport.
-      span = Math.max(Math.abs(e.fromX - e.toX), Math.abs(e.fromZ - e.toZ)) * 2 + 150;
-    } else {
-      let minX = Infinity;
-      let minZ = Infinity;
-      let maxX = -Infinity;
-      let maxZ = -Infinity;
-      for (const e of previewSegments) {
-        minX = Math.min(minX, e.fromX, e.toX);
-        minZ = Math.min(minZ, e.fromZ, e.toZ);
-        maxX = Math.max(maxX, e.fromX, e.toX);
-        maxZ = Math.max(maxZ, e.fromZ, e.toZ);
-      }
-      cx = (minX + maxX) / 2;
-      cz = (minZ + maxZ) / 2;
-      span = Math.max(maxX - minX, maxZ - minZ) * 1.4 + 150;
-    }
-    if (Number.isFinite(cx) && Number.isFinite(cz) && Number.isFinite(span)) {
-      dispatch(setRouteFocusRequest({ x: cx, z: cz, spanBlocks: Math.max(span, 200) }));
+    const focus = computePreviewFocus(previewSegments, previewFocusEdgeKey);
+    if (focus) {
+      dispatch(setRouteFocusRequest(focus));
     }
   }, [previewActive, previewFocusEdgeKey, previewSegments, dispatch]);
 
@@ -2220,341 +1842,81 @@ export function TOPSMapViewPage() {
                 </div>
               )}
             </div>
-            <CollapsibleSection
-              title={t("topsMap.layerGroups.layers")}
-              icon={<Layers className="size-4 text-muted-foreground" />}
-              defaultOpen
-            >
-              <div className="flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showTranslocators}
-                  onCheckedChange={setShowTranslocators}
-                  aria-label={t("topsMap.showTranslocatorOverlay")}
-                />
-                <Label>{t("topsMap.showTranslocators")}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.translocatorsFound")}{" "}
-                  <span className="font-medium text-foreground">
-                    {filteringActive
-                      ? t("topsMap.translocatorsShown", {
-                          visible: (visibleTranslocatorSegments?.length ?? 0).toLocaleString(),
-                          total: translocatorCount.toLocaleString(),
-                        })
-                      : translocatorCount.toLocaleString()}
-                  </span>
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="ml-auto"
-                  onClick={() => setGroupingsOpen(true)}
-                >
-                  <Layers className="size-4 mr-1" />
-                  {t("topsMap.groupings")}
-                  {activeGroupingIds.size > 0 && (
-                    <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                      {activeGroupingIds.size}
-                    </span>
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    // Active route wins over "panel-open" so the button
-                    // visually advertises the route even after the user
-                    // collapses the planner. Fall back to the original
-                    // open/closed states otherwise.
-                    routes.length > 0 ? "default" : routePlannerOpen ? "default" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
-                  className={
-                    routes.length > 0
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700"
-                      : undefined
-                  }
-                  aria-label={
-                    routes.length > 0
-                      ? t("routePlanner.routeActiveAria", {
-                          duration: formatDuration(
-                            (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                          ),
-                          action: routePlannerOpen
-                            ? t("routePlanner.routePlannerHide")
-                            : t("routePlanner.routePlannerShow"),
-                        })
-                      : routePlannerOpen
-                        ? t("routePlanner.routePlannerHide")
-                        : t("routePlanner.routePlannerShow")
-                  }
-                  title={
-                    routes.length > 0
-                      ? t("routePlanner.routeActiveTitle", {
-                          duration: formatDuration(
-                            (routes[routeSelectedIndex] ?? routes[0]).totalSeconds,
-                          ),
-                          count: t("routePlanner.tlHops", {
-                            count: (routes[routeSelectedIndex] ?? routes[0]).tlHops,
-                          }),
-                        })
-                      : undefined
-                  }
-                >
-                  <Waypoints className="size-4 mr-1" />
-                  {t("routePlanner.routeButton")}
-                  {routes.length > 0 ? (
-                    // Inline ETA pill — visible whether the planner is open
-                    // or collapsed, so the user always knows a route is
-                    // currently being displayed on the map and roughly how
-                    // long it takes.
-                    <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
-                      {formatDuration((routes[routeSelectedIndex] ?? routes[0]).totalSeconds)}
-                    </span>
-                  ) : routeFrom || routeTo ? (
-                    // Endpoints picked but no route yet — a small pulsing
-                    // dot signals "planning in progress" without competing
-                    // with the loaded-route ETA pill above.
-                    <span
-                      className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
-                      aria-hidden="true"
-                    />
-                  ) : null}
-                </Button>
-              </div>
-              {/* {!usingWebCartographer && ( */}
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showRecentlyAddedTLs}
-                  onCheckedChange={toggleShowRecentlyAddedTLs}
-                  aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
-                />
-                <Label>{t("topsMap.emphasizeRecentlyAddedTls", { days: 14 })}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.recentCount", { count: recentTLIdSet.size.toLocaleString() })}
-                </span>
-              </div>
-              {/* )} */}
-              <GroupEditingInfo
-                editingGrouping={editingGrouping}
-                setEditingGroupingId={setEditingGroupingId}
-              />
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showLandmarks}
-                  onCheckedChange={setShowLandmarks}
-                  aria-label={t("topsMap.showLandmarksOverlay")}
-                />
-                <Label>{t("topsMap.showLandmarks")}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.landmarksFound")}{" "}
-                  <span className="font-medium text-foreground">
-                    {landmarkCount.toLocaleString()}
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                <Switch
-                  checked={showTerminus}
-                  onCheckedChange={setShowTerminus}
-                  aria-label={t("topsMap.showTerminusTeleportersOverlay")}
-                />
-                <Label>{t("topsMap.showTerminusTeleporters")}</Label>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {t("topsMap.terminusMapped")}{" "}
-                  <span className="font-medium text-foreground">
-                    {terminusCount.toLocaleString()}
-                  </span>
-                </span>
-              </div>
-              {tradersQuery.data && (
-                <div className={cn("flex flex-col rounded-md border px-3 py-2 text-sm")}>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={showTraders}
-                      onCheckedChange={setShowTraders}
-                      aria-label={t("topsMap.showTradersOverlay")}
-                    />
-                    <Label>{t("topsMap.showTraders")}</Label>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {t("topsMap.tradersMapped")}{" "}
-                      <span className="font-medium text-foreground">
-                        {traderCount.toLocaleString()}
-                      </span>
-                    </span>
-                  </div>
-                  <div
-                    className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-                    style={{
-                      gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
-                    }}
-                    aria-hidden={!(showTraders && traderCount > 0)}
-                  >
-                    <div className="overflow-hidden min-h-0">
-                      <div className="flex flex-wrap gap-1 pt-3">
-                        {TRADER_TYPES.map((t, i) => {
-                          const active = traderTypeFilterSet.has(t);
-                          return (
-                            <button
-                              key={t}
-                              type="button"
-                              onClick={() => toggleTraderType(t)}
-                              tabIndex={showTraders && traderCount > 0 ? 0 : -1}
-                              className={cn(
-                                "rounded-full border px-2 py-0.5 text-xs cursor-pointer",
-                                showTraders &&
-                                  traderCount > 0 &&
-                                  "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
-                                "transition-colors duration-150",
-                                active ? "bg-foreground text-background" : "bg-background",
-                              )}
-                              style={{
-                                borderColor: traderColors[t],
-                                animationDelay: `${i * 35}ms`,
-                                animationDuration: "260ms",
-                              }}
-                              aria-pressed={active}
-                            >
-                              <span
-                                aria-hidden
-                                className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                                style={{ backgroundColor: traderColors[t] }}
-                              />
-                              {TRADER_TYPE_LABELS[t]}
-                            </button>
-                          );
-                        })}
-                        {traderTypeFilterSet.size > 0 && (
-                          <span
-                            className={cn(
-                              "text-xs text-muted-foreground ml-1 self-center",
-                              showTraders &&
-                                traderCount > 0 &&
-                                "animate-in fade-in-0 fill-mode-both",
-                            )}
-                            style={{
-                              animationDelay: `${TRADER_TYPES.length * 35}ms`,
-                              animationDuration: "260ms",
-                            }}
-                          >
-                            {t("topsMap.showingTypes", {
-                              shown: traderTypeFilterSet.size,
-                              total: TRADER_TYPES.length,
-                            })}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CollapsibleSection>
+            <LayersSection
+              showTranslocators={showTranslocators}
+              setShowTranslocators={setShowTranslocators}
+              filteringActive={filteringActive}
+              visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? 0}
+              translocatorCount={translocatorCount}
+              activeGroupingCount={activeGroupingIds.size}
+              onOpenGroupings={openGroupings}
+              routes={routes}
+              routePlannerOpen={routePlannerOpen}
+              routeSelectedIndex={routeSelectedIndex}
+              routeFrom={routeFrom}
+              routeTo={routeTo}
+              onToggleRoutePlanner={toggleRoutePlanner}
+              showRecentlyAddedTLs={showRecentlyAddedTLs}
+              toggleShowRecentlyAddedTLs={toggleShowRecentlyAddedTLs}
+              recentTLCount={recentTLIdSet.size}
+              editingGrouping={editingGrouping}
+              setEditingGroupingId={setEditingGroupingId}
+              showLandmarks={showLandmarks}
+              setShowLandmarks={setShowLandmarks}
+              landmarkCount={landmarkCount}
+              showTerminus={showTerminus}
+              setShowTerminus={setShowTerminus}
+              terminusCount={terminusCount}
+              tradersLoaded={Boolean(tradersQuery.data)}
+              showTraders={showTraders}
+              setShowTraders={setShowTraders}
+              traderCount={traderCount}
+              traderColors={traderColors}
+              traderTypeFilterSet={traderTypeFilterSet}
+              toggleTraderType={toggleTraderType}
+            />
             {showAdvancedMapOptions && (
-              <CollapsibleSection
-                title={t("topsMap.layerGroups.advanced")}
-                icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
-              >
-                {showAdvancedMapOptions && (
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                    <Switch
-                      checked={showOceans}
-                      onCheckedChange={setShowOceans}
-                      aria-label={t("topsMap.showOceansOverlay")}
-                    />
-                    <Label>{t("topsMap.oceans")}</Label>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {t("topsMap.totalCount", { count: OCEANS_TOTAL_COUNT.toLocaleString() })}
-                    </span>
-                  </div>
-                )}
-                {showAdvancedMapOptions && (
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                    <Switch
-                      checked={showRecordedBrokenTLs}
-                      onCheckedChange={setShowRecordedBrokenTLs}
-                      aria-label={t("topsMap.showRecordedBrokenTLsOverlay")}
-                    />
-                    <Label>{t("topsMap.showRecordedBrokenTLs")}</Label>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {t("topsMap.recordedBrokenTLsFound")}{" "}
-                      <span className="font-medium text-foreground">
-                        {(recordedFeatures?.brokenTLs.length ?? 0).toLocaleString()}
-                      </span>
-                    </span>
-                  </div>
-                )}
-                {showAdvancedMapOptions && (
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                    <Switch
-                      checked={showRapids}
-                      onCheckedChange={setShowRapids}
-                      aria-label={t("topsMap.showRapidsOverlay")}
-                    />
-                    <Label>{t("topsMap.showRapids")}</Label>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {t("topsMap.rapidsFound")}{" "}
-                      <span className="font-medium text-foreground">
-                        {(rapidsMarkers?.length ?? 0).toLocaleString()}
-                      </span>
-                    </span>
-                  </div>
-                )}
-                {showAdvancedMapOptions && (
-                  <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
-                    <Switch
-                      checked={showTraderClaims}
-                      onCheckedChange={setShowTraderClaims}
-                      aria-label={t("topsMap.showTraderClaimsOverlay")}
-                    />
-                    <Label>{t("topsMap.showTraderClaims")}</Label>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {t("topsMap.traderClaimsFound")}{" "}
-                      <span className="font-medium text-foreground">
-                        {(traderClaimsQuery.data?.length ?? 0).toLocaleString()}
-                      </span>
-                    </span>
-                  </div>
-                )}
-                <PlayerClaimsControl />
-                <AuctionHeatmapControl
-                  layer={auctionLayer}
-                  onLayerChange={setAuctionLayer}
-                  opacity={auctionOpacity}
-                  onOpacityChange={setAuctionOpacity}
-                />
-                <RockStrataLegendPanel
-                  enabled={showRockStrata}
-                  onEnabledChange={setShowRockStrata}
-                  layerKind={rockStrataKind}
-                  onLayerKindChange={setRockStrataKind}
-                  halfBlocks={rockStrataHalfBlocks}
-                  onHalfBlocksChange={setRockStrataHalfBlocks}
-                  opacity={rockStrataOpacity}
-                  onOpacityChange={setRockStrataOpacity}
-                  keepCodes={rockStrataKeepCodes}
-                  onKeepCodesChange={setRockStrataKeepCodes}
-                  legend={rockStrataOverlay.legend}
-                  warnBlocky={rockStrataOverlay.warnBlocky}
-                  sourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
-                  status={rockStrataOverlay.status}
-                  error={rockStrataOverlay.error}
-                />
-                {usingWebCartographer && (
-                  <ClimateControlsPanel
-                    layerMeta={climateOverlay.layerMeta}
-                    status={climateOverlay.status}
-                    error={climateOverlay.error}
-                  />
-                )}
-                {climateVisible && (
-                  <ClimateHoverReadout
-                    hoverCoords={climateHoverCoords}
-                    sample={climateHoverSample}
-                    visible={climateVisible}
-                    altitudeY={climateAltitudeY}
-                  />
-                )}
-              </CollapsibleSection>
+              <AdvancedLayersSection
+                showAdvancedMapOptions={showAdvancedMapOptions}
+                showOceans={showOceans}
+                setShowOceans={setShowOceans}
+                showRecordedBrokenTLs={showRecordedBrokenTLs}
+                setShowRecordedBrokenTLs={setShowRecordedBrokenTLs}
+                recordedBrokenTLsCount={recordedFeatures?.brokenTLs.length ?? 0}
+                showRapids={showRapids}
+                setShowRapids={setShowRapids}
+                rapidsCount={rapidsMarkers?.length ?? 0}
+                showTraderClaims={showTraderClaims}
+                setShowTraderClaims={setShowTraderClaims}
+                traderClaimsCount={traderClaimsQuery.data?.length ?? 0}
+                auctionLayer={auctionLayer}
+                setAuctionLayer={setAuctionLayer}
+                auctionOpacity={auctionOpacity}
+                setAuctionOpacity={setAuctionOpacity}
+                showRockStrata={showRockStrata}
+                setShowRockStrata={setShowRockStrata}
+                rockStrataKind={rockStrataKind}
+                setRockStrataKind={setRockStrataKind}
+                rockStrataKeepCodes={rockStrataKeepCodes}
+                setRockStrataKeepCodes={setRockStrataKeepCodes}
+                rockStrataHalfBlocks={rockStrataHalfBlocks}
+                setRockStrataHalfBlocks={setRockStrataHalfBlocks}
+                rockStrataOpacity={rockStrataOpacity}
+                setRockStrataOpacity={setRockStrataOpacity}
+                rockStrataLegend={rockStrataOverlay.legend}
+                rockStrataWarnBlocky={rockStrataOverlay.warnBlocky}
+                rockStrataSourceBlocksPerPixel={rockStrataOverlay.sourceBlocksPerPixel}
+                rockStrataStatus={rockStrataOverlay.status}
+                rockStrataError={rockStrataOverlay.error}
+                usingWebCartographer={usingWebCartographer}
+                climateLayerMeta={climateOverlay.layerMeta}
+                climateStatus={climateOverlay.status}
+                climateError={climateOverlay.error}
+                climateVisible={climateVisible}
+                climateHoverCoords={climateVisible ? climateHoverCoords : null}
+                climateHoverSample={climateHoverSample}
+                climateAltitudeY={climateAltitudeY}
+              />
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
             {hasMap && (
@@ -2577,37 +1939,10 @@ export function TOPSMapViewPage() {
               <MapStatsHeader stats={statsQuery.data} generatedAt={selectedLevelGeneratedAt} />
             )}
             {isAdmin && selectedDeposit && (
-              <div className="flex items-center gap-2 rounded-md border bg-primary/5 px-3 py-2 text-sm">
-                <Sparkles className="size-4 text-primary" />
-                <span className="font-medium capitalize">{selectedDeposit.type}</span>
-                <span className="text-muted-foreground font-mono text-xs">
-                  ({selectedDeposit.x}, {selectedDeposit.y}, {selectedDeposit.z})
-                </span>
-                {selectedDeposit.qty != null && (
-                  <span className="text-xs text-muted-foreground">
-                    {t("topsMap.depositQuantity", {
-                      value: selectedDeposit.qty.toFixed(2),
-                    })}
-                  </span>
-                )}
-                {selectedDeposit.richness != null && (
-                  <span className="text-xs text-muted-foreground">
-                    {t("topsMap.depositRichness", {
-                      value: selectedDeposit.richness.toFixed(2),
-                    })}
-                  </span>
-                )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-sm"
-                  className="ml-auto"
-                  onClick={() => setSelectedDeposit(null)}
-                  aria-label={t("topsMap.dismissDepositInfo")}
-                >
-                  <X className="size-4" />
-                </Button>
-              </div>
+              <AdminSelectedDepositBar
+                selectedDeposit={selectedDeposit}
+                onDismiss={() => setSelectedDeposit(null)}
+              />
             )}
           </>
         )}
@@ -2848,7 +2183,7 @@ export function TOPSMapViewPage() {
               traderCount={traderCount}
               recentTLCount={recentTLIdSet.size}
               activeGroupingCount={activeGroupingIds.size}
-              onOpenGroupings={() => setGroupingsOpen(true)}
+              onOpenGroupings={openGroupings}
               landmarkSearch={landmarkSearch}
               landmarkSuggestions={landmarkSuggestions}
               onLandmarkSearchChange={setLandmarkSearch}

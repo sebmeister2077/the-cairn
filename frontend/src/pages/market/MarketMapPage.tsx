@@ -28,7 +28,11 @@ export function MarketMapPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-semibold">Trade Map</h1>
-        <Button size="sm" render={<Link to="/multiplayer/tops-map?auction=both" />}>
+        <Button
+          size="sm"
+          render={<Link to="/multiplayer/tops-map?auction=both" />}
+          nativeButton={false}
+        >
           Open interactive Trade Map →
         </Button>
       </div>
