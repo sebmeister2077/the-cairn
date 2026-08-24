@@ -17,6 +17,8 @@ import {
     type WorldPoint,
     boardIndexEntry,
 } from "@/lib/drawing/types";
+import { translateElement } from "@/lib/drawing/elements";
+import { DEFAULT_STAMP_ICON_ID } from "@/lib/drawing/stampIcons";
 
 const HISTORY_LIMIT = 60;
 
@@ -35,21 +37,38 @@ export const STAMP_GLYPHS: readonly string[] = [
     "🏠", "🏰", "⛏️", "🌲", "🌾", "🚜", "⚓", "⭐", "❗", "❓",
     "🏭", "🛖", "🐄", "🐖", "🔥", "💧", "🗺️", "📦", "🚩", "⚔️",
 ];
+/** Font families offered by the text tool (label + CSS stack). */
+export const TEXT_FONTS: readonly { label: string; value: string }[] = [
+    { label: "Sans", value: "ui-sans-serif, system-ui, sans-serif" },
+    { label: "Serif", value: "ui-serif, Georgia, serif" },
+    { label: "Mono", value: "ui-monospace, 'Courier New', monospace" },
+    { label: "Rounded", value: "'Segoe UI', 'Trebuchet MS', sans-serif" },
+];
 
 export interface ToolStyle {
     /** Stroke colour for pen / shapes / text. */
     color: string;
     /** Pen / shape stroke width in world blocks. */
     widthBlocks: number;
+    /** General draw opacity 0..1 applied to whatever you draw next (pen, lines,
+     *  shape outlines, text, stamps). Marker keeps its own highlighter alpha. */
+    opacity: number;
     /** Marker (highlighter) opacity 0..1. */
     markerOpacity: number;
     /** Whether shapes are filled. */
     fillEnabled: boolean;
     fillColor: string;
     fillOpacity: number;
-    strokeOpacity: number;
     textSizeBlocks: number;
-    stampGlyph: string;
+    /** Text formatting. */
+    textBold: boolean;
+    textItalic: boolean;
+    textFont: string;
+    /** Outline (halo) behind text + stamps for legibility. */
+    outlineEnabled: boolean;
+    outlineColor: string;
+    /** Vector stamp icon id (see stampIcons.ts). */
+    stampIconId: string;
     stampSizeBlocks: number;
 }
 
@@ -77,6 +96,8 @@ export interface DrawingState {
     pasteBlueprintId: string | null;
     /** World position awaiting a text label from the themed dialog, or null. */
     pendingTextPos: WorldPoint | null;
+    /** Id of a text element being re-edited via the dialog, or null. */
+    editingTextId: string | null;
     /** "This world only" board list filter. */
     worldFilterEnabled: boolean;
 }
@@ -84,14 +105,19 @@ export interface DrawingState {
 const DEFAULT_STYLE: ToolStyle = {
     color: "#dc2626",
     widthBlocks: 24,
+    opacity: 1,
     markerOpacity: 0.4,
     fillEnabled: false,
     fillColor: "#f59e0b",
     fillOpacity: 0.3,
-    strokeOpacity: 1,
     textSizeBlocks: 80,
-    stampGlyph: STAMP_GLYPHS[0],
-    stampSizeBlocks: 120,
+    textBold: false,
+    textItalic: false,
+    textFont: TEXT_FONTS[0].value,
+    outlineEnabled: true,
+    outlineColor: "#000000",
+    stampIconId: DEFAULT_STAMP_ICON_ID,
+    stampSizeBlocks: 20,
 };
 
 /** Exported so the map viewer can seed a ref before the `drawing` prop lands. */
@@ -111,6 +137,7 @@ export const initialDrawingState: DrawingState = {
     blueprintIndex: [],
     pasteBlueprintId: null,
     pendingTextPos: null,
+    editingTextId: null,
     worldFilterEnabled: false,
 };
 
@@ -130,6 +157,64 @@ function pushHistory(state: DrawingState): void {
     state.past.push(current(state.activeBoard.elements) as DrawElement[]);
     if (state.past.length > HISTORY_LIMIT) state.past.shift();
     state.future = [];
+}
+
+/** Map relevant ToolStyle fields onto a single element (used by restyleSelected). */
+function applyStyleToElement(el: DrawElement, s: Partial<ToolStyle>): DrawElement {
+    switch (el.kind) {
+        case "pen":
+        case "marker": {
+            const next = { ...el };
+            if (s.color !== undefined) next.color = s.color;
+            if (s.widthBlocks !== undefined) next.widthBlocks = s.widthBlocks;
+            if (el.kind === "marker" && s.markerOpacity !== undefined) next.opacity = s.markerOpacity;
+            if (el.kind === "pen" && s.opacity !== undefined) next.opacity = s.opacity;
+            return next;
+        }
+        case "line":
+        case "arrow": {
+            const next = { ...el };
+            if (s.color !== undefined) next.color = s.color;
+            if (s.widthBlocks !== undefined) next.widthBlocks = s.widthBlocks;
+            if (s.opacity !== undefined) next.opacity = s.opacity;
+            return next;
+        }
+        case "rect":
+        case "circle": {
+            const next = { ...el };
+            if (s.color !== undefined) next.strokeColor = s.color;
+            if (s.widthBlocks !== undefined) next.strokeWidthBlocks = s.widthBlocks;
+            if (s.opacity !== undefined) next.strokeOpacity = s.opacity;
+            if (s.fillEnabled !== undefined || s.fillColor !== undefined) {
+                const enabled = s.fillEnabled ?? next.fillColor !== null;
+                next.fillColor = enabled ? (s.fillColor ?? next.fillColor ?? "#f59e0b") : null;
+            }
+            if (s.fillOpacity !== undefined) next.fillOpacity = s.fillOpacity;
+            return next;
+        }
+        case "text": {
+            const next = { ...el };
+            if (s.color !== undefined) next.color = s.color;
+            if (s.opacity !== undefined) next.opacity = s.opacity;
+            if (s.textSizeBlocks !== undefined) next.sizeBlocks = s.textSizeBlocks;
+            if (s.textBold !== undefined) next.bold = s.textBold;
+            if (s.textItalic !== undefined) next.italic = s.textItalic;
+            if (s.textFont !== undefined) next.fontFamily = s.textFont;
+            if (s.outlineEnabled !== undefined) next.outline = s.outlineEnabled;
+            if (s.outlineColor !== undefined) next.outlineColor = s.outlineColor;
+            return next;
+        }
+        case "stamp": {
+            const next = { ...el };
+            if (s.color !== undefined) next.color = s.color;
+            if (s.opacity !== undefined) next.opacity = s.opacity;
+            if (s.stampIconId !== undefined) next.iconId = s.stampIconId;
+            if (s.stampSizeBlocks !== undefined) next.sizeBlocks = s.stampSizeBlocks;
+            if (s.outlineEnabled !== undefined) next.outline = s.outlineEnabled;
+            if (s.outlineColor !== undefined) next.outlineColor = s.outlineColor;
+            return next;
+        }
+    }
 }
 
 export const drawingSlice = createSlice({
@@ -222,6 +307,49 @@ export const drawingSlice = createSlice({
             state.selectedIds = state.selectedIds.filter((id) => !ids.has(id));
             touch(state);
         },
+        /** Translate the given elements by (dx, dz) world blocks (drag-move). */
+        moveElements(
+            state,
+            action: PayloadAction<{ ids: string[]; dx: number; dz: number }>,
+        ) {
+            const { ids, dx, dz } = action.payload;
+            if (!state.activeBoard || ids.length === 0) return;
+            if (dx === 0 && dz === 0) return;
+            const set = new Set(ids);
+            pushHistory(state);
+            state.activeBoard.elements = state.activeBoard.elements.map((el) =>
+                set.has(el.id) ? translateElement(el, dx, dz) : el,
+            );
+            touch(state);
+        },
+        /** Patch a single element in place (e.g. edited text content). */
+        updateElement(
+            state,
+            action: PayloadAction<{ id: string; changes: Partial<DrawElement> }>,
+        ) {
+            if (!state.activeBoard) return;
+            const { id, changes } = action.payload;
+            const i = state.activeBoard.elements.findIndex((el) => el.id === id);
+            if (i < 0) return;
+            pushHistory(state);
+            state.activeBoard.elements[i] = {
+                ...state.activeBoard.elements[i],
+                ...changes,
+            } as DrawElement;
+            touch(state);
+        },
+        /** Apply the current tool style to every selected element (per-kind). */
+        restyleSelected(state, action: PayloadAction<Partial<ToolStyle>>) {
+            if (!state.activeBoard || state.selectedIds.length === 0) return;
+            const set = new Set(state.selectedIds);
+            const s = action.payload;
+            pushHistory(state);
+            state.activeBoard.elements = state.activeBoard.elements.map((el) => {
+                if (!set.has(el.id)) return el;
+                return applyStyleToElement(el, s);
+            });
+            touch(state);
+        },
         clearBoard(state) {
             if (!state.activeBoard || state.activeBoard.elements.length === 0) return;
             pushHistory(state);
@@ -286,6 +414,13 @@ export const drawingSlice = createSlice({
         },
         cancelText(state) {
             state.pendingTextPos = null;
+        },
+        /** Open the edit dialog for an existing text element. */
+        requestTextEdit(state, action: PayloadAction<string>) {
+            state.editingTextId = action.payload;
+        },
+        cancelTextEdit(state) {
+            state.editingTextId = null;
         },
 
         setWorldFilterEnabled(state, action: PayloadAction<boolean>) {

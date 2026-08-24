@@ -57,7 +57,9 @@ export function useDrawingViewerProps(): MapDrawingProps {
             onCommitMany: (els) => dispatch(drawingActions.addElements(els)),
             onErase: (ids) => dispatch(drawingActions.eraseElements(ids)),
             onSelect: (ids) => dispatch(drawingActions.setSelection(ids)),
+            onMove: (ids, dx, dz) => dispatch(drawingActions.moveElements({ ids, dx, dz })),
             onRequestText: (world) => dispatch(drawingActions.requestText(world)),
+            onEditText: (id) => dispatch(drawingActions.requestTextEdit(id)),
         }),
         [
             dispatch,

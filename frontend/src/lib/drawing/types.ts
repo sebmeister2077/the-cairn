@@ -73,6 +73,13 @@ export interface TextElement {
     sizeBlocks: number;
     color: string;
     opacity: number;
+    /** Optional rich formatting (all default off / sans when absent). */
+    bold?: boolean;
+    italic?: boolean;
+    fontFamily?: string;
+    /** Draw a coloured outline (halo) behind the glyphs for legibility. */
+    outline?: boolean;
+    outlineColor?: string;
     createdAt: number;
 }
 
@@ -80,9 +87,18 @@ export interface StampElement {
     id: string;
     kind: "stamp";
     pos: WorldPoint;
-    /** Emoji character or short icon id painted centred on `pos`. */
-    glyph: string;
+    /** Vector icon id (see stampIcons.ts). New stamps use this. */
+    iconId?: string;
+    /** Tint colour for the vector icon. */
+    color?: string;
+    /** Legacy emoji character (older boards); rendered when no iconId. */
+    glyph?: string;
     sizeBlocks: number;
+    /** Draw alpha 0..1 (legacy stamps had no opacity → treated as 1). */
+    opacity?: number;
+    /** Draw a coloured outline behind the glyph. */
+    outline?: boolean;
+    outlineColor?: string;
     createdAt: number;
 }
 

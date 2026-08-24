@@ -16,6 +16,17 @@ export interface WorldBBox {
     maxZ: number;
 }
 
+/** Rough on-screen width of a text label in world blocks (no canvas metrics). */
+function approxTextWidthBlocks(el: Extract<DrawElement, { kind: "text" }>): number {
+    const perChar = el.sizeBlocks * (el.bold ? 0.62 : 0.55);
+    return Math.max(el.sizeBlocks * 0.5, el.text.length * perChar);
+}
+
+/** Line-box height of a text label in world blocks. */
+function textHeightBlocks(el: Extract<DrawElement, { kind: "text" }>): number {
+    return el.sizeBlocks * 1.15;
+}
+
 /** All world points that define an element's extent (stroke vertices, shape
  *  corners, a circle's cardinal points, etc.). */
 function elementPoints(el: DrawElement): WorldPoint[] {
@@ -36,8 +47,19 @@ function elementPoints(el: DrawElement): WorldPoint[] {
                 { x: el.center.x, z: el.center.z + el.radiusBlocks },
             ];
         case "text":
-        case "stamp":
-            return [el.pos];
+            // Anchor is the top-left (baseline top, align left).
+            return [
+                el.pos,
+                { x: el.pos.x + approxTextWidthBlocks(el), z: el.pos.z + textHeightBlocks(el) },
+            ];
+        case "stamp": {
+            // Icon/emoji is centred on `pos` and spans ~sizeBlocks.
+            const half = el.sizeBlocks / 2;
+            return [
+                { x: el.pos.x - half, z: el.pos.z - half },
+                { x: el.pos.x + half, z: el.pos.z + half },
+            ];
+        }
     }
 }
 
@@ -174,10 +196,24 @@ export function hitTestElement(
             if (el.fillColor) return d <= el.radiusBlocks + toleranceBlocks;
             return Math.abs(d - el.radiusBlocks) <= toleranceBlocks + el.strokeWidthBlocks / 2;
         }
-        case "text":
+        case "text": {
+            const w = approxTextWidthBlocks(el);
+            const h = textHeightBlocks(el);
+            return (
+                px >= el.pos.x - toleranceBlocks &&
+                px <= el.pos.x + w + toleranceBlocks &&
+                pz >= el.pos.z - toleranceBlocks &&
+                pz <= el.pos.z + h + toleranceBlocks
+            );
+        }
         case "stamp": {
-            const half = el.sizeBlocks;
-            return (px - el.pos.x) ** 2 + (pz - el.pos.z) ** 2 <= (toleranceBlocks + half) ** 2;
+            const half = el.sizeBlocks / 2 + toleranceBlocks;
+            return (
+                px >= el.pos.x - half &&
+                px <= el.pos.x + half &&
+                pz >= el.pos.z - half &&
+                pz <= el.pos.z + half
+            );
         }
     }
 }

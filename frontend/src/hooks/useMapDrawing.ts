@@ -14,7 +14,7 @@ import {
     type WorldPoint,
     newId,
 } from "@/lib/drawing/types";
-import { cloneElementWithNewId, elementInBox, hitTestElement, translateElement } from "@/lib/drawing/elements";
+import { cloneElementWithNewId, elementInBox, elementsBBox, hitTestElement, translateElement } from "@/lib/drawing/elements";
 
 /** Screen-space marquee rectangle (container px). */
 export interface MarqueeRect {
@@ -24,11 +24,19 @@ export interface MarqueeRect {
     y1: number;
 }
 
+/** Live offset applied to selected elements while a move drag is in progress. */
+export interface MoveOffset {
+    ids: ReadonlySet<string>;
+    dx: number;
+    dz: number;
+}
+
 type Gesture =
     | { type: "stroke"; el: Extract<DrawElement, { kind: "pen" | "marker" }> }
     | { type: "shape"; el: DrawElement }
     | { type: "erase"; ids: Set<string> }
-    | { type: "marquee"; rect: MarqueeRect };
+    | { type: "marquee"; rect: MarqueeRect }
+    | { type: "move"; ids: Set<string>; start: WorldPoint; cur: WorldPoint };
 
 export interface MapDrawingConfig {
     enabledRef: MutableRefObject<boolean>;
@@ -38,6 +46,8 @@ export interface MapDrawingConfig {
     pasteRef: MutableRefObject<{ elements: DrawElement[] } | null>;
     /** Committed elements, for eraser / marquee hit-testing. */
     elementsRef: MutableRefObject<DrawElement[]>;
+    /** Currently-selected element ids (drives drag-to-move in select mode). */
+    selectedRef: MutableRefObject<ReadonlySet<string>>;
     ppbRef: MutableRefObject<number>;
     unproject: (sx: number, sy: number) => WorldPoint;
     scheduleRedraw: () => void;
@@ -45,6 +55,8 @@ export interface MapDrawingConfig {
     onCommitMany: (els: DrawElement[]) => void;
     onErase: (ids: string[]) => void;
     onSelect: (ids: string[]) => void;
+    /** Commit a drag-move of the given elements by (dx, dz) world blocks. */
+    onMove: (ids: string[], dx: number, dz: number) => void;
     /** Ask the React layer to collect a text label for the given world point
      *  (opens the themed dialog); the caller commits the element on submit. */
     onRequestText: (world: WorldPoint) => void;
@@ -61,6 +73,8 @@ export interface MapDrawingController {
     getPreview: () => DrawElement | null;
     getMarquee: () => MarqueeRect | null;
     getPendingErase: () => ReadonlySet<string>;
+    /** Live drag-move offset for selected elements, or null. */
+    getMoveOffset: () => MoveOffset | null;
 }
 
 function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint) {
@@ -70,7 +84,7 @@ function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint
         points: [first],
         widthBlocks: style.widthBlocks,
         color: style.color,
-        opacity: kind === "marker" ? style.markerOpacity : 1,
+        opacity: kind === "marker" ? style.markerOpacity : style.opacity,
         createdAt: Date.now(),
     } as Extract<DrawElement, { kind: "pen" | "marker" }>;
 }
@@ -88,7 +102,7 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
                 b: a,
                 color: style.color,
                 widthBlocks: style.widthBlocks,
-                opacity: style.strokeOpacity,
+                opacity: style.opacity,
                 createdAt: now,
             };
         case "rect":
@@ -99,7 +113,7 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
                 b: a,
                 strokeColor: style.color,
                 strokeWidthBlocks: style.widthBlocks,
-                strokeOpacity: style.strokeOpacity,
+                strokeOpacity: style.opacity,
                 fillColor: fill,
                 fillOpacity: style.fillOpacity,
                 createdAt: now,
@@ -112,7 +126,7 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
                 radiusBlocks: 0,
                 strokeColor: style.color,
                 strokeWidthBlocks: style.widthBlocks,
-                strokeOpacity: style.strokeOpacity,
+                strokeOpacity: style.opacity,
                 fillColor: fill,
                 fillOpacity: style.fillOpacity,
                 createdAt: now,
@@ -186,8 +200,12 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                     id: newId(),
                     kind: "stamp",
                     pos: world,
-                    glyph: c.styleRef.current.stampGlyph,
+                    iconId: c.styleRef.current.stampIconId,
+                    color: c.styleRef.current.color,
                     sizeBlocks: c.styleRef.current.stampSizeBlocks,
+                    opacity: c.styleRef.current.opacity,
+                    outline: c.styleRef.current.outlineEnabled,
+                    outlineColor: c.styleRef.current.outlineColor,
                     createdAt: Date.now(),
                 });
                 return true;
@@ -200,12 +218,36 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 return true;
             }
             case "select": {
+                // If the press lands inside the current selection, drag-move it;
+                // otherwise start a fresh marquee.
+                const sel = c.selectedRef.current;
+                if (sel.size > 0) {
+                    const selected = c.elementsRef.current.filter((el) => sel.has(el.id));
+                    const bb = elementsBBox(selected);
+                    const tol = worldTol();
+                    if (
+                        bb &&
+                        world.x >= bb.minX - tol &&
+                        world.x <= bb.maxX + tol &&
+                        world.z >= bb.minZ - tol &&
+                        world.z <= bb.maxZ + tol
+                    ) {
+                        gestureRef.current = {
+                            type: "move",
+                            ids: new Set(sel),
+                            start: world,
+                            cur: world,
+                        };
+                        c.scheduleRedraw();
+                        return true;
+                    }
+                }
                 gestureRef.current = { type: "marquee", rect: { x0: sx, y0: sy, x1: sx, y1: sy } };
                 c.scheduleRedraw();
                 return true;
             }
         }
-    }, [eraseAt]);
+    }, [eraseAt, worldTol]);
 
     const onPointerMove = useCallback((sx: number, sy: number) => {
         const c = cfg.current;
@@ -231,6 +273,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "marquee":
                 g.rect.x1 = sx;
                 g.rect.y1 = sy;
+                break;
+            case "move":
+                g.cur = world;
                 break;
         }
         c.scheduleRedraw();
@@ -275,6 +320,12 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 lastMarqueeRef.current = g.rect;
                 commitMarquee(g.rect);
                 break;
+            case "move": {
+                const dx = g.cur.x - g.start.x;
+                const dz = g.cur.z - g.start.z;
+                if (dx !== 0 || dz !== 0) c.onMove(Array.from(g.ids), dx, dz);
+                break;
+            }
         }
         c.scheduleRedraw();
     }, [commitMarquee]);
@@ -300,6 +351,11 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
         getMarquee: () => (gestureRef.current?.type === "marquee" ? gestureRef.current.rect : null),
         getPendingErase: () =>
             gestureRef.current?.type === "erase" ? gestureRef.current.ids : EMPTY_SET,
+        getMoveOffset: () => {
+            const g = gestureRef.current;
+            if (g?.type !== "move") return null;
+            return { ids: g.ids, dx: g.cur.x - g.start.x, dz: g.cur.z - g.start.z };
+        },
     };
 }
 

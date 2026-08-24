@@ -23,6 +23,13 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
   const canRedo = useAppSelector((s) => s.drawing.future.length > 0);
   const pendingTextPos = useAppSelector((s) => s.drawing.pendingTextPos);
   const textStyle = useAppSelector((s) => s.drawing.style);
+  const editingTextId = useAppSelector((s) => s.drawing.editingTextId);
+  const editingText = useAppSelector((s) => {
+    const id = s.drawing.editingTextId;
+    if (!id) return "";
+    const el = s.drawing.activeBoard?.elements.find((e) => e.id === id);
+    return el && el.kind === "text" ? el.text : "";
+  });
   // Mirror the fullscreen "Hide controls" declutter toggle.
   const controlsCollapsed = useAppSelector((s) => s.mapView.fullscreenControlsCollapsed);
 
@@ -72,7 +79,12 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
               text,
               sizeBlocks: textStyle.textSizeBlocks,
               color: textStyle.color,
-              opacity: 1,
+              opacity: textStyle.opacity,
+              bold: textStyle.textBold,
+              italic: textStyle.textItalic,
+              fontFamily: textStyle.textFont,
+              outline: textStyle.outlineEnabled,
+              outlineColor: textStyle.outlineColor,
               createdAt: Date.now(),
             }),
           );
@@ -83,9 +95,32 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
     />
   );
 
+  const editTextDialog = (
+    <PromptDialog
+      open={editingTextId !== null}
+      title="Edit text"
+      label="Label text"
+      initialValue={editingText}
+      submitLabel="Save"
+      onSubmit={(text) => {
+        if (editingTextId) {
+          dispatch(drawingActions.updateElement({ id: editingTextId, changes: { text } }));
+        }
+        dispatch(drawingActions.cancelTextEdit());
+      }}
+      onCancel={() => dispatch(drawingActions.cancelTextEdit())}
+    />
+  );
+
   // "Hide controls" collapses the bottom bar + toolbar, but keep the text
-  // dialog mounted so any pending label still resolves.
-  if (controlsCollapsed) return textDialog;
+  // dialogs mounted so any pending / in-progress label still resolves.
+  if (controlsCollapsed)
+    return (
+      <>
+        {textDialog}
+        {editTextDialog}
+      </>
+    );
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex flex-col items-center gap-2 px-3">
@@ -136,6 +171,7 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
         </Popover>
       </div>
       {textDialog}
+      {editTextDialog}
     </div>
   );
 }

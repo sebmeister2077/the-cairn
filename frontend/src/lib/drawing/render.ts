@@ -3,7 +3,8 @@
 // multiplied by `pixelsPerBlock` so everything scales with zoom.
 
 import type { DrawElement } from "./types";
-import { elementBBox } from "./elements";
+import { elementBBox, translateElement } from "./elements";
+import { STAMP_ICON_MAP, drawStampIcon } from "./stampIcons";
 
 export type ProjectFn = (wx: number, wz: number) => { x: number; y: number };
 
@@ -12,6 +13,8 @@ export interface DrawElementsOptions {
     highlightIds?: ReadonlySet<string>;
     /** Draw everything at reduced alpha (paste ghost / in-progress preview). */
     ghost?: boolean;
+    /** Live drag-move: translate matching elements by (dx, dz) world blocks. */
+    moveOffset?: { ids: ReadonlySet<string>; dx: number; dz: number };
 }
 
 const MIN_LINE_PX = 1;
@@ -131,23 +134,48 @@ function drawOne(
             ctx.fillStyle = el.color;
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
-            ctx.font = `${size}px ui-sans-serif, system-ui, sans-serif`;
-            // Halo for legibility over busy terrain.
-            ctx.strokeStyle = "rgba(0,0,0,0.55)";
-            ctx.lineWidth = Math.max(1, size / 12);
+            const italic = el.italic ? "italic " : "";
+            const weight = el.bold ? "700 " : "";
+            const family = el.fontFamily ?? "ui-sans-serif, system-ui, sans-serif";
+            ctx.font = `${italic}${weight}${size}px ${family}`;
             ctx.lineJoin = "round";
-            ctx.strokeText(el.text, p.x, p.y);
+            // Halo for legibility over busy terrain (on by default for legacy text).
+            if (el.outline ?? true) {
+                ctx.strokeStyle = el.outlineColor ?? "rgba(0,0,0,0.55)";
+                ctx.lineWidth = Math.max(1, size / 12);
+                ctx.strokeText(el.text, p.x, p.y);
+            }
             ctx.fillText(el.text, p.x, p.y);
             break;
         }
         case "stamp": {
             const p = project(el.pos.x, el.pos.z);
             const size = Math.max(8, el.sizeBlocks * ppb);
-            applyAlpha(ctx, 1, ghost);
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.font = `${size}px "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-            ctx.fillText(el.glyph, p.x, p.y);
+            applyAlpha(ctx, el.opacity ?? 1, ghost);
+            const icon = el.iconId ? STAMP_ICON_MAP[el.iconId] : undefined;
+            if (icon) {
+                drawStampIcon(
+                    ctx,
+                    icon.node,
+                    p.x,
+                    p.y,
+                    size,
+                    el.color ?? "#dc2626",
+                    el.outline ? { color: el.outlineColor ?? "#000000", width: 3 } : null,
+                );
+            } else if (el.glyph) {
+                // Legacy emoji stamp (older boards).
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.font = `${size}px "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+                if (el.outline) {
+                    ctx.strokeStyle = el.outlineColor ?? "#000000";
+                    ctx.lineWidth = Math.max(1, size / 14);
+                    ctx.lineJoin = "round";
+                    ctx.strokeText(el.glyph, p.x, p.y);
+                }
+                ctx.fillText(el.glyph, p.x, p.y);
+            }
             break;
         }
     }
@@ -165,9 +193,13 @@ export function drawElements(
     preview: DrawElement | null,
     opts: DrawElementsOptions = {},
 ): void {
-    const { highlightIds, ghost = false } = opts;
+    const { highlightIds, ghost = false, moveOffset } = opts;
     ctx.save();
-    for (const el of elements) {
+    for (const src of elements) {
+        const el =
+            moveOffset && moveOffset.ids.has(src.id)
+                ? translateElement(src, moveOffset.dx, moveOffset.dz)
+                : src;
         drawOne(ctx, el, project, pixelsPerBlock, ghost);
         if (highlightIds && highlightIds.has(el.id)) {
             const bb = elementBBox(el);

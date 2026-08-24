@@ -33,6 +33,20 @@ export interface SliderProps extends Omit<
   snapMarkers?: SliderSnapMarker[];
   /** Wrapper className (applied to the outer relative container). */
   className?: string;
+  /** Adjust the value with the mouse wheel while hovering. Default on. */
+  wheel?: boolean;
+  /** Render a compact number field beside the track for keyboard entry. */
+  showInput?: boolean;
+}
+
+/** Round `v` to the nearest `step` starting from `min`, clamped to [min,max]. */
+function snapToStep(v: number, min: number, max: number, step: number): number {
+  const clamped = Math.min(max, Math.max(min, v));
+  if (step <= 0) return clamped;
+  const snapped = min + Math.round((clamped - min) / step) * step;
+  // Kill float dust (e.g. 0.30000000000000004) using the step's decimal count.
+  const decimals = (String(step).split(".")[1] ?? "").length;
+  return Number(Math.min(max, Math.max(min, snapped)).toFixed(decimals));
 }
 
 export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function Slider(
@@ -45,15 +59,37 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
     snapMarkers,
     className,
     disabled,
+    wheel = true,
+    showInput = false,
     ...inputProps
   },
   ref,
 ) {
   const range = max - min;
   const pct = range > 0 ? ((value - min) / range) * 100 : 0;
+  const trackRef = React.useRef<HTMLDivElement>(null);
 
-  return (
-    <div className={cn("relative h-6 select-none", className)}>
+  // Native (non-passive) wheel listener so we can preventDefault and keep the
+  // map/page from scrolling while the cursor is over the slider.
+  React.useEffect(() => {
+    const node = trackRef.current;
+    if (!node || !wheel || disabled) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const dir = e.deltaY < 0 ? 1 : -1;
+      const mult = e.shiftKey ? 10 : 1;
+      onValueChange(snapToStep(value + dir * step * mult, min, max, step));
+    };
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [wheel, disabled, value, step, min, max, onValueChange]);
+
+  const track = (
+    <div
+      ref={trackRef}
+      className={cn("relative h-6 select-none", showInput && "flex-1", className)}
+    >
       {/* Track background */}
       <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-muted" />
       {/* Filled portion */}
@@ -101,6 +137,28 @@ export const Slider = React.forwardRef<HTMLInputElement, SliderProps>(function S
       <div
         className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 size-4 rounded-full pointer-events-none ring-2 ring-ring ring-offset-2 ring-offset-background opacity-0 peer-focus-visible:opacity-100 transition-opacity"
         style={{ left: `${pct}%` }}
+      />
+    </div>
+  );
+
+  if (!showInput) return track;
+
+  return (
+    <div className="flex items-center gap-2">
+      {track}
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => {
+          const raw = parseFloat(e.target.value);
+          if (Number.isNaN(raw)) return;
+          onValueChange(snapToStep(raw, min, max, step));
+        }}
+        className="h-7 w-16 shrink-0 rounded-md border bg-background px-2 text-xs tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
       />
     </div>
   );

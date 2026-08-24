@@ -46,6 +46,7 @@ import type {
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
+import { hitTestElement as hitTestDrawElement } from "@/lib/drawing/elements";
 import { DEFAULT_TOOL_STYLE, type ToolStyle } from "@/store/slices/drawing";
 import type { DrawElement, DrawTool } from "@/lib/drawing/types";
 
@@ -66,7 +67,10 @@ export interface MapDrawingProps {
   onCommitMany: (els: DrawElement[]) => void;
   onErase: (ids: string[]) => void;
   onSelect: (ids: string[]) => void;
+  onMove: (ids: string[], dx: number, dz: number) => void;
   onRequestText: (world: { x: number; z: number }) => void;
+  /** Double-click on an existing text element requests an edit of its content. */
+  onEditText: (id: string) => void;
 }
 
 /**
@@ -956,6 +960,7 @@ export function WebCartographerMapViewer({
     styleRef: drawStyleRef,
     pasteRef: drawPasteRef,
     elementsRef: drawElementsRef,
+    selectedRef: drawSelectedRef,
     ppbRef: pixelsPerBlockRef,
     unproject: unprojectScreen,
     scheduleRedraw,
@@ -966,6 +971,10 @@ export function WebCartographerMapViewer({
     ),
     onErase: useCallback((ids: string[]) => drawingPropsRef.current?.onErase(ids), []),
     onSelect: useCallback((ids: string[]) => drawingPropsRef.current?.onSelect(ids), []),
+    onMove: useCallback(
+      (ids: string[], dx: number, dz: number) => drawingPropsRef.current?.onMove(ids, dx, dz),
+      [],
+    ),
     onRequestText: useCallback(
       (world: { x: number; z: number }) => drawingPropsRef.current?.onRequestText(world),
       [],
@@ -1376,6 +1385,7 @@ export function WebCartographerMapViewer({
           : drawElementsRef.current;
       drawElements(octx, committed, project, ppb, mapDrawingRef.current.getPreview(), {
         highlightIds: drawSelectedRef.current,
+        moveOffset: mapDrawingRef.current.getMoveOffset() ?? undefined,
       });
 
       // Paste ghost: a translucent blueprint clone tracking the cursor.
@@ -1689,10 +1699,14 @@ export function WebCartographerMapViewer({
   // ── Pointer interaction (mouse / touch / pen) ────────────────────────────
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // Mouse: only the primary (left) button drags. Touch/pen always pass.
-      if (e.pointerType === "mouse" && e.button !== 0) return;
+      // Mouse: left button draws/pans; the middle or right button always pans
+      // (so you can move around the map even while drawing). Others are ignored.
+      const isPanButton = e.pointerType === "mouse" && (e.button === 1 || e.button === 2);
+      if (e.pointerType === "mouse" && e.button !== 0 && !isPanButton) return;
       if (interactionsLockedRef.current) return;
       if (cursorModeRef.current === "pick") return;
+      // Middle-click would otherwise trigger the OS autoscroll cursor.
+      if (isPanButton) e.preventDefault();
       const container = containerRef.current;
       container?.setPointerCapture?.(e.pointerId);
       pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1717,8 +1731,8 @@ export function WebCartographerMapViewer({
         return;
       }
 
-      // Draw mode: a single pointer paints instead of panning.
-      if (drawEnabledRef.current && cursorModeRef.current === "draw") {
+      // Draw mode: the left button paints; a pan button falls through to pan.
+      if (drawEnabledRef.current && cursorModeRef.current === "draw" && !isPanButton) {
         const rect = container?.getBoundingClientRect();
         const sx = e.clientX - (rect?.left ?? 0);
         const sy = e.clientY - (rect?.top ?? 0);
@@ -1778,6 +1792,16 @@ export function WebCartographerMapViewer({
         const hz = Math.floor(world.z);
         setHoverCoords({ x: hx, z: hz });
         onHoverCoords?.({ x: hx, z: hz });
+        // Middle/right-button drag pans the map even while drawing.
+        if (!active && dragging && dragStartRef.current) {
+          const dx = e.clientX - dragStartRef.current.x;
+          const dy = e.clientY - dragStartRef.current.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist > dragMaxDistRef.current) dragMaxDistRef.current = dist;
+          const ppb = pixelsPerBlockRef.current;
+          setCenterWorldX(dragStartRef.current.cwX - dx / ppb);
+          setCenterWorldZ(dragStartRef.current.cwZ - dy / ppb);
+        }
         if (active || drawPasteRef.current) scheduleRedraw();
         return;
       }
@@ -2071,14 +2095,45 @@ export function WebCartographerMapViewer({
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent) => {
+      // Right button pans the map, so always suppress the browser menu here.
+      e.preventDefault();
+      // A right-drag (pan) must not also fire a segment right-click.
+      const wasDrag = dragMaxDistRef.current > 4;
+      dragMaxDistRef.current = 0;
+      if (wasDrag) return;
       if (!onOverlaySegmentRightClick || !overlaySegments || overlaySegments.length === 0) return;
       if (hoveredSegmentIndex === null) return;
       const seg = overlaySegments[hoveredSegmentIndex];
       if (!seg) return;
-      e.preventDefault();
       onOverlaySegmentRightClick(seg);
     },
     [hoveredSegmentIndex, onOverlaySegmentRightClick, overlaySegments],
+  );
+
+  // Double-click a text element while drawing to edit its content.
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (!drawEnabledRef.current || cursorModeRef.current !== "draw") return;
+      // Only in the Select tool, so it can't collide with a tool that draws
+      // on click (e.g. Text would also spawn a new label).
+      if (drawToolRef.current !== "select") return;
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const world = unprojectScreen(e.clientX - rect.left, e.clientY - rect.top);
+      const tol = 6 / pixelsPerBlockRef.current;
+      const els = drawElementsRef.current;
+      // Topmost element is drawn last, so search from the end.
+      for (let i = els.length - 1; i >= 0; i--) {
+        const el = els[i];
+        if (el.kind !== "text") continue;
+        if (hitTestDrawElement(el, world.x, world.z, tol)) {
+          drawingPropsRef.current?.onEditText(el.id);
+          return;
+        }
+      }
+    },
+    [unprojectScreen],
   );
 
   // ── Canvas-class assembly ────────────────────────────────────────────────
@@ -2220,6 +2275,7 @@ export function WebCartographerMapViewer({
         onPointerCancel={handlePointerUp}
         onPointerLeave={handlePointerLeave}
         onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
         // A native drag (of the overlay SVG/img children) would fire
         // pointercancel and abort the pan; suppress it so mouse drags pan
