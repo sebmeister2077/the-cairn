@@ -59,6 +59,7 @@ import { PrivacyPage } from "@/pages/other/PrivacyPage";
 import { TermsPage } from "@/pages/other/TermsPage";
 import { CookieConsent } from "@/components/CookieConsent";
 import { openCookieSettings } from "@/lib/consent";
+import { EventPromoBanner } from "@/components/EventPromoBanner";
 import { GeneralPage } from "@/pages/other/GeneralPage";
 import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
 import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
@@ -840,6 +841,7 @@ export function AppContent() {
             }}
           />
         )}
+        <EventPromoBanner />
         {/* Fallback notice when no public invite link is configured and the
             visitor has no key. Auto-claim cannot run; an admin must hand out
             an invite link or paste a key directly via the API Key dialog. */}

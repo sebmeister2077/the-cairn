@@ -154,6 +154,7 @@ import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
+import { CenterCrosshair } from "@/components/tops-map/CenterCrosshair";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
@@ -477,6 +478,8 @@ export function TOPSMapViewPage() {
   // the map at viewport size with floating control panels.
   // const [isFullscreen, setIsFullscreen] = useState(false);
   const isFullscreen = useReduxState("mapView.isFullscreen");
+  // Center crosshair hides together with the fullscreen "Hide controls" toggle.
+  const controlsCollapsed = useReduxState("mapView.fullscreenControlsCollapsed");
   // Player-claims overlay (fullscreen-only): a claim-concentration heatmap
   // (density mode) or an owner-name filter (search mode). Advanced-only
   // opt-in; the bundled JSON only loads once visible, and the density raster
@@ -2157,6 +2160,7 @@ export function TOPSMapViewPage() {
               routeOverlay={finalRouteOverlay}
             />
           )}
+          {!controlsCollapsed && <CenterCrosshair />}
           {showTranslocators && selectedTranslocator && (
             <SelectedTranslocatorHeader
               selectedTranslocator={selectedTranslocator}
