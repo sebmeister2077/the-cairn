@@ -24,6 +24,7 @@ import {
 } from "@/store/slices/adminUsageFilters";
 import { Input } from "@/components/ui/input";
 import { SavedRoutesSection } from "@/components/admin/usage/SavedRoutesSection";
+import { PromoSection } from "@/components/admin/usage/PromoSection";
 import { useItemCatalog } from "@/lib/auction";
 
 /**
@@ -44,7 +45,8 @@ type SectionKey =
   | "downloads"
   | "moderation"
   | "api_keys"
-  | "actors";
+  | "actors"
+  | "promo";
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "overview", label: "Overview" },
@@ -58,6 +60,7 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "moderation", label: "Moderation" },
   { key: "api_keys", label: "API Keys" },
   { key: "actors", label: "Top Actors" },
+  { key: "promo", label: "Promo" },
 ];
 
 function defaultWindow(): { from: string; to: string } {
@@ -123,6 +126,9 @@ export function AdminUsagePage() {
         <ApiKeysSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "actors" && <TopActorsSection from={range.from} to={range.to} />}
+      {section === "promo" && (
+        <PromoSection from={range.from} to={range.to} granularity={granularity} />
+      )}
     </div>
   );
 }

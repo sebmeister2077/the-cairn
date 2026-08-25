@@ -254,3 +254,77 @@ async def record_page_entity_label(
                 )
     except Exception:  # best-effort — naming must never surface an error
         pass
+
+
+# Fixed allow-list of promo-banner interactions. Kept explicit (rather than a
+# free-form string) so a hostile client can't inflate the ``usage_events``
+# event_type cardinality. Stored as ``promo.<action>`` under category ``promo``.
+_PROMO_ACTIONS = frozenset(
+    {"impression", "details_open", "dismiss", "announcement_click", "map_click"}
+)
+# Matches the ``PROMO.id`` string shipped by the frontend banner.
+_PROMO_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,64}$")
+
+_PROMO_MAX_PER_WINDOW = 60
+_PROMO_WINDOW_SECONDS = 60
+
+
+@router.post("/promo-event", status_code=204)
+async def record_promo_event(
+    request: Request,
+    payload: dict,
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+) -> None:
+    """Record one promo-banner interaction into ``usage_events``.
+
+    Body shape::
+
+        {"promo_id": "tops-chisel-competition-2026-09",
+         "action": "dismiss",
+         "after_details": true}
+
+    ``action`` must be one of :data:`_PROMO_ACTIONS`; anything else is a 400
+    and is not recorded. ``after_details`` is optional and only meaningful for
+    the ``dismiss`` action (lets the dashboard split "dismissed outright" from
+    "dismissed after opening the details"). Best-effort and rate limited.
+    """
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="invalid body")
+
+    action = payload.get("action")
+    if not isinstance(action, str) or action not in _PROMO_ACTIONS:
+        raise HTTPException(status_code=400, detail="invalid action")
+
+    promo_id = payload.get("promo_id")
+    if not isinstance(promo_id, str) or not _PROMO_ID_RE.match(promo_id.strip()):
+        raise HTTPException(status_code=400, detail="invalid promo_id")
+    promo_id = promo_id.strip()
+
+    client_ip = _get_client_ip(request)
+    ip_hash = _hash_ip(client_ip)
+    check_scoped_rate_limit(
+        ip_hash,
+        "promo-event",
+        _PROMO_MAX_PER_WINDOW,
+        _PROMO_WINDOW_SECONDS,
+    )
+
+    actor_id = None
+    if x_api_key:
+        try:
+            actor_id = resolve_key_id(x_api_key)
+        except Exception:
+            actor_id = None
+
+    metadata: dict = {"promo_id": promo_id}
+    if action == "dismiss" and isinstance(payload.get("after_details"), bool):
+        metadata["after_details"] = payload["after_details"]
+
+    usage_events.record(
+        f"promo.{action}",
+        actor_api_key_id=actor_id,
+        category="promo",
+        metadata=metadata,
+        ip_hash=ip_hash,
+    )
+

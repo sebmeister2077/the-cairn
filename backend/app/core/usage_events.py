@@ -53,6 +53,7 @@ _CATEGORY_BY_PREFIX = {
     "auth": "auth",
     "page": "page",
     "route": "route",
+    "promo": "promo",
 }
 
 

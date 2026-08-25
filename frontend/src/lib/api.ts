@@ -3676,6 +3676,36 @@ export interface UsagePageEntities extends UsageWindow {
     }>;
 }
 
+export type PromoAction =
+    | "impression"
+    | "details_open"
+    | "map_click"
+    | "announcement_click"
+    | "dismiss";
+
+export interface UsagePromoActionStat {
+    count: number;
+    distinct_actors: number;
+    distinct_ips: number;
+}
+
+export interface UsagePromo extends UsageWindow {
+    granularity: UsageGranularity;
+    selected_promo_id: string | null;
+    promo_ids: string[];
+    summary: Record<PromoAction, UsagePromoActionStat>;
+    dismiss_split: { after_details: number; outright: number; unknown: number };
+    by_promo: Array<{ promo_id: string; actions: Record<PromoAction, number> }>;
+    timeline: Array<{ bucket: string; series: PromoAction; count: number }>;
+    recent: Array<{
+        created_at: string;
+        action: PromoAction;
+        promo_id: string | null;
+        after_details: boolean | null;
+        actor: string | null;
+    }>;
+}
+
 export interface UsageWindowParams {
     from?: string;
     to?: string;
@@ -3728,6 +3758,17 @@ export const adminUsage = {
         _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
     pageEntities: (p: UsageWindowParams & { path: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsagePageEntities>("page-entities", { from: p.from, to: p.to, path: p.path, limit: p.limit }, signal),
+    promo: (
+        p: UsageGranularityParams & { promo_id?: string; recent_limit?: number },
+        signal?: AbortSignal,
+    ) =>
+        _usageGet<UsagePromo>("promo", {
+            from: p.from,
+            to: p.to,
+            granularity: p.granularity,
+            promo_id: p.promo_id,
+            recent_limit: p.recent_limit,
+        }, signal),
     savedRoutes: (
         p: UsageGranularityParams & {
             top_limit?: number;

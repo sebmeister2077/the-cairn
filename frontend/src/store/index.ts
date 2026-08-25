@@ -44,6 +44,7 @@ import { marketFavoritesSlice } from "./slices/marketFavorites";
 import { rockPricingSlice } from "./slices/rockPricing";
 import { dateFormatSlice } from "./slices/dateFormat";
 import { drawingSlice } from "./slices/drawing";
+import { promoSlice } from "./slices/promo";
 
 // `combineReducers` lets us derive `RootState` *before* `store` is built,
 // which is essential because `loadPersistedRoot()` (and so the
@@ -73,6 +74,7 @@ const rootReducer = combineReducers({
     rockPricing: rockPricingSlice.reducer,
     dateFormat: dateFormatSlice.reducer,
     drawing: drawingSlice.reducer,
+    promo: promoSlice.reducer,
 });
 
 export type RootState = ReturnType<typeof rootReducer>;

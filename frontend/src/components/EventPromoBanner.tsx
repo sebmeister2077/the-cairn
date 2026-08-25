@@ -1,14 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  CalendarDays,
-  ExternalLink,
-  Hammer,
-  MapPin,
-  Trophy,
-  Users,
-  X,
-} from "lucide-react";
+import { CalendarDays, ExternalLink, Hammer, MapPin, Trophy, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,6 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { dismissPromo } from "@/store/slices/promo";
+import { recordPromoEvent } from "@/lib/promo-analytics";
 import chiselCompetitionImg from "@/assets/Promotions/chisel_competition.png";
 
 // --- Time-limited event promo ------------------------------------------------
@@ -52,16 +47,6 @@ const PROMO = {
   ],
 } as const;
 
-const dismissKey = `promo-dismissed:${PROMO.id}`;
-
-function isDismissed(): boolean {
-  try {
-    return window.localStorage.getItem(dismissKey) === "1";
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Slim, dismissible site-wide banner for a time-limited community event.
  *
@@ -73,20 +58,34 @@ function isDismissed(): boolean {
  */
 export function EventPromoBanner() {
   const navigate = useNavigate();
-  const [dismissed, setDismissed] = useState(isDismissed);
+  const dispatch = useAppDispatch();
+  const dismissed = useAppSelector((s) => s.promo.dismissed[PROMO.id] ?? false);
   const [open, setOpen] = useState(false);
+  // Tracks whether the details dialog was opened before a dismiss, so the
+  // analytics can split "dismissed outright" from "dismissed after reading".
+  const openedDetailsRef = useRef(false);
+  const impressionSentRef = useRef(false);
 
   const expired = Date.now() >= PROMO.endsAt.getTime();
 
+  // Count one impression per mount while the banner is actually visible.
+  useEffect(() => {
+    if (expired || dismissed || impressionSentRef.current) return;
+    impressionSentRef.current = true;
+    recordPromoEvent("impression", PROMO.id);
+  }, [expired, dismissed]);
+
   if (expired || dismissed) return null;
 
+  function openDetails() {
+    openedDetailsRef.current = true;
+    setOpen(true);
+    recordPromoEvent("details_open", PROMO.id);
+  }
+
   function dismiss() {
-    setDismissed(true);
-    try {
-      window.localStorage.setItem(dismissKey, "1");
-    } catch {
-      /* ignore */
-    }
+    recordPromoEvent("dismiss", PROMO.id, { afterDetails: openedDetailsRef.current });
+    dispatch(dismissPromo(PROMO.id));
   }
 
   return (
@@ -100,12 +99,7 @@ export function EventPromoBanner() {
             — a TOPS community event. Register by Sep 1.
           </span>
         </div>
-        <Button
-          size="xs"
-          variant="secondary"
-          className="shrink-0"
-          onClick={() => setOpen(true)}
-        >
+        <Button size="xs" variant="secondary" className="shrink-0" onClick={openDetails}>
           Details
         </Button>
         <Button
@@ -150,6 +144,7 @@ export function EventPromoBanner() {
                   type="button"
                   className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
                   onClick={() => {
+                    recordPromoEvent("map_click", PROMO.id);
                     setOpen(false);
                     navigate(PROMO.mapUrl);
                   }}
@@ -192,7 +187,12 @@ export function EventPromoBanner() {
           <Button
             className="w-full"
             render={
-              <a href={PROMO.discordUrl} target="_blank" rel="noopener noreferrer">
+              <a
+                href={PROMO.discordUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => recordPromoEvent("announcement_click", PROMO.id)}
+              >
                 <ExternalLink className="size-4" />
                 Read the full announcement on Discord
               </a>

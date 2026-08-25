@@ -1097,3 +1097,189 @@ async def usage_saved_routes(
     return payload
 
 
+# ---------------------------------------------------------------------------
+# /promo — promotion-banner interaction analytics.
+# ---------------------------------------------------------------------------
+
+# The interactions recorded by the frontend promo banner. Order defines the
+# funnel (top → bottom) shown in the dashboard.
+_PROMO_ACTIONS = (
+    "impression",
+    "details_open",
+    "map_click",
+    "announcement_click",
+    "dismiss",
+)
+
+
+@router.get("/promo")
+async def usage_promo(
+    _: str = Depends(require_admin),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    granularity: str = Query("day"),
+    promo_id: Optional[str] = Query(None, max_length=64),
+    recent_limit: int = Query(50, ge=1, le=200),
+) -> dict:
+    """Bundle of aggregations powering the admin "Promo" tab.
+
+    Every row is a ``category = 'promo'`` event (``promo.<action>``). Returns
+    per-action totals, the dismiss after-details split, a per-promo breakdown,
+    a bucketed timeline, and a recent-events feed — all in one call. When
+    ``promo_id`` is supplied every aggregate is scoped to that promotion.
+    """
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    gran = _resolve_granularity(granularity)
+    cache_key = ("promo", _iso(start), _iso(end), gran, promo_id or "", int(recent_limit))
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    # Shared WHERE clause. ``promo_id`` is an optional scope filter.
+    base_where = ["category = 'promo'", "created_at >= %s", "created_at < %s"]
+    recent_where = ["ue.category = 'promo'", "ue.created_at >= %s", "ue.created_at < %s"]
+    base_params: List[Any] = [start, end]
+    if promo_id:
+        base_where.append("metadata->>'promo_id' = %s")
+        recent_where.append("ue.metadata->>'promo_id' = %s")
+        base_params.append(promo_id)
+    where_sql = " AND ".join(base_where)
+    recent_where_sql = " AND ".join(recent_where)
+
+    def _action(event_type: str) -> str:
+        return event_type[len("promo.") :] if event_type.startswith("promo.") else event_type
+
+    summary: Dict[str, Dict[str, int]] = {
+        a: {"count": 0, "distinct_actors": 0, "distinct_ips": 0} for a in _PROMO_ACTIONS
+    }
+    dismiss_split = {"after_details": 0, "outright": 0, "unknown": 0}
+    by_promo_map: Dict[str, Dict[str, int]] = {}
+    promo_ids: List[str] = []
+    timeline: List[Dict[str, Any]] = []
+    recent: List[Dict[str, Any]] = []
+
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Per-action totals.
+            cur.execute(
+                f"""SELECT event_type,
+                           COUNT(*)::int AS count,
+                           COUNT(DISTINCT actor_api_key_id)::int AS distinct_actors,
+                           COUNT(DISTINCT ip_hash)::int AS distinct_ips
+                        FROM usage_events
+                       WHERE {where_sql}
+                    GROUP BY event_type""",
+                base_params,
+            )
+            for r in cur.fetchall():
+                summary[_action(r["event_type"])] = {
+                    "count": int(r["count"]),
+                    "distinct_actors": int(r["distinct_actors"] or 0),
+                    "distinct_ips": int(r["distinct_ips"] or 0),
+                }
+
+            # Dismiss after-details split.
+            cur.execute(
+                f"""SELECT metadata->>'after_details' AS after_details,
+                           COUNT(*)::int AS count
+                        FROM usage_events
+                       WHERE {where_sql} AND event_type = 'promo.dismiss'
+                    GROUP BY 1""",
+                base_params,
+            )
+            for r in cur.fetchall():
+                val = r["after_details"]
+                if val == "true":
+                    dismiss_split["after_details"] = int(r["count"])
+                elif val == "false":
+                    dismiss_split["outright"] = int(r["count"])
+                else:
+                    dismiss_split["unknown"] = int(r["count"])
+
+            # Per-promo breakdown (always across all promos in the window so the
+            # tab's promo picker can list them, even when scoped).
+            cur.execute(
+                """SELECT metadata->>'promo_id' AS promo_id,
+                          event_type,
+                          COUNT(*)::int AS count
+                       FROM usage_events
+                      WHERE category = 'promo'
+                        AND created_at >= %s AND created_at < %s
+                        AND metadata ? 'promo_id'
+                   GROUP BY 1, 2""",
+                [start, end],
+            )
+            for r in cur.fetchall():
+                pid = r["promo_id"]
+                bucket = by_promo_map.setdefault(pid, {a: 0 for a in _PROMO_ACTIONS})
+                bucket[_action(r["event_type"])] = int(r["count"])
+            promo_ids = sorted(by_promo_map.keys())
+
+            # Bucketed timeline per action.
+            cur.execute(
+                f"""SELECT date_trunc(%s, created_at) AS bucket,
+                           event_type,
+                           COUNT(*)::int AS count
+                        FROM usage_events
+                       WHERE {where_sql}
+                    GROUP BY bucket, event_type
+                    ORDER BY bucket""",
+                [gran, *base_params],
+            )
+            for r in cur.fetchall():
+                timeline.append(
+                    {
+                        "bucket": _iso(r["bucket"]),
+                        "series": _action(r["event_type"]),
+                        "count": int(r["count"]),
+                    }
+                )
+
+            # Recent events feed. Joins users for a display name; anonymous
+            # visitors surface as ``actor = null``.
+            cur.execute(
+                f"""SELECT ue.created_at AS created_at,
+                           ue.event_type AS event_type,
+                           ue.metadata->>'promo_id' AS promo_id,
+                           ue.metadata->>'after_details' AS after_details,
+                           u.display_name AS display_name
+                        FROM usage_events ue
+                        LEFT JOIN users u ON u.api_key_id::text = ue.actor_api_key_id
+                       WHERE {recent_where_sql}
+                    ORDER BY ue.created_at DESC
+                       LIMIT %s""",
+                [*base_params, int(recent_limit)],
+            )
+            for r in cur.fetchall():
+                after = r["after_details"]
+                recent.append(
+                    {
+                        "created_at": _iso(r["created_at"]),
+                        "action": _action(r["event_type"]),
+                        "promo_id": r["promo_id"],
+                        "after_details": True if after == "true" else False if after == "false" else None,
+                        "actor": r["display_name"],
+                    }
+                )
+
+    by_promo = [
+        {"promo_id": pid, "actions": by_promo_map[pid]} for pid in promo_ids
+    ]
+
+    payload = {
+        "from": _iso(start),
+        "to": _iso(end),
+        "granularity": gran,
+        "selected_promo_id": promo_id,
+        "promo_ids": promo_ids,
+        "summary": summary,
+        "dismiss_split": dismiss_split,
+        "by_promo": by_promo,
+        "timeline": timeline,
+        "recent": recent,
+    }
+    _cache_put(cache_key, payload)
+    return payload
+
+
