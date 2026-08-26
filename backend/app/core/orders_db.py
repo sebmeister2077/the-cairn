@@ -380,9 +380,7 @@ def list_orders(
         return {"orders": [], "total": 0}
     where: List[str] = []
     params: List[Any] = []
-    if include_closed:
-        where.append("o.status <> 'closed'")
-    else:
+    if not include_closed:
         where.append("o.status = %s")
         params.append(status)
     if side in ("buy", "sell"):
