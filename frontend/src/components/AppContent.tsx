@@ -841,7 +841,9 @@ export function AppContent() {
             }}
           />
         )}
-        <EventPromoBanner />
+        <ErrorBoundary fallback={null}>
+          <EventPromoBanner />
+        </ErrorBoundary>
         {/* Fallback notice when no public invite link is configured and the
             visitor has no key. Auto-claim cannot run; an admin must hand out
             an invite link or paste a key directly via the API Key dialog. */}

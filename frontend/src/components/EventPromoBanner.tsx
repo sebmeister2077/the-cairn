@@ -76,10 +76,10 @@ function shouldCountImpression(): boolean {
 export function EventPromoBanner() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const dismissed = useAppSelector((s) => s.promo.dismissed[PROMO.id] ?? false);
+  const dismissed = useAppSelector((s) => s.promo.dismissed?.[PROMO.id] ?? false);
   // Persisted so the "dismissed after reading" split survives a refresh
   // between opening the details and dismissing the banner.
-  const detailsOpened = useAppSelector((s) => s.promo.detailsOpened[PROMO.id] ?? false);
+  const detailsOpened = useAppSelector((s) => s.promo.detailsOpened?.[PROMO.id] ?? false);
   const [open, setOpen] = useState(false);
   const impressionSentRef = useRef(false);
 

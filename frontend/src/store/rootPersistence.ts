@@ -182,6 +182,13 @@ const NORMALIZE_ON_READ: {
     marketConcentration: (s) => normalizeMarketConcentration(s),
     // Dedupe / drop malformed IDs from a stored favorites list.
     marketFavorites: (s) => normalizeMarketFavorites(s),
+    // `detailsOpened` was added after the first promo envelope shipped;
+    // backfill it (and `dismissed`) so older stored state doesn't
+    // destructure to `undefined` and crash the banner selector.
+    promo: (s) => ({
+        dismissed: s?.dismissed ?? {},
+        detailsOpened: s?.detailsOpened ?? {},
+    }),
 };
 
 interface Envelope {
