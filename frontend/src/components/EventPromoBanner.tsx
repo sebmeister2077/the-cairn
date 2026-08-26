@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { dismissPromo } from "@/store/slices/promo";
+import { dismissPromo, markPromoDetailsOpened } from "@/store/slices/promo";
 import { recordPromoEvent } from "@/lib/promo-analytics";
 import chiselCompetitionImg from "@/assets/Promotions/chisel_competition.png";
 
@@ -47,6 +47,23 @@ const PROMO = {
   ],
 } as const;
 
+// One impression per browser session (not per page load), so refreshing while
+// ignoring the banner doesn't inflate the count. `distinct visitors` in the
+// admin dashboard still reflects true unique reach.
+const impressionSessionKey = `promo-impression:${PROMO.id}`;
+
+function shouldCountImpression(): boolean {
+  try {
+    if (window.sessionStorage.getItem(impressionSessionKey) === "1") return false;
+    window.sessionStorage.setItem(impressionSessionKey, "1");
+    return true;
+  } catch {
+    // No sessionStorage (private mode / blocked): fall back to counting once
+    // per page load rather than dropping impressions entirely.
+    return true;
+  }
+}
+
 /**
  * Slim, dismissible site-wide banner for a time-limited community event.
  *
@@ -60,31 +77,31 @@ export function EventPromoBanner() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const dismissed = useAppSelector((s) => s.promo.dismissed[PROMO.id] ?? false);
+  // Persisted so the "dismissed after reading" split survives a refresh
+  // between opening the details and dismissing the banner.
+  const detailsOpened = useAppSelector((s) => s.promo.detailsOpened[PROMO.id] ?? false);
   const [open, setOpen] = useState(false);
-  // Tracks whether the details dialog was opened before a dismiss, so the
-  // analytics can split "dismissed outright" from "dismissed after reading".
-  const openedDetailsRef = useRef(false);
   const impressionSentRef = useRef(false);
 
   const expired = Date.now() >= PROMO.endsAt.getTime();
 
-  // Count one impression per mount while the banner is actually visible.
+  // Count one impression per browser session while the banner is visible.
   useEffect(() => {
     if (expired || dismissed || impressionSentRef.current) return;
     impressionSentRef.current = true;
-    recordPromoEvent("impression", PROMO.id);
+    if (shouldCountImpression()) recordPromoEvent("impression", PROMO.id);
   }, [expired, dismissed]);
 
   if (expired || dismissed) return null;
 
   function openDetails() {
-    openedDetailsRef.current = true;
+    dispatch(markPromoDetailsOpened(PROMO.id));
     setOpen(true);
     recordPromoEvent("details_open", PROMO.id);
   }
 
   function dismiss() {
-    recordPromoEvent("dismiss", PROMO.id, { afterDetails: openedDetailsRef.current });
+    recordPromoEvent("dismiss", PROMO.id, { afterDetails: detailsOpened });
     dispatch(dismissPromo(PROMO.id));
   }
 
