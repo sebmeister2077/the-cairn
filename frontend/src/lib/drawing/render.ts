@@ -23,6 +23,18 @@ function applyAlpha(ctx: CanvasRenderingContext2D, alpha: number, ghost: boolean
     ctx.globalAlpha = ghost ? alpha * 0.55 : alpha;
 }
 
+/** Arrowhead geometry: the barb spread angle and how far the head extends back
+ *  from the tip (× the stroke width). Kept in one place so the line-shortening
+ *  in the caller always matches the drawn head. */
+const ARROW_SPREAD = Math.PI / 7;
+const ARROW_LEN_FACTOR = 3.2;
+
+function arrowHeadLen(lineWidthPx: number): number {
+    return Math.max(8, lineWidthPx * ARROW_LEN_FACTOR);
+}
+
+/** Draw a filled arrowhead whose TIP sits exactly on (toX,toY), pointing along
+ *  the from→to direction. */
 function drawArrowHead(
     ctx: CanvasRenderingContext2D,
     fromX: number,
@@ -32,11 +44,11 @@ function drawArrowHead(
     lineWidthPx: number,
 ): void {
     const angle = Math.atan2(toY - fromY, toX - fromX);
-    const size = Math.max(8, lineWidthPx * 3.2);
+    const size = arrowHeadLen(lineWidthPx);
     ctx.beginPath();
     ctx.moveTo(toX, toY);
-    ctx.lineTo(toX - size * Math.cos(angle - Math.PI / 7), toY - size * Math.sin(angle - Math.PI / 7));
-    ctx.lineTo(toX - size * Math.cos(angle + Math.PI / 7), toY - size * Math.sin(angle + Math.PI / 7));
+    ctx.lineTo(toX - size * Math.cos(angle - ARROW_SPREAD), toY - size * Math.sin(angle - ARROW_SPREAD));
+    ctx.lineTo(toX - size * Math.cos(angle + ARROW_SPREAD), toY - size * Math.sin(angle + ARROW_SPREAD));
     ctx.closePath();
     ctx.fill();
 }
@@ -75,6 +87,14 @@ function drawOne(
                 ctx.lineTo(p.x, p.y);
             }
             ctx.stroke();
+            // Optional arrowhead at the free-hand stroke's end.
+            if (el.arrow && el.points.length >= 2) {
+                const n = el.points.length;
+                const from = project(el.points[n - 2].x, el.points[n - 2].z);
+                const to = project(el.points[n - 1].x, el.points[n - 1].z);
+                ctx.fillStyle = el.color;
+                drawArrowHead(ctx, from.x, from.y, to.x, to.y, w);
+            }
             break;
         }
         case "line":
@@ -86,9 +106,21 @@ function drawOne(
             ctx.strokeStyle = el.color;
             ctx.fillStyle = el.color;
             ctx.lineWidth = w;
+            // For arrows, stop the shaft at the base of the head so a round cap
+            // doesn't poke through the tip (previously the head looked offset).
+            let endX = b.x;
+            let endY = b.y;
+            if (el.kind === "arrow") {
+                const len = Math.hypot(b.x - a.x, b.y - a.y);
+                const back = arrowHeadLen(w) * Math.cos(ARROW_SPREAD);
+                if (len > back) {
+                    endX = b.x - (back * (b.x - a.x)) / len;
+                    endY = b.y - (back * (b.y - a.y)) / len;
+                }
+            }
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
-            ctx.lineTo(b.x, b.y);
+            ctx.lineTo(endX, endY);
             ctx.stroke();
             if (el.kind === "arrow") drawArrowHead(ctx, a.x, a.y, b.x, b.y, w);
             break;
@@ -100,15 +132,28 @@ function drawOne(
             const y = Math.min(a.y, b.y);
             const w = Math.abs(b.x - a.x);
             const h = Math.abs(b.y - a.y);
+            const radius = el.cornerRadiusBlocks
+                ? Math.min(el.cornerRadiusBlocks * ppb, w / 2, h / 2)
+                : 0;
+            const trace = () => {
+                ctx.beginPath();
+                if (radius > 0 && typeof ctx.roundRect === "function") {
+                    ctx.roundRect(x, y, w, h, radius);
+                } else {
+                    ctx.rect(x, y, w, h);
+                }
+            };
             if (el.fillColor) {
                 applyAlpha(ctx, el.fillOpacity, ghost);
                 ctx.fillStyle = el.fillColor;
-                ctx.fillRect(x, y, w, h);
+                trace();
+                ctx.fill();
             }
             applyAlpha(ctx, el.strokeOpacity, ghost);
             ctx.strokeStyle = el.strokeColor;
             ctx.lineWidth = Math.max(MIN_LINE_PX, el.strokeWidthBlocks * ppb);
-            ctx.strokeRect(x, y, w, h);
+            trace();
+            ctx.stroke();
             break;
         }
         case "circle": {

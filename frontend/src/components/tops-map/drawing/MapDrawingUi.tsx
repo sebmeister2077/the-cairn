@@ -7,7 +7,13 @@ import { drawingActions } from "@/store/slices/drawing";
 import { newId } from "@/lib/drawing/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Pencil, Layers, Stamp as StampIcon } from "lucide-react";
+import {
+  Pencil,
+  Layers,
+  Stamp as StampIcon,
+  PanelBottomClose,
+  PanelBottomOpen,
+} from "lucide-react";
 import { DrawingToolbar } from "./DrawingToolbar";
 import { BoardsPanel } from "./BoardsPanel";
 import { BlueprintLibrary } from "./BlueprintLibrary";
@@ -30,8 +36,9 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
     const el = s.drawing.activeBoard?.elements.find((e) => e.id === id);
     return el && el.kind === "text" ? el.text : "";
   });
-  // Mirror the fullscreen "Hide controls" declutter toggle.
-  const controlsCollapsed = useAppSelector((s) => s.mapView.fullscreenControlsCollapsed);
+  // The bottom board toolbar hides independently of the map's overlay-controls
+  // declutter toggle, so users can clear either without losing the other.
+  const boardControlsCollapsed = useAppSelector((s) => s.drawing.boardControlsCollapsed);
 
   // Keyboard: undo/redo while drawing; Esc cancels paste mode.
   useEffect(() => {
@@ -112,11 +119,25 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
     />
   );
 
-  // "Hide controls" collapses the bottom bar + toolbar, but keep the text
-  // dialogs mounted so any pending / in-progress label still resolves.
-  if (controlsCollapsed)
+  // "Hide board controls" collapses the bottom bar + toolbar down to a small
+  // restore chip, but keeps the text dialogs mounted so any pending /
+  // in-progress label still resolves.
+  if (boardControlsCollapsed)
     return (
       <>
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex justify-center px-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="pointer-events-auto shadow-lg"
+            onClick={() => dispatch(drawingActions.setBoardControlsCollapsed(false))}
+            title="Show board controls"
+          >
+            <PanelBottomOpen className="mr-1 size-4" />
+            Board
+          </Button>
+        </div>
         {textDialog}
         {editTextDialog}
       </>
@@ -169,6 +190,17 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
             <BlueprintLibrary />
           </PopoverContent>
         </Popover>
+
+        <div className="mx-0.5 h-6 w-px bg-border" />
+        <Button
+          type="button"
+          size="icon-sm"
+          variant="ghost"
+          onClick={() => dispatch(drawingActions.setBoardControlsCollapsed(true))}
+          title="Hide board controls"
+        >
+          <PanelBottomClose className="size-4" />
+        </Button>
       </div>
       {textDialog}
       {editTextDialog}

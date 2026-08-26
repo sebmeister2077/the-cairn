@@ -15,12 +15,14 @@ import { PromptDialog } from "./PromptDialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Pen,
-  Highlighter,
   Eraser,
-  Minus,
-  ArrowUpRight,
   Square,
+  SquareRoundCorner,
   Circle,
+  Shapes,
+  Spline,
+  ArrowUpRight,
+  Pipette,
   Type,
   Smile,
   BoxSelect,
@@ -44,41 +46,20 @@ const TOOLS: {
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { tool: "pen", label: "Pen", icon: Pen },
-  { tool: "marker", label: "Marker", icon: Highlighter },
-  { tool: "line", label: "Line", icon: Minus },
-  { tool: "arrow", label: "Arrow", icon: ArrowUpRight },
-  { tool: "rect", label: "Rectangle", icon: Square },
-  { tool: "circle", label: "Circle", icon: Circle },
+  { tool: "shape", label: "Shapes", icon: Shapes },
   { tool: "text", label: "Text", icon: Type },
   { tool: "stamp", label: "Stamp", icon: Smile },
   { tool: "eraser", label: "Eraser", icon: Eraser },
   { tool: "select", label: "Select (drag to move)", icon: BoxSelect },
 ];
 
-const SHAPE_TOOLS = new Set<DrawTool>(["rect", "circle"]);
-const WIDTH_TOOLS = new Set<DrawTool>(["pen", "marker", "line", "arrow", "rect", "circle"]);
+/** Tools that expose a fill (the unified Shapes tool). */
+const SHAPE_TOOLS = new Set<DrawTool>(["shape"]);
+const WIDTH_TOOLS = new Set<DrawTool>(["pen", "shape"]);
 /** Tools whose stroke colour is driven by the shared quick-colour row. */
-const COLOR_TOOLS = new Set<DrawTool>([
-  "pen",
-  "marker",
-  "line",
-  "arrow",
-  "rect",
-  "circle",
-  "text",
-  "stamp",
-]);
+const COLOR_TOOLS = new Set<DrawTool>(["pen", "shape", "text", "stamp"]);
 /** Tools that expose a style popup (everything except eraser / select). */
-const STYLE_TOOLS = new Set<DrawTool>([
-  "pen",
-  "marker",
-  "line",
-  "arrow",
-  "rect",
-  "circle",
-  "text",
-  "stamp",
-]);
+const STYLE_TOOLS = new Set<DrawTool>(["pen", "shape", "text", "stamp"]);
 
 export function DrawingToolbar() {
   const dispatch = useAppDispatch();
@@ -230,8 +211,23 @@ export function DrawingToolbar() {
 function ColorSwatches() {
   const dispatch = useAppDispatch();
   const color = useAppSelector((s) => s.drawing.style.color);
+  const isCustom = !PEN_PALETTE.includes(color);
+  const hasEyeDropper = typeof window !== "undefined" && "EyeDropper" in window;
+
+  const pickWithEyeDropper = async () => {
+    try {
+      const EyeDropperCtor = (
+        window as unknown as { EyeDropper: new () => { open: () => Promise<{ sRGBHex: string }> } }
+      ).EyeDropper;
+      const res = await new EyeDropperCtor().open();
+      if (res?.sRGBHex) dispatch(drawingActions.updateStyle({ color: res.sRGBHex }));
+    } catch {
+      // User cancelled the eyedropper — nothing to do.
+    }
+  };
+
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-wrap items-center gap-1">
       {PEN_PALETTE.map((c) => (
         <button
           key={c}
@@ -245,6 +241,40 @@ function ColorSwatches() {
           style={{ backgroundColor: c }}
         />
       ))}
+
+      <div className="mx-0.5 h-5 w-px bg-border" />
+
+      {/* Custom colour (native picker / wheel). */}
+      <label
+        title="Custom colour"
+        className={cn(
+          "relative size-5 cursor-pointer overflow-hidden rounded-sm border",
+          isCustom ? "ring-2 ring-ring ring-offset-1" : "border-border",
+        )}
+        style={{
+          background: isCustom
+            ? color
+            : "conic-gradient(red, yellow, lime, aqua, blue, magenta, red)",
+        }}
+      >
+        <input
+          type="color"
+          value={isCustom ? color : "#ffffff"}
+          onChange={(e) => dispatch(drawingActions.updateStyle({ color: e.target.value }))}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
+        />
+      </label>
+
+      {hasEyeDropper && (
+        <button
+          type="button"
+          title="Pick a colour from the map (eyedropper)"
+          onClick={pickWithEyeDropper}
+          className="flex size-5 items-center justify-center rounded-sm border border-border text-muted-foreground hover:text-foreground"
+        >
+          <Pipette className="size-3" />
+        </button>
+      )}
     </div>
   );
 }
@@ -284,15 +314,18 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
 
   const isText = tool === "text";
   const isStamp = tool === "stamp";
-  const isMarker = tool === "marker";
+  const isPen = tool === "pen";
+  const isShape = tool === "shape";
   const showFill = SHAPE_TOOLS.has(tool);
   const showWidth = WIDTH_TOOLS.has(tool);
 
   return (
     <>
+      {isShape && <ShapeSelector />}
+
       {showWidth && (
         <div className="space-y-1">
-          <Label className="text-xs">Width: {style.widthBlocks} blocks</Label>
+          <Label className="text-xs">Line width: {style.widthBlocks} blocks</Label>
           <Slider
             value={style.widthBlocks}
             min={2}
@@ -300,6 +333,22 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
             step={2}
             showInput
             onValueChange={(v) => dispatch(drawingActions.updateStyle({ widthBlocks: v }))}
+          />
+        </div>
+      )}
+
+      {isPen && <PenToggles />}
+
+      {isShape && style.shapeKind === "roundedRect" && (
+        <div className="space-y-1">
+          <Label className="text-xs">Corner radius: {style.cornerRadiusBlocks} blocks</Label>
+          <Slider
+            value={style.cornerRadiusBlocks}
+            min={2}
+            max={200}
+            step={2}
+            showInput
+            onValueChange={(v) => dispatch(drawingActions.updateStyle({ cornerRadiusBlocks: v }))}
           />
         </div>
       )}
@@ -318,35 +367,17 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
         </div>
       )}
 
-      {/* Opacity: marker keeps its own highlighter alpha; everything else uses
-          the general "what you draw next" opacity. */}
-      {isMarker ? (
-        <div className="space-y-1">
-          <Label className="text-xs">
-            Marker opacity: {Math.round(style.markerOpacity * 100)}%
-          </Label>
-          <Slider
-            value={style.markerOpacity}
-            min={0.1}
-            max={0.9}
-            step={0.05}
-            showInput
-            onValueChange={(v) => dispatch(drawingActions.updateStyle({ markerOpacity: v }))}
-          />
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <Label className="text-xs">Opacity: {Math.round(style.opacity * 100)}%</Label>
-          <Slider
-            value={style.opacity}
-            min={0.1}
-            max={1}
-            step={0.05}
-            showInput
-            onValueChange={(v) => dispatch(drawingActions.updateStyle({ opacity: v }))}
-          />
-        </div>
-      )}
+      <div className="space-y-1">
+        <Label className="text-xs">Opacity: {Math.round(style.opacity * 100)}%</Label>
+        <Slider
+          value={style.opacity}
+          min={0.1}
+          max={1}
+          step={0.05}
+          showInput
+          onValueChange={(v) => dispatch(drawingActions.updateStyle({ opacity: v }))}
+        />
+      </div>
 
       {showFill && (
         <div className="space-y-2">
@@ -390,6 +421,75 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
     </>
   );
 }
+
+/** Pen "straight" + "arrowhead" toggles — combinable so one tool covers the old
+ *  Pen / Line / Arrow trio (arrowheads also work on free-hand strokes). */
+function PenToggles() {
+  const dispatch = useAppDispatch();
+  const style = useAppSelector((s) => s.drawing.style);
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5 text-xs">
+          <Spline className="size-3.5" />
+          Straight line
+        </Label>
+        <Switch
+          checked={style.penStraight}
+          onCheckedChange={(v) => dispatch(drawingActions.updateStyle({ penStraight: v }))}
+        />
+      </div>
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5 text-xs">
+          <ArrowUpRight className="size-3.5" />
+          Arrowhead
+        </Label>
+        <Switch
+          checked={style.penArrow}
+          onCheckedChange={(v) => dispatch(drawingActions.updateStyle({ penArrow: v }))}
+        />
+      </div>
+    </div>
+  );
+}
+
+/** Shape-kind picker for the unified Shapes tool. */
+function ShapeSelector() {
+  const dispatch = useAppDispatch();
+  const shapeKind = useAppSelector((s) => s.drawing.style.shapeKind);
+  const options: {
+    kind: ToolStyleShapeKind;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[] = [
+    { kind: "rect", label: "Rectangle", icon: Square },
+    { kind: "roundedRect", label: "Rounded", icon: SquareRoundCorner },
+    { kind: "circle", label: "Circle", icon: Circle },
+  ];
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">Shape</Label>
+      <div className="flex gap-1">
+        {options.map(({ kind, label, icon: Icon }) => (
+          <Button
+            key={kind}
+            type="button"
+            size="sm"
+            variant={shapeKind === kind ? "default" : "outline"}
+            className="flex-1"
+            title={label}
+            aria-pressed={shapeKind === kind}
+            onClick={() => dispatch(drawingActions.updateStyle({ shapeKind: kind }))}
+          >
+            <Icon className="size-4" />
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+type ToolStyleShapeKind = "rect" | "roundedRect" | "circle";
 
 function TextFormatControls() {
   const dispatch = useAppDispatch();

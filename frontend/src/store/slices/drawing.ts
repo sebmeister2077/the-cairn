@@ -55,6 +55,14 @@ export interface ToolStyle {
     opacity: number;
     /** Marker (highlighter) opacity 0..1. */
     markerOpacity: number;
+    /** Pen toggles: draw a straight segment instead of free-hand, and/or cap the
+     *  end with an arrowhead. Combinable (straight+arrow = a classic arrow). */
+    penStraight: boolean;
+    penArrow: boolean;
+    /** Which primitive the Shapes tool draws. */
+    shapeKind: "rect" | "roundedRect" | "circle";
+    /** Corner radius (world blocks) for the rounded-rectangle shape. */
+    cornerRadiusBlocks: number;
     /** Whether shapes are filled. */
     fillEnabled: boolean;
     fillColor: string;
@@ -100,6 +108,9 @@ export interface DrawingState {
     editingTextId: string | null;
     /** "This world only" board list filter. */
     worldFilterEnabled: boolean;
+    /** Declutter toggle for the bottom board toolbar, independent of the map's
+     *  overlay-controls collapse. */
+    boardControlsCollapsed: boolean;
 }
 
 const DEFAULT_STYLE: ToolStyle = {
@@ -107,6 +118,10 @@ const DEFAULT_STYLE: ToolStyle = {
     widthBlocks: 24,
     opacity: 1,
     markerOpacity: 0.4,
+    penStraight: false,
+    penArrow: false,
+    shapeKind: "rect",
+    cornerRadiusBlocks: 20,
     fillEnabled: false,
     fillColor: "#f59e0b",
     fillOpacity: 0.3,
@@ -139,6 +154,7 @@ export const initialDrawingState: DrawingState = {
     pendingTextPos: null,
     editingTextId: null,
     worldFilterEnabled: false,
+    boardControlsCollapsed: false,
 };
 
 /** Bump the active board's timestamp and keep its index entry in sync. */
@@ -190,6 +206,10 @@ function applyStyleToElement(el: DrawElement, s: Partial<ToolStyle>): DrawElemen
                 next.fillColor = enabled ? (s.fillColor ?? next.fillColor ?? "#f59e0b") : null;
             }
             if (s.fillOpacity !== undefined) next.fillOpacity = s.fillOpacity;
+            if (next.kind === "rect" && s.shapeKind !== undefined) {
+                next.cornerRadiusBlocks =
+                    s.shapeKind === "roundedRect" ? (s.cornerRadiusBlocks ?? next.cornerRadiusBlocks) : 0;
+            }
             return next;
         }
         case "text": {
@@ -425,6 +445,10 @@ export const drawingSlice = createSlice({
 
         setWorldFilterEnabled(state, action: PayloadAction<boolean>) {
             state.worldFilterEnabled = action.payload;
+        },
+
+        setBoardControlsCollapsed(state, action: PayloadAction<boolean>) {
+            state.boardControlsCollapsed = action.payload;
         },
     },
 });

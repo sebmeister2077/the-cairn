@@ -311,9 +311,7 @@ export function MarketItemPage() {
   // Persisted preference for overlaying expired (unsold) listings on the
   // price-history chart, so the choice carries across items and reloads.
   const dispatch = useAppDispatch();
-  const showUnsoldPriceHistory = useAppSelector(
-    (s) => s.auctionFilters.showUnsoldPriceHistory,
-  );
+  const showUnsoldPriceHistory = useAppSelector((s) => s.auctionFilters.showUnsoldPriceHistory);
 
   // Shared price mode (median vs quantity-weighted), synced across market pages.
   const [priceMode, setPriceMode] = useMarketPriceMode();

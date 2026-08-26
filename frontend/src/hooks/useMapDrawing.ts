@@ -85,19 +85,43 @@ function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint
         widthBlocks: style.widthBlocks,
         color: style.color,
         opacity: kind === "marker" ? style.markerOpacity : style.opacity,
+        // Free-hand pen may cap its end with an arrowhead (arrow toggle).
+        arrow: kind === "pen" && style.penArrow ? true : undefined,
         createdAt: Date.now(),
     } as Extract<DrawElement, { kind: "pen" | "marker" }>;
+}
+
+/** Straight segment produced by the pen tool's "straight" toggle (an arrow when
+ *  the arrow toggle is also on). */
+function styleLine(style: ToolStyle, a: WorldPoint): DrawElement {
+    return {
+        id: newId(),
+        kind: style.penArrow ? "arrow" : "line",
+        a,
+        b: a,
+        color: style.color,
+        widthBlocks: style.widthBlocks,
+        opacity: style.opacity,
+        createdAt: Date.now(),
+    };
 }
 
 function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElement | null {
     const now = Date.now();
     const fill = style.fillEnabled ? style.fillColor : null;
-    switch (tool) {
+    // The unified Shapes tool selects its primitive from the style.
+    const kind: DrawTool =
+        tool === "shape"
+            ? style.shapeKind === "circle"
+                ? "circle"
+                : "rect"
+            : tool;
+    switch (kind) {
         case "line":
         case "arrow":
             return {
                 id: newId(),
-                kind: tool,
+                kind,
                 a,
                 b: a,
                 color: style.color,
@@ -116,6 +140,10 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
                 strokeOpacity: style.opacity,
                 fillColor: fill,
                 fillOpacity: style.fillOpacity,
+                cornerRadiusBlocks:
+                    tool === "shape" && style.shapeKind === "roundedRect"
+                        ? style.cornerRadiusBlocks
+                        : 0,
                 createdAt: now,
             };
         case "circle":
@@ -176,12 +204,22 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
         switch (tool) {
             case "pen":
             case "marker": {
-                gestureRef.current = { type: "stroke", el: styleStroke(c.styleRef.current, tool, world) };
+                // Pen with the "straight" toggle draws a line/arrow instead of a
+                // free-hand stroke; everything else is a normal stroke.
+                if (tool === "pen" && c.styleRef.current.penStraight) {
+                    gestureRef.current = { type: "shape", el: styleLine(c.styleRef.current, world) };
+                } else {
+                    gestureRef.current = {
+                        type: "stroke",
+                        el: styleStroke(c.styleRef.current, tool, world),
+                    };
+                }
                 c.scheduleRedraw();
                 return true;
             }
             case "line":
             case "arrow":
+            case "shape":
             case "rect":
             case "circle": {
                 const el = styleShape(c.styleRef.current, tool, world);

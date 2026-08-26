@@ -25,6 +25,8 @@ export interface StrokeElement {
     widthBlocks: number;
     color: string;
     opacity: number;
+    /** Draw an arrowhead at the last point (free-hand pen with the arrow toggle). */
+    arrow?: boolean;
     createdAt: number;
 }
 
@@ -49,6 +51,8 @@ export interface RectElement {
     strokeOpacity: number;
     fillColor: string | null;
     fillOpacity: number;
+    /** Corner radius in world blocks (0 / absent = square corners). */
+    cornerRadiusBlocks?: number;
     createdAt: number;
 }
 
@@ -120,6 +124,7 @@ export type DrawTool =
     | "eraser"
     | "line"
     | "arrow"
+    | "shape"
     | "rect"
     | "circle"
     | "text"

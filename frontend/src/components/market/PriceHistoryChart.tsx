@@ -270,8 +270,8 @@ export function PriceHistoryChart({
                 <>
                   {" "}
                   {clampedCount} priced above {EXPIRED_CAP_MULTIPLE}× the median{" "}
-                  {clampedCount === 1 ? "is" : "are"} pinned to the top ({formatGears(cap)} / {unit})
-                  — hover for the real price.
+                  {clampedCount === 1 ? "is" : "are"} pinned to the top ({formatGears(cap)} / {unit}
+                  ) — hover for the real price.
                 </>
               )}
             </span>
