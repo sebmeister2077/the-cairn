@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -535,12 +535,29 @@ function SearchInput({
   onChange: (v: string) => void;
   placeholder: string;
 }) {
+  // Keep the field responsive with local state so keystrokes are never gated
+  // by a debounced parent ``value`` (e.g. Redux updated 300ms later).
+  const [text, setText] = useState(value);
+  const lastEmitted = useRef(value);
+
+  useEffect(() => {
+    if (value !== lastEmitted.current) {
+      setText(value);
+      lastEmitted.current = value;
+    }
+  }, [value]);
+
   return (
     <div className="relative">
       <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
       <Input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
+        value={text}
+        onChange={(e) => {
+          const v = e.target.value;
+          setText(v);
+          lastEmitted.current = v;
+          onChange(v);
+        }}
         placeholder={placeholder}
         className="pl-7"
       />
