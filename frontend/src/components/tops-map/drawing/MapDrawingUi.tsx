@@ -4,6 +4,7 @@
 import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { drawingActions } from "@/store/slices/drawing";
+import { setBoardControlsCollapsed } from "@/store/slices/mapView";
 import { newId } from "@/lib/drawing/types";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -38,7 +39,7 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
   });
   // The bottom board toolbar hides independently of the map's overlay-controls
   // declutter toggle, so users can clear either without losing the other.
-  const boardControlsCollapsed = useAppSelector((s) => s.drawing.boardControlsCollapsed);
+  const boardControlsCollapsed = useAppSelector((s) => s.mapView.boardControlsCollapsed);
 
   // Keyboard: undo/redo while drawing; Esc cancels paste mode.
   useEffect(() => {
@@ -131,7 +132,7 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
             size="sm"
             variant="secondary"
             className="pointer-events-auto shadow-lg"
-            onClick={() => dispatch(drawingActions.setBoardControlsCollapsed(false))}
+            onClick={() => dispatch(setBoardControlsCollapsed(false))}
             title="Show board controls"
           >
             <PanelBottomOpen className="mr-1 size-4" />
@@ -196,7 +197,7 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
           type="button"
           size="icon-sm"
           variant="ghost"
-          onClick={() => dispatch(drawingActions.setBoardControlsCollapsed(true))}
+          onClick={() => dispatch(setBoardControlsCollapsed(true))}
           title="Hide board controls"
         >
           <PanelBottomClose className="size-4" />

@@ -224,6 +224,184 @@ export function elementInBox(el: DrawElement, box: WorldBBox): boolean {
     return b.minX >= box.minX && b.maxX <= box.maxX && b.minZ >= box.minZ && b.maxZ <= box.maxZ;
 }
 
+// ── Resize handles ──────────────────────────────────────────────────────────
+// A single selected element exposes drag handles: line/arrow get endpoint
+// handles, circles a radius handle on each cardinal, and everything else the
+// eight bounding-box handles (corners + edge midpoints). Text/stamp scale
+// uniformly (corners only); rects and strokes resize freely.
+
+/** Handle ids: `a`/`b` = line endpoints; the rest are bbox anchors where the
+ *  first letter(s) name the box side(s) the handle controls. */
+export type ResizeHandleId =
+    | "a"
+    | "b"
+    | "tl"
+    | "t"
+    | "tr"
+    | "r"
+    | "br"
+    | "bl"
+    | "l";
+
+export interface ResizeHandle {
+    id: ResizeHandleId;
+    world: WorldPoint;
+}
+
+/** World-space handles for a single element (empty for kinds we don't resize). */
+export function elementResizeHandles(el: DrawElement): ResizeHandle[] {
+    switch (el.kind) {
+        case "line":
+        case "arrow":
+            return [
+                { id: "a", world: el.a },
+                { id: "b", world: el.b },
+            ];
+        case "circle": {
+            const { x, z } = el.center;
+            const r = el.radiusBlocks;
+            return [
+                { id: "t", world: { x, z: z - r } },
+                { id: "r", world: { x: x + r, z } },
+                { id: "b", world: { x, z: z + r } },
+                { id: "l", world: { x: x - r, z } },
+            ];
+        }
+        default: {
+            const bb = elementBBox(el);
+            const midX = (bb.minX + bb.maxX) / 2;
+            const midZ = (bb.minZ + bb.maxZ) / 2;
+            const corners: ResizeHandle[] = [
+                { id: "tl", world: { x: bb.minX, z: bb.minZ } },
+                { id: "tr", world: { x: bb.maxX, z: bb.minZ } },
+                { id: "br", world: { x: bb.maxX, z: bb.maxZ } },
+                { id: "bl", world: { x: bb.minX, z: bb.maxZ } },
+            ];
+            // Text + stamps scale uniformly, so only corner handles are offered.
+            if (el.kind === "text" || el.kind === "stamp") return corners;
+            return [
+                ...corners,
+                { id: "t", world: { x: midX, z: bb.minZ } },
+                { id: "r", world: { x: bb.maxX, z: midZ } },
+                { id: "b", world: { x: midX, z: bb.maxZ } },
+                { id: "l", world: { x: bb.minX, z: midZ } },
+            ];
+        }
+    }
+}
+
+const MIN_RESIZE_BLOCKS = 1;
+
+/** New bbox after dragging `handle` to `cursor`, keeping the opposite side fixed
+ *  and clamping to a minimum so the box can't collapse or flip. */
+function boxFromHandleDrag(
+    box: WorldBBox,
+    handle: ResizeHandleId,
+    cursor: WorldPoint,
+    uniform: boolean,
+): WorldBBox {
+    const controlsL = handle === "l" || handle === "tl" || handle === "bl";
+    const controlsR = handle === "r" || handle === "tr" || handle === "br";
+    const controlsT = handle === "t" || handle === "tl" || handle === "tr";
+    const controlsB = handle === "b" || handle === "bl" || handle === "br";
+
+    if (!uniform) {
+        let { minX, minZ, maxX, maxZ } = box;
+        if (controlsL) minX = Math.min(cursor.x, box.maxX - MIN_RESIZE_BLOCKS);
+        if (controlsR) maxX = Math.max(cursor.x, box.minX + MIN_RESIZE_BLOCKS);
+        if (controlsT) minZ = Math.min(cursor.z, box.maxZ - MIN_RESIZE_BLOCKS);
+        if (controlsB) maxZ = Math.max(cursor.z, box.minZ + MIN_RESIZE_BLOCKS);
+        return { minX, minZ, maxX, maxZ };
+    }
+
+    // Uniform: scale about the opposite corner, aspect locked to the original.
+    const anchorX = controlsL ? box.maxX : box.minX;
+    const anchorZ = controlsT ? box.maxZ : box.minZ;
+    const ow = Math.max(1e-6, box.maxX - box.minX);
+    const oh = Math.max(1e-6, box.maxZ - box.minZ);
+    const s = Math.max(
+        MIN_RESIZE_BLOCKS / Math.min(ow, oh),
+        Math.abs(cursor.x - anchorX) / ow,
+        Math.abs(cursor.z - anchorZ) / oh,
+    );
+    const nw = ow * s;
+    const nh = oh * s;
+    return {
+        minX: controlsL ? anchorX - nw : anchorX,
+        maxX: controlsL ? anchorX : anchorX + nw,
+        minZ: controlsT ? anchorZ - nh : anchorZ,
+        maxZ: controlsT ? anchorZ : anchorZ + nh,
+    };
+}
+
+/** Map a point from the original bbox into the resized bbox (linear per-axis). */
+function remapPoint(p: WorldPoint, ob: WorldBBox, nb: WorldBBox): WorldPoint {
+    const ow = Math.max(1e-6, ob.maxX - ob.minX);
+    const oh = Math.max(1e-6, ob.maxZ - ob.minZ);
+    return {
+        x: nb.minX + ((p.x - ob.minX) * (nb.maxX - nb.minX)) / ow,
+        z: nb.minZ + ((p.z - ob.minZ) * (nb.maxZ - nb.minZ)) / oh,
+    };
+}
+
+/**
+ * Return a resized copy of `el` (same id) given the dragged handle and the
+ * cursor's world position. `el` must be the element as it was when the drag
+ * began, so scaling stays stable across the gesture.
+ */
+export function resizeElement(el: DrawElement, handle: ResizeHandleId, cursor: WorldPoint): DrawElement {
+    switch (el.kind) {
+        case "line":
+        case "arrow":
+            return handle === "a" ? { ...el, a: cursor } : { ...el, b: cursor };
+        case "circle":
+            return {
+                ...el,
+                radiusBlocks: Math.max(
+                    MIN_RESIZE_BLOCKS,
+                    Math.hypot(cursor.x - el.center.x, cursor.z - el.center.z),
+                ),
+            };
+        default: {
+            const uniform = el.kind === "text" || el.kind === "stamp";
+            const ob = elementBBox(el);
+            const nb = boxFromHandleDrag(ob, handle, cursor, uniform);
+            const sx = (nb.maxX - nb.minX) / Math.max(1e-6, ob.maxX - ob.minX);
+            const sz = (nb.maxZ - nb.minZ) / Math.max(1e-6, ob.maxZ - ob.minZ);
+            switch (el.kind) {
+                case "pen":
+                case "marker":
+                    return { ...el, points: el.points.map((p) => remapPoint(p, ob, nb)) };
+                case "rect": {
+                    const cr = el.cornerRadiusBlocks
+                        ? el.cornerRadiusBlocks * Math.min(sx, sz)
+                        : el.cornerRadiusBlocks;
+                    return {
+                        ...el,
+                        a: remapPoint(el.a, ob, nb),
+                        b: remapPoint(el.b, ob, nb),
+                        cornerRadiusBlocks: cr,
+                    };
+                }
+                case "text":
+                    return {
+                        ...el,
+                        pos: remapPoint(el.pos, ob, nb),
+                        sizeBlocks: Math.max(4, el.sizeBlocks * ((sx + sz) / 2)),
+                    };
+                case "stamp":
+                    return {
+                        ...el,
+                        pos: remapPoint(el.pos, ob, nb),
+                        sizeBlocks: Math.max(4, el.sizeBlocks * ((sx + sz) / 2)),
+                    };
+                default:
+                    return el;
+            }
+        }
+    }
+}
+
 /**
  * Build a blueprint from a set of elements: normalise so the group's bbox min
  * sits at local origin (0,0) and record the bbox size for the paste ghost.

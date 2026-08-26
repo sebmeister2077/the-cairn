@@ -108,9 +108,6 @@ export interface DrawingState {
     editingTextId: string | null;
     /** "This world only" board list filter. */
     worldFilterEnabled: boolean;
-    /** Declutter toggle for the bottom board toolbar, independent of the map's
-     *  overlay-controls collapse. */
-    boardControlsCollapsed: boolean;
 }
 
 const DEFAULT_STYLE: ToolStyle = {
@@ -154,7 +151,6 @@ export const initialDrawingState: DrawingState = {
     pendingTextPos: null,
     editingTextId: null,
     worldFilterEnabled: false,
-    boardControlsCollapsed: false,
 };
 
 /** Bump the active board's timestamp and keep its index entry in sync. */
@@ -445,10 +441,6 @@ export const drawingSlice = createSlice({
 
         setWorldFilterEnabled(state, action: PayloadAction<boolean>) {
             state.worldFilterEnabled = action.payload;
-        },
-
-        setBoardControlsCollapsed(state, action: PayloadAction<boolean>) {
-            state.boardControlsCollapsed = action.payload;
         },
     },
 });

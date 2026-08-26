@@ -280,6 +280,12 @@ export interface MapViewState {
      */
     fullscreenControlsCollapsed: boolean;
     /**
+     * Declutter toggle for the bottom planning-board toolbar, independent of
+     * `fullscreenControlsCollapsed`. Persisted so the preference survives
+     * reloads (the board itself is restored from IndexedDB).
+     */
+    boardControlsCollapsed: boolean;
+    /**
      * When true, the TOPS map viewer renders an animated starfield behind
      * the tiles instead of a flat dark background. Pure-CSS; persists
      * across reloads. Default ON.
@@ -393,6 +399,7 @@ export function loadInitialMapViewState(): MapViewState {
         showAdvancedMapOptions: true,
         isFullscreen: false,
         fullscreenControlsCollapsed: false,
+        boardControlsCollapsed: false,
         starfieldEnabled: true,
         wcTileCacheEnabled: true,
         favoriteStartingPosition: null,
@@ -608,6 +615,9 @@ export const mapViewSlice = createSlice({
         setFullscreenControlsCollapsed(state, action: PayloadAction<boolean>) {
             state.fullscreenControlsCollapsed = action.payload;
         },
+        setBoardControlsCollapsed(state, action: PayloadAction<boolean>) {
+            state.boardControlsCollapsed = action.payload;
+        },
         setStarfieldEnabled(state, action: PayloadAction<boolean>) {
             state.starfieldEnabled = action.payload;
         },
@@ -727,6 +737,7 @@ export const {
     setShowAdvancedMapOptions,
     setShowFullscreen,
     setFullscreenControlsCollapsed,
+    setBoardControlsCollapsed,
     setStarfieldEnabled,
     setWCTileCacheEnabled,
     setFavoriteStartingPosition,

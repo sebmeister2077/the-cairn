@@ -14,7 +14,16 @@ import {
     type WorldPoint,
     newId,
 } from "@/lib/drawing/types";
-import { cloneElementWithNewId, elementInBox, elementsBBox, hitTestElement, translateElement } from "@/lib/drawing/elements";
+import {
+    cloneElementWithNewId,
+    elementInBox,
+    elementResizeHandles,
+    elementsBBox,
+    hitTestElement,
+    resizeElement,
+    translateElement,
+    type ResizeHandleId,
+} from "@/lib/drawing/elements";
 
 /** Screen-space marquee rectangle (container px). */
 export interface MarqueeRect {
@@ -36,7 +45,8 @@ type Gesture =
     | { type: "shape"; el: DrawElement }
     | { type: "erase"; ids: Set<string> }
     | { type: "marquee"; rect: MarqueeRect }
-    | { type: "move"; ids: Set<string>; start: WorldPoint; cur: WorldPoint };
+    | { type: "move"; ids: Set<string>; start: WorldPoint; cur: WorldPoint }
+    | { type: "resize"; id: string; handle: ResizeHandleId; original: DrawElement; el: DrawElement };
 
 export interface MapDrawingConfig {
     enabledRef: MutableRefObject<boolean>;
@@ -57,6 +67,8 @@ export interface MapDrawingConfig {
     onSelect: (ids: string[]) => void;
     /** Commit a drag-move of the given elements by (dx, dz) world blocks. */
     onMove: (ids: string[], dx: number, dz: number) => void;
+    /** Commit a single element's resized geometry. */
+    onResize: (el: DrawElement) => void;
     /** Ask the React layer to collect a text label for the given world point
      *  (opens the themed dialog); the caller commits the element on submit. */
     onRequestText: (world: WorldPoint) => void;
@@ -75,6 +87,8 @@ export interface MapDrawingController {
     getPendingErase: () => ReadonlySet<string>;
     /** Live drag-move offset for selected elements, or null. */
     getMoveOffset: () => MoveOffset | null;
+    /** Live resized element while a handle drag is in progress, or null. */
+    getResizePreview: () => { id: string; el: DrawElement } | null;
 }
 
 function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint) {
@@ -261,6 +275,32 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 const sel = c.selectedRef.current;
                 if (sel.size > 0) {
                     const selected = c.elementsRef.current.filter((el) => sel.has(el.id));
+                    // A single selected element exposes resize handles; grabbing
+                    // one starts a resize (checked before move so corners win).
+                    if (selected.length === 1) {
+                        const handleTol = 9 / cfg.current.ppbRef.current;
+                        const handles = elementResizeHandles(selected[0]);
+                        let hit: ResizeHandleId | null = null;
+                        let best = Infinity;
+                        for (const h of handles) {
+                            const d = Math.hypot(world.x - h.world.x, world.z - h.world.z);
+                            if (d <= handleTol && d < best) {
+                                best = d;
+                                hit = h.id;
+                            }
+                        }
+                        if (hit) {
+                            gestureRef.current = {
+                                type: "resize",
+                                id: selected[0].id,
+                                handle: hit,
+                                original: selected[0],
+                                el: selected[0],
+                            };
+                            c.scheduleRedraw();
+                            return true;
+                        }
+                    }
                     const bb = elementsBBox(selected);
                     const tol = worldTol();
                     if (
@@ -315,6 +355,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "move":
                 g.cur = world;
                 break;
+            case "resize":
+                g.el = resizeElement(g.original, g.handle, world);
+                break;
         }
         c.scheduleRedraw();
     }, [eraseAt]);
@@ -364,6 +407,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 if (dx !== 0 || dz !== 0) c.onMove(Array.from(g.ids), dx, dz);
                 break;
             }
+            case "resize":
+                if (g.el !== g.original) c.onResize(g.el);
+                break;
         }
         c.scheduleRedraw();
     }, [commitMarquee]);
@@ -393,6 +439,11 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             const g = gestureRef.current;
             if (g?.type !== "move") return null;
             return { ids: g.ids, dx: g.cur.x - g.start.x, dz: g.cur.z - g.start.z };
+        },
+        getResizePreview: () => {
+            const g = gestureRef.current;
+            if (g?.type !== "resize") return null;
+            return { id: g.id, el: g.el };
         },
     };
 }

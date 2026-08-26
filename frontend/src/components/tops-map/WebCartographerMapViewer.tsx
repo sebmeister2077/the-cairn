@@ -47,6 +47,7 @@ import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
 import { hitTestElement as hitTestDrawElement } from "@/lib/drawing/elements";
+import { elementResizeHandles } from "@/lib/drawing/elements";
 import { DEFAULT_TOOL_STYLE, type ToolStyle } from "@/store/slices/drawing";
 import type { DrawElement, DrawTool } from "@/lib/drawing/types";
 
@@ -68,6 +69,8 @@ export interface MapDrawingProps {
   onErase: (ids: string[]) => void;
   onSelect: (ids: string[]) => void;
   onMove: (ids: string[], dx: number, dz: number) => void;
+  /** Commit a single element's resized geometry (handle drag). */
+  onResize: (el: DrawElement) => void;
   onRequestText: (world: { x: number; z: number }) => void;
   /** Double-click on an existing text element requests an edit of its content. */
   onEditText: (id: string) => void;
@@ -975,6 +978,7 @@ export function WebCartographerMapViewer({
       (ids: string[], dx: number, dz: number) => drawingPropsRef.current?.onMove(ids, dx, dz),
       [],
     ),
+    onResize: useCallback((el: DrawElement) => drawingPropsRef.current?.onResize(el), []),
     onRequestText: useCallback(
       (world: { x: number; z: number }) => drawingPropsRef.current?.onRequestText(world),
       [],
@@ -1379,14 +1383,46 @@ export function WebCartographerMapViewer({
         y: (wz - cWz) * ppb + ch / 2,
       });
       const pendingErase = mapDrawingRef.current.getPendingErase();
-      const committed =
+      const resizePreview = mapDrawingRef.current.getResizePreview();
+      let committed =
         pendingErase.size > 0
           ? drawElementsRef.current.filter((el) => !pendingErase.has(el.id))
           : drawElementsRef.current;
+      // Substitute the element being resized with its live preview geometry.
+      if (resizePreview) {
+        committed = committed.map((el) => (el.id === resizePreview.id ? resizePreview.el : el));
+      }
       drawElements(octx, committed, project, ppb, mapDrawingRef.current.getPreview(), {
         highlightIds: drawSelectedRef.current,
         moveOffset: mapDrawingRef.current.getMoveOffset() ?? undefined,
       });
+
+      // Resize handles: shown for a single selected element in the Select tool.
+      if (
+        drawEnabledRef.current &&
+        drawToolRef.current === "select" &&
+        drawSelectedRef.current.size === 1
+      ) {
+        const selId = drawSelectedRef.current.values().next().value;
+        const selEl =
+          resizePreview && resizePreview.id === selId
+            ? resizePreview.el
+            : committed.find((el) => el.id === selId);
+        if (selEl) {
+          octx.save();
+          octx.fillStyle = "#ffffff";
+          octx.strokeStyle = "#38bdf8";
+          octx.lineWidth = 1.5;
+          for (const h of elementResizeHandles(selEl)) {
+            const p = project(h.world.x, h.world.z);
+            octx.beginPath();
+            octx.rect(p.x - 4, p.y - 4, 8, 8);
+            octx.fill();
+            octx.stroke();
+          }
+          octx.restore();
+        }
+      }
 
       // Paste ghost: a translucent blueprint clone tracking the cursor.
       const paste = drawPasteRef.current;

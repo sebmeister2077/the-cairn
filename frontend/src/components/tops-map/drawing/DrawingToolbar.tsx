@@ -190,8 +190,8 @@ export function DrawingToolbar() {
 
       {activeTool === "select" && (
         <p className="px-1 text-[11px] text-muted-foreground">
-          Drag a box to select, then drag inside it to move it. Use the wand to restyle, or
-          double-click text to edit it.
+          Drag a box to select, then drag inside it to move it. Select a single item to drag its
+          handles and resize it. Use the wand to restyle, or double-click text to edit it.
         </p>
       )}
 

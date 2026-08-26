@@ -84,7 +84,7 @@ export function BoardsPanel({ worldKey }: { worldKey: string | null }) {
           >
             <button
               type="button"
-              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              className="flex min-w-0 flex-1 items-center gap-2 text-left cursor-pointer"
               title={b.id === activeBoardId ? "Click to close this board" : "Open this board"}
               onClick={() =>
                 b.id === activeBoardId
