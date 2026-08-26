@@ -20,12 +20,16 @@ import {
     elementInBox,
     elementResizeHandles,
     elementsBBox,
+    groupResizeHandles,
     hitTestElement,
+    oppositeCorner,
     resizeElement,
     rotateElement,
     rotateHandlePos,
+    scaleElement,
     translateElement,
     type ResizeHandleId,
+    type WorldBBox,
 } from "@/lib/drawing/elements";
 
 /** Screen-space marquee rectangle (container px). */
@@ -50,6 +54,14 @@ type Gesture =
     | { type: "marquee"; rect: MarqueeRect }
     | { type: "move"; ids: Set<string>; start: WorldPoint; cur: WorldPoint }
     | { type: "resize"; id: string; handle: ResizeHandleId; original: DrawElement; el: DrawElement }
+    | {
+        type: "groupResize";
+        originals: DrawElement[];
+        origin: WorldPoint;
+        startBox: WorldBBox;
+        scale: number;
+        preview: DrawElement[];
+    }
     | {
         type: "rotate";
         originals: DrawElement[];
@@ -82,6 +94,9 @@ export interface MapDrawingConfig {
     onMove: (ids: string[], dx: number, dz: number) => void;
     /** Commit a single element's resized geometry. */
     onResize: (el: DrawElement) => void;
+    /** Commit a uniform scale of the current selection about `origin` (group
+     *  corner-resize), keeping every element's relative size + position. */
+    onScaleGroup: (factor: number, origin: WorldPoint) => void;
     /** Commit a rotation of the current selection by `angleDelta` radians about
      *  the selection's centre. */
     onRotate: (angleDelta: number) => void;
@@ -105,6 +120,8 @@ export interface MapDrawingController {
     getMoveOffset: () => MoveOffset | null;
     /** Live resized element while a handle drag is in progress, or null. */
     getResizePreview: () => { id: string; el: DrawElement } | null;
+    /** Live scaled element previews while a group corner-resize is in progress. */
+    getGroupResizePreview: () => DrawElement[] | null;
     /** Live rotated element previews while a rotate drag is in progress. */
     getRotatePreview: () => DrawElement[] | null;
 }
@@ -119,6 +136,9 @@ function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint
         opacity: kind === "marker" ? style.markerOpacity : style.opacity,
         // Free-hand pen may cap its end with an arrowhead (arrow toggle).
         arrow: kind === "pen" && style.penArrow ? true : undefined,
+        // Free-hand pen may carry a legibility halo (outline toggle).
+        outline: kind === "pen" && style.outlineEnabled ? true : undefined,
+        outlineColor: kind === "pen" && style.outlineEnabled ? style.outlineColor : undefined,
         createdAt: Date.now(),
     } as Extract<DrawElement, { kind: "pen" | "marker" }>;
 }
@@ -393,6 +413,34 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                             return true;
                         }
                     }
+                    // A multi-element selection exposes group corner handles that
+                    // scale the whole group uniformly about the opposite corner.
+                    if (selected.length > 1) {
+                        const gb = elementsBBox(selected);
+                        if (gb) {
+                            let hit: ResizeHandleId | null = null;
+                            let best = Infinity;
+                            for (const h of groupResizeHandles(gb)) {
+                                const d = Math.hypot(world.x - h.world.x, world.z - h.world.z);
+                                if (d <= handleTol && d < best) {
+                                    best = d;
+                                    hit = h.id;
+                                }
+                            }
+                            if (hit) {
+                                gestureRef.current = {
+                                    type: "groupResize",
+                                    originals: selected,
+                                    origin: oppositeCorner(gb, hit),
+                                    startBox: gb,
+                                    scale: 1,
+                                    preview: selected,
+                                };
+                                c.scheduleRedraw();
+                                return true;
+                            }
+                        }
+                    }
                     const bb = elementsBBox(selected);
                     const tol = worldTol();
                     if (
@@ -450,6 +498,21 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "resize":
                 g.el = resizeElement(g.original, g.handle, world);
                 break;
+            case "groupResize": {
+                const ob = g.startBox;
+                const ow = Math.max(1e-6, ob.maxX - ob.minX);
+                const oh = Math.max(1e-6, ob.maxZ - ob.minZ);
+                // Keep the smaller dimension from collapsing below ~1 block.
+                const minScale = 1 / Math.min(ow, oh);
+                const s = Math.max(
+                    minScale,
+                    Math.abs(world.x - g.origin.x) / ow,
+                    Math.abs(world.z - g.origin.z) / oh,
+                );
+                g.scale = s;
+                g.preview = g.originals.map((o) => scaleElement(o, s, g.origin));
+                break;
+            }
             case "rotate": {
                 const angle = Math.atan2(world.z - g.pivot.z, world.x - g.pivot.x);
                 g.delta = angle - g.start;
@@ -510,6 +573,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "resize":
                 if (g.el !== g.original) c.onResize(g.el);
                 break;
+            case "groupResize":
+                if (g.scale !== 1) c.onScaleGroup(g.scale, g.origin);
+                break;
             case "rotate":
                 if (g.delta !== 0) c.onRotate(g.delta);
                 break;
@@ -547,6 +613,11 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             const g = gestureRef.current;
             if (g?.type !== "resize") return null;
             return { id: g.id, el: g.el };
+        },
+        getGroupResizePreview: () => {
+            const g = gestureRef.current;
+            if (g?.type !== "groupResize") return null;
+            return g.preview;
         },
         getRotatePreview: () => {
             const g = gestureRef.current;

@@ -47,7 +47,12 @@ import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
 import { hitTestElement as hitTestDrawElement } from "@/lib/drawing/elements";
-import { elementResizeHandles, elementsBBox, rotateHandlePos } from "@/lib/drawing/elements";
+import {
+  elementResizeHandles,
+  elementsBBox,
+  groupResizeHandles,
+  rotateHandlePos,
+} from "@/lib/drawing/elements";
 import { DEFAULT_TOOL_STYLE, type ToolStyle } from "@/store/slices/drawing";
 import type { DrawElement, DrawTool } from "@/lib/drawing/types";
 
@@ -73,6 +78,9 @@ export interface MapDrawingProps {
   onMove: (ids: string[], dx: number, dz: number) => void;
   /** Commit a single element's resized geometry (handle drag). */
   onResize: (el: DrawElement) => void;
+  /** Commit a uniform scale of the selection about a world-space origin (group
+   *  corner-resize). */
+  onScaleGroup: (factor: number, origin: { x: number; z: number }) => void;
   /** Commit a rotation of the current selection by `angleDelta` radians. */
   onRotate: (angleDelta: number) => void;
   onRequestText: (world: { x: number; z: number }) => void;
@@ -986,6 +994,11 @@ export function WebCartographerMapViewer({
       [],
     ),
     onResize: useCallback((el: DrawElement) => drawingPropsRef.current?.onResize(el), []),
+    onScaleGroup: useCallback(
+      (factor: number, origin: { x: number; z: number }) =>
+        drawingPropsRef.current?.onScaleGroup(factor, origin),
+      [],
+    ),
     onRotate: useCallback(
       (angleDelta: number) => drawingPropsRef.current?.onRotate(angleDelta),
       [],
@@ -1395,6 +1408,7 @@ export function WebCartographerMapViewer({
       });
       const pendingErase = mapDrawingRef.current.getPendingErase();
       const resizePreview = mapDrawingRef.current.getResizePreview();
+      const groupResizePreview = mapDrawingRef.current.getGroupResizePreview();
       const rotatePreview = mapDrawingRef.current.getRotatePreview();
       let committed =
         pendingErase.size > 0
@@ -1403,6 +1417,11 @@ export function WebCartographerMapViewer({
       // Substitute the element being resized with its live preview geometry.
       if (resizePreview) {
         committed = committed.map((el) => (el.id === resizePreview.id ? resizePreview.el : el));
+      }
+      // Substitute the group being corner-resized with its live scaled preview.
+      if (groupResizePreview) {
+        const map = new Map(groupResizePreview.map((el) => [el.id, el]));
+        committed = committed.map((el) => map.get(el.id) ?? el);
       }
       // Substitute the elements being rotated with their live preview geometry.
       if (rotatePreview) {
@@ -1455,9 +1474,17 @@ export function WebCartographerMapViewer({
             octx.stroke();
           }
         } else if (selEls.length > 1) {
-          // Group rotate handle at the top-centre of the selection's bbox.
+          // Group corner handles (uniform resize) + a rotate handle above the
+          // top-centre of the selection's bounding box.
           const bb = elementsBBox(selEls);
           if (bb) {
+            for (const h of groupResizeHandles(bb)) {
+              const p = project(h.world.x, h.world.z);
+              octx.beginPath();
+              octx.rect(p.x - 4, p.y - 4, 8, 8);
+              octx.fill();
+              octx.stroke();
+            }
             const cx = (bb.minX + bb.maxX) / 2;
             const top = project(cx, bb.minZ);
             const knob = { x: top.x, y: top.y - 22 };

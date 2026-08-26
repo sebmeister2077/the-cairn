@@ -148,8 +148,6 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-3 z-20 flex flex-col items-center gap-2 px-3">
-      {drawingMode && activeBoardId && <DrawingToolbar />}
-
       {drawingMode && !activeBoardId && (
         <div className="pointer-events-auto rounded-md border bg-background/95 px-3 py-2 text-xs text-muted-foreground shadow">
           Create or open a board to start drawing.
@@ -157,10 +155,11 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
       )}
 
       {drawingMode && pasteId && (
-        <div className="pointer-events-auto rounded-md border bg-primary/10 px-3 py-1.5 text-xs shadow">
+        <div className="pointer-events-auto rounded-md border bg-primary/70 text-accent px-3 py-1.5 text-xs shadow">
           Click the map to stamp the blueprint · Esc to stop
         </div>
       )}
+      {drawingMode && activeBoardId && <DrawingToolbar />}
 
       <div className="pointer-events-auto flex items-center gap-1 rounded-lg border bg-background/95 p-1 shadow-lg backdrop-blur">
         <Button

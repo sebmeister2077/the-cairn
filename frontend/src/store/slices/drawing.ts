@@ -21,7 +21,7 @@ import {
     ensureBoardLayers,
     newLayer,
 } from "@/lib/drawing/types";
-import { cloneElementWithNewId, elementsBBox, rotateElement, translateElement } from "@/lib/drawing/elements";
+import { cloneElementWithNewId, elementsBBox, rotateElement, scaleElement, translateElement } from "@/lib/drawing/elements";
 import { DEFAULT_STAMP_ICON_ID } from "@/lib/drawing/stampIcons";
 
 const HISTORY_LIMIT = 60;
@@ -185,6 +185,8 @@ function applyStyleToElement(el: DrawElement, s: Partial<ToolStyle>): DrawElemen
             if (s.widthBlocks !== undefined) next.widthBlocks = s.widthBlocks;
             if (el.kind === "marker" && s.markerOpacity !== undefined) next.opacity = s.markerOpacity;
             if (el.kind === "pen" && s.opacity !== undefined) next.opacity = s.opacity;
+            if (el.kind === "pen" && s.outlineEnabled !== undefined) next.outline = s.outlineEnabled;
+            if (el.kind === "pen" && s.outlineColor !== undefined) next.outlineColor = s.outlineColor;
             return next;
         }
         case "line":
@@ -412,6 +414,24 @@ export const drawingSlice = createSlice({
             pushHistory(state);
             state.activeBoard.elements = state.activeBoard.elements.map((el) =>
                 set.has(el.id) ? rotateElement(current(el), angle, pivot) : el,
+            );
+            touch(state);
+        },
+        /** Uniformly scale the whole selection about `origin` (group corner
+         *  resize), keeping every element's size + relative position
+         *  proportional so the group looks the same, just bigger/smaller. */
+        scaleSelected(
+            state,
+            action: PayloadAction<{ factor: number; originX: number; originZ: number }>,
+        ) {
+            if (!state.activeBoard || state.selectedIds.length === 0) return;
+            const { factor, originX, originZ } = action.payload;
+            if (factor === 1) return;
+            const set = new Set(state.selectedIds);
+            const origin = { x: originX, z: originZ };
+            pushHistory(state);
+            state.activeBoard.elements = state.activeBoard.elements.map((el) =>
+                set.has(el.id) ? scaleElement(current(el), factor, origin) : el,
             );
             touch(state);
         },

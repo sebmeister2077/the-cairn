@@ -411,6 +411,35 @@ export function elementResizeHandles(el: DrawElement): ResizeHandle[] {
 
 const MIN_RESIZE_BLOCKS = 1;
 
+/** Corner handles for a multi-element selection's bounding box (group resize).
+ *  Dragging a corner scales the whole selection uniformly about the opposite
+ *  corner, so elements keep their relative sizes + positions. */
+export function groupResizeHandles(bb: WorldBBox): ResizeHandle[] {
+    return [
+        { id: "tl", world: { x: bb.minX, z: bb.minZ } },
+        { id: "tr", world: { x: bb.maxX, z: bb.minZ } },
+        { id: "br", world: { x: bb.maxX, z: bb.maxZ } },
+        { id: "bl", world: { x: bb.minX, z: bb.maxZ } },
+    ];
+}
+
+/** World-space corner of `bb` diagonally opposite the given corner handle — the
+ *  fixed anchor a group resize scales about. */
+export function oppositeCorner(bb: WorldBBox, handle: ResizeHandleId): WorldPoint {
+    switch (handle) {
+        case "tl":
+            return { x: bb.maxX, z: bb.maxZ };
+        case "tr":
+            return { x: bb.minX, z: bb.maxZ };
+        case "br":
+            return { x: bb.minX, z: bb.minZ };
+        case "bl":
+            return { x: bb.maxX, z: bb.minZ };
+        default:
+            return { x: bb.minX, z: bb.minZ };
+    }
+}
+
 /** World position of the rotate handle: `gapBlocks` above the element's
  *  (rotated) top-centre. Callers pass a screen-constant gap (px / ppb). Returns
  *  null for kinds we don't rotate by handle (circles). */
@@ -575,6 +604,50 @@ export function resizeElement(el: DrawElement, handle: ResizeHandleId, cursor: W
                     return el;
             }
         }
+    }
+}
+
+/**
+ * Uniformly scale an element by `factor` about world-space `origin`, scaling
+ * both its geometry (positions) AND its sizes (widths, radii, glyph sizes) so a
+ * whole selection keeps its relative appearance. Rotation is preserved.
+ */
+export function scaleElement(el: DrawElement, factor: number, origin: WorldPoint): DrawElement {
+    const sp = (p: WorldPoint): WorldPoint => ({
+        x: origin.x + (p.x - origin.x) * factor,
+        z: origin.z + (p.z - origin.z) * factor,
+    });
+    const w = (v: number) => Math.max(0.5, v * factor);
+    switch (el.kind) {
+        case "pen":
+        case "marker":
+            return { ...el, points: el.points.map(sp), widthBlocks: w(el.widthBlocks) };
+        case "line":
+        case "arrow":
+            return { ...el, a: sp(el.a), b: sp(el.b), widthBlocks: w(el.widthBlocks) };
+        case "circle":
+            return {
+                ...el,
+                center: sp(el.center),
+                radiusBlocks: Math.max(MIN_RESIZE_BLOCKS, el.radiusBlocks * factor),
+                strokeWidthBlocks: w(el.strokeWidthBlocks),
+            };
+        case "rect":
+            return {
+                ...el,
+                a: sp(el.a),
+                b: sp(el.b),
+                strokeWidthBlocks: w(el.strokeWidthBlocks),
+                cornerRadiusBlocks: el.cornerRadiusBlocks
+                    ? el.cornerRadiusBlocks * factor
+                    : el.cornerRadiusBlocks,
+            };
+        case "poly":
+            return { ...el, a: sp(el.a), b: sp(el.b), strokeWidthBlocks: w(el.strokeWidthBlocks) };
+        case "text":
+            return { ...el, pos: sp(el.pos), sizeBlocks: Math.max(1, el.sizeBlocks * factor) };
+        case "stamp":
+            return { ...el, pos: sp(el.pos), sizeBlocks: Math.max(1, el.sizeBlocks * factor) };
     }
 }
 

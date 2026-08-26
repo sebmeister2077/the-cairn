@@ -59,7 +59,8 @@ function trimPolylineEnd(pts: ScreenPoint[], trim: number): { pts: ScreenPoint[]
 }
 
 /** Draw a filled arrowhead whose TIP sits exactly on (toX,toY), pointing along
- *  the from→to direction. */
+ *  the from→to direction. Pass `alsoStroke` to trace the outline too (used to
+ *  enlarge the head by the current lineWidth for a halo). */
 function drawArrowHead(
     ctx: CanvasRenderingContext2D,
     fromX: number,
@@ -67,6 +68,7 @@ function drawArrowHead(
     toX: number,
     toY: number,
     lineWidthPx: number,
+    alsoStroke = false,
 ): void {
     const angle = Math.atan2(toY - fromY, toX - fromX);
     const size = arrowHeadLen(lineWidthPx);
@@ -76,6 +78,7 @@ function drawArrowHead(
     ctx.lineTo(toX - size * Math.cos(angle + ARROW_SPREAD), toY - size * Math.sin(angle + ARROW_SPREAD));
     ctx.closePath();
     ctx.fill();
+    if (alsoStroke) ctx.stroke();
 }
 
 function drawOne(
@@ -93,12 +96,21 @@ function drawOne(
         case "marker": {
             if (el.points.length === 0) return;
             const w = Math.max(MIN_LINE_PX, el.widthBlocks * ppb);
-            applyAlpha(ctx, el.opacity, ghost);
-            ctx.strokeStyle = el.color;
-            ctx.lineWidth = w;
             const pts = el.points.map((p) => project(p.x, p.z));
+            // A coloured halo behind the stroke for legibility (pen only).
+            const outline = el.kind === "pen" && Boolean(el.outline);
+            const haloColor = el.outlineColor ?? "rgba(0,0,0,0.55)";
+            const halo = Math.max(2, w * 0.4);
             if (pts.length === 1) {
                 // A dot: draw a filled circle so a single tap is visible.
+                if (outline) {
+                    applyAlpha(ctx, el.opacity, ghost);
+                    ctx.fillStyle = haloColor;
+                    ctx.beginPath();
+                    ctx.arc(pts[0].x, pts[0].y, w / 2 + halo, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                applyAlpha(ctx, el.opacity, ghost);
                 ctx.fillStyle = el.color;
                 ctx.beginPath();
                 ctx.arc(pts[0].x, pts[0].y, w / 2, 0, Math.PI * 2);
@@ -113,10 +125,28 @@ function drawOne(
             const base = withArrow
                 ? trimPolylineEnd(pts, arrowHeadLen(w) * Math.cos(ARROW_SPREAD))
                 : { pts, tail: tip };
-            ctx.beginPath();
-            ctx.moveTo(base.pts[0].x, base.pts[0].y);
-            for (let i = 1; i < base.pts.length; i++) ctx.lineTo(base.pts[i].x, base.pts[i].y);
-            ctx.stroke();
+            const traceShaft = () => {
+                ctx.beginPath();
+                ctx.moveTo(base.pts[0].x, base.pts[0].y);
+                for (let i = 1; i < base.pts.length; i++) ctx.lineTo(base.pts[i].x, base.pts[i].y);
+                ctx.stroke();
+            };
+            if (outline) {
+                applyAlpha(ctx, el.opacity, ghost);
+                ctx.strokeStyle = haloColor;
+                ctx.fillStyle = haloColor;
+                ctx.lineWidth = w + halo * 2;
+                traceShaft();
+                if (withArrow) {
+                    // Enlarge the head by the halo width (fill + stroke same path).
+                    ctx.lineWidth = halo * 2;
+                    drawArrowHead(ctx, base.tail.x, base.tail.y, tip.x, tip.y, w, true);
+                }
+            }
+            applyAlpha(ctx, el.opacity, ghost);
+            ctx.strokeStyle = el.color;
+            ctx.lineWidth = w;
+            traceShaft();
             if (withArrow) {
                 ctx.fillStyle = el.color;
                 drawArrowHead(ctx, base.tail.x, base.tail.y, tip.x, tip.y, w);

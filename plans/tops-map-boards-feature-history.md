@@ -230,6 +230,52 @@ Shipped:
 
 ---
 
+## Round 10 — stable toolbar width + group resize
+Two requests: (a) the toolbar changed width a lot depending on the selected
+tool, whether the colour palette showed, and whether the select-mode help text
+showed — sometimes very wide, sometimes half-size, and being centred it shifted
+around; (b) in Select mode, resizing a *multi-element* selection as one, keeping
+the elements' relative sizes/positions.
+
+Design decisions:
+- **Fixed-width toolbar** (`w-72`, matching the tool popovers). Content wraps
+  within that width, so appearing/disappearing controls (selection-action
+  buttons, the colour row, the select-mode help text) only change the toolbar's
+  *height*, never its width — and, being centre-anchored, it no longer shifts
+  sideways. Chosen over always-rendering every button (which added clutter) or
+  hard-structuring rows (fragile).
+- **Group resize is uniform (aspect-locked)** about the opposite corner, scaling
+  both geometry *and* sizes (stroke widths, radii, glyph/text sizes). This is the
+  only interpretation that keeps the selection "the same relative to each other,
+  just bigger/smaller"; non-uniform per-axis scaling would distort circles/text.
+
+Shipped:
+- **Stable toolbar**: `DrawingToolbar` container is now `w-72`; the select-mode
+  help text wraps within it.
+- **Group corner-resize**: a multi-element selection now shows four white corner
+  handles (plus the existing group rotate dot). Dragging a corner scales the
+  whole selection uniformly about the opposite corner with a live preview,
+  committed once (undoable). New `scaleElement(el, factor, origin)` +
+  `groupResizeHandles` / `oppositeCorner` in `elements.ts`; a `groupResize`
+  gesture in `useMapDrawing.ts` (`onScaleGroup`); a `scaleSelected` action in the
+  `drawing` slice; wired through `MapDrawingProps.onScaleGroup` /
+  `useDrawingViewerProps`. Single-element resize is unchanged.
+
+---
+
+## Round 11 — Pen outline
+Request: give the Pen tool an outline/halo option, just like Text (and stamps).
+
+Shipped:
+- **Pen halo**: `StrokeElement` gains optional `outline` + `outlineColor`; the
+  renderer draws a wider halo pass under the stroke (dot, shaft, and arrowhead)
+  before the main pass. The Pen popup now shows the shared `OutlineControls`
+  (same `style.outlineEnabled` / `outlineColor` state as Text/Stamp), the gesture
+  bakes the outline onto new pen strokes, and the wand (`restyleSelected`) applies
+  it to selected pen strokes. Marker (highlighter) is unaffected.
+
+---
+
 ## Deferred / backlog
 - **Shift-to-constrain** while drawing/resizing (square/circle lock, 45° line snap) and numeric size/rotation entry for a selected element.
 - **Resize while rotated** (currently resize handles hide for a rotated box/text/stamp; rotate back to 0 to resize).

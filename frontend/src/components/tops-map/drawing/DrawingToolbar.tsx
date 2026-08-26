@@ -92,7 +92,7 @@ export function DrawingToolbar() {
   };
 
   return (
-    <div className="pointer-events-auto flex flex-col gap-2 rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur">
+    <div className="pointer-events-auto flex w-72 flex-col gap-2 rounded-lg border bg-background/95 p-2 shadow-lg backdrop-blur">
       <div className="flex flex-wrap items-center gap-1">
         {TOOLS.map(({ tool, label, icon: Icon }) => {
           const button = (
@@ -231,8 +231,8 @@ export function DrawingToolbar() {
 
       {activeTool === "select" && (
         <p className="px-1 text-[11px] text-muted-foreground">
-          Drag a box to select, then drag inside it to move it. Drag the top dot to rotate (a single
-          item or the whole group), or a single item's handles to resize. Use the wand to restyle,
+          Drag a box to select, then drag inside it to move it. Drag the top dot to rotate, or a
+          corner handle to resize (a single item or the whole selection). Use the wand to restyle,
           copy to duplicate, or double-click text to edit it.
         </p>
       )}
@@ -374,8 +374,6 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
 
   return (
     <>
-      {isShape && <ShapeSelector />}
-
       <div className="space-y-1">
         <Label className="text-xs">Size: {size} blocks</Label>
         <Slider value={size} min={1} max={sizeMax} step={1} showInput onValueChange={setSize} />
@@ -393,6 +391,7 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
         />
       </div>
 
+      {isShape && <ShapeSelector />}
       {isPen && <PenToggles />}
 
       {isShape && style.shapeKind === "roundedRect" && (
@@ -447,7 +446,7 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
 
       {isStamp && <StampControls />}
 
-      {(isText || isStamp) && <OutlineControls />}
+      {(isText || isStamp || isPen) && <OutlineControls />}
     </>
   );
 }

@@ -82,6 +82,14 @@ export function useDrawingViewerProps(): MapDrawingProps {
             onSelect: (ids) => dispatch(drawingActions.setSelection(ids)),
             onMove: (ids, dx, dz) => dispatch(drawingActions.moveElements({ ids, dx, dz })),
             onResize: (el) => dispatch(drawingActions.updateElement({ id: el.id, changes: el })),
+            onScaleGroup: (factor, origin) =>
+                dispatch(
+                    drawingActions.scaleSelected({
+                        factor,
+                        originX: origin.x,
+                        originZ: origin.z,
+                    }),
+                ),
             onRotate: (angleDelta) => dispatch(drawingActions.rotateSelected(angleDelta)),
             onRequestText: (world) => dispatch(drawingActions.requestText(world)),
             onEditText: (id) => dispatch(drawingActions.requestTextEdit(id)),

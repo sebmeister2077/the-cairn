@@ -27,6 +27,9 @@ export interface StrokeElement {
     opacity: number;
     /** Draw an arrowhead at the last point (free-hand pen with the arrow toggle). */
     arrow?: boolean;
+    /** Draw a coloured halo/outline around the stroke for legibility (pen only). */
+    outline?: boolean;
+    outlineColor?: string;
     /** Layer this element belongs to (absent = the board's first/default layer). */
     layerId?: string;
     createdAt: number;
