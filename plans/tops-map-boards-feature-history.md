@@ -5,12 +5,13 @@ of user feedback with the decision taken and what actually shipped. Keep new
 feedback appended under a new "Round" heading so context stays small.
 
 ## File map (where things live)
-- Types: `frontend/src/lib/drawing/types.ts` (`DrawElement` union: pen/marker/line/arrow/rect/circle/text/stamp, `Board`, `Blueprint`)
-- Geometry: `frontend/src/lib/drawing/elements.ts` (bbox, `translateElement`, hit-testing)
+- Types: `frontend/src/lib/drawing/types.ts` (`DrawElement` union: pen/marker/line/arrow/rect/circle/poly/text/stamp; `PolyShape`, `ShapeKind`, `Board`, `Blueprint`)
+- Geometry: `frontend/src/lib/drawing/elements.ts` (bbox, `translateElement`, hit-testing, `polyVertices`, resize handles + `resizeElement`)
 - Canvas render: `frontend/src/lib/drawing/render.ts`
 - Vector stamp icons: `frontend/src/lib/drawing/stampIcons.ts`
 - Gesture controller: `frontend/src/hooks/useMapDrawing.ts`
 - State (Redux, mirrored to IndexedDB): `frontend/src/store/slices/drawing.ts`, `lib/drawing/boardStore.ts`
+- Persisted UI prefs (survive reload): `frontend/src/store/slices/mapView.ts` (`fullscreenControlsCollapsed`, `boardControlsCollapsed`)
 - UI: `frontend/src/components/tops-map/drawing/{DrawingToolbar,MapDrawingUi,BoardsPanel,BlueprintLibrary}.tsx`
 - Viewer bridge: `useDrawingViewerProps.ts` → `WebCartographerMapViewer.tsx` (`MapDrawingProps`)
 
@@ -84,8 +85,95 @@ Shipped:
 
 ---
 
+## Round 5 — declutter the toolbar, fold Line/Arrow into Pen, Shapes tool, split hide toggles
+Source feedback: arrow positioning felt off; the toolbar had too many top-level
+tools; Line + Arrow could live inside Pen as combinable toggles (an arrow should
+work even on a non-straight stroke); Marker is now obsolete; wanted a grouped
+"Shapes" tool (square / rounded square / circle); colours could be their own
+control or per-tool (plus an optional wheel + eyedropper); the map's overlay
+side-controls and the board controls should hide *independently*; and praise for
+"apply current style".
+
+Design decisions:
+- **Marker removed from the toolbar** (Pen + opacity covers the highlighter use).
+  Legacy `marker` elements on old boards still render, and the `marker` element
+  kind is kept so nothing breaks.
+- **Pen absorbs Line + Arrow** as two combinable toggles (`penStraight`,
+  `penArrow`): freehand / straight line / straight arrow / freehand-with-
+  arrowhead. Kept as toggles (not new tools) to shrink the top row. `StrokeElement`
+  gained an optional `arrow?: boolean` so freehand strokes can carry a head.
+- **Shapes grouped** under one `shape` tool that reads `style.shapeKind` rather
+  than three separate buttons. Added an optional `cornerRadiusBlocks` to
+  `RectElement` for the rounded variant.
+- **Colours stay per-tool (shared row)** but gained a native custom-colour
+  picker + an eyedropper (Chromium `EyeDropper` API, feature-detected). Rejected
+  a full standalone colour tool as more clicks for the common case.
+
+Shipped:
+- **Arrow positioning fix**: the shaft now stops at the base of the arrowhead so a
+  round line-cap no longer pokes past the tip; the tip sits exactly on the
+  endpoint (`render.ts` — shared arrowhead geometry constants).
+- **Pen toggles**: Straight + Arrowhead switches in the Pen popup; arrowheads also
+  render at the end of freehand strokes.
+- **Shapes tool**: rectangle / rounded rectangle / circle picker with a corner-
+  radius slider for the rounded one.
+- **Custom colour + eyedropper** added to the quick-colour row.
+- **Independent hide toggles**: board controls now collapse to a small "Board"
+  restore chip via their own toggle, decoupled from the map's overlay "Hide
+  controls" (which no longer also hides the board bar).
+
+Deferred at the time: resizing shapes by their corners; more shape types.
+
+---
+
+## Round 6 — resize selected elements by handles
+Request: shapes (and ideally anything) should be resizable by dragging corners
+after selection.
+
+Decision: make it general rather than shape-only. A **single** selected element
+in the Select tool shows drag handles; multi-select still just moves.
+
+Shipped (`elements.ts` `elementResizeHandles` + `resizeElement`, gesture in
+`useMapDrawing.ts`, handle rendering in `WebCartographerMapViewer.tsx`):
+- **line/arrow** → two endpoint handles (drag an end).
+- **circle** → four cardinal handles (drag changes radius, centre fixed).
+- **rect / pen / marker** → eight bbox handles (corners + edge midpoints), free
+  non-uniform resize; strokes remap all their points, rects keep proportional
+  corner radius.
+- **text / stamp** → four corner handles, aspect-locked uniform scale of the
+  font/icon size.
+- Handles are white squares hit-tested in world space (~9px), checked before the
+  move/marquee so grabbing a corner wins; a live preview renders during the drag
+  and commits once via `updateElement`.
+
+---
+
+## Round 7 — persist the board-controls hide state + more shapes
+Two requests: (a) the "hide board controls" toggle reset on refresh; (b) can the
+Shapes tool offer more shapes?
+
+(a) **Persistence fix** — the flag lived in the `drawing` slice, which is
+intentionally **blacklisted** from the localStorage envelope (boards are large and
+restored from IndexedDB), so any UI flag there resets to `initialState` on reload.
+Moved `boardControlsCollapsed` into the persisted `mapView` slice, next to the
+analogous `fullscreenControlsCollapsed`, so the preference now survives reloads.
+
+(b) **More shapes** — added a single `poly` element kind (shares a bbox `a`/`b`;
+concrete vertices derived at render/hit-test time via `polyVertices`) covering
+**triangle, diamond, ellipse, pentagon, hexagon, octagon, star**. The Shapes
+picker is now a 5-column grid (rectangle, rounded, circle, ellipse, triangle,
+diamond, pentagon, hexagon, octagon, star). `ShapeKind` (in `types.ts`) is the
+shared union used by `style.shapeKind`. Poly gets proper hit-testing (point-in-
+polygon for fills, ellipse-normalised test for ellipse), bbox resize, translate,
+and restyle support. `circle` stays its own uniform kind; `rect`/`roundedRect`
+stay `RectElement`.
+
+---
+
 ## Deferred / backlog
 - **Layers**: group drawings and show/hide them (e.g. a "rivers" or "paths" layer). Needs a data-model + persistence + panel; the largest outstanding item.
+- **Rotation** of shapes/text/stamps (resize handles exist; a rotate handle would round it out).
+- **Shift-to-constrain** while drawing/resizing (square/circle lock, 45° line snap) and numeric size entry for a selected element.
 
 ---
 

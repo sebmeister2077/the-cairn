@@ -4,6 +4,7 @@
 import {
     type Blueprint,
     type DrawElement,
+    type PolyShape,
     type WorldPoint,
     DRAWING_SCHEMA_VERSION,
     newId,
@@ -14,6 +15,50 @@ export interface WorldBBox {
     minZ: number;
     maxX: number;
     maxZ: number;
+}
+
+/** World-space vertices of a polygon shape inscribed in its bounding box.
+ *  `ellipse` returns an empty array (rendered/tested as a true ellipse). */
+export function polyVertices(shape: PolyShape, bb: WorldBBox): WorldPoint[] {
+    const cx = (bb.minX + bb.maxX) / 2;
+    const cz = (bb.minZ + bb.maxZ) / 2;
+    const rx = (bb.maxX - bb.minX) / 2;
+    const rz = (bb.maxZ - bb.minZ) / 2;
+    switch (shape) {
+        case "ellipse":
+            return [];
+        case "triangle":
+            return [
+                { x: cx, z: bb.minZ },
+                { x: bb.maxX, z: bb.maxZ },
+                { x: bb.minX, z: bb.maxZ },
+            ];
+        case "diamond":
+            return [
+                { x: cx, z: bb.minZ },
+                { x: bb.maxX, z: cz },
+                { x: cx, z: bb.maxZ },
+                { x: bb.minX, z: cz },
+            ];
+        case "star": {
+            const pts: WorldPoint[] = [];
+            for (let i = 0; i < 10; i++) {
+                const a = -Math.PI / 2 + (i * Math.PI) / 5;
+                const f = i % 2 === 0 ? 1 : 0.5;
+                pts.push({ x: cx + rx * f * Math.cos(a), z: cz + rz * f * Math.sin(a) });
+            }
+            return pts;
+        }
+        default: {
+            const n = shape === "pentagon" ? 5 : shape === "hexagon" ? 6 : 8;
+            const pts: WorldPoint[] = [];
+            for (let i = 0; i < n; i++) {
+                const a = -Math.PI / 2 + (i * 2 * Math.PI) / n;
+                pts.push({ x: cx + rx * Math.cos(a), z: cz + rz * Math.sin(a) });
+            }
+            return pts;
+        }
+    }
 }
 
 /** Rough on-screen width of a text label in world blocks (no canvas metrics). */
@@ -38,6 +83,8 @@ function elementPoints(el: DrawElement): WorldPoint[] {
         case "arrow":
             return [el.a, el.b];
         case "rect":
+            return [el.a, el.b];
+        case "poly":
             return [el.a, el.b];
         case "circle":
             return [
@@ -106,6 +153,8 @@ export function translateElement(el: DrawElement, dx: number, dz: number): DrawE
             return { ...el, a: mv(el.a), b: mv(el.b) };
         case "rect":
             return { ...el, a: mv(el.a), b: mv(el.b) };
+        case "poly":
+            return { ...el, a: mv(el.a), b: mv(el.b) };
         case "circle":
             return { ...el, center: mv(el.center) };
         case "text":
@@ -121,6 +170,21 @@ export function cloneElementWithNewId(el: DrawElement, createdAt: number): DrawE
         return { ...base, points: base.points.map((p) => ({ ...p })) };
     }
     return base;
+}
+
+/** Even-odd point-in-polygon test in world units. */
+function pointInPolygon(px: number, pz: number, verts: WorldPoint[]): boolean {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const zi = verts[i].z;
+        const zj = verts[j].z;
+        const xi = verts[i].x;
+        const xj = verts[j].x;
+        const intersect =
+            zi > pz !== zj > pz && px < ((xj - xi) * (pz - zi)) / (zj - zi) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
 }
 
 /** Squared distance from point (px,pz) to segment a-b, in world units. */
@@ -195,6 +259,27 @@ export function hitTestElement(
             const d = Math.hypot(px - el.center.x, pz - el.center.z);
             if (el.fillColor) return d <= el.radiusBlocks + toleranceBlocks;
             return Math.abs(d - el.radiusBlocks) <= toleranceBlocks + el.strokeWidthBlocks / 2;
+        }
+        case "poly": {
+            const bb = elementBBox(el);
+            if (el.shape === "ellipse") {
+                const cx = (bb.minX + bb.maxX) / 2;
+                const cz = (bb.minZ + bb.maxZ) / 2;
+                const rx = Math.max(1e-6, (bb.maxX - bb.minX) / 2);
+                const rz = Math.max(1e-6, (bb.maxZ - bb.minZ) / 2);
+                const nx = (px - cx) / rx;
+                const nz = (pz - cz) / rz;
+                if (el.fillColor) return nx * nx + nz * nz <= 1.1;
+                const band = (toleranceBlocks + el.strokeWidthBlocks / 2) / Math.min(rx, rz);
+                return Math.abs(Math.hypot(nx, nz) - 1) <= band;
+            }
+            const verts = polyVertices(el.shape, bb);
+            if (el.fillColor && pointInPolygon(px, pz, verts)) return true;
+            const t = (toleranceBlocks + el.strokeWidthBlocks / 2) ** 2;
+            for (let i = 0; i < verts.length; i++) {
+                if (distSqToSegment(px, pz, verts[i], verts[(i + 1) % verts.length]) <= t) return true;
+            }
+            return false;
         }
         case "text": {
             const w = approxTextWidthBlocks(el);
@@ -383,6 +468,8 @@ export function resizeElement(el: DrawElement, handle: ResizeHandleId, cursor: W
                         cornerRadiusBlocks: cr,
                     };
                 }
+                case "poly":
+                    return { ...el, a: remapPoint(el.a, ob, nb), b: remapPoint(el.b, ob, nb) };
                 case "text":
                     return {
                         ...el,

@@ -19,6 +19,12 @@ import {
   Square,
   SquareRoundCorner,
   Circle,
+  Triangle,
+  Diamond,
+  Pentagon,
+  Hexagon,
+  Octagon,
+  Star,
   Shapes,
   Spline,
   ArrowUpRight,
@@ -35,7 +41,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { PEN_PALETTE, TEXT_FONTS, drawingActions } from "@/store/slices/drawing";
-import type { DrawTool } from "@/lib/drawing/types";
+import type { DrawTool, ShapeKind } from "@/lib/drawing/types";
 import { STAMP_ICONS, type IconPrim } from "@/lib/drawing/stampIcons";
 import { useDrawingBoards } from "@/hooks/useDrawingBoards";
 import { cn } from "@/lib/utils";
@@ -453,30 +459,52 @@ function PenToggles() {
   );
 }
 
+/** Simple ellipse glyph (lucide has no ellipse icon). */
+function EllipseIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      className={className}
+    >
+      <ellipse cx="12" cy="12" rx="9" ry="6" />
+    </svg>
+  );
+}
+
+const SHAPE_OPTIONS: {
+  kind: ShapeKind;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { kind: "rect", label: "Rectangle", icon: Square },
+  { kind: "roundedRect", label: "Rounded", icon: SquareRoundCorner },
+  { kind: "circle", label: "Circle", icon: Circle },
+  { kind: "ellipse", label: "Ellipse", icon: EllipseIcon },
+  { kind: "triangle", label: "Triangle", icon: Triangle },
+  { kind: "diamond", label: "Diamond", icon: Diamond },
+  { kind: "pentagon", label: "Pentagon", icon: Pentagon },
+  { kind: "hexagon", label: "Hexagon", icon: Hexagon },
+  { kind: "octagon", label: "Octagon", icon: Octagon },
+  { kind: "star", label: "Star", icon: Star },
+];
+
 /** Shape-kind picker for the unified Shapes tool. */
 function ShapeSelector() {
   const dispatch = useAppDispatch();
   const shapeKind = useAppSelector((s) => s.drawing.style.shapeKind);
-  const options: {
-    kind: ToolStyleShapeKind;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-  }[] = [
-    { kind: "rect", label: "Rectangle", icon: Square },
-    { kind: "roundedRect", label: "Rounded", icon: SquareRoundCorner },
-    { kind: "circle", label: "Circle", icon: Circle },
-  ];
   return (
     <div className="space-y-1">
       <Label className="text-xs">Shape</Label>
-      <div className="flex gap-1">
-        {options.map(({ kind, label, icon: Icon }) => (
+      <div className="grid grid-cols-5 gap-1">
+        {SHAPE_OPTIONS.map(({ kind, label, icon: Icon }) => (
           <Button
             key={kind}
             type="button"
-            size="sm"
+            size="icon-sm"
             variant={shapeKind === kind ? "default" : "outline"}
-            className="flex-1"
             title={label}
             aria-pressed={shapeKind === kind}
             onClick={() => dispatch(drawingActions.updateStyle({ shapeKind: kind }))}
@@ -488,8 +516,6 @@ function ShapeSelector() {
     </div>
   );
 }
-
-type ToolStyleShapeKind = "rect" | "roundedRect" | "circle";
 
 function TextFormatControls() {
   const dispatch = useAppDispatch();

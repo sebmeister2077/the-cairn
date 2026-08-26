@@ -14,6 +14,7 @@ import {
     type BoardIndexEntry,
     type DrawElement,
     type DrawTool,
+    type ShapeKind,
     type WorldPoint,
     boardIndexEntry,
 } from "@/lib/drawing/types";
@@ -60,7 +61,7 @@ export interface ToolStyle {
     penStraight: boolean;
     penArrow: boolean;
     /** Which primitive the Shapes tool draws. */
-    shapeKind: "rect" | "roundedRect" | "circle";
+    shapeKind: ShapeKind;
     /** Corner radius (world blocks) for the rounded-rectangle shape. */
     cornerRadiusBlocks: number;
     /** Whether shapes are filled. */
@@ -192,7 +193,8 @@ function applyStyleToElement(el: DrawElement, s: Partial<ToolStyle>): DrawElemen
             return next;
         }
         case "rect":
-        case "circle": {
+        case "circle":
+        case "poly": {
             const next = { ...el };
             if (s.color !== undefined) next.strokeColor = s.color;
             if (s.widthBlocks !== undefined) next.strokeWidthBlocks = s.widthBlocks;

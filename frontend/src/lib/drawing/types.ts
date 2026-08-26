@@ -69,6 +69,32 @@ export interface CircleElement {
     createdAt: number;
 }
 
+/** Regular polygons + ellipse. All share a bounding box (`a`,`b`); the concrete
+ *  vertices are derived from that box at render/hit-test time (see
+ *  `polyVertices`), so resizing just moves the box corners. */
+export type PolyShape =
+    | "triangle"
+    | "diamond"
+    | "ellipse"
+    | "pentagon"
+    | "hexagon"
+    | "octagon"
+    | "star";
+
+export interface PolyElement {
+    id: string;
+    kind: "poly";
+    shape: PolyShape;
+    a: WorldPoint;
+    b: WorldPoint;
+    strokeColor: string;
+    strokeWidthBlocks: number;
+    strokeOpacity: number;
+    fillColor: string | null;
+    fillOpacity: number;
+    createdAt: number;
+}
+
 export interface TextElement {
     id: string;
     kind: "text";
@@ -111,10 +137,15 @@ export type DrawElement =
     | LineElement
     | RectElement
     | CircleElement
+    | PolyElement
     | TextElement
     | StampElement;
 
 export type DrawElementKind = DrawElement["kind"];
+
+/** What the Shapes tool can draw: box-based rect variants, a perfect circle, or
+ *  any {@link PolyShape}. */
+export type ShapeKind = "rect" | "roundedRect" | "circle" | PolyShape;
 
 /** Every interactive mode the drawing surface can be in. `select` drives the
  *  marquee used to build blueprints; `eraser` removes whole elements. */

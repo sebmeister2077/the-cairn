@@ -123,19 +123,59 @@ function styleLine(style: ToolStyle, a: WorldPoint): DrawElement {
 function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElement | null {
     const now = Date.now();
     const fill = style.fillEnabled ? style.fillColor : null;
-    // The unified Shapes tool selects its primitive from the style.
-    const kind: DrawTool =
-        tool === "shape"
-            ? style.shapeKind === "circle"
-                ? "circle"
-                : "rect"
-            : tool;
-    switch (kind) {
+    // The unified Shapes tool selects its primitive (rect variant, circle, or a
+    // polygon/ellipse) from the style's shapeKind.
+    if (tool === "shape") {
+        const sk = style.shapeKind;
+        if (sk === "circle") {
+            return {
+                id: newId(),
+                kind: "circle",
+                center: a,
+                radiusBlocks: 0,
+                strokeColor: style.color,
+                strokeWidthBlocks: style.widthBlocks,
+                strokeOpacity: style.opacity,
+                fillColor: fill,
+                fillOpacity: style.fillOpacity,
+                createdAt: now,
+            };
+        }
+        if (sk === "rect" || sk === "roundedRect") {
+            return {
+                id: newId(),
+                kind: "rect",
+                a,
+                b: a,
+                strokeColor: style.color,
+                strokeWidthBlocks: style.widthBlocks,
+                strokeOpacity: style.opacity,
+                fillColor: fill,
+                fillOpacity: style.fillOpacity,
+                cornerRadiusBlocks: sk === "roundedRect" ? style.cornerRadiusBlocks : 0,
+                createdAt: now,
+            };
+        }
+        return {
+            id: newId(),
+            kind: "poly",
+            shape: sk,
+            a,
+            b: a,
+            strokeColor: style.color,
+            strokeWidthBlocks: style.widthBlocks,
+            strokeOpacity: style.opacity,
+            fillColor: fill,
+            fillOpacity: style.fillOpacity,
+            createdAt: now,
+        };
+    }
+    switch (tool) {
         case "line":
         case "arrow":
             return {
                 id: newId(),
-                kind,
+                kind: tool,
                 a,
                 b: a,
                 color: style.color,
@@ -154,10 +194,7 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
                 strokeOpacity: style.opacity,
                 fillColor: fill,
                 fillOpacity: style.fillOpacity,
-                cornerRadiusBlocks:
-                    tool === "shape" && style.shapeKind === "roundedRect"
-                        ? style.cornerRadiusBlocks
-                        : 0,
+                cornerRadiusBlocks: 0,
                 createdAt: now,
             };
         case "circle":
@@ -338,7 +375,7 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 break;
             case "shape": {
                 const el = g.el;
-                if (el.kind === "line" || el.kind === "arrow" || el.kind === "rect") {
+                if (el.kind === "line" || el.kind === "arrow" || el.kind === "rect" || el.kind === "poly") {
                     el.b = world;
                 } else if (el.kind === "circle") {
                     el.radiusBlocks = Math.hypot(world.x - el.center.x, world.z - el.center.z);
@@ -389,7 +426,7 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 const el = g.el;
                 const degenerate =
                     (el.kind === "circle" && el.radiusBlocks < 0.5) ||
-                    ((el.kind === "line" || el.kind === "arrow" || el.kind === "rect") &&
+                    ((el.kind === "line" || el.kind === "arrow" || el.kind === "rect" || el.kind === "poly") &&
                         Math.hypot(el.b.x - el.a.x, el.b.z - el.a.z) < 0.5);
                 if (!degenerate) c.onCommit(el);
                 break;

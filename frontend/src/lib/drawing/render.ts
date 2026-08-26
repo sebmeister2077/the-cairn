@@ -3,7 +3,7 @@
 // multiplied by `pixelsPerBlock` so everything scales with zoom.
 
 import type { DrawElement } from "./types";
-import { elementBBox, translateElement } from "./elements";
+import { elementBBox, polyVertices, translateElement } from "./elements";
 import { STAMP_ICON_MAP, drawStampIcon } from "./stampIcons";
 
 export type ProjectFn = (wx: number, wz: number) => { x: number; y: number };
@@ -169,6 +169,45 @@ function drawOne(
             applyAlpha(ctx, el.strokeOpacity, ghost);
             ctx.strokeStyle = el.strokeColor;
             ctx.lineWidth = Math.max(MIN_LINE_PX, el.strokeWidthBlocks * ppb);
+            ctx.stroke();
+            break;
+        }
+        case "poly": {
+            const a = project(el.a.x, el.a.z);
+            const b = project(el.b.x, el.b.z);
+            const minX = Math.min(a.x, b.x);
+            const minY = Math.min(a.y, b.y);
+            const w = Math.abs(b.x - a.x);
+            const h = Math.abs(b.y - a.y);
+            const trace = () => {
+                ctx.beginPath();
+                if (el.shape === "ellipse") {
+                    ctx.ellipse(minX + w / 2, minY + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+                    return;
+                }
+                const verts = polyVertices(el.shape, {
+                    minX: el.a.x < el.b.x ? el.a.x : el.b.x,
+                    maxX: el.a.x > el.b.x ? el.a.x : el.b.x,
+                    minZ: el.a.z < el.b.z ? el.a.z : el.b.z,
+                    maxZ: el.a.z > el.b.z ? el.a.z : el.b.z,
+                });
+                verts.forEach((v, i) => {
+                    const p = project(v.x, v.z);
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.closePath();
+            };
+            if (el.fillColor) {
+                applyAlpha(ctx, el.fillOpacity, ghost);
+                ctx.fillStyle = el.fillColor;
+                trace();
+                ctx.fill();
+            }
+            applyAlpha(ctx, el.strokeOpacity, ghost);
+            ctx.strokeStyle = el.strokeColor;
+            ctx.lineWidth = Math.max(MIN_LINE_PX, el.strokeWidthBlocks * ppb);
+            trace();
             ctx.stroke();
             break;
         }
