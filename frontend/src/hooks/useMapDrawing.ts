@@ -16,11 +16,14 @@ import {
 } from "@/lib/drawing/types";
 import {
     cloneElementWithNewId,
+    elementCenter,
     elementInBox,
     elementResizeHandles,
     elementsBBox,
     hitTestElement,
     resizeElement,
+    rotateElement,
+    rotateHandlePos,
     translateElement,
     type ResizeHandleId,
 } from "@/lib/drawing/elements";
@@ -46,7 +49,15 @@ type Gesture =
     | { type: "erase"; ids: Set<string> }
     | { type: "marquee"; rect: MarqueeRect }
     | { type: "move"; ids: Set<string>; start: WorldPoint; cur: WorldPoint }
-    | { type: "resize"; id: string; handle: ResizeHandleId; original: DrawElement; el: DrawElement };
+    | { type: "resize"; id: string; handle: ResizeHandleId; original: DrawElement; el: DrawElement }
+    | {
+        type: "rotate";
+        originals: DrawElement[];
+        pivot: WorldPoint;
+        start: number;
+        delta: number;
+        preview: DrawElement[];
+    };
 
 export interface MapDrawingConfig {
     enabledRef: MutableRefObject<boolean>;
@@ -56,6 +67,8 @@ export interface MapDrawingConfig {
     pasteRef: MutableRefObject<{ elements: DrawElement[] } | null>;
     /** Committed elements, for eraser / marquee hit-testing. */
     elementsRef: MutableRefObject<DrawElement[]>;
+    /** Ids on locked layers: visible but not selectable / erasable. */
+    lockedRef: MutableRefObject<ReadonlySet<string>>;
     /** Currently-selected element ids (drives drag-to-move in select mode). */
     selectedRef: MutableRefObject<ReadonlySet<string>>;
     ppbRef: MutableRefObject<number>;
@@ -69,6 +82,9 @@ export interface MapDrawingConfig {
     onMove: (ids: string[], dx: number, dz: number) => void;
     /** Commit a single element's resized geometry. */
     onResize: (el: DrawElement) => void;
+    /** Commit a rotation of the current selection by `angleDelta` radians about
+     *  the selection's centre. */
+    onRotate: (angleDelta: number) => void;
     /** Ask the React layer to collect a text label for the given world point
      *  (opens the themed dialog); the caller commits the element on submit. */
     onRequestText: (world: WorldPoint) => void;
@@ -89,6 +105,8 @@ export interface MapDrawingController {
     getMoveOffset: () => MoveOffset | null;
     /** Live resized element while a handle drag is in progress, or null. */
     getResizePreview: () => { id: string; el: DrawElement } | null;
+    /** Live rotated element previews while a rotate drag is in progress. */
+    getRotatePreview: () => DrawElement[] | null;
 }
 
 function styleStroke(style: ToolStyle, kind: "pen" | "marker", first: WorldPoint) {
@@ -215,6 +233,26 @@ function styleShape(style: ToolStyle, tool: DrawTool, a: WorldPoint): DrawElemen
     }
 }
 
+/** Rotate-handle grab point + rotation pivot for the current selection. A single
+ *  element uses its own (rotation-aware) handle; a group uses the top-centre of
+ *  its bounding box, rotating about the group centre. Null when nothing rotates
+ *  (e.g. a single circle). */
+function rotateGrabPoint(
+    selected: DrawElement[],
+    ppb: number,
+): { pos: WorldPoint; pivot: WorldPoint } | null {
+    const gap = 22 / ppb;
+    if (selected.length === 0) return null;
+    if (selected.length === 1) {
+        const pos = rotateHandlePos(selected[0], gap);
+        return pos ? { pos, pivot: elementCenter(selected[0]) } : null;
+    }
+    const bb = elementsBBox(selected);
+    if (!bb) return null;
+    const pivot = { x: (bb.minX + bb.maxX) / 2, z: (bb.minZ + bb.maxZ) / 2 };
+    return { pos: { x: pivot.x, z: bb.minZ - gap }, pivot };
+}
+
 export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
     const cfg = useRef(config);
     useEffect(() => {
@@ -230,8 +268,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
 
     const eraseAt = useCallback((world: WorldPoint, ids: Set<string>) => {
         const tol = worldTol();
+        const locked = cfg.current.lockedRef.current;
         for (const el of cfg.current.elementsRef.current) {
-            if (ids.has(el.id)) continue;
+            if (ids.has(el.id) || locked.has(el.id)) continue;
             if (hitTestElement(el, world.x, world.z, tol)) ids.add(el.id);
         }
     }, [worldTol]);
@@ -312,10 +351,26 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
                 const sel = c.selectedRef.current;
                 if (sel.size > 0) {
                     const selected = c.elementsRef.current.filter((el) => sel.has(el.id));
-                    // A single selected element exposes resize handles; grabbing
-                    // one starts a resize (checked before move so corners win).
+                    const ppb = cfg.current.ppbRef.current;
+                    const handleTol = 9 / ppb;
+                    // Rotate handle (checked first — it sits outside the box). It
+                    // shows for both a single element and a multi-element group;
+                    // dragging rotates the whole selection about its centre.
+                    const rot = rotateGrabPoint(selected, ppb);
+                    if (rot && Math.hypot(world.x - rot.pos.x, world.z - rot.pos.z) <= handleTol) {
+                        gestureRef.current = {
+                            type: "rotate",
+                            originals: selected,
+                            pivot: rot.pivot,
+                            start: Math.atan2(world.z - rot.pivot.z, world.x - rot.pivot.x),
+                            delta: 0,
+                            preview: selected,
+                        };
+                        c.scheduleRedraw();
+                        return true;
+                    }
+                    // A single selected element also exposes resize handles.
                     if (selected.length === 1) {
-                        const handleTol = 9 / cfg.current.ppbRef.current;
                         const handles = elementResizeHandles(selected[0]);
                         let hit: ResizeHandleId | null = null;
                         let best = Infinity;
@@ -395,6 +450,12 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "resize":
                 g.el = resizeElement(g.original, g.handle, world);
                 break;
+            case "rotate": {
+                const angle = Math.atan2(world.z - g.pivot.z, world.x - g.pivot.x);
+                g.delta = angle - g.start;
+                g.preview = g.originals.map((o) => rotateElement(o, g.delta, g.pivot));
+                break;
+            }
         }
         c.scheduleRedraw();
     }, [eraseAt]);
@@ -409,7 +470,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             minZ: Math.min(a.z, b.z),
             maxZ: Math.max(a.z, b.z),
         };
-        const ids = c.elementsRef.current.filter((el) => elementInBox(el, box)).map((el) => el.id);
+        const ids = c.elementsRef.current
+            .filter((el) => !c.lockedRef.current.has(el.id) && elementInBox(el, box))
+            .map((el) => el.id);
         c.onSelect(ids);
     }, []);
 
@@ -447,6 +510,9 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             case "resize":
                 if (g.el !== g.original) c.onResize(g.el);
                 break;
+            case "rotate":
+                if (g.delta !== 0) c.onRotate(g.delta);
+                break;
         }
         c.scheduleRedraw();
     }, [commitMarquee]);
@@ -481,6 +547,11 @@ export function useMapDrawing(config: MapDrawingConfig): MapDrawingController {
             const g = gestureRef.current;
             if (g?.type !== "resize") return null;
             return { id: g.id, el: g.el };
+        },
+        getRotatePreview: () => {
+            const g = gestureRef.current;
+            if (g?.type !== "rotate") return null;
+            return g.preview;
         },
     };
 }

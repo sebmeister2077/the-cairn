@@ -47,7 +47,7 @@ import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";
 import { hitTestElement as hitTestDrawElement } from "@/lib/drawing/elements";
-import { elementResizeHandles } from "@/lib/drawing/elements";
+import { elementResizeHandles, elementsBBox, rotateHandlePos } from "@/lib/drawing/elements";
 import { DEFAULT_TOOL_STYLE, type ToolStyle } from "@/store/slices/drawing";
 import type { DrawElement, DrawTool } from "@/lib/drawing/types";
 
@@ -62,6 +62,8 @@ export interface MapDrawingProps {
   elements: DrawElement[];
   /** Marquee-selected element ids (dashed highlight). */
   selectedIds: ReadonlySet<string>;
+  /** Ids on locked layers: rendered but not selectable / erasable. */
+  lockedIds: ReadonlySet<string>;
   /** Blueprint being stamped (origin-normalised elements), or null. */
   pasteBlueprint: { elements: DrawElement[] } | null;
   onCommit: (el: DrawElement) => void;
@@ -71,6 +73,8 @@ export interface MapDrawingProps {
   onMove: (ids: string[], dx: number, dz: number) => void;
   /** Commit a single element's resized geometry (handle drag). */
   onResize: (el: DrawElement) => void;
+  /** Commit a rotation of the current selection by `angleDelta` radians. */
+  onRotate: (angleDelta: number) => void;
   onRequestText: (world: { x: number; z: number }) => void;
   /** Double-click on an existing text element requests an edit of its content. */
   onEditText: (id: string) => void;
@@ -946,6 +950,7 @@ export function WebCartographerMapViewer({
   const drawPasteRef = useRef<{ elements: DrawElement[] } | null>(drawing?.pasteBlueprint ?? null);
   const drawElementsRef = useRef<DrawElement[]>(drawing?.elements ?? []);
   const drawSelectedRef = useRef<ReadonlySet<string>>(drawing?.selectedIds ?? EMPTY_STRING_SET);
+  const drawLockedRef = useRef<ReadonlySet<string>>(drawing?.lockedIds ?? EMPTY_STRING_SET);
   useEffect(() => {
     drawingPropsRef.current = drawing;
     drawEnabledRef.current = drawing?.enabled ?? false;
@@ -954,6 +959,7 @@ export function WebCartographerMapViewer({
     drawPasteRef.current = drawing?.pasteBlueprint ?? null;
     drawElementsRef.current = drawing?.elements ?? [];
     drawSelectedRef.current = drawing?.selectedIds ?? EMPTY_STRING_SET;
+    drawLockedRef.current = drawing?.lockedIds ?? EMPTY_STRING_SET;
     scheduleRedraw();
   }, [drawing, scheduleRedraw]);
 
@@ -963,6 +969,7 @@ export function WebCartographerMapViewer({
     styleRef: drawStyleRef,
     pasteRef: drawPasteRef,
     elementsRef: drawElementsRef,
+    lockedRef: drawLockedRef,
     selectedRef: drawSelectedRef,
     ppbRef: pixelsPerBlockRef,
     unproject: unprojectScreen,
@@ -979,6 +986,10 @@ export function WebCartographerMapViewer({
       [],
     ),
     onResize: useCallback((el: DrawElement) => drawingPropsRef.current?.onResize(el), []),
+    onRotate: useCallback(
+      (angleDelta: number) => drawingPropsRef.current?.onRotate(angleDelta),
+      [],
+    ),
     onRequestText: useCallback(
       (world: { x: number; z: number }) => drawingPropsRef.current?.onRequestText(world),
       [],
@@ -1384,6 +1395,7 @@ export function WebCartographerMapViewer({
       });
       const pendingErase = mapDrawingRef.current.getPendingErase();
       const resizePreview = mapDrawingRef.current.getResizePreview();
+      const rotatePreview = mapDrawingRef.current.getRotatePreview();
       let committed =
         pendingErase.size > 0
           ? drawElementsRef.current.filter((el) => !pendingErase.has(el.id))
@@ -1392,27 +1404,32 @@ export function WebCartographerMapViewer({
       if (resizePreview) {
         committed = committed.map((el) => (el.id === resizePreview.id ? resizePreview.el : el));
       }
+      // Substitute the elements being rotated with their live preview geometry.
+      if (rotatePreview) {
+        const map = new Map(rotatePreview.map((el) => [el.id, el]));
+        committed = committed.map((el) => map.get(el.id) ?? el);
+      }
       drawElements(octx, committed, project, ppb, mapDrawingRef.current.getPreview(), {
         highlightIds: drawSelectedRef.current,
         moveOffset: mapDrawingRef.current.getMoveOffset() ?? undefined,
       });
 
-      // Resize handles: shown for a single selected element in the Select tool.
+      // Selection handles (Select tool): resize handles + a rotate handle for a
+      // single element; just a rotate handle (at the group's top-centre) for a
+      // multi-element selection so the whole group can be spun about its centre.
       if (
         drawEnabledRef.current &&
         drawToolRef.current === "select" &&
-        drawSelectedRef.current.size === 1
+        drawSelectedRef.current.size >= 1
       ) {
-        const selId = drawSelectedRef.current.values().next().value;
-        const selEl =
-          resizePreview && resizePreview.id === selId
-            ? resizePreview.el
-            : committed.find((el) => el.id === selId);
-        if (selEl) {
-          octx.save();
-          octx.fillStyle = "#ffffff";
-          octx.strokeStyle = "#38bdf8";
-          octx.lineWidth = 1.5;
+        const selIds = drawSelectedRef.current;
+        const selEls = committed.filter((el) => selIds.has(el.id));
+        octx.save();
+        octx.fillStyle = "#ffffff";
+        octx.strokeStyle = "#38bdf8";
+        octx.lineWidth = 1.5;
+        if (selEls.length === 1) {
+          const selEl = selEls[0];
           for (const h of elementResizeHandles(selEl)) {
             const p = project(h.world.x, h.world.z);
             octx.beginPath();
@@ -1420,8 +1437,41 @@ export function WebCartographerMapViewer({
             octx.fill();
             octx.stroke();
           }
-          octx.restore();
+          // Rotate handle above the element (stem down to its rotated top edge).
+          const rotWorld = rotateHandlePos(selEl, 22 / ppb);
+          if (rotWorld) {
+            const rp = project(rotWorld.x, rotWorld.z);
+            const stemWorld = rotateHandlePos(selEl, 6 / ppb);
+            if (stemWorld) {
+              const sp = project(stemWorld.x, stemWorld.z);
+              octx.beginPath();
+              octx.moveTo(sp.x, sp.y);
+              octx.lineTo(rp.x, rp.y);
+              octx.stroke();
+            }
+            octx.beginPath();
+            octx.arc(rp.x, rp.y, 5, 0, Math.PI * 2);
+            octx.fill();
+            octx.stroke();
+          }
+        } else if (selEls.length > 1) {
+          // Group rotate handle at the top-centre of the selection's bbox.
+          const bb = elementsBBox(selEls);
+          if (bb) {
+            const cx = (bb.minX + bb.maxX) / 2;
+            const top = project(cx, bb.minZ);
+            const knob = { x: top.x, y: top.y - 22 };
+            octx.beginPath();
+            octx.moveTo(top.x, top.y);
+            octx.lineTo(knob.x, knob.y);
+            octx.stroke();
+            octx.beginPath();
+            octx.arc(knob.x, knob.y, 5, 0, Math.PI * 2);
+            octx.fill();
+            octx.stroke();
+          }
         }
+        octx.restore();
       }
 
       // Paste ghost: a translucent blueprint clone tracking the cursor.
@@ -2163,6 +2213,7 @@ export function WebCartographerMapViewer({
       for (let i = els.length - 1; i >= 0; i--) {
         const el = els[i];
         if (el.kind !== "text") continue;
+        if (drawLockedRef.current.has(el.id)) continue;
         if (hitTestDrawElement(el, world.x, world.z, tol)) {
           drawingPropsRef.current?.onEditText(el.id);
           return;

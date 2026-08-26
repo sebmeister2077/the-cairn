@@ -170,10 +170,69 @@ stay `RectElement`.
 
 ---
 
+## Round 8 — tiny sizes, freehand arrows, layers, unified popups, blueprint search, duplicate + rotate
+Source feedback: minimum sizes should start at 1 (user works very zoomed in);
+freehand arrowheads are broken unless the stroke is straight; colours could be
+per-tool or their own tool to shrink the menu (admin: keep the single shared
+colour so tool1/tool2 don't diverge → no change); add a couple of layers so
+drawings don't interact; unify the control language/order across tool popups
+(size/opacity/etc. appeared in different orders); search through blueprints;
+duplicate a selection; rotate selected items.
+
+Shipped:
+- **Min size 1**: Size / corner-radius sliders now `min=1 step=1`; resize floors
+  for text/stamp lowered 4→1 (`elements.ts`).
+- **Freehand arrowhead fix**: the head now walks back a full head-length along
+  the stroke for a stable direction (adjacent samples were sub-pixel apart, so
+  the barbs pointed the wrong way on curves) — `render.ts`.
+- **Colours stay shared** (admin decision): unchanged.
+- **Unified popups**: every tool popup follows **Size → Opacity → tool-specific →
+  colours (fill/outline)**, with one label word "Size" everywhere (was "Line
+  width" / "Text size" / "Stamp size"). `DrawingToolbar.tsx`.
+- **Layers**: `Board.layers` + `activeLayerId` (+ optional `layerId` per element);
+  hidden layers aren't drawn, locked layers are drawn but not selectable/erasable,
+  new elements land on the active layer, stack order controls draw order. New
+  `LayersPanel` (add / rename / show-hide / lock / reorder / delete-with-elements).
+  Legacy boards normalise to one default layer on open (`ensureBoardLayers`).
+- **Blueprint search**: a filter box appears once there are >3 blueprints.
+- **Duplicate selection**: `duplicateSelected` clones the selection (nudged) onto
+  the same layers and selects the copies; Copy button in the toolbar.
+- **Rotate**: `rotation` field on rect/poly/text/stamp (point kinds rotate their
+  points). A rotate dot above a single selected element drags to rotate; toolbar
+  buttons rotate the selection ±15°. Rotated box elements hide resize handles
+  (rotate-only) to avoid an axis/rotated handle mismatch.
+
+Deferred: rotating a rotated element's resize handles (resize hidden while
+rotated); shift-to-constrain; numeric rotation entry.
+
+---
+
+## Round 9 — layer z-order, group rotation, freehand arrow tip
+Source feedback: layer order wasn't applied (last-drawn always on top regardless
+of layer); multi-select rotation should spin the whole selection about its centre
+(pasted blueprints broke when rotated) and the rotate handle didn't appear for a
+multi-selection; the free-hand Pen arrow sat just *before* the end instead of at
+the very end like the straight arrow.
+
+Shipped:
+- **Layer z-order**: `moveLayer` now reorders via `splice` (the previous Immer
+  destructuring swap could leave the array unreordered, so stacking never
+  changed). Elements are already drawn ordered by layer (`useDrawingViewerProps`).
+- **Group rotation**: `rotateElement(el, angle, pivot)` now orbits box/text/stamp
+  centres (and circle centres) around the pivot instead of only bumping the
+  stored angle, so `rotateSelected` rotates the whole selection rigidly about the
+  selection-bbox centre — blueprints/groups rotate without distorting. The rotate
+  handle now shows for multi-selections (at the group's top-centre); single
+  elements keep their own rotation-aware handle.
+- **Free-hand arrow tip**: the stroke is trimmed back by the head length (like the
+  straight arrow) so the round cap tucks under the head and the tip lands exactly
+  on the last point (`trimPolylineEnd` in `render.ts`).
+
+---
+
 ## Deferred / backlog
-- **Layers**: group drawings and show/hide them (e.g. a "rivers" or "paths" layer). Needs a data-model + persistence + panel; the largest outstanding item.
-- **Rotation** of shapes/text/stamps (resize handles exist; a rotate handle would round it out).
-- **Shift-to-constrain** while drawing/resizing (square/circle lock, 45° line snap) and numeric size entry for a selected element.
+- **Shift-to-constrain** while drawing/resizing (square/circle lock, 45° line snap) and numeric size/rotation entry for a selected element.
+- **Resize while rotated** (currently resize handles hide for a rotated box/text/stamp; rotate back to 0 to resize).
 
 ---
 

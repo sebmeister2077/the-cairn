@@ -141,6 +141,29 @@ export function elementsBBox(els: DrawElement[]): WorldBBox | null {
     return { minX, minZ, maxX, maxZ };
 }
 
+/** Rotation (radians) stored on an element, or 0 for kinds that don't rotate
+ *  by field (point-based kinds bake rotation into their points). */
+export function elementRotation(el: DrawElement): number {
+    return el.kind === "rect" || el.kind === "poly" || el.kind === "text" || el.kind === "stamp"
+        ? el.rotation ?? 0
+        : 0;
+}
+
+/** Centre of an element's (unrotated) bounding box — the rotation pivot. */
+export function elementCenter(el: DrawElement): WorldPoint {
+    const b = elementBBox(el);
+    return { x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2 };
+}
+
+/** Rotate point `p` by `angle` radians around pivot `c` (world space). */
+export function rotatePoint(p: WorldPoint, c: WorldPoint, angle: number): WorldPoint {
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
+    const dx = p.x - c.x;
+    const dz = p.z - c.z;
+    return { x: c.x + dx * cos - dz * sin, z: c.z + dx * sin + dz * cos };
+}
+
 /** Return a translated copy of `el` (new object, SAME id). */
 export function translateElement(el: DrawElement, dx: number, dz: number): DrawElement {
     const mv = (p: WorldPoint): WorldPoint => ({ x: p.x + dx, z: p.z + dz });
@@ -213,6 +236,14 @@ export function hitTestElement(
     pz: number,
     toleranceBlocks: number,
 ): boolean {
+    // Rotated box/text/stamp elements: inverse-rotate the cursor into the
+    // element's upright frame, then run the normal axis-aligned test.
+    const rot = elementRotation(el);
+    if (rot) {
+        const r = rotatePoint({ x: px, z: pz }, elementCenter(el), -rot);
+        px = r.x;
+        pz = r.z;
+    }
     switch (el.kind) {
         case "pen":
         case "marker": {
@@ -353,6 +384,9 @@ export function elementResizeHandles(el: DrawElement): ResizeHandle[] {
             ];
         }
         default: {
+            // A rotated box/text/stamp hides its resize handles (only the rotate
+            // handle shows) to avoid an axis-aligned/rotated handle mismatch.
+            if (elementRotation(el)) return [];
             const bb = elementBBox(el);
             const midX = (bb.minX + bb.maxX) / 2;
             const midZ = (bb.minZ + bb.maxZ) / 2;
@@ -376,6 +410,61 @@ export function elementResizeHandles(el: DrawElement): ResizeHandle[] {
 }
 
 const MIN_RESIZE_BLOCKS = 1;
+
+/** World position of the rotate handle: `gapBlocks` above the element's
+ *  (rotated) top-centre. Callers pass a screen-constant gap (px / ppb). Returns
+ *  null for kinds we don't rotate by handle (circles). */
+export function rotateHandlePos(el: DrawElement, gapBlocks: number): WorldPoint | null {
+    if (el.kind === "circle") return null;
+    const bb = elementBBox(el);
+    const c = { x: (bb.minX + bb.maxX) / 2, z: (bb.minZ + bb.maxZ) / 2 };
+    const topLocal: WorldPoint = { x: c.x, z: bb.minZ - gapBlocks };
+    const rot = elementRotation(el);
+    return rot ? rotatePoint(topLocal, c, rot) : topLocal;
+}
+
+/** Rotate an element by `angle` radians about `pivot` (default = the element's
+ *  own centre). Point-based kinds rotate their actual points; box/text/stamp
+ *  kinds orbit their centre around the pivot AND accumulate the stored rotation,
+ *  so a multi-element selection rotates rigidly about a shared pivot. */
+export function rotateElement(el: DrawElement, angle: number, pivot?: WorldPoint): DrawElement {
+    if (!angle) return el;
+    const c = pivot ?? elementCenter(el);
+    const rot = (p: WorldPoint) => rotatePoint(p, c, angle);
+    switch (el.kind) {
+        case "pen":
+        case "marker":
+            return { ...el, points: el.points.map(rot) };
+        case "line":
+        case "arrow":
+            return { ...el, a: rot(el.a), b: rot(el.b) };
+        case "circle":
+            return { ...el, center: rot(el.center) };
+        case "rect":
+        case "poly": {
+            const old = elementCenter(el);
+            const nc = rot(old);
+            const dx = nc.x - old.x;
+            const dz = nc.z - old.z;
+            return {
+                ...el,
+                a: { x: el.a.x + dx, z: el.a.z + dz },
+                b: { x: el.b.x + dx, z: el.b.z + dz },
+                rotation: (el.rotation ?? 0) + angle,
+            };
+        }
+        case "text":
+        case "stamp": {
+            const old = elementCenter(el);
+            const nc = rot(old);
+            return {
+                ...el,
+                pos: { x: el.pos.x + (nc.x - old.x), z: el.pos.z + (nc.z - old.z) },
+                rotation: (el.rotation ?? 0) + angle,
+            };
+        }
+    }
+}
 
 /** New bbox after dragging `handle` to `cursor`, keeping the opposite side fixed
  *  and clamping to a minimum so the box can't collapse or flip. */
@@ -474,13 +563,13 @@ export function resizeElement(el: DrawElement, handle: ResizeHandleId, cursor: W
                     return {
                         ...el,
                         pos: remapPoint(el.pos, ob, nb),
-                        sizeBlocks: Math.max(4, el.sizeBlocks * ((sx + sz) / 2)),
+                        sizeBlocks: Math.max(1, el.sizeBlocks * ((sx + sz) / 2)),
                     };
                 case "stamp":
                     return {
                         ...el,
                         pos: remapPoint(el.pos, ob, nb),
-                        sizeBlocks: Math.max(4, el.sizeBlocks * ((sx + sz) / 2)),
+                        sizeBlocks: Math.max(1, el.sizeBlocks * ((sx + sz) / 2)),
                     };
                 default:
                     return el;
@@ -496,9 +585,13 @@ export function resizeElement(el: DrawElement, handle: ResizeHandleId, cursor: W
 export function makeBlueprint(name: string, els: DrawElement[], createdAt: number): Blueprint | null {
     const bbox = elementsBBox(els);
     if (!bbox) return null;
-    const normalized = els.map((el) =>
-        cloneElementWithNewId(translateElement(el, -bbox.minX, -bbox.minZ), createdAt),
-    );
+    // Strip layer membership: pasted copies land on the destination board's
+    // active layer, not whatever layer they were captured from.
+    const normalized = els.map((el) => {
+        const clone = cloneElementWithNewId(translateElement(el, -bbox.minX, -bbox.minZ), createdAt);
+        delete (clone as { layerId?: string }).layerId;
+        return clone;
+    });
     return {
         id: newId(),
         name,

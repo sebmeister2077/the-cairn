@@ -18,7 +18,9 @@ import {
     type Board,
     type DrawElement,
     DRAWING_SCHEMA_VERSION,
+    ensureBoardLayers,
     newId,
+    newLayer,
 } from "@/lib/drawing/types";
 import { makeBlueprint } from "@/lib/drawing/elements";
 
@@ -28,11 +30,14 @@ export function useDrawingBoards() {
     const createBoard = useCallback(
         async (name: string, worldKey: string | null): Promise<Board> => {
             const now = Date.now();
+            const layer = newLayer("Layer 1");
             const board: Board = {
                 id: newId(),
                 name: name.trim() || "Untitled board",
                 worldKey,
                 elements: [],
+                layers: [layer],
+                activeLayerId: layer.id,
                 createdAt: now,
                 updatedAt: now,
                 schemaVersion: DRAWING_SCHEMA_VERSION,
@@ -47,7 +52,7 @@ export function useDrawingBoards() {
     const selectBoard = useCallback(
         async (id: string): Promise<void> => {
             const board = await getBoard(id);
-            if (board) dispatch(drawingActions.boardSelected(board));
+            if (board) dispatch(drawingActions.boardSelected(ensureBoardLayers(board)));
         },
         [dispatch],
     );

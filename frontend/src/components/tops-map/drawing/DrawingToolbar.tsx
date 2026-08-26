@@ -39,6 +39,9 @@ import {
   Trash2,
   Save,
   Wand2,
+  Copy,
+  RotateCcw,
+  RotateCw,
 } from "lucide-react";
 import { PEN_PALETTE, TEXT_FONTS, drawingActions } from "@/store/slices/drawing";
 import type { DrawTool, ShapeKind } from "@/lib/drawing/types";
@@ -61,7 +64,6 @@ const TOOLS: {
 
 /** Tools that expose a fill (the unified Shapes tool). */
 const SHAPE_TOOLS = new Set<DrawTool>(["shape"]);
-const WIDTH_TOOLS = new Set<DrawTool>(["pen", "shape"]);
 /** Tools whose stroke colour is driven by the shared quick-colour row. */
 const COLOR_TOOLS = new Set<DrawTool>(["pen", "shape", "text", "stamp"]);
 /** Tools that expose a style popup (everything except eraser / select). */
@@ -174,6 +176,39 @@ export function DrawingToolbar() {
             <Wand2 className="size-4" />
           </Button>
         )}
+        {selectedIds.length > 0 && (
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            title="Duplicate selection"
+            onClick={() => dispatch(drawingActions.duplicateSelected())}
+          >
+            <Copy className="size-4" />
+          </Button>
+        )}
+        {selectedIds.length > 0 && (
+          <>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              title="Rotate selection 15° left"
+              onClick={() => dispatch(drawingActions.rotateSelected(-Math.PI / 12))}
+            >
+              <RotateCcw className="size-4" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              title="Rotate selection 15° right"
+              onClick={() => dispatch(drawingActions.rotateSelected(Math.PI / 12))}
+            >
+              <RotateCw className="size-4" />
+            </Button>
+          </>
+        )}
         <Button
           type="button"
           size="icon"
@@ -196,8 +231,9 @@ export function DrawingToolbar() {
 
       {activeTool === "select" && (
         <p className="px-1 text-[11px] text-muted-foreground">
-          Drag a box to select, then drag inside it to move it. Select a single item to drag its
-          handles and resize it. Use the wand to restyle, or double-click text to edit it.
+          Drag a box to select, then drag inside it to move it. Drag the top dot to rotate (a single
+          item or the whole group), or a single item's handles to resize. Use the wand to restyle,
+          copy to duplicate, or double-click text to edit it.
         </p>
       )}
 
@@ -323,25 +359,39 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
   const isPen = tool === "pen";
   const isShape = tool === "shape";
   const showFill = SHAPE_TOOLS.has(tool);
-  const showWidth = WIDTH_TOOLS.has(tool);
+
+  // Unified "Size" control: line width for pen/shape, glyph size for text/stamp.
+  // Every popup follows the same order — Size, Opacity, then tool-specific
+  // options, then colours (fill / outline) — so the language stays consistent.
+  const size = isText ? style.textSizeBlocks : isStamp ? style.stampSizeBlocks : style.widthBlocks;
+  const sizeMax = isText ? 400 : isStamp ? 500 : 200;
+  const setSize = (v: number) =>
+    dispatch(
+      drawingActions.updateStyle(
+        isText ? { textSizeBlocks: v } : isStamp ? { stampSizeBlocks: v } : { widthBlocks: v },
+      ),
+    );
 
   return (
     <>
       {isShape && <ShapeSelector />}
 
-      {showWidth && (
-        <div className="space-y-1">
-          <Label className="text-xs">Line width: {style.widthBlocks} blocks</Label>
-          <Slider
-            value={style.widthBlocks}
-            min={2}
-            max={200}
-            step={2}
-            showInput
-            onValueChange={(v) => dispatch(drawingActions.updateStyle({ widthBlocks: v }))}
-          />
-        </div>
-      )}
+      <div className="space-y-1">
+        <Label className="text-xs">Size: {size} blocks</Label>
+        <Slider value={size} min={1} max={sizeMax} step={1} showInput onValueChange={setSize} />
+      </div>
+
+      <div className="space-y-1">
+        <Label className="text-xs">Opacity: {Math.round(style.opacity * 100)}%</Label>
+        <Slider
+          value={style.opacity}
+          min={0.05}
+          max={1}
+          step={0.05}
+          showInput
+          onValueChange={(v) => dispatch(drawingActions.updateStyle({ opacity: v }))}
+        />
+      </div>
 
       {isPen && <PenToggles />}
 
@@ -350,40 +400,14 @@ function ToolStylePanel({ tool }: { tool: DrawTool }) {
           <Label className="text-xs">Corner radius: {style.cornerRadiusBlocks} blocks</Label>
           <Slider
             value={style.cornerRadiusBlocks}
-            min={2}
+            min={1}
             max={200}
-            step={2}
+            step={1}
             showInput
             onValueChange={(v) => dispatch(drawingActions.updateStyle({ cornerRadiusBlocks: v }))}
           />
         </div>
       )}
-
-      {isText && (
-        <div className="space-y-1">
-          <Label className="text-xs">Text size: {style.textSizeBlocks} blocks</Label>
-          <Slider
-            value={style.textSizeBlocks}
-            min={16}
-            max={400}
-            step={4}
-            showInput
-            onValueChange={(v) => dispatch(drawingActions.updateStyle({ textSizeBlocks: v }))}
-          />
-        </div>
-      )}
-
-      <div className="space-y-1">
-        <Label className="text-xs">Opacity: {Math.round(style.opacity * 100)}%</Label>
-        <Slider
-          value={style.opacity}
-          min={0.1}
-          max={1}
-          step={0.05}
-          showInput
-          onValueChange={(v) => dispatch(drawingActions.updateStyle({ opacity: v }))}
-        />
-      </div>
 
       {showFill && (
         <div className="space-y-2">
@@ -586,17 +610,6 @@ function StampControls() {
             <StampIconSvg node={ic.node} className="size-5" />
           </button>
         ))}
-      </div>
-      <div className="space-y-1">
-        <Label className="text-xs">Stamp size: {style.stampSizeBlocks} blocks</Label>
-        <Slider
-          value={style.stampSizeBlocks}
-          min={10}
-          max={500}
-          step={5}
-          showInput
-          onValueChange={(v) => dispatch(drawingActions.updateStyle({ stampSizeBlocks: v }))}
-        />
       </div>
     </div>
   );

@@ -27,6 +27,8 @@ export interface StrokeElement {
     opacity: number;
     /** Draw an arrowhead at the last point (free-hand pen with the arrow toggle). */
     arrow?: boolean;
+    /** Layer this element belongs to (absent = the board's first/default layer). */
+    layerId?: string;
     createdAt: number;
 }
 
@@ -38,6 +40,7 @@ export interface LineElement {
     color: string;
     widthBlocks: number;
     opacity: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -53,6 +56,9 @@ export interface RectElement {
     fillOpacity: number;
     /** Corner radius in world blocks (0 / absent = square corners). */
     cornerRadiusBlocks?: number;
+    /** Rotation about the element centre in radians (0 / absent = upright). */
+    rotation?: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -66,6 +72,7 @@ export interface CircleElement {
     strokeOpacity: number;
     fillColor: string | null;
     fillOpacity: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -92,6 +99,9 @@ export interface PolyElement {
     strokeOpacity: number;
     fillColor: string | null;
     fillOpacity: number;
+    /** Rotation about the element centre in radians (0 / absent = upright). */
+    rotation?: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -110,6 +120,9 @@ export interface TextElement {
     /** Draw a coloured outline (halo) behind the glyphs for legibility. */
     outline?: boolean;
     outlineColor?: string;
+    /** Rotation about the element centre in radians (0 / absent = upright). */
+    rotation?: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -129,6 +142,9 @@ export interface StampElement {
     /** Draw a coloured outline behind the glyph. */
     outline?: boolean;
     outlineColor?: string;
+    /** Rotation about the element centre in radians (0 / absent = upright). */
+    rotation?: number;
+    layerId?: string;
     createdAt: number;
 }
 
@@ -162,6 +178,15 @@ export type DrawTool =
     | "stamp"
     | "select";
 
+/** A drawing layer: an independent surface so elements on different layers
+ *  don't interact (hidden layers aren't drawn; locked layers can't be edited). */
+export interface Layer {
+    id: string;
+    name: string;
+    visible: boolean;
+    locked: boolean;
+}
+
 /** A planning board: one project's worth of drawings. */
 export interface Board {
     id: string;
@@ -170,9 +195,31 @@ export interface Board {
      *  filtering. `null` = unscoped / legacy. */
     worldKey: string | null;
     elements: DrawElement[];
+    /** Ordered bottom→top; index 0 is the default layer for legacy elements
+     *  (those without a `layerId`). Always at least one entry after load. */
+    layers: Layer[];
+    /** Layer new elements are added to. */
+    activeLayerId: string;
     createdAt: number;
     updatedAt: number;
     schemaVersion: number;
+}
+
+/** Create a fresh layer with sensible defaults. */
+export function newLayer(name: string): Layer {
+    return { id: newId(), name, visible: true, locked: false };
+}
+
+/** Ensure a board (possibly loaded from an older schema) has at least one
+ *  layer + a valid active layer. Mutates + returns the same board. */
+export function ensureBoardLayers(board: Board): Board {
+    if (!board.layers || board.layers.length === 0) {
+        board.layers = [newLayer("Layer 1")];
+    }
+    if (!board.activeLayerId || !board.layers.some((l) => l.id === board.activeLayerId)) {
+        board.activeLayerId = board.layers[board.layers.length - 1].id;
+    }
+    return board;
 }
 
 /** Lightweight board summary kept in Redux + hydrated from IDB without loading

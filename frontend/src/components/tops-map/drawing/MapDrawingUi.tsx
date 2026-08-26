@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   Pencil,
   Layers,
+  Layers3,
   Stamp as StampIcon,
   PanelBottomClose,
   PanelBottomOpen,
@@ -18,6 +19,7 @@ import {
 import { DrawingToolbar } from "./DrawingToolbar";
 import { BoardsPanel } from "./BoardsPanel";
 import { BlueprintLibrary } from "./BlueprintLibrary";
+import { LayersPanel } from "./LayersPanel";
 import { PromptDialog } from "./PromptDialog";
 
 export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
@@ -191,6 +193,18 @@ export function MapDrawingUi({ worldKey }: { worldKey: string | null }) {
             <BlueprintLibrary />
           </PopoverContent>
         </Popover>
+
+        {activeBoardId && (
+          <Popover>
+            <PopoverTrigger render={<Button type="button" size="sm" variant="ghost" />}>
+              <Layers3 className="mr-1 size-4" />
+              Layers
+            </PopoverTrigger>
+            <PopoverContent side="top" align="center" className="w-80">
+              <LayersPanel />
+            </PopoverContent>
+          </Popover>
+        )}
 
         <div className="mx-0.5 h-6 w-px bg-border" />
         <Button

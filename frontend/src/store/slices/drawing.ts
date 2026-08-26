@@ -14,11 +14,14 @@ import {
     type BoardIndexEntry,
     type DrawElement,
     type DrawTool,
+    type Layer,
     type ShapeKind,
     type WorldPoint,
     boardIndexEntry,
+    ensureBoardLayers,
+    newLayer,
 } from "@/lib/drawing/types";
-import { translateElement } from "@/lib/drawing/elements";
+import { cloneElementWithNewId, elementsBBox, rotateElement, translateElement } from "@/lib/drawing/elements";
 import { DEFAULT_STAMP_ICON_ID } from "@/lib/drawing/stampIcons";
 
 const HISTORY_LIMIT = 60;
@@ -261,7 +264,7 @@ export const drawingSlice = createSlice({
             state.boardsHydrated = true;
         },
         boardCreated(state, action: PayloadAction<Board>) {
-            const board = action.payload;
+            const board = ensureBoardLayers(action.payload);
             state.boardIndex.unshift(boardIndexEntry(board));
             state.activeBoard = board;
             state.activeBoardId = board.id;
@@ -270,8 +273,9 @@ export const drawingSlice = createSlice({
             state.selectedIds = [];
         },
         boardSelected(state, action: PayloadAction<Board>) {
-            state.activeBoard = action.payload;
-            state.activeBoardId = action.payload.id;
+            const board = ensureBoardLayers(action.payload);
+            state.activeBoard = board;
+            state.activeBoardId = board.id;
             state.past = [];
             state.future = [];
             state.selectedIds = [];
@@ -308,13 +312,20 @@ export const drawingSlice = createSlice({
         addElement(state, action: PayloadAction<DrawElement>) {
             if (!state.activeBoard) return;
             pushHistory(state);
-            state.activeBoard.elements.push(action.payload);
+            const el = action.payload;
+            state.activeBoard.elements.push({
+                ...el,
+                layerId: el.layerId ?? state.activeBoard.activeLayerId,
+            });
             touch(state);
         },
         addElements(state, action: PayloadAction<DrawElement[]>) {
             if (!state.activeBoard || action.payload.length === 0) return;
             pushHistory(state);
-            state.activeBoard.elements.push(...action.payload);
+            const active = state.activeBoard.activeLayerId;
+            state.activeBoard.elements.push(
+                ...action.payload.map((el) => ({ ...el, layerId: el.layerId ?? active })),
+            );
             touch(state);
         },
         eraseElements(state, action: PayloadAction<string[]>) {
@@ -366,6 +377,42 @@ export const drawingSlice = createSlice({
                 if (!set.has(el.id)) return el;
                 return applyStyleToElement(el, s);
             });
+            touch(state);
+        },
+        /** Clone the selected elements (nudged so copies are visible) onto the
+         *  same layers, and select the clones. */
+        duplicateSelected(state) {
+            if (!state.activeBoard || state.selectedIds.length === 0) return;
+            const set = new Set(state.selectedIds);
+            const els = state.activeBoard.elements.filter((el) => set.has(el.id));
+            if (els.length === 0) return;
+            const now = Date.now();
+            const OFFSET = 20;
+            pushHistory(state);
+            const clones = els.map((el) =>
+                cloneElementWithNewId(translateElement(current(el), OFFSET, OFFSET), now),
+            );
+            state.activeBoard.elements.push(...clones);
+            state.selectedIds = clones.map((c) => c.id);
+            touch(state);
+        },
+        /** Rotate the whole selection rigidly about the selection's centre
+         *  (box/text/stamp orbit that pivot; point kinds rotate their points),
+         *  so groups + pasted blueprints rotate without distorting. */
+        rotateSelected(state, action: PayloadAction<number>) {
+            if (!state.activeBoard || state.selectedIds.length === 0) return;
+            const set = new Set(state.selectedIds);
+            const els = state.activeBoard.elements.filter((el) => set.has(el.id));
+            if (els.length === 0) return;
+            const angle = action.payload;
+            const bb = elementsBBox(els.map((e) => current(e)));
+            const pivot = bb
+                ? { x: (bb.minX + bb.maxX) / 2, z: (bb.minZ + bb.maxZ) / 2 }
+                : undefined;
+            pushHistory(state);
+            state.activeBoard.elements = state.activeBoard.elements.map((el) =>
+                set.has(el.id) ? rotateElement(current(el), angle, pivot) : el,
+            );
             touch(state);
         },
         clearBoard(state) {
@@ -443,6 +490,74 @@ export const drawingSlice = createSlice({
 
         setWorldFilterEnabled(state, action: PayloadAction<boolean>) {
             state.worldFilterEnabled = action.payload;
+        },
+
+        // ── Layers ──────────────────────────────────────────────────────────
+        layerAdded(state, action: PayloadAction<string | undefined>) {
+            if (!state.activeBoard) return;
+            const layer: Layer = newLayer(
+                action.payload?.trim() || `Layer ${state.activeBoard.layers.length + 1}`,
+            );
+            state.activeBoard.layers.push(layer);
+            state.activeBoard.activeLayerId = layer.id;
+            touch(state);
+        },
+        setActiveLayer(state, action: PayloadAction<string>) {
+            if (!state.activeBoard) return;
+            if (state.activeBoard.layers.some((l) => l.id === action.payload)) {
+                state.activeBoard.activeLayerId = action.payload;
+            }
+        },
+        layerRenamed(state, action: PayloadAction<{ id: string; name: string }>) {
+            if (!state.activeBoard) return;
+            const layer = state.activeBoard.layers.find((l) => l.id === action.payload.id);
+            if (layer) layer.name = action.payload.name.trim() || layer.name;
+            touch(state);
+        },
+        setLayerVisible(state, action: PayloadAction<{ id: string; visible: boolean }>) {
+            if (!state.activeBoard) return;
+            const layer = state.activeBoard.layers.find((l) => l.id === action.payload.id);
+            if (layer) layer.visible = action.payload.visible;
+            touch(state);
+        },
+        setLayerLocked(state, action: PayloadAction<{ id: string; locked: boolean }>) {
+            if (!state.activeBoard) return;
+            const layer = state.activeBoard.layers.find((l) => l.id === action.payload.id);
+            if (layer) layer.locked = action.payload.locked;
+            touch(state);
+        },
+        /** Delete a layer and every element on it (needs ≥1 remaining layer). */
+        layerRemoved(state, action: PayloadAction<string>) {
+            const board = state.activeBoard;
+            if (!board || board.layers.length <= 1) return;
+            const id = action.payload;
+            const defaultId = board.layers[0].id;
+            pushHistory(state);
+            board.layers = board.layers.filter((l) => l.id !== id);
+            // Elements on the removed layer are dropped; those with no layerId
+            // (default-layer members) are only affected if the default was removed.
+            board.elements = board.elements.filter((el) => {
+                const eff = el.layerId ?? defaultId;
+                return eff !== id;
+            });
+            state.selectedIds = [];
+            if (board.activeLayerId === id) {
+                board.activeLayerId = board.layers[board.layers.length - 1].id;
+            }
+            touch(state);
+        },
+        /** Move a layer up/down in the stack (affects draw order). */
+        moveLayer(state, action: PayloadAction<{ id: string; dir: -1 | 1 }>) {
+            if (!state.activeBoard) return;
+            const layers = state.activeBoard.layers;
+            const i = layers.findIndex((l) => l.id === action.payload.id);
+            const j = i + action.payload.dir;
+            if (i < 0 || j < 0 || j >= layers.length) return;
+            // Splice (not a destructuring swap) so Immer reliably produces a new,
+            // reordered array — the swap form could leave the order unchanged.
+            const [moved] = layers.splice(i, 1);
+            layers.splice(j, 0, moved);
+            touch(state);
         },
     },
 });

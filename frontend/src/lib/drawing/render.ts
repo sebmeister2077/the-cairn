@@ -3,7 +3,7 @@
 // multiplied by `pixelsPerBlock` so everything scales with zoom.
 
 import type { DrawElement } from "./types";
-import { elementBBox, polyVertices, translateElement } from "./elements";
+import { elementBBox, elementCenter, polyVertices, translateElement } from "./elements";
 import { STAMP_ICON_MAP, drawStampIcon } from "./stampIcons";
 
 export type ProjectFn = (wx: number, wz: number) => { x: number; y: number };
@@ -31,6 +31,31 @@ const ARROW_LEN_FACTOR = 3.2;
 
 function arrowHeadLen(lineWidthPx: number): number {
     return Math.max(8, lineWidthPx * ARROW_LEN_FACTOR);
+}
+
+interface ScreenPoint {
+    x: number;
+    y: number;
+}
+
+/** Trim `trim` px off the end of a projected polyline, returning the shortened
+ *  polyline plus the new tail point (the head's base). Used so a free-hand
+ *  arrow's shaft stops under its head and the tip stays on the last point. */
+function trimPolylineEnd(pts: ScreenPoint[], trim: number): { pts: ScreenPoint[]; tail: ScreenPoint } {
+    let remaining = trim;
+    for (let i = pts.length - 1; i > 0; i--) {
+        const a = pts[i - 1];
+        const b = pts[i];
+        const segLen = Math.hypot(b.x - a.x, b.y - a.y);
+        if (segLen >= remaining) {
+            const t = (segLen - remaining) / segLen;
+            const tail = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+            return { pts: [...pts.slice(0, i), tail], tail };
+        }
+        remaining -= segLen;
+    }
+    // Whole stroke is shorter than the head: collapse to the first point.
+    return { pts: [pts[0]], tail: pts[0] };
 }
 
 /** Draw a filled arrowhead whose TIP sits exactly on (toX,toY), pointing along
@@ -71,29 +96,30 @@ function drawOne(
             applyAlpha(ctx, el.opacity, ghost);
             ctx.strokeStyle = el.color;
             ctx.lineWidth = w;
-            ctx.beginPath();
-            const p0 = project(el.points[0].x, el.points[0].z);
-            ctx.moveTo(p0.x, p0.y);
-            if (el.points.length === 1) {
+            const pts = el.points.map((p) => project(p.x, p.z));
+            if (pts.length === 1) {
                 // A dot: draw a filled circle so a single tap is visible.
                 ctx.fillStyle = el.color;
                 ctx.beginPath();
-                ctx.arc(p0.x, p0.y, w / 2, 0, Math.PI * 2);
+                ctx.arc(pts[0].x, pts[0].y, w / 2, 0, Math.PI * 2);
                 ctx.fill();
                 break;
             }
-            for (let i = 1; i < el.points.length; i++) {
-                const p = project(el.points[i].x, el.points[i].z);
-                ctx.lineTo(p.x, p.y);
-            }
+            const withArrow = Boolean(el.arrow) && pts.length >= 2;
+            const tip = pts[pts.length - 1];
+            // For an arrow, stop the polyline at the head's base (like the
+            // straight arrow) so the round cap sits *under* the head and the tip
+            // lands exactly on the last point — not short of it.
+            const base = withArrow
+                ? trimPolylineEnd(pts, arrowHeadLen(w) * Math.cos(ARROW_SPREAD))
+                : { pts, tail: tip };
+            ctx.beginPath();
+            ctx.moveTo(base.pts[0].x, base.pts[0].y);
+            for (let i = 1; i < base.pts.length; i++) ctx.lineTo(base.pts[i].x, base.pts[i].y);
             ctx.stroke();
-            // Optional arrowhead at the free-hand stroke's end.
-            if (el.arrow && el.points.length >= 2) {
-                const n = el.points.length;
-                const from = project(el.points[n - 2].x, el.points[n - 2].z);
-                const to = project(el.points[n - 1].x, el.points[n - 1].z);
+            if (withArrow) {
                 ctx.fillStyle = el.color;
-                drawArrowHead(ctx, from.x, from.y, to.x, to.y, w);
+                drawArrowHead(ctx, base.tail.x, base.tail.y, tip.x, tip.y, w);
             }
             break;
         }
@@ -126,15 +152,27 @@ function drawOne(
             break;
         }
         case "rect": {
+            const rotation = el.rotation ?? 0;
             const a = project(el.a.x, el.a.z);
             const b = project(el.b.x, el.b.z);
-            const x = Math.min(a.x, b.x);
-            const y = Math.min(a.y, b.y);
             const w = Math.abs(b.x - a.x);
             const h = Math.abs(b.y - a.y);
             const radius = el.cornerRadiusBlocks
                 ? Math.min(el.cornerRadiusBlocks * ppb, w / 2, h / 2)
                 : 0;
+            let x = Math.min(a.x, b.x);
+            let y = Math.min(a.y, b.y);
+            // Rotated rects draw in a centred, rotated frame; upright ones keep
+            // the plain top-left path.
+            if (rotation) {
+                const c = elementCenter(el);
+                const cs = project(c.x, c.z);
+                ctx.save();
+                ctx.translate(cs.x, cs.y);
+                ctx.rotate(rotation);
+                x = -w / 2;
+                y = -h / 2;
+            }
             const trace = () => {
                 ctx.beginPath();
                 if (radius > 0 && typeof ctx.roundRect === "function") {
@@ -154,6 +192,7 @@ function drawOne(
             ctx.lineWidth = Math.max(MIN_LINE_PX, el.strokeWidthBlocks * ppb);
             trace();
             ctx.stroke();
+            if (rotation) ctx.restore();
             break;
         }
         case "circle": {
@@ -175,26 +214,31 @@ function drawOne(
         case "poly": {
             const a = project(el.a.x, el.a.z);
             const b = project(el.b.x, el.b.z);
-            const minX = Math.min(a.x, b.x);
-            const minY = Math.min(a.y, b.y);
             const w = Math.abs(b.x - a.x);
             const h = Math.abs(b.y - a.y);
+            const c = elementCenter(el);
+            const cs = project(c.x, c.z);
+            // Draw in a centred frame so rotation is a simple ctx.rotate; the
+            // polygon vertices are taken from a box centred at the origin.
+            ctx.save();
+            ctx.translate(cs.x, cs.y);
+            const rotation = el.rotation ?? 0;
+            if (rotation) ctx.rotate(rotation);
             const trace = () => {
                 ctx.beginPath();
                 if (el.shape === "ellipse") {
-                    ctx.ellipse(minX + w / 2, minY + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2);
+                    ctx.ellipse(0, 0, w / 2, h / 2, 0, 0, Math.PI * 2);
                     return;
                 }
                 const verts = polyVertices(el.shape, {
-                    minX: el.a.x < el.b.x ? el.a.x : el.b.x,
-                    maxX: el.a.x > el.b.x ? el.a.x : el.b.x,
-                    minZ: el.a.z < el.b.z ? el.a.z : el.b.z,
-                    maxZ: el.a.z > el.b.z ? el.a.z : el.b.z,
+                    minX: -w / 2,
+                    maxX: w / 2,
+                    minZ: -h / 2,
+                    maxZ: h / 2,
                 });
                 verts.forEach((v, i) => {
-                    const p = project(v.x, v.z);
-                    if (i === 0) ctx.moveTo(p.x, p.y);
-                    else ctx.lineTo(p.x, p.y);
+                    if (i === 0) ctx.moveTo(v.x, v.z);
+                    else ctx.lineTo(v.x, v.z);
                 });
                 ctx.closePath();
             };
@@ -209,40 +253,70 @@ function drawOne(
             ctx.lineWidth = Math.max(MIN_LINE_PX, el.strokeWidthBlocks * ppb);
             trace();
             ctx.stroke();
+            ctx.restore();
             break;
         }
         case "text": {
-            const p = project(el.pos.x, el.pos.z);
+            const rotation = el.rotation ?? 0;
             const size = Math.max(6, el.sizeBlocks * ppb);
             applyAlpha(ctx, el.opacity, ghost);
             ctx.fillStyle = el.color;
-            ctx.textAlign = "left";
-            ctx.textBaseline = "top";
             const italic = el.italic ? "italic " : "";
             const weight = el.bold ? "700 " : "";
             const family = el.fontFamily ?? "ui-sans-serif, system-ui, sans-serif";
             ctx.font = `${italic}${weight}${size}px ${family}`;
             ctx.lineJoin = "round";
+            let originX: number;
+            let originY: number;
+            if (rotation) {
+                // Draw centred + rotated about the element centre.
+                const c = elementCenter(el);
+                const cs = project(c.x, c.z);
+                ctx.save();
+                ctx.translate(cs.x, cs.y);
+                ctx.rotate(rotation);
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                originX = 0;
+                originY = 0;
+            } else {
+                const p = project(el.pos.x, el.pos.z);
+                ctx.textAlign = "left";
+                ctx.textBaseline = "top";
+                originX = p.x;
+                originY = p.y;
+            }
             // Halo for legibility over busy terrain (on by default for legacy text).
             if (el.outline ?? true) {
                 ctx.strokeStyle = el.outlineColor ?? "rgba(0,0,0,0.55)";
                 ctx.lineWidth = Math.max(1, size / 12);
-                ctx.strokeText(el.text, p.x, p.y);
+                ctx.strokeText(el.text, originX, originY);
             }
-            ctx.fillText(el.text, p.x, p.y);
+            ctx.fillText(el.text, originX, originY);
+            if (rotation) ctx.restore();
             break;
         }
         case "stamp": {
-            const p = project(el.pos.x, el.pos.z);
+            const rotation = el.rotation ?? 0;
             const size = Math.max(8, el.sizeBlocks * ppb);
             applyAlpha(ctx, el.opacity ?? 1, ghost);
+            const p = project(el.pos.x, el.pos.z);
+            let ox = p.x;
+            let oy = p.y;
+            if (rotation) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(rotation);
+                ox = 0;
+                oy = 0;
+            }
             const icon = el.iconId ? STAMP_ICON_MAP[el.iconId] : undefined;
             if (icon) {
                 drawStampIcon(
                     ctx,
                     icon.node,
-                    p.x,
-                    p.y,
+                    ox,
+                    oy,
                     size,
                     el.color ?? "#dc2626",
                     el.outline ? { color: el.outlineColor ?? "#000000", width: 3 } : null,
@@ -256,10 +330,11 @@ function drawOne(
                     ctx.strokeStyle = el.outlineColor ?? "#000000";
                     ctx.lineWidth = Math.max(1, size / 14);
                     ctx.lineJoin = "round";
-                    ctx.strokeText(el.glyph, p.x, p.y);
+                    ctx.strokeText(el.glyph, ox, oy);
                 }
-                ctx.fillText(el.glyph, p.x, p.y);
+                ctx.fillText(el.glyph, ox, oy);
             }
+            if (rotation) ctx.restore();
             break;
         }
     }
