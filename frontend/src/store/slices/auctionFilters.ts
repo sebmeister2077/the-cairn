@@ -33,6 +33,8 @@ export interface AuctionFilters {
     unpickedExpiredOnly: boolean;
     /** Admin-only display toggle: show the raw AuctionId column. */
     showAuctionId: boolean;
+    /** Item page: overlay expired (unsold) listings on the price-history chart. */
+    showUnsoldPriceHistory: boolean;
     /** Comma-separated buyer/seller names to hide from the listings. */
     excludePlayers: string;
     sort: AuctionSortKey;
@@ -50,6 +52,7 @@ export const DEFAULT_AUCTION_FILTERS: AuctionFilters = {
     excludeExternalTrades: true,
     unpickedExpiredOnly: false,
     showAuctionId: false,
+    showUnsoldPriceHistory: false,
     excludePlayers: "",
     sort: "date",
     sortDir: "desc",

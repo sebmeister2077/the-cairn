@@ -41,20 +41,39 @@ function movingAverage(values: number[], window: number): number[] {
   return out;
 }
 
+// Y-axis ceiling for the expired-listings overlay, as a multiple of the median
+// sale price (never below the highest real sale). Extreme asking prices above
+// this are pinned to the top instead of stretching the whole chart.
+const EXPIRED_CAP_MULTIPLE = 5;
+
 export function PriceHistoryChart({
   points,
+  expiredPoints,
   stackSize,
   defaultPerUnit,
+  showUnsold,
+  onShowUnsoldChange,
 }: {
   points: SalePoint[];
+  /** Expired-but-not-cancelled listings that never sold, plotted at their asking
+   * price to reveal how much unsold supply sits above the sales cluster. */
+  expiredPoints?: SalePoint[];
   stackSize: number;
   /** Seed the per-unit vs per-stack toggle from the page's own decision. */
   defaultPerUnit: boolean;
+  /** Controlled "show unsold" state; when omitted the component keeps its own. */
+  showUnsold?: boolean;
+  onShowUnsoldChange?: (v: boolean) => void;
 }) {
   const canStack = stackSize > 1;
   const [perUnit, setPerUnit] = useState(defaultPerUnit || !canStack);
+  const [internalShowExpired, setInternalShowExpired] = useState(false);
+  const showExpired = showUnsold ?? internalShowExpired;
+  const setShowExpired = (v: boolean) =>
+    onShowUnsoldChange ? onShowUnsoldChange(v) : setInternalShowExpired(v);
+  const hasExpired = (expiredPoints?.length ?? 0) > 0;
 
-  const { rows, median, min, max } = useMemo(() => {
+  const { rows, chartData, median, min, max, cap, clampedCount } = useMemo(() => {
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
     const ma = movingAverage(scaled, 7);
@@ -66,13 +85,41 @@ export function PriceHistoryChart({
       observedUtc: p.observedUtc,
     }));
     const sorted = [...scaled].sort((a, b) => a - b);
+    const medianVal = percentileSorted(sorted, 0.5);
+    const maxSale = sorted[sorted.length - 1] ?? 0;
+    // A wildly overpriced expired listing (e.g. 12× the median) would otherwise
+    // crush every real sale into a flat line. Cap the axis at a multiple of the
+    // median — but never below the highest actual sale — and pin anything above
+    // it to that ceiling so the outliers still register without dominating.
+    const cap = Math.max(maxSale, medianVal * EXPIRED_CAP_MULTIPLE) || maxSale;
+    let clampedCount = 0;
+    const expiredRows =
+      showExpired && expiredPoints
+        ? expiredPoints.map((p) => {
+            const value = p.ppu * scale;
+            const clamped = cap > 0 && value > cap;
+            if (clamped) clampedCount += 1;
+            return {
+              t: p.t,
+              expired: clamped ? cap : value,
+              expiredReal: value,
+              clamped,
+              qty: p.qty,
+              observedUtc: p.observedUtc,
+            };
+          })
+        : [];
+    const chartData = [...rows, ...expiredRows].sort((a, b) => a.t - b.t);
     return {
       rows,
-      median: percentileSorted(sorted, 0.5),
+      chartData,
+      median: medianVal,
       min: sorted[0] ?? 0,
-      max: sorted[sorted.length - 1] ?? 0,
+      max: maxSale,
+      cap,
+      clampedCount,
     };
-  }, [points, perUnit, stackSize]);
+  }, [points, expiredPoints, showExpired, perUnit, stackSize]);
 
   const unit = perUnit ? "unit" : "stack";
 
@@ -83,28 +130,40 @@ export function PriceHistoryChart({
           Every recorded sale over the selected range, by in-game sale date. Hover a point for the
           exact price.
         </p>
-        {canStack && (
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          {hasExpired && (
             <Button
               size="sm"
-              variant={perUnit ? "default" : "outline"}
-              onClick={() => setPerUnit(true)}
+              variant={showExpired ? "default" : "outline"}
+              onClick={() => setShowExpired(!showExpired)}
+              title="Overlay expired (unsold, not cancelled) listings at their asking price to gauge supply above current sales"
             >
-              Per unit
+              {showExpired ? "Hide unsold" : "Show unsold"}
             </Button>
-            <Button
-              size="sm"
-              variant={!perUnit ? "default" : "outline"}
-              onClick={() => setPerUnit(false)}
-            >
-              Per stack
-            </Button>
-          </div>
-        )}
+          )}
+          {canStack && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant={perUnit ? "default" : "outline"}
+                onClick={() => setPerUnit(true)}
+              >
+                Per unit
+              </Button>
+              <Button
+                size="sm"
+                variant={!perUnit ? "default" : "outline"}
+                onClick={() => setPerUnit(false)}
+              >
+                Per stack
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={rows} margin={{ top: 8, right: 12, bottom: 18, left: 4 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 18, left: 4 }}>
             <XAxis
               dataKey="t"
               type="number"
@@ -117,6 +176,8 @@ export function PriceHistoryChart({
             <YAxis
               tick={{ fontSize: 11 }}
               width={52}
+              domain={showExpired && clampedCount > 0 ? [0, cap] : ["auto", "auto"]}
+              allowDataOverflow
               tickFormatter={(v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : String(v))}
               label={{
                 value: perUnit ? "Price / unit (gears)" : "Price / stack (gears)",
@@ -139,8 +200,25 @@ export function PriceHistoryChart({
               formatter={(value, name, item) => {
                 if (name === "7-sale avg")
                   return [`${formatGears(Number(value))} / ${unit}`, "7-sale avg"];
-                const p = item?.payload as (typeof rows)[number] | undefined;
+                const p = item?.payload as
+                  | {
+                      qty?: number;
+                      observedUtc?: string | null;
+                      expiredReal?: number;
+                      clamped?: boolean;
+                    }
+                  | undefined;
                 const obs = p?.observedUtc ? ` · seen ${formatListingDate(p.observedUtc)}` : "";
+                if (name === "Unsold (expired)") {
+                  // Show the true asking price even when the point is pinned to
+                  // the capped ceiling.
+                  const real = p?.expiredReal ?? Number(value);
+                  const flag = p?.clamped ? " · capped" : "";
+                  return [
+                    `${formatGears(real)} / ${unit} · ×${p?.qty ?? "?"}${flag}${obs}`,
+                    "Unsold",
+                  ];
+                }
                 return [
                   `${formatGears(Number(value))} / ${unit} · ×${p?.qty ?? "?"}${obs}`,
                   "Sale",
@@ -150,8 +228,19 @@ export function PriceHistoryChart({
             <ReferenceLine y={median} stroke="#10b981" strokeDasharray="4 4" />
             <ReferenceLine y={min} stroke="#94a3b8" strokeDasharray="2 3" />
             <ReferenceLine y={max} stroke="#94a3b8" strokeDasharray="2 3" />
+            {showExpired && (
+              <Scatter
+                dataKey="expired"
+                fill="#ef4444"
+                fillOpacity={0.55}
+                shape="cross"
+                name="Unsold (expired)"
+                isAnimationActive={false}
+              />
+            )}
             <Scatter dataKey="price" fill="#6366f1" name="Sale" isAnimationActive={false} />
             <Line
+              data={rows}
               type="monotone"
               dataKey="ma"
               stroke="#f59e0b"
@@ -170,6 +259,24 @@ export function PriceHistoryChart({
             <span className="text-foreground">Sales</span> — each recorded sale, per {unit}.
           </span>
         </li>
+        {showExpired && (
+          <li className="flex items-center gap-2">
+            <span className="inline-block size-2 shrink-0 rotate-45 bg-[#ef4444]/60" />
+            <span>
+              <span className="text-foreground">Unsold (expired)</span> — listings that expired at
+              this asking price without selling. Many points above the sales cluster mean plenty of
+              supply sellers would part with if buyers paid more.
+              {clampedCount > 0 && (
+                <>
+                  {" "}
+                  {clampedCount} priced above {EXPIRED_CAP_MULTIPLE}× the median{" "}
+                  {clampedCount === 1 ? "is" : "are"} pinned to the top ({formatGears(cap)} / {unit})
+                  — hover for the real price.
+                </>
+              )}
+            </span>
+          </li>
+        )}
         <li className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-3 shrink-0 bg-[#f59e0b]" />
           <span>

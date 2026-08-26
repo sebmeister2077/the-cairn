@@ -80,7 +80,8 @@ import { ItemRarityCard } from "@/components/market/ItemRarityCard";
 import { Sparkline } from "@/components/market/Sparkline";
 import { PriceHistoryChart, type SalePoint } from "@/components/market/PriceHistoryChart";
 import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`
  * is the price the dashed "fair price" reference line should snap to (the plain
@@ -307,6 +308,13 @@ export function MarketItemPage() {
   // Shared "hide off-platform trades" toggle (synced across market pages).
   const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
 
+  // Persisted preference for overlaying expired (unsold) listings on the
+  // price-history chart, so the choice carries across items and reloads.
+  const dispatch = useAppDispatch();
+  const showUnsoldPriceHistory = useAppSelector(
+    (s) => s.auctionFilters.showUnsoldPriceHistory,
+  );
+
   // Shared price mode (median vs quantity-weighted), synced across market pages.
   const [priceMode, setPriceMode] = useMarketPriceMode();
 
@@ -518,6 +526,25 @@ export function MarketItemPage() {
         price: l.price,
         observedUtc: l.observedUtc ?? l.lastObservedUtc ?? null,
       }))
+      .sort((a, b) => a.t - b.t);
+  }, [pricedWindowListings]);
+
+  // Expired-but-not-cancelled listings that never sold, dated by their in-game
+  // lapse time (falling back to the posting time). Plotted on the price-history
+  // chart to show how much unsold supply sits above the sales cluster — i.e.
+  // whether sellers would part with much more at higher prices. Cancelled
+  // listings are excluded (the seller pulled them, so they aren't market supply).
+  const expiredSalePoints = useMemo<SalePoint[]>(() => {
+    return pricedWindowListings
+      .filter((l) => l.state === "Expired" && !l.cancelled)
+      .map((l) => ({
+        t: l.expireTotalHours ?? l.postedTotalHours ?? 0,
+        ppu: l.pricePerUnit,
+        qty: l.qty,
+        price: l.price,
+        observedUtc: l.observedUtc ?? l.lastObservedUtc ?? null,
+      }))
+      .filter((p) => p.t > 0)
       .sort((a, b) => a.t - b.t);
   }, [pricedWindowListings]);
 
@@ -1189,8 +1216,13 @@ export function MarketItemPage() {
               <CardContent className="py-4">
                 <PriceHistoryChart
                   points={salePoints}
+                  expiredPoints={expiredSalePoints}
                   stackSize={stackSize}
                   defaultPerUnit={perUnitUseful}
+                  showUnsold={showUnsoldPriceHistory}
+                  onShowUnsoldChange={(v) =>
+                    dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
+                  }
                 />
               </CardContent>
             </Card>
