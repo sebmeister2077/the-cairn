@@ -1,0 +1,12 @@
+{
+  "originBlockX": 412000,
+  "originBlockZ": 412000,
+  "blocksPerPixelX": 25.0,
+  "blocksPerPixelZ": 25.0,
+  "widthPx": 8000,
+  "heightPx": 8000,
+  "y": 80,
+  "imagePngRelative": "tempstab_20260827_140807_y80.png",
+  "imageRawPngRelative": "tempstab_20260827_140807_y80.raw.png",
+  "rawDecodeFormula": "stability = (R*256 + G) / 10000"
+}

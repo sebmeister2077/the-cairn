@@ -1,0 +1,189 @@
+{
+  "seed": 421943594,
+  "center": {
+    "x": 512000,
+    "z": 512000
+  },
+  "halfSizeBlocks": 100000,
+  "outputPx": 8000,
+  "seaLevel": 110,
+  "mapSizeY": 256,
+  "worldBox": {
+    "minX": 412000,
+    "minZ": 412000,
+    "maxX": 612000,
+    "maxZ": 612000
+  },
+  "stormExcluded": true,
+  "temporalStabilityEnabled": true,
+  "rawDecodeFormula": "stability = (R*256 + G) / 10000",
+  "stabilityRange": {
+    "min": 0.0,
+    "max": 1.5
+  },
+  "colorAnchors": [
+    {
+      "value": 0.0,
+      "hex": "#B00000"
+    },
+    {
+      "value": 0.25,
+      "hex": "#E04000"
+    },
+    {
+      "value": 0.5,
+      "hex": "#FF8000"
+    },
+    {
+      "value": 0.75,
+      "hex": "#F0D000"
+    },
+    {
+      "value": 1.0,
+      "hex": "#40C040"
+    },
+    {
+      "value": 1.5,
+      "hex": "#00A0A0"
+    }
+  ],
+  "assumptions": [
+    "Static base temporal stability = deterministic function of world seed + (x, y, z).",
+    "stabilityNoise = SimplexNoise.FromDefaultOctaves(4, 0.1, 0.9, seed); sampled at (x/80, y/80, z/80).",
+    "Depth curve and penalty use seaLevel and mapSizeY exactly as SystemTemporalStability.GetTemporalStability.",
+    "EXCLUDES the dynamic temporal-storm term (1.5 * glitch strength) and the OnGetTemporalStability mod hook (e.g. story structures forcing 1.0).",
+    "Value range is [0, 1.5]; 1.0 = full stability, higher = extra stable surface, lower = unstable."
+  ],
+  "slices": [
+    {
+      "y": 10,
+      "colorPng": "tempstab_20260827_140807_y10.png",
+      "rawPng": "tempstab_20260827_140807_y10.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.25877193,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 20,
+      "colorPng": "tempstab_20260827_140807_y20.png",
+      "rawPng": "tempstab_20260827_140807_y20.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.2757991,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 30,
+      "colorPng": "tempstab_20260827_140807_y30.png",
+      "rawPng": "tempstab_20260827_140807_y30.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.30301416,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 40,
+      "colorPng": "tempstab_20260827_140807_y40.png",
+      "rawPng": "tempstab_20260827_140807_y40.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.3441534,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 50,
+      "colorPng": "tempstab_20260827_140807_y50.png",
+      "rawPng": "tempstab_20260827_140807_y50.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.4037508,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 60,
+      "colorPng": "tempstab_20260827_140807_y60.png",
+      "rawPng": "tempstab_20260827_140807_y60.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.4864509,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 70,
+      "colorPng": "tempstab_20260827_140807_y70.png",
+      "rawPng": "tempstab_20260827_140807_y70.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.59640366,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 80,
+      "colorPng": "tempstab_20260827_140807_y80.png",
+      "rawPng": "tempstab_20260827_140807_y80.raw.png",
+      "stats": {
+        "min": 0.0,
+        "avg": 0.7361328,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 90,
+      "colorPng": "tempstab_20260827_140807_y90.png",
+      "rawPng": "tempstab_20260827_140807_y90.raw.png",
+      "stats": {
+        "min": 0.18263724,
+        "avg": 0.9165312,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 100,
+      "colorPng": "tempstab_20260827_140807_y100.png",
+      "rawPng": "tempstab_20260827_140807_y100.raw.png",
+      "stats": {
+        "min": 0.47644272,
+        "avg": 1.1225463,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 110,
+      "colorPng": "tempstab_20260827_140807_y110.png",
+      "rawPng": "tempstab_20260827_140807_y110.raw.png",
+      "stats": {
+        "min": 0.79999995,
+        "avg": 1.349085,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 120,
+      "colorPng": "tempstab_20260827_140807_y120.png",
+      "rawPng": "tempstab_20260827_140807_y120.raw.png",
+      "stats": {
+        "min": 0.79999995,
+        "avg": 1.3491379,
+        "max": 1.5
+      }
+    },
+    {
+      "y": 130,
+      "colorPng": "tempstab_20260827_140807_y130.png",
+      "rawPng": "tempstab_20260827_140807_y130.raw.png",
+      "stats": {
+        "min": 0.79999995,
+        "avg": 1.3491844,
+        "max": 1.5
+      }
+    }
+  ]
+}

@@ -11,9 +11,11 @@ import {
 import { RockStrataLegendPanel } from "@/components/tops-map/RockStrataLegendPanel";
 import { ClimateControlsPanel } from "@/components/tops-map/ClimateControlsPanel";
 import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
+import { TemporalStabilityPanel } from "@/components/tops-map/TemporalStabilityPanel";
 import { OCEANS_TOTAL_COUNT } from "@/components/tops-map/FullScreenOverlay";
 import type { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import type { ClimateSampleResult, useClimateOverlay } from "@/hooks/useClimateOverlay";
+import type { useTemporalStabilityOverlay } from "@/hooks/useTemporalStabilityOverlay";
 import { useTranslation } from "@/lib/i18n";
 
 interface AdvancedLayersSectionProps {
@@ -56,6 +58,9 @@ interface AdvancedLayersSectionProps {
   climateHoverCoords: { x: number; z: number } | null;
   climateHoverSample: ClimateSampleResult | null;
   climateAltitudeY: number;
+  stabilitySliceMeta: ReturnType<typeof useTemporalStabilityOverlay>["sliceMeta"];
+  stabilityStatus: ReturnType<typeof useTemporalStabilityOverlay>["status"];
+  stabilityError: ReturnType<typeof useTemporalStabilityOverlay>["error"];
 }
 
 /** Advanced-only overlay controls (oceans, broken TLs, rapids, claims,
@@ -100,6 +105,9 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
   climateHoverCoords,
   climateHoverSample,
   climateAltitudeY,
+  stabilitySliceMeta,
+  stabilityStatus,
+  stabilityError,
 }: AdvancedLayersSectionProps) {
   const { t } = useTranslation();
   return (
@@ -195,6 +203,13 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           layerMeta={climateLayerMeta}
           status={climateStatus}
           error={climateError}
+        />
+      )}
+      {usingWebCartographer && (
+        <TemporalStabilityPanel
+          sliceMeta={stabilitySliceMeta}
+          status={stabilityStatus}
+          error={stabilityError}
         />
       )}
       {climateVisible && (

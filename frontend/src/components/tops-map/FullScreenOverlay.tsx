@@ -54,11 +54,13 @@ import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
+import { TemporalStabilityPanel } from "./TemporalStabilityPanel";
 import { PlayerClaimsControl } from "./PlayerClaimsControl";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapControl";
 import type { LegendEntry } from "@/lib/rockstrata/types";
 import type { ClimateLayerMeta } from "@/lib/climate/types";
+import type { StabilitySliceMeta } from "@/lib/stability/types";
 import { cn } from "@/lib/utils";
 
 type FullscreenControlsOverlayProps = {
@@ -93,6 +95,11 @@ type FullscreenControlsOverlayProps = {
   /** Climate overlay status pill (loading / error). */
   climateStatus: "idle" | "loading" | "ready" | "error";
   climateError: string | null;
+  /** Temporal-stability active-slice metadata (null while disabled / loading). */
+  stabilitySliceMeta: StabilitySliceMeta | null;
+  /** Temporal-stability overlay status pill (loading / error). */
+  stabilityStatus: "idle" | "loading" | "ready" | "error";
+  stabilityError: string | null;
 };
 
 /**
@@ -132,6 +139,9 @@ export function FullscreenControlsOverlay({
   climateLayerMeta,
   climateStatus,
   climateError,
+  stabilitySliceMeta,
+  stabilityStatus,
+  stabilityError,
 }: FullscreenControlsOverlayProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -748,6 +758,15 @@ export function FullscreenControlsOverlay({
                 layerMeta={climateLayerMeta}
                 status={climateStatus}
                 error={climateError}
+              />
+            </div>
+            <div
+              className={cn(!showAdvancedMapOptions && "hidden", !usingWebCartographer && "hidden")}
+            >
+              <TemporalStabilityPanel
+                sliceMeta={stabilitySliceMeta}
+                status={stabilityStatus}
+                error={stabilityError}
               />
             </div>
           </CollapsibleSection>

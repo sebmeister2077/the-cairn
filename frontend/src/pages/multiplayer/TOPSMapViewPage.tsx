@@ -126,6 +126,8 @@ import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
 import { ClimateHoverReadout } from "@/components/tops-map/ClimateHoverReadout";
 import { useClimateOverlay } from "@/hooks/useClimateOverlay";
+import { TemporalStabilityOverlayLayer } from "@/components/tops-map/TemporalStabilityOverlayLayer";
+import { useTemporalStabilityOverlay } from "@/hooks/useTemporalStabilityOverlay";
 import { LandmarkManagementCard } from "@/components/tops-map/landmarks/LandmarkManagementCard";
 import { useResourcesOverlay } from "@/hooks/useResourcesOverlay";
 import { useActiveTranslocators } from "@/hooks/useActiveTranslocators";
@@ -473,6 +475,18 @@ export function TOPSMapViewPage() {
     // `climateAltitudeY` is read via a ref inside `sampleAt`; list it here
     // so the readout re-samples live while the altitude slider is dragged.
   }, [climateVisible, climateHoverCoords, climateSampleAt, climateAltitudeY]);
+
+  // Temporal-stability overlay (WebCartographer-only). Shares the same
+  // one-raster-at-a-time exclusivity group as climate + rock-strata at the
+  // slice-reducer level, gated by `showAdvancedMapOptions`.
+  const stabilityEnabled = useAppSelector((s) => s.mapView.stabilityEnabled);
+  const stabilityYSlice = useAppSelector((s) => s.mapView.stabilityYSlice);
+  const stabilityOpacity = useAppSelector((s) => s.mapView.stabilityOpacity);
+  const stabilityVisible = stabilityEnabled && showAdvancedMapOptions;
+  const stabilityOverlay = useTemporalStabilityOverlay({
+    enabled: stabilityVisible,
+    ySlice: stabilityYSlice,
+  });
 
   // Fullscreen mode (local, not persisted): hides the page chrome and renders
   // the map at viewport size with floating control panels.
@@ -1923,6 +1937,9 @@ export function TOPSMapViewPage() {
                 climateHoverCoords={climateVisible ? climateHoverCoords : null}
                 climateHoverSample={climateHoverSample}
                 climateAltitudeY={climateAltitudeY}
+                stabilitySliceMeta={stabilityOverlay.sliceMeta}
+                stabilityStatus={stabilityOverlay.status}
+                stabilityError={stabilityOverlay.error}
               />
             )}
             <LandmarkManagementCard onLandmarksChanged={reloadLandmarks} />
@@ -2024,6 +2041,16 @@ export function TOPSMapViewPage() {
                         imageWidth={imgNatural.w}
                         imageHeight={imgNatural.h}
                         opacity={climateOpacity}
+                      />
+                    ) : null}
+                    {stabilityVisible ? (
+                      <TemporalStabilityOverlayLayer
+                        bounds={stabilityOverlay.overlayBounds}
+                        overlayUrl={stabilityOverlay.overlayUrl}
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        opacity={stabilityOpacity}
                       />
                     ) : null}
                     {auctionActive && auctionSummary ? (
@@ -2211,6 +2238,9 @@ export function TOPSMapViewPage() {
               climateLayerMeta={climateOverlay.layerMeta}
               climateStatus={climateOverlay.status}
               climateError={climateOverlay.error}
+              stabilitySliceMeta={stabilityOverlay.sliceMeta}
+              stabilityStatus={stabilityOverlay.status}
+              stabilityError={stabilityOverlay.error}
             />
           )}
           <MapDrawingUi worldKey={effectiveWcUrl} />

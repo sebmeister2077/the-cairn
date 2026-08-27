@@ -26,6 +26,7 @@ import type {
     ClimateThresholdMode,
     CropId,
 } from "@/lib/climate/types";
+import type { StabilityYSlice } from "@/lib/stability/types";
 
 /** World sea level = the Y the climate rasters are baked at (anchorY in
  *  the export manifest). Default for the altitude readout = no adjustment. */
@@ -255,6 +256,17 @@ export interface MapViewState {
     /** Climate overlay opacity (0..1). */
     climateOpacity: number;
     /**
+     * Temporal-stability overlay enable flag. Mutually exclusive with the
+     * climate and rock-strata overlays (enabling any one disables the
+     * others). Renders a single depth-slice stability raster selected by
+     * {@link stabilityYSlice}. WebCartographer + advanced-options only.
+     */
+    stabilityEnabled: boolean;
+    /** Which depth slice (world Y) the stability raster renders. */
+    stabilityYSlice: StabilityYSlice;
+    /** Temporal-stability overlay opacity (0..1). */
+    stabilityOpacity: number;
+    /**
      * Auction House "trade density" heatmap overlay intensity (0..1).
      * Drives the overlay opacity via the Intensity slider in
      * {@link AuctionHeatmapControl}. Persisted so the chosen intensity
@@ -395,6 +407,9 @@ export function loadInitialMapViewState(): MapViewState {
         climateCustomMax: null,
         climateAltitudeY: CLIMATE_SEA_LEVEL,
         climateOpacity: 0.7,
+        stabilityEnabled: false,
+        stabilityYSlice: 110,
+        stabilityOpacity: 0.7,
         auctionHeatmapOpacity: 0.75,
         showAdvancedMapOptions: true,
         isFullscreen: false,
@@ -504,10 +519,11 @@ export const mapViewSlice = createSlice({
         },
         setShowRockStrata(state, action: PayloadAction<boolean>) {
             state.showRockStrata = action.payload;
-            // Mutually exclusive with the climate overlay — flipping rock
-            // strata on hides any active climate raster (and vice versa).
+            // Mutually exclusive with the climate + stability overlays —
+            // flipping rock strata on hides any active raster (and vice versa).
             if (state.showRockStrata) {
                 state.climateSubToggle = "off";
+                state.stabilityEnabled = false;
             }
         },
         setRockStrataKind(state, action: PayloadAction<"rock" | "geo">) {
@@ -531,6 +547,7 @@ export const mapViewSlice = createSlice({
             state.climateSubToggle = action.payload;
             if (state.climateSubToggle !== "off") {
                 state.showRockStrata = false;
+                state.stabilityEnabled = false;
             }
             // Switching away from Temperature clears any temp-only preset so
             // the next activation starts on a clean raster.
@@ -600,6 +617,22 @@ export const mapViewSlice = createSlice({
             const v = action.payload;
             if (!Number.isFinite(v)) return;
             state.climateOpacity = Math.max(0, Math.min(1, v));
+        },
+        setStabilityEnabled(state, action: PayloadAction<boolean>) {
+            state.stabilityEnabled = action.payload;
+            // Mutually exclusive with the climate + rock-strata overlays.
+            if (state.stabilityEnabled) {
+                state.climateSubToggle = "off";
+                state.showRockStrata = false;
+            }
+        },
+        setStabilityYSlice(state, action: PayloadAction<StabilityYSlice>) {
+            state.stabilityYSlice = action.payload;
+        },
+        setStabilityOpacity(state, action: PayloadAction<number>) {
+            const v = action.payload;
+            if (!Number.isFinite(v)) return;
+            state.stabilityOpacity = Math.max(0, Math.min(1, v));
         },
         setAuctionHeatmapOpacity(state, action: PayloadAction<number>) {
             const v = action.payload;
@@ -733,6 +766,9 @@ export const {
     setClimateCustomRange,
     setClimateAltitudeY,
     setClimateOpacity,
+    setStabilityEnabled,
+    setStabilityYSlice,
+    setStabilityOpacity,
     setAuctionHeatmapOpacity,
     setShowAdvancedMapOptions,
     setShowFullscreen,

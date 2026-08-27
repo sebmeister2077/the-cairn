@@ -28,3 +28,7 @@ public/auction/
 src/assets/Auction/auction-events.jsonl
 src/assets/Auction/auctions.csv
 
+# Temporal-stability rasters are hosted on R2, not committed (~2.3 GB of
+# 8000px PNGs). The tiny *.world.json + summary JSON stay tracked for georef.
+src/assets/Stability/**/*.png
+
