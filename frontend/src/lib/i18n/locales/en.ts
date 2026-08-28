@@ -2150,6 +2150,12 @@ export const en = {
             colCracked: "Cracked",
             igneous: "Igneous",
             reference: "Reference",
+            deep: "Deep",
+            deposit: "Deposit",
+            approx: "Approx.",
+            hostIn: "in {hosts}",
+            derivedNote:
+                "Rocks tagged “Approx.” never show on the surface map — Vintage Story generates them underground, so they have no map share (shown as —). Their rarity is approximated from a Monte-Carlo of the actual world-generation, measured by underground volume relative to granite (roughly how often you'd hit them while mining). Phyllite and kimberlite form deep rock layers; marble and travertine form pockets inside a host rock (named after the “Deposit” tag).",
             noData: "No rock map data is available.",
             tableFootnote:
                 "Rarity is derived from the bundled TOPS rock-strata map. Map share is each rock's percentage of the total boosted surface area; rarity is its price ratio relative to granite (1.00×).",

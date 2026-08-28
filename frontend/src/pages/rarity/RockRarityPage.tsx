@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import { computeRockPricing, type RarityCurve } from "@/lib/rockstrata/pricing";
+import { computeRockPricing, prettifyRockCode, type RarityCurve } from "@/lib/rockstrata/pricing";
 import { getLayerLegend } from "@/lib/rockstrata/loader";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -211,10 +211,29 @@ export function RockRarityPage() {
                         {r.isReference && (
                           <Badge variant="ghost">{t("rarityPage.rocks.reference")}</Badge>
                         )}
+                        {r.isDerived && (
+                          <>
+                            <Badge variant="secondary">{t("rarityPage.rocks.approx")}</Badge>
+                            <Badge variant="outline">
+                              {r.derivedKind === "deep"
+                                ? t("rarityPage.rocks.deep")
+                                : r.hosts && r.hosts.length > 0
+                                  ? `${t("rarityPage.rocks.deposit")} ${t(
+                                      "rarityPage.rocks.hostIn",
+                                      {
+                                        hosts: r.hosts
+                                          .map((h) => prettifyRockCode(`rock-${h}`))
+                                          .join(", "),
+                                      },
+                                    )}`
+                                  : t("rarityPage.rocks.deposit")}
+                            </Badge>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell className="text-right tabular-nums">
-                      {(r.boostedPct * 100).toFixed(2)}%
+                      {r.isDerived ? "—" : `${(r.boostedPct * 100).toFixed(2)}%`}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{r.ratio.toFixed(2)}×</TableCell>
                     <TableCell className="text-right font-medium tabular-nums text-foreground">
@@ -234,6 +253,7 @@ export function RockRarityPage() {
           <p className="mt-3 text-xs text-muted-foreground">
             {t("rarityPage.rocks.tableFootnote")}
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">{t("rarityPage.rocks.derivedNote")}</p>
         </CardContent>
       </Card>
     </div>
