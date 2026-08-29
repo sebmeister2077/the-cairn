@@ -2049,6 +2049,10 @@ export interface LicenseActivation {
     revoked: boolean;
     first_seen: string;
     last_seen: string;
+    parameters: Record<string, unknown> | null;
+    parameters_prev: Record<string, unknown> | null;
+    params_changed: boolean;
+    params_changed_at: string | null;
 }
 
 export async function adminListLicenses(): Promise<{ items: License[] }> {
@@ -2101,6 +2105,17 @@ export async function adminRevokeLicenseActivation(
 ): Promise<void> {
     const res = await fetch(
         `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/activations/${encodeURIComponent(fingerprint)}/revoke`,
+        { method: "POST", headers: authHeaders() },
+    );
+    await handleResponse(res);
+}
+
+export async function adminDismissActivationFlag(
+    licenseCode: string,
+    fingerprint: string,
+): Promise<void> {
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/activations/${encodeURIComponent(fingerprint)}/dismiss-flag`,
         { method: "POST", headers: authHeaders() },
     );
     await handleResponse(res);

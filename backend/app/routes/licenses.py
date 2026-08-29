@@ -86,6 +86,8 @@ class ActivateRequest(BaseModel):
     license_code: str = Field(..., min_length=8, max_length=200)
     fingerprint: str = Field(..., min_length=8, max_length=200)
     app_version: Optional[str] = Field(None, max_length=64)
+    # Effective runtime parameters (CLI flags / config, minus licensing secrets).
+    parameters: Optional[dict] = None
 
 
 @router.post("/license/activate")
@@ -100,7 +102,9 @@ async def activate(req: ActivateRequest) -> dict:
                 status_code=403,
                 detail="License activation limit reached on other machines",
             )
-    db.upsert_activation(req.license_code, req.fingerprint, req.app_version)
+    db.upsert_activation(
+        req.license_code, req.fingerprint, req.app_version, req.parameters
+    )
     return _sign_token(lic, req.fingerprint)
 
 
@@ -112,7 +116,9 @@ async def validate(req: ActivateRequest) -> dict:
         raise HTTPException(status_code=403, detail="Machine not activated")
     if existing.get("revoked"):
         raise HTTPException(status_code=403, detail="This machine has been unbound")
-    db.upsert_activation(req.license_code, req.fingerprint, req.app_version)
+    db.upsert_activation(
+        req.license_code, req.fingerprint, req.app_version, req.parameters
+    )
     return _sign_token(lic, req.fingerprint)
 
 
@@ -161,6 +167,7 @@ async def list_activations(
     for it in items:
         it["first_seen"] = _iso(it.get("first_seen"))
         it["last_seen"] = _iso(it.get("last_seen"))
+        it["params_changed_at"] = _iso(it.get("params_changed_at"))
     return {"items": items}
 
 
@@ -181,4 +188,14 @@ async def unbind_activation(
     if db.get_activation(license_code, fingerprint) is None:
         raise HTTPException(status_code=404, detail="Unknown activation")
     db.revoke_activation(license_code, fingerprint)
+    return {"ok": True, "license_code": license_code, "fingerprint": fingerprint}
+
+
+@router.post("/admin/licenses/{license_code}/activations/{fingerprint}/dismiss-flag")
+async def dismiss_activation_flag(
+    license_code: str, fingerprint: str, _admin: str = Depends(require_admin)
+) -> dict:
+    if db.get_activation(license_code, fingerprint) is None:
+        raise HTTPException(status_code=404, detail="Unknown activation")
+    db.dismiss_activation_flag(license_code, fingerprint)
     return {"ok": True, "license_code": license_code, "fingerprint": fingerprint}

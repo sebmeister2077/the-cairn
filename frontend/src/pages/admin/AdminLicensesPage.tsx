@@ -10,6 +10,8 @@ import {
   ChevronRight,
   KeyRound,
   MonitorSmartphone,
+  AlertTriangle,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   adminListLicenses,
@@ -17,6 +19,7 @@ import {
   adminListLicenseActivations,
   adminRevokeLicense,
   adminRevokeLicenseActivation,
+  adminDismissActivationFlag,
   type License,
   type LicenseActivation,
 } from "@/lib/api";
@@ -36,6 +39,40 @@ function fmtDate(iso: string | null): string {
 
 function shortFp(fp: string): string {
   return fp.length > 16 ? `${fp.slice(0, 8)}…${fp.slice(-6)}` : fp;
+}
+
+function fmtVal(v: unknown): string {
+  if (typeof v === "string") return v;
+  return JSON.stringify(v);
+}
+
+type ParamDiff = {
+  added: string[];
+  removed: string[];
+  changed: { key: string; from: unknown; to: unknown }[];
+};
+
+function diffParams(
+  prev: Record<string, unknown> | null,
+  cur: Record<string, unknown> | null,
+): ParamDiff {
+  const p = prev ?? {};
+  const c = cur ?? {};
+  const added: string[] = [];
+  const removed: string[] = [];
+  const changed: { key: string; from: unknown; to: unknown }[] = [];
+  for (const k of Object.keys(c)) {
+    if (!(k in p)) added.push(k);
+    else if (JSON.stringify(p[k]) !== JSON.stringify(c[k]))
+      changed.push({ key: k, from: p[k], to: c[k] });
+  }
+  for (const k of Object.keys(p)) {
+    if (!(k in c)) removed.push(k);
+  }
+  added.sort();
+  removed.sort();
+  changed.sort((a, b) => a.key.localeCompare(b.key));
+  return { added, removed, changed };
 }
 
 function CopyButton({ value, label = "Copy" }: { value: string; label?: string }) {
@@ -75,6 +112,13 @@ function ActivationsPanel({ licenseCode }: { licenseCode: string }) {
     },
   });
 
+  const dismissMut = useMutation({
+    mutationFn: (fingerprint: string) => adminDismissActivationFlag(licenseCode, fingerprint),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-license-activations", licenseCode] });
+    },
+  });
+
   if (activations.isLoading) {
     return (
       <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
@@ -95,33 +139,119 @@ function ActivationsPanel({ licenseCode }: { licenseCode: string }) {
   return (
     <div className="space-y-2 py-1">
       {items.map((a: LicenseActivation) => (
-        <div
+        <ActivationRow
           key={a.fingerprint}
-          className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm flex-wrap"
-        >
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2 flex-wrap">
-              <MonitorSmartphone className="size-4 text-muted-foreground" />
-              <span className="font-mono text-xs">{shortFp(a.fingerprint)}</span>
-              {a.app_version && <Badge variant="secondary">v{a.app_version}</Badge>}
-              {a.revoked && <Badge variant="destructive">unbound</Badge>}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              first {fmtDate(a.first_seen)} · last {fmtDate(a.last_seen)}
-            </div>
+          a={a}
+          onUnbind={() => unbindMut.mutate(a.fingerprint)}
+          unbinding={unbindMut.isPending}
+          onDismiss={() => dismissMut.mutate(a.fingerprint)}
+          dismissing={dismissMut.isPending}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ActivationRow({
+  a,
+  onUnbind,
+  unbinding,
+  onDismiss,
+  dismissing,
+}: {
+  a: LicenseActivation;
+  onUnbind: () => void;
+  unbinding: boolean;
+  onDismiss: () => void;
+  dismissing: boolean;
+}) {
+  const [showParams, setShowParams] = useState(false);
+  const params = a.parameters ?? null;
+  const paramKeys = params ? Object.keys(params).sort() : [];
+  const diff = a.params_changed ? diffParams(a.parameters_prev, params) : null;
+
+  return (
+    <div className="rounded-md border px-3 py-2 text-sm">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <MonitorSmartphone className="size-4 text-muted-foreground" />
+            <span className="font-mono text-xs">{shortFp(a.fingerprint)}</span>
+            {a.app_version && <Badge variant="secondary">v{a.app_version}</Badge>}
+            {a.revoked && <Badge variant="destructive">unbound</Badge>}
+            {a.params_changed && (
+              <Badge variant="destructive" className="gap-1">
+                <AlertTriangle className="size-3" /> params changed
+              </Badge>
+            )}
           </div>
+          <div className="text-xs text-muted-foreground">
+            first {fmtDate(a.first_seen)} · last {fmtDate(a.last_seen)}
+            {a.params_changed && a.params_changed_at
+              ? ` · changed ${fmtDate(a.params_changed_at)}`
+              : ""}
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1">
+          {params && (
+            <Button size="xs" variant="outline" onClick={() => setShowParams((v) => !v)}>
+              <SlidersHorizontal className="size-3" /> Params
+            </Button>
+          )}
+          {a.params_changed && (
+            <Button size="xs" variant="outline" disabled={dismissing} onClick={onDismiss}>
+              <Check className="size-3" /> Dismiss
+            </Button>
+          )}
           {!a.revoked && (
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={unbindMut.isPending}
-              onClick={() => unbindMut.mutate(a.fingerprint)}
-            >
+            <Button size="xs" variant="outline" disabled={unbinding} onClick={onUnbind}>
               <Ban className="size-3" /> Unbind
             </Button>
           )}
         </div>
-      ))}
+      </div>
+
+      {diff && (diff.added.length > 0 || diff.removed.length > 0 || diff.changed.length > 0) && (
+        <div className="mt-2 space-y-1 rounded bg-muted/50 px-2 py-1.5 text-xs">
+          <div className="font-medium">Changes since previous run</div>
+          {diff.added.map((k) => (
+            <div key={`a-${k}`} className="font-mono text-green-600 dark:text-green-400">
+              + {k} = {fmtVal(params?.[k])}
+            </div>
+          ))}
+          {diff.removed.map((k) => (
+            <div key={`r-${k}`} className="font-mono text-red-600 dark:text-red-400">
+              − {k} = {fmtVal(a.parameters_prev?.[k])}
+            </div>
+          ))}
+          {diff.changed.map((c) => (
+            <div key={`c-${c.key}`} className="font-mono text-amber-600 dark:text-amber-400">
+              ~ {c.key}: {fmtVal(c.from)} → {fmtVal(c.to)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showParams && params && (
+        <div className="mt-2 rounded bg-muted/50 px-2 py-1.5 text-xs">
+          {paramKeys.length === 0 ? (
+            <span className="text-muted-foreground">No parameters reported.</span>
+          ) : (
+            paramKeys.map((k) => {
+              const changedKey =
+                diff?.changed.some((c) => c.key === k) || diff?.added.includes(k);
+              return (
+                <div key={k} className="font-mono">
+                  <span className={changedKey ? "text-amber-600 dark:text-amber-400" : ""}>
+                    {k}
+                  </span>
+                  <span className="text-muted-foreground"> = {fmtVal(params[k])}</span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -2270,25 +2270,90 @@ def get_activation(license_code: str, fingerprint: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
+def _canon_params(params) -> str:
+    """Order-independent canonical form used to detect parameter changes."""
+    return json.dumps(params, sort_keys=True, separators=(",", ":"))
+
+
 def upsert_activation(
-    license_code: str, fingerprint: str, app_version: Optional[str]
+    license_code: str,
+    fingerprint: str,
+    app_version: Optional[str],
+    parameters: Optional[dict] = None,
 ) -> dict:
     """Bind a machine to a license (or refresh ``last_seen`` if already bound).
 
     Caller must enforce the activation cap *before* inserting a NEW fingerprint;
     an existing (even revoked) row is refreshed without consuming a new slot.
+
+    When ``parameters`` is provided it becomes the machine's current runtime
+    snapshot. If it differs from the previously stored snapshot the old one is
+    kept in ``parameters_prev`` and ``params_changed`` is raised for admin
+    review (cleared via :func:`dismiss_activation_flag`).
     """
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            if parameters is None:
+                # No snapshot sent — leave the parameter columns untouched.
+                cur.execute(
+                    """INSERT INTO license_activations (license_code, fingerprint, app_version)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (license_code, fingerprint)
+                       DO UPDATE SET last_seen = now(),
+                                     app_version = EXCLUDED.app_version
+                       RETURNING *""",
+                    (license_code, fingerprint, app_version),
+                )
+                return dict(cur.fetchone())
+
             cur.execute(
-                """INSERT INTO license_activations (license_code, fingerprint, app_version)
-                   VALUES (%s, %s, %s)
-                   ON CONFLICT (license_code, fingerprint)
-                   DO UPDATE SET last_seen = now(),
-                                 app_version = EXCLUDED.app_version
-                   RETURNING *""",
-                (license_code, fingerprint, app_version),
+                """SELECT parameters FROM license_activations
+                    WHERE license_code = %s AND fingerprint = %s""",
+                (license_code, fingerprint),
             )
+            row = cur.fetchone()
+            old = row["parameters"] if row else None
+            changed = old is not None and _canon_params(old) != _canon_params(parameters)
+
+            if changed:
+                cur.execute(
+                    """INSERT INTO license_activations
+                           (license_code, fingerprint, app_version, parameters)
+                       VALUES (%s, %s, %s, %s)
+                       ON CONFLICT (license_code, fingerprint)
+                       DO UPDATE SET last_seen = now(),
+                                     app_version = EXCLUDED.app_version,
+                                     parameters_prev = %s,
+                                     parameters = EXCLUDED.parameters,
+                                     params_changed = TRUE,
+                                     params_changed_at = now()
+                       RETURNING *""",
+                    (
+                        license_code,
+                        fingerprint,
+                        app_version,
+                        psycopg2.extras.Json(parameters),
+                        psycopg2.extras.Json(old),
+                    ),
+                )
+            else:
+                # First snapshot or unchanged — store current, don't raise the flag.
+                cur.execute(
+                    """INSERT INTO license_activations
+                           (license_code, fingerprint, app_version, parameters)
+                       VALUES (%s, %s, %s, %s)
+                       ON CONFLICT (license_code, fingerprint)
+                       DO UPDATE SET last_seen = now(),
+                                     app_version = EXCLUDED.app_version,
+                                     parameters = EXCLUDED.parameters
+                       RETURNING *""",
+                    (
+                        license_code,
+                        fingerprint,
+                        app_version,
+                        psycopg2.extras.Json(parameters),
+                    ),
+                )
             return dict(cur.fetchone())
 
 
@@ -2298,6 +2363,18 @@ def revoke_activation(license_code: str, fingerprint: str) -> None:
         with conn.cursor() as cur:
             cur.execute(
                 """UPDATE license_activations SET revoked = TRUE
+                    WHERE license_code = %s AND fingerprint = %s""",
+                (license_code, fingerprint),
+            )
+
+
+def dismiss_activation_flag(license_code: str, fingerprint: str) -> None:
+    """Clear the params-changed flag; keep the stored snapshots for history."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE license_activations
+                      SET params_changed = FALSE, params_changed_at = NULL
                     WHERE license_code = %s AND fingerprint = %s""",
                 (license_code, fingerprint),
             )
