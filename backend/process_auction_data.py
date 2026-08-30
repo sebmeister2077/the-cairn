@@ -125,7 +125,7 @@ EXTERNAL_TRADE_PRICE = 1
 # only 1-gear sales that concluded within this many in-game hours are treated as
 # external trades — a genuinely cheap item usually sits on the board longer.
 # 20 in-game hours ≈ 40 real minutes (1 real hour ≈ 30 in-game hours).
-EXTERNAL_TRADE_MAX_HOURS = 20
+EXTERNAL_TRADE_MAX_HOURS = float("inf")
 
 
 def duration_weeks_for_hours(initial_duration_hours: Any) -> Optional[int]:

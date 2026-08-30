@@ -49,10 +49,6 @@ export function ExternalTradeToggle({ className }: { className?: string }) {
             <li>
               sold for exactly <strong className="text-foreground">1 rusty gear</strong>,
             </li>
-            <li>
-              sold <strong className="text-foreground">within ~30 minutes</strong> of listing (a
-              pre-arranged hand-off), and
-            </li>
             <li>actually sold — not expired or cancelled.</li>
           </ul>
         </PopoverContent>

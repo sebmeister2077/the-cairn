@@ -238,8 +238,7 @@ function ActivationRow({
             <span className="text-muted-foreground">No parameters reported.</span>
           ) : (
             paramKeys.map((k) => {
-              const changedKey =
-                diff?.changed.some((c) => c.key === k) || diff?.added.includes(k);
+              const changedKey = diff?.changed.some((c) => c.key === k) || diff?.added.includes(k);
               return (
                 <div key={k} className="font-mono">
                   <span className={changedKey ? "text-amber-600 dark:text-amber-400" : ""}>
