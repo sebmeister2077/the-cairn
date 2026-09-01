@@ -192,10 +192,70 @@ def _sweep_orphan_temp_files() -> None:
 # _sweep_orphan_temp_files()
 
 
+def _purge_local_map_data() -> None:
+    """Delete all locally-cached combined-map ``.db`` artefacts.
+
+    Used when ``MAP_DATA_DISABLED`` is set: the terrain webmap is served from
+    an external API and contributions are off, so any ``globalservermap.db``
+    (plus its ``.upload.db`` / ``.cache.db`` sidecars and sqlite ``-wal`` /
+    ``-shm`` files) in ``CONTRIBUTE_DATA_DIR`` and any ``tmp*.db`` worker
+    copies in the temp dir are stale and safe to remove."""
+    targets: list[str] = []
+    data_dir = settings.CONTRIBUTE_DATA_DIR
+    try:
+        if data_dir and os.path.isdir(data_dir):
+            with os.scandir(data_dir) as it:
+                for entry in it:
+                    if entry.is_file(follow_symlinks=False) and entry.name.startswith("globalservermap.db"):
+                        targets.append(entry.path)
+    except OSError as exc:
+        logger.warning("MAP_DATA_DISABLED purge: could not scan %s (%s)", data_dir, exc)
+    tmpdir = tempfile.gettempdir()
+    try:
+        if tmpdir and os.path.isdir(tmpdir):
+            with os.scandir(tmpdir) as it:
+                for entry in it:
+                    if (
+                        entry.is_file(follow_symlinks=False)
+                        and entry.name.startswith("tmp")
+                        and entry.name.endswith(".db")
+                    ):
+                        targets.append(entry.path)
+    except OSError as exc:
+        logger.warning("MAP_DATA_DISABLED purge: could not scan %s (%s)", tmpdir, exc)
+    deleted = 0
+    freed_bytes = 0
+    for path in targets:
+        try:
+            freed_bytes += os.path.getsize(path)
+        except OSError:
+            pass
+        try:
+            os.unlink(path)
+            deleted += 1
+        except OSError as exc:
+            logger.warning("MAP_DATA_DISABLED purge: could not delete %s (%s)", path, exc)
+    logger.warning(
+        "MAP_DATA_DISABLED purge: removed %d local map .db file(s), freed %.1f MiB",
+        deleted, freed_bytes / (1024 * 1024),
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     startup_started = perf_counter()
     logger.info("Startup begin")
+
+    # Kill-switch: webmap is served from an external API and contributions are
+    # disabled. Purge stale local map caches and skip the map/contribution
+    # workers below. Auction / infra workers keep running.
+    map_data_enabled = not settings.MAP_DATA_DISABLED
+    if not map_data_enabled:
+        _purge_local_map_data()
+        logger.warning(
+            "MAP_DATA_DISABLED=true — map/contribution workers skipped; "
+            "webmap served from external API"
+        )
 
     # Startup: initialise Supabase connection pool + schema
     step_started = perf_counter()
@@ -259,12 +319,13 @@ async def lifespan(app: FastAPI):
     # shutdown but never picked up by a worker (process restart mid-pass, etc.).
     step_started = perf_counter()
     try:
-        from .tasks.generate_map_levels import resume_pending_work
-        resume_pending_work()
-        logger.info(
-            "Startup step resume regen queue completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks.generate_map_levels import resume_pending_work
+            resume_pending_work()
+            logger.info(
+                "Startup step resume regen queue completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Could not resume regen queue (non-fatal): %s", exc)
 
@@ -273,12 +334,13 @@ async def lifespan(app: FastAPI):
     # contribution upload to wake the queue.
     step_started = perf_counter()
     try:
-        from .tasks.match_score import kick_on_startup
-        kick_on_startup()
-        logger.info(
-            "Startup step match-score kick completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks.match_score import kick_on_startup
+            kick_on_startup()
+            logger.info(
+                "Startup step match-score kick completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Match-score startup kick failed (non-fatal): %s", exc)
 
@@ -287,12 +349,13 @@ async def lifespan(app: FastAPI):
     # upload to wake the worker.
     step_started = perf_counter()
     try:
-        from .tasks.validate_uploads import kick_on_startup as kick_validate_uploads
-        kick_validate_uploads()
-        logger.info(
-            "Startup step validate-uploads kick completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks.validate_uploads import kick_on_startup as kick_validate_uploads
+            kick_validate_uploads()
+            logger.info(
+                "Startup step validate-uploads kick completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Validate-uploads startup kick failed (non-fatal): %s", exc)
 
@@ -301,12 +364,13 @@ async def lifespan(app: FastAPI):
     # + per-position existence check), so resuming a half-run merge is safe.
     step_started = perf_counter()
     try:
-        from .tasks.approve_contribution import kick_on_startup as kick_approve
-        kick_approve()
-        logger.info(
-            "Startup step approve-contribution kick completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks.approve_contribution import kick_on_startup as kick_approve
+            kick_approve()
+            logger.info(
+                "Startup step approve-contribution kick completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Approve-contribution startup kick failed (non-fatal): %s", exc)
 
@@ -316,12 +380,13 @@ async def lifespan(app: FastAPI):
     # so a restart mid-revert is safe to resume.
     step_started = perf_counter()
     try:
-        from .tasks.revert_contribution import kick_on_startup as kick_revert
-        kick_revert()
-        logger.info(
-            "Startup step revert-contribution kick completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks.revert_contribution import kick_on_startup as kick_revert
+            kick_revert()
+            logger.info(
+                "Startup step revert-contribution kick completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Revert-contribution startup kick failed (non-fatal): %s", exc)
 
@@ -357,12 +422,13 @@ async def lifespan(app: FastAPI):
     # Phase 3 — start the daily history cleanup sweeper.
     step_started = perf_counter()
     try:
-        from .tasks import cleanup_history
-        cleanup_history.start()
-        logger.info(
-            "Startup step cleanup_history scheduler started in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks import cleanup_history
+            cleanup_history.start()
+            logger.info(
+                "Startup step cleanup_history scheduler started in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("History cleanup scheduler failed to start (non-fatal): %s", exc)
 
@@ -372,12 +438,13 @@ async def lifespan(app: FastAPI):
     # contributions uploaded against the prod backend without restarting.
     step_started = perf_counter()
     try:
-        from .tasks import heavy_compute_poller
-        heavy_compute_poller.start()
-        logger.info(
-            "Startup step heavy_compute_poller scheduler started in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks import heavy_compute_poller
+            heavy_compute_poller.start()
+            logger.info(
+                "Startup step heavy_compute_poller scheduler started in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Heavy compute poller failed to start (non-fatal): %s", exc)
 
@@ -386,12 +453,13 @@ async def lifespan(app: FastAPI):
     # therefore takes effect within one tick without a redeploy.
     step_started = perf_counter()
     try:
-        from .tasks import weekly_backup
-        weekly_backup.start()
-        logger.info(
-            "Startup step weekly_backup scheduler started in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks import weekly_backup
+            weekly_backup.start()
+            logger.info(
+                "Startup step weekly_backup scheduler started in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("Weekly backup scheduler failed to start (non-fatal): %s", exc)
 
@@ -400,12 +468,13 @@ async def lifespan(app: FastAPI):
     # is OFF; cheap (single LIST + per-row Postgres lookup) otherwise.
     step_started = perf_counter()
     try:
-        from .tasks import compress_workers
-        compress_workers.kick_on_startup()
-        logger.info(
-            "Startup step compress_workers kick completed in %.3fs",
-            perf_counter() - step_started,
-        )
+        if map_data_enabled:
+            from .tasks import compress_workers
+            compress_workers.kick_on_startup()
+            logger.info(
+                "Startup step compress_workers kick completed in %.3fs",
+                perf_counter() - step_started,
+            )
     except Exception as exc:  # pragma: no cover
         logger.warning("compress_workers startup kick failed (non-fatal): %s", exc)
 

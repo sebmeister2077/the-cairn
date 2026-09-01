@@ -71,6 +71,14 @@ class Settings:
     )
     ADMIN_API_KEY: str = os.environ.get("ADMIN_API_KEY", "")
 
+    # Kill-switch: the terrain webmap is now served from an external API and
+    # contributions are disabled. When true, the app deletes any cached
+    # combined-map .db artefacts at startup and skips every map/contribution
+    # background worker. Auction ingest is unaffected.
+    MAP_DATA_DISABLED: bool = os.environ.get(
+        "MAP_DATA_DISABLED", "false"
+    ).strip().lower() in ("1", "true", "yes", "on")
+
     # PEM PKCS#8 private key (P-256) used to sign VSProxy license tokens.
     # The client embeds the matching public key. Keep secret; never commit.
     LICENSE_SIGNING_PRIVATE_KEY: str = os.environ.get(
