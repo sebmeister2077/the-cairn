@@ -87,6 +87,7 @@ export const en = {
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
                 licenses: "Licenses",
+                programDownloads: "Program Downloads",
                 tunnelPreviewer: "Tunnel Previewer",
                 waypointMacro: "Waypoint Macros",
                 marketOverview: "Overview",

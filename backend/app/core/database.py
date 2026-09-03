@@ -2381,6 +2381,200 @@ def dismiss_activation_flag(license_code: str, fingerprint: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Program distribution: uploaded builds + shareable download links
+# (see app/routes/admin_program.py and app/routes/public_program_download.py)
+# ---------------------------------------------------------------------------
+def create_program_build(
+    r2_key: str,
+    *,
+    original_filename: Optional[str],
+    version_label: Optional[str],
+    size_bytes: Optional[int],
+    sha256: Optional[str],
+    uploaded_by: Optional[str],
+) -> dict:
+    """Register an uploaded build and flag it as the sole current one."""
+    from . import api_key_cache  # local import avoids a load-time cycle
+
+    uploaded_by_id = api_key_cache.ensure_id(uploaded_by) if uploaded_by else None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Demote any previous current build first so the partial unique
+            # index (one is_current=true row) is never violated.
+            cur.execute(
+                "UPDATE program_builds SET is_current = FALSE WHERE is_current"
+            )
+            cur.execute(
+                """INSERT INTO program_builds
+                       (r2_key, original_filename, version_label, size_bytes,
+                        sha256, uploaded_by_key_id, is_current)
+                   VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                   RETURNING *""",
+                (
+                    r2_key,
+                    original_filename,
+                    version_label,
+                    size_bytes,
+                    sha256,
+                    str(uploaded_by_id) if uploaded_by_id else None,
+                ),
+            )
+            return dict(cur.fetchone())
+
+
+def get_current_program_build() -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM program_builds WHERE is_current LIMIT 1"
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_program_build(build_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM program_builds WHERE id = %s", (build_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def create_program_download_link(
+    *,
+    token: str,
+    label: Optional[str],
+    license_code: str,
+    api_key: str,
+    build_id: Optional[int],
+    max_activations: int,
+    expires_at,
+    notes: Optional[str],
+    created_by: Optional[str],
+) -> dict:
+    from . import api_key_cache  # local import avoids a load-time cycle
+
+    created_by_id = api_key_cache.ensure_id(created_by) if created_by else None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO program_download_links
+                       (token, label, license_code, api_key, build_id,
+                        max_activations, expires_at, notes, created_by_key_id)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING *""",
+                (
+                    token,
+                    label,
+                    license_code,
+                    api_key,
+                    build_id,
+                    max_activations,
+                    expires_at,
+                    notes,
+                    str(created_by_id) if created_by_id else None,
+                ),
+            )
+            return dict(cur.fetchone())
+
+
+def get_program_download_link_by_token(token: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM program_download_links WHERE token = %s", (token,)
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_program_download_link(link_id: int) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM program_download_links WHERE id = %s", (link_id,)
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_program_download_links() -> List[dict]:
+    """All program-download links, newest first, with redemption stats."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT
+                    l.*,
+                    COALESCE(r.redeem_count, 0)  AS redeem_count,
+                    COALESCE(r.success_count, 0) AS success_count,
+                    r.last_redeem_at             AS last_redeem_at
+                FROM program_download_links l
+                LEFT JOIN (
+                    SELECT link_id,
+                           COUNT(*)                        AS redeem_count,
+                           COUNT(*) FILTER (WHERE success) AS success_count,
+                           MAX(redeemed_at)                AS last_redeem_at
+                    FROM program_download_log
+                    GROUP BY link_id
+                ) r ON r.link_id = l.id
+                ORDER BY l.created_at DESC
+                """
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_program_download_redemptions(link_id: int) -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, redeemed_at, ip_hash, user_agent, success, failure_reason
+                       FROM program_download_log
+                       WHERE link_id = %s
+                       ORDER BY redeemed_at DESC""",
+                (link_id,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def revoke_program_download_link(link_id: int, admin_key: str) -> Optional[dict]:
+    """Mark a link revoked. Returns the updated row, or None if missing /
+    already revoked (idempotent)."""
+    from . import api_key_cache  # local import avoids a load-time cycle
+
+    admin_key_id = api_key_cache.ensure_id(admin_key) if admin_key else None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE program_download_links
+                       SET revoked_at = now(), revoked_by_key_id = %s
+                       WHERE id = %s AND revoked_at IS NULL
+                       RETURNING *""",
+                (str(admin_key_id) if admin_key_id else None, link_id),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def record_program_download_redemption(
+    link_id: int,
+    *,
+    ip_hash: Optional[str],
+    user_agent: Optional[str],
+    success: bool,
+    failure_reason: Optional[str] = None,
+) -> None:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO program_download_log
+                       (link_id, ip_hash, user_agent, success, failure_reason)
+                   VALUES (%s, %s, %s, %s, %s)""",
+                (link_id, ip_hash, user_agent, success, failure_reason),
+            )
+
+
+# ---------------------------------------------------------------------------
 # Auction contributor keys (VSProxy → /api/contribute-auction-events)
 # ---------------------------------------------------------------------------
 def get_api_key_by_id(key_id) -> Optional[dict]:

@@ -2122,6 +2122,164 @@ export async function adminDismissActivationFlag(
 }
 
 // ---------------------------------------------------------------------------
+// Program download links (admin: distribute a pre-configured VSProxy build)
+// ---------------------------------------------------------------------------
+export interface ProgramBuild {
+    id: number;
+    original_filename: string | null;
+    version_label: string | null;
+    size_bytes: number | null;
+    sha256: string | null;
+    uploaded_at: string | null;
+}
+
+export interface ProgramDownloadLink {
+    id: number;
+    token: string;
+    label: string | null;
+    license_code: string;
+    api_key: string;
+    max_activations: number;
+    expires_at: string | null;
+    notes: string | null;
+    created_at: string | null;
+    revoked_at: string | null;
+    redeem_count: number;
+    success_count: number;
+    last_redeem_at: string | null;
+    status: "active" | "expired" | "revoked";
+    build_filename: string | null;
+    url?: string;
+}
+
+export interface ProgramDownloadRedemption {
+    id: number;
+    redeemed_at: string | null;
+    ip_hash_short: string | null;
+    user_agent: string | null;
+    success: boolean;
+    failure_reason: string | null;
+}
+
+export async function adminGetProgramBuild(): Promise<{ build: ProgramBuild | null }> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/build`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminProgramBuildUploadUrl(filename: string): Promise<{
+    token: string;
+    r2_key: string;
+    upload_url: string;
+    content_type: string;
+    expires_in: number;
+}> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/build/upload-url`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ filename }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** PUT the build bytes straight to R2 using the presigned URL (no auth header). */
+export async function uploadProgramBuildToR2(
+    uploadUrl: string,
+    contentType: string,
+    file: File | Blob,
+): Promise<void> {
+    const res = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": contentType },
+        body: file,
+    });
+    if (!res.ok) {
+        throw new Error(`Upload failed (${res.status})`);
+    }
+}
+
+export async function adminProgramBuildFinalize(data: {
+    r2_key: string;
+    original_filename?: string | null;
+    version_label?: string | null;
+    sha256?: string | null;
+}): Promise<{ build: ProgramBuild }> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/build/finalize`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(data),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateProgramDownloadLink(data: {
+    label?: string | null;
+    max_activations: number;
+    expires_at?: string | null;
+    notes?: string | null;
+}): Promise<ProgramDownloadLink> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(data),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListProgramDownloadLinks(): Promise<{
+    links: ProgramDownloadLink[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListProgramDownloadRedemptions(
+    linkId: number,
+): Promise<{ redemptions: ProgramDownloadRedemption[] }> {
+    const res = await fetch(
+        `${API_BASE}/admin/program-downloads/${linkId}/redemptions`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRevokeProgramDownloadLink(
+    linkId: number,
+): Promise<{ revoked: boolean; link: ProgramDownloadLink }> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/${linkId}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export interface ProgramDownloadInfo {
+    label: string | null;
+    status: "active" | "expired" | "revoked";
+    expires_at: string | null;
+    filename: string;
+    size_bytes: number | null;
+}
+
+/** Public (no auth): metadata for the /download/<token> landing page. */
+export async function getProgramDownloadInfo(
+    token: string,
+): Promise<ProgramDownloadInfo> {
+    const res = await fetch(
+        `${API_BASE}/public/program-download/${encodeURIComponent(token)}/info`,
+    );
+    return (await handleResponse(res)).json();
+}
+
+/** Public: the direct URL that streams the zip (browser navigates here). */
+export function programDownloadUrl(token: string): string {
+    return `${API_BASE}/public/program-download/${encodeURIComponent(token)}`;
+}
+
+// ---------------------------------------------------------------------------
 // Admin � invite links
 // ---------------------------------------------------------------------------
 

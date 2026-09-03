@@ -36,6 +36,8 @@ import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
+import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
+import { DownloadPage } from "@/pages/DownloadPage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
@@ -149,6 +151,7 @@ const NavigationRoutes = {
     TLScreenshots: "/manage/tl-screenshots",
     ElkWalkable: "/manage/elk-walkable",
     Licenses: "/manage/licenses",
+    ProgramDownloads: "/manage/program-downloads",
   },
   Usage: {
     Overview: "/usage",
@@ -198,6 +201,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.tlScreenshots"
   | "app.nav.subtabs.elkWalkable"
   | "app.nav.subtabs.licenses"
+  | "app.nav.subtabs.programDownloads"
   | "app.nav.subtabs.tunnelPreviewer"
   | "app.nav.subtabs.waypointMacro"
   | "app.nav.subtabs.marketOverview"
@@ -265,6 +269,7 @@ const subTabs: Subtabs = {
     { value: "/manage/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
     { value: "/manage/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
     { value: "/manage/licenses", labelKey: "app.nav.subtabs.licenses" },
+    { value: "/manage/program-downloads", labelKey: "app.nav.subtabs.programDownloads" },
   ],
   "/usage": [],
 };
@@ -1055,6 +1060,22 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Licenses failed" resetKeys={[location.pathname]}>
                 <AdminLicensesPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/program-downloads"
+            element={
+              <ErrorBoundary title="Program Downloads failed" resetKeys={[location.pathname]}>
+                <AdminProgramDownloadsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/download/:token"
+            element={
+              <ErrorBoundary title="Download failed" resetKeys={[location.pathname]}>
+                <DownloadPage />
               </ErrorBoundary>
             }
           />

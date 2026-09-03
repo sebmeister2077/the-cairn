@@ -59,6 +59,8 @@ from .routes import admin_elk_walkable as admin_elk_walkable_routes
 from .routes import grouping_library as grouping_library_routes
 from .routes import orders as orders_routes
 from .routes import licenses as licenses_routes
+from .routes import admin_program as admin_program_routes
+from .routes import public_program_download
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -801,6 +803,8 @@ app.include_router(admin_elk_walkable_routes.router, prefix="/api")
 app.include_router(grouping_library_routes.router, prefix="/api")
 app.include_router(orders_routes.router, prefix="/api")
 app.include_router(licenses_routes.router, prefix="/api")
+app.include_router(admin_program_routes.router, prefix="/api")
+app.include_router(public_program_download.router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 

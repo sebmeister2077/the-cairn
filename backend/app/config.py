@@ -119,6 +119,12 @@ class Settings:
     # endpoint falls back to the request's own base URL.
     PUBLIC_BASE_URL: str = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
 
+    # Externally visible base URL of the FRONTEND (e.g. ``https://vs-waypoints.example.com``).
+    # Used to render friendly program-download links that point at the SPA
+    # ``/download/<token>`` page instead of the raw backend API. Falls back to
+    # ``PUBLIC_BASE_URL`` and then the request's own base URL when empty.
+    FRONTEND_BASE_URL: str = os.environ.get("FRONTEND_BASE_URL", "").strip().rstrip("/")
+
     # --- Multi-instance coordination (leader election + geojson lock) ---
     # Whether this instance should run scheduled jobs (weekly backup,
     # history cleanup) that write shared R2 keys:
