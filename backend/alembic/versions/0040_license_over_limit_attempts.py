@@ -51,6 +51,9 @@ def upgrade() -> None:
         unique=False,
     )
 
+    op.execute("ALTER TABLE license_activation_attempts ENABLE ROW LEVEL SECURITY;")
+
+
 
 def downgrade() -> None:
     op.drop_index(

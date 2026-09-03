@@ -63,7 +63,6 @@ const MACHINE_FILTER_OPTIONS: {
   { value: "3plus", label: "3+ machines", min: 3 },
 ];
 
-
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -501,7 +500,8 @@ export function AdminLicensesPage() {
           <div>
             <div className="text-2xl font-semibold">{total}</div>
             <div className="text-muted-foreground">
-              Licenses{status !== "all" || debouncedSearch || machines !== "any" ? " (filtered)" : ""}
+              Licenses
+              {status !== "all" || debouncedSearch || machines !== "any" ? " (filtered)" : ""}
             </div>
           </div>
           <div>

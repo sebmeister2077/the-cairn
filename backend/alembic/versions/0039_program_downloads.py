@@ -126,6 +126,10 @@ def upgrade() -> None:
         unique=False,
     )
 
+    op.execute("ALTER TABLE program_builds ENABLE ROW LEVEL SECURITY;")
+    op.execute("ALTER TABLE program_download_links ENABLE ROW LEVEL SECURITY;")
+    op.execute("ALTER TABLE program_download_log ENABLE ROW LEVEL SECURITY;")
+
 
 def downgrade() -> None:
     op.drop_index("idx_program_download_log_link", table_name="program_download_log")

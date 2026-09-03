@@ -65,7 +65,6 @@ const MACHINE_FILTER_OPTIONS: {
   { value: "3plus", label: "3+ machines", min: 3 },
 ];
 
-
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -474,10 +473,7 @@ export function AdminProgramDownloadsPage() {
     },
   });
 
-  const items = useMemo(
-    () => links.data?.pages.flatMap((p) => p.items) ?? [],
-    [links.data],
-  );
+  const items = useMemo(() => links.data?.pages.flatMap((p) => p.items) ?? [], [links.data]);
   const total = links.data?.pages[0]?.total ?? 0;
 
   return (

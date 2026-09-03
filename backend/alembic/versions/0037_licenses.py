@@ -59,6 +59,8 @@ def upgrade() -> None:
         ["license_code"],
         unique=False,
     )
+    op.execute("ALTER TABLE licenses ENABLE ROW LEVEL SECURITY;")
+    op.execute("ALTER TABLE license_activations ENABLE ROW LEVEL SECURITY;")
 
 
 def downgrade() -> None:
