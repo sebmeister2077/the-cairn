@@ -78,6 +78,18 @@ const METRICS: MetricDef[] = [
     value: (p) => p.uniqueSellers,
   },
   { key: "uniqueBuyers", label: "Active buyers", color: "#6366f1", value: (p) => p.uniqueBuyers },
+  {
+    key: "firstTimeSellers",
+    label: "First-time sellers",
+    color: "#14b8a6",
+    value: (p) => p.firstTimeSellers,
+  },
+  {
+    key: "firstTimeBuyers",
+    label: "First-time buyers",
+    color: "#d946ef",
+    value: (p) => p.firstTimeBuyers,
+  },
   { key: "missing", label: "Missing auctions", color: "#94a3b8", value: (p) => p.missing },
   { key: "unrecorded", label: "Unrecorded outcome", color: "#a3a3a3", value: (p) => p.unrecorded },
 ];

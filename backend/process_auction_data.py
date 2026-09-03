@@ -1241,6 +1241,11 @@ def build_time_series(
     sellers_by_bucket: Dict[int, set] = defaultdict(set)
     buyers_by_bucket: Dict[int, set] = defaultdict(set)
     items_by_bucket: Dict[int, set] = defaultdict(set)
+    # The earliest in-game month a player was ever seen selling / buying, so each
+    # is counted once — in the month they first appeared (keyed by posting month,
+    # matching how unique sellers/buyers are attributed above).
+    first_seller_month: Dict[str, int] = {}
+    first_buyer_month: Dict[str, int] = {}
 
     # Start of the most recent Auction House scan. A scan isn't instantaneous —
     # it streams over up to a minute, so listings in the same scan get slightly
@@ -1267,6 +1272,8 @@ def build_time_series(
                 "deliveredCount": 0,
                 "missing": 0,
                 "unrecorded": 0,
+                "firstTimeSellers": 0,
+                "firstTimeBuyers": 0,
             }
         return b
 
@@ -1279,8 +1286,12 @@ def build_time_series(
         b["posted"] += 1
         b["depositFeesPaid"] += r.get("depositFee") or 0
         items_by_bucket[month].add(r["itemId"])
-        if r.get("sellerUid"):
-            sellers_by_bucket[month].add(r["sellerUid"])
+        su = r.get("sellerUid")
+        if su:
+            sellers_by_bucket[month].add(su)
+            prev = first_seller_month.get(su)
+            if prev is None or month < prev:
+                first_seller_month[su] = month
         # Auctions we only ever saw as "Active" — capture stopped before a
         # terminal verdict, so we never learned whether they sold or expired.
         # Exclude listings seen in the final scan session: those are simply
@@ -1306,9 +1317,18 @@ def build_time_series(
             ensure_bucket(sold_month)["gearsTraded"] += r["price"]
             if r.get("buyerUid"):
                 buyers_by_bucket[month].add(r["buyerUid"])
+                prev = first_buyer_month.get(r["buyerUid"])
+                if prev is None or month < prev:
+                    first_buyer_month[r["buyerUid"]] = month
             if r["delivered"]:
                 b["deliveredCount"] += 1
                 b["deliveryFeesPaid"] += r.get("deliveryFee") or 0
+
+    # Count each first-time participant once, in the month they debuted.
+    for month in first_seller_month.values():
+        ensure_bucket(month)["firstTimeSellers"] += 1
+    for month in first_buyer_month.values():
+        ensure_bucket(month)["firstTimeBuyers"] += 1
 
     # Missing auctions from sequential-id gaps, attributed by posting month.
     present = sorted(

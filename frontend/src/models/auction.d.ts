@@ -374,6 +374,10 @@ export interface MarketTimePoint {
     uniqueSellers: number;
     uniqueBuyers: number;
     uniqueItems: number;
+    /** Sellers whose first-ever auction was posted this month. */
+    firstTimeSellers: number;
+    /** Buyers whose first-ever purchase was posted this month. */
+    firstTimeBuyers: number;
 }
 
 export interface AuctionSummary {
