@@ -2039,6 +2039,7 @@ export interface License {
     expires_at: string | null;
     created_at: string;
     active_activations: number;
+    over_limit_attempts: number;
     notes: string | null;
 }
 
@@ -2055,8 +2056,35 @@ export interface LicenseActivation {
     params_changed_at: string | null;
 }
 
-export async function adminListLicenses(): Promise<{ items: License[] }> {
-    const res = await fetch(`${API_BASE}/admin/licenses`, {
+export interface LicenseAttempt {
+    id: number;
+    license_code: string;
+    fingerprint: string | null;
+    app_version: string | null;
+    ip_hash_short: string | null;
+    user_agent: string | null;
+    reason: string;
+    attempted_at: string | null;
+}
+
+export async function adminListLicenses(
+    params: {
+        status?: "all" | "active" | "revoked";
+        q?: string;
+        min_machines?: number | null;
+        max_machines?: number | null;
+        offset?: number;
+        limit?: number;
+    } = {},
+): Promise<{ items: License[]; total: number; next_offset: number | null }> {
+    const search = new URLSearchParams();
+    search.set("status", params.status ?? "all");
+    if (params.q) search.set("q", params.q);
+    if (params.min_machines != null) search.set("min_machines", String(params.min_machines));
+    if (params.max_machines != null) search.set("max_machines", String(params.max_machines));
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(`${API_BASE}/admin/licenses?${search.toString()}`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
@@ -2086,6 +2114,20 @@ export async function adminListLicenseActivations(
 ): Promise<{ items: LicenseActivation[] }> {
     const res = await fetch(
         `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/activations`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListLicenseAttempts(
+    licenseCode: string,
+    params: { offset?: number; limit?: number } = {},
+): Promise<{ items: LicenseAttempt[]; total: number; next_offset: number | null }> {
+    const search = new URLSearchParams();
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/attempts?${search.toString()}`,
         { headers: authHeaders() },
     );
     return (await handleResponse(res)).json();
@@ -2149,6 +2191,8 @@ export interface ProgramDownloadLink {
     last_redeem_at: string | null;
     status: "active" | "expired" | "revoked";
     build_filename: string | null;
+    active_activations: number;
+    over_limit_attempts: number;
     url?: string;
 }
 
@@ -2227,10 +2271,28 @@ export async function adminCreateProgramDownloadLink(data: {
     return (await handleResponse(res)).json();
 }
 
-export async function adminListProgramDownloadLinks(): Promise<{
+export async function adminListProgramDownloadLinks(
+    params: {
+        status?: "all" | "active" | "expired" | "revoked";
+        q?: string;
+        min_machines?: number | null;
+        max_machines?: number | null;
+        offset?: number;
+        limit?: number;
+    } = {},
+): Promise<{
     links: ProgramDownloadLink[];
+    total: number;
+    next_offset: number | null;
 }> {
-    const res = await fetch(`${API_BASE}/admin/program-downloads`, {
+    const search = new URLSearchParams();
+    search.set("status", params.status ?? "all");
+    if (params.q) search.set("q", params.q);
+    if (params.min_machines != null) search.set("min_machines", String(params.min_machines));
+    if (params.max_machines != null) search.set("max_machines", String(params.max_machines));
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(`${API_BASE}/admin/program-downloads?${search.toString()}`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();

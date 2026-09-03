@@ -2207,13 +2207,49 @@ def get_license(license_code: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
-def list_licenses() -> List[dict]:
-    """All licenses (newest first) with their current active-activation count."""
+def list_licenses(
+    *,
+    status: str = "all",
+    q: Optional[str] = None,
+    min_machines: Optional[int] = None,
+    max_machines: Optional[int] = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> dict:
+    """Filtered, paginated licenses (newest first).
+
+    Each row carries its current active-activation count and how many
+    over-limit activation attempts it has logged. Returns
+    ``{"items": [...], "total": N}`` where ``total`` reflects the filters
+    (ignoring pagination) so the caller can drive infinite scroll.
+    """
+    where: List[str] = []
+    params: List[object] = []
+    if status == "active":
+        where.append("l.status = 'active'")
+    elif status == "revoked":
+        where.append("l.status <> 'active'")
+    if q:
+        where.append(
+            "(l.license_code ILIKE %s OR l.label ILIKE %s OR l.notes ILIKE %s)"
+        )
+        like = f"%{q}%"
+        params.extend([like, like, like])
+    if min_machines is not None:
+        where.append("COALESCE(a.active_count, 0) >= %s")
+        params.append(int(min_machines))
+    if max_machines is not None:
+        where.append("COALESCE(a.active_count, 0) <= %s")
+        params.append(int(max_machines))
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """SELECT l.*,
-                          COALESCE(a.active_count, 0) AS active_activations
+                f"""SELECT l.*,
+                          COALESCE(a.active_count, 0) AS active_activations,
+                          COALESCE(t.attempt_count, 0) AS over_limit_attempts,
+                          COUNT(*) OVER() AS _total
                      FROM licenses l
                      LEFT JOIN (
                          SELECT license_code, COUNT(*) AS active_count
@@ -2221,9 +2257,65 @@ def list_licenses() -> List[dict]:
                           WHERE NOT revoked
                           GROUP BY license_code
                      ) a ON a.license_code = l.license_code
-                    ORDER BY l.created_at DESC"""
+                     LEFT JOIN (
+                         SELECT license_code, COUNT(*) AS attempt_count
+                           FROM license_activation_attempts
+                          GROUP BY license_code
+                     ) t ON t.license_code = l.license_code
+                    {where_sql}
+                    ORDER BY l.created_at DESC
+                    LIMIT %s OFFSET %s""",
+                (*params, int(limit), int(offset)),
             )
-            return [dict(r) for r in cur.fetchall()]
+            rows = [dict(r) for r in cur.fetchall()]
+    total = int(rows[0].pop("_total")) if rows else 0
+    for r in rows:
+        r.pop("_total", None)
+    return {"items": rows, "total": total}
+
+
+def record_activation_attempt(
+    license_code: str,
+    fingerprint: Optional[str],
+    app_version: Optional[str],
+    *,
+    ip_hash: Optional[str] = None,
+    user_agent: Optional[str] = None,
+    reason: str = "limit_reached",
+) -> None:
+    """Log a denied over-limit activation for the admin Licenses view."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO license_activation_attempts
+                       (license_code, fingerprint, app_version, ip_hash,
+                        user_agent, reason)
+                   VALUES (%s, %s, %s, %s, %s, %s)""",
+                (license_code, fingerprint, app_version, ip_hash, user_agent, reason),
+            )
+
+
+def list_license_activation_attempts(
+    license_code: str, *, offset: int = 0, limit: int = 50
+) -> dict:
+    """Denied over-limit activation attempts for one license (newest first)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, license_code, fingerprint, app_version, ip_hash,
+                          user_agent, reason, attempted_at,
+                          COUNT(*) OVER() AS _total
+                     FROM license_activation_attempts
+                    WHERE license_code = %s
+                    ORDER BY attempted_at DESC
+                    LIMIT %s OFFSET %s""",
+                (license_code, int(limit), int(offset)),
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+    total = int(rows[0].pop("_total")) if rows else 0
+    for r in rows:
+        r.pop("_total", None)
+    return {"items": rows, "total": total}
 
 
 def revoke_license(license_code: str) -> None:
@@ -2498,17 +2590,59 @@ def get_program_download_link(link_id: int) -> Optional[dict]:
             return dict(row) if row else None
 
 
-def list_program_download_links() -> List[dict]:
-    """All program-download links, newest first, with redemption stats."""
+def list_program_download_links(
+    *,
+    status: str = "all",
+    q: Optional[str] = None,
+    min_machines: Optional[int] = None,
+    max_machines: Optional[int] = None,
+    offset: int = 0,
+    limit: int = 50,
+) -> dict:
+    """Filtered, paginated program-download links (newest first).
+
+    Each row carries redemption stats plus the linked license's current
+    active-machine count and over-limit attempt count. Returns
+    ``{"items": [...], "total": N}`` where ``total`` ignores pagination.
+    """
+    where: List[str] = []
+    params: List[object] = []
+    if status == "revoked":
+        where.append("l.revoked_at IS NOT NULL")
+    elif status == "expired":
+        where.append(
+            "l.revoked_at IS NULL AND l.expires_at IS NOT NULL AND l.expires_at <= now()"
+        )
+    elif status == "active":
+        where.append(
+            "l.revoked_at IS NULL AND (l.expires_at IS NULL OR l.expires_at > now())"
+        )
+    if q:
+        where.append(
+            "(l.label ILIKE %s OR l.notes ILIKE %s OR l.license_code ILIKE %s OR l.token ILIKE %s)"
+        )
+        like = f"%{q}%"
+        params.extend([like, like, like, like])
+    if min_machines is not None:
+        where.append("COALESCE(act.active_count, 0) >= %s")
+        params.append(int(min_machines))
+    if max_machines is not None:
+        where.append("COALESCE(act.active_count, 0) <= %s")
+        params.append(int(max_machines))
+    where_sql = f"WHERE {' AND '.join(where)}" if where else ""
+
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """
+                f"""
                 SELECT
                     l.*,
                     COALESCE(r.redeem_count, 0)  AS redeem_count,
                     COALESCE(r.success_count, 0) AS success_count,
-                    r.last_redeem_at             AS last_redeem_at
+                    r.last_redeem_at             AS last_redeem_at,
+                    COALESCE(act.active_count, 0)  AS active_activations,
+                    COALESCE(att.attempt_count, 0) AS over_limit_attempts,
+                    COUNT(*) OVER()                AS _total
                 FROM program_download_links l
                 LEFT JOIN (
                     SELECT link_id,
@@ -2518,10 +2652,28 @@ def list_program_download_links() -> List[dict]:
                     FROM program_download_log
                     GROUP BY link_id
                 ) r ON r.link_id = l.id
+                LEFT JOIN (
+                    SELECT license_code, COUNT(*) AS active_count
+                      FROM license_activations
+                     WHERE NOT revoked
+                     GROUP BY license_code
+                ) act ON act.license_code = l.license_code
+                LEFT JOIN (
+                    SELECT license_code, COUNT(*) AS attempt_count
+                      FROM license_activation_attempts
+                     GROUP BY license_code
+                ) att ON att.license_code = l.license_code
+                {where_sql}
                 ORDER BY l.created_at DESC
-                """
+                LIMIT %s OFFSET %s
+                """,
+                (*params, int(limit), int(offset)),
             )
-            return [dict(r) for r in cur.fetchall()]
+            rows = [dict(r) for r in cur.fetchall()]
+    total = int(rows[0].pop("_total")) if rows else 0
+    for r in rows:
+        r.pop("_total", None)
+    return {"items": rows, "total": total}
 
 
 def list_program_download_redemptions(link_id: int) -> List[dict]:

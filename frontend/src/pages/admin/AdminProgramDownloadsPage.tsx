@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Copy,
@@ -11,6 +11,9 @@ import {
   KeyRound,
   ExternalLink,
   Package,
+  Search,
+  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import {
   adminGetProgramBuild,
@@ -20,9 +23,11 @@ import {
   adminCreateProgramDownloadLink,
   adminListProgramDownloadLinks,
   adminListProgramDownloadRedemptions,
+  adminListLicenseAttempts,
   adminRevokeProgramDownloadLink,
   type ProgramDownloadLink,
   type ProgramDownloadRedemption,
+  type LicenseAttempt,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { buttonVariants } from "@/components/ui/button";
@@ -31,7 +36,35 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useDebounced } from "@/hooks/useDebounced";
+import { InfiniteScrollSentinel } from "@/components/InfiniteScrollSentinel";
+
+const PAGE_SIZE = 25;
+
+type Page<T> = { items: T[]; total: number; next_offset: number | null };
+
+// Presets for the "machines bound" filter. Values map to the min/max query params.
+const MACHINE_FILTER_OPTIONS: {
+  value: string;
+  label: string;
+  min?: number;
+  max?: number;
+}[] = [
+  { value: "any", label: "Any machines" },
+  { value: "unused", label: "Unused (0)", max: 0 },
+  { value: "1plus", label: "1+ machines", min: 1 },
+  { value: "2plus", label: "2+ machines", min: 2 },
+  { value: "3plus", label: "3+ machines", min: 3 },
+];
+
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -194,20 +227,76 @@ function RedemptionsPanel({ linkId }: { linkId: number }) {
   }
 
   return (
-    <div className="space-y-1 py-1">
+    <div className="space-y-1.5 py-1">
       {items.map((r: ProgramDownloadRedemption) => (
-        <div key={r.id} className="flex items-center justify-between gap-2 text-xs">
-          <span className="text-muted-foreground">{fmtDate(r.redeemed_at)}</span>
-          <span className="flex items-center gap-2">
-            {r.success ? (
-              <Badge variant="secondary">ok</Badge>
-            ) : (
-              <Badge variant="destructive">{r.failure_reason || "failed"}</Badge>
-            )}
-            <span className="font-mono text-muted-foreground">{r.ip_hash_short || "—"}</span>
-          </span>
+        <div key={r.id} className="rounded-md border px-3 py-1.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="text-muted-foreground">{fmtDate(r.redeemed_at)}</span>
+            <span className="flex items-center gap-2">
+              {r.success ? (
+                <Badge variant="secondary">ok</Badge>
+              ) : (
+                <Badge variant="destructive">{r.failure_reason || "failed"}</Badge>
+              )}
+              <span className="font-mono text-muted-foreground">{r.ip_hash_short || "—"}</span>
+            </span>
+          </div>
+          <div className="mt-0.5 break-all text-muted-foreground">
+            {r.user_agent ? `UA: ${r.user_agent}` : "UA: —"}
+          </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function LinkAttemptsPanel({ licenseCode }: { licenseCode: string }) {
+  const attempts = useInfiniteQuery<Page<LicenseAttempt>>({
+    queryKey: ["admin-license-attempts", licenseCode],
+    queryFn: ({ pageParam = 0 }) =>
+      adminListLicenseAttempts(licenseCode, { offset: pageParam as number, limit: PAGE_SIZE }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset,
+  });
+
+  if (attempts.isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" /> Loading attempts…
+      </div>
+    );
+  }
+
+  const items = attempts.data?.pages.flatMap((p) => p.items) ?? [];
+  if (items.length === 0) {
+    return (
+      <p className="py-2 text-sm text-muted-foreground">
+        No over-limit activation attempts recorded.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 py-1">
+      <div className="text-xs font-medium text-muted-foreground">
+        Machines that tried to activate past the limit
+      </div>
+      {items.map((a: LicenseAttempt) => (
+        <div key={a.id} className="rounded-md border px-3 py-1.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="flex items-center gap-2 flex-wrap">
+              <ShieldAlert className="size-3.5 text-destructive" />
+              {a.app_version && <Badge variant="secondary">v{a.app_version}</Badge>}
+            </span>
+            <span className="text-muted-foreground">{fmtDate(a.attempted_at)}</span>
+          </div>
+          <div className="mt-0.5 break-all text-muted-foreground">
+            {a.ip_hash_short ? `ip ${a.ip_hash_short}` : "ip —"}
+            {a.user_agent ? ` · ${a.user_agent}` : ""}
+          </div>
+        </div>
+      ))}
+      <InfiniteScrollSentinel query={attempts} />
     </div>
   );
 }
@@ -215,6 +304,7 @@ function RedemptionsPanel({ linkId }: { linkId: number }) {
 function LinkCard({ link }: { link: ProgramDownloadLink }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
+  const [showAttempts, setShowAttempts] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
 
   const revokeMut = useMutation({
@@ -234,6 +324,14 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
               <span className="font-medium">{link.label || "(no label)"}</span>
               <Badge variant={statusVariant}>{link.status}</Badge>
               <Badge variant="secondary">{link.redeem_count} downloads</Badge>
+              <Badge variant="secondary">
+                {link.active_activations} / {link.max_activations} machines
+              </Badge>
+              {link.over_limit_attempts > 0 && (
+                <Badge variant="destructive" className="gap-1">
+                  <ShieldAlert className="size-3" /> {link.over_limit_attempts} over-limit
+                </Badge>
+              )}
             </div>
             {link.url && (
               <div className="flex items-center gap-2 flex-wrap">
@@ -261,6 +359,11 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
               {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
               Downloads
             </Button>
+            {link.over_limit_attempts > 0 && (
+              <Button size="sm" variant="outline" onClick={() => setShowAttempts((v) => !v)}>
+                <ShieldAlert className="size-3" /> Over-limit
+              </Button>
+            )}
             {link.status !== "revoked" && (
               <Button size="sm" variant="destructive" onClick={() => setConfirmRevoke(true)}>
                 Revoke
@@ -290,6 +393,13 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
             </div>
             <Separator />
             <RedemptionsPanel linkId={link.id} />
+          </>
+        )}
+
+        {showAttempts && (
+          <>
+            <Separator />
+            <LinkAttemptsPanel licenseCode={link.license_code} />
           </>
         )}
       </CardContent>
@@ -322,9 +432,29 @@ export function AdminProgramDownloadsPage() {
   const [notes, setNotes] = useState("");
   const [created, setCreated] = useState<ProgramDownloadLink | null>(null);
 
-  const links = useQuery({
-    queryKey: ["admin-program-links"],
-    queryFn: adminListProgramDownloadLinks,
+  // List filters
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounced(search);
+  const [status, setStatus] = useState<"all" | "active" | "expired" | "revoked">("all");
+  const [machines, setMachines] = useState("any");
+
+  const machineFilter = MACHINE_FILTER_OPTIONS.find((m) => m.value === machines);
+
+  const links = useInfiniteQuery<Page<ProgramDownloadLink>>({
+    queryKey: ["admin-program-links", debouncedSearch, status, machines],
+    queryFn: async ({ pageParam = 0 }) => {
+      const res = await adminListProgramDownloadLinks({
+        status,
+        q: debouncedSearch,
+        min_machines: machineFilter?.min ?? null,
+        max_machines: machineFilter?.max ?? null,
+        offset: pageParam as number,
+        limit: PAGE_SIZE,
+      });
+      return { items: res.links, total: res.total, next_offset: res.next_offset };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset,
   });
 
   const createMut = useMutation({
@@ -344,9 +474,11 @@ export function AdminProgramDownloadsPage() {
     },
   });
 
-  const items = links.data?.links ?? [];
-  const active = useMemo(() => items.filter((l) => l.status === "active"), [items]);
-  const totalDownloads = useMemo(() => items.reduce((n, l) => n + l.redeem_count, 0), [items]);
+  const items = useMemo(
+    () => links.data?.pages.flatMap((p) => p.items) ?? [],
+    [links.data],
+  );
+  const total = links.data?.pages[0]?.total ?? 0;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
@@ -361,18 +493,16 @@ export function AdminProgramDownloadsPage() {
       </div>
 
       <Card>
-        <CardContent className="grid grid-cols-3 gap-3 py-3 text-sm">
+        <CardContent className="grid grid-cols-2 gap-3 py-3 text-sm">
+          <div>
+            <div className="text-2xl font-semibold">{total}</div>
+            <div className="text-muted-foreground">
+              Links{status !== "all" || debouncedSearch || machines !== "any" ? " (filtered)" : ""}
+            </div>
+          </div>
           <div>
             <div className="text-2xl font-semibold">{items.length}</div>
-            <div className="text-muted-foreground">Links</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">{active.length}</div>
-            <div className="text-muted-foreground">Active</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">{totalDownloads}</div>
-            <div className="text-muted-foreground">Downloads</div>
+            <div className="text-muted-foreground">Loaded</div>
           </div>
         </CardContent>
       </Card>
@@ -463,15 +593,69 @@ export function AdminProgramDownloadsPage() {
       </Card>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground">Links</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            Links{total ? ` (${total})` : ""}
+          </h2>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => links.refetch()}
+            disabled={links.isFetching}
+          >
+            <RefreshCw className={`size-3 ${links.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-50 flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search label, notes, license, or token…"
+              className="pl-7"
+            />
+          </div>
+          <Select value={status} onValueChange={(v) => setStatus((v ?? "all") as typeof status)}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="revoked">Revoked</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={machines} onValueChange={(v) => setMachines(v ?? "any")}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MACHINE_FILTER_OPTIONS.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {links.isLoading ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Loading…
           </div>
         ) : items.length === 0 ? (
-          <p className="py-4 text-sm text-muted-foreground">No links yet.</p>
+          <p className="py-4 text-sm text-muted-foreground">No links match these filters.</p>
         ) : (
-          items.map((l) => <LinkCard key={l.id} link={l} />)
+          <>
+            {items.map((l) => (
+              <LinkCard key={l.id} link={l} />
+            ))}
+            <InfiniteScrollSentinel query={links} />
+          </>
         )}
       </div>
     </div>

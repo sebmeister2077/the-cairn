@@ -20,12 +20,13 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..auth import require_admin
 from ..core import database as db
 from ..core import license_signing
+from .. import auth as _auth
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -34,6 +35,7 @@ router = APIRouter(tags=["licenses"])
 # How long an issued token stays valid for offline use before the client must
 # re-activate online. Bounded so revocation propagates within a day.
 _TOKEN_GRACE = timedelta(hours=24)
+_USER_AGENT_MAX_LEN = 256
 
 
 def _iso(dt: Optional[datetime]) -> Optional[str]:
@@ -91,13 +93,30 @@ class ActivateRequest(BaseModel):
 
 
 @router.post("/license/activate")
-async def activate(req: ActivateRequest) -> dict:
+async def activate(req: ActivateRequest, request: Request) -> dict:
     lic = _check_license(req.license_code)
     existing = db.get_activation(req.license_code, req.fingerprint)
     if existing is not None and existing.get("revoked"):
         raise HTTPException(status_code=403, detail="This machine has been unbound")
     if existing is None:
         if db.count_active_activations(req.license_code) >= int(lic["max_activations"]):
+            try:
+                db.record_activation_attempt(
+                    req.license_code,
+                    req.fingerprint,
+                    req.app_version,
+                    ip_hash=_auth._hash_ip(_auth._get_client_ip(request)),
+                    user_agent=(request.headers.get("user-agent") or "")[
+                        :_USER_AGENT_MAX_LEN
+                    ]
+                    or None,
+                    reason="limit_reached",
+                )
+            except Exception:
+                logger.exception(
+                    "failed to record over-limit activation attempt for %s",
+                    req.license_code,
+                )
             raise HTTPException(
                 status_code=403,
                 detail="License activation limit reached on other machines",
@@ -149,12 +168,51 @@ async def issue_license(
 
 
 @router.get("/admin/licenses")
-async def list_licenses(_admin: str = Depends(require_admin)) -> dict:
-    items = db.list_licenses()
+async def list_licenses(
+    status: str = Query("all", pattern="^(all|active|revoked)$"),
+    q: Optional[str] = Query(None, max_length=200),
+    min_machines: Optional[int] = Query(None, ge=0),
+    max_machines: Optional[int] = Query(None, ge=0),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    _admin: str = Depends(require_admin),
+) -> dict:
+    result = db.list_licenses(
+        status=status,
+        q=(q or "").strip() or None,
+        min_machines=min_machines,
+        max_machines=max_machines,
+        offset=offset,
+        limit=limit,
+    )
+    items = result["items"]
     for it in items:
         it["expires_at"] = _iso(it.get("expires_at"))
         it["created_at"] = _iso(it.get("created_at"))
-    return {"items": items}
+    total = result["total"]
+    next_offset = offset + len(items) if offset + len(items) < total else None
+    return {"items": items, "total": total, "next_offset": next_offset}
+
+
+@router.get("/admin/licenses/{license_code}/attempts")
+async def list_over_limit_attempts(
+    license_code: str,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    _admin: str = Depends(require_admin),
+) -> dict:
+    if db.get_license(license_code) is None:
+        raise HTTPException(status_code=404, detail="Unknown license")
+    result = db.list_license_activation_attempts(
+        license_code, offset=offset, limit=limit
+    )
+    items = result["items"]
+    for it in items:
+        it["attempted_at"] = _iso(it.get("attempted_at"))
+        it["ip_hash_short"] = (it.pop("ip_hash", None) or "")[:12] or None
+    total = result["total"]
+    next_offset = offset + len(items) if offset + len(items) < total else None
+    return {"items": items, "total": total, "next_offset": next_offset}
 
 
 @router.get("/admin/licenses/{license_code}/activations")

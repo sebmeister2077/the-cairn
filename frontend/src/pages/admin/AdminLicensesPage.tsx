@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Copy,
@@ -12,16 +12,21 @@ import {
   MonitorSmartphone,
   AlertTriangle,
   SlidersHorizontal,
+  Search,
+  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import {
   adminListLicenses,
   adminCreateLicense,
   adminListLicenseActivations,
+  adminListLicenseAttempts,
   adminRevokeLicense,
   adminRevokeLicenseActivation,
   adminDismissActivationFlag,
   type License,
   type LicenseActivation,
+  type LicenseAttempt,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +34,35 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useDebounced } from "@/hooks/useDebounced";
+import { InfiniteScrollSentinel } from "@/components/InfiniteScrollSentinel";
+
+const PAGE_SIZE = 25;
+
+type Page<T> = { items: T[]; total: number; next_offset: number | null };
+
+// Presets for the "machines bound" filter. Values map to the min/max query params.
+const MACHINE_FILTER_OPTIONS: {
+  value: string;
+  label: string;
+  min?: number;
+  max?: number;
+}[] = [
+  { value: "any", label: "Any machines" },
+  { value: "unused", label: "Unused (0)", max: 0 },
+  { value: "1plus", label: "1+ machines", min: 1 },
+  { value: "2plus", label: "2+ machines", min: 2 },
+  { value: "3plus", label: "3+ machines", min: 3 },
+];
+
 
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
@@ -255,9 +288,64 @@ function ActivationRow({
   );
 }
 
+function AttemptsPanel({ licenseCode }: { licenseCode: string }) {
+  const attempts = useInfiniteQuery<Page<LicenseAttempt>>({
+    queryKey: ["admin-license-attempts", licenseCode],
+    queryFn: ({ pageParam = 0 }) =>
+      adminListLicenseAttempts(licenseCode, { offset: pageParam as number, limit: PAGE_SIZE }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset,
+  });
+
+  if (attempts.isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+        <Loader2 className="size-4 animate-spin" /> Loading attempts…
+      </div>
+    );
+  }
+
+  const items = attempts.data?.pages.flatMap((p) => p.items) ?? [];
+  if (items.length === 0) {
+    return (
+      <p className="py-2 text-sm text-muted-foreground">
+        No over-limit activation attempts recorded.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 py-1">
+      <div className="text-xs font-medium text-muted-foreground">
+        Machines that tried to activate past the limit
+      </div>
+      {items.map((a: LicenseAttempt) => (
+        <div key={a.id} className="rounded-md border px-3 py-1.5 text-xs">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <span className="flex items-center gap-2 flex-wrap">
+              <ShieldAlert className="size-3.5 text-destructive" />
+              <span className="font-mono">
+                {a.fingerprint ? shortFp(a.fingerprint) : "unknown"}
+              </span>
+              {a.app_version && <Badge variant="secondary">v{a.app_version}</Badge>}
+            </span>
+            <span className="text-muted-foreground">{fmtDate(a.attempted_at)}</span>
+          </div>
+          <div className="mt-0.5 text-muted-foreground break-all">
+            {a.ip_hash_short ? `ip ${a.ip_hash_short}` : "ip —"}
+            {a.user_agent ? ` · ${a.user_agent}` : ""}
+          </div>
+        </div>
+      ))}
+      <InfiniteScrollSentinel query={attempts} />
+    </div>
+  );
+}
+
 function LicenseCard({ lic }: { lic: License }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
+  const [showAttempts, setShowAttempts] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const revoked = lic.status !== "active";
 
@@ -277,6 +365,11 @@ function LicenseCard({ lic }: { lic: License }) {
               <Badge variant="secondary">
                 {lic.active_activations} / {lic.max_activations} machines
               </Badge>
+              {lic.over_limit_attempts > 0 && (
+                <Badge variant="destructive" className="gap-1">
+                  <ShieldAlert className="size-3" /> {lic.over_limit_attempts} over-limit
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
@@ -294,6 +387,11 @@ function LicenseCard({ lic }: { lic: License }) {
               {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
               Machines
             </Button>
+            {lic.over_limit_attempts > 0 && (
+              <Button size="sm" variant="outline" onClick={() => setShowAttempts((v) => !v)}>
+                <ShieldAlert className="size-3" /> Over-limit
+              </Button>
+            )}
             {!revoked && (
               <Button size="sm" variant="destructive" onClick={() => setConfirmRevoke(true)}>
                 Revoke
@@ -306,6 +404,13 @@ function LicenseCard({ lic }: { lic: License }) {
           <>
             <Separator />
             <ActivationsPanel licenseCode={lic.license_code} />
+          </>
+        )}
+
+        {showAttempts && (
+          <>
+            <Separator />
+            <AttemptsPanel licenseCode={lic.license_code} />
           </>
         )}
       </CardContent>
@@ -337,9 +442,27 @@ export function AdminLicensesPage() {
   const [notes, setNotes] = useState("");
   const [createdCode, setCreatedCode] = useState<string | null>(null);
 
-  const licenses = useQuery({
-    queryKey: ["admin-licenses"],
-    queryFn: adminListLicenses,
+  // List filters
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounced(search);
+  const [status, setStatus] = useState<"all" | "active" | "revoked">("all");
+  const [machines, setMachines] = useState("any");
+
+  const machineFilter = MACHINE_FILTER_OPTIONS.find((m) => m.value === machines);
+
+  const licenses = useInfiniteQuery<Page<License>>({
+    queryKey: ["admin-licenses", debouncedSearch, status, machines],
+    queryFn: ({ pageParam = 0 }) =>
+      adminListLicenses({
+        status,
+        q: debouncedSearch,
+        min_machines: machineFilter?.min ?? null,
+        max_machines: machineFilter?.max ?? null,
+        offset: pageParam as number,
+        limit: PAGE_SIZE,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => last.next_offset,
   });
 
   const createMut = useMutation({
@@ -359,9 +482,8 @@ export function AdminLicensesPage() {
     },
   });
 
-  const items = licenses.data?.items ?? [];
-  const active = items.filter((l) => l.status === "active");
-  const totalMachines = items.reduce((n, l) => n + l.active_activations, 0);
+  const items = licenses.data?.pages.flatMap((p) => p.items) ?? [];
+  const total = licenses.data?.pages[0]?.total ?? 0;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 p-4">
@@ -375,18 +497,16 @@ export function AdminLicensesPage() {
       </div>
 
       <Card>
-        <CardContent className="grid grid-cols-3 gap-3 py-3 text-sm">
+        <CardContent className="grid grid-cols-2 gap-3 py-3 text-sm">
+          <div>
+            <div className="text-2xl font-semibold">{total}</div>
+            <div className="text-muted-foreground">
+              Licenses{status !== "all" || debouncedSearch || machines !== "any" ? " (filtered)" : ""}
+            </div>
+          </div>
           <div>
             <div className="text-2xl font-semibold">{items.length}</div>
-            <div className="text-muted-foreground">Licenses</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">{active.length}</div>
-            <div className="text-muted-foreground">Active</div>
-          </div>
-          <div>
-            <div className="text-2xl font-semibold">{totalMachines}</div>
-            <div className="text-muted-foreground">Bound machines</div>
+            <div className="text-muted-foreground">Loaded</div>
           </div>
         </CardContent>
       </Card>
@@ -472,15 +592,68 @@ export function AdminLicensesPage() {
       </Card>
 
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-muted-foreground">All licenses</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            All licenses{total ? ` (${total})` : ""}
+          </h2>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => licenses.refetch()}
+            disabled={licenses.isFetching}
+          >
+            <RefreshCw className={`size-3 ${licenses.isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-50 flex-1">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search label, code, or notes…"
+              className="pl-7"
+            />
+          </div>
+          <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
+            <SelectTrigger className="w-36">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="revoked">Revoked</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={machines} onValueChange={(v) => setMachines(v ?? "any")}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MACHINE_FILTER_OPTIONS.map((m) => (
+                <SelectItem key={m.value} value={m.value}>
+                  {m.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {licenses.isLoading ? (
           <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" /> Loading…
           </div>
         ) : items.length === 0 ? (
-          <p className="py-4 text-sm text-muted-foreground">No licenses issued yet.</p>
+          <p className="py-4 text-sm text-muted-foreground">No licenses match these filters.</p>
         ) : (
-          items.map((lic) => <LicenseCard key={lic.license_code} lic={lic} />)
+          <>
+            {items.map((lic) => (
+              <LicenseCard key={lic.license_code} lic={lic} />
+            ))}
+            <InfiniteScrollSentinel query={licenses} />
+          </>
         )}
       </div>
     </div>

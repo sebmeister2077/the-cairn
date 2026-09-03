@@ -25,7 +25,7 @@ import secrets
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..auth import require_admin
@@ -111,6 +111,8 @@ def _serialize_link(
         "last_redeem_at": _iso(link.get("last_redeem_at")),
         "status": status,
         "build_filename": (build or {}).get("original_filename"),
+        "active_activations": int(link.get("active_activations") or 0),
+        "over_limit_attempts": int(link.get("over_limit_attempts") or 0),
     }
     if request is not None:
         out["url"] = _download_url(request, link["token"])
@@ -273,8 +275,25 @@ async def create_download_link(
 
 
 @router.get("")
-async def list_download_links(request: Request, _admin: str = Depends(require_admin)):
-    rows = db.list_program_download_links()
+async def list_download_links(
+    request: Request,
+    status: str = Query("all", pattern="^(all|active|expired|revoked)$"),
+    q: Optional[str] = Query(None, max_length=200),
+    min_machines: Optional[int] = Query(None, ge=0),
+    max_machines: Optional[int] = Query(None, ge=0),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    _admin: str = Depends(require_admin),
+):
+    result = db.list_program_download_links(
+        status=status,
+        q=(q or "").strip() or None,
+        min_machines=min_machines,
+        max_machines=max_machines,
+        offset=offset,
+        limit=limit,
+    )
+    rows = result["items"]
     builds: dict = {}
 
     def _build_for(bid):
@@ -284,12 +303,13 @@ async def list_download_links(request: Request, _admin: str = Depends(require_ad
             builds[bid] = db.get_program_build(bid)
         return builds[bid]
 
-    return {
-        "links": [
-            _serialize_link(r, request=request, build=_build_for(r.get("build_id")))
-            for r in rows
-        ]
-    }
+    links = [
+        _serialize_link(r, request=request, build=_build_for(r.get("build_id")))
+        for r in rows
+    ]
+    total = result["total"]
+    next_offset = offset + len(links) if offset + len(links) < total else None
+    return {"links": links, "total": total, "next_offset": next_offset}
 
 
 @router.get("/{link_id}/redemptions")
