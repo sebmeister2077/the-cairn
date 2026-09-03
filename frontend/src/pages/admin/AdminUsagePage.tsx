@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ import {
   clearOverviewCategories,
   patchPagesFilters,
   resetPagesFilters,
+  setAccountsExcludeUnused,
   setPagesSelectedPath,
   toggleOverviewCategory,
   type PagesSortKey,
@@ -58,7 +59,7 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "queues", label: "Queue Velocity" },
   { key: "downloads", label: "Downloads" },
   { key: "moderation", label: "Moderation" },
-  { key: "api_keys", label: "API Keys" },
+  { key: "api_keys", label: "Accounts" },
   { key: "actors", label: "Top Actors" },
   { key: "promo", label: "Promo" },
 ];
@@ -69,8 +70,26 @@ function defaultWindow(): { from: string; to: string } {
   return { from: from.toISOString(), to: to.toISOString() };
 }
 
+const VALID_SECTIONS = new Set<string>(SECTIONS.map((s) => s.key));
+
 export function AdminUsagePage() {
-  const [section, setSection] = useState<SectionKey>("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // The active tab lives in the URL (?tab=…) so a refresh or shared link
+  // lands on the same section. Falls back to "overview" for missing/unknown
+  // values.
+  const tabParam = searchParams.get("tab");
+  const section: SectionKey =
+    tabParam && VALID_SECTIONS.has(tabParam) ? (tabParam as SectionKey) : "overview";
+  const setSection = (next: SectionKey) => {
+    setSearchParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set("tab", next);
+        return p;
+      },
+      { replace: true },
+    );
+  };
   const [range, setRange] = useState<{ from: string; to: string }>(defaultWindow);
   const [granularity, setGranularity] = useState<UsageGranularity>("day");
 
@@ -975,11 +994,18 @@ function ModerationSection(props: { from: string; to: string; granularity: Usage
 // ---------------------------------------------------------------------------
 
 function ApiKeysSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const dispatch = useAppDispatch();
+  const excludeUnused = useAppSelector((s) => s.adminUsageFilters.accountsExcludeUnused);
   const q = useQuery({
-    queryKey: ["usage", "api-keys", props.from, props.to, props.granularity],
+    queryKey: ["usage", "api-keys", props.from, props.to, props.granularity, excludeUnused],
     queryFn: ({ signal }) =>
       adminUsage.apiKeys(
-        { from: props.from, to: props.to, granularity: props.granularity },
+        {
+          from: props.from,
+          to: props.to,
+          granularity: props.granularity,
+          exclude_unused: excludeUnused,
+        },
         signal,
       ),
   });
@@ -993,9 +1019,27 @@ function ApiKeysSection(props: { from: string; to: string; granularity: UsageGra
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>API keys</CardTitle>
-        <CardDescription>New keys created vs. distinct active keys per bucket.</CardDescription>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-4">
+        <div className="space-y-1.5">
+          <CardTitle>Accounts</CardTitle>
+          <CardDescription>
+            New accounts created vs. accounts that made at least one request, per bucket.
+          </CardDescription>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Switch
+            id="accounts-exclude-unused"
+            checked={excludeUnused}
+            onCheckedChange={(v) => dispatch(setAccountsExcludeUnused(v))}
+            size="sm"
+          />
+          <Label
+            htmlFor="accounts-exclude-unused"
+            className="text-xs text-muted-foreground cursor-pointer"
+          >
+            Hide unused accounts
+          </Label>
+        </div>
       </CardHeader>
       <CardContent>
         <TimeSeriesChart

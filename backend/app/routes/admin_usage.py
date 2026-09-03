@@ -742,22 +742,27 @@ async def usage_api_keys(
     frm: Optional[str] = Query(None, alias="from"),
     to: Optional[str] = Query(None),
     granularity: str = Query("day"),
+    exclude_unused: bool = Query(False),
 ) -> dict:
     _ensure_db()
     start, end = _resolve_window(frm, to)
     gran = _resolve_granularity(granularity)
-    cache_key = ("api-keys", _iso(start), _iso(end), gran)
+    cache_key = ("api-keys", _iso(start), _iso(end), gran, exclude_unused)
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
 
+    # When excluding unused keys, only count keys that made at least one request.
+    unused_filter = "AND usage_count > 0" if exclude_unused else ""
+
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """SELECT date_trunc(%s, created_at) AS bucket,
+                f"""SELECT date_trunc(%s, created_at) AS bucket,
                           COUNT(*)::int AS count
                        FROM api_keys
                       WHERE created_at >= %s AND created_at < %s
+                        {unused_filter}
                    GROUP BY bucket
                    ORDER BY bucket""",
                 (gran, start, end),

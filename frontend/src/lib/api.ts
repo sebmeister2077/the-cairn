@@ -3765,8 +3765,8 @@ export const adminUsage = {
         _usageGet<UsageDownloads>("downloads", { from: p.from, to: p.to, granularity: p.granularity, limit_recent: p.limit_recent }, signal),
     moderation: (p: UsageGranularityParams, signal?: AbortSignal) =>
         _usageGet<UsageModeration>("moderation", { from: p.from, to: p.to, granularity: p.granularity }, signal),
-    apiKeys: (p: UsageGranularityParams, signal?: AbortSignal) =>
-        _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity }, signal),
+    apiKeys: (p: UsageGranularityParams & { exclude_unused?: boolean }, signal?: AbortSignal) =>
+        _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity, exclude_unused: p.exclude_unused ? "true" : undefined }, signal),
     topActors: (p: UsageWindowParams & { category?: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
     pages: (p: UsageGranularityParams & { limit?: number; path?: string }, signal?: AbortSignal) =>

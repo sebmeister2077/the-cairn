@@ -33,11 +33,14 @@ export type AdminUsageFilters = {
     /** Whitelist of category names to keep on the Overview chart. Empty = all. */
     overviewCategories: string[];
     pages: PagesFilters;
+    /** Accounts section: when true, exclude API keys that never made a request. */
+    accountsExcludeUnused: boolean;
 };
 
 export const DEFAULT_ADMIN_USAGE_FILTERS: AdminUsageFilters = {
     overviewCategories: [],
     pages: DEFAULT_PAGES_FILTERS,
+    accountsExcludeUnused: false,
 };
 
 export const adminUsageFiltersSlice = createSlice({
@@ -70,6 +73,9 @@ export const adminUsageFiltersSlice = createSlice({
         setPagesSelectedPath(state, action: PayloadAction<string | null>) {
             state.pages.selectedPath = action.payload;
         },
+        setAccountsExcludeUnused(state, action: PayloadAction<boolean>) {
+            state.accountsExcludeUnused = action.payload;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -93,4 +99,5 @@ export const {
     patchPagesFilters,
     resetPagesFilters,
     setPagesSelectedPath,
+    setAccountsExcludeUnused,
 } = adminUsageFiltersSlice.actions;
