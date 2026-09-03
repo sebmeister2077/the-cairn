@@ -52,6 +52,7 @@ import { MarketItemPage } from "@/pages/market/MarketItemPage";
 import { MarketItemsPage } from "@/pages/market/MarketItemsPage";
 import { MarketLeaderboardsPage } from "@/pages/market/MarketLeaderboardsPage";
 import { MarketPlayerPage } from "@/pages/market/MarketPlayerPage";
+import { MarketPlayersPage } from "@/pages/market/MarketPlayersPage";
 import { MarketMapPage } from "@/pages/market/MarketMapPage";
 import { MarketOrdersPage } from "@/pages/market/MarketOrdersPage";
 import { OrderDetailPage } from "@/pages/market/OrderDetailPage";
@@ -131,6 +132,7 @@ const NavigationRoutes = {
     Converter: "/market/converter",
     Orders: "/market/orders",
     Leaderboards: "/market/leaderboards",
+    Players: "/market/players",
     Map: "/market/map",
   },
   Rarity: {
@@ -209,6 +211,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketConverter"
   | "app.nav.subtabs.marketOrders"
   | "app.nav.subtabs.marketLeaderboards"
+  | "app.nav.subtabs.marketPlayers"
   | "app.nav.subtabs.marketMap"
   | "app.nav.categories.rarity"
   | "app.nav.subtabs.rarityRocks"
@@ -248,6 +251,7 @@ const subTabs: Subtabs = {
     { value: "/market/converter", labelKey: "app.nav.subtabs.marketConverter" },
     { value: "/market/orders", labelKey: "app.nav.subtabs.marketOrders" },
     { value: "/market/leaderboards", labelKey: "app.nav.subtabs.marketLeaderboards" },
+    { value: "/market/players", labelKey: "app.nav.subtabs.marketPlayers" },
     { value: "/market/map", labelKey: "app.nav.subtabs.marketMap" },
   ],
   "/tools": [
@@ -1188,6 +1192,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketItemPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/players"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketPlayersPage />
               </ErrorBoundary>
             }
           />

@@ -97,6 +97,7 @@ export const en = {
                 marketConverter: "Converter",
                 marketOrders: "Orders",
                 marketLeaderboards: "Leaderboards",
+                marketPlayers: "Players",
                 marketMap: "Trade Map",
                 rarityRocks: "Rocks",
             },
