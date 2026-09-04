@@ -84,13 +84,32 @@ export const SPAWN_CLAIM_RADIUS = 500;
 export function isWithinSpawnClaim(x: number, z: number): boolean {
     return Math.abs(x) <= SPAWN_CLAIM_RADIUS && Math.abs(z) <= SPAWN_CLAIM_RADIUS;
 }
+
+/** Extra Chebyshev band (blocks) outside the spawn claim within which a
+ *  virtual Start/Dest is considered "near spawn". When elk-friendly is on
+ *  the claimed spawn cluster is skipped (not elk-rideable), so a Start/Dest
+ *  this close needs a larger KNN candidate pool to reach the first
+ *  non-claimed endpoint past the boundary. */
+export const SPAWN_CLAIM_NEAR_RADIUS = 300;
+
+/** Boosted KNN candidate count used for a virtual Start/Dest that sits
+ *  near the spawn claim while elk-friendly routing is on. Large enough to
+ *  see past the dense claimed cluster to the nearest elk-rideable TLs. */
+export const SPAWN_NEAR_VIRTUAL_K = 256;
+
+/** True when (x, z) lies within `SPAWN_CLAIM_NEAR_RADIUS` blocks of the
+ *  spawn claim (Chebyshev), including inside the claim itself. */
+export function isNearSpawnClaim(x: number, z: number): boolean {
+    const near = SPAWN_CLAIM_RADIUS + SPAWN_CLAIM_NEAR_RADIUS;
+    return Math.abs(x) <= near && Math.abs(z) <= near;
+}
 /** Surface-ish baseline. Endpoints at/above this y level pay only the
  *  small fixed minimum overhead; endpoints below pay proportionally more. */
 export const DEFAULT_ELK_DEPTH_BASELINE_Y = 110;
 /** Seconds of elk-climbing overhead per 30-block chunk (rounded up)
  *  below `DEFAULT_ELK_DEPTH_BASELINE_Y`. Charged once per endpoint
  *  involved in an unverified inter-TL walk. */
-export const DEFAULT_ELK_PENALTY_PER_30_BLOCKS_S = 80;
+export const DEFAULT_ELK_PENALTY_PER_30_BLOCKS_S = 160;
 /** Minimum per-endpoint overhead charged when a TL endpoint sits at or
  *  above the baseline y — leading an elk still has some unavoidable
  *  setup cost (loading, leashing, navigating doorways). */
@@ -610,11 +629,22 @@ function augmentForQuery(
     // Virtuals are wired to MORE neighbours than the base graph (see the
     // doc on `kNeighborsVirtual`). Falling back to `kNeighbors` keeps
     // older callers that omit the field working unchanged.
-    const k = graph.opts.kNeighborsVirtual ?? graph.opts.kNeighbors;
+    const baseK = graph.opts.kNeighborsVirtual ?? graph.opts.kNeighbors;
+    const preferElk = graph.opts.elkFriendlyOnly === true;
 
-    // Worst case: 2 virtuals * (k neighbours both directions = 2k each)
-    // + 1 direct start↔dest * 2. Allocate generously to avoid resizes.
-    const cap = 4 * k + 2 + 4;
+    // When elk-friendly is on we skip claimed spawn endpoints below (the
+    // claim isn't elk-rideable), so a Start/Dest near the claim needs a
+    // larger candidate pool to reach the first non-claimed TL past the
+    // boundary. Only boost near spawn; everywhere else `baseK` is plenty.
+    const kFor = (vx: number, vz: number): number =>
+        preferElk && isNearSpawnClaim(vx, vz) ? Math.max(baseK, SPAWN_NEAR_VIRTUAL_K) : baseK;
+    const kStart = kFor(start.x, start.z);
+    const kDest = kFor(dest.x, dest.z);
+
+    // Worst case: each virtual wires k neighbours both directions (2k
+    // edges) + 1 direct start↔dest * 2. Allocate generously to avoid
+    // resizes.
+    const cap = 2 * kStart + 2 * kDest + 2 + 4;
     const extraTo = new Int32Array(cap);
     const extraSec = new Float64Array(cap);
     const extraKindTlIdx = new Int32Array(cap);
@@ -635,13 +665,17 @@ function augmentForQuery(
         else extrasBySource.set(from, [eid]);
     };
 
-    const linkVirtual = (virtualIdx: number, vx: number, vz: number) => {
-        const nn = knn(graph.kd, vx, vz, k);
+    const linkVirtual = (virtualIdx: number, vx: number, vz: number, kv: number) => {
+        const nn = knn(graph.kd, vx, vz, kv);
         for (const { idx, d2 } of nn) {
-            // Skip claimed-zone endpoints: they're dead ends with no
-            // buildable tunnel, so a virtual Start/Dest can't reach the
-            // network through them.
-            if (isWithinSpawnClaim(graph.xs[idx], graph.zs[idx])) continue;
+            // With elk-friendly on, skip claimed-zone endpoints: the spawn
+            // claim isn't elk-rideable, so a route can't lead an elk in or
+            // out through one. With the toggle off the player can just
+            // surface-walk from their real Start/Dest to any nearby TL, so
+            // claimed endpoints stay reachable (otherwise a Start/Dest at
+            // spawn (0,0) — where every nearest endpoint is claimed — would
+            // fall back to the direct walk and hide all spawn-hub routes).
+            if (preferElk && isWithinSpawnClaim(graph.xs[idx], graph.zs[idx])) continue;
             const seconds = Math.sqrt(d2) / speed;
             appendEdge(virtualIdx, idx, seconds);
             // Reverse direction so endpoints can reach virtuals too.
@@ -649,8 +683,8 @@ function augmentForQuery(
         }
     };
 
-    linkVirtual(startIdx, start.x, start.z);
-    linkVirtual(destIdx, dest.x, dest.z);
+    linkVirtual(startIdx, start.x, start.z, kStart);
+    linkVirtual(destIdx, dest.x, dest.z, kDest);
 
     // Direct start↔dest walk edge so trivially short trips don't force a TL.
     const dsx = dest.x - start.x;
