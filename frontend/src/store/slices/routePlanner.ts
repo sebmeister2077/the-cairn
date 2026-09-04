@@ -2,18 +2,21 @@
 //
 // Holds the From/To endpoints, computed routes, selected alternative, and
 // configurable cost-model knobs (walk speed, TL penalty). Only the
-// cost-model preferences (`walkSpeed`, `tlPenaltySeconds`, `kNeighbors`)
-// are persisted across reloads — see `STRIP_BEFORE_WRITE.routePlanner`
-// in `rootPersistence.ts`. Everything else (endpoints, computed routes,
-// pickMode, focusRequest, isOpen) is ephemeral; on reload From/To are
-// re-hydrated only from URL params.
+// cost-model preferences (`walkSpeed`, `tlPenaltySeconds`, `kNeighbors`,
+// `numberOfRoutes`) are persisted across reloads — see
+// `STRIP_BEFORE_WRITE.routePlanner` in `rootPersistence.ts`. Everything
+// else (endpoints, computed routes, pickMode, focusRequest, isOpen) is
+// ephemeral; on reload From/To are re-hydrated only from URL params.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { RendezvousObjective, RendezvousResult, RouteResult, WorldPoint } from "@/lib/tl-routing";
 import {
     DEFAULT_K_NEIGHBORS,
+    DEFAULT_NUMBER_OF_ROUTES,
     DEFAULT_TL_PENALTY_S,
     DEFAULT_WALK_SPEED,
+    MAX_NUMBER_OF_ROUTES,
+    MIN_NUMBER_OF_ROUTES,
 } from "@/lib/tl-routing";
 
 /** A picked endpoint, plus a human-readable label (e.g. landmark name). */
@@ -48,6 +51,8 @@ export interface RoutePlannerState {
     walkSpeed: number;
     tlPenaltySeconds: number;
     kNeighbors: number;
+    /** Number of alternative routes to compute/show (1–10). */
+    numberOfRoutes: number;
     /** When true, the planner only routes through TL-to-TL walk
      *  segments the community has confirmed are safely traversable
      *  by an elk. Persisted so a logged-in player's preference
@@ -88,6 +93,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     walkSpeed: DEFAULT_WALK_SPEED,
     tlPenaltySeconds: DEFAULT_TL_PENALTY_S,
     kNeighbors: DEFAULT_K_NEIGHBORS,
+    numberOfRoutes: DEFAULT_NUMBER_OF_ROUTES,
     elkFriendlyOnly: false,
     players: [null, null],
     rendezvousObjective: "minimax",
@@ -237,6 +243,13 @@ export const routePlannerSlice = createSlice({
             state.routes = [];
             state.rendezvousResult = null;
         },
+        setNumberOfRoutes(state, action: PayloadAction<number>) {
+            state.numberOfRoutes = Math.max(
+                MIN_NUMBER_OF_ROUTES,
+                Math.min(MAX_NUMBER_OF_ROUTES, Math.trunc(action.payload)),
+            );
+            state.routes = [];
+        },
         setElkFriendlyOnly(state, action: PayloadAction<boolean>) {
             state.elkFriendlyOnly = action.payload;
             // Recompute on next tick — the toggle changes which walk
@@ -337,6 +350,7 @@ export const {
     setError: setRoutePlannerError,
     setWalkSpeed: setRouteWalkSpeed,
     setTLPenalty: setRouteTLPenalty,
+    setNumberOfRoutes: setRouteNumberOfRoutes,
     setElkFriendlyOnly: setRouteElkFriendlyOnly,
     setFocusRequest: setRouteFocusRequest,
     hydrateFromShare: hydrateRoutePlannerFromShare,

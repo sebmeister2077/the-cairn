@@ -56,6 +56,7 @@ import {
   setRendezvousObjective,
   setRouteElkFriendlyOnly,
   setRouteFocusRequest,
+  setRouteNumberOfRoutes,
   setRoutePlannerMode,
   setRoutePlannerOpen,
   setRouteSelectedIndex,
@@ -217,6 +218,7 @@ export function RoutePlannerPanel() {
   const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
   const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
   const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
+  const numberOfRoutes = useAppSelector((s) => s.routePlanner.numberOfRoutes);
   const mode = useAppSelector((s) => s.routePlanner.mode);
   const players = useAppSelector((s) => s.routePlanner.players);
   const rendezvousObjective = useAppSelector((s) => s.routePlanner.rendezvousObjective);
@@ -609,6 +611,24 @@ export function RoutePlannerPanel() {
                 />
                 <p className="text-[10px] text-muted-foreground">
                   {t("routePlanner.tlPenaltyHelp")}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label className="flex items-center justify-between text-xs">
+                  <span>{t("routePlanner.numberOfRoutes")}</span>
+                  <span className="font-mono text-muted-foreground">
+                    {t("routePlanner.numberOfRoutesValue", { value: numberOfRoutes })}
+                  </span>
+                </Label>
+                <Slider
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={numberOfRoutes}
+                  onValueChange={(v) => dispatch(setRouteNumberOfRoutes(v))}
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  {t("routePlanner.numberOfRoutesHelp")}
                 </p>
               </div>
               <div className="space-y-1">

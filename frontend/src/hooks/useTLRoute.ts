@@ -65,7 +65,6 @@ function getOrBuildGraph(
     return graph;
 }
 
-const NUMBER_OF_ROUTES = 3;
 const DEBOUNCE_MS = 150;
 
 interface UseTLRouteResult {
@@ -82,6 +81,7 @@ export function useTLRoute(): UseTLRouteResult {
     const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
     const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
     const kNeighbors = useAppSelector((s) => s.routePlanner.kNeighbors);
+    const numberOfRoutes = useAppSelector((s) => s.routePlanner.numberOfRoutes);
     const elkFriendlyOnly = useAppSelector((s) => s.routePlanner.elkFriendlyOnly);
     const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
     const elkEtag = useAppSelector((s) => s.elkWalkable.etag);
@@ -160,7 +160,7 @@ export function useTLRoute(): UseTLRouteResult {
                     to: capturedTo.point,
                     opts,
                     elkSignature: elkEtag,
-                    numberOfRoutes: NUMBER_OF_ROUTES,
+                    numberOfRoutes,
                     signal: ctrl.signal,
                 })
                     .then(({ routes: result, elapsedMs }) => {
@@ -209,7 +209,7 @@ export function useTLRoute(): UseTLRouteResult {
                 try {
                     const graph = getOrBuildGraph(segs, opts, elkEtag);
                     const t0 = performance.now();
-                    const result = findRoutes(graph, fromPt, toPt, NUMBER_OF_ROUTES);
+                    const result = findRoutes(graph, fromPt, toPt, numberOfRoutes);
                     const elapsed = performance.now() - t0;
                     if (import.meta.env.DEV) {
                         // eslint-disable-next-line no-console
@@ -257,7 +257,7 @@ export function useTLRoute(): UseTLRouteResult {
                 pendingAbort.current = null;
             }
         };
-    }, [dispatch, from, to, segments, segmentsEtag, opts, elkEtag]);
+    }, [dispatch, from, to, segments, segmentsEtag, opts, elkEtag, numberOfRoutes]);
 
     return { routes, selectedIndex, isComputing, error };
 }

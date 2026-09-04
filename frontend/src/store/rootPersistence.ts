@@ -87,6 +87,7 @@ const STRIP_BEFORE_WRITE: {
         walkSpeed: s.walkSpeed,
         tlPenaltySeconds: s.tlPenaltySeconds,
         kNeighbors: s.kNeighbors,
+        numberOfRoutes: s.numberOfRoutes,
         elkFriendlyOnly: s.elkFriendlyOnly,
     }),
     // Only persist the draft attest/unattest lists. Server `edges` are

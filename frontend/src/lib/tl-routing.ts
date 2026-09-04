@@ -70,6 +70,12 @@ export const DEFAULT_TL_PENALTY_S = 15;
 export const DEFAULT_K_NEIGHBORS = 8;
 export const DEFAULT_K_NEIGHBORS_VIRTUAL = 24;
 
+/** Number of alternative routes the planner computes/shows. User-tunable
+ *  (1–10) via the settings section; Yen's K-shortest runs for this K. */
+export const DEFAULT_NUMBER_OF_ROUTES = 3;
+export const MIN_NUMBER_OF_ROUTES = 1;
+export const MAX_NUMBER_OF_ROUTES = 10;
+
 /** Half-width (in blocks) of the square area around spawn (world origin
  *  0,0) that admins have claimed. No tunnels can be dug inside it, so any
  *  TL endpoint that falls within this square is treated as a dead end:

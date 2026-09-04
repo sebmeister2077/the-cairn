@@ -1106,6 +1106,9 @@ export const en = {
         tlPenalty: "TL penalty",
         tlPenaltyValue: "{value}s",
         tlPenaltyHelp: "Fixed time cost per hop (charge-up, possible ladder climbing).",
+        numberOfRoutes: "Number of routes",
+        numberOfRoutesValue: "{value}",
+        numberOfRoutesHelp: "How many alternative routes to compute and show (1–10).",
         elk: {
             elkFriendlyOnly: "Prefer elk-walkable routes",
             elkFriendlyOnlyHelp:
