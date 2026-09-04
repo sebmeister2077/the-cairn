@@ -1502,6 +1502,11 @@ export function TOPSMapViewPage() {
     if (editingGrouping) {
       for (const id of editingGrouping.tlIds) ids.add(id);
     }
+    // A pinned TL stays visible regardless of cursor distance, so its detail
+    // card never refers to a culled segment.
+    if (translocatorPinned && selectedTranslocator) {
+      ids.add(tlIdFor(selectedTranslocator));
+    }
     return { radiusBlocks: tlRadiusBlocks, alwaysShowTLIds: ids };
   }, [
     showTLsInRadius,
@@ -1510,6 +1515,8 @@ export function TOPSMapViewPage() {
     groupingsViewMode,
     activeTLIdSet,
     editingGrouping,
+    translocatorPinned,
+    selectedTranslocator,
   ]);
 
   // ---------------------------------------------------------------------

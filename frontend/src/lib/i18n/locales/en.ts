@@ -1889,8 +1889,13 @@ export const en = {
             unpinTitle: "Unpin translocator (also unpins on clicking another TL)",
             rightClickToPin: "Right-click a TL to pin",
             copyWaypoints: "Copy waypoints",
+            copyWaypointStart: "Copy start WP",
+            copyWaypointEnd: "Copy end WP",
             copied: "Copied",
             copyWaypointsTitle: "Copy /waypoint commands for both endpoints to clipboard",
+            copyWaypointStartTitle:
+                "Copy the /waypoint command for the start endpoint to clipboard",
+            copyWaypointEndTitle: "Copy the /waypoint command for the end endpoint to clipboard",
             dismissAria: "Dismiss selected translocator",
             dismissTitle: "Dismiss",
             emptyValue: "-",

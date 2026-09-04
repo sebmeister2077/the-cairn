@@ -9,12 +9,13 @@ import { useTranslation } from "@/lib/i18n";
 // reasonable surface value — the user can always edit the waypoint in-game.
 const WAYPOINT_Y = 110;
 
-function buildWaypointCommands(seg: WorldLineSegment): string {
+// In-game you can only run one /waypoint command at a time, so each endpoint
+// gets its own command (and its own copy button).
+function buildWaypointCommand(seg: WorldLineSegment, endpoint: "start" | "end"): string {
   const { x1, z1, x2, z2 } = seg;
-  return [
-    `/waypoint addati spiral ${x1} ${WAYPOINT_Y} ${z1} false purple TL to ${x2} ${z2}`,
-    `/waypoint addati spiral ${x2} ${WAYPOINT_Y} ${z2} false purple TL to ${x1} ${z1}`,
-  ].join("\n");
+  return endpoint === "start"
+    ? `/waypoint addati spiral ${x1} ${WAYPOINT_Y} ${z1} false purple TL to ${x2} ${z2}`
+    : `/waypoint addati spiral ${x2} ${WAYPOINT_Y} ${z2} false purple TL to ${x1} ${z1}`;
 }
 
 export function SelectedTranslocatorHeader({
@@ -34,12 +35,12 @@ export function SelectedTranslocatorHeader({
   onClose?: () => void;
 }) {
   const { t } = useTranslation();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"start" | "end" | null>(null);
   if (!selectedTranslocator) return null;
 
-  const handleCopyWaypointCommands = async () => {
+  const handleCopyWaypointCommand = async (endpoint: "start" | "end") => {
     if (!selectedTranslocator) return;
-    const text = buildWaypointCommands(selectedTranslocator);
+    const text = buildWaypointCommand(selectedTranslocator, endpoint);
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text);
@@ -54,8 +55,8 @@ export function SelectedTranslocatorHeader({
         document.execCommand("copy");
         document.body.removeChild(ta);
       }
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1500);
+      setCopied(endpoint);
+      window.setTimeout(() => setCopied((c) => (c === endpoint ? null : c)), 1500);
     } catch {
       // Silently ignore — clipboard may be blocked by permissions.
     }
@@ -141,11 +142,11 @@ export function SelectedTranslocatorHeader({
         type="button"
         variant="ghost"
         size="sm"
-        onClick={handleCopyWaypointCommands}
-        title={t("topsMap.selectedTranslocator.copyWaypointsTitle")}
+        onClick={() => handleCopyWaypointCommand("start")}
+        title={t("topsMap.selectedTranslocator.copyWaypointStartTitle")}
         className="h-7 px-2 text-foreground"
       >
-        {copied ? (
+        {copied === "start" ? (
           <>
             <Check className="size-4 mr-1" />
             {t("topsMap.selectedTranslocator.copied")}
@@ -153,7 +154,27 @@ export function SelectedTranslocatorHeader({
         ) : (
           <>
             <Copy className="size-4 mr-1" />
-            {t("topsMap.selectedTranslocator.copyWaypoints")}
+            {t("topsMap.selectedTranslocator.copyWaypointStart")}
+          </>
+        )}
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => handleCopyWaypointCommand("end")}
+        title={t("topsMap.selectedTranslocator.copyWaypointEndTitle")}
+        className="h-7 px-2 text-foreground"
+      >
+        {copied === "end" ? (
+          <>
+            <Check className="size-4 mr-1" />
+            {t("topsMap.selectedTranslocator.copied")}
+          </>
+        ) : (
+          <>
+            <Copy className="size-4 mr-1" />
+            {t("topsMap.selectedTranslocator.copyWaypointEnd")}
           </>
         )}
       </Button>
