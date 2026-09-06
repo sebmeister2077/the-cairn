@@ -25,6 +25,7 @@ import {
   adminListProgramDownloadRedemptions,
   adminListLicenseAttempts,
   adminRevokeProgramDownloadLink,
+  programDownloadPageUrl,
   type ProgramDownloadLink,
   type ProgramDownloadRedemption,
   type LicenseAttempt,
@@ -315,6 +316,10 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
   const statusVariant =
     link.status === "active" ? "default" : link.status === "revoked" ? "destructive" : "secondary";
 
+  // Build the shareable link from the current frontend origin so it always
+  // points at the SPA /download page, not the backend API host.
+  const shareUrl = programDownloadPageUrl(link.token);
+
   return (
     <Card>
       <CardContent className="py-3 space-y-2">
@@ -338,14 +343,14 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
                 </Badge>
               )}
             </div>
-            {link.url && (
+            {shareUrl && (
               <div className="flex items-center gap-2 flex-wrap">
                 <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs break-all">
-                  {link.url}
+                  {shareUrl}
                 </code>
-                <CopyButton value={link.url} label="Copy link" />
+                <CopyButton value={shareUrl} label="Copy link" />
                 <a
-                  href={link.url}
+                  href={shareUrl}
                   target="_blank"
                   rel="noreferrer"
                   className={buttonVariants({ size: "xs", variant: "outline" })}
@@ -591,12 +596,12 @@ export function AdminProgramDownloadsPage() {
           {created && (
             <div className="space-y-2 rounded-md border border-primary/40 bg-primary/5 p-3">
               <div className="text-sm font-medium">Download link created</div>
-              {created.url && (
+              {created.token && (
                 <div className="flex items-center gap-2 flex-wrap">
                   <code className="rounded bg-muted px-2 py-1 font-mono text-sm break-all">
-                    {created.url}
+                    {programDownloadPageUrl(created.token)}
                   </code>
-                  <CopyButton value={created.url} label="Copy link" />
+                  <CopyButton value={programDownloadPageUrl(created.token)} label="Copy link" />
                 </div>
               )}
               <p className="text-xs text-muted-foreground">

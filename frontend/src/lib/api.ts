@@ -2344,6 +2344,19 @@ export function programDownloadUrl(token: string): string {
     return `${API_BASE}/public/program-download/${encodeURIComponent(token)}`;
 }
 
+/**
+ * Friendly, shareable link to the SPA ``/download/<token>`` landing page.
+ * Built from the current frontend origin so it always points at the SPA,
+ * regardless of the backend's ``FRONTEND_BASE_URL`` configuration.
+ */
+export function programDownloadPageUrl(token: string): string {
+    const origin =
+        typeof window !== "undefined" && window.location?.origin
+            ? window.location.origin
+            : "";
+    return `${origin}/download/${encodeURIComponent(token)}`;
+}
+
 // ---------------------------------------------------------------------------
 // Admin � invite links
 // ---------------------------------------------------------------------------
