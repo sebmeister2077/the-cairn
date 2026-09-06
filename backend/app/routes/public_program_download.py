@@ -7,8 +7,9 @@ A program-download link is an opaque token an admin issues via
   (label, status, filename, size) so the frontend ``/download/<token>`` page
   can render before the user clicks download.
 * ``GET /api/public/program-download/<token>`` — download a zip containing the
-  current VSProxy build plus ``license.key`` + ``publish.key`` (the per-recipient
-  license code and API key), assembled on the fly.
+  current VSProxy build. For a full link the zip also carries ``license.key`` +
+  ``publish.key`` (the per-recipient license code and API key); an "update only"
+  link (``include_keys`` false) ships just the exe. Assembled on the fly.
 
 Each redemption is logged (hashed IP + truncated UA) for the admin view, until
 the link expires or is revoked.
@@ -63,6 +64,27 @@ you do not need to pass any command-line arguments.
 Unofficial tool — not affiliated with or endorsed by Anego Studios.
 """
 
+_README_TEXT_EXE_ONLY = """VSProxy — program update
+=========================
+
+This package contains only the updated VSProxy program.
+
+Contents
+--------
+  VSProxy.exe   the proxy, pre-configured with its default arguments
+
+How to update
+-------------
+  1. Replace your existing VSProxy.exe with this one.
+  2. Keep your existing license.key and publish.key in the same folder.
+  3. Run VSProxy.exe as before.
+
+This update does not change your license or upload key — reuse the ones you
+already have.
+
+Unofficial tool — not affiliated with or endorsed by Anego Studios.
+"""
+
 
 def _status(link: dict, now: datetime) -> Optional[str]:
     if link.get("revoked_at") is not None:
@@ -112,6 +134,7 @@ async def program_download_info(token: str, request: Request):
         "expires_at": link["expires_at"].isoformat() if link.get("expires_at") else None,
         "filename": (build or {}).get("original_filename") or "VSProxy.exe",
         "size_bytes": (build or {}).get("size_bytes"),
+        "include_keys": bool(link.get("include_keys", True)),
     }
 
 
@@ -164,9 +187,12 @@ async def redeem_program_download(token: str, request: Request):
 
         with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.write(exe_path, arcname=exe_name)
-            zf.writestr("license.key", link["license_code"])
-            zf.writestr("publish.key", link["api_key"])
-            zf.writestr("README.txt", _README_TEXT)
+            if link.get("include_keys", True) and link.get("license_code"):
+                zf.writestr("license.key", link["license_code"])
+                zf.writestr("publish.key", link["api_key"])
+                zf.writestr("README.txt", _README_TEXT)
+            else:
+                zf.writestr("README.txt", _README_TEXT_EXE_ONLY)
         # The raw exe is now inside the zip; free the disk copy early.
         try:
             os.unlink(exe_path)

@@ -78,9 +78,20 @@ export function DownloadPage() {
               </a>
 
               <p className="text-xs text-muted-foreground">
-                The zip contains the program plus your personal <code>license.key</code> and{" "}
-                <code>publish.key</code>. Keep all files together in one folder and run the exe — no
-                extra setup needed. Unofficial tool; not affiliated with Anego Studios.
+                {info.data.include_keys ? (
+                  <>
+                    The zip contains the program plus your personal <code>license.key</code> and{" "}
+                    <code>publish.key</code>. Keep all files together in one folder and run the exe —
+                    no extra setup needed.
+                  </>
+                ) : (
+                  <>
+                    This is a program update — the zip contains only the exe. Replace your existing{" "}
+                    VSProxy.exe and keep your current <code>license.key</code> and{" "}
+                    <code>publish.key</code> in the same folder.
+                  </>
+                )}{" "}
+                Unofficial tool; not affiliated with Anego Studios.
               </p>
             </>
           )}

@@ -2179,8 +2179,8 @@ export interface ProgramDownloadLink {
     id: number;
     token: string;
     label: string | null;
-    license_code: string;
-    api_key: string;
+    license_code: string | null;
+    api_key: string | null;
     max_activations: number;
     expires_at: string | null;
     notes: string | null;
@@ -2193,6 +2193,7 @@ export interface ProgramDownloadLink {
     build_filename: string | null;
     active_activations: number;
     over_limit_attempts: number;
+    include_keys: boolean;
     url?: string;
 }
 
@@ -2262,6 +2263,7 @@ export async function adminCreateProgramDownloadLink(data: {
     max_activations: number;
     expires_at?: string | null;
     notes?: string | null;
+    include_keys?: boolean;
 }): Promise<ProgramDownloadLink> {
     const res = await fetch(`${API_BASE}/admin/program-downloads`, {
         method: "POST",
@@ -2324,6 +2326,7 @@ export interface ProgramDownloadInfo {
     expires_at: string | null;
     filename: string;
     size_bytes: number | null;
+    include_keys: boolean;
 }
 
 /** Public (no auth): metadata for the /download/<token> landing page. */

@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -322,10 +323,15 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
             <div className="flex items-center gap-2 flex-wrap">
               <span className="font-medium">{link.label || "(no label)"}</span>
               <Badge variant={statusVariant}>{link.status}</Badge>
-              <Badge variant="secondary">{link.redeem_count} downloads</Badge>
-              <Badge variant="secondary">
-                {link.active_activations} / {link.max_activations} machines
+              <Badge variant={link.include_keys ? "outline" : "secondary"}>
+                {link.include_keys ? "full package" : "program only"}
               </Badge>
+              <Badge variant="secondary">{link.redeem_count} downloads</Badge>
+              {link.include_keys && (
+                <Badge variant="secondary">
+                  {link.active_activations} / {link.max_activations} machines
+                </Badge>
+              )}
               {link.over_limit_attempts > 0 && (
                 <Badge variant="destructive" className="gap-1">
                   <ShieldAlert className="size-3" /> {link.over_limit_attempts} over-limit
@@ -374,28 +380,34 @@ function LinkCard({ link }: { link: ProgramDownloadLink }) {
         {expanded && (
           <>
             <Separator />
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-muted-foreground">license</span>
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono break-all">
-                  {link.license_code}
-                </code>
-                <CopyButton value={link.license_code} />
+            {link.include_keys && link.license_code && link.api_key ? (
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-muted-foreground">license</span>
+                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono break-all">
+                    {link.license_code}
+                  </code>
+                  <CopyButton value={link.license_code} />
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-muted-foreground">publish key</span>
+                  <code className="rounded bg-muted px-1.5 py-0.5 font-mono break-all">
+                    {link.api_key}
+                  </code>
+                  <CopyButton value={link.api_key} />
+                </div>
+                <Separator />
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-muted-foreground">publish key</span>
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono break-all">
-                  {link.api_key}
-                </code>
-                <CopyButton value={link.api_key} />
-              </div>
-            </div>
-            <Separator />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Program-only link — the zip ships just the exe, no license or publish key.
+              </p>
+            )}
             <RedemptionsPanel linkId={link.id} />
           </>
         )}
 
-        {showAttempts && (
+        {showAttempts && link.license_code && (
           <>
             <Separator />
             <LinkAttemptsPanel licenseCode={link.license_code} />
@@ -429,6 +441,7 @@ export function AdminProgramDownloadsPage() {
   const [maxActivations, setMaxActivations] = useState(2);
   const [expiresAt, setExpiresAt] = useState("");
   const [notes, setNotes] = useState("");
+  const [exeOnly, setExeOnly] = useState(false);
   const [created, setCreated] = useState<ProgramDownloadLink | null>(null);
 
   // List filters
@@ -463,12 +476,14 @@ export function AdminProgramDownloadsPage() {
         max_activations: maxActivations,
         expires_at: expiresAt ? `${expiresAt}T23:59:59Z` : null,
         notes: notes.trim() || null,
+        include_keys: !exeOnly,
       }),
     onSuccess: (data) => {
       setCreated(data);
       setLabel("");
       setNotes("");
       setExpiresAt("");
+      setExeOnly(false);
       queryClient.invalidateQueries({ queryKey: ["admin-program-links"] });
     },
   });
@@ -513,6 +528,19 @@ export function AdminProgramDownloadsPage() {
           <CardDescription>Share the generated link with one recipient.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          <div className="flex items-start justify-between gap-3 rounded-md border px-3 py-2">
+            <div className="space-y-0.5">
+              <Label htmlFor="pd-exe-only" className="cursor-pointer">
+                Program only (update)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Ships just the exe — no license or publish key. Use this to hand out program
+                updates to people who already have their keys.
+              </p>
+            </div>
+            <Switch id="pd-exe-only" checked={exeOnly} onCheckedChange={setExeOnly} />
+          </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1">
               <Label htmlFor="pd-label">Label (recipient)</Label>
@@ -523,17 +551,19 @@ export function AdminProgramDownloadsPage() {
                 placeholder="e.g. Alice"
               />
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="pd-max">Max machines</Label>
-              <Input
-                id="pd-max"
-                type="number"
-                min={1}
-                max={20}
-                value={maxActivations}
-                onChange={(e) => setMaxActivations(Math.max(1, Number(e.target.value) || 1))}
-              />
-            </div>
+            {!exeOnly && (
+              <div className="space-y-1">
+                <Label htmlFor="pd-max">Max machines</Label>
+                <Input
+                  id="pd-max"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={maxActivations}
+                  onChange={(e) => setMaxActivations(Math.max(1, Number(e.target.value) || 1))}
+                />
+              </div>
+            )}
             <div className="space-y-1">
               <Label htmlFor="pd-exp">Expires (optional)</Label>
               <Input
@@ -570,9 +600,18 @@ export function AdminProgramDownloadsPage() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Send this link to {created.label || "the recipient"}. The zip they download already
-                contains their <code>license.key</code> and <code>publish.key</code> — you don't
-                need to send anything else.
+                Send this link to {created.label || "the recipient"}.{" "}
+                {created.include_keys ? (
+                  <>
+                    The zip they download already contains their <code>license.key</code> and{" "}
+                    <code>publish.key</code> — you don't need to send anything else.
+                  </>
+                ) : (
+                  <>
+                    The zip contains only the updated program — they keep their existing{" "}
+                    <code>license.key</code> and <code>publish.key</code>.
+                  </>
+                )}
               </p>
             </div>
           )}

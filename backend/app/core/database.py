@@ -2536,13 +2536,14 @@ def create_program_download_link(
     *,
     token: str,
     label: Optional[str],
-    license_code: str,
-    api_key: str,
+    license_code: Optional[str],
+    api_key: Optional[str],
     build_id: Optional[int],
     max_activations: int,
     expires_at,
     notes: Optional[str],
     created_by: Optional[str],
+    include_keys: bool = True,
 ) -> dict:
     from . import api_key_cache  # local import avoids a load-time cycle
 
@@ -2552,8 +2553,9 @@ def create_program_download_link(
             cur.execute(
                 """INSERT INTO program_download_links
                        (token, label, license_code, api_key, build_id,
-                        max_activations, expires_at, notes, created_by_key_id)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        max_activations, expires_at, notes, created_by_key_id,
+                        include_keys)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    RETURNING *""",
                 (
                     token,
@@ -2565,6 +2567,7 @@ def create_program_download_link(
                     expires_at,
                     notes,
                     str(created_by_id) if created_by_id else None,
+                    include_keys,
                 ),
             )
             return dict(cur.fetchone())

@@ -113,6 +113,7 @@ def _serialize_link(
         "build_filename": (build or {}).get("original_filename"),
         "active_activations": int(link.get("active_activations") or 0),
         "over_limit_attempts": int(link.get("over_limit_attempts") or 0),
+        "include_keys": bool(link.get("include_keys", True)),
     }
     if request is not None:
         out["url"] = _download_url(request, link["token"])
@@ -210,6 +211,9 @@ class CreateLinkBody(BaseModel):
     max_activations: int = Field(2, ge=1, le=20)
     expires_at: Optional[datetime] = None
     notes: Optional[str] = Field(None, max_length=_NOTES_MAX_LEN)
+    # When false, the link is an "update only" link: the zip ships just the exe,
+    # with no minted license / API key (nothing to activate or track).
+    include_keys: bool = True
 
 
 @router.post("")
@@ -228,25 +232,30 @@ async def create_download_link(
 
     label = (body.label or "").strip() or None
 
-    # 1. Mint the license (same shape as POST /admin/licenses).
-    license_code = "vsp_" + secrets.token_urlsafe(24)
-    db.create_license(
-        license_code, label, body.max_activations, body.expires_at, body.notes
-    )
-
-    # 2. Mint the API key and grant the map-export publish permission.
-    api_key = secrets.token_urlsafe(32)
-    db.create_api_key(
-        api_key,
-        name=f"VSProxy map-export — {label or 'unlabelled'}",
-        permissions="contribute",
-        consume_once=False,
-    )
-    if not db.set_api_key_extra_permission(api_key, _MAP_FEATURES_PERMISSION, True):
-        logger.warning(
-            "program link: failed to grant %s to freshly minted key",
-            _MAP_FEATURES_PERMISSION,
+    license_code: Optional[str] = None
+    api_key: Optional[str] = None
+    if body.include_keys:
+        # 1. Mint the license (same shape as POST /admin/licenses).
+        license_code = "vsp_" + secrets.token_urlsafe(24)
+        db.create_license(
+            license_code, label, body.max_activations, body.expires_at, body.notes
         )
+
+        # 2. Mint the API key and grant the map-export publish permission.
+        api_key = secrets.token_urlsafe(32)
+        db.create_api_key(
+            api_key,
+            name=f"VSProxy map-export — {label or 'unlabelled'}",
+            permissions="contribute",
+            consume_once=False,
+        )
+        if not db.set_api_key_extra_permission(
+            api_key, _MAP_FEATURES_PERMISSION, True
+        ):
+            logger.warning(
+                "program link: failed to grant %s to freshly minted key",
+                _MAP_FEATURES_PERMISSION,
+            )
 
     # 3. Record the link. Its expiry tracks the license expiry (may be None).
     token = secrets.token_urlsafe(24)
@@ -260,6 +269,7 @@ async def create_download_link(
         expires_at=body.expires_at,
         notes=body.notes,
         created_by=admin_key,
+        include_keys=body.include_keys,
     )
     accounts_db.audit_log(
         admin_key,
@@ -269,6 +279,7 @@ async def create_download_link(
             "link_id": link["id"],
             "license_code": license_code,
             "build_id": build["id"],
+            "include_keys": body.include_keys,
         },
     )
     return _serialize_link(link, request=request, build=build)
