@@ -6,7 +6,11 @@
 // used to find and compare traders.
 
 import { useMemo } from "react";
-import { specializationGroupFor } from "@/lib/auction";
+import {
+    getLatestObservedUtc,
+    refreshMarketReferences,
+    specializationGroupFor,
+} from "@/lib/auction";
 import type { AuctionListing } from "@/models/auction";
 
 /** Whether a player shows up mainly as a seller, a buyer, or does both. */
@@ -43,7 +47,7 @@ interface Agg {
     sold: number;
     bought: number;
     categories: Map<string, number>;
-    lastActiveUtc: string | null;
+    lastActiveMs: number;
 }
 
 function ensure(map: Map<string, Agg>, uid: string): Agg {
@@ -58,7 +62,7 @@ function ensure(map: Map<string, Agg>, uid: string): Agg {
             sold: 0,
             bought: 0,
             categories: new Map(),
-            lastActiveUtc: null,
+            lastActiveMs: 0,
         };
         map.set(uid, a);
     }
@@ -70,10 +74,8 @@ function bumpCategory(a: Agg, category: string): void {
     a.categories.set(group, (a.categories.get(group) ?? 0) + 1);
 }
 
-function touchActive(a: Agg, l: AuctionListing): void {
-    const ts = l.lastObservedUtc ?? l.observedUtc;
-    // ISO-8601 UTC strings compare lexicographically, so a plain > works.
-    if (ts && (a.lastActiveUtc == null || ts > a.lastActiveUtc)) a.lastActiveUtc = ts;
+function touchActive(a: Agg, ms: number): void {
+    if (ms > a.lastActiveMs) a.lastActiveMs = ms;
 }
 
 function roleFor(a: Agg): PlayerRoleKind {
@@ -100,16 +102,50 @@ function topCategoryFor(a: Agg): string | null {
  */
 export function usePlayerSearchIndex(listings: AuctionListing[] | undefined): PlayerIndexRow[] {
     return useMemo(() => {
+        // "Last active" needs a real-world time for the player's own actions
+        // (posting a listing, buying it) — not sweep observation times, which
+        // keep ticking on lingering listings and make absent players look live.
+        // Convert in-game hours to real UTC using the market-clock anchor
+        // (`currentGameHours` ↔ `latestObservedUtc`) and VS's 1 in-game hour
+        // ≈ 2 real minutes rate.
+        const currentGameHours = refreshMarketReferences(listings ?? []);
+        const anchorMs = Date.parse(getLatestObservedUtc());
+        const IN_GAME_HOUR_MS = 2 * 60 * 1000;
+        const nowMs = Date.now();
+        const anchorReady = currentGameHours > 0 && Number.isFinite(anchorMs);
+        const realMsFromGameHours = (gameHours: number | null | undefined): number => {
+            if (!anchorReady || gameHours == null) return 0;
+            const ms = anchorMs - (currentGameHours - gameHours) * IN_GAME_HOUR_MS;
+            return ms > nowMs ? nowMs : ms;
+        };
+
         const map = new Map<string, Agg>();
         for (const l of listings ?? []) {
             if (l.spam || l.externalTrade) continue;
+
+            const postedMs =
+                realMsFromGameHours(l.postedTotalHours) ||
+                (l.observedUtc ? Date.parse(l.observedUtc) : 0);
+            const saleMs = l.sold
+                ? realMsFromGameHours(
+                      l.postedTotalHours != null && l.timeToSellHours != null
+                          ? l.postedTotalHours + l.timeToSellHours
+                          : null,
+                  ) ||
+                  (l.lastObservedUtc ? Date.parse(l.lastObservedUtc) : 0) ||
+                  postedMs
+                : 0;
 
             if (l.sellerUid) {
                 const a = ensure(map, l.sellerUid);
                 if (!a.name && l.sellerName) a.name = l.sellerName;
                 a.listed += 1;
                 bumpCategory(a, l.category);
-                touchActive(a, l);
+                // Posting the listing is the seller's only pinpointable action;
+                // a later sale/expiry is the buyer's or the clock's doing, not
+                // theirs. Older `observedUtc` fallback only used when we can't
+                // reconstruct the posting time.
+                touchActive(a, postedMs);
                 if (l.sold) {
                     a.sold += 1;
                     a.revenue += l.price - (l.traderCut || 0);
@@ -122,7 +158,7 @@ export function usePlayerSearchIndex(listings: AuctionListing[] | undefined): Pl
                 a.bought += 1;
                 a.spent += l.price;
                 bumpCategory(a, l.category);
-                touchActive(a, l);
+                touchActive(a, saleMs);
             }
         }
 
@@ -138,7 +174,7 @@ export function usePlayerSearchIndex(listings: AuctionListing[] | undefined): Pl
                 bought: a.bought,
                 sellThrough: a.listed ? a.sold / a.listed : null,
                 topCategory: topCategoryFor(a),
-                lastActiveUtc: a.lastActiveUtc,
+                lastActiveUtc: a.lastActiveMs > 0 ? new Date(a.lastActiveMs).toISOString() : null,
                 role: roleFor(a),
             });
         }
