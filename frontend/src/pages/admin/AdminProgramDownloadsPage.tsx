@@ -539,8 +539,8 @@ export function AdminProgramDownloadsPage() {
                 Program only (update)
               </Label>
               <p className="text-xs text-muted-foreground">
-                Ships just the exe — no license or publish key. Use this to hand out program
-                updates to people who already have their keys.
+                Ships just the exe — no license or publish key. Use this to hand out program updates
+                to people who already have their keys.
               </p>
             </div>
             <Switch id="pd-exe-only" checked={exeOnly} onCheckedChange={setExeOnly} />

@@ -81,8 +81,8 @@ export function DownloadPage() {
                 {info.data.include_keys ? (
                   <>
                     The zip contains the program plus your personal <code>license.key</code> and{" "}
-                    <code>publish.key</code>. Keep all files together in one folder and run the exe —
-                    no extra setup needed.
+                    <code>publish.key</code>. Keep all files together in one folder and run the exe
+                    — no extra setup needed.
                   </>
                 ) : (
                   <>

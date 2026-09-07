@@ -18,6 +18,7 @@ import { PlayerPricingChart, PlayerActivityChart } from "@/components/market/Pla
 import { PlayerListingsSection } from "@/components/market/PlayerListingsSection";
 import { PlayerPurchasesSection } from "@/components/market/PlayerPurchasesSection";
 import { PlayerBehaviorSection } from "@/components/market/PlayerBehaviorSection";
+import { PlayerAchievementsBar } from "@/components/market/PlayerAchievements";
 
 // Auctioneer entities respawn a few blocks off (with a new entity id) after a
 // culling event, so the same physical stall shows up under slightly different
@@ -195,7 +196,11 @@ export function MarketPlayerPage() {
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
         </button>
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h1 className="text-2xl font-semibold">{name}</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-2xl font-semibold">{name}</h1>
+            {/* All-time, window-independent — shown even when the window is empty. */}
+            <PlayerAchievementsBar listings={data} uid={decodedUid} />
+          </div>
           <div className="flex items-center gap-1">
             {INSIGHTS_WINDOWS.map((w) => (
               <Button
