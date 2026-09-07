@@ -59,7 +59,7 @@ function AchievementTile({ a }: { a: AchievementProgress }) {
         />
       </div>
       <div className="mt-1 text-right text-[11px] tabular-nums text-muted-foreground">
-        {a.nextTarget == null ? "Complete" : `${fmt(a.value)} / ${fmt(target)}`}
+        {a.nextTarget == null ? `Complete (${fmt(a.value)})` : `${fmt(a.value)} / ${fmt(target)}`}
       </div>
     </div>
   );
