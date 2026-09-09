@@ -3528,6 +3528,55 @@ export async function adminDeleteTradersByUser(actorApiKeyId: string): Promise<{
     return (await handleResponse(res)).json();
 }
 
+export interface AdminTraderInArea {
+    trader_id: string;
+    label: string | null;
+    trader_type: TraderType | null;
+    x: number;
+    z: number;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    source: "chatlog" | "manual" | null;
+    created_at: string | null;
+}
+
+/**
+ * Traders whose live position falls inside the world-coordinate box
+ * (frontend +Z = north convention), joined with who/when/method metadata so
+ * an admin can review before deleting from the map area tool.
+ */
+export async function adminListTradersInArea(box: {
+    min_x: number;
+    max_x: number;
+    min_z: number;
+    max_z: number;
+}): Promise<{ traders: AdminTraderInArea[]; count: number }> {
+    const qs = new URLSearchParams({
+        min_x: String(Math.round(box.min_x)),
+        max_x: String(Math.round(box.max_x)),
+        min_z: String(Math.round(box.min_z)),
+        max_z: String(Math.round(box.max_z)),
+    });
+    const res = await fetch(`${API_BASE}/admin/traders/in-area?${qs}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+/** Hard-delete an explicit set of traders (map area tool). */
+export async function adminBulkDeleteTraders(traderIds: string[]): Promise<{
+    deleted: number;
+    trader_ids: string[];
+    not_found: string[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/traders/bulk-delete`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ trader_ids: traderIds, confirm: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 export async function adminRevertTraderAudit(auditId: number): Promise<{
     reverted: string;
     audit_id: number;

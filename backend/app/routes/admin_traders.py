@@ -216,6 +216,93 @@ async def get_user_stats(
 
 
 # ---------------------------------------------------------------------------
+# Area lookup (map "remove traders from this area" tool)
+# ---------------------------------------------------------------------------
+
+@router.get("/in-area")
+async def list_traders_in_area(
+    min_x: int,
+    max_x: int,
+    min_z: int,
+    max_z: int,
+    _: str = Depends(require_admin),
+) -> dict:
+    """Traders whose live position falls inside the world-coordinate box
+    ``[min_x, max_x] x [min_z, max_z]`` (frontend +Z = north convention),
+    each joined with its originating ``add`` audit row so the admin can see
+    who added it, when, and by which method (chatlog vs manual) before
+    deleting. Coordinates in the response use the same +Z = north convention
+    as the map."""
+    lo_x, hi_x = (min_x, max_x) if min_x <= max_x else (max_x, min_x)
+    lo_z, hi_z = (min_z, max_z) if min_z <= max_z else (max_z, min_z)
+    data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
+    matched: list = []
+    ids: list = []
+    for feat in data.get("features") or []:
+        if not isinstance(feat, dict):
+            continue
+        geom = feat.get("geometry") or {}
+        if geom.get("type") != "Point":
+            continue
+        coords = geom.get("coordinates") or []
+        if len(coords) < 2:
+            continue
+        gx, gz = coords[0], coords[1]
+        if not isinstance(gx, (int, float)) or not isinstance(gz, (int, float)):
+            continue
+        # geojson stores +Z = south; the map/UI uses +Z = north.
+        fz = -gz
+        if lo_x <= gx <= hi_x and lo_z <= fz <= hi_z:
+            props = feat.get("properties") or {}
+            tid = props.get("id")
+            if not tid:
+                continue
+            ids.append(tid)
+            matched.append({
+                "trader_id": tid,
+                "label": props.get("label"),
+                "trader_type": props.get("trader_type"),
+                "x": int(gx),
+                "z": int(fz),
+            })
+
+    # Pull the originating ``add`` audit row for each matched id (who / when /
+    # method), keeping the latest add per trader.
+    audit_by_id: dict = {}
+    offset = 0
+    while ids:
+        page = await asyncio.to_thread(
+            db.list_trader_add_audit_paginated,
+            trader_ids=ids,
+            limit=200,
+            offset=offset,
+        )
+        items = page.get("items") or []
+        for r in items:
+            tid = r.get("trader_id")
+            if tid and tid not in audit_by_id:
+                audit_by_id[tid] = r
+        offset += len(items)
+        if not items or offset >= int(page.get("total") or 0):
+            break
+
+    for m in matched:
+        r = audit_by_id.get(m["trader_id"]) or {}
+        created = r.get("created_at")
+        m["actor_api_key_id"] = r.get("actor_api_key_id")
+        m["actor_display_name"] = r.get("actor_display_name")
+        m["source"] = r.get("source")
+        m["created_at"] = (
+            created.isoformat() if hasattr(created, "isoformat") else created
+        )
+        if not m.get("trader_type"):
+            m["trader_type"] = r.get("trader_type")
+
+    matched.sort(key=lambda t: (t.get("created_at") or ""), reverse=True)
+    return {"traders": matched, "count": len(matched)}
+
+
+# ---------------------------------------------------------------------------
 # Edit
 # ---------------------------------------------------------------------------
 
@@ -409,6 +496,63 @@ async def delete_user_traders_bulk(
     return {
         "deleted": len(removed),
         "trader_ids": [(f.get("properties") or {}).get("id") for f in removed],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Bulk delete by explicit id set (map "remove traders from this area" tool)
+# ---------------------------------------------------------------------------
+
+class BulkDeleteBody(BaseModel):
+    trader_ids: list = Field(default_factory=list)
+    confirm: bool = Field(False)
+
+
+@router.post("/bulk-delete")
+async def bulk_delete_traders(
+    body: BulkDeleteBody,
+    api_key: str = Depends(require_admin),
+) -> dict:
+    """Hard-delete an explicit set of traders (used by the map area tool so
+    the confirmation deletes exactly what the admin reviewed). Each removed
+    feature gets an ``admin_delete`` audit row. Ids not present in the live
+    geojson are returned under ``not_found`` instead of failing the batch."""
+    if not body.confirm:
+        raise HTTPException(status_code=400, detail="confirm must be true")
+    ids = {str(t) for t in body.trader_ids if t}
+    if not ids:
+        raise HTTPException(status_code=400, detail="trader_ids must not be empty")
+    admin_id = _admin_api_key_id(api_key)
+    removed: list = []
+    async with contribute_traders_routes.traders_write_lock("admin_area_delete"):
+        data = await asyncio.to_thread(contribute_traders_routes._load_traders_file)
+        removed = _drop_features_by_ids(data, ids)
+        if removed:
+            await asyncio.to_thread(contribute_traders_routes._save_traders_file, data)
+            for feat in removed:
+                tid = (feat.get("properties") or {}).get("id")
+                if not tid:
+                    continue
+                await asyncio.to_thread(
+                    db.insert_trader_audit,
+                    trader_id=tid,
+                    action="admin_delete",
+                    actor_api_key_id=admin_id,
+                    actor_display_name="admin",
+                    trader_type=((feat.get("properties") or {}).get("trader_type")),
+                    before_payload=feat,
+                )
+    removed_ids = [(f.get("properties") or {}).get("id") for f in removed]
+    not_found = [t for t in ids if t not in set(removed_ids)]
+    accounts_db.audit_log(
+        api_key,
+        "traders.deleted_in_area",
+        metadata={"count": len(removed), "trader_ids": removed_ids},
+    )
+    return {
+        "deleted": len(removed),
+        "trader_ids": removed_ids,
+        "not_found": not_found,
     }
 
 

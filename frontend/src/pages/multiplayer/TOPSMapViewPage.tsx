@@ -157,6 +157,9 @@ import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/Selecte
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
 import { FullscreenControlsOverlay } from "@/components/tops-map/FullScreenOverlay";
 import { CenterCrosshair } from "@/components/tops-map/CenterCrosshair";
+import { AdminTraderAreaPanel } from "@/components/tops-map/AdminTraderAreaPanel";
+import { AdminTraderAreaOverlay } from "@/components/tops-map/AdminTraderAreaOverlay";
+import { useAdminTraderAreaTool } from "@/hooks/useAdminTraderAreaTool";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
 import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
@@ -1695,6 +1698,22 @@ export function TOPSMapViewPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [routePickMode, dispatch]);
 
+  // Admin "remove traders from this area" tool. When its pick mode is active
+  // it takes over the map cursor + click; otherwise the route planner keeps
+  // it. Only meaningful for admins (the panel + hook are gated on `isAdmin`).
+  const areaTool = useAdminTraderAreaTool(isAdmin);
+  const areaPickActive = isAdmin && areaTool.picking;
+  const handleMapWorldClick = useCallback(
+    (x: number, z: number) => {
+      if (areaPickActive) {
+        areaTool.handleWorldClick(x, z);
+        return;
+      }
+      handleRouteWorldClick(x, z);
+    },
+    [areaPickActive, areaTool, handleRouteWorldClick],
+  );
+
   return (
     <Card
       className={
@@ -2086,11 +2105,27 @@ export function TOPSMapViewPage() {
                         ) : null}
                       </>
                     ) : null}
+                    {isAdmin && areaTool.active ? (
+                      <AdminTraderAreaOverlay
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        box={areaTool.box}
+                      />
+                    ) : null}
                   </>
                 ) : null
               }
-              cursorMode={routePickMode ? "pick" : drawingProps.enabled ? "draw" : "default"}
-              onWorldClick={handleRouteWorldClick}
+              cursorMode={
+                areaPickActive
+                  ? "pick"
+                  : routePickMode
+                    ? "pick"
+                    : drawingProps.enabled
+                      ? "draw"
+                      : "default"
+              }
+              onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}
@@ -2186,11 +2221,19 @@ export function TOPSMapViewPage() {
                         ) : null}
                       </>
                     ) : null}
+                    {isAdmin && areaTool.active ? (
+                      <AdminTraderAreaOverlay
+                        stats={stats}
+                        imageWidth={tileSet.imageWidth}
+                        imageHeight={tileSet.imageHeight}
+                        box={areaTool.box}
+                      />
+                    ) : null}
                   </>
                 ) : null
               }
-              cursorMode={routePickMode ? "pick" : "default"}
-              onWorldClick={handleRouteWorldClick}
+              cursorMode={areaPickActive || routePickMode ? "pick" : "default"}
+              onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
             />
           )}
@@ -2215,6 +2258,16 @@ export function TOPSMapViewPage() {
               floating
             />
           )}
+          {isFullscreen && isAdmin && !areaTool.active && (
+            <button
+              type="button"
+              onClick={areaTool.open}
+              className="pointer-events-auto absolute left-3 top-28 z-30 rounded-md border border-destructive/40 bg-background/95 px-3 py-1.5 text-xs font-medium text-destructive shadow-md backdrop-blur hover:bg-destructive/10 sm:left-6"
+            >
+              Remove traders in area
+            </button>
+          )}
+          {isFullscreen && isAdmin && areaTool.active && <AdminTraderAreaPanel tool={areaTool} />}
           {isFullscreen && (
             <FullscreenControlsOverlay
               translocatorCount={translocatorCount}
