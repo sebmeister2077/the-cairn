@@ -42,7 +42,7 @@ import {
   formatGears,
   formatRealTimeToSell,
 } from "@/lib/auction";
-import { formatGameDate } from "@/components/market/VirtualListingsTable";
+import { formatGameDate } from "@/components/market/VirtualTable";
 import { INSIGHTS_WINDOWS, resolveWindowDays, useMarketInsights } from "@/hooks/useMarketInsights";
 import { ScreenerTable, type ScreenerColumn } from "@/components/market/InsightsScreenerTable";
 import { InsightsFilterBar } from "@/components/market/InsightsFilterBar";

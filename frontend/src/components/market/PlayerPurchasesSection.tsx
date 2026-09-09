@@ -7,13 +7,13 @@ import { Link } from "react-router-dom";
 import { formatRealTimeToSell, listingHasText } from "@/lib/auction";
 import type { AuctionListing } from "@/models/auction";
 import {
-  VirtualListingsTable,
+  VirtualTable,
   formatListingDate,
   formatGameDate,
   DeliveryFeeCell,
   ListingNotesCell,
   type ListingColumn,
-} from "./VirtualListingsTable";
+} from "./VirtualTable";
 
 /**
  * The purchases this player made (they are the buyer). Surfaces who they bought
@@ -134,7 +134,7 @@ export function PlayerPurchasesSection({ listings }: { listings: AuctionListing[
           No recorded purchases.
         </p>
       ) : (
-        <VirtualListingsTable listings={sorted} columns={columns} />
+        <VirtualTable listings={sorted} columns={columns} />
       )}
     </div>
   );

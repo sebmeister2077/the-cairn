@@ -21,7 +21,7 @@ import {
 import type { AuctionListing } from "@/models/auction";
 import { useDebounced } from "@/hooks/useDebounced";
 import {
-  VirtualListingsTable,
+  VirtualTable,
   formatListingDate,
   formatGameDate,
   ListingStateBadge,
@@ -29,7 +29,7 @@ import {
   DurationCell,
   ListingNotesCell,
   type ListingColumn,
-} from "../../components/market/VirtualListingsTable";
+} from "../../components/market/VirtualTable";
 
 /** Compact checkbox-popover multi-select for filtering listings by item type. */
 function TypeMultiSelect({
@@ -328,7 +328,7 @@ export function PlayerListingsSection({ listings }: { listings: AuctionListing[]
           No listings match your search.
         </p>
       ) : (
-        <VirtualListingsTable listings={sorted} columns={columns} />
+        <VirtualTable listings={sorted} columns={columns} />
       )}
     </div>
   );

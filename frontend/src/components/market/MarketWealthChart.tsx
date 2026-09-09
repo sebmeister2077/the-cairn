@@ -58,7 +58,7 @@ import {
   type WealthEliteMode,
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
-import { formatGameDate } from "./VirtualListingsTable";
+import { formatGameDate } from "./VirtualTable";
 import { INSIGHTS_WINDOWS } from "@/hooks/useMarketInsights";
 
 const ELITE_SEG = {

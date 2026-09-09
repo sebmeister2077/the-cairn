@@ -1,5 +1,5 @@
 // Generic, virtualized, sortable table for the Market Insights screener. Mirrors
-// the windowing approach of `VirtualListingsTable` (which is typed to
+// the windowing approach of `VirtualTable` (which is typed to
 // `AuctionListing`) but is generic over the row type and adds click-to-sort
 // headers, since the insights screener can list hundreds of items.
 

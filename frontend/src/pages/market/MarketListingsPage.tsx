@@ -20,7 +20,7 @@ import {
   formatListingDate,
   ListingStateBadge,
   ListingNotesCell,
-} from "../../components/market/VirtualListingsTable";
+} from "../../components/market/VirtualTable";
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {

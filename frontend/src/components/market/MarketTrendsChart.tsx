@@ -12,7 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatGears } from "@/lib/auction";
-import { formatGameDate } from "./VirtualListingsTable";
+import { formatGameDate } from "./VirtualTable";
 import type { MarketTimePoint } from "@/models/auction";
 
 // The metrics a viewer can chart over in-game time. `gears` flags currency

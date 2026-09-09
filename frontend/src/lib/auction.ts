@@ -724,6 +724,33 @@ export function listingHasText(l: { attrs?: Record<string, unknown> | null }): b
 }
 
 /**
+ * The metal a listing's stack is cast from, humanized for display (e.g. a
+ * lantern's frame). Reads the `material` attr the metal lantern block carries,
+ * falling back to `metal` for stacks that use that key. Returns `null` when the
+ * stack names no metal.
+ */
+export function listingMetalType(l: { attrs?: Record<string, unknown> | null }): string | null {
+    const a = l.attrs;
+    if (!a) return null;
+    const raw = a.material ?? a.metal;
+    if (typeof raw !== "string" || raw.trim() === "") return null;
+    return humanizeItemCode(raw.trim());
+}
+
+/**
+ * The lining of a lantern's stack (`lining` attr), humanized for display, or
+ * `null` when the stack has no lining attr at all — so a caller can show the
+ * lining type when present and "no lining" otherwise.
+ */
+export function listingLining(l: { attrs?: Record<string, unknown> | null }): string | null {
+    const a = l.attrs;
+    if (!a) return null;
+    const raw = a.lining;
+    if (typeof raw !== "string" || raw.trim() === "") return null;
+    return humanizeItemCode(raw.trim());
+}
+
+/**
  * Item categories that are wearable tools or weapons. Their auction item stacks
  * can carry a `condition` / `durability` (wear) plus other combat or utility
  * modifiers, so an individual listing may be worth inspecting beyond its price.

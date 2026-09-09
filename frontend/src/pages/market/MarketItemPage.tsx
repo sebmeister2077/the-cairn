@@ -40,6 +40,8 @@ import {
   humanizeItemCode,
   listingHasText,
   listingToolAttributes,
+  listingMetalType,
+  listingLining,
   computeRelatedItems,
   resolveItemFamily,
   metalUnitsForEntry,
@@ -53,7 +55,6 @@ import type { ChiselDesign } from "@/models/auction";
 import { getTapestryImage } from "@/components/market/tapestryImages";
 import { chiselColor } from "@/components/market/chiselColors";
 import {
-  VirtualListingsTable,
   formatListingDate,
   formatGameDate,
   DeliveryFeeCell,
@@ -62,7 +63,8 @@ import {
   ListingNotesCell,
   ListingAttributesCell,
   type ListingColumn,
-} from "@/components/market/VirtualListingsTable";
+} from "@/components/market/VirtualTable";
+import { RecentListingsSection } from "@/components/market/RecentListingsSection";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
@@ -318,8 +320,6 @@ export function MarketItemPage() {
 
   // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
   const [bins, setBins] = useState(24);
-  // Show only sold listings in the Recent listings table.
-  const [soldOnly, setSoldOnly] = useState(false);
   // Volume-over-time series unit: total gears vs total units.
   const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
   // Whether the expanded, hoverable price-history chart is shown under the title.
@@ -710,13 +710,6 @@ export function MarketItemPage() {
     return bars;
   }, [windowListings]);
 
-  // Newest first by in-game posting time (matches the Game date column),
-  // restricted to the window and optionally to sold listings only.
-  const sortedListings = useMemo(() => {
-    const base = soldOnly ? windowListings.filter((l) => l.sold) : windowListings;
-    return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
-  }, [windowListings, soldOnly]);
-
   // Grouped clutter items (e.g. "Toy") bundle many distinct objects; when this
   // item is one of them, surface each listing's exact variant ("toy7") so the
   // specific object is visible even though they aggregate under one item.
@@ -733,6 +726,23 @@ export function MarketItemPage() {
   const hasToolAttrs = useMemo(
     () => itemListings.some((l) => listingToolAttributes(l).length > 0),
     [itemListings],
+  );
+
+  // Lanterns don't fit the tool "Details" popover — their metal frame and
+  // lining live in the stack attrs and are better shown as their own columns.
+  // Gated to the lantern category so these columns never appear for other items
+  // that happen to carry a `metal`/`material` attr (e.g. shields).
+  const isLantern = useMemo(
+    () => (currentEntry?.category ?? itemListings[0]?.category) === "lantern",
+    [currentEntry, itemListings],
+  );
+  const hasMetalAttr = useMemo(
+    () => isLantern && itemListings.some((l) => listingMetalType(l) != null),
+    [isLantern, itemListings],
+  );
+  const hasLiningAttr = useMemo(
+    () => isLantern && itemListings.some((l) => listingLining(l) != null),
+    [isLantern, itemListings],
   );
 
   // Distinct in-game clutter codes (attrs.type) covered by this grouped item, so
@@ -841,6 +851,46 @@ export function MarketItemPage() {
               header: "Notes",
               width: "minmax(4.5rem,0.8fr)",
               cell: (l) => <ListingNotesCell listing={l} />,
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(hasMetalAttr
+        ? [
+            {
+              key: "metal",
+              header: "Metal",
+              width: "minmax(5rem,0.9fr)",
+              cell: (l) => {
+                const metal = listingMetalType(l);
+                return metal ? (
+                  <span className="text-xs" title="Metal this lantern's frame is cast from">
+                    {metal}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                );
+              },
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(hasLiningAttr
+        ? [
+            {
+              key: "lining",
+              header: "Lining",
+              width: "minmax(4.5rem,0.7fr)",
+              cell: (l) => {
+                const lining = listingLining(l);
+                return lining ? (
+                  <span className="text-xs" title={`Lining: ${lining}`}>
+                    {lining}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground" title="No lining">
+                    —
+                  </span>
+                );
+              },
             } satisfies ListingColumn,
           ]
         : []),
@@ -980,6 +1030,8 @@ export function MarketItemPage() {
       hasChiselVariants,
       hasTextListings,
       hasToolAttrs,
+      hasMetalAttr,
+      hasLiningAttr,
       currentGameHours,
     ],
   );
@@ -1700,16 +1752,12 @@ export function MarketItemPage() {
 
       <ItemConcentrationSection listings={windowListings} />
 
-      <div>
-        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-lg font-semibold">Recent listings ({sortedListings.length})</h2>
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-            <Checkbox checked={soldOnly} onCheckedChange={(v) => setSoldOnly(v === true)} />
-            Sold only
-          </label>
-        </div>
-        <VirtualListingsTable listings={sortedListings} columns={columns} />
-      </div>
+      <RecentListingsSection
+        listings={windowListings}
+        columns={columns}
+        currentGameHours={currentGameHours}
+        hostRockByItemId={combineOres && oreGroup ? oreGroup.rockByItemId : null}
+      />
     </div>
   );
 }

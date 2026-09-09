@@ -203,7 +203,7 @@ export function ListingAttributesCell({ listing }: { listing: AuctionListing }) 
   );
 }
 
-interface VirtualListingsTableProps {
+interface VirtualTableProps {
   listings: AuctionListing[];
   columns: ListingColumn[];
   /** Tailwind max-height class for the scroll container. */
@@ -242,11 +242,11 @@ export function formatGameDate(totalHours: number | null | undefined): string {
   return `Y${year} M${month} D${day}`;
 }
 
-export function VirtualListingsTable({
+export function VirtualTable({
   listings,
   columns,
   maxHeightClass = "max-h-96",
-}: VirtualListingsTableProps) {
+}: VirtualTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const virtualizer = useVirtualizer({
     count: listings.length,

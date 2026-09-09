@@ -10,7 +10,7 @@ import { Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatGameDate } from "./VirtualListingsTable";
+import { formatGameDate } from "./VirtualTable";
 import { PLAYER_MIN_TRADES } from "@/hooks/usePlayerProfile";
 import { PlayerDominanceTable } from "./PlayerDominanceTable";
 import type {
