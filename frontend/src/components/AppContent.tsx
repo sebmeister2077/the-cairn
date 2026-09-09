@@ -95,7 +95,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 
 const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
-  { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
+  // { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
   { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
   { value: "/market", labelKey: "app.nav.categories.market" },
   { value: "/rarity", labelKey: "app.nav.categories.rarity" },
@@ -106,15 +106,15 @@ const ADMIN_CATEGORY = { value: "/manage", labelKey: "app.nav.categories.manage"
 const USAGE_CATEGORY = { value: "/usage", labelKey: "app.nav.categories.usage" } as const;
 
 const NavigationRoutes = {
-  Singleplayer: {
-    Extract: "/singleplayer/extract",
-    Import: "/singleplayer/import",
-    Commands: "/singleplayer/commands",
-    Delete: "/singleplayer/delete",
-  },
+  // Singleplayer: {
+  //   Extract: "/singleplayer/extract",
+  //   Import: "/singleplayer/import",
+  //   Commands: "/singleplayer/commands",
+  //   Delete: "/singleplayer/delete",
+  // },
   Multiplayer: {
-    Identify: "/multiplayer/identify",
-    MapViewer: "/multiplayer/map-viewer",
+    // Identify: "/multiplayer/identify",
+    // MapViewer: "/multiplayer/map-viewer",
     TOPSMap: "/multiplayer/tops-map",
     ContributeMap: "/multiplayer/contribute-map",
     ContributeTLs: "/multiplayer/contribute-tls",
@@ -218,15 +218,15 @@ type StaticNavLabelKey =
   | "app.nav.chip.new"
   | "app.nav.chip.adminOnLeave";
 const subTabs: Subtabs = {
-  "/singleplayer": [
-    { value: "/singleplayer/extract", labelKey: "app.nav.subtabs.extract" },
-    { value: "/singleplayer/import", labelKey: "app.nav.subtabs.import" },
-    { value: "/singleplayer/commands", labelKey: "app.nav.subtabs.commands" },
-    { value: "/singleplayer/delete", labelKey: "app.nav.subtabs.delete" },
-  ],
+  // "/singleplayer": [
+  //   { value: "/singleplayer/extract", labelKey: "app.nav.subtabs.extract" },
+  //   { value: "/singleplayer/import", labelKey: "app.nav.subtabs.import" },
+  //   { value: "/singleplayer/commands", labelKey: "app.nav.subtabs.commands" },
+  //   { value: "/singleplayer/delete", labelKey: "app.nav.subtabs.delete" },
+  // ],
   "/multiplayer": [
-    { value: "/multiplayer/identify", labelKey: "app.nav.subtabs.identifyMaps" },
-    { value: "/multiplayer/map-viewer", labelKey: "app.nav.subtabs.localMapViewer" },
+    // { value: "/multiplayer/identify", labelKey: "app.nav.subtabs.identifyMaps" },
+    // { value: "/multiplayer/map-viewer", labelKey: "app.nav.subtabs.localMapViewer" },
     { value: "/multiplayer/tops-map", labelKey: "app.nav.subtabs.topsMapViewer" },
     { value: "/multiplayer/contribute-map", labelKey: "app.nav.subtabs.contributeMap" },
     {

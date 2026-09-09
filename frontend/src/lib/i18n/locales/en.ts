@@ -364,7 +364,7 @@ export const en = {
         cairnDefinition:
             "<strong><link>cairn</link></strong> <noun>(noun)</noun>: what your ancestors built when they ran out of dye and signs but still needed to mark the spot where they died to a drifter. We've upgraded the tech a little.",
         intro:
-            "Cairn is a community-driven web map and toolkit for Vintage Story. Explore a shared, player-built server map, plan routes across the translocator network, keep an eye on the auction market, and manage your own waypoints — all in one place. Pick a category above to dive in.",
+            "Cairn is a community-driven web map and toolkit for Vintage Story TOPS. Explore a shared, player-built server map, plan routes across the translocator network, keep an eye on the auction market, and manage your own waypoints — all in one place. Pick a category above to dive in.",
         featuresTitle: "What's inside",
         features: {
             mapTitle: "Community server map",
