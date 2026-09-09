@@ -263,12 +263,36 @@ def _read_tree(r: _Reader) -> Dict[str, Any]:
         elif attr_id == ATTR_TREE_ARRAY:
             n = r.int32()
             out[key] = [_read_tree(r) for _ in range(n)]
+        elif attr_id == ATTR_ITEMSTACK:
+            # Nested ItemStack (e.g. a container's `contents` liquid). A leading
+            # bool marks presence (ItemstackAttribute writes `value == null`, so
+            # 0 = a stack follows); the stack itself is class/id/stackSize + tree.
+            out[key] = _read_stack(r) if r.byte() == 0 else None
         else:
-            # ItemstackAttribute (nested stack) and any unknown type: can't
-            # reliably advance past it, so stop attribute parsing here.
+            # Any unknown attribute type: can't reliably advance past it, so stop
+            # attribute parsing here.
             out["_partial"] = True
             break
     return out
+
+
+def _read_stack(r: _Reader) -> Dict[str, Any]:
+    """Read a serialized ItemStack body (int32 class, id, stackSize, then a
+    TreeAttribute). Shared by the top-level decoder and nested itemstack attrs."""
+    class_type = r.int32()
+    item_id = r.int32()
+    stack_size = r.int32()
+    attrs: Dict[str, Any] = {}
+    try:
+        attrs = _read_tree(r)
+    except EOFError:
+        pass
+    return {
+        "classType": "Item" if class_type == 1 else "Block",
+        "itemId": item_id,
+        "stackSize": max(1, stack_size),
+        "attributes": attrs,
+    }
 
 
 def decode_itemstack(raw_hex: Optional[str]) -> Optional[Dict[str, Any]]:
@@ -692,6 +716,123 @@ def chisel_variant(
 
 
 # --------------------------------------------------------------------------- #
+# Liquid / container splitting
+# --------------------------------------------------------------------------- #
+# In Vintage Story a liquid (honey, alcohol, oil, water, ...) is never its own
+# market item on the Auction House — it is sold *inside* a container: a wooden
+# bucket, a fired bowl, a jug, etc. The container's stack carries the liquid in
+# its `contents` attribute (a nested ItemStack whose code always contains
+# "portion", e.g. "game:honeyportion"). A liquid can also be listed on its own
+# (an in-game quirk where a raw portion stack is auctioned with no container).
+#
+# Collapsing every "bucket of honey" / "bowl of honey" / bare honey portion into
+# their container item is useless: you can't see what honey itself is worth. We
+# split the liquid out and aggregate every listing of the same liquid under one
+# synthetic item (keyed by the liquid code) regardless of its container, and
+# price it per litre.
+#
+# Every sellable liquid in the base game defines `itemsPerLitre: 100`, so a
+# liquid stack's item count converts to litres by dividing by 100 (a full 10 L
+# bucket = 1000 items, a 1 L bowl = 100 items). Litres is the natural market
+# unit, so a liquid listing's quantity is its litres and its price-per-unit is
+# gears per litre.
+ITEMS_PER_LITRE = 100
+
+
+def _container_kind(code: Optional[str]) -> str:
+    """Human label for the vessel a liquid was sold in, from the container's
+    bare code (e.g. "woodbucket" -> "bucket", "bowl-blue-fired" -> "bowl")."""
+    bare = _bare(code) or ""
+    if "bucket" in bare:
+        return "bucket"
+    if bare.startswith("bowl"):
+        return "bowl"
+    if bare.startswith("jug"):
+        return "jug"
+    if bare.startswith("crock"):
+        return "crock"
+    if bare.startswith("pot") or "cookingpot" in bare:
+        return "pot"
+    return "container"
+
+
+def _humanize_liquid(code: Optional[str]) -> str:
+    """Readable name for a liquid from its code, dropping the "portion" marker
+    and moving any variant ahead of the base (e.g. "game:honeyportion" ->
+    "Honey"; "spiritportion-pear" -> "Pear spirit"; "oilportion-olive" ->
+    "Olive oil"; "saltwaterportion" -> "Saltwater")."""
+    bare = _bare(code) or ""
+    left, _, right = bare.partition("portion")
+    base_words = [w for w in re.split(r"[\-_]+", left) if w]
+    variant_words = [w for w in re.split(r"[\-_]+", right) if w]
+    words = variant_words + base_words  # "pear" + "spirit" -> "Pear spirit"
+    text = " ".join(words) if words else bare
+    return text[:1].upper() + text[1:]
+
+
+def _first_content_stack(contents: Any) -> Optional[Dict[str, Any]]:
+    """The single content ItemStack inside a container's decoded `contents`
+    tree (slots keyed "0", "1", ...), or None when empty/undecodable."""
+    if not isinstance(contents, dict):
+        return None
+    for key in sorted(contents.keys()):
+        value = contents[key]
+        if isinstance(value, dict) and "itemId" in value:
+            return value
+    return None
+
+
+def liquid_variant(
+    item: Dict[str, Any],
+    attrs: Optional[Dict[str, Any]],
+    stack: Dict[str, Any],
+    registry: Dict[str, Dict[str, str]],
+) -> Optional[Tuple[int, str, Dict[str, Any]]]:
+    """Split a liquid out from the container it was sold in. Returns
+    ``(synthetic_item_id, liquid_display_name, liquid_payload)`` where the
+    payload carries the liquid code, its container, litres and raw item count;
+    else ``None`` for non-liquid listings.
+
+    Two shapes are handled: a liquid stored in a bucket/bowl/jug/crock (the
+    liquid lives in ``attrs.contents``) and a bare liquid portion listed on its
+    own (the item itself is the liquid). Both aggregate under one synthetic item
+    per liquid code so a liquid's price is visible independent of its vessel.
+    """
+    self_code = item.get("code")
+    # (a) A raw liquid portion auctioned directly (no container): the whole
+    # top-level stack is the liquid, its stackSize the item count.
+    if self_code and "portion" in (_bare(self_code) or ""):
+        liquid_code = self_code
+        container_kind = "none"
+        container_code = None
+        items = stack["stackSize"]
+    else:
+        # (b) A liquid inside a container: the nested `contents` stack is the
+        # liquid; the container's own stackSize is how many such containers.
+        content = _first_content_stack((attrs or {}).get("contents"))
+        if content is None:
+            return None
+        liquid_code = registry.get(content["classType"], {}).get(str(content["itemId"]))
+        if not liquid_code or "portion" not in (_bare(liquid_code) or ""):
+            return None
+        container_kind = _container_kind(self_code)
+        container_code = self_code
+        items = content["stackSize"] * max(1, stack["stackSize"])
+
+    litres = round(items / ITEMS_PER_LITRE, 3)
+    name = _humanize_liquid(liquid_code)
+    sid = _variant_synth_id(f"liquid:{_bare(liquid_code)}")
+    payload = {
+        "liquidCode": liquid_code,
+        "container": container_kind,
+        "containerCode": container_code,
+        "items": items,
+        "litres": litres,
+    }
+    return sid, name, payload
+
+
+# --------------------------------------------------------------------------- #
 # Stats helpers (pure python; no numpy dependency)
 # --------------------------------------------------------------------------- #
 def percentile(sorted_vals: List[float], q: float) -> float:
@@ -1017,6 +1158,17 @@ def build_records(
         if ch is not None:
             item["itemId"], item["name"], chisel = ch
 
+        # Liquids (honey, alcohol, oil, ...) are always sold inside a bucket/bowl/
+        # jug or, rarely, on their own. Split the liquid out from its container so
+        # every listing of the same liquid aggregates under one item priced per
+        # litre, independent of the vessel it shipped in.
+        liquid = None
+        lv = liquid_variant(item, attrs, stack, registry)
+        if lv is not None:
+            item["itemId"], item["name"], liquid = lv
+            item["category"] = "liquid"
+            item["code"] = liquid["liquidCode"]
+
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
@@ -1026,6 +1178,8 @@ def build_records(
         }
         if chisel is not None:
             items_catalog[str(item["itemId"])]["chisel"] = chisel
+        if liquid is not None:
+            items_catalog[str(item["itemId"])]["liquid"] = True
 
         price = float(row.get("Price") or 0)
         stack_size = stack["stackSize"]
@@ -1062,6 +1216,11 @@ def build_records(
         if delivered and dst[0] and dst[1]:
             trade_distance = round(math.hypot(src[0] - dst[0], src[1] - dst[1]), 1)
 
+        # For a liquid the market unit is litres, not the container count, so its
+        # quantity (and thus price-per-unit) is expressed per litre. Everything
+        # else keeps its stack size.
+        qty = liquid["litres"] if liquid is not None else stack_size
+
         records.append(
             {
                 "auctionId": row.get("AuctionId"),
@@ -1075,10 +1234,13 @@ def build_records(
                 # Decoded chiseled/microblock render payload (geometry + material
                 # codes + name); null for everything else.
                 "chisel": chisel,
+                # Liquid split out from its container (code, vessel, litres); null
+                # for non-liquid listings. `qty` is this listing's litres.
+                "liquid": liquid,
                 "attrs": attrs,
                 "price": price,
-                "qty": stack_size,
-                "pricePerUnit": round(price / stack_size, 3) if stack_size else price,
+                "qty": qty,
+                "pricePerUnit": round(price / qty, 3) if qty else price,
                 "traderCut": row.get("TraderCut") or 0,
                 # Non-refundable deposit the seller paid to list this auction,
                 # set by its duration in weeks (independent of sale outcome).

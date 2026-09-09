@@ -6,7 +6,13 @@
 import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus, listingMetalType, listingLining } from "@/lib/auction";
+import {
+  deriveListingStatus,
+  listingMetalType,
+  listingLining,
+  liquidContainerLabel,
+  liquidContainerShort,
+} from "@/lib/auction";
 import { useDebounced } from "@/hooks/useDebounced";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -40,8 +46,8 @@ export function RecentListingsSection({
 
   // Free-text filter: matches (case-insensitive, all space-separated terms must
   // hit) against every text column shown — item / variant name, seller, buyer,
-  // metal, lining, host rock, category and status. Debounced so typing doesn't
-  // re-filter (and re-render the virtual table) on every keystroke.
+  // metal, lining, liquid container, host rock, category and status. Debounced so
+  // typing doesn't re-filter (and re-render the virtual table) on every keystroke.
   const debouncedSearch = useDebounced(search);
   const visibleListings = useMemo(() => {
     const q = debouncedSearch.trim().toLowerCase();
@@ -56,6 +62,8 @@ export function RecentListingsSection({
         l.category,
         listingMetalType(l),
         listingLining(l),
+        l.liquid ? liquidContainerShort(l.liquid.container) : null,
+        l.liquid ? liquidContainerLabel(l.liquid.container) : null,
         hostRockByItemId?.get(l.itemId) ?? null,
         deriveListingStatus(l, currentGameHours),
       ]

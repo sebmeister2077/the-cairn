@@ -27,6 +27,28 @@ export interface ChiselDesign {
     boxes: ChiselBox[];
 }
 
+/**
+ * A liquid split out from the container it was auctioned in. Liquids (honey,
+ * alcohol, oil, water, ...) are never their own market item in-game — they ship
+ * inside a bucket/bowl/jug (or, rarely, as a bare portion stack). The backend
+ * lifts the liquid out so every listing of the same liquid aggregates under one
+ * item priced per litre, regardless of its vessel. See `liquid_variant` in
+ * `backend/process_auction_data.py`.
+ */
+export interface LiquidInfo {
+    /** The liquid's item code (e.g. "game:honeyportion"). */
+    liquidCode: string;
+    /** The vessel it shipped in: "bucket" | "bowl" | "jug" | "crock" | "pot" |
+     *  "container" | "none" ("none" = a bare portion sold without a container). */
+    container: string;
+    /** The container's item code, or null when sold with no container. */
+    containerCode: string | null;
+    /** Raw liquid item count (100 items = 1 litre). */
+    items: number;
+    /** The listing's volume in litres — this is the listing's `qty`. */
+    litres: number;
+}
+
 /** One deduplicated auction (latest observed state). */
 export interface AuctionListing {
     auctionId: number;
@@ -41,11 +63,19 @@ export interface AuctionListing {
     variant?: string | null;
     /** Decoded chiseled/microblock render payload; null for everything else. */
     chisel?: ChiselDesign | null;
+    /**
+     * The liquid split out from its container, when this listing is a liquid
+     * (honey, alcohol, oil, ...). Null for everything else. When present, `qty`
+     * is the volume in litres and `pricePerUnit` is gears per litre.
+     */
+    liquid?: LiquidInfo | null;
     category: string;
     classType: "Item" | "Block";
     attrs: Record<string, unknown> | null;
     price: number;
+    /** The listing quantity. For liquids this is litres, not a stack count. */
     qty: number;
+    /** Price per unit — per litre for liquids, per item otherwise. */
     pricePerUnit: number;
     traderCut: number;
     /** Non-refundable deposit (in gears) the seller paid to list the auction,
@@ -423,6 +453,9 @@ export interface ItemCatalogEntry {
     /** Representative chiseled/microblock design for this item (geometry +
      *  materials + name), when it is a chiseled/microblock group. */
     chisel?: ChiselDesign | null;
+    /** True when this item is a liquid (category "liquid") split out from the
+     *  containers it was sold in; its listings are priced per litre. */
+    liquid?: boolean;
 }
 
 export type ItemCatalog = Record<string, ItemCatalogEntry>;

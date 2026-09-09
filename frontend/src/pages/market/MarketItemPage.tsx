@@ -49,6 +49,8 @@ import {
   METAL_FAMILY_KEYS,
   deriveListingStatus,
   useCurrentGameHours,
+  liquidContainerLabel,
+  liquidContainerShort,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import type { ChiselDesign } from "@/models/auction";
@@ -559,6 +561,18 @@ export function MarketItemPage() {
     return expiredPpu.every((p) => p <= maxSold);
   }, [soldPpu, pricedWindowListings]);
 
+  // Liquids (honey, alcohol, oil, ...) are split out of their containers and
+  // priced per litre. When this item is a liquid, quantities read as litres, the
+  // "fair price" stays per-litre (never per-stack), and a column shows which
+  // vessel (bucket/bowl/jug) each listing shipped in.
+  const isLiquid = useMemo(
+    () =>
+      (currentEntry?.liquid ?? false) ||
+      (currentEntry?.category ?? itemListings[0]?.category) === "liquid" ||
+      itemListings.some((l) => l.liquid),
+    [currentEntry, itemListings],
+  );
+
   // Representative full-stack size for the item. We prefer the item's real
   // in-game maximum stack size (from the game registry, carried on the item
   // catalog) so the "per stack" figure matches what a full stack actually is.
@@ -593,9 +607,12 @@ export function MarketItemPage() {
   // `priceStats.median` is the per-unit median (windowed). When it drops below 2
   // gears per unit the per-unit view rounds poorly, so we fall back to whole-
   // stack prices — but only when we actually know the item's stack size (a stack
-  // of more than one), since otherwise there's nothing to convert to.
-  const perUnitUseful = (insight?.priceStats?.median ?? 0) >= 2 || stackSize <= 1;
+  // of more than one), since otherwise there's nothing to convert to. Liquids
+  // are always priced per litre (there's no stack), so they never fall back.
+  const perUnitUseful = isLiquid || (insight?.priceStats?.median ?? 0) >= 2 || stackSize <= 1;
   const chartPrices = perUnitUseful ? soldPpu : soldStackPrices;
+  // The noun for a single priced unit: liquids are measured in litres.
+  const unitWord = isLiquid ? "litre" : "unit";
 
   // Quantity-weighted fair price (per-unit) from the Insights engine; the
   // per-stack figure scales linearly with the stack size (weighted median of
@@ -844,6 +861,26 @@ export function MarketItemPage() {
             } satisfies ListingColumn,
           ]
         : []),
+      ...(isLiquid
+        ? [
+            {
+              key: "container",
+              header: "Container",
+              width: "minmax(5.5rem,0.9fr)",
+              cell: (l) =>
+                l.liquid ? (
+                  <span
+                    className="text-xs capitalize"
+                    title={`Sold ${liquidContainerLabel(l.liquid.container)}`}
+                  >
+                    {liquidContainerShort(l.liquid.container)}
+                  </span>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                ),
+            } satisfies ListingColumn,
+          ]
+        : []),
       ...(hasTextListings
         ? [
             {
@@ -926,10 +963,10 @@ export function MarketItemPage() {
       },
       {
         key: "qty",
-        header: "Qty",
+        header: isLiquid ? "Litres" : "Qty",
         width: "3.5rem",
         align: "right",
-        cell: (l) => `×${l.qty}`,
+        cell: (l) => (isLiquid && l.liquid ? `${l.qty.toLocaleString()} L` : `×${l.qty}`),
       },
       {
         key: "seller",
@@ -1028,6 +1065,7 @@ export function MarketItemPage() {
       combineOres,
       oreGroup,
       hasChiselVariants,
+      isLiquid,
       hasTextListings,
       hasToolAttrs,
       hasMetalAttr,
@@ -1406,7 +1444,7 @@ export function MarketItemPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard
-          label={perUnitUseful ? "Fair price / unit" : "Fair price / stack"}
+          label={perUnitUseful ? `Fair price / ${unitWord}` : "Fair price / stack"}
           value={
             perUnitUseful
               ? fairUnit != null
@@ -1545,7 +1583,7 @@ export function MarketItemPage() {
             <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
               <h2 className="font-semibold">
                 {perUnitUseful
-                  ? "Price-per-unit distribution (sold)"
+                  ? `Price-per-${unitWord} distribution (sold)`
                   : "Price-per-stack distribution (sold)"}
               </h2>
               <div className="flex items-center gap-3">
@@ -1577,7 +1615,9 @@ export function MarketItemPage() {
                     dataKey="bucket"
                     tick={{ fontSize: 11 }}
                     label={{
-                      value: perUnitUseful ? "Price / unit (gears)" : "Price / stack (gears)",
+                      value: perUnitUseful
+                        ? `Price / ${unitWord} (gears)`
+                        : "Price / stack (gears)",
                       position: "insideBottom",
                       offset: -4,
                       fontSize: 11,

@@ -12,7 +12,13 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppSelector } from "@/store/hooks";
-import { useAuctionListings, useAuctionCsvUrl, useCurrentGameHours } from "@/lib/auction";
+import {
+  useAuctionListings,
+  useAuctionCsvUrl,
+  useCurrentGameHours,
+  liquidContainerLabel,
+  liquidContainerShort,
+} from "@/lib/auction";
 import { MarketFilterBar } from "../../components/market/MarketFilterBar";
 import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
@@ -116,10 +122,21 @@ export function MarketListingsPage() {
                   <Link
                     to={`/market/items/${l.itemId}`}
                     className="hover:underline"
-                    title={l.variant ? `${l.name} · ${l.category}` : l.category}
+                    title={
+                      l.liquid
+                        ? `${l.name} · ${liquidContainerLabel(l.liquid.container)}`
+                        : l.variant
+                          ? `${l.name} · ${l.category}`
+                          : l.category
+                    }
                   >
                     {l.variant || l.name}
                   </Link>
+                  {l.liquid && (
+                    <span className="ml-1 text-xs text-muted-foreground">
+                      ({liquidContainerShort(l.liquid.container)})
+                    </span>
+                  )}
                 </TableCell>
                 {showAuctionId && (
                   <TableCell className="text-right tabular-nums text-muted-foreground">
@@ -137,7 +154,9 @@ export function MarketListingsPage() {
                 <TableCell className="text-right tabular-nums text-muted-foreground">
                   {l.pricePerUnit.toLocaleString()}
                 </TableCell>
-                <TableCell className="text-right tabular-nums">{l.qty}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {l.liquid ? `${l.qty.toLocaleString()} L` : l.qty}
+                </TableCell>
                 <TableCell>
                   <ListingStateBadge listing={l} currentGameHours={currentGameHours} />
                 </TableCell>

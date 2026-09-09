@@ -156,6 +156,35 @@ export function listingLabel(l: { variant?: string | null; name: string }): stri
 }
 
 /**
+ * Readable label for the vessel a liquid was auctioned in (e.g. "in a bucket",
+ * "in a bowl", "sold directly"). Mirrors the backend `container` values from
+ * `liquid_variant`.
+ */
+export function liquidContainerLabel(container: string | null | undefined): string {
+    switch (container) {
+        case "none":
+            return "sold directly";
+        case "bucket":
+            return "in a bucket";
+        case "bowl":
+            return "in a bowl";
+        case "jug":
+            return "in a jug";
+        case "crock":
+            return "in a crock";
+        case "pot":
+            return "in a pot";
+        default:
+            return "in a container";
+    }
+}
+
+/** Short vessel noun for a liquid's container (e.g. "bucket", "direct"). */
+export function liquidContainerShort(container: string | null | undefined): string {
+    return container === "none" ? "direct" : container || "container";
+}
+
+/**
  * Group base for a clutter/tapestry variant code: the `type` with any trailing
  * number stripped (e.g. "toy7" -> "toy", "ambush3" -> "ambush",
  * "rotbeast11" -> "rotbeast"). Mirrors the backend's `_variant_base`.
