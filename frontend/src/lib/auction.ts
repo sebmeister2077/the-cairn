@@ -753,6 +753,21 @@ export function listingHasText(l: { attrs?: Record<string, unknown> | null }): b
 }
 
 /**
+ * The written content a listing carries (see `listingHasText`): the parchment's
+ * title and body text. Returns `null` when the listing has no written content.
+ */
+export function listingText(
+    l: { attrs?: Record<string, unknown> | null },
+): { title: string; text: string } | null {
+    const a = l.attrs;
+    if (!a) return null;
+    const text = typeof a.text === "string" ? a.text.trim() : "";
+    const title = typeof a.title === "string" ? a.title.trim() : "";
+    if (!text && !title) return null;
+    return { title, text };
+}
+
+/**
  * The metal a listing's stack is cast from, humanized for display (e.g. a
  * lantern's frame). Reads the `material` attr the metal lantern block carries,
  * falling back to `metal` for stacks that use that key. Returns `null` when the

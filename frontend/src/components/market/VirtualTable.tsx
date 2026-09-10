@@ -6,9 +6,10 @@ import { useRef, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Wrench } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus, listingHasText, listingToolAttributes } from "@/lib/auction";
+import { deriveListingStatus, listingText, listingToolAttributes } from "@/lib/auction";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAppSelector } from "@/store/hooks";
 import { cn } from "@/lib/utils";
 
 /**
@@ -146,19 +147,51 @@ export function DurationCell({ listing }: { listing: AuctionListing }) {
  * Notes cell for a listing: flags parchments/books that carry written content
  * (a story, note, or advert). These are priced for their content rather than as
  * the raw commodity, so they're excluded from fair-price stats but still listed.
+ * Admins can click the chip to read the listing's actual written text.
  */
 export function ListingNotesCell({ listing }: { listing: AuctionListing }) {
-  if (!listingHasText(listing)) {
+  const isAdmin = useAppSelector((s) => s.auth.isAdmin);
+  const content = listingText(listing);
+  if (!content) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
+  if (!isAdmin) {
+    return (
+      <Badge
+        variant="secondary"
+        className="text-xs font-normal"
+        title="This item has written text — excluded from fair-price stats"
+      >
+        Text
+      </Badge>
+    );
+  }
   return (
-    <Badge
-      variant="secondary"
-      className="text-xs font-normal"
-      title="This item has written text — excluded from fair-price stats"
-    >
-      Text
-    </Badge>
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="inline-flex h-6 cursor-pointer items-center rounded border border-border/60 px-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            title="Read this listing's written text"
+          >
+            Text
+          </button>
+        }
+      />
+      <PopoverContent align="end" className="w-80 max-w-[90vw] p-3">
+        {content.title && (
+          <p className="mb-1.5 text-sm font-semibold break-words">{content.title}</p>
+        )}
+        {content.text ? (
+          <p className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">
+            {content.text}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">No body text.</p>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
