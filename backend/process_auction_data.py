@@ -678,14 +678,42 @@ def _chisel_signature(chisel: Dict[str, Any]) -> str:
     return f"{zlib.crc32(payload.encode('utf-8')) & 0xFFFFFFFF:08x}"
 
 
+# Reverse registry index (bare block code -> display name), cached per registry
+# object so a chisel material can be named without rescanning the whole registry.
+_block_name_by_code_cache: Dict[int, Dict[str, str]] = {}
+
+
+def _material_label(code: str, registry: Dict[str, Dict[str, str]]) -> str:
+    """Readable name for a chisel material block code (e.g. "rock-travertine" ->
+    "Travertine"). Prefers the game registry's display name, dropping a trailing
+    "rock"/"block" noise word; falls back to humanizing the code."""
+    cache = _block_name_by_code_cache.get(id(registry))
+    if cache is None:
+        cache = {}
+        block_reg = registry.get("Block", {})
+        names = registry.get("BlockNames", {})
+        for id_str, c in block_reg.items():
+            bare = _bare(c)
+            if bare and bare not in cache and names.get(id_str):
+                cache[bare] = names[id_str]
+        _block_name_by_code_cache[id(registry)] = cache
+    name = cache.get(code)
+    if name:
+        cleaned = re.sub(r"\s+(rock|block)$", "", name.strip(), flags=re.IGNORECASE)
+        return cleaned or name.strip()
+    return humanize_code(code)
+
+
 def chisel_variant(
     item: Dict[str, Any],
     attrs: Optional[Dict[str, Any]],
     registry: Dict[str, Dict[str, str]],
 ) -> Optional[Tuple[int, str, Dict[str, Any]]]:
     """If this item is a chiseled/microblock, return ``(synthetic_item_id,
-    group_display_name, chisel_payload)``; else ``None``. Named designs group by
-    their custom name; unnamed designs group by a (materials, cuboids) signature."""
+    group_display_name, chisel_payload)``; else ``None``. Named designs keep their
+    custom name; unnamed single-material designs group by their material (e.g.
+    "Chiseled Travertine"); other unnamed designs group by a (materials, cuboids)
+    signature."""
     if item.get("category") not in CHISEL_CATEGORIES:
         return None
     chisel = decode_chisel(attrs, registry)
@@ -701,17 +729,26 @@ def chisel_variant(
     # request). Every other design groups by its exact geometry so distinct builds
     # stay separate; identical builds still aggregate. Named designs keep their
     # name as the display label but are NOT merged just for sharing a name.
+    label = "Microblock" if base_kind == "microblock" else "Chiseled"
+    unique_mats = list(dict.fromkeys(chisel["materials"]))
     if name_line and name_line.lower() == "l-dungeon":
         key = f"{base_kind}:name:l-dungeon"
         name = name_line
+    elif name_line:
+        sig = _chisel_signature(chisel)
+        key = f"{base_kind}:sig:{sig}"
+        name = name_line
+    elif len(unique_mats) == 1:
+        # Unnamed design made of a single material: name it after that material
+        # (e.g. "Chiseled Travertine") and group every such block of the same
+        # material together, so simple chisels aggregate into one comparable item.
+        mat = unique_mats[0]
+        key = f"{base_kind}:mat:{mat}"
+        name = f"{label} {_material_label(mat, registry)}"
     else:
         sig = _chisel_signature(chisel)
         key = f"{base_kind}:sig:{sig}"
-        if name_line:
-            name = name_line
-        else:
-            label = "Microblock" if base_kind == "microblock" else "Chiseled"
-            name = f"{label} design #{sig[:6]}"
+        name = f"{label} design #{sig[:6]}"
     return _variant_synth_id(key), name, chisel
 
 

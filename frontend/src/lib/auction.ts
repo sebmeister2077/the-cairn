@@ -18,6 +18,7 @@ import type {
     AuctionListing,
     AuctionSummary,
     ItemCatalog,
+    ItemCatalogEntry,
 } from "@/models/auction";
 
 const publicBucketOrigin = import.meta.env.VITE_PUBLIC_BUCKET_ORIGIN?.replace(/\/+$/, "");
@@ -459,6 +460,15 @@ function findManualLink(code: string | null): ManualLinkRule | null {
     return MANUAL_LINKS.find((r) => codeMatches(code, r.code)) ?? null;
 }
 
+/** The single material a chiseled/microblock catalog entry is carved from, or
+ *  null when it isn't a chiseled block or mixes more than one material. Used to
+ *  pair a chiseled block with the quarried rock it's made of. */
+function singleChiselMaterial(entry: ItemCatalogEntry): string | null {
+    if (!entry.chisel) return null;
+    const uniq = Array.from(new Set(entry.chisel.materials));
+    return uniq.length === 1 ? bareCode(uniq[0]) : null;
+}
+
 /** A related item surfaced on the item page. */
 export interface RelatedItem {
     id: number;
@@ -500,7 +510,36 @@ export function computeRelatedItems(
 
     const ownFamily = resolveItemFamily(current);
     const rule = findManualLink(current.code);
-    if (!ownFamily && !rule) return null;
+
+    const filterActive = activeIds.size > 0;
+    // Rock ↔ its single-material chiseled form: a quarried rock block and the
+    // "Chiseled <rock>" block carved from only that rock are natural price
+    // comparisons, so cross-link the two both ways.
+    const currentBare = current.code ? bareCode(current.code) : null;
+    const currentChiselMat = singleChiselMaterial(current);
+    const chiselItems: RelatedItem[] = [];
+    let chiselLabel: string | null = null;
+    if (currentBare && currentBare.startsWith("rock-")) {
+        for (const [key, e] of Object.entries(catalog)) {
+            const iid = Number(key);
+            if (selfIds.has(iid)) continue;
+            if (filterActive && !activeIds.has(iid)) continue;
+            if (singleChiselMaterial(e) === currentBare)
+                chiselItems.push({ id: iid, name: e.name, category: e.category });
+        }
+        if (chiselItems.length > 0) chiselLabel = "Chiseled form";
+    } else if (currentChiselMat) {
+        for (const [key, e] of Object.entries(catalog)) {
+            const iid = Number(key);
+            if (selfIds.has(iid)) continue;
+            if (filterActive && !activeIds.has(iid)) continue;
+            if (e.code && bareCode(e.code) === currentChiselMat)
+                chiselItems.push({ id: iid, name: e.name, category: e.category });
+        }
+        if (chiselItems.length > 0) chiselLabel = "Quarried block";
+    }
+
+    if (!ownFamily && !rule && chiselItems.length === 0) return null;
 
     // Families to draw related *forms* from: the item's own, plus manual extras.
     const familyKeys = new Set<string>();
@@ -509,7 +548,6 @@ export function computeRelatedItems(
     // Specific item codes a manual rule links regardless of family/category.
     const itemPatterns = rule?.items ?? [];
 
-    const filterActive = activeIds.size > 0;
     const seen = new Set<string>();
     const items: RelatedItem[] = [];
     for (const [key, e] of Object.entries(catalog)) {
@@ -544,12 +582,17 @@ export function computeRelatedItems(
         seen.add(dedupe);
         items.push({ id: iid, name, category: e.category });
     }
+    // Fold in the rock ↔ chiseled cross-links (deduped against family/manual hits).
+    const existingIds = new Set(items.map((i) => i.id));
+    for (const ci of chiselItems) if (!existingIds.has(ci.id)) items.push(ci);
     if (items.length === 0) return null;
     items.sort((a, b) => a.name.localeCompare(b.name));
 
     const label =
         rule?.label ??
-        (ownFamily ? `Other forms of ${ownFamily.label.toLowerCase()}` : `Related to ${current.name}`);
+        (ownFamily
+            ? `Other forms of ${ownFamily.label.toLowerCase()}`
+            : chiselLabel ?? `Related to ${current.name}`);
     return { label, items };
 }
 
