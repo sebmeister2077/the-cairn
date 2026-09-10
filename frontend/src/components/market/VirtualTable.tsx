@@ -2,7 +2,7 @@
 // items / players have hundreds or thousands of listings, so rows are
 // windowed with @tanstack/react-virtual to keep the DOM small.
 
-import { useRef, type ReactNode } from "react";
+import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Wrench } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
@@ -180,27 +180,192 @@ export function ListingNotesCell({ listing }: { listing: AuctionListing }) {
           </button>
         }
       />
-      <PopoverContent align="end" className="w-[min(32rem,92vw)] max-h-[70vh] overflow-y-auto p-4">
-        {content.title && <p className="mb-2 text-sm font-semibold break-words">{content.title}</p>}
+      <PopoverContent align="end" className="w-auto max-w-[96vw] max-h-[92vh] overflow-hidden p-3">
+        {content.title && <p className="mb-2 text-sm font-semibold">{content.title}</p>}
         {content.text ? (
           looksLikeHtml(content.text) ? (
             // Untrusted, user-authored rich text — sanitized to an allowlist of
             // tags/attrs before rendering (see sanitize-html.ts). The project has
             // no CSP, so this is the XSS boundary for this content.
-            <div
-              className="listing-text-html max-w-none text-xs break-words [&_a]:underline [&_a]:text-primary"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.text) }}
-            />
+            <ListingTextCanvas html={sanitizeHtml(content.text)} />
           ) : (
-            <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
-              {content.text}
-            </p>
+            <ListingTextCanvas text={content.text} />
           )
         ) : (
           <p className="text-xs text-muted-foreground">No body text.</p>
         )}
       </PopoverContent>
     </Popover>
+  );
+}
+
+/**
+ * Renders a listing's written content as a zoomable, resizable monospace grid.
+ * Much of this content is character/emoji "canvas" art — one glyph per pixel —
+ * whether written as plain text or as sanitized HTML (`<font color>` blocks), so
+ * the default view uses square cells (line-height 1, no wrapping) to reproduce
+ * the picture, with zoom + spacing + resize controls to dial it in.
+ *
+ * Pass exactly one of `text` (plain) or `html` (already sanitized, see
+ * sanitize-html.ts — this is the XSS boundary and the project has no CSP).
+ */
+function ListingTextCanvas({ text, html }: { text?: string; html?: string }) {
+  const [cellPx, setCellPx] = useState(10);
+  const [lineH, setLineH] = useState(1);
+  const [wrap, setWrap] = useState(false);
+  const [size, setSize] = useState(() => ({
+    w: Math.min(704, Math.round(window.innerWidth * 0.9)),
+    h: Math.round(window.innerHeight * 0.6),
+  }));
+  const boxRef = useRef<HTMLDivElement>(null);
+  const measRef = useRef<HTMLElement | null>(null);
+  const drag = useRef<{ x: number; y: number; w: number; h: number } | null>(null);
+  const lines = text != null ? text.split(/\r?\n/) : null;
+  const rows = lines ? lines.length : 0;
+  const cols = lines ? lines.reduce((m, l) => Math.max(m, [...l].length), 0) : 0;
+
+  // Shrink the font until the widest line fits the current container width.
+  // Measures the rendered width so it's correct even for emoji/wide glyphs.
+  const fitWidth = () => {
+    const box = boxRef.current;
+    const meas = measRef.current;
+    if (!box || !meas || meas.scrollWidth === 0) return;
+    const avail = box.clientWidth - 8;
+    const next = Math.max(1, Math.min(40, Math.floor((cellPx * avail) / meas.scrollWidth)));
+    setCellPx(next);
+  };
+
+  const onResizeDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    drag.current = { x: e.clientX, y: e.clientY, w: size.w, h: size.h };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onResizeMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    setSize({
+      w: Math.max(240, Math.min(Math.round(window.innerWidth * 0.96), d.w + (e.clientX - d.x))),
+      h: Math.max(160, Math.min(Math.round(window.innerHeight * 0.85), d.h + (e.clientY - d.y))),
+    });
+  };
+  const onResizeUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    drag.current = null;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  };
+
+  const contentClass = cn(
+    "font-mono text-foreground",
+    wrap ? "whitespace-pre-wrap break-words" : "w-fit min-w-full whitespace-pre",
+  );
+  const contentStyle = { fontSize: `${cellPx}px`, lineHeight: lineH, letterSpacing: 0 } as const;
+
+  const btn =
+    "inline-flex h-6 min-w-6 cursor-pointer items-center justify-center rounded border border-border/60 px-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted disabled:cursor-default disabled:opacity-40";
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+        <span className="mr-1">Zoom</span>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => setCellPx((p) => Math.max(1, p - 1))}
+          title="Zoom out"
+        >
+          −
+        </button>
+        <span className="w-8 text-center tabular-nums">{cellPx}px</span>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => setCellPx((p) => Math.min(40, p + 1))}
+          title="Zoom in"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          className={btn}
+          onClick={fitWidth}
+          title="Fit the drawing to the box width"
+        >
+          Fit
+        </button>
+        <span className="mx-1 h-4 w-px bg-border" />
+        <span className="mr-1">Row height</span>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => setLineH((h) => Math.max(0.5, Math.round((h - 0.05) * 100) / 100))}
+          title="Tighten rows"
+        >
+          −
+        </button>
+        <span className="w-8 text-center tabular-nums">{lineH.toFixed(2)}</span>
+        <button
+          type="button"
+          className={btn}
+          onClick={() => setLineH((h) => Math.min(1.6, Math.round((h + 0.05) * 100) / 100))}
+          title="Loosen rows"
+        >
+          +
+        </button>
+        <span className="mx-1 h-4 w-px bg-border" />
+        <button
+          type="button"
+          className={cn(btn, wrap && "bg-muted text-foreground")}
+          onClick={() => setWrap((w) => !w)}
+          title="Toggle line wrapping"
+        >
+          Wrap
+        </button>
+        <span className="ml-auto tabular-nums">{lines ? `${rows}×${cols}` : "HTML"}</span>
+      </div>
+      {/* Resizable viewport — drag the grip in the bottom-right corner. */}
+      <div className="relative" style={{ width: size.w, height: size.h }}>
+        <div
+          ref={boxRef}
+          className="h-full w-full overflow-auto rounded border bg-white dark:bg-neutral-900"
+        >
+          {html != null ? (
+            <div
+              ref={(el) => {
+                measRef.current = el;
+              }}
+              className={cn(contentClass, "listing-text-html [&_a]:text-primary [&_a]:underline")}
+              style={contentStyle}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <pre
+              ref={(el) => {
+                measRef.current = el;
+              }}
+              className={contentClass}
+              style={contentStyle}
+            >
+              {text}
+            </pre>
+          )}
+        </div>
+        <div
+          onPointerDown={onResizeDown}
+          onPointerMove={onResizeMove}
+          onPointerUp={onResizeUp}
+          className="absolute right-0 bottom-0 z-10 flex size-4 cursor-nwse-resize touch-none items-end justify-end rounded-tl border-t border-l border-border bg-muted text-muted-foreground hover:bg-accent"
+          title="Drag to resize"
+        >
+          <svg
+            viewBox="0 0 10 10"
+            className="size-3"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M8.5 3.5 3.5 8.5M8.5 6.5 6.5 8.5" />
+          </svg>
+        </div>
+      </div>
+    </div>
   );
 }
 
