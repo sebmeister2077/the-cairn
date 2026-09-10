@@ -7,6 +7,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Wrench } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
 import { deriveListingStatus, listingText, listingToolAttributes } from "@/lib/auction";
+import { sanitizeHtml, looksLikeHtml } from "@/lib/sanitize-html";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAppSelector } from "@/store/hooks";
@@ -179,14 +180,22 @@ export function ListingNotesCell({ listing }: { listing: AuctionListing }) {
           </button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[90vw] p-3">
-        {content.title && (
-          <p className="mb-1.5 text-sm font-semibold break-words">{content.title}</p>
-        )}
+      <PopoverContent align="end" className="w-[min(32rem,92vw)] max-h-[70vh] overflow-y-auto p-4">
+        {content.title && <p className="mb-2 text-sm font-semibold break-words">{content.title}</p>}
         {content.text ? (
-          <p className="max-h-72 overflow-y-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">
-            {content.text}
-          </p>
+          looksLikeHtml(content.text) ? (
+            // Untrusted, user-authored rich text — sanitized to an allowlist of
+            // tags/attrs before rendering (see sanitize-html.ts). The project has
+            // no CSP, so this is the XSS boundary for this content.
+            <div
+              className="listing-text-html max-w-none text-xs break-words [&_a]:underline [&_a]:text-primary"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.text) }}
+            />
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-xs text-muted-foreground">
+              {content.text}
+            </p>
+          )
         ) : (
           <p className="text-xs text-muted-foreground">No body text.</p>
         )}
