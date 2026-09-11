@@ -61,6 +61,19 @@ const STATE_ROW_CLASS: Record<WalkLegElkState, string> = {
   "pending-unattest": "bg-red-50 text-red-900 dark:bg-red-950/40 dark:text-red-100",
 };
 
+/** List ordering priority — actionable edges (things the user can still
+ *  attest / has staged) float to the top so the truncated 12-row preview
+ *  isn't dominated by already-confirmed connections. Within a priority
+ *  bucket the original shortest-walk-first order is preserved. */
+const STATE_LIST_PRIORITY: Record<WalkLegElkState, number> = {
+  unconfirmed: 0,
+  "pending-attest": 1,
+  "pending-unattest": 2,
+  "confirmed-by-me": 3,
+  confirmed: 4,
+  "not-attestable": 5,
+};
+
 export function MarkGroupingElkDialog({
   open,
   onOpenChange,
@@ -248,7 +261,17 @@ export function MarkGroupingElkDialog({
     });
   };
 
-  const visibleEdges = showAllRows ? edges : edges.slice(0, 12);
+  // Actionable connections first so the initial (truncated) view surfaces
+  // what still needs work instead of the already-confirmed majority. Stable
+  // sort keeps shortest-walk-first ordering within each state bucket.
+  const displayEdges = edges
+    .map((edge, i) => ({ edge, i }))
+    .sort(
+      (x, y) =>
+        STATE_LIST_PRIORITY[x.edge.state] - STATE_LIST_PRIORITY[y.edge.state] || x.i - y.i,
+    )
+    .map(({ edge }) => edge);
+  const visibleEdges = showAllRows ? displayEdges : displayEdges.slice(0, 12);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
