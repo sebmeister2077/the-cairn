@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  adminBulkRevertElkWalkableAudit,
   adminListElkWalkableAudit,
   adminListElkWalkableReports,
   adminListElkWalkableSnapshots,
@@ -27,6 +28,7 @@ import { formatTimestamp } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   ChevronLeft,
@@ -77,6 +79,8 @@ function ElkAuditCard() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [revertTarget, setRevertTarget] = useState<AdminElkWalkableAuditEntry | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(() => new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: [...AUDIT_KEY, page],
@@ -88,18 +92,63 @@ function ElkAuditCard() {
     placeholderData: keepPreviousData,
   });
 
+  const invalidateAfterMutation = () => {
+    queryClient.invalidateQueries({ queryKey: AUDIT_KEY });
+    queryClient.invalidateQueries({ queryKey: SNAPSHOTS_KEY });
+    queryClient.invalidateQueries({ queryKey: ELK_WALKABLE_QUERY_KEY });
+  };
+
   const revertMut = useMutation({
     mutationFn: (auditId: number) => adminRevertElkWalkableAudit(auditId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: AUDIT_KEY });
-      queryClient.invalidateQueries({ queryKey: SNAPSHOTS_KEY });
-      queryClient.invalidateQueries({ queryKey: ELK_WALKABLE_QUERY_KEY });
+      invalidateAfterMutation();
       setRevertTarget(null);
+    },
+  });
+
+  const bulkRevertMut = useMutation({
+    mutationFn: (auditIds: number[]) => adminBulkRevertElkWalkableAudit(auditIds),
+    onSuccess: () => {
+      invalidateAfterMutation();
+      setSelectedIds(new Set());
+      setBulkConfirmOpen(false);
     },
   });
 
   const rows = data?.audit ?? [];
   const hasNext = rows.length === AUDIT_PAGE_SIZE;
+
+  // Only attest / unattest rows can be reverted, so those are the only
+  // ones that participate in multi-select.
+  const revertibleIds = rows.filter((r) => REVERTIBLE_ACTIONS.has(r.action)).map((r) => r.id);
+  const selectedOnPage = revertibleIds.filter((id) => selectedIds.has(id));
+  const allSelected = revertibleIds.length > 0 && selectedOnPage.length === revertibleIds.length;
+  const someSelected = selectedOnPage.length > 0 && !allSelected;
+
+  const changePage = (next: number) => {
+    setSelectedIds(new Set());
+    setPage(next);
+  };
+
+  const toggleSelectAll = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of revertibleIds) {
+        if (checked) next.add(id);
+        else next.delete(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleOne = (id: number, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
 
   return (
     <Card>
@@ -116,11 +165,44 @@ function ElkAuditCard() {
         {data && rows.length === 0 && (
           <p className="text-sm text-muted-foreground">No audit entries yet.</p>
         )}
+        {revertibleIds.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5">
+            <Checkbox
+              checked={allSelected}
+              indeterminate={someSelected}
+              onCheckedChange={(v) => toggleSelectAll(v === true)}
+              aria-label="Select all attests/unattests on this page"
+            />
+            <span className="text-xs text-muted-foreground">
+              {selectedIds.size > 0
+                ? `${selectedIds.size} selected`
+                : "Select attests/unattests to undo in bulk"}
+            </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="destructive"
+              className="ml-auto gap-1.5"
+              disabled={selectedIds.size === 0 || bulkRevertMut.isPending}
+              onClick={() => setBulkConfirmOpen(true)}
+            >
+              {bulkRevertMut.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Undo2 className="size-4" />
+              )}
+              Undo selected{selectedIds.size > 0 ? ` (${selectedIds.size})` : ""}
+            </Button>
+          </div>
+        )}
         <div className="divide-y border rounded-md">
           {rows.map((row) => (
             <ElkAuditRow
               key={row.id}
               row={row}
+              selectable={REVERTIBLE_ACTIONS.has(row.action)}
+              selected={selectedIds.has(row.id)}
+              onSelectedChange={(checked) => toggleOne(row.id, checked)}
               onRevert={() => setRevertTarget(row)}
               reverting={revertMut.isPending && revertTarget?.id === row.id}
             />
@@ -131,9 +213,14 @@ function ElkAuditCard() {
             Revert failed: {(revertMut.error as Error).message}
           </p>
         )}
+        {bulkRevertMut.error && (
+          <p className="text-sm text-destructive">
+            Bulk undo failed: {(bulkRevertMut.error as Error).message}
+          </p>
+        )}
         <SimplePager
           page={page}
-          onPageChange={setPage}
+          onPageChange={changePage}
           hasNext={hasNext}
           rangeLabel={`${rows.length} on this page`}
         />
@@ -167,61 +254,104 @@ function ElkAuditCard() {
           if (!revertMut.isPending) setRevertTarget(null);
         }}
       />
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        title="Undo selected attestations?"
+        description={
+          <div className="space-y-1 text-sm">
+            <div>
+              Inverts <strong>{selectedIds.size}</strong> selected attest/unattest{" "}
+              {selectedIds.size === 1 ? "row" : "rows"}, restoring each edge to its state before
+              that change.
+            </div>
+            <div className="text-muted-foreground text-xs">
+              A single pre-revert snapshot is written first, and each undo is recorded as its own
+              admin_revert audit row.
+            </div>
+          </div>
+        }
+        confirmLabel={`Undo ${selectedIds.size}`}
+        variant="destructive"
+        loading={bulkRevertMut.isPending}
+        onConfirm={() => selectedIds.size > 0 && bulkRevertMut.mutate(Array.from(selectedIds))}
+        onCancel={() => {
+          if (!bulkRevertMut.isPending) setBulkConfirmOpen(false);
+        }}
+      />
     </Card>
   );
 }
 
 function ElkAuditRow({
   row,
+  selectable,
+  selected,
+  onSelectedChange,
   onRevert,
   reverting,
 }: {
   row: AdminElkWalkableAuditEntry;
+  selectable: boolean;
+  selected: boolean;
+  onSelectedChange: (checked: boolean) => void;
   onRevert: () => void;
   reverting: boolean;
 }) {
   const revertible = REVERTIBLE_ACTIONS.has(row.action);
   return (
-    <div className="min-w-0 space-y-0.5 px-3 py-2 text-xs">
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <Badge variant={actionBadgeVariant(row.action)}>{row.action}</Badge>
-        <span className="min-w-0 break-all font-mono text-[11px] text-muted-foreground">
-          {row.edge_key ?? "—"}
-        </span>
-        <span className="text-muted-foreground">by</span>
-        <span className="wrap-break-word font-medium">
-          {row.actor_display_name || row.actor_api_key_id || "—"}
-        </span>
-        <span className="ml-auto flex items-center gap-2">
-          <span className="whitespace-nowrap text-muted-foreground">
-            {formatTimestamp(row.created_at)}
+    <div className="flex min-w-0 items-start gap-2 px-3 py-2 text-xs">
+      {selectable ? (
+        <Checkbox
+          className="mt-0.5"
+          checked={selected}
+          onCheckedChange={(v) => onSelectedChange(v === true)}
+          aria-label={`Select audit row #${row.id}`}
+        />
+      ) : (
+        <span className="w-4 shrink-0" />
+      )}
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <Badge variant={actionBadgeVariant(row.action)}>{row.action}</Badge>
+          <span className="min-w-0 break-all font-mono text-[11px] text-muted-foreground">
+            {row.edge_key ?? "—"}
           </span>
-          {revertible && (
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              onClick={onRevert}
-              disabled={reverting}
-              title="Revert this audit row"
-            >
-              {reverting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Undo2 className="size-4" />
-              )}
-            </Button>
+          <span className="text-muted-foreground">by</span>
+          <span className="wrap-break-word font-medium">
+            {row.actor_display_name || row.actor_api_key_id || "—"}
+          </span>
+          <span className="ml-auto flex items-center gap-2">
+            <span className="whitespace-nowrap text-muted-foreground">
+              {formatTimestamp(row.created_at)}
+            </span>
+            {revertible && (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={onRevert}
+                disabled={reverting}
+                title="Revert this audit row"
+              >
+                {reverting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Undo2 className="size-4" />
+                )}
+              </Button>
+            )}
+          </span>
+        </div>
+        <div className="text-[11px] text-muted-foreground">
+          id #{row.id}
+          {row.snapshot_key && (
+            <>
+              {" · snapshot "}
+              <code className="break-all">{row.snapshot_key}</code>
+            </>
           )}
-        </span>
-      </div>
-      <div className="text-[11px] text-muted-foreground">
-        id #{row.id}
-        {row.snapshot_key && (
-          <>
-            {" · snapshot "}
-            <code className="break-all">{row.snapshot_key}</code>
-          </>
-        )}
+        </div>
       </div>
     </div>
   );

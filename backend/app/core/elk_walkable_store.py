@@ -507,6 +507,97 @@ def revert_audit_row(
     }
 
 
+def revert_audit_rows(
+    audit_ids: List[int],
+    *,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+) -> dict:
+    """Bulk-invert multiple attest/unattest audit rows in a single save.
+
+    Rows are processed in the given order; each restores its own
+    ``before_payload`` onto the evolving working state (so two rows on the
+    same edge behave like reverting them one-by-one in that order). One
+    pre-mutation snapshot is written and one ``admin_revert`` audit row is
+    recorded per reverted edge.
+
+    Caller must hold :func:`elk_walkable_write_lock`.
+    """
+    if not audit_ids:
+        raise HTTPException(status_code=400, detail="no audit ids supplied")
+
+    # Dedupe while preserving the caller's order.
+    ordered_ids: List[int] = []
+    seen_ids: set = set()
+    for aid in audit_ids:
+        if aid in seen_ids:
+            continue
+        seen_ids.add(aid)
+        ordered_ids.append(aid)
+
+    rows: List[dict] = []
+    for aid in ordered_ids:
+        row = db.get_elk_walkable_audit(aid)
+        if not row:
+            raise HTTPException(status_code=404, detail=f"audit {aid} not found")
+        if row["action"] not in ("attest", "unattest"):
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"cannot revert audit row {aid} with "
+                    f"action={row['action']!r}"
+                ),
+            )
+        rows.append(row)
+
+    data = load_live()
+    pre_mutation = copy.deepcopy(data)
+    by_key = _edges_by_key(data)
+    change_id = uuid.uuid4().hex
+
+    reverts: List[dict] = []
+    for row in rows:
+        edge_key = row["edge_key"]
+        before_state = row.get("before_payload")
+        current = by_key.get(edge_key)
+        before_after = json.loads(json.dumps(current)) if current else None
+        if before_state is None:
+            by_key.pop(edge_key, None)
+        else:
+            by_key[edge_key] = json.loads(json.dumps(before_state))
+        reverts.append({
+            "edge_key": edge_key,
+            "before_after": before_after,
+            "reverted_audit_id": row["id"],
+        })
+
+    data["edges"] = sorted(by_key.values(), key=lambda e: e["key"])
+    _save_live(data)
+    snapshot_key = _resolve_snapshot_key(pre_mutation, change_id)
+
+    audit_ids_new: List[int] = []
+    for rv in reverts:
+        edge_key = rv["edge_key"]
+        audit_id_new = db.insert_elk_walkable_audit(
+            change_id=change_id,
+            action="admin_revert",
+            edge_key=edge_key,
+            actor_api_key_id=actor_api_key_id,
+            actor_display_name=actor_display_name,
+            before_payload=rv["before_after"],
+            after_payload=by_key.get(edge_key),
+            snapshot_key=snapshot_key,
+        )
+        audit_ids_new.append(audit_id_new)
+
+    return {
+        "change_id": change_id,
+        "snapshot_key": snapshot_key,
+        "audit_ids": audit_ids_new,
+        "reverted_audit_ids": [rv["reverted_audit_id"] for rv in reverts],
+    }
+
+
 def restore_snapshot(
     snapshot_key: str,
     *,

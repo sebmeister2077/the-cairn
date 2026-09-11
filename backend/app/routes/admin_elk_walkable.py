@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
 from ..auth import require_admin
@@ -73,6 +73,35 @@ async def revert_audit_row(
         result = await asyncio.to_thread(
             elk_walkable_store.revert_audit_row,
             audit_id,
+            actor_api_key_id=None,
+            actor_display_name=_ADMIN_DISPLAY_NAME,
+        )
+    return result
+
+
+class BulkRevertBody(BaseModel):
+    audit_ids: List[int]
+
+
+_MAX_BULK_REVERT = 200
+
+
+@router.post("/audit/bulk-revert")
+async def bulk_revert_audit_rows(
+    payload: BulkRevertBody,
+    api_key: str = Depends(require_admin),
+) -> dict:
+    if not payload.audit_ids:
+        raise HTTPException(status_code=400, detail="no audit ids supplied")
+    if len(payload.audit_ids) > _MAX_BULK_REVERT:
+        raise HTTPException(
+            status_code=400,
+            detail=f"too many audit ids in one batch (max {_MAX_BULK_REVERT})",
+        )
+    async with elk_walkable_store.elk_walkable_write_lock("admin_bulk_revert"):
+        result = await asyncio.to_thread(
+            elk_walkable_store.revert_audit_rows,
+            payload.audit_ids,
             actor_api_key_id=None,
             actor_display_name=_ADMIN_DISPLAY_NAME,
         )

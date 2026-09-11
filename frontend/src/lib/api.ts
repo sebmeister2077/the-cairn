@@ -516,6 +516,22 @@ export async function adminRevertElkWalkableAudit(
     return (await handleResponse(res)).json();
 }
 
+export async function adminBulkRevertElkWalkableAudit(
+    auditIds: number[],
+): Promise<{
+    change_id: string;
+    snapshot_key: string;
+    audit_ids: number[];
+    reverted_audit_ids: number[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/elk-walkable/audit/bulk-revert`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ audit_ids: auditIds }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 export async function adminListElkWalkableSnapshots(
     limit = 200,
 ): Promise<{ snapshots: AdminElkWalkableSnapshot[] }> {
