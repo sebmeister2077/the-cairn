@@ -4,12 +4,11 @@
 // already confirmed and stage every missing edge into the existing
 // attestation draft in one click.
 //
-// We reuse the route-planner's `buildTLGraph()` so the user's notion of
-// "what walks count as adjacent inside this grouping" matches what the
-// planner itself would consider when routing through that subset. The
-// K-nearest wiring is computed over the grouping's TLs alone — that's
-// the right scope for "every walkable edge between TLs the user has
-// grouped together".
+// Connections are enumerated as every endpoint-to-endpoint pair between
+// two different TLs in the grouping within `maxWalkBlocks`. We deliberately
+// do NOT use the planner's K-nearest wiring here: for a small hand-picked
+// grouping the user expects *every* short walk to appear, and the K-NN cap
+// silently dropped edges when several TLs clustered close together.
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 import {
@@ -20,7 +19,6 @@ import {
     type ElkWalkableEdge,
     type WalkLegElkState,
 } from "@/lib/elk-walkable";
-import { buildTLGraph } from "@/lib/tl-routing";
 import type { TLGrouping } from "@/lib/tl-groupings";
 import { tlIdFor } from "@/lib/tl-groupings";
 
@@ -66,9 +64,8 @@ export const MAX_MAX_WALK_BLOCKS = 1900;
  *
  * - Filters `segments` to those whose `tlIdFor()` is in the grouping.
  * - Drops members missing a stable `id` (recorded in `skipped`).
- * - Builds a K-NN graph over the remaining endpoints with `buildTLGraph`
- *   and walks the CSR adjacency to collect every walk edge (kind < 0).
- * - Deduplicates by canonical edge key (the graph stores both directions).
+ * - Enumerates every endpoint-to-endpoint pair between two different TLs
+ *   within `maxWalkBlocks` and deduplicates by canonical edge key.
  */
 export function enumerateGroupingEdges(
     grouping: TLGrouping,
@@ -91,43 +88,31 @@ export function enumerateGroupingEdges(
         return { edges: [], skipped, includedCount: included.length };
     }
 
-    const graph = buildTLGraph(included, {
-        kNeighbors: options.kNeighbors,
-        walkSpeed: options.walkSpeed,
-    });
     const maxWalkBlocks = options.maxWalkBlocks ?? DEFAULT_MAX_WALK_BLOCKS;
 
+    // Every walkable connection inside the grouping is an endpoint-to-endpoint
+    // pair between two *different* TLs within `maxWalkBlocks`. Enumerate all
+    // such pairs directly rather than via the planner's K-nearest graph — the
+    // K-NN cap silently dropped connections when 7+ TLs sat close together,
+    // since each endpoint only wired to its k closest neighbours.
     const seen = new Map<string, GroupingElkEdge>();
-    const xs = graph.xs;
-    const zs = graph.zs;
-    const head = graph.baseHead;
-    const to = graph.baseTo;
-    const kindTlIdx = graph.baseKindTlIdx;
-    const numNodes = head.length - 1;
-
-    for (let u = 0; u < numNodes; u++) {
-        const lo = head[u];
-        const hi = head[u + 1];
-        for (let eid = lo; eid < hi; eid++) {
-            // Walk edges are encoded with negative `kindTlIdx`
-            // (KIND_WALK=-1, KIND_WALK_ELK=-2). TL edges carry the
-            // non-negative tlIndex of the segment they pair.
-            if (kindTlIdx[eid] >= 0) continue;
-            const v = to[eid];
-            if (v <= u) continue; // dedupe the reverse direction
-
-            const segA = included[u >>> 1];
-            const segB = included[v >>> 1];
-            // `buildTLGraph` already skips wiring an endpoint to its
-            // partner, but be defensive — same-TL walk would have no
-            // attestation meaning.
-            if (!segA?.id || !segB?.id) continue;
-            if (segA.id === segB.id) continue;
-
-            const epA: EdgeEndpointIdx = (u & 1) as 0 | 1;
-            const epB: EdgeEndpointIdx = (v & 1) as 0 | 1;
-            const a: EdgeEndpointRef = { tl_id: segA.id, ep: epA };
-            const b: EdgeEndpointRef = { tl_id: segB.id, ep: epB };
+    const endpoints: Array<{ id: string; ep: EdgeEndpointIdx; x: number; z: number }> = [];
+    for (const seg of included) {
+        if (!seg.id) continue;
+        endpoints.push({ id: seg.id, ep: 0, x: seg.x1, z: seg.z1 });
+        endpoints.push({ id: seg.id, ep: 1, x: seg.x2, z: seg.z2 });
+    }
+    for (let i = 0; i < endpoints.length; i++) {
+        const A = endpoints[i];
+        for (let j = i + 1; j < endpoints.length; j++) {
+            const B = endpoints[j];
+            if (A.id === B.id) continue; // same TL — not a walk
+            const dx = A.x - B.x;
+            const dz = A.z - B.z;
+            const walkBlocks = Math.sqrt(dx * dx + dz * dz);
+            if (walkBlocks > maxWalkBlocks) continue;
+            const a: EdgeEndpointRef = { tl_id: A.id, ep: A.ep };
+            const b: EdgeEndpointRef = { tl_id: B.id, ep: B.ep };
             let key: string;
             try {
                 key = canonicalEdgeKey(a, b);
@@ -135,11 +120,6 @@ export function enumerateGroupingEdges(
                 continue;
             }
             if (seen.has(key)) continue;
-
-            const dx = xs[u] - xs[v];
-            const dz = zs[u] - zs[v];
-            const walkBlocks = Math.sqrt(dx * dx + dz * dz);
-            if (walkBlocks > maxWalkBlocks) continue;
             seen.set(key, { a, b, key, walkBlocks });
         }
     }

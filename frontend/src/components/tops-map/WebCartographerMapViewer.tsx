@@ -875,12 +875,21 @@ export function WebCartographerMapViewer({
       x2: number;
       y2: number;
       elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+      ignored?: boolean;
     }> = [];
     for (const leg of routeOverlay.walkLegs) {
       const a = projectWorld(leg.from.x, leg.from.z);
       const b = projectWorld(leg.to.x, leg.to.z);
       if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
-      walkLegs.push({ key: leg.key, x1: a.x, y1: a.y, x2: b.x, y2: b.y, elkState: leg.elkState });
+      walkLegs.push({
+        key: leg.key,
+        x1: a.x,
+        y1: a.y,
+        x2: b.x,
+        y2: b.y,
+        elkState: leg.elkState,
+        ignored: leg.ignored,
+      });
     }
     const pin = (p: { x: number; z: number } | null | undefined) => {
       if (!p) return null;
@@ -2603,6 +2612,7 @@ interface OverlayDrawArgs {
       x2: number;
       y2: number;
       elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+      ignored?: boolean;
     }>;
     from: { x: number; y: number } | null;
     to: { x: number; y: number } | null;
@@ -2950,16 +2960,73 @@ function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: OverlayDra
         ctx.lineTo(leg.x2, leg.y2);
       }
       ctx.stroke();
-      ctx.setLineDash([dashUnit, dashUnit * 0.75]);
-      ctx.strokeStyle = "rgba(226, 232, 240, 0.98)";
-      ctx.lineWidth = walkW;
-      ctx.beginPath();
+
+      // Per-state colour table — mirrors MapViewer so a confirmed /
+      // pending walk reads the same in both viewers.
+      const colourFor = (state: RouteOverlay["walkLegs"][number]["elkState"]): string => {
+        switch (state) {
+          case "confirmed":
+          case "confirmed-by-me":
+            return "rgba(56, 189, 248, 0.98)"; // sky-400
+          case "pending-attest":
+            return "rgba(250, 204, 21, 0.98)"; // amber-400
+          case "pending-unattest":
+            return "rgba(248, 113, 113, 0.98)"; // red-400
+          default:
+            return "rgba(226, 232, 240, 0.98)"; // slate-200
+        }
+      };
+      const groups = new Map<string, { colour: string; legs: typeof route.walkLegs }>();
       for (const leg of route.walkLegs) {
-        ctx.moveTo(leg.x1, leg.y1);
-        ctx.lineTo(leg.x2, leg.y2);
+        if (leg.ignored) continue; // ignored legs get the red/white pass below
+        const colour = colourFor(leg.elkState);
+        let bucket = groups.get(colour);
+        if (!bucket) {
+          bucket = { colour, legs: [] };
+          groups.set(colour, bucket);
+        }
+        bucket.legs.push(leg);
       }
-      ctx.stroke();
+      ctx.setLineDash([dashUnit, dashUnit * 0.75]);
+      ctx.lineWidth = walkW;
+      for (const { colour, legs } of groups.values()) {
+        ctx.strokeStyle = colour;
+        ctx.beginPath();
+        for (const leg of legs) {
+          ctx.moveTo(leg.x1, leg.y1);
+          ctx.lineTo(leg.x2, leg.y2);
+        }
+        ctx.stroke();
+      }
       ctx.setLineDash([]);
+
+      // Ignored legs: a bold red barber-stripe so excluded connections
+      // read unmistakably as "red / not being submitted".
+      const ignoredLegs = route.walkLegs.filter((l) => l.ignored);
+      if (ignoredLegs.length > 0) {
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.setLineDash([]);
+        ctx.strokeStyle = "rgba(220, 38, 38, 0.98)"; // red-600 base
+        ctx.lineWidth = walkW * 1.6;
+        ctx.beginPath();
+        for (const leg of ignoredLegs) {
+          ctx.moveTo(leg.x1, leg.y1);
+          ctx.lineTo(leg.x2, leg.y2);
+        }
+        ctx.stroke();
+        ctx.setLineDash([dashUnit * 0.9, dashUnit * 0.9]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.lineWidth = walkW * 1.6;
+        ctx.beginPath();
+        for (const leg of ignoredLegs) {
+          ctx.moveTo(leg.x1, leg.y1);
+          ctx.lineTo(leg.x2, leg.y2);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
 
       // Pulsing focused-leg highlight — mirrors the highlight in
       // MapViewer.tsx so a user-selected edge stands out in both viewers.

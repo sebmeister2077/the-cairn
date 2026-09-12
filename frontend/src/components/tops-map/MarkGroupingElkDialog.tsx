@@ -104,10 +104,20 @@ export function MarkGroupingElkDialog({
   const [ignoredKeys, setIgnoredKeys] = useState<Set<string>>(
     () => new Set(dialogStateSnapshot?.ignoredKeys ?? []),
   );
+  // The edge whose "jump to" icon was last clicked. Re-highlighted on the
+  // row after the user exits preview so they don't have to remember which
+  // connection they inspected.
+  const [highlightEdgeKey, setHighlightEdgeKey] = useState<string | null>(
+    () => dialogStateSnapshot?.focusedEdgeKey ?? null,
+  );
+  const highlightRowRef = useRef<HTMLLIElement | null>(null);
 
   // One-shot consume — only the very first mount of this open cycle
   // should clear the snapshot. Re-renders triggered by the consume
-  // dispatch must NOT re-run this.
+  // dispatch must NOT re-run this. The component often survives the
+  // preview round-trip without unmounting, so we rehydrate local state
+  // here (not just in the lazy `useState` initialisers, which only run
+  // on a true first mount).
   const consumedSnapshotRef = useRef(false);
   useEffect(() => {
     if (!open) {
@@ -116,6 +126,10 @@ export function MarkGroupingElkDialog({
     }
     if (dialogStateSnapshot && !consumedSnapshotRef.current) {
       consumedSnapshotRef.current = true;
+      setIgnoredKeys(new Set(dialogStateSnapshot.ignoredKeys));
+      setMaxWalkBlocks(dialogStateSnapshot.maxWalkBlocks);
+      setShowAllRows(dialogStateSnapshot.showAllRows);
+      setHighlightEdgeKey(dialogStateSnapshot.focusedEdgeKey ?? null);
       dispatch(consumeDialogStateSnapshot());
     }
   }, [open, dialogStateSnapshot, dispatch]);
@@ -196,6 +210,29 @@ export function MarkGroupingElkDialog({
     },
   });
 
+  // Keep the highlighted (last-jumped-to) row reachable: expand the list
+  // if it would otherwise be truncated away.
+  useEffect(() => {
+    if (!highlightEdgeKey || !classification) return;
+    const ordered = classification.edges
+      .map((edge, i) => ({ edge, i }))
+      .sort(
+        (x, y) =>
+          STATE_LIST_PRIORITY[x.edge.state] - STATE_LIST_PRIORITY[y.edge.state] || x.i - y.i,
+      );
+    const idx = ordered.findIndex(({ edge }) => edge.key === highlightEdgeKey);
+    if (idx >= 12) setShowAllRows(true);
+  }, [highlightEdgeKey, classification]);
+
+  // Scroll the highlighted row into view once it's rendered.
+  useEffect(() => {
+    if (!highlightEdgeKey) return;
+    const id = window.requestAnimationFrame(() => {
+      highlightRowRef.current?.scrollIntoView({ block: "nearest" });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [highlightEdgeKey, showAllRows, classification]);
+
   if (!grouping) return null;
 
   const summary = classification?.summary;
@@ -226,6 +263,7 @@ export function MarkGroupingElkDialog({
         toX,
         toZ,
         elkState: edge.state,
+        ignored: ignoredKeys.has(edge.key),
       });
     }
     return out;
@@ -238,6 +276,7 @@ export function MarkGroupingElkDialog({
 
   const handleEnterPreview = (focusEdgeKey: string | null) => {
     if (!grouping) return;
+    if (focusEdgeKey) setHighlightEdgeKey(focusEdgeKey);
     dispatch(
       enterPreview({
         groupingId: grouping.id,
@@ -247,6 +286,7 @@ export function MarkGroupingElkDialog({
           ignoredKeys: Array.from(ignoredKeys),
           maxWalkBlocks,
           showAllRows,
+          focusedEdgeKey: focusEdgeKey,
         },
       }),
     );
@@ -267,15 +307,14 @@ export function MarkGroupingElkDialog({
   const displayEdges = edges
     .map((edge, i) => ({ edge, i }))
     .sort(
-      (x, y) =>
-        STATE_LIST_PRIORITY[x.edge.state] - STATE_LIST_PRIORITY[y.edge.state] || x.i - y.i,
+      (x, y) => STATE_LIST_PRIORITY[x.edge.state] - STATE_LIST_PRIORITY[y.edge.state] || x.i - y.i,
     )
     .map(({ edge }) => edge);
   const visibleEdges = showAllRows ? displayEdges : displayEdges.slice(0, 12);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl lg:max-w-xl">
+      <DialogContent className="grid max-h-[90vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden sm:max-w-xl lg:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <PawPrint className="size-5 text-emerald-600" />
@@ -309,7 +348,7 @@ export function MarkGroupingElkDialog({
             {t("topsMap.markGroupingElk.notEnoughTls")}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-3 overflow-y-auto pr-1">
             {/* Stat block */}
             <div className="grid grid-cols-2 gap-2 rounded-md border bg-muted/30 p-3 text-sm">
               <div>
@@ -364,10 +403,9 @@ export function MarkGroupingElkDialog({
               </div>
             )}
 
-            {/* Max-walk-distance filter — pure K-NN over a small grouping
-                wires every TL pair together regardless of distance, so a
-                user-tunable cap is what turns "every pair" into "only
-                walks you'd actually do". */}
+            {/* Max-walk-distance filter — every endpoint pair inside the
+                grouping is a candidate walk, so this cap is what turns
+                "every pair" into "only walks you'd actually do". */}
             <div className="space-y-1">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="font-medium uppercase tracking-wide text-muted-foreground">
@@ -407,14 +445,20 @@ export function MarkGroupingElkDialog({
                     const isConfirmed =
                       edge.state === "confirmed" || edge.state === "confirmed-by-me";
                     const isUnconfirmed = edge.state === "unconfirmed";
+                    const isHighlighted = edge.key === highlightEdgeKey;
                     const edgeLabel = `${edge.a.tl_id}#${edge.a.ep} ↔ ${edge.b.tl_id}#${edge.b.ep}`;
                     return (
                       <li
                         key={edge.key}
+                        ref={isHighlighted ? highlightRowRef : undefined}
                         className={`flex items-center gap-2 rounded px-1.5 py-0.5 ${
                           ignored
                             ? "bg-muted/30 text-muted-foreground line-through opacity-60"
                             : STATE_ROW_CLASS[edge.state]
+                        } ${
+                          isHighlighted
+                            ? "ring-2 ring-sky-500 ring-offset-1 ring-offset-background"
+                            : ""
                         }`}
                       >
                         <span
@@ -423,8 +467,13 @@ export function MarkGroupingElkDialog({
                           }`}
                         />
                         <span className="flex-1 truncate font-mono">{edgeLabel}</span>
-                        <span className="shrink-0 tabular-nums text-muted-foreground">
-                          {Math.round(edge.walkBlocks)}b
+                        <span
+                          className="shrink-0 rounded bg-foreground/10 px-1 font-mono text-[10px] tabular-nums text-foreground"
+                          title={t("topsMap.markGroupingElk.walkDistance", {
+                            count: Math.round(edge.walkBlocks),
+                          })}
+                        >
+                          {Math.round(edge.walkBlocks)} b
                         </span>
                         {isUnconfirmed && (
                           <Button

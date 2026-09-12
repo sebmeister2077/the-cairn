@@ -105,6 +105,9 @@ export interface RouteOverlay {
       | "confirmed-by-me"
       | "pending-attest"
       | "pending-unattest";
+    /** When true the leg is drawn as a red/white barber-stripe to signal
+     *  the user has excluded ("ignored") it from staging. */
+    ignored?: boolean;
   }>;
   /** Origin pin (green). */
   from?: { x: number; z: number } | null;
@@ -659,6 +662,7 @@ export function MapViewer({
       x2: number;
       y2: number;
       elkState?: RouteOverlay["walkLegs"][number]["elkState"];
+      ignored?: boolean;
     }> = [];
     for (const leg of routeOverlay.walkLegs) {
       const x1 = toImgX(leg.from.x);
@@ -666,7 +670,7 @@ export function MapViewer({
       const x2 = toImgX(leg.to.x);
       const y2 = toImgY(leg.to.z);
       if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
-      walkLegs.push({ key: leg.key, x1, y1, x2, y2, elkState: leg.elkState });
+      walkLegs.push({ key: leg.key, x1, y1, x2, y2, elkState: leg.elkState, ignored: leg.ignored });
     }
     const projectPin = (p: { x: number; z: number } | null | undefined) => {
       if (!p) return null;
@@ -1412,6 +1416,7 @@ export function MapViewer({
           { colour: string; legs: typeof projectedRouteOverlay.walkLegs }
         >();
         for (const leg of projectedRouteOverlay.walkLegs) {
+          if (leg.ignored) continue; // ignored legs get the red/white pass below
           const colour = colourFor(leg.elkState);
           let bucket = groups.get(colour);
           if (!bucket) {
@@ -1432,6 +1437,36 @@ export function MapViewer({
           ctx.stroke();
         }
         ctx.setLineDash([]);
+
+        // Ignored legs: a bold red barber-stripe (thick red base, white
+        // dashes on top) so excluded connections read unmistakably as
+        // "red / not being submitted" and stand out from the light
+        // slate-200 unconfirmed walks around them.
+        const ignoredLegs = projectedRouteOverlay.walkLegs.filter((l) => l.ignored);
+        if (ignoredLegs.length > 0) {
+          ctx.save();
+          ctx.lineCap = "round";
+          ctx.setLineDash([]);
+          ctx.strokeStyle = "rgba(220, 38, 38, 0.98)"; // red-600 base
+          ctx.lineWidth = walkLineWidth * 1.6;
+          ctx.beginPath();
+          for (const leg of ignoredLegs) {
+            ctx.moveTo(leg.x1, leg.y1);
+            ctx.lineTo(leg.x2, leg.y2);
+          }
+          ctx.stroke();
+          ctx.setLineDash([dashUnit * 0.9, dashUnit * 0.9]);
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+          ctx.lineWidth = walkLineWidth * 1.6;
+          ctx.beginPath();
+          for (const leg of ignoredLegs) {
+            ctx.moveTo(leg.x1, leg.y1);
+            ctx.lineTo(leg.x2, leg.y2);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.restore();
+        }
 
         // 1b. Focused walk leg: bright pulsing halo + endpoint rings so the
         //     user can immediately see which edge was "Jumped to" from the

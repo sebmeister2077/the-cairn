@@ -1654,6 +1654,7 @@ export function TOPSMapViewPage() {
           from: { x: s.fromX, z: s.fromZ },
           to: { x: s.toX, z: s.toZ },
           elkState: s.elkState,
+          ignored: s.ignored,
         })),
         from: null,
         to: null,
@@ -2027,7 +2028,7 @@ export function TOPSMapViewPage() {
               claimDensity={playerClaimDensity}
               playerClaimMarkers={playerClaimMarkers}
               playerClaimLabelMode={playerClaimLabelMode}
-              radiusFilter={radiusFilter}
+              radiusFilter={previewActive ? null : radiusFilter}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
               initialView={initialUrlParams.initialView ?? favoriteInitialViewRef.current}

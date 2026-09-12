@@ -1827,6 +1827,12 @@ export const en = {
                 many: "{count} blocks",
                 other: "{count} blocks",
             },
+            walkDistance: {
+                one: "{count} block walk",
+                few: "{count} blocks walk",
+                many: "{count} blocks walk",
+                other: "{count} blocks walk",
+            },
             preview: "Preview",
             previewHint: "Show only this grouping's walks on the map",
             exitPreview: "Exit preview",

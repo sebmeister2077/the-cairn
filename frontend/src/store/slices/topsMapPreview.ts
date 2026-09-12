@@ -37,6 +37,10 @@ export interface PreviewWalkSegment {
     | "confirmed-by-me"
     | "pending-attest"
     | "pending-unattest";
+    /** When true the user has flagged this walk as "ignore" in the dialog.
+     *  Rendered on the map with a red/white barber-stripe so it's obvious
+     *  which connections were excluded from staging. */
+    ignored?: boolean;
 }
 
 export interface MarkElkDialogSnapshot {
@@ -45,6 +49,9 @@ export interface MarkElkDialogSnapshot {
     ignoredKeys: string[];
     maxWalkBlocks: number;
     showAllRows: boolean;
+    /** The edge whose "jump to" location icon was clicked to enter
+     *  preview, so the dialog can re-highlight that row on exit. */
+    focusedEdgeKey?: string | null;
 }
 
 export interface TopsMapPreviewState {

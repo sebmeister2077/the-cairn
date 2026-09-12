@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Database, Download, Globe, Plus, Upload } from "lucide-react";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
@@ -108,6 +108,13 @@ export function TLGroupingsDrawer({
   // state so React doesn't see a setState-in-effect cascade.
   const previewActive = useAppSelector((s) => s.topsMapPreview.active);
   const previewGroupingId = useAppSelector((s) => s.topsMapPreview.groupingId);
+
+  // The drawer (a portalled sheet) sits above the map's floating
+  // "Exit preview" button, so keeping it open would cover the only way
+  // out of preview. Close it the moment preview activates.
+  useEffect(() => {
+    if (previewActive && open) onOpenChange(false);
+  }, [previewActive, open, onOpenChange]);
   const effectiveMarkElkTarget: TLGrouping | null = useMemo(() => {
     if (previewActive) return null;
     if (previewGroupingId) {

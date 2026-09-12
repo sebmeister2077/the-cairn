@@ -8,7 +8,7 @@ export function ExitPreviewButton({}) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-3 z-30 flex justify-center">
+    <div className="pointer-events-none absolute inset-x-0 top-3 z-50 flex justify-center">
       <Button
         type="button"
         size="sm"
