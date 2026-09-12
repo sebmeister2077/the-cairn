@@ -41,6 +41,14 @@ export interface EnumerateGroupingEdgesResult {
     includedCount: number;
 }
 
+/** How walk edges inside a grouping are selected.
+ *  - `distance`: every endpoint pair within {@link EnumerateGroupingEdgesOptions.maxWalkBlocks}.
+ *  - `epicenter`: only endpoints inside {@link EnumerateGroupingEdgesOptions.radiusBlocks}
+ *    of a chosen centre, wired to each other regardless of the distance
+ *    between them. Lets the user tightly scope a densely interconnected
+ *    cluster so far-apart-but-nearby TLs aren't wrongly linked. */
+export type ElkGroupingMode = "distance" | "epicenter";
+
 export interface EnumerateGroupingEdgesOptions {
     kNeighbors: number;
     walkSpeed: number;
@@ -48,8 +56,16 @@ export interface EnumerateGroupingEdgesOptions {
      *  exceeds this many blocks. Defaults to {@link DEFAULT_MAX_WALK_BLOCKS}.
      *  Pure K-NN over a small grouping will otherwise wire up every TL
      *  pair regardless of distance, so chained TLs that should produce
-     *  N−1 walks end up with C(N,2)×4 edges. */
+     *  N−1 walks end up with C(N,2)×4 edges. Ignored in `epicenter` mode. */
     maxWalkBlocks?: number;
+    /** Connection-selection strategy. Defaults to `distance`. */
+    mode?: ElkGroupingMode;
+    /** Epicenter centre (map/UI world frame) for `epicenter` mode. When
+     *  null in `epicenter` mode, no edges are produced. */
+    epicenter?: { x: number; z: number } | null;
+    /** Inclusion radius around {@link epicenter}, in blocks. Defaults to
+     *  {@link DEFAULT_EPICENTER_RADIUS}. */
+    radiusBlocks?: number;
 }
 
 /** Default cap on the walkable distance between two TL endpoints inside
@@ -58,6 +74,11 @@ export interface EnumerateGroupingEdgesOptions {
 export const DEFAULT_MAX_WALK_BLOCKS = 800;
 export const MIN_MAX_WALK_BLOCKS = 10;
 export const MAX_MAX_WALK_BLOCKS = 1900;
+
+/** Default / bounds for the epicenter-mode inclusion radius. */
+export const DEFAULT_EPICENTER_RADIUS = 400;
+export const MIN_EPICENTER_RADIUS = 25;
+export const MAX_EPICENTER_RADIUS = 2000;
 
 /**
  * Walk-edge enumeration for a single grouping.
@@ -89,18 +110,40 @@ export function enumerateGroupingEdges(
     }
 
     const maxWalkBlocks = options.maxWalkBlocks ?? DEFAULT_MAX_WALK_BLOCKS;
+    const mode: ElkGroupingMode = options.mode ?? "distance";
+    const epicenter = options.epicenter ?? null;
+    const radiusBlocks = options.radiusBlocks ?? DEFAULT_EPICENTER_RADIUS;
+
+    // Epicenter mode with no centre chosen yet produces nothing — the UI
+    // prompts the user to pick one.
+    if (mode === "epicenter" && !epicenter) {
+        return { edges: [], skipped, includedCount: included.length };
+    }
 
     // Every walkable connection inside the grouping is an endpoint-to-endpoint
-    // pair between two *different* TLs within `maxWalkBlocks`. Enumerate all
-    // such pairs directly rather than via the planner's K-nearest graph — the
-    // K-NN cap silently dropped connections when 7+ TLs sat close together,
-    // since each endpoint only wired to its k closest neighbours.
+    // pair between two *different* TLs. Enumerate all such pairs directly
+    // rather than via the planner's K-nearest graph — the K-NN cap silently
+    // dropped connections when 7+ TLs sat close together, since each endpoint
+    // only wired to its k closest neighbours.
+    //
+    // Selection differs by mode:
+    //   * distance  — keep pairs within `maxWalkBlocks` of each other.
+    //   * epicenter — keep only endpoints inside `radiusBlocks` of the
+    //                 chosen centre, then link every remaining pair.
     const seen = new Map<string, GroupingElkEdge>();
-    const endpoints: Array<{ id: string; ep: EdgeEndpointIdx; x: number; z: number }> = [];
+    let endpoints: Array<{ id: string; ep: EdgeEndpointIdx; x: number; z: number }> = [];
     for (const seg of included) {
         if (!seg.id) continue;
         endpoints.push({ id: seg.id, ep: 0, x: seg.x1, z: seg.z1 });
         endpoints.push({ id: seg.id, ep: 1, x: seg.x2, z: seg.z2 });
+    }
+    if (mode === "epicenter" && epicenter) {
+        const r2 = radiusBlocks * radiusBlocks;
+        endpoints = endpoints.filter((e) => {
+            const dx = e.x - epicenter.x;
+            const dz = e.z - epicenter.z;
+            return dx * dx + dz * dz <= r2;
+        });
     }
     for (let i = 0; i < endpoints.length; i++) {
         const A = endpoints[i];
@@ -110,7 +153,9 @@ export function enumerateGroupingEdges(
             const dx = A.x - B.x;
             const dz = A.z - B.z;
             const walkBlocks = Math.sqrt(dx * dx + dz * dz);
-            if (walkBlocks > maxWalkBlocks) continue;
+            // In epicenter mode the radius filter already scoped the set,
+            // so any surviving pair counts regardless of separation.
+            if (mode === "distance" && walkBlocks > maxWalkBlocks) continue;
             const a: EdgeEndpointRef = { tl_id: A.id, ep: A.ep };
             const b: EdgeEndpointRef = { tl_id: B.id, ep: B.ep };
             let key: string;

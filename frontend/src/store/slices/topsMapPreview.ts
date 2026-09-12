@@ -52,6 +52,14 @@ export interface MarkElkDialogSnapshot {
     /** The edge whose "jump to" location icon was clicked to enter
      *  preview, so the dialog can re-highlight that row on exit. */
     focusedEdgeKey?: string | null;
+    /** Connection-selection mode the dialog was in. */
+    mode?: "distance" | "epicenter";
+    /** Epicenter centre for `epicenter` mode (map/UI world frame). Updated
+     *  in-place when the user picks a point on the map during preview so
+     *  the dialog rehydrates with the freshly-chosen centre. */
+    epicenter?: { x: number; z: number } | null;
+    /** Inclusion radius for `epicenter` mode, in blocks. */
+    epicenterRadius?: number;
 }
 
 export interface TopsMapPreviewState {
@@ -69,6 +77,13 @@ export interface TopsMapPreviewState {
      *  dialog reads this once on remount and dispatches
      *  `consumeDialogStateSnapshot` to clear it. */
     dialogStateSnapshot: MarkElkDialogSnapshot | null;
+    /** True while the map is waiting for a click to place the epicenter
+     *  centre (epicenter mode only). Turns the cursor into "pick". */
+    pickEpicenter: boolean;
+    /** Current epicenter centre to draw a radius circle for on the map. */
+    epicenter: { x: number; z: number } | null;
+    /** Radius (blocks) of the epicenter circle drawn on the map. */
+    epicenterRadius: number;
 }
 
 export const initialTopsMapPreviewState: TopsMapPreviewState = {
@@ -77,6 +92,9 @@ export const initialTopsMapPreviewState: TopsMapPreviewState = {
     segments: [],
     focusEdgeKey: null,
     dialogStateSnapshot: null,
+    pickEpicenter: false,
+    epicenter: null,
+    epicenterRadius: 0,
 };
 
 interface EnterPreviewPayload {
@@ -84,6 +102,11 @@ interface EnterPreviewPayload {
     segments: PreviewWalkSegment[];
     focusEdgeKey: string | null;
     dialogStateSnapshot: MarkElkDialogSnapshot;
+    /** When true, the map enters epicenter-pick cursor mode. */
+    pickEpicenter?: boolean;
+    /** Epicenter centre + radius to draw a circle for while in preview. */
+    epicenter?: { x: number; z: number } | null;
+    epicenterRadius?: number;
 }
 
 export const topsMapPreviewSlice = createSlice({
@@ -96,6 +119,9 @@ export const topsMapPreviewSlice = createSlice({
             state.segments = action.payload.segments;
             state.focusEdgeKey = action.payload.focusEdgeKey;
             state.dialogStateSnapshot = action.payload.dialogStateSnapshot;
+            state.pickEpicenter = action.payload.pickEpicenter ?? false;
+            state.epicenter = action.payload.epicenter ?? null;
+            state.epicenterRadius = action.payload.epicenterRadius ?? 0;
         },
         /** Stop hiding overlays. The drawer will see `groupingId` is
          *  still set with `active=false` and re-open the dialog; the
@@ -104,6 +130,7 @@ export const topsMapPreviewSlice = createSlice({
             state.active = false;
             state.segments = [];
             state.focusEdgeKey = null;
+            state.pickEpicenter = false;
         },
         /** Called by the dialog after it has read its initial state
          *  from the snapshot. Also clears `groupingId` so the drawer
@@ -111,12 +138,25 @@ export const topsMapPreviewSlice = createSlice({
         consumeDialogStateSnapshot(state) {
             state.dialogStateSnapshot = null;
             state.groupingId = null;
+            state.epicenter = null;
+            state.epicenterRadius = 0;
         },
         /** Update the focus pointer mid-preview (e.g. the user clicked
          *  another edge from a side panel — currently unused but a
          *  natural extension point). */
         setPreviewFocusEdge(state, action: PayloadAction<string | null>) {
             state.focusEdgeKey = action.payload;
+        },
+        /** Record the epicenter the user clicked on the map. Ends pick
+         *  mode (single click) but stays in preview so the circle is
+         *  visible, and writes the centre back into the pending dialog
+         *  snapshot so it survives the round-trip to the dialog. */
+        setPickedEpicenter(state, action: PayloadAction<{ x: number; z: number }>) {
+            state.epicenter = action.payload;
+            state.pickEpicenter = false;
+            if (state.dialogStateSnapshot) {
+                state.dialogStateSnapshot.epicenter = action.payload;
+            }
         },
     },
 });
@@ -126,4 +166,5 @@ export const {
     exitPreview,
     consumeDialogStateSnapshot,
     setPreviewFocusEdge,
+    setPickedEpicenter,
 } = topsMapPreviewSlice.actions;

@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PawPrint, AlertTriangle, Flag, Eye, EyeOff, MapPin } from "lucide-react";
+import {
+  Loader2,
+  PawPrint,
+  AlertTriangle,
+  Flag,
+  Eye,
+  EyeOff,
+  MapPin,
+  Target,
+  Ruler,
+  X,
+} from "lucide-react";
 
 import type { WorldLineSegment } from "@/components/MapViewer";
 import { Button } from "@/components/ui/button";
@@ -28,7 +39,11 @@ import {
   DEFAULT_MAX_WALK_BLOCKS,
   MAX_MAX_WALK_BLOCKS,
   MIN_MAX_WALK_BLOCKS,
+  DEFAULT_EPICENTER_RADIUS,
+  MAX_EPICENTER_RADIUS,
+  MIN_EPICENTER_RADIUS,
   type ClassifiedGroupingEdge,
+  type ElkGroupingMode,
 } from "@/lib/elk-grouping";
 import type { WalkLegElkState } from "@/lib/elk-walkable";
 import { Slider } from "@/components/ui/slider";
@@ -101,6 +116,15 @@ export function MarkGroupingElkDialog({
   const [maxWalkBlocks, setMaxWalkBlocks] = useState<number>(
     () => dialogStateSnapshot?.maxWalkBlocks ?? DEFAULT_MAX_WALK_BLOCKS,
   );
+  const [mode, setMode] = useState<ElkGroupingMode>(
+    () => dialogStateSnapshot?.mode ?? "distance",
+  );
+  const [epicenter, setEpicenter] = useState<{ x: number; z: number } | null>(
+    () => dialogStateSnapshot?.epicenter ?? null,
+  );
+  const [epicenterRadius, setEpicenterRadius] = useState<number>(
+    () => dialogStateSnapshot?.epicenterRadius ?? DEFAULT_EPICENTER_RADIUS,
+  );
   const [ignoredKeys, setIgnoredKeys] = useState<Set<string>>(
     () => new Set(dialogStateSnapshot?.ignoredKeys ?? []),
   );
@@ -130,6 +154,11 @@ export function MarkGroupingElkDialog({
       setMaxWalkBlocks(dialogStateSnapshot.maxWalkBlocks);
       setShowAllRows(dialogStateSnapshot.showAllRows);
       setHighlightEdgeKey(dialogStateSnapshot.focusedEdgeKey ?? null);
+      setMode(dialogStateSnapshot.mode ?? "distance");
+      setEpicenter(dialogStateSnapshot.epicenter ?? null);
+      if (dialogStateSnapshot.epicenterRadius != null) {
+        setEpicenterRadius(dialogStateSnapshot.epicenterRadius);
+      }
       dispatch(consumeDialogStateSnapshot());
     }
   }, [open, dialogStateSnapshot, dispatch]);
@@ -154,8 +183,21 @@ export function MarkGroupingElkDialog({
       kNeighbors,
       walkSpeed,
       maxWalkBlocks,
+      mode,
+      epicenter,
+      radiusBlocks: epicenterRadius,
     });
-  }, [open, grouping, allSegments, kNeighbors, walkSpeed, maxWalkBlocks]);
+  }, [
+    open,
+    grouping,
+    allSegments,
+    kNeighbors,
+    walkSpeed,
+    maxWalkBlocks,
+    mode,
+    epicenter,
+    epicenterRadius,
+  ]);
 
   const pendingAttestKeys = useMemo(
     () => new Set(pendingAttest.map((p) => p.key)),
@@ -282,14 +324,49 @@ export function MarkGroupingElkDialog({
         groupingId: grouping.id,
         segments: buildPreviewSegments(),
         focusEdgeKey,
+        epicenter: mode === "epicenter" ? epicenter : null,
+        epicenterRadius: mode === "epicenter" ? epicenterRadius : 0,
         dialogStateSnapshot: {
           ignoredKeys: Array.from(ignoredKeys),
           maxWalkBlocks,
           showAllRows,
           focusedEdgeKey: focusEdgeKey,
+          mode,
+          epicenter,
+          epicenterRadius,
         },
       }),
     );
+  };
+
+  // Hand off to preview with the map cursor armed to place the epicenter.
+  // The click writes the centre back into the snapshot, so exiting preview
+  // rehydrates the dialog with the chosen point.
+  const handlePickEpicenter = () => {
+    if (!grouping) return;
+    dispatch(
+      enterPreview({
+        groupingId: grouping.id,
+        segments: buildPreviewSegments(),
+        focusEdgeKey: null,
+        pickEpicenter: true,
+        epicenter,
+        epicenterRadius,
+        dialogStateSnapshot: {
+          ignoredKeys: Array.from(ignoredKeys),
+          maxWalkBlocks,
+          showAllRows,
+          focusedEdgeKey: null,
+          mode: "epicenter",
+          epicenter,
+          epicenterRadius,
+        },
+      }),
+    );
+  };
+
+  const handleClearEpicenter = () => {
+    setEpicenter(null);
   };
 
   const toggleIgnored = (key: string) => {
@@ -403,26 +480,120 @@ export function MarkGroupingElkDialog({
               </div>
             )}
 
-            {/* Max-walk-distance filter — every endpoint pair inside the
-                grouping is a candidate walk, so this cap is what turns
-                "every pair" into "only walks you'd actually do". */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between gap-2 text-xs">
-                <span className="font-medium uppercase tracking-wide text-muted-foreground">
-                  {t("topsMap.markGroupingElk.maxWalkLabel")}
-                </span>
-                <span className="font-mono tabular-nums">
-                  {t("topsMap.markGroupingElk.maxWalkValue", { count: maxWalkBlocks })}
-                </span>
+            {/* Connection-selection mode. Distance links every nearby
+                endpoint pair; epicenter scopes to a hand-placed circle so
+                far-apart-but-close TLs aren't wrongly wired together. */}
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-1 rounded-md border p-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "distance" ? "default" : "ghost"}
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => setMode("distance")}
+                >
+                  <Ruler className="size-3.5" />
+                  {t("topsMap.markGroupingElk.modeDistance")}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={mode === "epicenter" ? "default" : "ghost"}
+                  className="h-7 gap-1.5 text-xs"
+                  onClick={() => setMode("epicenter")}
+                >
+                  <Target className="size-3.5" />
+                  {t("topsMap.markGroupingElk.modeEpicenter")}
+                </Button>
               </div>
-              <Slider
-                value={maxWalkBlocks}
-                min={MIN_MAX_WALK_BLOCKS}
-                max={MAX_MAX_WALK_BLOCKS}
-                step={10}
-                onValueChange={setMaxWalkBlocks}
-                aria-label={t("topsMap.markGroupingElk.maxWalkLabel")}
-              />
+
+              {mode === "distance" ? (
+                /* Max-walk-distance filter — every endpoint pair inside the
+                   grouping is a candidate walk, so this cap is what turns
+                   "every pair" into "only walks you'd actually do". */
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="font-medium uppercase tracking-wide text-muted-foreground">
+                      {t("topsMap.markGroupingElk.maxWalkLabel")}
+                    </span>
+                    <span className="font-mono tabular-nums">
+                      {t("topsMap.markGroupingElk.maxWalkValue", { count: maxWalkBlocks })}
+                    </span>
+                  </div>
+                  <Slider
+                    value={maxWalkBlocks}
+                    min={MIN_MAX_WALK_BLOCKS}
+                    max={MAX_MAX_WALK_BLOCKS}
+                    step={10}
+                    onValueChange={setMaxWalkBlocks}
+                    aria-label={t("topsMap.markGroupingElk.maxWalkLabel")}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    {t("topsMap.markGroupingElk.epicenterHelp")}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-8 flex-1 gap-1.5 text-xs"
+                      onClick={handlePickEpicenter}
+                    >
+                      <Target className="size-3.5" />
+                      {epicenter
+                        ? t("topsMap.markGroupingElk.epicenterRepick")
+                        : t("topsMap.markGroupingElk.epicenterPick")}
+                    </Button>
+                    {epicenter && (
+                      <>
+                        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                          {t("topsMap.markGroupingElk.epicenterCoords", {
+                            x: epicenter.x,
+                            z: epicenter.z,
+                          })}
+                        </span>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          className="h-7 w-7 shrink-0"
+                          onClick={handleClearEpicenter}
+                          title={t("topsMap.markGroupingElk.epicenterClear")}
+                          aria-label={t("topsMap.markGroupingElk.epicenterClear")}
+                        >
+                          <X className="size-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between gap-2 text-xs">
+                      <span className="font-medium uppercase tracking-wide text-muted-foreground">
+                        {t("topsMap.markGroupingElk.radiusLabel")}
+                      </span>
+                      <span className="font-mono tabular-nums">
+                        {t("topsMap.markGroupingElk.maxWalkValue", { count: epicenterRadius })}
+                      </span>
+                    </div>
+                    <Slider
+                      value={epicenterRadius}
+                      min={MIN_EPICENTER_RADIUS}
+                      max={MAX_EPICENTER_RADIUS}
+                      step={25}
+                      onValueChange={setEpicenterRadius}
+                      aria-label={t("topsMap.markGroupingElk.radiusLabel")}
+                    />
+                  </div>
+                  {!epicenter && (
+                    <div className="rounded-md border border-dashed p-3 text-center text-xs text-muted-foreground">
+                      {t("topsMap.markGroupingElk.epicenterNotSet")}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Edge list */}

@@ -114,7 +114,11 @@ import {
   hydrateRoutePlannerFromShare,
   setRouteFocusRequest,
 } from "@/store/slices/routePlanner";
-import { exitPreview as exitPreviewAction } from "@/store/slices/topsMapPreview";
+import {
+  exitPreview as exitPreviewAction,
+  setPickedEpicenter,
+} from "@/store/slices/topsMapPreview";
+import { PreviewEpicenterOverlay } from "@/components/tops-map/PreviewEpicenterOverlay";
 import { ResourcesDrawer } from "@/components/tops-map/ResourcesDrawer";
 import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLayer";
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
@@ -1613,6 +1617,9 @@ export function TOPSMapViewPage() {
   const previewSegments = useAppSelector((s) => s.topsMapPreview.segments);
   const previewFocusEdgeKey = useAppSelector((s) => s.topsMapPreview.focusEdgeKey);
   const previewGroupingId = useAppSelector((s) => s.topsMapPreview.groupingId);
+  const previewPickEpicenter = useAppSelector((s) => s.topsMapPreview.pickEpicenter);
+  const previewEpicenter = useAppSelector((s) => s.topsMapPreview.epicenter);
+  const previewEpicenterRadius = useAppSelector((s) => s.topsMapPreview.epicenterRadius);
 
   // The grouping's member TLs are rendered alongside the walk edges in
   // preview mode so the user can see which translocators the walks are
@@ -1706,13 +1713,17 @@ export function TOPSMapViewPage() {
   const areaPickActive = isAdmin && areaTool.picking;
   const handleMapWorldClick = useCallback(
     (x: number, z: number) => {
+      if (previewPickEpicenter) {
+        dispatch(setPickedEpicenter({ x: Math.round(x), z: Math.round(z) }));
+        return;
+      }
       if (areaPickActive) {
         areaTool.handleWorldClick(x, z);
         return;
       }
       handleRouteWorldClick(x, z);
     },
-    [areaPickActive, areaTool, handleRouteWorldClick],
+    [previewPickEpicenter, dispatch, areaPickActive, areaTool, handleRouteWorldClick],
   );
 
   return (
@@ -1999,6 +2010,13 @@ export function TOPSMapViewPage() {
         )}
         <div className={isFullscreen ? "absolute inset-0" : "relative"}>
           {previewActive && <ExitPreviewButton />}
+          {previewPickEpicenter && (
+            <div className="pointer-events-none absolute inset-x-0 top-14 z-50 flex justify-center">
+              <div className="pointer-events-none rounded-md bg-emerald-600/90 px-3 py-1.5 text-xs font-medium text-white shadow-lg">
+                {t("topsMap.markGroupingElk.pickEpicenterHint")}
+              </div>
+            </div>
+          )}
           {usingWebCartographer ? (
             <WebCartographerMapViewer
               baseUrl={effectiveWcUrl}
@@ -2114,17 +2132,28 @@ export function TOPSMapViewPage() {
                         box={areaTool.box}
                       />
                     ) : null}
+                    {previewActive && previewEpicenter ? (
+                      <PreviewEpicenterOverlay
+                        stats={wcStats}
+                        imageWidth={imgNatural.w}
+                        imageHeight={imgNatural.h}
+                        center={previewEpicenter}
+                        radiusBlocks={previewEpicenterRadius}
+                      />
+                    ) : null}
                   </>
                 ) : null
               }
               cursorMode={
-                areaPickActive
+                previewPickEpicenter
                   ? "pick"
-                  : routePickMode
+                  : areaPickActive
                     ? "pick"
-                    : drawingProps.enabled
-                      ? "draw"
-                      : "default"
+                    : routePickMode
+                      ? "pick"
+                      : drawingProps.enabled
+                        ? "draw"
+                        : "default"
               }
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
@@ -2230,10 +2259,21 @@ export function TOPSMapViewPage() {
                         box={areaTool.box}
                       />
                     ) : null}
+                    {previewActive && previewEpicenter ? (
+                      <PreviewEpicenterOverlay
+                        stats={stats}
+                        imageWidth={tileSet.imageWidth}
+                        imageHeight={tileSet.imageHeight}
+                        center={previewEpicenter}
+                        radiusBlocks={previewEpicenterRadius}
+                      />
+                    ) : null}
                   </>
                 ) : null
               }
-              cursorMode={areaPickActive || routePickMode ? "pick" : "default"}
+              cursorMode={
+                previewPickEpicenter || areaPickActive || routePickMode ? "pick" : "default"
+              }
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
             />
