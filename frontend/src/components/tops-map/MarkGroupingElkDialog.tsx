@@ -116,9 +116,7 @@ export function MarkGroupingElkDialog({
   const [maxWalkBlocks, setMaxWalkBlocks] = useState<number>(
     () => dialogStateSnapshot?.maxWalkBlocks ?? DEFAULT_MAX_WALK_BLOCKS,
   );
-  const [mode, setMode] = useState<ElkGroupingMode>(
-    () => dialogStateSnapshot?.mode ?? "distance",
-  );
+  const [mode, setMode] = useState<ElkGroupingMode>(() => dialogStateSnapshot?.mode ?? "distance");
   const [epicenter, setEpicenter] = useState<{ x: number; z: number } | null>(
     () => dialogStateSnapshot?.epicenter ?? null,
   );

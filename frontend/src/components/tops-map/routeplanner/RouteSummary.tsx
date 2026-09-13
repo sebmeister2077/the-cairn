@@ -83,7 +83,7 @@ import {
 import { formatDuration } from "@/lib/format-duration";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { FALLBACK_WAYPOINT_Y } from "../RoutePlannerPanel";
+import { FALLBACK_WAYPOINT_Y } from "@/lib/route-waypoints";
 
 /** Per-walk-leg attestation controls accepted by {@link RouteSummary}. */
 interface ElkRouteSummaryProps {

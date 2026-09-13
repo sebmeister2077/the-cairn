@@ -14,7 +14,7 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import { useEffect, useState } from "react";
 import type { RouteResult } from "@/lib/tl-routing";
-import { renderTemplate, routeWaypointChain } from "../RoutePlannerPanel";
+import { renderTemplate, routeWaypointChain } from "@/lib/route-waypoints";
 import { copyTextToClipboard } from "@/lib/component-helpers/copyToClipboard";
 
 // Curated palette of CSS colour names that VS's /waypoint command renders

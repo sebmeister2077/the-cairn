@@ -20,7 +20,7 @@ import { useTranslation } from "@/lib/i18n";
 
 import { copyTextToClipboard } from "@/lib/component-helpers/copyToClipboard";
 import { PlayerPicker } from "../PlayerPicker";
-import { FALLBACK_WAYPOINT_Y } from "../RoutePlannerPanel";
+import { FALLBACK_WAYPOINT_Y } from "@/lib/route-waypoints";
 
 type TranslateFn = ReturnType<typeof useTranslation>["t"];
 

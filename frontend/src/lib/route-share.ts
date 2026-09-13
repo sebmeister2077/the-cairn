@@ -15,14 +15,20 @@
 //   fl=label            URL-encoded From label (omitted when redundant)
 //   tl=label            URL-encoded To label
 //   ws, tlp, kn         settings — omitted when equal to slice defaults
+//   nr=3                number of alternative routes — omitted when default
+//   elk=1               elk-friendly-only toggle — omitted when off
+//   sel=2               selected alternative index — omitted when 0 (route mode only)
 //   pl=x,z|x,z|...      rendezvous party, "_" = empty slot
 //   pll=l|l|...         per-player labels (same length / order as `pl`)
 //   obj=minisum         rendezvous objective — omitted when default "minimax"
 
 import {
     DEFAULT_K_NEIGHBORS,
+    DEFAULT_NUMBER_OF_ROUTES,
     DEFAULT_TL_PENALTY_S,
     DEFAULT_WALK_SPEED,
+    MAX_NUMBER_OF_ROUTES,
+    MIN_NUMBER_OF_ROUTES,
     type RendezvousObjective,
 } from "@/lib/tl-routing";
 import type { EndpointPick, RoutePlannerMode } from "@/store/slices/routePlanner";
@@ -39,6 +45,9 @@ export const ROUTE_SHARE_PARAM_KEYS = [
     "ws",
     "tlp",
     "kn",
+    "nr",
+    "elk",
+    "sel",
     "pl",
     "pll",
     "obj",
@@ -53,6 +62,9 @@ export interface RouteSharePayload {
     walkSpeed?: number;
     tlPenaltySeconds?: number;
     kNeighbors?: number;
+    numberOfRoutes?: number;
+    elkFriendlyOnly?: boolean;
+    selectedIndex?: number;
     players?: Array<EndpointPick | null>;
     rendezvousObjective?: RendezvousObjective;
 }
@@ -65,6 +77,9 @@ export interface RouteShareInputs {
     walkSpeed: number;
     tlPenaltySeconds: number;
     kNeighbors: number;
+    numberOfRoutes: number;
+    elkFriendlyOnly: boolean;
+    selectedIndex: number;
     players: Array<EndpointPick | null>;
     rendezvousObjective: RendezvousObjective;
 }
@@ -123,6 +138,10 @@ export function encodeRouteShareParams(input: RouteShareInputs): URLSearchParams
             const lbl = labelIfMeaningful(input.to);
             if (lbl) params.set("tl", lbl);
         }
+        // Only meaningful in route mode — rendezvous has no alternates list.
+        if (input.selectedIndex > 0) {
+            params.set("sel", String(Math.trunc(input.selectedIndex)));
+        }
     } else {
         const filled = input.players.filter((p) => p != null);
         if (filled.length < 1) return null;
@@ -145,6 +164,12 @@ export function encodeRouteShareParams(input: RouteShareInputs): URLSearchParams
     }
     if (input.kNeighbors !== DEFAULT_K_NEIGHBORS) {
         params.set("kn", String(input.kNeighbors));
+    }
+    if (input.numberOfRoutes !== DEFAULT_NUMBER_OF_ROUTES) {
+        params.set("nr", String(input.numberOfRoutes));
+    }
+    if (input.elkFriendlyOnly) {
+        params.set("elk", "1");
     }
 
     return params;
@@ -183,6 +208,8 @@ export function decodeRouteShareParams(params: URLSearchParams): RouteSharePaylo
                 source: "url",
             };
         }
+        const sel = parseNumberInRange(params.get("sel"), 0, MAX_NUMBER_OF_ROUTES - 1);
+        if (sel !== undefined) payload.selectedIndex = Math.trunc(sel);
     } else {
         const plRaw = params.get("pl");
         if (!plRaw) return null;
@@ -215,6 +242,9 @@ export function decodeRouteShareParams(params: URLSearchParams): RouteSharePaylo
     if (tlp !== undefined) payload.tlPenaltySeconds = tlp;
     const kn = parseNumberInRange(params.get("kn"), 1, 64);
     if (kn !== undefined) payload.kNeighbors = Math.trunc(kn);
+    const nr = parseNumberInRange(params.get("nr"), MIN_NUMBER_OF_ROUTES, MAX_NUMBER_OF_ROUTES);
+    if (nr !== undefined) payload.numberOfRoutes = Math.trunc(nr);
+    if (params.get("elk") === "1") payload.elkFriendlyOnly = true;
 
     return payload;
 }

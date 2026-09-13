@@ -42,6 +42,12 @@ export interface RoutePlannerState {
     to: EndpointPick | null;
     routes: RouteResult[];
     selectedIndex: number;
+    /** A share link can request a specific alternative be pre-selected,
+     *  but routes are recomputed asynchronously on the recipient's side
+     *  and `setRoutes` resets `selectedIndex` to 0. This carries the
+     *  desired index until the first result set arrives, at which point
+     *  it's clamped, applied, and cleared. `null` = no pending request. */
+    pendingSelectedIndex: number | null;
     isComputing: boolean;
     error: string | null;
     /** Map pointer mode: "from"/"to"/"player:N" means the next map click
@@ -87,6 +93,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     to: null,
     routes: [],
     selectedIndex: 0,
+    pendingSelectedIndex: null,
     isComputing: false,
     error: null,
     pickMode: null,
@@ -224,7 +231,17 @@ export const routePlannerSlice = createSlice({
         },
         setRoutes(state, action: PayloadAction<RouteResult[]>) {
             state.routes = action.payload;
-            state.selectedIndex = 0;
+            // Honour a pending share-link selection once, clamped to the
+            // routes that actually came back; otherwise reset to the best.
+            if (state.pendingSelectedIndex != null && action.payload.length > 0) {
+                state.selectedIndex = Math.min(
+                    Math.max(0, state.pendingSelectedIndex),
+                    action.payload.length - 1,
+                );
+            } else {
+                state.selectedIndex = 0;
+            }
+            state.pendingSelectedIndex = null;
             state.isComputing = false;
             state.error = null;
         },
@@ -273,6 +290,9 @@ export const routePlannerSlice = createSlice({
                 walkSpeed?: number;
                 tlPenaltySeconds?: number;
                 kNeighbors?: number;
+                numberOfRoutes?: number;
+                elkFriendlyOnly?: boolean;
+                selectedIndex?: number;
                 players?: Array<EndpointPick | null>;
                 rendezvousObjective?: RendezvousObjective;
             }>,
@@ -283,10 +303,14 @@ export const routePlannerSlice = createSlice({
             state.to = p.to;
             state.routes = [];
             state.selectedIndex = 0;
+            // Defer the shared alternative selection until routes recompute
+            // (see `pendingSelectedIndex` / `setRoutes`). Omitted = best route.
+            state.pendingSelectedIndex = p.selectedIndex ?? null;
             state.error = null;
             state.pickMode = null;
             state.rendezvousResult = null;
             state.rendezvousError = null;
+
             if (p.players !== undefined) {
                 const next = p.players.slice();
                 while (next.length < 2) next.push(null);
@@ -310,6 +334,14 @@ export const routePlannerSlice = createSlice({
                 p.kNeighbors !== undefined
                     ? Math.max(1, Math.min(64, Math.trunc(p.kNeighbors)))
                     : DEFAULT_K_NEIGHBORS;
+            state.numberOfRoutes =
+                p.numberOfRoutes !== undefined
+                    ? Math.max(
+                        MIN_NUMBER_OF_ROUTES,
+                        Math.min(MAX_NUMBER_OF_ROUTES, Math.trunc(p.numberOfRoutes)),
+                    )
+                    : DEFAULT_NUMBER_OF_ROUTES;
+            state.elkFriendlyOnly = p.elkFriendlyOnly ?? false;
             state.isOpen = true;
         },
         setFocusRequest(

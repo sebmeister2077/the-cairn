@@ -95,6 +95,16 @@ export function useTLRoute(): UseTLRouteResult {
     // the TLs the map is drawing.
     const { segments, etag: segmentsEtag } = useActiveTranslocators();
 
+    // The recompute effect keys on `segmentsEtag` (stable while the TL
+    // set is unchanged) rather than the `segments` array reference. React
+    // Query refetches these geojson exports on window focus and hands back
+    // a fresh array of identical content, which would otherwise re-trigger
+    // the effect and flash "Computing routes…" every time the tab regains
+    // focus. Reading the live array through a ref lets the compute use the
+    // latest data without making the reference a dependency.
+    const segmentsRef = useRef(segments);
+    segmentsRef.current = segments;
+
     // Materialise the elk edge set as a Set<string> for O(1) lookup
     // inside the graph builder. Only re-derive when the underlying
     // edge map changes; gate it on `elkFriendlyOnly` so paying users
@@ -137,6 +147,7 @@ export function useTLRoute(): UseTLRouteResult {
             pendingAbort.current.abort();
             pendingAbort.current = null;
         }
+        const segments = segmentsRef.current;
         if (!from || !to || !segments) return;
 
         dispatch(setRouteComputing(true));
@@ -257,7 +268,7 @@ export function useTLRoute(): UseTLRouteResult {
                 pendingAbort.current = null;
             }
         };
-    }, [dispatch, from, to, segments, segmentsEtag, opts, elkEtag, numberOfRoutes]);
+    }, [dispatch, from, to, segmentsEtag, opts, elkEtag, numberOfRoutes]);
 
     return { routes, selectedIndex, isComputing, error };
 }
