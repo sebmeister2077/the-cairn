@@ -113,6 +113,7 @@ export function RoutePlannerPanel() {
   const routes = useAppSelector((s) => s.routePlanner.routes);
   const selectedIndex = useAppSelector((s) => s.routePlanner.selectedIndex);
   const isComputing = useAppSelector((s) => s.routePlanner.isComputing);
+  const progress = useAppSelector((s) => s.routePlanner.progress);
   const error = useAppSelector((s) => s.routePlanner.error);
   const walkSpeed = useAppSelector((s) => s.routePlanner.walkSpeed);
   const tlPenaltySeconds = useAppSelector((s) => s.routePlanner.tlPenaltySeconds);
@@ -562,12 +563,18 @@ export function RoutePlannerPanel() {
               <p className="text-xs text-muted-foreground">
                 {t("routePlanner.setEndpointsPrompt")}
               </p>
-            ) : isComputing ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="h-3 w-3 animate-spin" /> {t("routePlanner.computingRoutes")}
-              </div>
             ) : error ? (
               <p className="text-xs text-red-600">{error}</p>
+            ) : isComputing && !hasRoutes ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" /> {t("routePlanner.computingRoutes")}
+                </div>
+                <RouteSearchProgress
+                  value={progress}
+                  ariaLabel={t("routePlanner.searchProgressAria")}
+                />
+              </div>
             ) : !hasRoutes ? (
               <div className="space-y-1">
                 <p className="text-xs text-muted-foreground">{t("routePlanner.noRouteFound")}</p>
@@ -580,6 +587,24 @@ export function RoutePlannerPanel() {
               </div>
             ) : (
               <>
+                {/* Still enumerating alternates in the worker — keep the
+                    already-found routes on screen and animate a thin bar so
+                    the user knows more may still stream in. */}
+                {isComputing && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        {t("routePlanner.refiningRoutes")}
+                      </span>
+                      <span className="font-mono">{routes.length}</span>
+                    </div>
+                    <RouteSearchProgress
+                      value={progress}
+                      ariaLabel={t("routePlanner.searchProgressAria")}
+                    />
+                  </div>
+                )}
                 {/* Alternate-route tabs — only show when more than one. */}
                 {routes.length > 1 && (
                   <Tabs
@@ -713,5 +738,32 @@ export function RoutePlannerPanel() {
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * Slim determinate progress bar for the route search. `value` is the
+ * worker-reported fraction in [0, 1] (already ramped across a middle band
+ * so it animates smoothly instead of snapping to full); `null` renders an
+ * empty track. We intentionally show only the fill — the "found N" count in
+ * the header carries the concrete number — so the bar reads as motion, not
+ * a precise-but-misleading percentage that never quite reaches 100.
+ */
+function RouteSearchProgress({ value, ariaLabel }: { value: number | null; ariaLabel: string }) {
+  const pct = Math.round(Math.max(0, Math.min(1, value ?? 0)) * 100);
+  return (
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+      role="progressbar"
+      aria-label={ariaLabel}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={pct}
+    >
+      <div
+        className="h-full rounded-full bg-emerald-500 transition-[width] duration-200 ease-out"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
   );
 }

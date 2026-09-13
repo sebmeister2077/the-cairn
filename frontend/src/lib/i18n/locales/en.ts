@@ -1161,6 +1161,8 @@ export const en = {
         },
         setEndpointsPrompt: "Set both endpoints to compute a route.",
         computingRoutes: "Computing routes...",
+        refiningRoutes: "Finding more alternatives…",
+        searchProgressAria: "Route search progress",
         noRouteFound: "No route found.",
         routeAlternative: "#{index}",
         best: "best",

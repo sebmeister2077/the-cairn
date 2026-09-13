@@ -1140,6 +1140,20 @@ export function findRoute(
 // ---------------------------------------------------------------------------
 
 /**
+ * Incremental-progress callback for `findRoutes`. Invoked as Yen's loop
+ * discovers material so callers can render alternatives one-at-a-time and
+ * drive a progress bar. `fraction` is a monotonic 0..1 estimate of how far
+ * through the search we are; `routes` is the best-known deduped prefix so
+ * far (already cost-ordered, capped at `k`); `routesChanged` is `true` only
+ * on the events where that list actually grew.
+ */
+export type RouteProgressFn = (progress: {
+    fraction: number;
+    routes: RouteResult[];
+    routesChanged: boolean;
+}) => void;
+
+/**
  * Yen's K-shortest-loopless-paths. We post-filter the K candidates so each
  * returned route uses a TL set that's not a subset/superset of any earlier
  * route — this makes "Alt 1" and "Alt 2" visibly different rather than
@@ -1147,12 +1161,19 @@ export function findRoute(
  *
  * Worst-case Yen's is O(K · V · (E + V log V)); for K=3 and V≤30k this is
  * well under the 300ms budget on commodity hardware.
+ *
+ * `onProgress` (optional) is called as material is discovered so the UI can
+ * stream alternatives in and animate a progress bar. It's invoked
+ * synchronously; the final authoritative result is the function's return
+ * value (which may reorder the tail relative to the last preview once the
+ * distinct-TL-chain pass and final sort run).
  */
 export function findRoutes(
     graph: TLGraph,
     start: WorldPoint,
     dest: WorldPoint,
     k: number,
+    onProgress?: RouteProgressFn,
 ): RouteResult[] {
     if (k <= 0) return [];
     const aug = augmentForQuery(graph, start, dest);
@@ -1174,6 +1195,48 @@ export function findRoutes(
     // Cap raw Yen iterations to avoid degenerate cost on pathological graphs.
     // Generous multiplier so we still have material after dedup filtering.
     const RAW_K = Math.max(k * 5, 12);
+
+    // Incremental preview: as Yen appends to `A` (strictly cost-ordered) we
+    // reconstruct just the newly-added path and, when it's a genuinely new
+    // TL chain, surface it through `onProgress` so the panel can stream
+    // alternatives in one-at-a-time. `previewOut` therefore stays
+    // cost-ordered without any extra sort. The authoritative result is still
+    // recomputed in the tail below (it also folds in the distinct-TL pass),
+    // so the last few alternates may reshuffle once the search completes.
+    const previewOut: RouteResult[] = [];
+    const previewSeen = new Set<string>();
+    const tlKey = (r: RouteResult): string => {
+        const ids = r.legs
+            .filter((l): l is Extract<RouteLeg, { kind: "tl" }> => l.kind === "tl")
+            .map((l) => l.tlId);
+        return ids.length === 0 ? "__walk_only__" : ids.join(">");
+    };
+    const considerForPreview = (sr: SearchResult): boolean => {
+        if (previewOut.length >= k) return false;
+        const r = reconstructLegs(aug, sr.nodes, sr.edgeIds);
+        const key = tlKey(r);
+        if (previewSeen.has(key)) return false;
+        previewSeen.add(key);
+        previewOut.push(r);
+        return true;
+    };
+    const emitProgress = (raw01: number, routesChanged: boolean) => {
+        if (!onProgress) return;
+        // Reserve the head of the bar for "search started" and the tail for
+        // the distinct-TL pass + final sort, so the Yen loop animates across
+        // the middle band rather than snapping straight to full.
+        const clamped = Math.max(0, Math.min(1, raw01));
+        onProgress({
+            fraction: 0.1 + clamped * 0.8,
+            routes: previewOut.slice(0, k),
+            routesChanged,
+        });
+    };
+
+    // Surface the best route immediately — this is the single biggest
+    // perceived-latency win: the primary route paints while alternates
+    // are still being enumerated.
+    emitProgress(A.length / RAW_K, considerForPreview(first));
 
     /** Pair an edge id with its reverse. Both base TL/walk edges and
      *  extras are wired symmetrically (we always `addEdge(u,v)` AND
@@ -1268,6 +1331,8 @@ export function findRoutes(
         if (B.length === 0) break;
         B.sort((a, b) => a.cost - b.cost);
         A.push(B.shift()!);
+        const changed = considerForPreview(A[A.length - 1]);
+        emitProgress(A.length / RAW_K, changed);
     }
 
     // Yen tends to enumerate walk-routing variants of the same TL chain,
@@ -1319,12 +1384,6 @@ export function findRoutes(
     const built = A.map((p) => reconstructLegs(aug, p.nodes, p.edgeIds));
     const out: RouteResult[] = [];
     const seenKeys = new Set<string>();
-    const tlKey = (r: RouteResult): string => {
-        const ids = r.legs
-            .filter((l): l is Extract<RouteLeg, { kind: "tl" }> => l.kind === "tl")
-            .map((l) => l.tlId);
-        return ids.length === 0 ? "__walk_only__" : ids.join(">");
-    };
     for (const r of built) {
         const key = tlKey(r);
         if (seenKeys.has(key)) continue;

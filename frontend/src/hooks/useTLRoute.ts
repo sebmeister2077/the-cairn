@@ -23,6 +23,8 @@ import {
     setRouteComputing,
     setRoutePlannerError,
     setRoutePlannerRoutes,
+    setRoutePlannerPartialRoutes,
+    setRouteProgress,
 } from "@/store/slices/routePlanner";
 
 /**
@@ -173,6 +175,15 @@ export function useTLRoute(): UseTLRouteResult {
                     elkSignature: elkEtag,
                     numberOfRoutes,
                     signal: ctrl.signal,
+                    onProgress: ({ fraction, routes: partial }) => {
+                        if (ctrl.signal.aborted) return;
+                        dispatch(setRouteProgress(fraction));
+                        // Stream alternatives in as they're discovered; the
+                        // final `setRoutePlannerRoutes` below settles order.
+                        if (partial && partial.length > 0) {
+                            dispatch(setRoutePlannerPartialRoutes(partial));
+                        }
+                    },
                 })
                     .then(({ routes: result, elapsedMs }) => {
                         if (ctrl.signal.aborted) return;

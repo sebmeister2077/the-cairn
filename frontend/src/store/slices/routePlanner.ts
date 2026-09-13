@@ -49,6 +49,11 @@ export interface RoutePlannerState {
      *  it's clamped, applied, and cleared. `null` = no pending request. */
     pendingSelectedIndex: number | null;
     isComputing: boolean;
+    /** Live search progress in [0, 1] while `isComputing`, else `null`.
+     *  Driven by the routing worker's streamed progress ticks so the panel
+     *  can show a bar that actually tracks Yen's enumeration rather than
+     *  snapping from a spinner straight to the final result. */
+    progress: number | null;
     error: string | null;
     /** Map pointer mode: "from"/"to"/"player:N" means the next map click
      *  sets that endpoint. */
@@ -95,6 +100,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     selectedIndex: 0,
     pendingSelectedIndex: null,
     isComputing: false,
+    progress: null,
     error: null,
     pickMode: null,
     walkSpeed: DEFAULT_WALK_SPEED,
@@ -227,7 +233,29 @@ export const routePlannerSlice = createSlice({
         },
         setComputing(state, action: PayloadAction<boolean>) {
             state.isComputing = action.payload;
-            if (action.payload) state.error = null;
+            if (action.payload) {
+                state.error = null;
+                state.progress = 0;
+            } else {
+                state.progress = null;
+            }
+        },
+        setProgress(state, action: PayloadAction<number>) {
+            // Only meaningful mid-search; ignore late ticks that race in
+            // after the final result already cleared `isComputing`.
+            if (!state.isComputing) return;
+            state.progress = Math.max(0, Math.min(1, action.payload));
+        },
+        // Mid-search preview: swap in the best-known routes without ending
+        // the computing state, so alternatives stream in one-at-a-time. We
+        // deliberately keep `selectedIndex` in range instead of resetting it
+        // to 0 (that only happens on the final `setRoutes`), so a preview
+        // update doesn't yank the user off a tab they're already reading.
+        setPartialRoutes(state, action: PayloadAction<RouteResult[]>) {
+            if (!state.isComputing) return;
+            state.routes = action.payload;
+            const max = Math.max(0, action.payload.length - 1);
+            state.selectedIndex = Math.min(state.selectedIndex, max);
         },
         setRoutes(state, action: PayloadAction<RouteResult[]>) {
             state.routes = action.payload;
@@ -243,11 +271,13 @@ export const routePlannerSlice = createSlice({
             }
             state.pendingSelectedIndex = null;
             state.isComputing = false;
+            state.progress = null;
             state.error = null;
         },
         setError(state, action: PayloadAction<string | null>) {
             state.error = action.payload;
             state.isComputing = false;
+            state.progress = null;
         },
         setWalkSpeed(state, action: PayloadAction<number>) {
             // Clamp to sane sprint/walk range so a fat-fingered slider can't blow up cost math.
@@ -378,7 +408,9 @@ export const {
     setRendezvousError,
     setSelectedIndex: setRouteSelectedIndex,
     setComputing: setRouteComputing,
+    setProgress: setRouteProgress,
     setRoutes: setRoutePlannerRoutes,
+    setPartialRoutes: setRoutePlannerPartialRoutes,
     setError: setRoutePlannerError,
     setWalkSpeed: setRouteWalkSpeed,
     setTLPenalty: setRouteTLPenalty,

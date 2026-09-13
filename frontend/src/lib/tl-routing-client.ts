@@ -33,6 +33,9 @@ type RoutePromiseEntry = {
     kind: "route";
     resolve: (r: { routes: RouteResult[]; elapsedMs: number }) => void;
     reject: (err: Error) => void;
+    /** Streamed mid-search updates. `routes` is only present when the
+     *  best-known list grew; a bare `fraction` is a progress-bar tick. */
+    onProgress?: (p: { fraction: number; routes?: RouteResult[] }) => void;
 };
 type RendezvousPromiseEntry = {
     kind: "rendezvous";
@@ -51,6 +54,14 @@ function getWorker(): Worker {
         const msg = ev.data;
         const entry = pending.get(msg.requestId);
         if (!entry) return;
+        // Progress ticks don't settle the promise — fan them out to the
+        // caller's callback and keep the entry alive for the final reply.
+        if (msg.kind === "progress") {
+            if (entry.kind === "route") {
+                entry.onProgress?.({ fraction: msg.fraction, routes: msg.routes });
+            }
+            return;
+        }
         pending.delete(msg.requestId);
         if (msg.kind === "ok" && entry.kind === "route") {
             entry.resolve({ routes: msg.routes, elapsedMs: msg.elapsedMs });
@@ -93,6 +104,10 @@ export interface ComputeRoutesAsyncArgs {
     numberOfRoutes: number;
     /** Optional AbortSignal — when aborted the returned promise rejects. */
     signal?: AbortSignal;
+    /** Optional streaming callback. Fires as the worker discovers material
+     *  so the caller can render alternatives incrementally and drive a
+     *  progress bar. `routes` is only set when the best-known list grew. */
+    onProgress?: (p: { fraction: number; routes?: RouteResult[] }) => void;
 }
 
 export function computeRoutesAsync(
@@ -105,7 +120,12 @@ export function computeRoutesAsync(
     const requestId = nextRequestId++;
     const promise = new Promise<{ routes: RouteResult[]; elapsedMs: number }>(
         (resolve, reject) => {
-            pending.set(requestId, { kind: "route", resolve, reject });
+            pending.set(requestId, {
+                kind: "route",
+                resolve,
+                reject,
+                onProgress: args.onProgress,
+            });
             if (args.signal) {
                 if (args.signal.aborted) {
                     pending.delete(requestId);

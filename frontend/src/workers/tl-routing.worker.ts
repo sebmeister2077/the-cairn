@@ -61,6 +61,15 @@ export type RouteWorkerResponse =
         elapsedMs: number;
     }
     | {
+        /** Streamed mid-search update. `routes` is the best-known deduped
+         *  prefix so far; it's only present when the list actually grew
+         *  (a plain `fraction` bump omits it to keep messages tiny). */
+        kind: "progress";
+        requestId: number;
+        fraction: number;
+        routes?: RouteResult[];
+    }
+    | {
         kind: "rendezvous-ok";
         requestId: number;
         result: RendezvousResult | null;
@@ -119,7 +128,17 @@ self.onmessage = (ev: MessageEvent<RouteWorkerRequest>) => {
             };
             (self as unknown as Worker).postMessage(response);
         } else {
-            const routes = findRoutes(graph, req.from, req.to, req.numberOfRoutes);
+            const routes = findRoutes(graph, req.from, req.to, req.numberOfRoutes, (p) => {
+                const progress: RouteWorkerResponse = {
+                    kind: "progress",
+                    requestId: req.requestId,
+                    fraction: p.fraction,
+                    // Only ship the (structured-cloned) route payload on the
+                    // events where it changed; pure fraction bumps stay cheap.
+                    ...(p.routesChanged ? { routes: p.routes } : {}),
+                };
+                (self as unknown as Worker).postMessage(progress);
+            });
             const elapsedMs = performance.now() - t0;
             const response: RouteWorkerResponse = {
                 kind: "ok",
