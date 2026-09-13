@@ -254,9 +254,14 @@ export function RouteSummary({
           )}
         </div>
         <div className="flex flex-col items-end gap-1 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 whitespace-nowrap">
             <Footprints className="h-3 w-3" />
-            {t("routePlanner.walkBlocks", { count: Math.round(route.walkBlocks) })}
+            {t("routePlanner.walkBlocks", {
+              count:
+                route.walkBlocks > 10000
+                  ? Math.round(route.walkBlocks).toLocaleString()
+                  : Math.round(route.walkBlocks),
+            })}
           </span>
           <span>{t("routePlanner.tlHops", { count: route.tlHops })}</span>
         </div>
