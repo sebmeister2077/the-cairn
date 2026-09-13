@@ -442,7 +442,7 @@ const GAME_DAYS_PER_YEAR = GAME_DAYS_PER_MONTH * GAME_MONTHS_PER_YEAR;
 export function formatGameDate(totalHours: number | null | undefined): string {
   if (totalHours == null || !Number.isFinite(totalHours) || totalHours <= 0) return "—";
   const totalDays = Math.floor(totalHours / GAME_HOURS_PER_DAY);
-  const year = Math.floor(totalDays / GAME_DAYS_PER_YEAR) + 1;
+  const year = Math.floor(totalDays / GAME_DAYS_PER_YEAR);
   const dayOfYear = totalDays % GAME_DAYS_PER_YEAR;
   const month = Math.floor(dayOfYear / GAME_DAYS_PER_MONTH) + 1;
   const day = (dayOfYear % GAME_DAYS_PER_MONTH) + 1;
