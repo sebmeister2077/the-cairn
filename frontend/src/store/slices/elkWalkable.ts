@@ -88,6 +88,14 @@ export const elkWalkableSlice = createSlice({
             state,
             action: PayloadAction<{ edges: ElkWalkableEdge[]; etag: string }>,
         ) {
+            // Ignore an identical snapshot (same R2 etag) once loaded.
+            // Window-focus refetches re-run this with fresh-but-equal data;
+            // rebuilding `edges` would churn its reference and make every
+            // downstream memo (routing graph, planner) recompute needlessly.
+            if (state.loaded && state.etag === action.payload.etag) {
+                state.loading = false;
+                return;
+            }
             const next: Record<string, ElkWalkableEdge> = {};
             for (const e of action.payload.edges) {
                 if (e && typeof e.key === "string") {
