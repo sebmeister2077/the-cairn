@@ -77,6 +77,7 @@ import {
 import { useMarketWindow } from "@/hooks/useMarketWindow";
 import { useMarketPriceMode } from "@/hooks/useMarketPriceMode";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
+import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 import { MetalContentCard } from "@/components/market/MetalContentCard";
 import { ItemConcentrationSection } from "@/components/market/ItemConcentrationSection";
 import { TraderAvailabilityCard } from "@/components/market/TraderAvailabilityCard";
@@ -308,6 +309,7 @@ export function MarketItemPage() {
     () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
     [windowKey, summary?.recordingStartGameHours],
   );
+  const smart = windowKey === "smart";
 
   // Shared "hide off-platform trades" toggle (synced across market pages).
   const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
@@ -439,8 +441,8 @@ export function MarketItemPage() {
     const ids = metal.unitsByItemId;
     let family = (listingsQ.data ?? []).filter((l) => ids.has(l.itemId));
     if (excludeExternalTrades) family = family.filter((l) => !l.externalTrade);
-    return filterListingsByWindow(family, windowDays);
-  }, [metal, listingsQ.data, windowDays, excludeExternalTrades]);
+    return filterListingsByWindow(family, windowDays, smart);
+  }, [metal, listingsQ.data, windowDays, smart, excludeExternalTrades]);
 
   const itemListings = useMemo(() => {
     const all = listingsQ.data ?? [];
@@ -466,16 +468,16 @@ export function MarketItemPage() {
 
   // Listings restricted to the selected window (by in-game posting time).
   const windowListings = useMemo(
-    () => filterListingsByWindow(itemListings, windowDays),
-    [itemListings, windowDays],
+    () => filterListingsByWindow(itemListings, windowDays, smart),
+    [itemListings, windowDays, smart],
   );
 
   // Window-restricted view of the price listings (host-rock blocks optionally
   // excluded). Drives every price figure below; `windowListings` (all forms)
   // still drives the volume series and the Recent listings table.
   const priceWindowListings = useMemo(
-    () => filterListingsByWindow(priceListings, windowDays),
-    [priceListings, windowDays],
+    () => filterListingsByWindow(priceListings, windowDays, smart),
+    [priceListings, windowDays, smart],
   );
 
   // Reuse the Insights engine for this single item so every windowed stat
@@ -492,8 +494,8 @@ export function MarketItemPage() {
       combineOres && oreGroup
         ? priceListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
         : priceListings;
-    return computeMarketInsights(src, windowDays, excludeExternalTrades).rows[0] ?? null;
-  }, [priceListings, windowDays, combineOres, oreGroup, id, excludeExternalTrades]);
+    return computeMarketInsights(src, windowDays, excludeExternalTrades, smart).rows[0] ?? null;
+  }, [priceListings, windowDays, smart, combineOres, oreGroup, id, excludeExternalTrades]);
 
   const trend = insight?.trend ?? null;
 
@@ -1411,12 +1413,14 @@ export function MarketItemPage() {
             key={w.key}
             size="sm"
             variant={windowKey === w.key ? "default" : "outline"}
+            title={w.hint}
             onClick={() => setWindowKey(w.key)}
           >
             {w.label}
           </Button>
         ))}
         <span className="ml-1 text-xs text-muted-foreground">1 real day ≈ 1 in-game month</span>
+        <SmartWindowNote windowKey={windowKey} />
       </div>
 
       {/* Hide off-platform trades (synced across the market pages) */}

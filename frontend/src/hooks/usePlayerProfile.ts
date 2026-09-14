@@ -102,16 +102,18 @@ function hasUsableRef(l: AuctionListing): boolean {
 
 /**
  * Compute a full player profile for `uid` within `windowDays` (null = all time)
- * from the shared listings dataset. Memoised on its inputs.
+ * from the shared listings dataset. When `smart` is set the adaptive per-item
+ * Smart window is used instead. Memoised on its inputs.
  */
 export function usePlayerProfile(
     listings: AuctionListing[] | undefined,
     uid: string,
     windowDays: number | null,
+    smart = false,
 ): PlayerProfile {
     return useMemo(() => {
         const clean = (listings ?? []).filter((l) => !l.spam && !l.externalTrade);
-        const windowed = filterListingsByWindow(clean, windowDays);
+        const windowed = filterListingsByWindow(clean, windowDays, smart);
 
         const asSeller = windowed.filter((l) => l.sellerUid === uid);
         const asSellerSold = asSeller.filter((l) => l.sold);
@@ -477,7 +479,7 @@ export function usePlayerProfile(
             pricingHistory,
             activity,
         } satisfies PlayerProfile;
-    }, [listings, uid, windowDays]);
+    }, [listings, uid, windowDays, smart]);
 }
 
 interface ArchetypeInput {

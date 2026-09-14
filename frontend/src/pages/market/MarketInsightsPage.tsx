@@ -58,6 +58,7 @@ import {
   useInsightsHiddenColumns,
 } from "@/hooks/useInsightsColumns";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
+import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
 import type { Rarity } from "@/models/item-sources";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
@@ -618,7 +619,12 @@ export function MarketInsightsPage() {
     [windowKey, summary?.recordingStartGameHours],
   );
   const excludeExternalTrades = useAppSelector((s) => s.auctionFilters.excludeExternalTrades);
-  const insights = useMarketInsights(listings, windowDays, excludeExternalTrades);
+  const insights = useMarketInsights(
+    listings,
+    windowDays,
+    excludeExternalTrades,
+    windowKey === "smart",
+  );
 
   // Screener rows: items with at least one sale in the window carry meaningful
   // stats; drop the rest so the table isn't padded with empty indicators.
@@ -936,6 +942,7 @@ export function MarketInsightsPage() {
               size="sm"
               variant={windowKey === w.key ? "default" : "outline"}
               aria-pressed={windowKey === w.key}
+              title={w.hint}
               onClick={() => setWindowKey(w.key)}
             >
               {w.label}
@@ -982,6 +989,8 @@ export function MarketInsightsPage() {
           <PriceModeInfo />
         </div>
       </div>
+
+      <SmartWindowNote windowKey={windowKey} />
 
       {/* Window totals */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">

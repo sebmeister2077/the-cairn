@@ -37,6 +37,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
+import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
@@ -551,9 +552,9 @@ export function MarketConverterPage() {
   const insights = useMemo(
     () =>
       listings && listings.length
-        ? computeMarketInsights(listings, windowDays, excludeExternalTrades)
+        ? computeMarketInsights(listings, windowDays, excludeExternalTrades, windowKey === "smart")
         : null,
-    [listings, windowDays, excludeExternalTrades],
+    [listings, windowDays, windowKey, excludeExternalTrades],
   );
 
   // Resolve item names to their best insights row. Item names can repeat across
@@ -662,6 +663,7 @@ export function MarketConverterPage() {
               key={w.key}
               size="sm"
               variant={windowKey === w.key ? "default" : "outline"}
+              title={w.hint}
               onClick={() => setWindowKey(w.key)}
             >
               {w.label}
@@ -686,6 +688,7 @@ export function MarketConverterPage() {
           </Select>
         </div>
         <ExternalTradeToggle className="text-muted-foreground" />
+        <SmartWindowNote windowKey={windowKey} />
       </div>
 
       {/* Quick picks: popular target items */}

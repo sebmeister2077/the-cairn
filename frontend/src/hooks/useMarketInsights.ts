@@ -43,16 +43,49 @@ import type {
  * sec → 720 in-game hours = 30 in-game days = one in-game month per real day). */
 const GAME_HOURS_PER_REAL_DAY = 720;
 
-/** Selectable insight windows (days), plus "since recording" and "all". */
+/** Base look-back for the adaptive "Smart" window. Busy items are priced from
+ * roughly this recent span; rarely-traded items reach further back per item (see
+ * `smartCutoffForItem`) so they still resolve to a price. */
+export const SMART_BASE_DAYS = 30;
+
+/** Sold-listing count at which a price becomes "high" confidence (mirrors
+ * `confidenceFor`). The Smart window extends back per item until it has at least
+ * this many sales, or includes the item's whole (shorter) history. */
+export const HIGH_CONFIDENCE_SALES = 20;
+
+/** Plain-language explanation of the adaptive Smart window, reused for the
+ * button tooltip and the caption shown on the market pages when it's active. */
+export const SMART_WINDOW_HINT =
+    `Prices from each item's last ${SMART_BASE_DAYS} days, automatically reaching further back for rarely-traded items (down to their ${HIGH_CONFIDENCE_SALES} most recent sales) so they still show a price.`;
+
+/** Selectable insight windows (days), plus "since recording", "all" and the
+ * adaptive per-item "smart" window. */
 export const INSIGHTS_WINDOWS = [
-    { key: "7", label: "Last 7 days", days: 7 },
-    { key: "14", label: "Last 14 days", days: 14 },
-    { key: "30", label: "Last 30 days", days: 30 },
-    { key: "recording", label: "Since recording", days: null },
-    { key: "all", label: "All time", days: null },
+    { key: "7", label: "Last 7 days", days: 7, hint: "Sales from the last 7 days" },
+    { key: "14", label: "Last 14 days", days: 14, hint: "Sales from the last 14 days" },
+    { key: "30", label: "Last 30 days", days: 30, hint: "Sales from the last 30 days" },
+    { key: "90", label: "Last 3 months", days: 90, hint: "Sales from the last 3 months" },
+    {
+        key: "recording",
+        label: "Since recording",
+        days: null,
+        hint: "Sales since data capture began",
+    },
+    { key: "all", label: "All time", days: null, hint: "Every recorded sale" },
+    {
+        key: "smart",
+        label: "Smart",
+        days: null,
+        hint: SMART_WINDOW_HINT,
+    },
 ] as const;
 
 export type InsightsWindowKey = (typeof INSIGHTS_WINDOWS)[number]["key"];
+
+/** Whether a window key selects the adaptive per-item Smart window. */
+export function isSmartWindow(windowKey: string): boolean {
+    return windowKey === "smart";
+}
 
 /**
  * Effective look-back days for a window key. The special "recording" window is
@@ -67,6 +100,10 @@ export function resolveWindowDays(
     windowKey: string,
     recordingStartHours?: number | null,
 ): number | null {
+    // The Smart window is per-item (see `smartCutoffForItem`); this base span is
+    // only used as a fallback by consumers that don't implement it and as the
+    // per-day rate basis for busy items.
+    if (windowKey === "smart") return SMART_BASE_DAYS;
     if (windowKey === "recording") {
         if (recordingStartHours == null) return null;
         const days = (getCurrentGameHours() - recordingStartHours) / GAME_HOURS_PER_REAL_DAY;
@@ -85,15 +122,60 @@ export function saleGameHours(l: AuctionListing): number | null {
 }
 
 /**
+ * In-game posting-hour cutoff for a single item's listings under the Smart
+ * window. Starts from the shared recent `baseCutoff`, then reaches further back
+ * per item when that recent span holds fewer than `HIGH_CONFIDENCE_SALES` sales,
+ * so a rarely-traded item still surfaces a price from its most recent sales.
+ * Returns -Infinity ("keep everything") when the item has too few sales to
+ * window meaningfully.
+ */
+function smartCutoffForItem(recs: AuctionListing[], baseCutoff: number): number {
+    const soldPosted = recs
+        .filter((l) => l.sold && l.postedTotalHours != null)
+        .map((l) => l.postedTotalHours as number)
+        .sort((a, b) => b - a); // most recently posted first
+    if (soldPosted.length <= HIGH_CONFIDENCE_SALES) return -Infinity;
+    let soldInBase = 0;
+    for (const h of soldPosted) if (h >= baseCutoff) soldInBase += 1;
+    if (soldInBase >= HIGH_CONFIDENCE_SALES) return baseCutoff;
+    // Not enough recent sales: reach back to the Nth most recent sold listing.
+    return soldPosted[HIGH_CONFIDENCE_SALES - 1];
+}
+
+/** Per-item Smart-window posting-hour cutoffs for a listing set (item id → cutoff). */
+function smartCutoffsByItem(listings: AuctionListing[]): Map<number, number> {
+    const baseCutoff = getCurrentGameHours() - SMART_BASE_DAYS * GAME_HOURS_PER_REAL_DAY;
+    const byItem = new Map<number, AuctionListing[]>();
+    for (const l of listings) {
+        const arr = byItem.get(l.itemId);
+        if (arr) arr.push(l);
+        else byItem.set(l.itemId, [l]);
+    }
+    const out = new Map<number, number>();
+    for (const [id, recs] of byItem) out.set(id, smartCutoffForItem(recs, baseCutoff));
+    return out;
+}
+
+/**
  * Filter listings to the selected real-days window, measured through the in-game
  * clock (see the file header). `windowDays === null` (all time) returns the list
- * unchanged. Refreshes the cached reference clocks first so windowing works even
- * when the data came from a persisted cache.
+ * unchanged. When `smart` is set the days window is ignored in favour of the
+ * adaptive per-item Smart cutoff. Refreshes the cached reference clocks first so
+ * windowing works even when the data came from a persisted cache.
  */
 export function filterListingsByWindow(
     listings: AuctionListing[],
     windowDays: number | null,
+    smart = false,
 ): AuctionListing[] {
+    if (smart) {
+        refreshMarketReferences(listings);
+        const cutoffByItem = smartCutoffsByItem(listings);
+        return listings.filter((l) => {
+            const cutoff = cutoffByItem.get(l.itemId) ?? -Infinity;
+            return l.postedTotalHours != null && l.postedTotalHours >= cutoff;
+        });
+    }
     if (windowDays == null) return listings;
     refreshMarketReferences(listings);
     const cutoff = getCurrentGameHours() - windowDays * GAME_HOURS_PER_REAL_DAY;
@@ -210,13 +292,16 @@ function rankNormalize(values: number[]): Map<number, number> {
 
 /**
  * Compute every Market Insights indicator per item for the given window.
- * `windowDays === null` means all-time. Spam is always excluded; external
+ * `windowDays === null` means all-time. When `smart` is set the days window is
+ * replaced by the adaptive per-item Smart window (recent activity, reaching
+ * back per item so rare items still price). Spam is always excluded; external
  * (1-gear barter) trades are excluded when `excludeExternalTrades` is set.
  */
 export function computeMarketInsights(
     listings: AuctionListing[],
     windowDays: number | null,
     excludeExternalTrades = true,
+    smart = false,
 ): MarketInsights {
     // Ensure the module-cached reference clocks reflect this dataset even when it
     // was restored from a persisted query cache (whose queryFn never ran).
@@ -231,6 +316,9 @@ export function computeMarketInsights(
         (l) => !l.spam && (!excludeExternalTrades || !l.externalTrade),
     );
 
+    // Smart window: a per-item posting-hour cutoff instead of a single shared one.
+    const smartCutoffByItem = smart ? smartCutoffsByItem(clean) : null;
+
     // In-game span (as real days) used to turn all-time counts into per-day rates.
     let earliestPosted = currentGameHours;
     for (const l of clean) {
@@ -244,9 +332,16 @@ export function computeMarketInsights(
             : Math.max(1, (currentGameHours - earliestPosted) / GAME_HOURS_PER_REAL_DAY);
 
     /** Whether a listing falls inside the selected window, by in-game posting time. */
-    const inWindow = (l: AuctionListing) =>
-        windowDays == null ||
-        (l.postedTotalHours != null && l.postedTotalHours >= windowStartGameHours);
+    const inWindow = (l: AuctionListing) => {
+        if (smartCutoffByItem) {
+            const cutoff = smartCutoffByItem.get(l.itemId) ?? -Infinity;
+            return l.postedTotalHours != null && l.postedTotalHours >= cutoff;
+        }
+        return (
+            windowDays == null ||
+            (l.postedTotalHours != null && l.postedTotalHours >= windowStartGameHours)
+        );
+    };
 
     // Group windowed listings by item; also track live supply per item across the
     // whole dataset (supply on the board is a snapshot, not window-scoped).
@@ -392,10 +487,27 @@ export function computeMarketInsights(
         const recencyTier =
             daysSinceLastSale != null ? recencyTierFor(daysSinceLastSale) : null;
 
-        const salesVelocity = sold.length / effectiveWindowDays;
+        // Rate basis (real days). In Smart mode the window reaches back a
+        // different distance per item, so measure this item's own included span
+        // rather than the shared window.
+        let itemWindowDays = effectiveWindowDays;
+        if (smartCutoffByItem) {
+            let minPosted = currentGameHours;
+            for (const r of recs) {
+                if (r.postedTotalHours != null && r.postedTotalHours < minPosted) {
+                    minPosted = r.postedTotalHours;
+                }
+            }
+            itemWindowDays = Math.max(
+                1,
+                (currentGameHours - minPosted) / GAME_HOURS_PER_REAL_DAY,
+            );
+        }
+
+        const salesVelocity = sold.length / itemWindowDays;
         const activeCount = active.length;
         const speedSignal = medianTts != null && medianTts > 0 ? 1 / medianTts : 0;
-        const freq = recs.length / effectiveWindowDays;
+        const freq = recs.length / itemWindowDays;
 
         // Sparkline series: per-unit sold prices ordered by in-game sale time,
         // downsampled. Needs a few dated points to convey a shape.
@@ -528,9 +640,10 @@ export function useMarketInsights(
     listings: AuctionListing[] | undefined,
     windowDays: number | null,
     excludeExternalTrades = true,
+    smart = false,
 ): MarketInsights | null {
     return useMemo(() => {
         if (!listings || listings.length === 0) return null;
-        return computeMarketInsights(listings, windowDays, excludeExternalTrades);
-    }, [listings, windowDays, excludeExternalTrades]);
+        return computeMarketInsights(listings, windowDays, excludeExternalTrades, smart);
+    }, [listings, windowDays, excludeExternalTrades, smart]);
 }

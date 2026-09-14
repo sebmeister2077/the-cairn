@@ -507,12 +507,13 @@ export function MarketWealthChart({
         {hasTimeSeries && (
           <div className="flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">Range:</span>
-            {INSIGHTS_WINDOWS.map((w) => (
+            {INSIGHTS_WINDOWS.filter((w) => w.key !== "smart").map((w) => (
               <Button
                 key={w.key}
                 size="sm"
                 variant={windowKey === w.key ? "default" : "outline"}
                 className="h-7 px-2.5 text-xs"
+                title={w.hint}
                 onClick={() => setWindowKey(w.key)}
               >
                 {w.label}

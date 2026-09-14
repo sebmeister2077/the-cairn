@@ -19,6 +19,7 @@ import { PlayerListingsSection } from "@/components/market/PlayerListingsSection
 import { PlayerPurchasesSection } from "@/components/market/PlayerPurchasesSection";
 import { PlayerBehaviorSection } from "@/components/market/PlayerBehaviorSection";
 import { PlayerAchievementsBar } from "@/components/market/PlayerAchievements";
+import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 
 // Auctioneer entities respawn a few blocks off (with a new entity id) after a
 // culling event, so the same physical stall shows up under slightly different
@@ -40,10 +41,11 @@ export function MarketPlayerPage() {
     () => resolveWindowDays(windowKey, summary?.recordingStartGameHours),
     [windowKey, summary?.recordingStartGameHours],
   );
+  const smart = windowKey === "smart";
 
   const decodedUid = uid ? decodeURIComponent(uid) : "";
 
-  const profile = usePlayerProfile(data, decodedUid, windowDays);
+  const profile = usePlayerProfile(data, decodedUid, windowDays, smart);
 
   // Whether this player exists in the dataset at all (across all time), so a
   // player who traded only outside the selected window still resolves to a real
@@ -57,7 +59,7 @@ export function MarketPlayerPage() {
 
   const { name, asSeller, asBuyer, favItems, favBuyItems, locations, revenue, spent, delivery } =
     useMemo(() => {
-      const all = filterListingsByWindow(data ?? [], windowDays);
+      const all = filterListingsByWindow(data ?? [], windowDays, smart);
       const asSeller = all.filter((l) => l.sellerUid === decodedUid);
       const asBuyer = all.filter((l) => l.buyerUid === decodedUid && l.sold);
       const name =
@@ -142,7 +144,7 @@ export function MarketPlayerPage() {
         spent,
         delivery,
       };
-    }, [data, decodedUid, windowDays]);
+    }, [data, decodedUid, windowDays, smart]);
 
   // Report the resolved in-game name (never the raw uid fallback) so the admin
   // usage "Items & Players" tab can show names instead of opaque uids.
@@ -207,12 +209,14 @@ export function MarketPlayerPage() {
                 key={w.key}
                 size="sm"
                 variant={windowKey === w.key ? "default" : "outline"}
+                title={w.hint}
                 onClick={() => setWindowKey(w.key)}
               >
                 {w.label}
               </Button>
             ))}
           </div>
+          <SmartWindowNote windowKey={windowKey} />
         </div>
       </div>
 
