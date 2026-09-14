@@ -3331,6 +3331,48 @@ export async function submitTraderClaimTypes(
     return (await handleResponse(res)).json();
 }
 
+/**
+ * Merged "no-trader" claim overlay (``trader_claim_empty.json``). Same
+ * public-bucket shortcut as {@link getTraderClaimTypesUrl}: the object is
+ * public-read so we hit the bucket origin directly on the read path.
+ */
+export interface TraderClaimEmptyUrlResponse {
+    url: string | null;
+    etag?: string;
+    expires_in_seconds?: number;
+    disabled?: boolean;
+    empty?: boolean;
+}
+
+export async function getTraderClaimEmptyUrl(): Promise<TraderClaimEmptyUrlResponse> {
+    return { url: `${publicBucketOrigin}/trader_claim_empty.json`, etag: "", expires_in_seconds: 0 };
+}
+
+export interface EmptyClaimSubmitItem {
+    claim_id: string;
+    /** True marks the claim empty (no trader); false clears it. Defaults true. */
+    empty?: boolean;
+    center?: { x: number; y: number; z: number };
+}
+
+export interface EmptyClaimSubmitResult {
+    accepted: number;
+    submitted: number;
+}
+
+/** Manual (logged-in / admin) empty-claim marking. Cannot override an
+ *  authoritative (proxy) value unless the caller is an admin; rate-limited. */
+export async function submitTraderClaimEmpty(
+    items: EmptyClaimSubmitItem[],
+): Promise<EmptyClaimSubmitResult> {
+    const res = await fetch(`${API_BASE}/trader-claim-empty`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ items }),
+    });
+    return (await handleResponse(res)).json();
+}
+
 export interface TraderContributionItem {
     x: number;
     z: number;

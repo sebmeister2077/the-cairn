@@ -13,7 +13,7 @@
 //      that's already invalid.
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, getTraderClaimTypesUrl, type MarkerFileUrlResponse, type TradersUrlResponse, type TraderClaimTypesUrlResponse } from "@/lib/api";
+import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, getTraderClaimTypesUrl, getTraderClaimEmptyUrl, type MarkerFileUrlResponse, type TradersUrlResponse, type TraderClaimTypesUrlResponse, type TraderClaimEmptyUrlResponse } from "@/lib/api";
 import type {
     LandmarkProperty,
     WorldLineSegment,
@@ -356,6 +356,72 @@ export function useTraderClaimTypesOverlay(
             }
             const json: unknown = await res.json();
             return { etag, expiresAt, data: parseClaimTypes(json) };
+        },
+        staleTime: 0,
+        meta: { persist: true },
+    });
+}
+
+// ---------------------------------------------------------------------------
+// No-trader claim overlay (trader_claim_empty.json)
+// ---------------------------------------------------------------------------
+
+export const TRADER_CLAIM_EMPTY_QUERY_KEY = ["overlay", "trader-claim-empty"] as const;
+
+/** Set of claim ids known to have NO actual trader inside. */
+export type EmptyClaimSet = Set<string>;
+
+export function parseEmptyClaims(json: unknown): EmptyClaimSet {
+    const claims = (json as { claims?: unknown })?.claims;
+    const out: EmptyClaimSet = new Set<string>();
+    if (!claims || typeof claims !== "object") return out;
+    for (const claimId of Object.keys(claims as Record<string, unknown>)) {
+        out.add(claimId);
+    }
+    return out;
+}
+
+/**
+ * No-trader claim overlay. A claim id present in this set is known to have no
+ * actual trader (a beta-worldgen leftover), so the map flags it instead of
+ * implying a trader is there. Refreshes every 5 min when empty so a fresh mark
+ * becomes visible without a hard reload.
+ */
+export function useTraderClaimEmptyOverlay(
+    enabled: boolean,
+): UseQueryResult<CachedOverlay<EmptyClaimSet>> {
+    const queryClient = useQueryClient();
+
+    return useQuery<CachedOverlay<EmptyClaimSet>>({
+        queryKey: [...TRADER_CLAIM_EMPTY_QUERY_KEY],
+        enabled,
+        queryFn: async () => {
+            const info: TraderClaimEmptyUrlResponse = await getTraderClaimEmptyUrl();
+            if (!info.url) {
+                return {
+                    etag: info.disabled ? "__disabled__" : "__empty__",
+                    expiresAt: Date.now() + 5 * 60_000,
+                    data: new Set<string>() as EmptyClaimSet,
+                };
+            }
+            const expiresAt =
+                Date.now() + Math.max(0, (info.expires_in_seconds ?? 3600) * 1000 - EXPIRY_GUARD_MS);
+            const etag = info.etag ?? "";
+            const cached = queryClient.getQueryData<CachedOverlay<EmptyClaimSet>>([
+                ...TRADER_CLAIM_EMPTY_QUERY_KEY,
+            ]);
+            if (cached && etag && cached.etag === etag) {
+                return { etag, expiresAt, data: cached.data };
+            }
+            const res = await fetch(info.url, { cache: "no-cache" });
+            if (res.status === 404) {
+                return { etag: "__empty__", expiresAt, data: new Set<string>() as EmptyClaimSet };
+            }
+            if (!res.ok) {
+                throw new Error(`Failed to load no-trader overlay (${res.status})`);
+            }
+            const json: unknown = await res.json();
+            return { etag, expiresAt, data: parseEmptyClaims(json) };
         },
         staleTime: 0,
         meta: { persist: true },

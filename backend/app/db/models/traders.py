@@ -116,3 +116,48 @@ class TraderClaimTypesAudit(Base):
         Index("idx_trader_claim_types_type", "trader_type", text("created_at DESC")),
         Index("idx_trader_claim_types_source", "source", text("created_at DESC")),
     )
+
+
+class TraderClaimEmptyAudit(Base):
+    """Audit trail for trader-*claim* "no trader present" markings.
+
+    A twin of ``TraderClaimTypesAudit`` for the opposite signal: instead of
+    "this claim is a trader of type X", it records "this claim has NO actual
+    trader" — leftovers from beta worldgen where a claim box was placed but
+    its trader entity never persisted. The live merged set lives in the R2
+    object ``trader_claim_empty.json``; this table is the append-only history.
+    ``claim_id`` is the quantised absolute claim centre (``"x:y:z"``), the same
+    key used by the static asset, the type overlay and proxy submissions.
+
+    ``action`` = ``add`` (marked empty) | ``remove`` (trader found, unmarked) |
+    ``admin_delete`` (admin unmark). ``source`` = ``authoritative`` (proxy,
+    derived from an actual scan of the claim volume) | ``manual`` (a logged-in
+    user / admin marking). Authoritative always wins over manual.
+    """
+
+    __tablename__ = "trader_claim_empty_audit"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    claim_id: Mapped[str] = mapped_column(String, nullable=False)
+    action: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
+    center_x: Mapped[float | None] = mapped_column(Float, nullable=True)
+    center_y: Mapped[float | None] = mapped_column(Float, nullable=True)
+    center_z: Mapped[float | None] = mapped_column(Float, nullable=True)
+    actor_api_key_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    actor_display_name: Mapped[str | None] = mapped_column(String, nullable=True)
+    before_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    after_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+
+    __table_args__ = (
+        Index("idx_trader_claim_empty_claim", "claim_id", text("created_at DESC")),
+        Index("idx_trader_claim_empty_actor", "actor_api_key_id", text("created_at DESC")),
+        Index("idx_trader_claim_empty_created", text("created_at DESC")),
+        Index("idx_trader_claim_empty_action", "action", text("created_at DESC")),
+        Index("idx_trader_claim_empty_source", "source", text("created_at DESC")),
+    )

@@ -3291,7 +3291,7 @@ class GeojsonLocked(Exception):
 
 
 GEOJSON_LOCK_TTL_SECONDS = 60
-_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks", "elk_walkable", "trader_claim_types"}
+_VALID_GEOJSON_RESOURCES = {"translocators", "traders", "landmarks", "elk_walkable", "trader_claim_types", "trader_claim_empty"}
 
 
 def try_acquire_geojson_lock(
@@ -4468,6 +4468,82 @@ def count_trader_claim_type_submissions_in_window(
             cur.execute(
                 """SELECT COUNT(*) FROM trader_claim_types_audit
                     WHERE action = 'add'
+                      AND actor_api_key_id = %s
+                      AND source = %s
+                      AND created_at >= now() - (%s || ' seconds')::INTERVAL""",
+                (actor_api_key_id, source, int(window_seconds)),
+            )
+            return int(cur.fetchone()[0])
+
+
+def insert_trader_claim_empty_audit(
+    *,
+    claim_id: str,
+    action: str,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+    source: Optional[str] = None,
+    center: Optional[dict] = None,
+    before_payload: Optional[dict] = None,
+    after_payload: Optional[dict] = None,
+) -> int:
+    """Append-only audit record for a trader-claim "no trader present" marking.
+    Returns row id. ``action`` is ``add`` (marked empty), ``remove`` (trader
+    found / unmarked) or ``admin_delete``."""
+    cx = cy = cz = None
+    if isinstance(center, dict):
+        cx = center.get("x")
+        cy = center.get("y")
+        cz = center.get("z")
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO trader_claim_empty_audit
+                       (claim_id, action, source,
+                        center_x, center_y, center_z,
+                        actor_api_key_id, actor_display_name,
+                        before_payload, after_payload)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    claim_id,
+                    action,
+                    source,
+                    float(cx) if cx is not None else None,
+                    float(cy) if cy is not None else None,
+                    float(cz) if cz is not None else None,
+                    actor_api_key_id,
+                    actor_display_name,
+                    json.dumps(before_payload) if before_payload is not None else None,
+                    json.dumps(after_payload) if after_payload is not None else None,
+                ),
+            )
+            audit_row_id = int(cur.fetchone()[0])
+    _emit_usage_event(
+        f"trader_claim_empty.{action}",
+        actor_api_key_id=actor_api_key_id,
+        category="contribution",
+        metadata={
+            "claim_id": claim_id,
+            "source": source,
+        },
+    )
+    return audit_row_id
+
+
+def count_trader_claim_empty_submissions_in_window(
+    *,
+    actor_api_key_id: str,
+    source: str,
+    window_seconds: int,
+) -> int:
+    """Per-source empty-claim submission counter used by the manual daily cap.
+    Counts ``add`` + ``remove`` rows in the window (both are user actions)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT COUNT(*) FROM trader_claim_empty_audit
+                    WHERE action IN ('add', 'remove')
                       AND actor_api_key_id = %s
                       AND source = %s
                       AND created_at >= now() - (%s || ' seconds')::INTERVAL""",

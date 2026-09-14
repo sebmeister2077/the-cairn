@@ -1,5 +1,5 @@
 import type { WorldPointMarker } from "@/components/MapViewer";
-import type { TraderMarker, ClaimTypeMap } from "@/hooks/useOverlayData";
+import type { TraderMarker, ClaimTypeMap, EmptyClaimSet } from "@/hooks/useOverlayData";
 import type { RecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import { isTraderType, type TraderType } from "@/lib/trader-types";
@@ -26,6 +26,7 @@ export interface BuildLandmarkPointsArgs {
     rapidsMarkers: WorldPointMarker[] | undefined;
     claimList: TraderClaimMarker[] | undefined;
     claimTypeMap: ClaimTypeMap | undefined;
+    emptyClaimSet: EmptyClaimSet | undefined;
     brokenTLViewportBounds: ViewportBounds | null;
     favoriteStartingPosition: { x: number; z: number; zoom?: number } | null;
 }
@@ -50,6 +51,7 @@ export function buildLandmarkPoints({
     rapidsMarkers,
     claimList,
     claimTypeMap,
+    emptyClaimSet,
     brokenTLViewportBounds,
     favoriteStartingPosition,
 }: BuildLandmarkPointsArgs): WorldPointMarker[] {
@@ -160,6 +162,7 @@ export function buildLandmarkPoints({
                 if (rm.traderType) addBucket(rm.traderType, rm.x, rm.z);
             }
             for (const c of claimList) {
+                if (emptyClaimSet?.has(c.claimId)) continue;
                 const assigned = claimTypeMap[c.claimId];
                 if (!assigned) continue;
                 if (!passesTypeFilter(assigned.trader_type)) continue;

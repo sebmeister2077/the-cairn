@@ -785,6 +785,9 @@ TRADERS_LIVE_KEY = "traders.geojson"
 # Merged type assignments for the static trader-claim boxes. Keyed by the
 # quantised absolute claim centre ("x:y:z"); see trader_claim_types.py.
 TRADER_CLAIM_TYPES_KEY = "trader_claim_types.json"
+# Claims known to have NO actual trader inside (beta worldgen leftovers).
+# Keyed by the same quantised absolute claim centre; see trader_claim_empty.py.
+TRADER_CLAIM_EMPTY_KEY = "trader_claim_empty.json"
 ELK_WALKABLE_LIVE_KEY = "elk_walkable.json"
 ELK_WALKABLE_SNAPSHOTS_PREFIX = "elk_walkable/snapshots/"
 
@@ -803,6 +806,10 @@ def traders_live_key() -> str:
 
 def trader_claim_types_key() -> str:
     return TRADER_CLAIM_TYPES_KEY
+
+
+def trader_claim_empty_key() -> str:
+    return TRADER_CLAIM_EMPTY_KEY
 
 
 def elk_walkable_live_key() -> str:

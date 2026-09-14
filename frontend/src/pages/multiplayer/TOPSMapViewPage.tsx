@@ -145,6 +145,7 @@ import {
   useTranslocatorsOverlay,
   useTradersOverlay,
   useTraderClaimTypesOverlay,
+  useTraderClaimEmptyOverlay,
   LANDMARKS_QUERY_KEY,
 } from "@/hooks/useOverlayData";
 import {
@@ -367,6 +368,7 @@ export function TOPSMapViewPage() {
   const claimsDataEnabled = traderClaimsVisible || showTradersForClaims;
   const traderClaimsQuery = useTraderClaims(claimsDataEnabled);
   const traderClaimTypesQuery = useTraderClaimTypesOverlay(claimsDataEnabled);
+  const traderClaimEmptyQuery = useTraderClaimEmptyOverlay(claimsDataEnabled);
   // Viewport-culling for the recorded broken-TL overlay: only markers inside
   // the current viewport (plus a margin) are rendered. Fed from MapViewer's
   // already-debounced `onViewportChange`. `viewportBoundsRef` mirrors the
@@ -1182,6 +1184,7 @@ export function TOPSMapViewPage() {
         rapidsMarkers,
         claimList: traderClaimsQuery.data,
         claimTypeMap: traderClaimTypesQuery.data?.data,
+        emptyClaimSet: traderClaimEmptyQuery.data?.data,
         brokenTLViewportBounds,
         favoriteStartingPosition,
       }),
@@ -1200,6 +1203,7 @@ export function TOPSMapViewPage() {
       rapidsMarkers,
       traderClaimsQuery.data,
       traderClaimTypesQuery.data,
+      traderClaimEmptyQuery.data,
       brokenTLViewportBounds,
       favoriteStartingPosition,
     ],
@@ -2041,6 +2045,7 @@ export function TOPSMapViewPage() {
               segmentColors={groupingSegmentColors}
               claimMarkers={traderClaimsVisible ? traderClaimsQuery.data : undefined}
               claimTypes={traderClaimTypesQuery.data?.data}
+              emptyClaims={traderClaimEmptyQuery.data?.data}
               claimMarkingEnabled={traderClaimsVisible}
               claimMarkingHasAccount={Boolean(accountMeQuery.data?.user)}
               claimDensity={playerClaimDensity}

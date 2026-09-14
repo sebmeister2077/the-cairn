@@ -31,11 +31,18 @@ import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import {
   type ClaimTypeMap,
+  type EmptyClaimSet,
   type CachedOverlay,
   TRADER_CLAIM_TYPES_QUERY_KEY,
+  TRADER_CLAIM_EMPTY_QUERY_KEY,
 } from "@/hooks/useOverlayData";
 import { useTraderColors } from "@/hooks/useTraderColors";
-import { submitTraderClaimTypes, type ClaimTypeSubmitItem } from "@/lib/api";
+import {
+  submitTraderClaimTypes,
+  submitTraderClaimEmpty,
+  type ClaimTypeSubmitItem,
+  type EmptyClaimSubmitItem,
+} from "@/lib/api";
 import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
 import type {
   MapStats,
@@ -119,6 +126,9 @@ const MAX_PIXELS_PER_BLOCK = 8;
 /** Below this zoom the trader-claim dot field is hidden — the ~thousands of
  *  boxes would otherwise smear into an unreadable wall when zoomed way out. */
 const CLAIM_MIN_PIXELS_PER_BLOCK = 0.02;
+
+/** Fill for a claim flagged as having NO actual trader (beta leftover). */
+const CLAIM_EMPTY_COLOR = "#ef4444"; // red-500
 
 const WHEEL_ZOOM_FACTOR = 1.3;
 const BUTTON_ZOOM_FACTOR = 1.75;
@@ -216,6 +226,8 @@ interface WebCartographerMapViewerProps {
   claimMarkers?: TraderClaimMarker[];
   /** Claim id → assigned trader type, used to colour classified claim dots. */
   claimTypes?: ClaimTypeMap;
+  /** Claim ids known to have NO actual trader (rendered flagged). */
+  emptyClaims?: EmptyClaimSet;
   /** Enable the click-to-mark type picker on claim dots. */
   claimMarkingEnabled?: boolean;
   /**
@@ -362,6 +374,7 @@ export function WebCartographerMapViewer({
   overlayPoints,
   claimMarkers,
   claimTypes,
+  emptyClaims,
   claimMarkingEnabled = false,
   claimMarkingHasAccount = false,
   claimDensity = null,
@@ -462,6 +475,28 @@ export function WebCartographerMapViewer({
             ...(prev?.data ?? {}),
             [item.claim_id]: { trader_type: item.trader_type, source: "manual" },
           };
+          return {
+            etag: prev?.etag ?? "__empty__",
+            expiresAt: prev?.expiresAt ?? Date.now() + 5 * 60_000,
+            data: next,
+          };
+        },
+      );
+      setClaimPopover(null);
+    },
+  });
+
+  // Empty (no-trader) marking: toggles a claim in/out of the no-trader set.
+  const emptyMutation = useMutation({
+    mutationFn: (item: EmptyClaimSubmitItem) => submitTraderClaimEmpty([item]),
+    onSuccess: (_result, item) => {
+      // Patch the in-memory no-trader overlay so the dot restyles instantly.
+      claimQueryClient.setQueryData<CachedOverlay<EmptyClaimSet>>(
+        [...TRADER_CLAIM_EMPTY_QUERY_KEY],
+        (prev) => {
+          const next = new Set(prev?.data ?? []);
+          if (item.empty === false) next.delete(item.claim_id);
+          else next.add(item.claim_id);
           return {
             etag: prev?.etag ?? "__empty__",
             expiresAt: prev?.expiresAt ?? Date.now() + 5 * 60_000,
@@ -1359,7 +1394,14 @@ export function WebCartographerMapViewer({
           const sy = (c.z - cWz) * ppb + ch / 2;
           if (sx < -margin || sx > cw + margin || sy < -margin || sy > ch + margin) continue;
           const assigned = types?.[c.claimId];
-          const color = assigned ? traderColors[assigned.trader_type] : CLAIM_UNCLASSIFIED_COLOR;
+          const isEmpty = emptyClaims?.has(c.claimId) ?? false;
+          // No-trader claims render in a muted red regardless of any stale
+          // type, so beta-leftover claims are visually distinct.
+          const color = isEmpty
+            ? CLAIM_EMPTY_COLOR
+            : assigned
+              ? traderColors[assigned.trader_type]
+              : CLAIM_UNCLASSIFIED_COLOR;
           const isHot = c.claimId === hoveredClaimId || c.claimId === claimPopover?.claimId;
           drawClaimDot(octx, sx, sy, zoom, color, isHot);
           projected.push({ claimId: c.claimId, sx, sy, center: c.center });
@@ -1562,6 +1604,7 @@ export function WebCartographerMapViewer({
     traderColors,
     claimMarkers,
     claimTypes,
+    emptyClaims,
     claimDensity,
     playerClaimMarkers,
     playerClaimLabelMode,
@@ -2516,6 +2559,15 @@ export function WebCartographerMapViewer({
                 </span>
               </div>
             )}
+            {emptyClaims?.has(claimPopover.claimId) && (
+              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-medium text-red-300">
+                <span
+                  className="inline-block h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/40"
+                  style={{ backgroundColor: CLAIM_EMPTY_COLOR }}
+                />
+                {t("topsMap.claimEmptyBadge")}
+              </div>
+            )}
             {canMarkClaims ? (
               <div className="grid grid-cols-1 gap-1">
                 {TRADER_TYPES.map((tt) => (
@@ -2539,11 +2591,48 @@ export function WebCartographerMapViewer({
                     <span>{TRADER_TYPE_LABELS[tt]}</span>
                   </button>
                 ))}
+                <div className="my-1 h-px bg-white/10" />
+                {emptyClaims?.has(claimPopover.claimId) ? (
+                  <button
+                    type="button"
+                    disabled={emptyMutation.isPending}
+                    onClick={() =>
+                      emptyMutation.mutate({
+                        claim_id: claimPopover.claimId,
+                        empty: false,
+                        center: claimPopover.center,
+                      })
+                    }
+                    className="flex items-center gap-2 rounded px-2 py-1 text-left hover:bg-white/10 disabled:opacity-50"
+                  >
+                    <span className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/40 bg-emerald-400" />
+                    <span>{t("topsMap.claimEmptyUnmark")}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={emptyMutation.isPending}
+                    onClick={() =>
+                      emptyMutation.mutate({
+                        claim_id: claimPopover.claimId,
+                        empty: true,
+                        center: claimPopover.center,
+                      })
+                    }
+                    className="flex items-center gap-2 rounded px-2 py-1 text-left hover:bg-white/10 disabled:opacity-50"
+                  >
+                    <span
+                      className="inline-block h-3 w-3 shrink-0 rounded-full ring-1 ring-black/40"
+                      style={{ backgroundColor: CLAIM_EMPTY_COLOR }}
+                    />
+                    <span>{t("topsMap.claimEmptyMark")}</span>
+                  </button>
+                )}
               </div>
             ) : (
               <div className="text-[11px] text-amber-300">{t("topsMap.claimSignInHint")}</div>
             )}
-            {claimMutation.isError && (
+            {(claimMutation.isError || emptyMutation.isError) && (
               <div className="mt-1 text-[11px] text-red-400">{t("topsMap.claimMarkError")}</div>
             )}
           </div>

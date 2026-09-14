@@ -44,6 +44,7 @@ from .routes import admin_translocators as admin_translocators_routes
 from .routes import admin_translocators_screenshots as admin_translocators_screenshots_routes
 from .routes import contribute_traders as contribute_traders_routes
 from .routes import trader_claim_types as trader_claim_types_routes
+from .routes import trader_claim_empty as trader_claim_empty_routes
 from .routes import contribute_auctions as contribute_auctions_routes
 from .routes import contribute_auction_events as contribute_auction_events_routes
 from .routes import contribute_map_features as contribute_map_features_routes
@@ -787,6 +788,7 @@ app.include_router(contribute_tls_screenshots_routes.router, prefix="/api")
 app.include_router(admin_translocators_routes.router, prefix="/api")
 app.include_router(contribute_traders_routes.router, prefix="/api")
 app.include_router(trader_claim_types_routes.router, prefix="/api")
+app.include_router(trader_claim_empty_routes.router, prefix="/api")
 app.include_router(contribute_auctions_routes.router, prefix="/api")
 app.include_router(contribute_auction_events_routes.router, prefix="/api")
 app.include_router(contribute_map_features_routes.router, prefix="/api")
