@@ -14,8 +14,9 @@ import type { DominanceTier, PlayerDominanceRow } from "@/models/auction";
 
 const DOMINANCE_TIER: Record<
   DominanceTier,
-  { label: string; variant: "secondary" | "destructive" | "default" }
+  { label: string; variant: "outline" | "secondary" | "destructive" | "default" }
 > = {
+  minor: { label: "Minor", variant: "outline" },
   leading: { label: "Leading", variant: "secondary" },
   dominant: { label: "Dominant", variant: "default" },
   monopoly: { label: "Monopoly", variant: "destructive" },

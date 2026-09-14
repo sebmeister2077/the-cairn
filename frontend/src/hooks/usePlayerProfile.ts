@@ -87,7 +87,8 @@ function specializationFor(hhi: number | null): SpecializationTier {
 function dominanceTierFor(share: number, otherTraders: number): DominanceTier {
     if (otherTraders === 0) return "monopoly";
     if (share >= 0.6) return "dominant";
-    return "leading";
+    if (share >= 0.25) return "leading";
+    return "minor";
 }
 
 /** Whether a listing carries a usable market reference for premium comparisons. */

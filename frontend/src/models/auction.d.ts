@@ -601,7 +601,7 @@ export type BuyerStyle =
 export type SpecializationTier = "specialist" | "focused" | "generalist";
 
 /** Strength of a player's grip on a single item's supply or demand. */
-export type DominanceTier = "leading" | "dominant" | "monopoly";
+export type DominanceTier = "minor" | "leading" | "dominant" | "monopoly";
 
 /** A single headline label summarising the player's trading behaviour. */
 export type PlayerArchetype =

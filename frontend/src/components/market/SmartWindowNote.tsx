@@ -18,10 +18,7 @@ export function SmartWindowNote({
   if (windowKey !== "smart") return null;
   return (
     <p
-      className={cn(
-        "basis-full flex items-start gap-1.5 text-xs text-muted-foreground",
-        className,
-      )}
+      className={cn("basis-full flex items-start gap-1.5 text-xs text-muted-foreground", className)}
     >
       <Sparkles className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
       <span>
