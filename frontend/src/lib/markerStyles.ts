@@ -129,6 +129,9 @@ export function isRapidsStyle(v: unknown): v is RapidsStyle {
 
 const OUTLINE = "rgba(15, 23, 42, 0.9)";
 
+/** Muted red used for the "no trader" (empty claim) prohibited glyph. */
+const EMPTY_CLAIM_GLYPH = "#dc2626";
+
 /** Size policy shared with MapViewer's existing trader/TL dots. */
 function tlSize(zoom: number) {
     const outer = Math.max(2.1, 3.6 / Math.max(zoom, 0.1));
@@ -290,6 +293,42 @@ export function drawClaimDot(
     ctx.fill();
     ctx.lineWidth = highlight ? stroke * 2.5 : stroke;
     ctx.strokeStyle = highlight ? "rgba(255,255,255,0.95)" : OUTLINE;
+    ctx.stroke();
+}
+
+/**
+ * Draw a "no trader" marker for a claim known to be empty: a small hollow ring
+ * with a diagonal slash (the universal "prohibited" glyph). Deliberately
+ * unfilled and slightly smaller than {@link drawClaimDot} so it reads as
+ * "nothing here" and stays subtle instead of competing with real trader dots.
+ */
+export function drawEmptyClaimMarker(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    zoom: number,
+    highlight = false,
+) {
+    const { outer, stroke } = claimSize(zoom);
+    const r = outer * 0.82;
+    const lw = Math.max(0.9, stroke * 1.3);
+    // Faint dark halo so the glyph stays legible over bright terrain tiles.
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.lineWidth = lw + (highlight ? 2.5 : 1.6);
+    ctx.strokeStyle = "rgba(15,23,42,0.55)";
+    ctx.stroke();
+    // Ring + slash in a muted red so it doesn't jump out.
+    const glyph = highlight ? "rgba(255,255,255,0.95)" : EMPTY_CLAIM_GLYPH;
+    ctx.strokeStyle = glyph;
+    ctx.lineWidth = lw;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    const d = r * Math.SQRT1_2; // 45° slash inscribed in the ring
+    ctx.beginPath();
+    ctx.moveTo(x - d, y - d);
+    ctx.lineTo(x + d, y + d);
     ctx.stroke();
 }
 

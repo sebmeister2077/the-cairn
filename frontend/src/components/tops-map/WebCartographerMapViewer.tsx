@@ -18,6 +18,7 @@ import {
   drawTerminusMarker,
   drawRapidsMarker,
   drawClaimDot,
+  drawEmptyClaimMarker,
 } from "@/lib/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -1395,15 +1396,15 @@ export function WebCartographerMapViewer({
           if (sx < -margin || sx > cw + margin || sy < -margin || sy > ch + margin) continue;
           const assigned = types?.[c.claimId];
           const isEmpty = emptyClaims?.has(c.claimId) ?? false;
-          // No-trader claims render in a muted red regardless of any stale
-          // type, so beta-leftover claims are visually distinct.
-          const color = isEmpty
-            ? CLAIM_EMPTY_COLOR
-            : assigned
-              ? traderColors[assigned.trader_type]
-              : CLAIM_UNCLASSIFIED_COLOR;
           const isHot = c.claimId === hoveredClaimId || c.claimId === claimPopover?.claimId;
-          drawClaimDot(octx, sx, sy, zoom, color, isHot);
+          if (isEmpty) {
+            // "No trader" claims get a small hollow no-entry glyph instead of a
+            // filled dot, so they don't read as a real trader marker.
+            drawEmptyClaimMarker(octx, sx, sy, zoom, isHot);
+          } else {
+            const color = assigned ? traderColors[assigned.trader_type] : CLAIM_UNCLASSIFIED_COLOR;
+            drawClaimDot(octx, sx, sy, zoom, color, isHot);
+          }
           projected.push({ claimId: c.claimId, sx, sy, center: c.center });
         }
       }
