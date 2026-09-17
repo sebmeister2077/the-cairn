@@ -398,6 +398,20 @@ export function TOPSMapViewPage() {
       setBrokenTLViewportBounds(viewportBoundsRef.current);
     }
   }, [rapidsVisible]);
+  // Viewport-culling bounds for the oceans body overlay (separate state so
+  // panning only churns re-renders while that layer is on).
+  const [oceansViewportBounds, setOceansViewportBounds] = useState<{
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+  } | null>(null);
+  // Seed the culling bounds when the oceans layer toggles on.
+  useEffect(() => {
+    if (oceansVisible && viewportBoundsRef.current) {
+      setOceansViewportBounds(viewportBoundsRef.current);
+    }
+  }, [oceansVisible]);
 
   // Rock-strata overlay (rockstratafinder mod export). Optional opt-in
   // layer with its own legend filter, debounced re-crop on pan, and a
@@ -994,6 +1008,9 @@ export function TOPSMapViewPage() {
       if (recordedBrokenTLsVisible || rapidsVisible) {
         setBrokenTLViewportBounds(bounds);
       }
+      if (oceansVisible) {
+        setOceansViewportBounds(bounds);
+      }
       // Feed the rock-strata hook only while the overlay is on; setting
       // state every pan when the layer is off would just churn re-renders.
       if (rockStrataVisible) {
@@ -1013,7 +1030,7 @@ export function TOPSMapViewPage() {
         worldMaxZ: info.worldMaxZ,
       });
     },
-    [updateUrlParams, rockStrataVisible, recordedBrokenTLsVisible, rapidsVisible],
+    [updateUrlParams, rockStrataVisible, recordedBrokenTLsVisible, rapidsVisible, oceansVisible],
   );
 
   const levelInfoQuery = useQuery<TopsMapLevelChunks>({
@@ -2067,6 +2084,7 @@ export function TOPSMapViewPage() {
                     stats={wcStats}
                     imageWidth={imgNatural.w}
                     imageHeight={imgNatural.h}
+                    viewportBounds={oceansViewportBounds}
                   />
                 ) : null
               }
@@ -2208,6 +2226,7 @@ export function TOPSMapViewPage() {
                         stats={stats}
                         imageWidth={tileSet.imageWidth}
                         imageHeight={tileSet.imageHeight}
+                        viewportBounds={oceansViewportBounds}
                       />
                     ) : null}
                     {rockStrataVisible ? (
