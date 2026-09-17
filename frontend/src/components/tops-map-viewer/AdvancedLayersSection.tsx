@@ -25,6 +25,8 @@ interface AdvancedLayersSectionProps {
   showRecordedBrokenTLs: boolean;
   setShowRecordedBrokenTLs: (next: boolean) => void;
   recordedBrokenTLsCount: number;
+  /** Only registered account holders (not API-key-only users) see the broken TL toggle. */
+  hasAccount: boolean;
   showRapids: boolean;
   setShowRapids: (next: boolean) => void;
   rapidsCount: number;
@@ -72,6 +74,7 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
   showRecordedBrokenTLs,
   setShowRecordedBrokenTLs,
   recordedBrokenTLsCount,
+  hasAccount,
   showRapids,
   setShowRapids,
   rapidsCount,
@@ -128,7 +131,7 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           </span>
         </div>
       )}
-      {showAdvancedMapOptions && (
+      {showAdvancedMapOptions && hasAccount && (
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch
             checked={showRecordedBrokenTLs}

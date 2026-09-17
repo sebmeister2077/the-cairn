@@ -1968,6 +1968,7 @@ export function TOPSMapViewPage() {
                 showRecordedBrokenTLs={showRecordedBrokenTLs}
                 setShowRecordedBrokenTLs={setShowRecordedBrokenTLs}
                 recordedBrokenTLsCount={recordedFeatures?.brokenTLs.length ?? 0}
+                hasAccount={Boolean(accountMeQuery.data?.user)}
                 showRapids={showRapids}
                 setShowRapids={setShowRapids}
                 rapidsCount={rapidsMarkers?.length ?? 0}
