@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import psycopg2.extras
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..auth import require_admin
+from ..auth import require_admin, resolve_key_id
 from ..core import database as db
 
 
@@ -1286,5 +1286,254 @@ async def usage_promo(
     }
     _cache_put(cache_key, payload)
     return payload
+
+
+# ---------------------------------------------------------------------------
+# /map-layers — TOPS map "Advanced Layers" usage aggregation.
+#
+# Sourced from ``layer.*`` rows (category ``map_layer``) recorded by
+# ``usage_ingest.record_map_layer_events``. Per-layer enable counts + dwell
+# come from the enable/disable/adjust event stream; the "how many users have
+# it on" measure comes from the daily ``layer.snapshot`` rows whose settings
+# object carries each layer id as a boolean.
+# ---------------------------------------------------------------------------
+
+# Advanced-layer ids, kept in sync with ``_LAYER_IDS`` in usage_ingest and the
+# frontend telemetry builder. Drives the timeline's fixed series order.
+_MAP_LAYER_IDS = [
+    "oceans",
+    "broken_tls",
+    "rapids",
+    "trader_claims",
+    "player_claims",
+    "rock_strata",
+    "climate",
+    "temporal_stability",
+    "auction_heatmap",
+]
+
+
+@router.get("/map-layers")
+async def usage_map_layers(
+    _: str = Depends(require_admin),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    granularity: str = Query("day"),
+    settings_limit: int = Query(50, ge=1, le=200),
+) -> dict:
+    """Aggregate advanced-layer usage: per-layer enable counts + dwell, the
+    daily-snapshot "on" counts, an enable timeline, and the most common
+    per-layer setting values."""
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    gran = _resolve_granularity(granularity)
+    cache_key = ("map-layers", _iso(start), _iso(end), gran, int(settings_limit))
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            # Per-layer counters from the change-event stream (excludes snapshots).
+            cur.execute(
+                """SELECT metadata->>'layer' AS layer,
+                          COUNT(*) FILTER (WHERE event_type = 'layer.enable')::int
+                              AS enable_count,
+                          COUNT(DISTINCT actor_api_key_id)
+                              FILTER (WHERE actor_api_key_id IS NOT NULL)::int
+                              AS distinct_actors,
+                          COALESCE(SUM((metadata->>'duration_ms')::bigint)
+                              FILTER (WHERE metadata ? 'duration_ms'), 0)::bigint
+                              AS total_dwell_ms,
+                          COUNT(*) FILTER (WHERE metadata ? 'duration_ms')::int
+                              AS dwell_samples
+                       FROM usage_events
+                      WHERE category = 'map_layer'
+                        AND event_type <> 'layer.snapshot'
+                        AND created_at >= %s AND created_at < %s
+                        AND metadata ? 'layer'
+                   GROUP BY metadata->>'layer'""",
+                (start, end),
+            )
+            change_rows = {r["layer"]: r for r in cur.fetchall()}
+
+            # Snapshot "on" counts: how many daily snapshots had each layer on.
+            cur.execute(
+                """SELECT kv.key AS layer,
+                          COUNT(*) FILTER (WHERE kv.value = 'true')::int AS on_count,
+                          COUNT(DISTINCT actor_api_key_id)
+                              FILTER (WHERE kv.value = 'true'
+                                      AND actor_api_key_id IS NOT NULL)::int
+                              AS distinct_on_actors
+                       FROM usage_events,
+                            jsonb_each_text(metadata->'settings') AS kv(key, value)
+                      WHERE event_type = 'layer.snapshot'
+                        AND created_at >= %s AND created_at < %s
+                        AND kv.key = ANY(%s)
+                   GROUP BY kv.key""",
+                (start, end, _MAP_LAYER_IDS),
+            )
+            snap_rows = {r["layer"]: r for r in cur.fetchall()}
+
+            cur.execute(
+                """SELECT COUNT(*)::int AS n
+                       FROM usage_events
+                      WHERE event_type = 'layer.snapshot'
+                        AND created_at >= %s AND created_at < %s""",
+                (start, end),
+            )
+            snapshot_total = int((cur.fetchone() or {}).get("n") or 0)
+
+            # Enable timeline, stacked per layer.
+            cur.execute(
+                """SELECT date_trunc(%s, created_at) AS bucket,
+                          metadata->>'layer' AS layer,
+                          COUNT(*)::int AS count
+                       FROM usage_events
+                      WHERE event_type = 'layer.enable'
+                        AND created_at >= %s AND created_at < %s
+                        AND metadata ? 'layer'
+                   GROUP BY bucket, layer
+                   ORDER BY bucket""",
+                (gran, start, end),
+            )
+            timeline = [
+                {
+                    "bucket": _iso(r["bucket"]),
+                    "series": r["layer"],
+                    "count": int(r["count"]),
+                }
+                for r in cur.fetchall()
+            ]
+
+            # Most common per-layer setting values across enable/adjust rows.
+            cur.execute(
+                """SELECT metadata->>'layer' AS layer,
+                          kv.key AS setting,
+                          kv.value AS value,
+                          COUNT(*)::int AS count
+                       FROM usage_events,
+                            jsonb_each_text(metadata->'settings') AS kv(key, value)
+                      WHERE category = 'map_layer'
+                        AND event_type IN ('layer.enable', 'layer.adjust')
+                        AND created_at >= %s AND created_at < %s
+                        AND metadata ? 'layer'
+                   GROUP BY layer, setting, value
+                   ORDER BY count DESC
+                      LIMIT %s""",
+                (start, end, int(settings_limit)),
+            )
+            top_settings = [
+                {
+                    "layer": r["layer"],
+                    "setting": r["setting"],
+                    "value": r["value"],
+                    "count": int(r["count"]),
+                }
+                for r in cur.fetchall()
+            ]
+
+    layers = []
+    for lid in _MAP_LAYER_IDS:
+        c = change_rows.get(lid) or {}
+        s = snap_rows.get(lid) or {}
+        total_dwell = int(c.get("total_dwell_ms") or 0)
+        samples = int(c.get("dwell_samples") or 0)
+        layers.append(
+            {
+                "layer": lid,
+                "enable_count": int(c.get("enable_count") or 0),
+                "distinct_actors": int(c.get("distinct_actors") or 0),
+                "total_dwell_ms": total_dwell,
+                "avg_dwell_ms": int(total_dwell / samples) if samples else 0,
+                "snapshot_on_count": int(s.get("on_count") or 0),
+                "snapshot_on_actors": int(s.get("distinct_on_actors") or 0),
+            }
+        )
+
+    payload = {
+        "from": _iso(start),
+        "to": _iso(end),
+        "granularity": gran,
+        "snapshot_total": snapshot_total,
+        "layers": layers,
+        "timeline": timeline,
+        "top_settings": top_settings,
+    }
+    _cache_put(cache_key, payload)
+    return payload
+
+
+# ---------------------------------------------------------------------------
+# /actor/{api_key} — per-account activity history (pages + map layers).
+#
+# Signed-in ``page.view`` and ``layer.*`` rows tied to one account, newest
+# first. Used by the admin per-user "History" dialog. Not cached — admin
+# traffic is low volume and freshness matters here.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/actor/{api_key}")
+async def usage_actor_history(
+    api_key: str,
+    _: str = Depends(require_admin),
+    frm: Optional[str] = Query(None, alias="from"),
+    to: Optional[str] = Query(None),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+) -> dict:
+    """Return one account's recent page-view + map-layer activity, newest
+    first. ``api_key`` is the user's full key string (as elsewhere in the
+    admin API); it is resolved to its ``api_keys.id`` internally and never
+    echoed back."""
+    _ensure_db()
+    start, end = _resolve_window(frm, to)
+    actor_id = resolve_key_id(api_key)
+    if actor_id is None:
+        raise HTTPException(status_code=404, detail="Unknown API key")
+    actor_str = str(actor_id)
+
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT display_name FROM users WHERE api_key_id::text = %s",
+                (actor_str,),
+            )
+            urow = cur.fetchone()
+            display_name = urow["display_name"] if urow else None
+
+            cur.execute(
+                """SELECT created_at, event_type, category, metadata
+                       FROM usage_events
+                      WHERE actor_api_key_id = %s
+                        AND category IN ('page', 'map_layer')
+                        AND created_at >= %s AND created_at < %s
+                   ORDER BY created_at DESC
+                      LIMIT %s OFFSET %s""",
+                (actor_str, start, end, int(limit) + 1, int(offset)),
+            )
+            rows = list(cur.fetchall())
+
+    has_more = len(rows) > int(limit)
+    events = [
+        {
+            "created_at": _iso(r["created_at"]),
+            "event_type": r["event_type"],
+            "category": r["category"],
+            "metadata": r["metadata"] or {},
+        }
+        for r in rows[: int(limit)]
+    ]
+
+    return {
+        "from": _iso(start),
+        "to": _iso(end),
+        "display_name": display_name,
+        "events": events,
+        "limit": int(limit),
+        "offset": int(offset),
+        "has_more": has_more,
+    }
+
 
 

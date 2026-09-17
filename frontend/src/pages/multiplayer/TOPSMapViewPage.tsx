@@ -105,6 +105,7 @@ import {
 } from "@/components/tops-map/TLGroupingsDrawer";
 import { useTLRoute } from "@/hooks/useTLRoute";
 import { useElkWalkable } from "@/hooks/useElkWalkable";
+import { useMapLayerTelemetry } from "@/hooks/useMapLayerTelemetry";
 import {
   setRouteFrom,
   setRoutePickMode,
@@ -248,6 +249,10 @@ export function TOPSMapViewPage() {
   const showAuctionSell = auctionLayer === "sell" || auctionLayer === "both";
   const showAuctionBuy = auctionLayer === "buy" || auctionLayer === "both";
   const auctionOpacity = useAppSelector((s) => s.mapView.auctionHeatmapOpacity);
+
+  // Record advanced-layer usage (daily snapshot + per-layer dwell) for the
+  // admin "Map Layers" analytics. Signed-in + consent-gated; inert otherwise.
+  useMapLayerTelemetry(auctionLayer);
 
   // Single helper that merges param changes into the existing search string.
   // and replaces the history entry (so panning doesn't fill back-button

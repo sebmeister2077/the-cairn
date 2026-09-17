@@ -466,6 +466,18 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # pragma: no cover
         logger.warning("Weekly backup scheduler failed to start (non-fatal): %s", exc)
 
+    # Daily prune of aged map-layer usage telemetry (keeps usage_events small).
+    step_started = perf_counter()
+    try:
+        from .tasks import prune_layer_events
+        prune_layer_events.start()
+        logger.info(
+            "Startup step prune_layer_events scheduler started in %.3fs",
+            perf_counter() - step_started,
+        )
+    except Exception as exc:  # pragma: no cover
+        logger.warning("Layer-telemetry prune scheduler failed to start (non-fatal): %s", exc)
+
     # Resume any per-contribution archive-compression work that was
     # interrupted by a previous process. No-op when ``compress_artefacts``
     # is OFF; cheap (single LIST + per-row Postgres lookup) otherwise.
@@ -538,6 +550,11 @@ async def lifespan(app: FastAPI):
         try:
             from .tasks import weekly_backup
             weekly_backup.stop()
+        except Exception:
+            pass
+        try:
+            from .tasks import prune_layer_events
+            prune_layer_events.stop()
         except Exception:
             pass
         try:

@@ -4034,6 +4034,37 @@ export interface UsagePageEntities extends UsageWindow {
     }>;
 }
 
+export interface UsageMapLayers extends UsageWindow {
+    granularity: UsageGranularity;
+    snapshot_total: number;
+    layers: Array<{
+        layer: string;
+        enable_count: number;
+        distinct_actors: number;
+        total_dwell_ms: number;
+        avg_dwell_ms: number;
+        snapshot_on_count: number;
+        snapshot_on_actors: number;
+    }>;
+    timeline: Array<{ bucket: string; series: string; count: number }>;
+    top_settings: Array<{ layer: string; setting: string; value: string; count: number }>;
+}
+
+export interface UsageActorHistory {
+    from: string;
+    to: string;
+    display_name: string | null;
+    events: Array<{
+        created_at: string;
+        event_type: string;
+        category: string;
+        metadata: Record<string, unknown>;
+    }>;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+}
+
 export type PromoAction =
     | "impression"
     | "details_open"
@@ -4116,6 +4147,17 @@ export const adminUsage = {
         _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
     pageEntities: (p: UsageWindowParams & { path: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsagePageEntities>("page-entities", { from: p.from, to: p.to, path: p.path, limit: p.limit }, signal),
+    mapLayers: (p: UsageGranularityParams & { settings_limit?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageMapLayers>("map-layers", { from: p.from, to: p.to, granularity: p.granularity, settings_limit: p.settings_limit }, signal),
+    actorHistory: (
+        p: UsageWindowParams & { api_key: string; limit?: number; offset?: number },
+        signal?: AbortSignal,
+    ) =>
+        _usageGet<UsageActorHistory>(
+            `actor/${encodeURIComponent(p.api_key)}`,
+            { from: p.from, to: p.to, limit: p.limit, offset: p.offset },
+            signal,
+        ),
     promo: (
         p: UsageGranularityParams & { promo_id?: string; recent_limit?: number },
         signal?: AbortSignal,

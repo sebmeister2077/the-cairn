@@ -54,6 +54,7 @@ _CATEGORY_BY_PREFIX = {
     "page": "page",
     "route": "route",
     "promo": "promo",
+    "layer": "map_layer",
 }
 
 

@@ -27,6 +27,7 @@ import { Input } from "@/components/ui/input";
 import { SavedRoutesSection } from "@/components/admin/usage/SavedRoutesSection";
 import { PromoSection } from "@/components/admin/usage/PromoSection";
 import { useItemCatalog } from "@/lib/auction";
+import { formatDuration } from "@/lib/format-duration";
 
 /**
  * Admin "Usage" dashboard.
@@ -40,6 +41,7 @@ type SectionKey =
   | "contributions"
   | "pages"
   | "entities"
+  | "map_layers"
   | "saved_routes"
   | "admin"
   | "queues"
@@ -54,6 +56,7 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "contributions", label: "Contributions" },
   { key: "pages", label: "Pages" },
   { key: "entities", label: "Items & Players" },
+  { key: "map_layers", label: "Map Layers" },
   { key: "saved_routes", label: "Saved Routes" },
   { key: "admin", label: "Admin Activity" },
   { key: "queues", label: "Queue Velocity" },
@@ -128,6 +131,9 @@ export function AdminUsagePage() {
         <PagesSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "entities" && <EntitiesSection from={range.from} to={range.to} />}
+      {section === "map_layers" && (
+        <MapLayersSection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "saved_routes" && (
         <SavedRoutesSection from={range.from} to={range.to} granularity={granularity} />
       )}
@@ -712,6 +718,201 @@ function EntitiesSection(props: { from: string; to: string }) {
                 </tbody>
               </table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Section: Map Layers — TOPS map advanced-overlay usage.
+// ---------------------------------------------------------------------------
+
+const MAP_LAYER_LABELS: Record<string, string> = {
+  oceans: "Oceans",
+  broken_tls: "Broken translocators",
+  rapids: "Rapids",
+  trader_claims: "Trader claims",
+  player_claims: "Player claims",
+  rock_strata: "Rock strata",
+  climate: "Climate",
+  temporal_stability: "Temporal stability",
+  auction_heatmap: "Auction heatmap",
+};
+
+function layerLabel(id: string): string {
+  return MAP_LAYER_LABELS[id] ?? id;
+}
+
+function MapLayersSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const [showTrend, setShowTrend] = useState(true);
+  const q = useQuery({
+    queryKey: ["usage", "map-layers", props.from, props.to, props.granularity],
+    queryFn: ({ signal }) =>
+      adminUsage.mapLayers(
+        { from: props.from, to: props.to, granularity: props.granularity, settings_limit: 60 },
+        signal,
+      ),
+  });
+
+  // Rank layers by how many daily snapshots had them on (the "most used"
+  // signal), falling back to enable counts to break ties.
+  const rankedLayers = useMemo(() => {
+    const rows = [...(q.data?.layers ?? [])];
+    rows.sort(
+      (a, b) => b.snapshot_on_count - a.snapshot_on_count || b.enable_count - a.enable_count,
+    );
+    return rows;
+  }, [q.data?.layers]);
+
+  const timelineSeries = useMemo(
+    () =>
+      (q.data?.timeline ?? []).map((b) => ({
+        bucket: b.bucket,
+        series: layerLabel(b.series),
+        count: b.count,
+      })),
+    [q.data?.timeline],
+  );
+
+  // Group the flat top-settings list by layer for a compact per-layer view.
+  const settingsByLayer = useMemo(() => {
+    const map = new Map<string, Array<{ setting: string; value: string; count: number }>>();
+    for (const r of q.data?.top_settings ?? []) {
+      const arr = map.get(r.layer) ?? [];
+      arr.push({ setting: r.setting, value: r.value, count: r.count });
+      map.set(r.layer, arr);
+    }
+    return map;
+  }, [q.data?.top_settings]);
+
+  if (q.isLoading) return <Loading />;
+  if (q.isError || !q.data) return <ErrorMsg msg="Failed to load map-layer analytics." />;
+
+  const maxOn = rankedLayers.reduce((m, r) => Math.max(m, r.snapshot_on_count), 0) || 1;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <StatCard label="Daily snapshots" value={q.data.snapshot_total} />
+        <StatCard
+          label="Layers with usage"
+          value={rankedLayers.filter((r) => r.enable_count > 0 || r.snapshot_on_count > 0).length}
+        />
+      </div>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="space-y-1">
+            <CardTitle>Layer enables over time</CardTitle>
+            <CardDescription>
+              How often each advanced overlay was switched on, per {props.granularity}.
+            </CardDescription>
+          </div>
+          <TrendToggle checked={showTrend} onChange={setShowTrend} id="map-layers-trend" />
+        </CardHeader>
+        <CardContent>
+          <TimeSeriesChart
+            data={timelineSeries}
+            xKey="bucket"
+            yKey="count"
+            seriesKey="series"
+            stacked
+            granularity={props.granularity}
+            showTrend={showTrend}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Most used advanced layers</CardTitle>
+          <CardDescription>
+            Ranked by how many daily config snapshots had the layer enabled. Dwell = time a layer
+            stayed on before being switched off. Distinct users = signed-in accounts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          {rankedLayers.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              No map-layer telemetry recorded in this window.
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground border-b">
+                  <th className="py-2 pr-4 font-medium">Layer</th>
+                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Users w/ on</th>
+                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Snapshots on</th>
+                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Enables</th>
+                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Avg dwell</th>
+                  <th className="py-2 font-medium w-1/4">Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankedLayers.map((row) => (
+                  <tr key={row.layer} className="border-b">
+                    <td className="py-2 pr-4">{layerLabel(row.layer)}</td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {row.snapshot_on_actors.toLocaleString()}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {row.snapshot_on_count.toLocaleString()}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {row.enable_count.toLocaleString()}
+                    </td>
+                    <td className="py-2 pr-4 text-right tabular-nums">
+                      {row.avg_dwell_ms > 0 ? formatDuration(row.avg_dwell_ms / 1000) : "—"}
+                    </td>
+                    <td className="py-2">
+                      <div className="h-2 bg-muted rounded">
+                        <div
+                          className="h-2 bg-primary rounded"
+                          style={{ width: `${(row.snapshot_on_count / maxOn) * 100}%` }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Popular settings</CardTitle>
+          <CardDescription>
+            Most common setting values chosen when each layer was enabled or adjusted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {settingsByLayer.size === 0 ? (
+            <div className="text-sm text-muted-foreground py-4 text-center">
+              No setting data in this window.
+            </div>
+          ) : (
+            rankedLayers
+              .filter((r) => settingsByLayer.has(r.layer))
+              .map((r) => (
+                <div key={r.layer} className="space-y-1">
+                  <div className="text-sm font-medium">{layerLabel(r.layer)}</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(settingsByLayer.get(r.layer) ?? []).map((s, i) => (
+                      <span
+                        key={`${s.setting}-${s.value}-${i}`}
+                        className="text-xs px-2 py-0.5 rounded-full border bg-background text-muted-foreground"
+                      >
+                        <span className="font-mono">{s.setting}</span>={s.value}{" "}
+                        <span className="text-foreground">×{s.count}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))
           )}
         </CardContent>
       </Card>

@@ -55,6 +55,110 @@ _PAGE_VIEW_BATCH_MAX_EVENTS = 50
 _PAGE_VIEW_BATCH_MAX_PER_WINDOW = 30
 
 
+# ---------------------------------------------------------------------------
+# Map-layer (TOPS map "Advanced Layers") usage telemetry.
+#
+# The frontend coalesces a user's advanced-overlay toggles + settings into a
+# single daily upload (see frontend `lib/mapLayerTelemetry.ts`): one
+# ``snapshot`` row capturing the whole config plus per-layer
+# enable/disable/adjust rows carrying the dwell time of the previous state.
+# Everything lands in ``usage_events`` as ``layer.<action>`` under category
+# ``map_layer``. Only signed-in, consent-accepted users send these.
+# ---------------------------------------------------------------------------
+
+# Fixed allow-list of advanced-overlay layer ids. Kept explicit so a hostile
+# client can't inflate the ``metadata->>'layer'`` index cardinality. Mirrors
+# the advanced-layer fields of the frontend mapView slice.
+_LAYER_IDS = frozenset(
+    {
+        "oceans",
+        "broken_tls",
+        "rapids",
+        "trader_claims",
+        "player_claims",
+        "rock_strata",
+        "climate",
+        "temporal_stability",
+        "auction_heatmap",
+    }
+)
+_LAYER_ACTIONS = frozenset({"snapshot", "enable", "disable", "adjust"})
+# Bound on a single dwell interval: one day in ms. Longer values are clamped.
+_LAYER_MAX_DURATION_MS = 24 * 60 * 60 * 1000
+# Settings are a tiny sanitized dict; cap keys + value sizes so the JSONB
+# payload stays small regardless of what the client sends.
+_LAYER_MAX_SETTINGS_KEYS = 24
+_LAYER_MAX_SETTING_VALUE_LEN = 64
+_LAYER_SETTING_KEY_RE = re.compile(r"^[A-Za-z0-9_]{1,32}$")
+
+_LAYER_EVENTS_BATCH_MAX_EVENTS = 60
+_LAYER_EVENTS_MAX_PER_WINDOW = 20
+_LAYER_EVENTS_WINDOW_SECONDS = 60
+
+
+def _validate_layer_id(raw: object) -> Optional[str]:
+    if not isinstance(raw, str):
+        return None
+    v = raw.strip()
+    return v if v in _LAYER_IDS else None
+
+
+def _sanitize_layer_settings(raw: object) -> dict:
+    """Coerce a client ``settings`` object into a small JSON-safe dict.
+
+    Only scalar values (bool / number / short string) survive. Lists of
+    scalars are kept but capped. Anything else is dropped. Keys must match
+    ``_LAYER_SETTING_KEY_RE``. The whole object is capped at
+    ``_LAYER_MAX_SETTINGS_KEYS`` keys.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict = {}
+    for key, value in raw.items():
+        if len(out) >= _LAYER_MAX_SETTINGS_KEYS:
+            break
+        if not isinstance(key, str) or not _LAYER_SETTING_KEY_RE.match(key):
+            continue
+        coerced = _coerce_setting_value(value)
+        if coerced is not None:
+            out[key] = coerced
+    return out
+
+
+def _coerce_setting_value(value: object):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        # Reject non-finite floats which are not valid JSON.
+        if isinstance(value, float) and (value != value or value in (float("inf"), float("-inf"))):
+            return None
+        return value
+    if isinstance(value, str):
+        return value[:_LAYER_MAX_SETTING_VALUE_LEN]
+    if isinstance(value, list):
+        items = []
+        for item in value[:_LAYER_MAX_SETTINGS_KEYS]:
+            if isinstance(item, bool) or isinstance(item, (int, float)):
+                items.append(item)
+            elif isinstance(item, str):
+                items.append(item[:_LAYER_MAX_SETTING_VALUE_LEN])
+        return items
+    return None
+
+
+def _clamp_duration_ms(raw: object) -> Optional[int]:
+    if raw is None:
+        return None
+    try:
+        ms = int(round(float(raw)))
+    except (TypeError, ValueError):
+        return None
+    if ms < 0:
+        return 0
+    return min(ms, _LAYER_MAX_DURATION_MS)
+
+
+
 def _validate_path(raw: object) -> Optional[str]:
     """Return a sanitized path or ``None`` if invalid."""
     if not isinstance(raw, str):
@@ -196,6 +300,93 @@ async def record_page_views(
             {
                 "event_type": "page.view",
                 "category": "page",
+                "actor_api_key_id": actor_id,
+                "metadata": metadata,
+                "ip_hash": ip_hash,
+            }
+        )
+
+    if not rows:
+        raise HTTPException(status_code=400, detail="no valid events in batch")
+
+    usage_events.record_batch(rows)
+
+
+@router.post("/map-layer-events", status_code=204)
+async def record_map_layer_events(
+    request: Request,
+    payload: dict,
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+) -> None:
+    """Record a batch of TOPS-map advanced-layer usage events.
+
+    Body shape::
+
+        {"events": [
+            {"layer": "rock_strata", "action": "enable",
+             "settings": {"kind": "rock", "opacity": 0.6}},
+            {"layer": "climate", "action": "disable", "duration_ms": 42000},
+            {"layer": "__snapshot__", "action": "snapshot",
+             "settings": {"oceans": true, "rock_strata": false, ...}}
+        ]}
+
+    Each event becomes a ``layer.<action>`` row under category ``map_layer``.
+    Only signed-in users are attributed (``actor_api_key_id``); anonymous
+    posts are still accepted but recorded without an actor. Invalid entries
+    are dropped; the batch succeeds if at least one valid event remains.
+    """
+    raw_events = payload.get("events") if isinstance(payload, dict) else None
+    if not isinstance(raw_events, list) or not raw_events:
+        raise HTTPException(status_code=400, detail="events must be a non-empty list")
+    if len(raw_events) > _LAYER_EVENTS_BATCH_MAX_EVENTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"too many events (max {_LAYER_EVENTS_BATCH_MAX_EVENTS})",
+        )
+
+    client_ip = _get_client_ip(request)
+    ip_hash = _hash_ip(client_ip)
+    check_scoped_rate_limit(
+        ip_hash,
+        "map-layer-events",
+        _LAYER_EVENTS_MAX_PER_WINDOW,
+        _LAYER_EVENTS_WINDOW_SECONDS,
+    )
+
+    actor_id = None
+    if x_api_key:
+        try:
+            actor_id = resolve_key_id(x_api_key)
+        except Exception:
+            actor_id = None
+
+    rows = []
+    for raw in raw_events:
+        if not isinstance(raw, dict):
+            continue
+        action = raw.get("action")
+        if not isinstance(action, str) or action not in _LAYER_ACTIONS:
+            continue
+        settings = _sanitize_layer_settings(raw.get("settings"))
+        metadata: dict = {}
+        if action == "snapshot":
+            # A snapshot describes the whole config; the per-layer id is not
+            # meaningful, so it lives entirely in ``settings``.
+            metadata["settings"] = settings
+        else:
+            layer = _validate_layer_id(raw.get("layer"))
+            if not layer:
+                continue
+            metadata["layer"] = layer
+            if settings:
+                metadata["settings"] = settings
+            duration_ms = _clamp_duration_ms(raw.get("duration_ms"))
+            if duration_ms is not None:
+                metadata["duration_ms"] = duration_ms
+        rows.append(
+            {
+                "event_type": f"layer.{action}",
+                "category": "map_layer",
                 "actor_api_key_id": actor_id,
                 "metadata": metadata,
                 "ip_hash": ip_hash,

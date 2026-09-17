@@ -4,6 +4,7 @@ import { FlagsDialog } from "@/components/admin/FlagsDialog";
 import { PermissionsDialog } from "@/components/admin/PermissionsDialog";
 import { RekeyResultDialog } from "@/components/admin/RekeyResultDialog";
 import { SiblingsDialog } from "@/components/admin/SiblingsDialog";
+import { UserHistoryDialog } from "@/components/admin/UserHistoryDialog";
 import { UserStat } from "@/components/admin/UserStat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ export function AdminUsersPage() {
 
   const [banTarget, setBanTarget] = useState<AdminUserListItem | null>(null);
   const [siblingTarget, setSiblingTarget] = useState<AdminUserListItem | null>(null);
+  const [historyTarget, setHistoryTarget] = useState<AdminUserListItem | null>(null);
   const [flagsTarget, setFlagsTarget] = useState<AdminUserListItem | null>(null);
   const [permsTarget, setPermsTarget] = useState<AdminUserListItem | null>(null);
   const [rekeyResult, setRekeyResult] = useState<{ user: string; key: string } | null>(null);
@@ -237,6 +239,9 @@ export function AdminUsersPage() {
                   <Button size="sm" variant="outline" onClick={() => setSiblingTarget(u)}>
                     Siblings
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setHistoryTarget(u)}>
+                    History
+                  </Button>
                   {u.flag_count > 0 && (
                     <Button size="sm" variant="outline" onClick={() => setFlagsTarget(u)}>
                       Flags ({u.flag_count})
@@ -280,6 +285,8 @@ export function AdminUsersPage() {
       />
 
       <SiblingsDialog target={siblingTarget} onClose={() => setSiblingTarget(null)} />
+
+      <UserHistoryDialog target={historyTarget} onClose={() => setHistoryTarget(null)} />
 
       <FlagsDialog
         target={flagsTarget}
