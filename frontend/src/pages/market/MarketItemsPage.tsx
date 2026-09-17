@@ -25,8 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuctionSummary, useItemCatalog, formatGears } from "@/lib/auction";
+import { useAuctionSummary, useItemCatalog, useItemImages, formatGears } from "@/lib/auction";
 import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
+import { ItemThumb } from "@/components/market/ItemThumb";
 import type { Rarity } from "@/models/item-sources";
 import {
   useItemSearch,
@@ -55,6 +56,8 @@ interface SearchRow {
   itemId: number;
   name: string;
   category: string;
+  code: string | null;
+  classType: "Item" | "Block";
   listings: number;
   unitsSold: number;
   gearsTraded: number;
@@ -97,6 +100,7 @@ function num(n: number): string {
 export function MarketItemsPage() {
   const catalogQ = useItemCatalog();
   const summaryQ = useAuctionSummary();
+  const images = useItemImages();
   const search = useItemSearch();
   const { q, category, rarity, sort } = search;
 
@@ -114,6 +118,8 @@ export function MarketItemsPage() {
         itemId,
         name: entry.name,
         category: entry.category,
+        code: entry.code,
+        classType: entry.classType,
         listings: st?.listings ?? 0,
         unitsSold: st?.unitsSold ?? 0,
         gearsTraded: st?.gearsTraded ?? 0,
@@ -295,9 +301,12 @@ export function MarketItemsPage() {
             {shown.map((it) => (
               <TableRow key={it.itemId}>
                 <TableCell className="font-medium">
-                  <Link to={`/market/items/${it.itemId}`} className="hover:underline">
-                    {it.name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <ItemThumb url={images.url(it.code, it.classType)} alt={it.name} />
+                    <Link to={`/market/items/${it.itemId}`} className="hover:underline">
+                      {it.name}
+                    </Link>
+                  </div>
                 </TableCell>
                 <TableCell className="text-xs text-muted-foreground">{it.category}</TableCell>
                 <TableCell>

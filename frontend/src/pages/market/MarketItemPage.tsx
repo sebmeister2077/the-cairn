@@ -51,6 +51,7 @@ import {
   useCurrentGameHours,
   liquidContainerLabel,
   liquidContainerShort,
+  useItemImages,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import type { ChiselDesign } from "@/models/auction";
@@ -798,6 +799,15 @@ export function MarketItemPage() {
     return rest || null;
   }, [chiselDesign]);
 
+  // Game-rendered item icon (from the game's `.blockitempngexport`, ingested by
+  // `backend/build_item_icons.py`). Shown next to the title for ordinary items;
+  // tapestries and chiseled blocks render their own visuals, so they opt out.
+  const itemImages = useItemImages();
+  const itemImageUrl = useMemo(() => {
+    if (!currentEntry?.code || tapestryImage || chiselDesign) return null;
+    return itemImages.url(currentEntry.code, currentEntry.classType);
+  }, [currentEntry, tapestryImage, chiselDesign, itemImages]);
+
   // Distinct builds within this item's listings — a named group like "l-dungeon"
   // can bundle several designs. When it does, the listings table shows a preview.
   const hasChiselVariants = useMemo(() => {
@@ -1106,9 +1116,19 @@ export function MarketItemPage() {
           >
             <ArrowLeft className="size-4" /> Back
           </Button>
-          <div>
-            <h1 className="text-2xl font-semibold">{currentEntry.name}</h1>
-            <p className="text-sm text-muted-foreground">{currentEntry.category}</p>
+          <div className="flex items-center gap-3">
+            {itemImageUrl && (
+              <img
+                src={itemImageUrl}
+                alt={currentEntry.name}
+                className="size-24 shrink-0 rounded-md border bg-muted/30 object-contain p-1"
+                loading="lazy"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold">{currentEntry.name}</h1>
+              <p className="text-sm text-muted-foreground">{currentEntry.category}</p>
+            </div>
           </div>
           <Card>
             <CardContent className="py-4 text-sm text-muted-foreground">
@@ -1181,6 +1201,14 @@ export function MarketItemPage() {
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
         </button>
         <div className="flex flex-wrap items-center gap-2">
+          {itemImageUrl && (
+            <img
+              src={itemImageUrl}
+              alt={displayName}
+              className="size-16 shrink-0 rounded-md border bg-muted/30 object-contain p-1"
+              loading="lazy"
+            />
+          )}
           <h1 className="text-2xl font-semibold">{displayName}</h1>
           {trend && (
             <span className="inline-flex items-center gap-1.5">

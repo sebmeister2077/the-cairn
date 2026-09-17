@@ -140,6 +140,60 @@ export function useItemCatalog() {
     });
 }
 
+/** Stable per-item image key, matching the backend's `image_key`:
+ *  `<class lower>-<bare code with '/' -> '-'>` (e.g. `item-ingot-copper`). */
+function itemImageKey(code: string | null | undefined, classType: string): string | null {
+    if (!code) return null;
+    const bare = code.split(":").pop() ?? code;
+    return `${classType.toLowerCase()}-${bare.replace(/\//g, "-")}`;
+}
+
+interface ItemImagesManifest {
+    version: string;
+    keys: string[];
+}
+
+/**
+ * Game-rendered item/block icons (produced offline by `backend/build_item_icons.py`
+ * from the game's `.blockitempngexport` output, published under `auction/icons/`).
+ * Returns helpers to test for and resolve an item's image URL by its catalog
+ * `code` + `classType`. The manifest is small and fetched `no-store`; a missing
+ * manifest (e.g. local dev without the icon set) degrades to "no images".
+ */
+export function useItemImages() {
+    const { ready } = useAuctionVersion();
+    const q = useQuery({
+        queryKey: ["auction", "itemImages"],
+        queryFn: async ({ signal }) => {
+            const res = await fetch(`${AUCTION_BASE}/icons/item-images.json`, {
+                signal,
+                cache: "no-store",
+            });
+            if (!res.ok) throw new Error(`Failed to load item images: ${res.status}`);
+            const m = (await res.json()) as ItemImagesManifest;
+            return { version: m.version, keys: new Set(m.keys) };
+        },
+        enabled: ready,
+        staleTime: 1000 * 60 * 60,
+        gcTime: 1000 * 60 * 60 * 24,
+        refetchOnWindowFocus: false,
+        retry: false, // absent in local dev / before the icon set is published
+    });
+
+    const data = q.data;
+    return useMemo(
+        () => ({
+            /** URL of the item's icon, or null when it has none. */
+            url(code: string | null | undefined, classType: string): string | null {
+                const key = itemImageKey(code, classType);
+                if (!key || !data?.keys.has(key)) return null;
+                return auctionUrl(`icons/${key}.png`, data.version);
+            },
+        }),
+        [data],
+    );
+}
+
 /** Format a Rusty Gears amount for display. */
 export function formatGears(n: number): string {
     if (n < 1) return `${n.toFixed(2)}⚙`;

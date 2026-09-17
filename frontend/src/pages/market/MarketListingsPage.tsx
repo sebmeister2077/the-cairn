@@ -16,10 +16,13 @@ import {
   useAuctionListings,
   useAuctionCsvUrl,
   useCurrentGameHours,
+  useItemCatalog,
+  useItemImages,
   liquidContainerLabel,
   liquidContainerShort,
 } from "@/lib/auction";
 import { MarketFilterBar } from "../../components/market/MarketFilterBar";
+import { ItemThumb } from "../../components/market/ItemThumb";
 import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
   formatGameDate,
@@ -32,6 +35,8 @@ const PAGE_SIZE = 100;
 export function MarketListingsPage() {
   const { data, isPending, isError } = useAuctionListings();
   const currentGameHours = useCurrentGameHours();
+  const catalogQ = useItemCatalog();
+  const images = useItemImages();
   const filters = useAppSelector((s) => s.auctionFilters);
   const isAdmin = useAppSelector((s) => s.auth.isAdmin);
   const rows = useFilteredListings(data, filters, isAdmin);
@@ -119,24 +124,37 @@ export function MarketListingsPage() {
             {pageRows.map((l) => (
               <TableRow key={l.auctionId}>
                 <TableCell className="font-medium">
-                  <Link
-                    to={`/market/items/${l.itemId}`}
-                    className="hover:underline"
-                    title={
-                      l.liquid
-                        ? `${l.name} · ${liquidContainerLabel(l.liquid.container)}`
-                        : l.variant
-                          ? `${l.name} · ${l.category}`
-                          : l.category
-                    }
-                  >
-                    {l.variant || l.name}
-                  </Link>
-                  {l.liquid && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      ({liquidContainerShort(l.liquid.container)})
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {(() => {
+                      const entry = catalogQ.data?.[String(l.itemId)];
+                      return (
+                        <ItemThumb
+                          url={entry ? images.url(entry.code, entry.classType) : null}
+                          alt={l.name}
+                        />
+                      );
+                    })()}
+                    <div className="min-w-0">
+                      <Link
+                        to={`/market/items/${l.itemId}`}
+                        className="hover:underline"
+                        title={
+                          l.liquid
+                            ? `${l.name} · ${liquidContainerLabel(l.liquid.container)}`
+                            : l.variant
+                              ? `${l.name} · ${l.category}`
+                              : l.category
+                        }
+                      >
+                        {l.variant || l.name}
+                      </Link>
+                      {l.liquid && (
+                        <span className="ml-1 text-xs text-muted-foreground">
+                          ({liquidContainerShort(l.liquid.container)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </TableCell>
                 {showAuctionId && (
                   <TableCell className="text-right tabular-nums text-muted-foreground">
