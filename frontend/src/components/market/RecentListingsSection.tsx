@@ -8,6 +8,7 @@ import { Search, X } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
 import {
   deriveListingStatus,
+  listingHasText,
   listingMetalType,
   listingLining,
   liquidContainerLabel,
@@ -16,6 +17,13 @@ import {
 import { useDebounced } from "@/hooks/useDebounced";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { VirtualTable, type ListingColumn } from "./VirtualTable";
 
 interface RecentListingsSectionProps {
@@ -26,23 +34,33 @@ interface RecentListingsSectionProps {
   currentGameHours: number;
   /** Host rock per itemId for merged ore groups, so it's searchable too. */
   hostRockByItemId?: Map<number, string | null> | null;
+  /** Show a text/non-text filter (for items like parchment that carry written
+   * content on some listings but not others). */
+  showTextFilter?: boolean;
 }
+
+type TextFilter = "all" | "text" | "notext";
 
 export function RecentListingsSection({
   listings,
   columns,
   currentGameHours,
   hostRockByItemId,
+  showTextFilter,
 }: RecentListingsSectionProps) {
   const [soldOnly, setSoldOnly] = useState(false);
+  const [textFilter, setTextFilter] = useState<TextFilter>("all");
   const [search, setSearch] = useState("");
 
   // Newest first by in-game posting time (matches the Game date column),
-  // optionally restricted to sold listings only.
+  // optionally restricted to sold listings only and by written-text presence.
   const sortedListings = useMemo(() => {
-    const base = soldOnly ? listings.filter((l) => l.sold) : listings;
+    let base = soldOnly ? listings.filter((l) => l.sold) : listings;
+    if (showTextFilter && textFilter !== "all") {
+      base = base.filter((l) => (textFilter === "text" ? listingHasText(l) : !listingHasText(l)));
+    }
     return [...base].sort((a, b) => (b.postedTotalHours ?? 0) - (a.postedTotalHours ?? 0));
-  }, [listings, soldOnly]);
+  }, [listings, soldOnly, showTextFilter, textFilter]);
 
   // Free-text filter: matches (case-insensitive, all space-separated terms must
   // hit) against every text column shown — item / variant name, seller, buyer,
@@ -78,10 +96,40 @@ export function RecentListingsSection({
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Recent listings ({visibleListings.length})</h2>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox checked={soldOnly} onCheckedChange={(v) => setSoldOnly(v === true)} />
-          Sold only
-        </label>
+        <div className="flex flex-wrap items-center gap-3">
+          {showTextFilter && (
+            <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              Written text
+              <Select value={textFilter} onValueChange={(v) => setTextFilter(v as TextFilter)}>
+                <SelectTrigger className="h-7 w-36 text-xs">
+                  <SelectValue>
+                    {(value) => {
+                      switch (value) {
+                        case "all":
+                          return "Text & non-text";
+                        case "text":
+                          return "Text only";
+                        case "notext":
+                          return "Non-text only";
+                        default:
+                          return "";
+                      }
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Text &amp; non-text</SelectItem>
+                  <SelectItem value="text">Text only</SelectItem>
+                  <SelectItem value="notext">Non-text only</SelectItem>
+                </SelectContent>
+              </Select>
+            </label>
+          )}
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox checked={soldOnly} onCheckedChange={(v) => setSoldOnly(v === true)} />
+            Sold only
+          </label>
+        </div>
       </div>
       <div className="relative mb-2">
         <Search

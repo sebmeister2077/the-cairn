@@ -1829,6 +1829,7 @@ export function MarketItemPage() {
         columns={columns}
         currentGameHours={currentGameHours}
         hostRockByItemId={combineOres && oreGroup ? oreGroup.rockByItemId : null}
+        showTextFilter={hasTextListings}
       />
     </div>
   );
