@@ -382,6 +382,7 @@ const RELATED_FORM_CATEGORIES = new Set([
     "powder",
     "gem",
     "metalbit",
+    "metalplate",
     // Raw mineral rock/stone forms (e.g. "stone-halite" = rock salt, "rock-halite").
     // Scoped by the material-family filter, so only family-matching stones/rocks
     // (not granite, basalt, …) ever surface as related.
@@ -690,7 +691,10 @@ export const METAL_FAMILY_KEYS = new Set<string>([
  */
 const METAL_FORM_UNITS: Record<string, number> = {
     ingot: 100,
-    plate: 100,
+    // Metal plates (`metalplate-copper`, `metalplate-gold`, …) — hammered from an
+    // ingot on the anvil, so they hold the same 100 units of metal. The catalog
+    // category is the code's first segment, i.e. `metalplate` (NOT `plate`).
+    metalplate: 100,
     // 20 nuggets = 1 ingot, so a nugget is 5 units (per the game's smelting recipes).
     nugget: 5,
     // "Metal bits" — the small surface fragments (e.g. `metalbit-gold`); smelt
@@ -784,11 +788,11 @@ const METAL_FORM_LABELS: Record<string, string> = {
     nugget: "Nuggets",
     metalbit: "Metal bits",
     ingot: "Ingots",
-    plate: "Plates",
+    metalplate: "Plates",
 };
 
 /** Order metal forms from raw → refined in the comparison table. */
-const METAL_FORM_ORDER = ["ore", "crushed", "nugget", "metalbit", "ingot", "plate"];
+const METAL_FORM_ORDER = ["ore", "crushed", "nugget", "metalbit", "ingot", "metalplate"];
 
 /**
  * Group every metal item of a family into its tradeable forms (ore chunks,
@@ -832,6 +836,242 @@ export function computeMetalForms(
         return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi) || a.label.localeCompare(b.label);
     });
     return { forms, unitsByItemId };
+}
+
+// --------------------------------------------------------------------------- //
+// Combine groups — variants that trade as the same underlying commodity
+// --------------------------------------------------------------------------- //
+/**
+ * Some items are, for pricing purposes, the *same tradeable good* in a different
+ * form: a pickaxe head and the finished pickaxe (the stick between them is
+ * worthless), a sulfur ore chunk and the powder it grinds into, cinnabar and
+ * crushed cinnabar. A "combine group" lets the item page pool every such variant
+ * into one fair price on demand, while the listings table still shows which exact
+ * variant each row is (the "Type" column).
+ *
+ * Each member carries an optional `weight` — how many *base units* one item of
+ * that form represents. It defaults to `1` (all variants equal), which covers the
+ * common "worthless connector" case (head ↔ tool). Set it when a conversion
+ * isn't 1:1 — e.g. one sulfur ore chunk grinds into two powders, so powder is
+ * `0.5`. Prices are then normalized to the form you're viewing, so the figure
+ * always reads in that item's own units.
+ *
+ * ── HOW TO ADD A GROUP ──────────────────────────────────────────────────────
+ * Add a {@link CombineGroupRule} to {@link COMBINE_GROUPS} (or a `[head, tool,
+ * label]` triple to {@link TOOL_HEAD_STEMS} for a new tool head). A member `code`
+ * is matched like {@link MANUAL_LINKS}: exact, a trailing `*` prefix, or with a
+ * single `{v}` placeholder that captures a shared variant token (usually the
+ * metal) so ONE rule covers every metal and only same-metal items group together
+ * (a copper pickaxe head joins the copper pickaxe, not the steel one).
+ */
+export interface CombineMemberRule {
+    /** Code pattern: exact, trailing `*` prefix, or containing one `{v}` capture. */
+    code: string;
+    /** Short label shown in the listings "Type" column (e.g. "Head", "Full tool"). */
+    label: string;
+    /** Base-units one of this item represents. Default 1. Powdered sulfur = 0.5. */
+    weight?: number;
+}
+
+export interface CombineGroupRule {
+    key: string;
+    /** Group display label. `{v}` is filled with the humanized captured variant. */
+    label: string;
+    members: CombineMemberRule[];
+}
+
+/**
+ * Tool heads ↔ their finished tool. The head and the tool are the same metal
+ * value (the connecting stick/handle is worthless), so they combine 1:1. Listed
+ * as `[head stem, tool stem, label]`; a `{metal}` variant is captured so only
+ * same-metal items group. Knife heads (`knifeblade`) map to the generic knife.
+ */
+const TOOL_HEAD_STEMS: [string, string, string][] = [
+    ["pickaxehead", "pickaxe", "Pickaxe"],
+    ["axehead", "axe", "Axe"],
+    ["shovelhead", "shovel", "Shovel"],
+    ["hoehead", "hoe", "Hoe"],
+    ["scythehead", "scythe", "Scythe"],
+    ["sawblade", "saw", "Saw"],
+    ["hammerhead", "hammer", "Hammer"],
+    ["prospectingpickhead", "prospectingpick", "Prospecting pick"],
+    ["knifeblade", "knife-generic", "Knife"],
+];
+
+const COMBINE_GROUPS: CombineGroupRule[] = [
+    ...TOOL_HEAD_STEMS.map(([head, tool, label]) => ({
+        key: `tool-${tool}`,
+        label,
+        members: [
+            { code: `${head}-{v}`, label: "Head" },
+            { code: `${tool}-{v}`, label: "Full tool" },
+        ],
+    })),
+    // Sulfur: one ore chunk grinds into two powders, so powder is worth half a
+    // chunk. Prices normalize to whichever form you're viewing.
+    {
+        key: "sulfur",
+        label: "Sulfur",
+        members: [
+            { code: "ore-sulfur", label: "Ore chunk" },
+            { code: "powder-sulfur", label: "Powdered", weight: 0.5 },
+        ],
+    },
+    // Cinnabar ore ↔ crushed cinnabar (1:1 by default — adjust the weight if the
+    // in-game crush ratio differs).
+    {
+        key: "cinnabar",
+        label: "Cinnabar",
+        members: [
+            { code: "ore-cinnabar", label: "Ore chunk" },
+            { code: "crushed-cinnabar", label: "Crushed" },
+        ],
+    },
+];
+
+/** Compile a member `code` pattern to a regex. `{v}` → a single lowercase
+ *  capture group; a trailing `*` → prefix match; everything else literal.
+ *  Results are cached — this runs once per catalog entry per page. */
+const combinePatternCache = new Map<string, { re: RegExp; hasVar: boolean }>();
+function combinePatternRegex(pattern: string): { re: RegExp; hasVar: boolean } {
+    const cached = combinePatternCache.get(pattern);
+    if (cached) return cached;
+    const p = bareCode(pattern);
+    const prefix = p.endsWith("*");
+    const core = prefix ? p.slice(0, -1) : p;
+    const hasVar = core.includes("{v}");
+    const escaped = core
+        .split("{v}")
+        .map((s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+        .join("([a-z0-9]+)");
+    const out = { re: new RegExp(`^${escaped}${prefix ? ".*" : ""}$`), hasVar };
+    combinePatternCache.set(pattern, out);
+    return out;
+}
+
+/** Candidate codes to test a catalog entry against: its bare code, plus (for an
+ *  ore) the host-rock-stripped base so `ore-sulfur-chalk` matches `ore-sulfur`. */
+function combineMatchCodes(entry: { code: string | null; category: string }): string[] {
+    if (!entry.code) return [];
+    const bare = bareCode(entry.code);
+    if (entry.category === "ore") {
+        const base = splitOreHostRock(entry.code).base;
+        return base !== bare ? [bare, base] : [bare];
+    }
+    return [bare];
+}
+
+interface CombineMatch {
+    rule: CombineGroupRule;
+    member: CombineMemberRule;
+    /** Captured `{v}` token, or null for a variant-less member pattern. */
+    variant: string | null;
+}
+
+/** Find the combine rule + member (and captured variant) an item code belongs
+ *  to, or null when it's in no combine group. */
+function matchCombineMember(entry: { code: string | null; category: string }): CombineMatch | null {
+    const codes = combineMatchCodes(entry);
+    if (codes.length === 0) return null;
+    for (const rule of COMBINE_GROUPS) {
+        for (const member of rule.members) {
+            const { re, hasVar } = combinePatternRegex(member.code);
+            for (const c of codes) {
+                const m = re.exec(c);
+                if (m) return { rule, member, variant: hasVar ? (m[1] ?? null) : null };
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * A resolved combine group for the item being viewed: every catalog itemId in
+ * the same group (same rule + same captured variant), the per-item "Type" label
+ * and base-unit weight, and how prices scale into the current item's own units.
+ */
+export interface CombineGroup {
+    /** Stable key: `${rule.key}:${variant ?? ""}`. */
+    key: string;
+    /** Group display label (variant folded in, e.g. "Copper pickaxe"). */
+    label: string;
+    /** Every itemId in the group (ore members expand to all host-rock ids). */
+    ids: Set<number>;
+    /** Type label per itemId (e.g. "Head", "Full tool", "Powdered"). */
+    typeByItemId: Map<number, string>;
+    /** Base-unit weight per itemId (default 1). */
+    weightByItemId: Map<number, number>;
+    /** The weight of the item currently being viewed (prices normalize to it). */
+    currentWeight: number;
+    /** Distinct member *types* present with data (≥2 for the group to be useful). */
+    memberCount: number;
+    /** Whether any member has a non-1 weight (so prices need rescaling). */
+    weighted: boolean;
+}
+
+/** Humanize a captured variant token for the group label (`tinbronze` → "Tin
+ *  bronze" is overkill; keep it simple — capitalize). */
+function humanizeVariant(v: string): string {
+    return v.slice(0, 1).toUpperCase() + v.slice(1);
+}
+
+/**
+ * Resolve the {@link CombineGroup} for the item on the page, or null when it
+ * belongs to no group (or the group has fewer than two member types actually
+ * present in the catalog). Only itemIds in `activeIds` are considered when it's
+ * non-empty, so the combine option only appears when there's real data to pool.
+ */
+export function computeCombineGroup(
+    currentId: number,
+    catalog: ItemCatalog,
+    activeIds: Set<number>,
+): CombineGroup | null {
+    const current = catalog[String(currentId)];
+    if (!current) return null;
+    const self = matchCombineMember(current);
+    if (!self) return null;
+
+    const filterActive = activeIds.size > 0;
+    const ids = new Set<number>();
+    const typeByItemId = new Map<number, string>();
+    const weightByItemId = new Map<number, number>();
+    const typesSeen = new Set<string>();
+    let weighted = false;
+
+    for (const [key, e] of Object.entries(catalog)) {
+        const iid = Number(key);
+        const m = matchCombineMember(e);
+        if (!m || m.rule.key !== self.rule.key) continue;
+        // Same variant token (metal) as the item being viewed, so a copper head
+        // never joins a steel tool. Variant-less rules (sulfur/cinnabar) share null.
+        if (m.variant !== self.variant) continue;
+        // Keep the current item even if it (somehow) lacks listings; require data
+        // for the *other* members so the toggle only shows when pooling helps.
+        if (filterActive && iid !== currentId && !activeIds.has(iid)) continue;
+        ids.add(iid);
+        typeByItemId.set(iid, m.member.label);
+        const w = m.member.weight ?? 1;
+        weightByItemId.set(iid, w);
+        if (w !== 1) weighted = true;
+        typesSeen.add(m.member.label);
+    }
+
+    if (ids.size < 2 || typesSeen.size < 2) return null;
+
+    const variantLabel = self.variant ? `${humanizeVariant(self.variant)} ` : "";
+    const baseLabel = self.rule.label.replace("{v}", self.variant ? humanizeVariant(self.variant) : "");
+    const label = self.variant ? `${variantLabel}${baseLabel.toLowerCase()}` : baseLabel;
+
+    return {
+        key: `${self.rule.key}:${self.variant ?? ""}`,
+        label,
+        ids,
+        typeByItemId,
+        weightByItemId,
+        currentWeight: weightByItemId.get(currentId) ?? 1,
+        memberCount: typesSeen.size,
+        weighted,
+    };
 }
 
 /**
@@ -940,7 +1180,7 @@ const METAL_FORM_CATEGORIES = new Set([
     "nugget",
     "metalbit",
     "ingot",
-    "plate",
+    "metalplate",
     "ironbloom",
 ]);
 

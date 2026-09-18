@@ -1,0 +1,10237 @@
+{
+"generatedAt": "2026-09-18T19:45:07.071322+00:00",
+"source": "vintagestory/assets/survival/recipes/grid",
+"recipes": {
+"antlermount": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-*",
+"quantity": 1,
+"allowed": [
+"plain",
+"orange",
+"black",
+"red",
+"blue",
+"purple",
+"white",
+"yellow",
+"gray",
+"green"
+]
+},
+{
+"code": "plank-*",
+"quantity": 4
+}
+]
+}
+],
+"armor-head-antique-blackguard-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-blackguard-broken",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-antique-blackguard-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-blackguard-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-antique-blackguard-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-blackguard-broken",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 5
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-antique-blackguard-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 5
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-blackguard-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-antique-blackguard-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-blackguard-broken",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-antique-blackguard-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-blackguard-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-blackguard-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-antique-forlorn-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-forlorn-broken",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-antique-forlorn-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-gold",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-antique-forlorn-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-antique-forlorn-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-forlorn-broken",
+"quantity": 1
+},
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "metalchain-gold",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 4
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-antique-forlorn-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-gold",
+"quantity": 2
+},
+{
+"code": "metalplate-iron",
+"quantity": 4
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-antique-forlorn-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-antique-forlorn-damaged": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-forlorn-broken",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-antique-forlorn-pristine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-forlorn-damaged",
+"quantity": 1
+},
+{
+"code": "metalplate-gold",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-antique-forlorn-pristine",
+"quantity": 1
+},
+{
+"code": "metalchain-iron",
+"quantity": 1
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-sewn-linen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "linen-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-sewn-linen",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-sewn-linen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-*",
+"quantity": 11
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-sewn-linen",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-sewn-linen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "linen-*",
+"quantity": 5
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-sewn-linen",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-jerkin-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 14
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-jerkin-leather",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-jerkin-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 8
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-jerkin-leather",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-lamellar-wood": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 5
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 5
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-lamellar-wood",
+"quantity": 1
+},
+{
+"code": "firewood",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-lamellar-wood": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 14
+},
+{
+"code": "hide-pelt-*",
+"quantity": 4
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 14
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 14
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-lamellar-wood",
+"quantity": 1
+},
+{
+"code": "firewood",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-lamellar-wood": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 10
+},
+{
+"code": "hide-pelt-*",
+"quantity": 4
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 10
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+},
+{
+"code": "resin",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-lamellar-wood",
+"quantity": 1
+},
+{
+"code": "firewood",
+"quantity": 1
+}
+]
+}
+],
+"armor-head-sewn-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 7
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-head-sewn-leather",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"armor-body-sewn-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 22
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-body-sewn-leather",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"armor-legs-sewn-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 11
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "armor-legs-sewn-leather",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"armorstand": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"backpack-normal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 8
+}
+]
+}
+],
+"backpack-sturdy": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-sturdy-plain",
+"quantity": 10
+}
+]
+}
+],
+"bandage-alcoholed": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 1
+},
+{
+"code": "jug-*-fired",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 1
+},
+{
+"code": "woodbucket",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 1
+},
+{
+"code": "bowl-*-fired",
+"quantity": 1
+}
+]
+}
+],
+"bandage-clean": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"barrel": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 4
+}
+]
+}
+],
+"basket-normal-reed": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 10
+}
+]
+}
+],
+"basket-normal-papyrus": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 10
+}
+]
+}
+],
+"baskettrap-reed": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "stationarybasket-east",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"baskettrap-papyrus": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "stationarybasket-east",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"bed-wood-head-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 3
+},
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 6
+}
+]
+}
+],
+"bed-hay-head-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 3
+}
+]
+}
+],
+"beenade-opened": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "cattailtops",
+"quantity": 4
+},
+{
+"code": "clay-*",
+"quantity": 2
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "clay-*",
+"quantity": 2
+},
+{
+"code": "papyrustops",
+"quantity": 4
+}
+]
+}
+],
+"bellows-crude-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hide-pelt-*",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 8
+}
+]
+}
+],
+"blastingpowder": [
+{
+"output": 6,
+"ingredients": [
+{
+"code": "ore-bituminouscoal",
+"quantity": 1
+},
+{
+"code": "powder-sulfur",
+"quantity": 2
+},
+{
+"code": "saltpeter",
+"quantity": 4
+}
+]
+}
+],
+"bloomerybase-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "burnedbrick-fire",
+"quantity": 8
+}
+]
+}
+],
+"bloomerychimney": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "burnedbrick-fire",
+"quantity": 4
+}
+]
+}
+],
+"bomb-ore": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "blastingpowder",
+"quantity": 4
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"bomb-stone": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "blastingpowder",
+"quantity": 4
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "powder-iron-oxide",
+"quantity": 8
+}
+]
+}
+],
+"bomb-scrap": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "blastingpowder",
+"quantity": 4
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "metal-scraps",
+"quantity": 4
+},
+{
+"code": "powder-iron-oxide",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-brickred": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 2
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-cherryred": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-red",
+"quantity": 2
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-darkbeige": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-darkgray": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-black",
+"quantity": 1
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-darkgreen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-black",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-darkolive": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-gray": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-gray",
+"quantity": 2
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-olive": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-orange": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-orange",
+"quantity": 2
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-orangebrown": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-orange",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-purple": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-purple",
+"quantity": 2
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-purpleorange": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-orange",
+"quantity": 1
+},
+{
+"code": "leather-normal-purple",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"book-normal-teal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-blue",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 8
+}
+]
+}
+],
+"bookshelf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 7
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 8
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"bugnet-copper": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 1
+},
+{
+"code": "metalnailsandstrips-copper",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 2
+}
+]
+}
+],
+"labeledchest-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chest-east",
+"quantity": 1
+},
+{
+"code": "sign-ground-north",
+"quantity": 1
+}
+]
+}
+],
+"chiseledblock": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chiseledbloc*",
+"quantity": 2
+}
+]
+}
+],
+"chute-elbow-down-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chutesection-copper",
+"quantity": 2
+}
+]
+}
+],
+"chute-straight-ns": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chutesection-copper",
+"quantity": 2
+}
+]
+}
+],
+"chute-cross-ground": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chutesection-copper",
+"quantity": 4
+}
+]
+}
+],
+"chute-t-ns": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chutesection-copper",
+"quantity": 3
+}
+]
+}
+],
+"chute-3way-down-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chutesection-copper",
+"quantity": 3
+}
+]
+}
+],
+"clay-fire": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-red",
+"quantity": 8
+},
+{
+"code": "powder-flint",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-blue",
+"quantity": 8
+},
+{
+"code": "powder-flint",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 8,
+"allowed": [
+"blue",
+"red"
+]
+},
+{
+"code": "powder-flint",
+"quantity": 1
+}
+]
+}
+],
+"claybricks-good-fire": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "burnedbrick-fire",
+"quantity": 8
+},
+{
+"code": "mortar",
+"quantity": 1
+}
+]
+}
+],
+"brickcourse-four-running-clinker": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "burnedbrick-clinker",
+"quantity": 8
+},
+{
+"code": "mortar",
+"quantity": 1
+}
+]
+}
+],
+"claybricks-clinkerrough": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "burnedbrick-clinker",
+"quantity": 8
+},
+{
+"code": "mortar",
+"quantity": 2
+}
+]
+}
+],
+"cloth-plain": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-bamboo": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "sapling-*bamboo-free",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-cattail": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "cattailroot",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-papyrus": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "papyrusroot",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-tule": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "tuleroot",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-maplered": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "treeseed-crimsonkingmaple",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-coral": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "coralchunk-*",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-cypress": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "treeseed-*cypress",
+"quantity": 1
+}
+]
+}
+],
+"clothes-arm-leather-bracers": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 4
+}
+]
+}
+],
+"hoovedwearables-blanket-commoner": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 2
+},
+{
+"code": "cloth-brown",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-plaidblue": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-gray",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-azure-embroidered": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 3
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-earthtone": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "cloth-brown",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-fancygreen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 2
+},
+{
+"code": "cloth-yellow",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-plaincloth": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 3
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-chateau": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-blanket-herder": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-blindfold": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-arctic": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 1
+},
+{
+"code": "log-placed-birch-ud",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-bandageeyes": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 2
+}
+]
+}
+],
+"clothes-face-bandageleft": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 2
+}
+]
+}
+],
+"clothes-face-bandageright": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-clean",
+"quantity": 2
+}
+]
+}
+],
+"clothes-face-eyepatchleatherleft": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-eyepatchleatherright": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-eyepatchstuddedleft": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "metalbit-blackbronze",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-eyepatchstuddedright": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "metalbit-blackbronze",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-headbandfabric": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-linenveil": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 2
+}
+]
+}
+],
+"clothes-face-headbandseashells": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "seashell*",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-headbandteeth": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hide-pelt-*-head",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"clothes-face-headbandvine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-*",
+"quantity": 2
+}
+]
+}
+],
+"clothes-face-leather-reinforced-mask": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-black",
+"quantity": 2
+}
+]
+}
+],
+"clothes-foot-strawsandals": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 4
+}
+]
+}
+],
+"clothes-foot-minstrel-boots": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 8
+}
+]
+}
+],
+"clothes-foot-nomad-boots": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 2
+},
+{
+"code": "cloth-green",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-foot-worn-leather-boots": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 8
+}
+]
+}
+],
+"clothes-foot-high-leather-boots": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "leather-normal-plain",
+"quantity": 12
+}
+]
+}
+],
+"clothes-foot-tigh-high-boots": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-black",
+"quantity": 8
+}
+]
+}
+],
+"clothes-foot-fur-lined-reindeer-herder-shoes": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-pink",
+"quantity": 4
+},
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-pink",
+"quantity": 4
+},
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1,
+"allowed": [
+"medium",
+"large",
+"huge"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-hand-heavy-leather-gloves": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "leather-normal-plain",
+"quantity": 6
+}
+]
+}
+],
+"clothes-hand-minstrel-gloves": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-head-wreathflower": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flower-*",
+"quantity": 3
+}
+]
+}
+],
+"clothes-head-wimple": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 2
+}
+]
+}
+],
+"clothes-head-phrygian": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"clothes-head-peasent-head-scarf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 3
+}
+]
+}
+],
+"clothes-head-minstrel-hat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-head-fortune-tellers-scarf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 4
+},
+{
+"code": "nugget-nativegold",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-head-straw-hat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 6
+}
+]
+}
+],
+"clothes-head-tophat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-hoseyellowblack": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 2
+},
+{
+"code": "cloth-yellow",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosewhiteorange": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-orange",
+"quantity": 2
+},
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hoseredwhite": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosepurplepink": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-pink",
+"quantity": 2
+},
+{
+"code": "cloth-purple",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hoseorangeblue": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-orange",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosegreenyellow": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 2
+},
+{
+"code": "cloth-yellow",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosegraypurple": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-gray",
+"quantity": 2
+},
+{
+"code": "cloth-purple",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosebrowngray": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-brown",
+"quantity": 2
+},
+{
+"code": "cloth-gray",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hosebluepink": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-pink",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-hoseblackred": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 2
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-lowerbody-grass": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 8
+}
+]
+}
+],
+"clothes-lowerbody-reindeer-herder-trousers": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 4
+},
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-fine-trousers": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 4
+},
+{
+"code": "cloth-brown",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-tattered-peasent-gown": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 4
+}
+]
+}
+],
+"clothes-lowerbody-workmans-gown": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-brown",
+"quantity": 4
+}
+]
+}
+],
+"clothes-lowerbody-nomad-trousers": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 8
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-homespun-pants": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+}
+]
+}
+],
+"clothes-lowerbody-pastoral-pants": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-chateau-pants": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-lowerbody-minstrel-pants": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-purple",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-walnut-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-walnut",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-redwood-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-redwood",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-pinecone-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-pine",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-darkpine",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-larch-seed-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-larch",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-cypress-seed-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-baldcypress",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-greenspirecypress",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-acorn-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-oak",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-acacia-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-acacia",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-birch-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-birch",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-cattail-root-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailroot",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-ebony-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-ebony",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-kapok-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-kapok",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-maple-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-maple",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-maple-red-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-crimsonkingmaple",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-papyrus-root-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrusroot",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-purpleheart-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "treeseed-purpleheart",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-tule-root-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "tuleroot",
+"quantity": 1
+}
+]
+}
+],
+"clothes-nadiya-neck-bamboo-seed-amulet": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "sapling-*bamboo-free",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-gear-amulet-temporal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "gear-temporal",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-gear-amulet-rusty": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "gear-rusty",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"gear-temporal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clothes-neck-gear-amulet-temporal",
+"quantity": 1
+}
+]
+}
+],
+"gear-rusty": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clothes-neck-gear-amulet-rusty",
+"quantity": 1
+}
+]
+}
+],
+"clothes-neck-necklace-seashell1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "seashell-*",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-midnightponcho": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-purple",
+"quantity": 3
+}
+]
+}
+],
+"clothes-shoulder-forestponcho": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 3
+}
+]
+}
+],
+"clothes-shoulder-shawlmoth": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 1
+},
+{
+"code": "cloth-brown",
+"quantity": 1
+},
+{
+"code": "cloth-white",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-shawlhawk": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-black",
+"quantity": 1
+},
+{
+"code": "cloth-gray",
+"quantity": 1
+},
+{
+"code": "cloth-white",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-apronplain": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+}
+]
+}
+],
+"clothes-shoulder-artisans-scarf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 5
+}
+]
+}
+],
+"clothes-shoulder-embroidered-tartarean-scarf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "cloth-yellow",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-mooncloth-robe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 4
+},
+{
+"code": "cloth-purple",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-jord-robe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-brown",
+"quantity": 5
+}
+]
+}
+],
+"clothes-shoulder-hooded-cape": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "cloth-brown",
+"quantity": 3
+}
+]
+}
+],
+"clothes-shoulder-blacksmith-apron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 8
+}
+]
+}
+],
+"clothes-shoulder-stained-leather-poncho": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-normal-orange",
+"quantity": 8
+}
+]
+}
+],
+"clothes-shoulder-peasent-kaftan": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-pink",
+"quantity": 5
+}
+]
+}
+],
+"clothes-shoulder-longsleeve-pearl-moonrobe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-purple",
+"quantity": 5
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-shortsleeve-pearl-moonrobe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-purple",
+"quantity": 3
+},
+{
+"code": "nugget-nativegold",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-shoulder-minstrel-coat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "cloth-red",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-grass": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 8
+}
+]
+}
+],
+"clothes-upperbody-chemisesleeveless": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chemiseshort": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chemiseshouldershort": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chemiselong": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chemisescoop": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chemiseshoulderlong": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-white",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-minstrel-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 3
+},
+{
+"code": "cloth-plain",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-azure-embroidered-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 5
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-earth-toned-robe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 1
+},
+{
+"code": "cloth-brown",
+"quantity": 4
+}
+]
+}
+],
+"clothes-upperbody-homespun-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+}
+]
+}
+],
+"clothes-upperbody-peasent-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 6
+}
+]
+}
+],
+"clothes-upperbody-pastoral-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-chateau-blouse": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbody-scarlet-ornate-linen-tunic": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 3
+},
+{
+"code": "cloth-red",
+"quantity": 3
+}
+]
+}
+],
+"clothes-upperbody-reindeer-herder-collared-shirt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 4
+},
+{
+"code": "cloth-red",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbodyover-cobalt-mantle": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 4
+},
+{
+"code": "cloth-yellow",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbodyover-warm-robe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-brown",
+"quantity": 4
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-brown",
+"quantity": 4
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+}
+]
+}
+],
+"clothes-upperbodyover-nomad-mantle": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-green",
+"quantity": 3
+},
+{
+"code": "cloth-plain",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbodyover-spice-merchants-coat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-green",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-upperbodyover-travelers-earthrobe": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-orange",
+"quantity": 3
+},
+{
+"code": "cloth-yellow",
+"quantity": 2
+}
+]
+}
+],
+"clothes-upperbodyover-reindeer-herder-fur-coat": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "hide-pelt-*",
+"quantity": 4
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "hide-pelt-*",
+"quantity": 2
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 2
+},
+{
+"code": "cloth-plain",
+"quantity": 4
+},
+{
+"code": "cloth-red",
+"quantity": 2
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-waist-peasantapron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 1
+}
+]
+}
+],
+"clothes-waist-reindeer-herder-waistband": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-blue",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"clothes-waist-fortune-teller-hip-scarf": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-red",
+"quantity": 4
+},
+{
+"code": "nugget-nativegold",
+"quantity": 16
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"cob-none": [
+{
+"output": 10,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 5
+},
+{
+"code": "soil-*",
+"quantity": 4
+}
+]
+}
+],
+"cobblestonefan-andesite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"granite",
+"peridotite",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-andesite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-basalt-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"basalt",
+"shale",
+"slate"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-basalt",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-mixed-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"chalk",
+"chert",
+"conglomerate",
+"limestone",
+"claystone",
+"granite",
+"sandstone",
+"shale",
+"basalt",
+"peridotite",
+"phyllite",
+"slate",
+"bauxite",
+"suevite",
+"whitemarble",
+"greenmarble",
+"redmarble",
+"kimberlite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-andesite",
+"quantity": 1
+},
+{
+"code": "stone-bauxite",
+"quantity": 1
+},
+{
+"code": "stone-claystone",
+"quantity": 1
+},
+{
+"code": "stone-conglomerate",
+"quantity": 1
+},
+{
+"code": "stone-granite",
+"quantity": 2
+},
+{
+"code": "stone-shale",
+"quantity": 1
+}
+]
+}
+],
+"cobblestonefan-bauxite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"bauxite",
+"chert",
+"claystone",
+"sandstone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-bauxite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-chalk-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-chalk",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-chert-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chert",
+"conglomerate",
+"claystone",
+"sandstone",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-chert",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-claystone-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"conglomerate",
+"claystone",
+"limestone",
+"sandstone",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-claystone",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-conglomerate-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"conglomerate",
+"claystone",
+"limestone",
+"sandstone",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-conglomerate",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-granite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"granite",
+"peridotite",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-granite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-limestone-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-limestone",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-peridotite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"granite",
+"peridotite",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-peridotite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-phyllite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"conglomerate",
+"claystone",
+"sandstone",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-phyllite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-sandstone-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"conglomerate",
+"claystone",
+"limestone",
+"sandstone",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-sandstone",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-shale-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"basalt",
+"shale",
+"slate"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-shale",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-slate-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"basalt",
+"shale",
+"slate"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-kimberlite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"granite",
+"peridotite",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-kimberlite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-suevite-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"granite",
+"peridotite",
+"phyllite"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-suevite",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-whitemarble-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-whitemarble",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-redmarble-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-redmarble",
+"quantity": 7
+}
+]
+}
+],
+"cobblestonefan-greenmarble-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "gravel-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "stone-greenmarble",
+"quantity": 7
+}
+]
+}
+],
+"cobblestone-coral": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "coralchunk-*",
+"quantity": 8
+}
+]
+}
+],
+"condenser-west": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 2
+},
+{
+"code": "solderbar-*",
+"quantity": 2,
+"allowed": [
+"tin",
+"silver"
+]
+},
+{
+"code": "solderingiron",
+"quantity": 1
+}
+]
+}
+],
+"crank-south": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"crate": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "crate",
+"quantity": 1
+},
+{
+"code": "paper-parchment",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "crate",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-ash": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-blue",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"andesite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"andesite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-browngolden": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1,
+"allowed": [
+"red"
+]
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"andesite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"claystone",
+"conglomerate"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1,
+"allowed": [
+"red"
+]
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1,
+"allowed": [
+"red"
+]
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"granite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-brown": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"shale",
+"basalt",
+"slate"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-brownlight": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-blue",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"chalk",
+"limestone"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-brownweathered": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"phyllite",
+"chert"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-green": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"peridotite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-orange": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"bauxite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-tan": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-blue",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"granite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"granite"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"daubraw-yellow": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "sand-*",
+"quantity": 1,
+"allowed": [
+"sandstone"
+]
+},
+{
+"code": "soil-*-none",
+"quantity": 1
+}
+]
+}
+],
+"displaycase-generic": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "glassslab-plain-down-free",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 2
+}
+]
+}
+],
+"talldisplaycase-generic": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "glass-plain",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 2
+}
+]
+}
+],
+"metaldoor-solid-iron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalplate-iron",
+"quantity": 6
+}
+]
+}
+],
+"metaldoor-barred-iron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rod-iron",
+"quantity": 8
+}
+]
+}
+],
+"metaldoor-sleek-windowed-iron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalplate-iron",
+"quantity": 5
+},
+{
+"code": "rod-iron",
+"quantity": 2
+}
+]
+}
+],
+"drygrass": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 1
+}
+]
+}
+],
+"drypackeddirt": [
+{
+"output": 6,
+"ingredients": [
+{
+"code": "sand-*",
+"quantity": 2
+},
+{
+"code": "soil-*",
+"quantity": 4,
+"allowed": [
+"verylow-none",
+"low-none",
+"medium-none"
+]
+}
+]
+}
+],
+"drystone-mixed": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "stone-andesite",
+"quantity": 1
+},
+{
+"code": "stone-bauxite",
+"quantity": 1
+},
+{
+"code": "stone-chalk",
+"quantity": 1
+},
+{
+"code": "stone-claystone",
+"quantity": 1
+},
+{
+"code": "stone-conglomerate",
+"quantity": 1
+},
+{
+"code": "stone-granite",
+"quantity": 1
+},
+{
+"code": "stone-limestone",
+"quantity": 1
+},
+{
+"code": "stone-phyllite",
+"quantity": 1
+},
+{
+"code": "stonebrick-*",
+"quantity": 1,
+"allowed": [
+"andesite",
+"chalk",
+"chert",
+"conglomerate",
+"limestone",
+"claystone",
+"granite",
+"sandstone",
+"shale",
+"basalt",
+"peridotite",
+"phyllite",
+"slate",
+"bauxite"
+]
+}
+]
+}
+],
+"drystonefence-mixed-ew-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 1
+},
+{
+"code": "stone-andesite",
+"quantity": 1
+},
+{
+"code": "stone-bauxite",
+"quantity": 1
+},
+{
+"code": "stone-chalk",
+"quantity": 1
+},
+{
+"code": "stone-claystone",
+"quantity": 1
+},
+{
+"code": "stone-conglomerate",
+"quantity": 1
+},
+{
+"code": "stone-granite",
+"quantity": 1
+},
+{
+"code": "stone-limestone",
+"quantity": 1
+},
+{
+"code": "stone-phyllite",
+"quantity": 1
+}
+]
+}
+],
+"fencecoral-ew-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "coralchunk-*",
+"quantity": 6
+}
+]
+}
+],
+"firestarter": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 2
+}
+]
+}
+],
+"forge": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cobblestone-*",
+"quantity": 7
+}
+]
+}
+],
+"glider": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cloth-plain",
+"quantity": 2
+},
+{
+"code": "gear-rusty",
+"quantity": 2
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "schematic-glider",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 6
+}
+]
+}
+],
+"hay-normal-ud": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 8
+}
+]
+}
+],
+"henbox": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"hopper": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 3
+}
+]
+}
+],
+"hunterbackpack": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 15,
+"allowed": [
+"papyrustops",
+"cattailtops"
+]
+},
+{
+"code": "hide-pelt-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 15,
+"allowed": [
+"papyrustops",
+"cattailtops"
+]
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+}
+]
+},
+{
+"output": 2,
+"ingredients": [
+{
+"code": "*",
+"quantity": 30,
+"allowed": [
+"papyrustops",
+"cattailtops"
+]
+},
+{
+"code": "hide-pelt-*",
+"quantity": 1
+}
+]
+}
+],
+"inkandquill": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "feather",
+"quantity": 1
+}
+]
+}
+],
+"nightvisiondevice": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gears01",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "metalplate-electrum",
+"quantity": 1
+},
+{
+"code": "metalplate-lead",
+"quantity": 1
+},
+{
+"code": "nightvisionupgrades-nightvisionbright",
+"quantity": 1
+},
+{
+"code": "nightvisionupgrades-nightvisionlens1",
+"quantity": 1
+},
+{
+"code": "nightvisionupgrades-nightvisionpower",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"nightvisionupgrades-nightvisionbright": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "ingot-lead",
+"quantity": 1
+},
+{
+"code": "jonasframes-spring01",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank02",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"nightvisionupgrades-nightvisionlens1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "glass-plain",
+"quantity": 1
+},
+{
+"code": "jonasframes-oscillator01",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder02",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+}
+]
+}
+],
+"nightvisionupgrades-nightvisionlens2": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "glass-plain",
+"quantity": 1
+},
+{
+"code": "jonasframes-gearbox01",
+"quantity": 1
+},
+{
+"code": "jonasparts-valve01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+}
+]
+}
+],
+"nightvisionupgrades-nightvisionpower": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gearbox02",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"resonator-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "gear-temporal",
+"quantity": 1
+},
+{
+"code": "jonasframes-oscillator01",
+"quantity": 1
+},
+{
+"code": "jonasframes-spring01",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder01",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "metalplate-electrum",
+"quantity": 1
+},
+{
+"code": "metalplate-lead",
+"quantity": 2
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"basereturnteleporter": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-joint01",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder02",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "metalplate-electrum",
+"quantity": 1
+},
+{
+"code": "metalplate-lead",
+"quantity": 1
+},
+{
+"code": "returnbase-returnbasebottom",
+"quantity": 1
+},
+{
+"code": "returnbase-returnbaseend",
+"quantity": 1
+},
+{
+"code": "returnbase-returnbasetop",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 2
+}
+]
+}
+],
+"returnbase-returnbasebottom": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gears01",
+"quantity": 1
+},
+{
+"code": "jonasparts-connector01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"returnbase-returnbaseend": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gears02",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"returnbase-returnbasetop": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gearbox02",
+"quantity": 1
+},
+{
+"code": "jonasparts-valve01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"corpsereturnteleporter-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-joint01",
+"quantity": 1
+},
+{
+"code": "jonasparts-cylinder02",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 4
+},
+{
+"code": "metalplate-electrum",
+"quantity": 2
+},
+{
+"code": "metalplate-lead",
+"quantity": 4
+},
+{
+"code": "returndeath-returndeath1",
+"quantity": 1
+},
+{
+"code": "returndeath-returndeath2",
+"quantity": 1
+},
+{
+"code": "returndeath-returndeath3",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 6
+}
+]
+}
+],
+"returndeath-returndeath1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "glass-plain",
+"quantity": 2
+},
+{
+"code": "jonasparts-connector01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 1
+}
+]
+}
+],
+"returndeath-returndeath2": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gears02",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank02",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 2
+}
+]
+}
+],
+"returndeath-returndeath3": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "jonasframes-gearbox01",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank01",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 1
+},
+{
+"code": "rod-cupronickel",
+"quantity": 2
+}
+]
+}
+],
+"riftward": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clearquartz",
+"quantity": 4
+},
+{
+"code": "ingot-electrum",
+"quantity": 1
+},
+{
+"code": "jonasframes-oscillator01",
+"quantity": 1
+},
+{
+"code": "jonasparts-connector01",
+"quantity": 1
+},
+{
+"code": "jonasparts-tank02",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 2
+},
+{
+"code": "metalnailsandstrips-copper",
+"quantity": 8
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+}
+]
+}
+],
+"ladder-stick-north": [
+{
+"output": 3,
+"ingredients": [
+{
+"code": "stick",
+"quantity": 7
+}
+]
+}
+],
+"ladder-rope-north": [
+{
+"output": 3,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 3
+}
+]
+}
+],
+"overlay-leather-stitch1-normal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"leather-normal-plain": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "overlay-leather-stitch1-normal",
+"quantity": 1
+}
+]
+}
+],
+"lightningrod": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rod-copper",
+"quantity": 3
+}
+]
+}
+],
+"linen-normal-down": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 4
+}
+]
+}
+],
+"linen-offset-down": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-normal-down",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"linen-diamond-down": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-normal-down",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"linen-square-down": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-normal-down",
+"quantity": 1
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"linensack": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"mannequin-reed-head": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 1
+}
+]
+}
+],
+"mannequin-reed-legs": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 8
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 8
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+}
+],
+"mannequin-reed-torso": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 7
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 8
+},
+{
+"code": "plank-*",
+"quantity": 7
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 8
+},
+{
+"code": "plank-*",
+"quantity": 7
+}
+]
+}
+],
+"mannequin-reed-complete": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "mannequin-reed-head",
+"quantity": 1
+},
+{
+"code": "mannequin-reed-legs",
+"quantity": 1
+},
+{
+"code": "mannequin-reed-torso",
+"quantity": 1
+}
+]
+}
+],
+"sail": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "linen-*",
+"quantity": 4
+},
+{
+"code": "stick",
+"quantity": 6
+},
+{
+"code": "supportbeam-*",
+"quantity": 4,
+"allowed": [
+"birch",
+"oak",
+"maple",
+"pine",
+"acacia",
+"kapok",
+"baldcypress",
+"larch",
+"redwood",
+"ebony",
+"walnut",
+"purpleheart"
+]
+}
+]
+}
+],
+"largegear3": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "largegearsection-wood",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 24
+},
+{
+"code": "woodenaxle-ud",
+"quantity": 1
+}
+]
+}
+],
+"miningbag": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel"
+]
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linensack",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel"
+]
+}
+]
+}
+],
+"miningbagsturdy": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "leather-sturdy-plain",
+"quantity": 9
+},
+{
+"code": "linen-*",
+"quantity": 2
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"iron",
+"meteoriciron",
+"steel"
+]
+}
+]
+}
+],
+"moldrack-normal-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 4
+}
+]
+}
+],
+"mudbrick-light": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 8
+},
+{
+"code": "drygrass",
+"quantity": 8
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "soil-*-none",
+"quantity": 1,
+"allowed": [
+"low",
+"medium"
+]
+}
+]
+}
+],
+"mudbrick-dark": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 4
+},
+{
+"code": "drygrass",
+"quantity": 8
+},
+{
+"code": "soil-*-none",
+"quantity": 1,
+"allowed": [
+"low",
+"medium"
+]
+}
+]
+}
+],
+"packeddirt": [
+{
+"output": 6,
+"ingredients": [
+{
+"code": "soil-*",
+"quantity": 6,
+"allowed": [
+"verylow-none",
+"low-none",
+"medium-none"
+]
+}
+]
+}
+],
+"paper-parchment": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "pulp-linen",
+"quantity": 4
+},
+{
+"code": "sieve-*",
+"quantity": 1
+}
+]
+}
+],
+"pemmican-raw-basic": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*-cooked",
+"quantity": 2,
+"allowed": [
+"redmeat",
+"poultry",
+"fish"
+]
+},
+{
+"code": "fat",
+"quantity": 1
+},
+{
+"code": "fruit-*",
+"quantity": 8
+}
+]
+}
+],
+"pemmican-raw-salted": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*-cured",
+"quantity": 2,
+"allowed": [
+"redmeat",
+"poultry",
+"fish"
+]
+},
+{
+"code": "fat",
+"quantity": 1
+},
+{
+"code": "fruit-*",
+"quantity": 8
+}
+]
+}
+],
+"plaster-diagonal-ud": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 2
+},
+{
+"code": "plaster-plain",
+"quantity": 1
+}
+]
+}
+],
+"plaster-plain": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "quicklime",
+"quantity": 1
+},
+{
+"code": "sand-*",
+"quantity": 1
+}
+]
+}
+],
+"plaster-square": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 4
+},
+{
+"code": "plaster-plain",
+"quantity": 1
+}
+]
+}
+],
+"plaster-stripes-ud": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 2
+},
+{
+"code": "plaster-plain",
+"quantity": 1
+}
+]
+}
+],
+"plumbandsquare": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 2
+},
+{
+"code": "stone-*",
+"quantity": 1
+}
+]
+}
+],
+"poultice-linen-honey-sulfur": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "powder-sulfur",
+"quantity": 2
+}
+]
+}
+],
+"poultice-linen-horsetail": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "flower-horsetail-free",
+"quantity": 4
+},
+{
+"code": "linen-*",
+"quantity": 1
+}
+]
+}
+],
+"poultice-reed-horsetail": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 2
+},
+{
+"code": "flower-horsetail-free",
+"quantity": 4
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "flower-horsetail-free",
+"quantity": 4
+},
+{
+"code": "papyrustops",
+"quantity": 2
+}
+]
+}
+],
+"poultice-reed-honey-sulfur": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "cattailtops",
+"quantity": 2
+},
+{
+"code": "powder-sulfur",
+"quantity": 2
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "bowl-*-fired",
+"quantity": 1
+},
+{
+"code": "papyrustops",
+"quantity": 2
+},
+{
+"code": "powder-sulfur",
+"quantity": 2
+}
+]
+}
+],
+"seeds-pumpkin": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "pumpkin-fruit-4",
+"quantity": 1
+}
+]
+}
+],
+"glass-quartz": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clearquartz",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 4
+}
+]
+}
+],
+"boat-raft-bamboo": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 18
+},
+{
+"code": "rope",
+"quantity": 3
+}
+]
+}
+],
+"rammed-light-plain": [
+{
+"output": 6,
+"ingredients": [
+{
+"code": "packeddirt",
+"quantity": 6
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rammed-light-thickheavy",
+"quantity": 1
+}
+]
+}
+],
+"rammed-light-thinlight": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rammed-light-plain",
+"quantity": 1
+}
+]
+}
+],
+"rammed-light-thicklight": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rammed-light-thinlight",
+"quantity": 1
+}
+]
+}
+],
+"rammed-light-thinheavy": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rammed-light-thicklight",
+"quantity": 1
+}
+]
+}
+],
+"rammed-light-thickheavy": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rammed-light-thinheavy",
+"quantity": 1
+}
+]
+}
+],
+"ratlines": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 14
+}
+]
+}
+],
+"refractorybrick-raw-tier1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 2
+},
+{
+"code": "crushed-bauxite",
+"quantity": 1
+},
+{
+"code": "crushed-quartz",
+"quantity": 1
+}
+]
+}
+],
+"refractorybrick-raw-tier2": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 2
+},
+{
+"code": "crushed-bauxite",
+"quantity": 1
+},
+{
+"code": "crushed-olivine",
+"quantity": 1
+},
+{
+"code": "crushed-quartz",
+"quantity": 1
+}
+]
+}
+],
+"refractorybrick-raw-tier3": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clay-fire",
+"quantity": 2
+},
+{
+"code": "crushed-bauxite",
+"quantity": 1
+},
+{
+"code": "crushed-ilmenite",
+"quantity": 1
+},
+{
+"code": "crushed-olivine",
+"quantity": 1
+},
+{
+"code": "crushed-quartz",
+"quantity": 1
+}
+]
+}
+],
+"refractorybrickgrating-good-fire": [
+{
+"output": 3,
+"ingredients": [
+{
+"code": "burnedbrick-fire",
+"quantity": 6
+},
+{
+"code": "mortar",
+"quantity": 1
+}
+]
+}
+],
+"roller": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "firewood",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofing-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "thatch",
+"quantity": 4
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 2
+}
+]
+}
+],
+"slantedroofingridge-thatch-ns-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "thatch",
+"quantity": 6
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingtip-thatch-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "thatch",
+"quantity": 8
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 4
+}
+]
+}
+],
+"slantedroofingcornerinner-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "thatch",
+"quantity": 6
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingcornerouter-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "thatch",
+"quantity": 6
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingbottom-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-thatch-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtop-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-thatch-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfleft-thatch-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-thatch-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfright-thatch-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-thatch-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgeend-thatch-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofingridge-thatch-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfleft-thatch-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-thatch-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfright-thatch-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-thatch-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofing-copper-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingridge-copper-ns-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingcornerinner-copper-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingcornerouter-copper-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingbottom-copper-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-copper-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtop-copper-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-copper-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfleft-copper-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-copper-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfright-copper-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-copper-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgeend-copper-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofingridge-copper-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfleft-copper-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-copper-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfright-copper-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-copper-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofing-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 9
+}
+]
+}
+],
+"slantedroofingridge-slate-ns-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 9
+}
+]
+}
+],
+"slantedroofingtip-slate-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 12
+}
+]
+}
+],
+"slantedroofingcornerinner-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 9
+}
+]
+}
+],
+"slantedroofingcornerouter-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 1
+},
+{
+"code": "stone-slate",
+"quantity": 9
+}
+]
+}
+],
+"slantedroofingbottom-slate-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-slate-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtop-slate-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-slate-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfleft-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-slate-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfright-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-slate-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgeend-slate-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofingridge-slate-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfleft-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-slate-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfright-slate-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-slate-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"stone-slate": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofinghalf*-slate-*",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "slantedroofing*-slate-*",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofing-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingridge-bamboo-ns-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingtip-bamboo-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 4
+}
+]
+}
+],
+"slantedroofingcornerinner-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingcornerouter-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 3
+}
+]
+}
+],
+"slantedroofingbottom-bamboo-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-bamboo-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtop-bamboo-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-bamboo-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfleft-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-bamboo-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfright-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-bamboo-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgeend-bamboo-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofingridge-bamboo-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfleft-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-bamboo-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfright-bamboo-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-bamboo-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofing-sod-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 4
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "log-placed-*-ud",
+"quantity": 1
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridge-sod-ns-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "plank-*",
+"quantity": 6
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "log-placed-*-ud",
+"quantity": 1
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtip-sod-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 4
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 4
+},
+{
+"code": "log-placed-*-ud",
+"quantity": 1
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingcornerinner-sod-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "plank-*",
+"quantity": 6
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "log-placed-*-ud",
+"quantity": 1
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingcornerouter-sod-east-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "plank-*",
+"quantity": 2
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+},
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "log-placed-*-ud",
+"quantity": 1
+},
+{
+"code": "soil-medium-none",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingbottom-sod-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-sod-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingtop-sod-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofing-sod-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfleft-sod-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-sod-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofinghalfright-sod-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofing-sod-east-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgeend-sod-east-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "slantedroofingridge-sod-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfleft-sod-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-sod-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"slantedroofingridgehalfright-sod-east-free": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "slantedroofingridge-sod-ns-free",
+"quantity": 1
+}
+]
+}
+],
+"rope": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-section-north",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-tropical-section-north",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 6
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 6
+}
+]
+}
+],
+"schematic-glider": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "paper-parchment",
+"quantity": 2
+},
+{
+"code": "schematic-glider",
+"quantity": 1
+}
+]
+}
+],
+"scrapweaponkit": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metal-scraps",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"sewingkit": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 4
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"shelf-normal-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 4
+}
+]
+}
+],
+"sieve-linen": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 5
+},
+{
+"code": "plank-*",
+"quantity": 4
+}
+]
+}
+],
+"sign-ground-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"signpost": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 2
+}
+]
+}
+],
+"skep-reed-empty-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 16
+},
+{
+"code": "clay-*",
+"quantity": 2
+}
+]
+}
+],
+"skep-papyrus-empty-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 2
+},
+{
+"code": "papyrustops",
+"quantity": 16
+}
+]
+}
+],
+"quartzslab-down-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "quartzslab-down-free",
+"quantity": 1
+}
+]
+}
+],
+"brickslabs-fire-down-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "burnedbrick-*",
+"quantity": 5,
+"allowed": [
+"fire"
+]
+},
+{
+"code": "mortar",
+"quantity": 1
+}
+]
+}
+],
+"mudbrickslab-dark-down-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 2
+},
+{
+"code": "drygrass",
+"quantity": 4
+},
+{
+"code": "soil-*-none",
+"quantity": 1,
+"allowed": [
+"low",
+"medium"
+]
+}
+]
+}
+],
+"mudbrickslab-light-down-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "clay-*",
+"quantity": 4
+},
+{
+"code": "drygrass",
+"quantity": 4
+},
+{
+"code": "sand-*",
+"quantity": 1
+},
+{
+"code": "soil-*-none",
+"quantity": 1,
+"allowed": [
+"low",
+"medium"
+]
+}
+]
+}
+],
+"stonepathslab-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "soil-*",
+"quantity": 1
+},
+{
+"code": "stone-*",
+"quantity": 2
+}
+]
+}
+],
+"tileslab-2x2-plain-travertine-down-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "mortar",
+"quantity": 1
+},
+{
+"code": "tile-stone-travertine",
+"quantity": 5
+}
+]
+}
+],
+"snowball-beenade": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "beenade-closed",
+"quantity": 1
+},
+{
+"code": "snowball-snow",
+"quantity": 1
+}
+]
+}
+],
+"soil-high-none": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bonemeal",
+"quantity": 8
+},
+{
+"code": "compost",
+"quantity": 16
+},
+{
+"code": "powder-charcoal",
+"quantity": 8
+}
+]
+},
+{
+"output": 2,
+"ingredients": [
+{
+"code": "bonemeal",
+"quantity": 8
+},
+{
+"code": "compost",
+"quantity": 16
+},
+{
+"code": "powder-charcoal",
+"quantity": 8
+},
+{
+"code": "soil-compost-none",
+"quantity": 1
+}
+]
+}
+],
+"stackedbamboo-ud": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 4
+}
+]
+}
+],
+"brickstairs-fire-up-north-free": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "burnedbrick-*",
+"quantity": 7,
+"allowed": [
+"fire"
+]
+},
+{
+"code": "mortar",
+"quantity": 1
+}
+]
+}
+],
+"stonepathstairs-up-north-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "soil-*",
+"quantity": 1
+},
+{
+"code": "stone-*",
+"quantity": 4
+}
+]
+}
+],
+"stationarybasket-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 24
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 24
+}
+]
+}
+],
+"stickslayer-wooden-ew-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "stick",
+"quantity": 9
+}
+]
+}
+],
+"stonepath-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "soil-*",
+"quantity": 1
+},
+{
+"code": "stone-*",
+"quantity": 4
+}
+]
+}
+],
+"strawbedding": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 3
+},
+{
+"code": "soil-*",
+"quantity": 3,
+"allowed": [
+"verylow-none",
+"low-none",
+"medium-none"
+]
+}
+]
+}
+],
+"strawdummy": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hay-normal-ud",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"table-normal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 7
+}
+]
+}
+],
+"hoovedwearables-face-face1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "metalnailsandstrips-tinbronze",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-face-face5": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 2
+},
+{
+"code": "metalnailsandstrips-tinbronze",
+"quantity": 1
+}
+]
+}
+],
+"hoovedwearables-face-face7": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 2
+},
+{
+"code": "metalnailsandstrips-tinbronze",
+"quantity": 2
+}
+]
+}
+],
+"hoovedwearables-face-face13": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "metalnailsandstrips-tinbronze",
+"quantity": 2
+}
+]
+}
+],
+"hoovedwearables-lowerbackside-pillion-leather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 7
+}
+]
+}
+],
+"hoovedwearables-lowerbackside-pillion-sturdyleather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-sturdy-plain",
+"quantity": 7
+}
+]
+}
+],
+"tile-2x2-plain-travertine": [
+{
+"output": 4,
+"ingredients": [
+{
+"code": "mortar",
+"quantity": 1
+},
+{
+"code": "tile-stone-travertine",
+"quantity": 8
+}
+]
+}
+],
+"arrow-crude": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "arrowhead-flint",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"blade-blackguard-iron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bladehead-short-iron",
+"quantity": 1
+},
+{
+"code": "charcoal",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"blade-falx-gold": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bladehead-falx-steel",
+"quantity": 1
+},
+{
+"code": "metalplate-gold",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"blade-falx-silver": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bladehead-falx-steel",
+"quantity": 1
+},
+{
+"code": "metalplate-silver",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"bow-crude": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 3
+}
+]
+}
+],
+"bow-simple": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 3
+}
+]
+}
+],
+"bow-recurve": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 2
+},
+{
+"code": "bowstave-recurve-dry",
+"quantity": 1
+},
+{
+"code": "bushmeat-raw",
+"quantity": 2
+},
+{
+"code": "flaxtwine",
+"quantity": 3
+},
+{
+"code": "leather-normal-plain",
+"quantity": 1
+}
+]
+}
+],
+"spear-generic-hacking": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "gear-temporal",
+"quantity": 1
+},
+{
+"code": "metal-parts",
+"quantity": 2
+},
+{
+"code": "spear-generic-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze"
+]
+}
+]
+}
+],
+"knife-generic-bonegranite": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-granite",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-boneandesite": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-andesite",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-boneobsidian": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-obsidian",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-boneperidotite": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-peridotite",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-bonechert": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-chert",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-boneflint": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-flint",
+"quantity": 1
+}
+]
+}
+],
+"knife-generic-bonebasalt": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bone",
+"quantity": 1
+},
+{
+"code": "knifeblade-basalt",
+"quantity": 1
+}
+]
+}
+],
+"shield-woodmetal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+}
+],
+"shield-woodmetalleather": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-*",
+"quantity": 4,
+"allowed": [
+"orange",
+"black",
+"red",
+"blue",
+"purple",
+"white",
+"yellow",
+"gray",
+"green"
+]
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-plain",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-pink",
+"quantity": 4
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-orange",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 2
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-black",
+"quantity": 2
+},
+{
+"code": "leather-normal-red",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-blue",
+"quantity": 2
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 2
+},
+{
+"code": "leather-normal-purple",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 2
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-blue",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-orange",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-pink",
+"quantity": 2
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-pink",
+"quantity": 1
+},
+{
+"code": "leather-normal-purple",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-red",
+"quantity": 2
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-black",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-black",
+"quantity": 2
+},
+{
+"code": "leather-normal-orange",
+"quantity": 2
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+}
+],
+"shield-metal": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-orange",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 2
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-black",
+"quantity": 2
+},
+{
+"code": "leather-normal-red",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-blue",
+"quantity": 2
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-plain",
+"quantity": 2
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 2
+},
+{
+"code": "leather-normal-purple",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 2
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-blue",
+"quantity": 1
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-orange",
+"quantity": 2
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-green",
+"quantity": 1
+},
+{
+"code": "leather-normal-pink",
+"quantity": 2
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-pink",
+"quantity": 1
+},
+{
+"code": "leather-normal-purple",
+"quantity": 2
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-gray",
+"quantity": 1
+},
+{
+"code": "leather-normal-red",
+"quantity": 2
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "hoop-*",
+"quantity": 1,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "leather-normal-black",
+"quantity": 1
+},
+{
+"code": "leather-normal-white",
+"quantity": 1
+},
+{
+"code": "leather-normal-yellow",
+"quantity": 2
+},
+{
+"code": "metalplate-*",
+"quantity": 2,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel",
+"gold",
+"silver"
+]
+},
+{
+"code": "sewingkit",
+"quantity": 1
+}
+]
+}
+],
+"shield-crude": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 6
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "cattailtops",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 6
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "papyrustops",
+"quantity": 3
+},
+{
+"code": "stick",
+"quantity": 6
+}
+]
+}
+],
+"shield-blackguard": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "boss-iron",
+"quantity": 1
+},
+{
+"code": "charcoal",
+"quantity": 2
+},
+{
+"code": "leather-normal-gray",
+"quantity": 2
+},
+{
+"code": "metalplate-iron",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+}
+],
+"snowshovel-oak": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"sling": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "linen-*",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "leather-normal-plain",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "hide-pelt-*",
+"quantity": 1
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+}
+],
+"solderingiron": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chisel-copper",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+}
+],
+"tongs": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "rope",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 6
+}
+]
+}
+],
+"toolrack-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "stick",
+"quantity": 6
+}
+]
+}
+],
+"torch-basic-extinct-up": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "drygrass",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1,
+"allowed": [
+"papyrustops",
+"cattailtops"
+]
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1,
+"allowed": [
+"fat",
+"resin"
+]
+},
+{
+"code": "torch-crude-*-up",
+"quantity": 1,
+"allowed": [
+"extinct",
+"lit"
+]
+}
+]
+}
+],
+"torch-cloth-extinct-up": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "*",
+"quantity": 1,
+"allowed": [
+"fat",
+"resin"
+]
+},
+{
+"code": "bandage-*",
+"quantity": 1
+},
+{
+"code": "stick",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bandage-*",
+"quantity": 1
+},
+{
+"code": "torch-basic-*-up",
+"quantity": 1,
+"allowed": [
+"extinct",
+"lit"
+]
+}
+]
+}
+],
+"torchholder-brass-empty-north": [
+{
+"output": 2,
+"ingredients": [
+{
+"code": "metalplate-brass",
+"quantity": 2
+}
+]
+}
+],
+"trapcrate-wood": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalnailsandstrips-*",
+"quantity": 4,
+"allowed": [
+"tinbronze",
+"bismuthbronze",
+"blackbronze",
+"iron",
+"meteoriciron",
+"steel"
+]
+},
+{
+"code": "plank-*",
+"quantity": 20
+}
+]
+}
+],
+"trapdoor-plate-iron-1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalnailsandstrips-iron",
+"quantity": 2
+},
+{
+"code": "metalplate-iron",
+"quantity": 2
+}
+]
+}
+],
+"trapdoor-bars-iron-1": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalnailsandstrips-iron",
+"quantity": 2
+},
+{
+"code": "rod-iron",
+"quantity": 4
+}
+]
+}
+],
+"trough-genericwood-large-head-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"trough-genericwood-small-ns": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 3
+}
+]
+}
+],
+"trunk-east": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "chest-east",
+"quantity": 2
+}
+]
+}
+],
+"flaxtwine": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxfibers",
+"quantity": 4
+}
+]
+}
+],
+"verticalboiler-west": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "metalplate-copper",
+"quantity": 5
+},
+{
+"code": "solderbar-*",
+"quantity": 5,
+"allowed": [
+"tin",
+"silver"
+]
+},
+{
+"code": "solderingiron",
+"quantity": 1
+}
+]
+}
+],
+"rawcheese-waxed": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "beeswax",
+"quantity": 1
+},
+{
+"code": "rawcheese-salted",
+"quantity": 1
+}
+]
+}
+],
+"wildvine-end-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-section-north",
+"quantity": 1
+}
+]
+}
+],
+"wildvine-tropical-end-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-tropical-section-north",
+"quantity": 1
+}
+]
+}
+],
+"wildvine-section-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-end-north",
+"quantity": 1
+}
+]
+}
+],
+"wildvine-tropical-section-north": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "wildvine-tropical-end-north",
+"quantity": 1
+}
+]
+}
+],
+"woodbucket": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "plank-*",
+"quantity": 5
+},
+{
+"code": "rope",
+"quantity": 1
+}
+]
+},
+{
+"output": 1,
+"ingredients": [
+{
+"code": "flaxtwine",
+"quantity": 1
+},
+{
+"code": "plank-*",
+"quantity": 5
+}
+]
+}
+],
+"fencebamboo-brown-ew-free": [
+{
+"output": 8,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 6
+}
+]
+}
+],
+"bamboogate-brown-n-closed-free": [
+{
+"output": 1,
+"ingredients": [
+{
+"code": "bamboostakes",
+"quantity": 2
+},
+{
+"code": "stick",
+"quantity": 4
+}
+]
+}
+]
+}
+}

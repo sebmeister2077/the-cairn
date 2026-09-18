@@ -1,4 +1,4 @@
-import { useMemo, useState, lazy, Suspense } from "react";
+import { useMemo, useState, useCallback, lazy, Suspense } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert, ChevronDown } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
@@ -43,6 +43,7 @@ import {
   listingMetalType,
   listingLining,
   computeRelatedItems,
+  computeCombineGroup,
   resolveItemFamily,
   metalUnitsForEntry,
   computeMetalForms,
@@ -80,6 +81,7 @@ import { useMarketPriceMode } from "@/hooks/useMarketPriceMode";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
 import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 import { MetalContentCard } from "@/components/market/MetalContentCard";
+import { IngredientFairPriceCard } from "@/components/market/IngredientFairPriceCard";
 import { ItemConcentrationSection } from "@/components/market/ItemConcentrationSection";
 import { TraderAvailabilityCard } from "@/components/market/TraderAvailabilityCard";
 import { ItemRarityCard } from "@/components/market/ItemRarityCard";
@@ -427,6 +429,36 @@ export function MarketItemPage() {
     [listingsQ.data],
   );
 
+  // "Combine group": variants that trade as the same commodity (a tool head and
+  // its finished tool, a sulfur ore chunk and its powder, cinnabar and crushed
+  // cinnabar). When one exists AND the user opts in, this page pools every
+  // variant's listings into one fair price — normalized to the form being viewed
+  // (e.g. one ore chunk grinds into two powders, so their per-unit prices are
+  // scaled to compare) — while the listings table still shows each row's exact
+  // type. Off by default so the page keeps showing just this item unless asked.
+  const combineGroup = useMemo(() => {
+    const catalog = catalogQ.data;
+    if (!catalog) return null;
+    return computeCombineGroup(id, catalog, activeItemIds);
+  }, [catalogQ.data, id, activeItemIds]);
+  const [combineVariants, setCombineVariants] = useState(false);
+  const combineActive = combineGroup != null && combineVariants;
+
+  // Scale a listing's per-unit price (and quantity) from its own variant into
+  // the viewed item's units, so a weighted group (e.g. sulfur, where powder is
+  // worth half a chunk) compares like-for-like. Identity for equal-weight
+  // groups; total gears are preserved (price = per-unit × qty is unchanged).
+  const scaleCombineListing = useCallback(
+    <T extends { itemId: number; pricePerUnit: number; qty: number }>(l: T): T => {
+      if (!combineGroup) return l;
+      const w = combineGroup.weightByItemId.get(l.itemId) ?? 1;
+      const factor = combineGroup.currentWeight / w;
+      if (factor === 1) return l;
+      return { ...l, pricePerUnit: l.pricePerUnit * factor, qty: l.qty / factor };
+    },
+    [combineGroup],
+  );
+
   // Every tradeable form of this metal (ore chunks, nuggets, bits, ingots…) plus
   // a per-itemId pure-metal-units map for normalizing prices. Null for non-metals.
   const metal = useMemo(() => {
@@ -447,25 +479,51 @@ export function MarketItemPage() {
 
   const itemListings = useMemo(() => {
     const all = listingsQ.data ?? [];
-    let base =
-      combineOres && oreGroup
-        ? all.filter((l) => oreGroup.ids.has(l.itemId))
-        : all.filter((l) => l.itemId === id);
+    let base: typeof all;
+    if (combineActive && combineGroup) {
+      base = all.filter((l) => combineGroup.ids.has(l.itemId));
+    } else if (combineOres && oreGroup) {
+      base = all.filter((l) => oreGroup.ids.has(l.itemId));
+    } else {
+      base = all.filter((l) => l.itemId === id);
+    }
     if (excludeExternalTrades) base = base.filter((l) => !l.externalTrade);
     return base;
-  }, [listingsQ.data, id, combineOres, oreGroup, excludeExternalTrades]);
+  }, [
+    listingsQ.data,
+    id,
+    combineActive,
+    combineGroup,
+    combineOres,
+    oreGroup,
+    excludeExternalTrades,
+  ]);
 
   // Listings that feed the price/market figures (fair price, distribution,
   // sell-through, trend…). For ores that exist both as a standalone item and as
   // ore embedded in a host rock, drop the host-rock blocks unless the user opts
   // to include them — people trade the extracted item, so the host-rock blocks
-  // would otherwise skew the price. The Recent listings table stays untouched.
+  // would otherwise skew the price. For a weighted combine group, normalize each
+  // variant's price into the viewed item's units. The Recent listings table
+  // (fed by `windowListings`) stays untouched — it shows each row's real price.
   const priceListings = useMemo(() => {
-    if (combineOres && oreGroup && oreGroup.hostRockSplit && !includeHostRock) {
-      return itemListings.filter((l) => !oreGroup.rockByItemId.get(l.itemId));
+    let base = itemListings;
+    if (!combineActive && combineOres && oreGroup && oreGroup.hostRockSplit && !includeHostRock) {
+      base = base.filter((l) => !oreGroup.rockByItemId.get(l.itemId));
     }
-    return itemListings;
-  }, [itemListings, combineOres, oreGroup, includeHostRock]);
+    if (combineActive && combineGroup?.weighted) {
+      base = base.map(scaleCombineListing);
+    }
+    return base;
+  }, [
+    itemListings,
+    combineActive,
+    combineGroup,
+    combineOres,
+    oreGroup,
+    includeHostRock,
+    scaleCombineListing,
+  ]);
 
   // Listings restricted to the selected window (by in-game posting time).
   const windowListings = useMemo(
@@ -488,15 +546,28 @@ export function MarketItemPage() {
   // aren't shown here.
   const insight = useMemo(() => {
     if (!priceListings.length) return null;
-    // When merging an ore's host-rock variants, remap every listing onto this
-    // page's itemId (and a shared display name) so the Insights engine treats
-    // them as one item and returns a single combined row.
+    // When merging an ore's host-rock variants (or a combine group of variant
+    // forms), remap every listing onto this page's itemId and a shared display
+    // name so the Insights engine treats them as one item and returns a single
+    // combined row. Combine-group prices are already normalized in `priceListings`.
     const src =
-      combineOres && oreGroup
-        ? priceListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
-        : priceListings;
+      combineActive && combineGroup
+        ? priceListings.map((l) => ({ ...l, itemId: id, name: combineGroup.label }))
+        : combineOres && oreGroup
+          ? priceListings.map((l) => ({ ...l, itemId: id, name: oreGroup.name }))
+          : priceListings;
     return computeMarketInsights(src, windowDays, excludeExternalTrades, smart).rows[0] ?? null;
-  }, [priceListings, windowDays, smart, combineOres, oreGroup, id, excludeExternalTrades]);
+  }, [
+    priceListings,
+    windowDays,
+    smart,
+    combineActive,
+    combineGroup,
+    combineOres,
+    oreGroup,
+    id,
+    excludeExternalTrades,
+  ]);
 
   const trend = insight?.trend ?? null;
 
@@ -863,6 +934,23 @@ export function MarketItemPage() {
             } satisfies ListingColumn,
           ]
         : []),
+      ...(combineActive && combineGroup
+        ? [
+            {
+              key: "combineType",
+              header: "Type",
+              width: "minmax(6rem,1fr)",
+              cell: (l) => (
+                <span
+                  className="text-xs font-medium"
+                  title="Which form of this item this listing is"
+                >
+                  {combineGroup.typeByItemId.get(l.itemId) ?? "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
       ...(hasChiselVariants
         ? [
             {
@@ -1076,6 +1164,8 @@ export function MarketItemPage() {
       hasVariants,
       combineOres,
       oreGroup,
+      combineActive,
+      combineGroup,
       hasChiselVariants,
       isLiquid,
       hasTextListings,
@@ -1090,7 +1180,9 @@ export function MarketItemPage() {
   // "Items & Players" tab can show names instead of raw ids. Called before the
   // early returns below to keep hook order stable across renders.
   const reportableName =
-    (combineOres && oreGroup ? oreGroup.name : insight?.name) ?? itemListings[0]?.name ?? null;
+    (combineOres && oreGroup ? oreGroup.name : (currentEntry?.name ?? insight?.name)) ??
+    itemListings[0]?.name ??
+    null;
   useReportEntityLabel("/market/items/:itemId", itemId ?? null, reportableName);
 
   if (listingsQ.isLoading) {
@@ -1163,7 +1255,9 @@ export function MarketItemPage() {
   // still has raw listings to show, so fall back to the first listing for the
   // name/category header. Merged ores use the host-rock-agnostic group name.
   const displayName =
-    (combineOres && oreGroup ? oreGroup.name : insight?.name) ?? itemListings[0]?.name ?? `#${id}`;
+    (combineOres && oreGroup ? oreGroup.name : (currentEntry?.name ?? insight?.name)) ??
+    itemListings[0]?.name ??
+    `#${id}`;
   const displayCategory = insight?.category ?? itemListings[0]?.category ?? "unknown";
 
   // Per-unit sold-price series (oldest → newest) behind the header sparkline,
@@ -1192,7 +1286,7 @@ export function MarketItemPage() {
 
   return (
     <div className="space-y-5">
-      <div>
+      <div className="mb-3">
         <button
           type="button"
           onClick={onBack}
@@ -1306,6 +1400,40 @@ export function MarketItemPage() {
             </Popover>
           </label>
         )}
+        {combineGroup && (
+          <label className="mt-2 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Checkbox
+              checked={combineVariants}
+              onCheckedChange={(v) => setCombineVariants(v === true)}
+            />
+            Combine with {combineGroup.label.toLowerCase()} variants
+            <Popover>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    aria-label="What does combining variants do?"
+                    className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                  >
+                    <Info className="size-4" />
+                  </button>
+                }
+              />
+              <PopoverContent className="max-w-xs">
+                <p className="text-left">
+                  This item trades as the same commodity in more than one form (e.g. a tool head and
+                  its finished tool, an ore chunk and the powder it grinds into). Turn this on to
+                  pool every form&apos;s sales into one fair price
+                  {combineGroup.weighted
+                    ? ", normalized to this item's units so unequal conversions compare fairly"
+                    : ""}
+                  . The Recent listings table adds a <span className="font-medium">Type</span>{" "}
+                  column showing which exact form each row is.
+                </p>
+              </PopoverContent>
+            </Popover>
+          </label>
+        )}
         {variantCodes.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className="text-xs text-muted-foreground">
@@ -1318,33 +1446,37 @@ export function MarketItemPage() {
             ))}
           </div>
         )}
-      </div>
 
-      {/* Height/fade transition on toggle; kept mounted so it animates both ways. */}
-      <div
-        className={`grid overflow-hidden transition-all duration-300 ease-out ${
-          historyExpanded && salePoints.length >= 2
-            ? "grid-rows-[1fr] opacity-100"
-            : "grid-rows-[0fr] opacity-0 mt-0!"
-        }`}
-      >
-        <div className="min-h-0 overflow-hidden">
-          {salePoints.length >= 2 && (
-            <Card>
-              <CardContent className="py-4">
-                <PriceHistoryChart
-                  points={salePoints}
-                  expiredPoints={expiredSalePoints}
-                  stackSize={stackSize}
-                  defaultPerUnit={perUnitUseful}
-                  showUnsold={showUnsoldPriceHistory}
-                  onShowUnsoldChange={(v) =>
-                    dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
-                  }
-                />
-              </CardContent>
-            </Card>
-          )}
+        {/* Height + fade transition on toggle; kept mounted so it animates both
+          ways. When collapsed the grid row is 0fr (0 height); the inline
+          marginTop:0 cancels the space-y gap ABOVE this wrapper so the gaps
+          above and below a 0-height flow child don't add up to a double gap. */}
+        <div
+          className={`grid overflow-hidden transition-all mt-5 duration-300 ease-out ${
+            historyExpanded && salePoints.length >= 2
+              ? "grid-rows-[1fr] opacity-100"
+              : "grid-rows-[0fr] opacity-0"
+          }`}
+          style={historyExpanded && salePoints.length >= 2 ? undefined : { marginTop: 0 }}
+        >
+          <div className="min-h-0 overflow-hidden">
+            {salePoints.length >= 2 && (
+              <Card>
+                <CardContent className="py-4">
+                  <PriceHistoryChart
+                    points={salePoints}
+                    expiredPoints={expiredSalePoints}
+                    stackSize={stackSize}
+                    defaultPerUnit={perUnitUseful}
+                    showUnsold={showUnsoldPriceHistory}
+                    onShowUnsoldChange={(v) =>
+                      dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
+                    }
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1372,7 +1504,7 @@ export function MarketItemPage() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 empty:hidden">
         <TraderAvailabilityCard code={lookupCode} />
         <ItemRarityCard code={lookupCode} />
       </div>
@@ -1606,6 +1738,21 @@ export function MarketItemPage() {
           listings={metalWindowListings}
           weighted={priceModeWeighted}
           currentFormKey={currentFormKey}
+        />
+      )}
+
+      {currentEntry?.code && catalogQ.data && (
+        <IngredientFairPriceCard
+          code={currentEntry.code}
+          catalog={catalogQ.data}
+          listings={listingsQ.data ?? []}
+          priceMode={priceMode}
+          windowDays={windowDays}
+          smart={smart}
+          excludeExternalTrades={excludeExternalTrades}
+          stackPriced={!perUnitUseful}
+          stackSize={stackSize}
+          className="sm:max-w-md"
         />
       )}
 
