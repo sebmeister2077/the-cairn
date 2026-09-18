@@ -441,7 +441,7 @@ export function MarketItemPage() {
     if (!catalog) return null;
     return computeCombineGroup(id, catalog, activeItemIds);
   }, [catalogQ.data, id, activeItemIds]);
-  const [combineVariants, setCombineVariants] = useState(false);
+  const combineVariants = useAppSelector((s) => s.auctionFilters.combineVariants);
   const combineActive = combineGroup != null && combineVariants;
 
   // Scale a listing's per-unit price (and quantity) from its own variant into
@@ -1404,7 +1404,7 @@ export function MarketItemPage() {
           <label className="mt-2 flex w-fit cursor-pointer items-center gap-2 text-sm text-muted-foreground">
             <Checkbox
               checked={combineVariants}
-              onCheckedChange={(v) => setCombineVariants(v === true)}
+              onCheckedChange={(v) => dispatch(patchAuctionFilters({ combineVariants: v === true }))}
             />
             Combine with {combineGroup.label.toLowerCase()} variants
             <Popover>

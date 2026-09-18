@@ -35,6 +35,8 @@ export interface AuctionFilters {
     showAuctionId: boolean;
     /** Item page: overlay expired (unsold) listings on the price-history chart. */
     showUnsoldPriceHistory: boolean;
+    /** Item page: pool variant forms of the same commodity into one fair price. */
+    combineVariants: boolean;
     /** Comma-separated buyer/seller names to hide from the listings. */
     excludePlayers: string;
     sort: AuctionSortKey;
@@ -53,6 +55,7 @@ export const DEFAULT_AUCTION_FILTERS: AuctionFilters = {
     unpickedExpiredOnly: false,
     showAuctionId: false,
     showUnsoldPriceHistory: false,
+    combineVariants: true,
     excludePlayers: "",
     sort: "date",
     sortDir: "desc",
