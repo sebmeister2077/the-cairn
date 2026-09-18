@@ -9,6 +9,9 @@ import {
   percentileSorted,
   weightedMedian,
   listingHasText,
+  resolveItemFamily,
+  metalUnitsForEntry,
+  METAL_FAMILY_KEYS,
 } from "@/lib/auction";
 import { filterListingsByWindow, confidenceFor } from "@/hooks/useMarketInsights";
 import { lookupRecipes, type RecipeDef } from "@/lib/recipes";
@@ -28,6 +31,16 @@ const RANK_CONF: Conf[] = ["none", "low", "medium", "high"];
 /** How deep to chase a missing ingredient's own recipe (guards runaway chains). */
 const MAX_DERIVE_DEPTH = 4;
 
+/** A resolved per-unit price for one code: from direct sales, a sub-recipe, or a
+ *  blended metal-content estimate. `note` explains a `derived` (estimated) price. */
+type ResolvePoint = {
+  price: number | null;
+  itemId: number | null;
+  confidence: Conf;
+  derived: boolean;
+  note?: string;
+};
+
 /** Dot colour + label for each confidence tier, shown per ingredient. */
 const CONF_META: Record<Conf, { dot: string; label: string }> = {
   high: { dot: "bg-emerald-500", label: "High confidence" },
@@ -37,7 +50,15 @@ const CONF_META: Record<Conf, { dot: string; label: string }> = {
 };
 
 /** A confidence dot with a tooltip; ringed when the price was derived. */
-function ConfDot({ confidence, derived }: { confidence: Conf; derived: boolean }) {
+function ConfDot({
+  confidence,
+  derived,
+  note,
+}: {
+  confidence: Conf;
+  derived: boolean;
+  note?: string;
+}) {
   const meta = CONF_META[confidence];
   return (
     <span
@@ -46,7 +67,7 @@ function ConfDot({ confidence, derived }: { confidence: Conf; derived: boolean }
         meta.dot,
         derived && "ring-1 ring-foreground/40",
       )}
-      title={derived ? `${meta.label} · estimated from its own recipe` : meta.label}
+      title={derived ? `${meta.label} · ${note ?? "estimated from its own recipe"}` : meta.label}
     />
   );
 }
@@ -65,6 +86,8 @@ interface PricedIngredient {
   confidence: Conf;
   /** True when the price was derived from this ingredient's own recipe, not sales. */
   derived: boolean;
+  /** For a derived/estimated price, a short note on how it was estimated. */
+  derivedNote?: string;
 }
 
 interface CostedRecipe {
@@ -148,6 +171,21 @@ export function IngredientFairPriceCard({
     return map;
   }, [listings, excludeExternalTrades, windowDays, smart]);
 
+  // itemId -> {metal family, pure-metal units} for every metal form in the
+  // catalog, so a metal ingredient (e.g. a lead plate) with no sales can be
+  // valued from the metal's other forms ("value by metal content").
+  const metalInfoByItemId = useMemo(() => {
+    const map = new Map<number, { familyKey: string; units: number }>();
+    for (const [key, e] of Object.entries(catalog)) {
+      const fam = resolveItemFamily(e);
+      if (!fam || !METAL_FAMILY_KEYS.has(fam.key)) continue;
+      const units = metalUnitsForEntry(e);
+      if (units == null || units <= 0) continue;
+      map.set(Number(key), { familyKey: fam.key, units });
+    }
+    return map;
+  }, [catalog]);
+
   const costed = useMemo<CostedRecipe | null>(() => {
     if (!recipes) return null;
 
@@ -187,15 +225,68 @@ export function IngredientFairPriceCard({
       return [...idsByCode.keys()].filter((c) => c.startsWith(prefix));
     };
 
+    // Blended "value by metal content" (price per unit of pure metal) per family,
+    // from every sold form of that metal, for estimating a metal ingredient that
+    // never sold on its own.
+    const metalPairsByFamily = new Map<string, { value: number; weight: number }[]>();
+    for (const [iid, info] of metalInfoByItemId) {
+      const ls = soldByItemId.get(iid);
+      if (!ls || !ls.length) continue;
+      const arr = metalPairsByFamily.get(info.familyKey) ?? [];
+      for (const l of ls)
+        arr.push({ value: l.pricePerUnit / info.units, weight: l.qty * info.units });
+      metalPairsByFamily.set(info.familyKey, arr);
+    }
+    const blendedCache = new Map<string, { price: number | null; count: number }>();
+    const blendedPerMetalUnit = (familyKey: string): { price: number | null; count: number } => {
+      const cached = blendedCache.get(familyKey);
+      if (cached) return cached;
+      const pairs = metalPairsByFamily.get(familyKey) ?? [];
+      let out: { price: number | null; count: number } = { price: null, count: 0 };
+      if (pairs.length) {
+        const price =
+          priceMode === "weighted"
+            ? weightedMedian(pairs)
+            : percentileSorted(
+                pairs.map((p) => p.value).sort((a, b) => a - b),
+                0.5,
+              );
+        out = { price, count: pairs.length };
+      }
+      blendedCache.set(familyKey, out);
+      return out;
+    };
+
+    // Estimate a metal code's per-unit price from its metal family's blended
+    // content value (its own pure-metal units × the blended price per unit).
+    const metalEstimate = (bare: string): ResolvePoint | null => {
+      const iid = idsByCode.get(bare)?.[0] ?? null;
+      const entry = (iid != null && catalog[String(iid)]) || {
+        code: bare,
+        name: humanizeItemCode(bare),
+        category: bare.includes("-") ? bare.split("-")[0] : bare,
+      };
+      const fam = resolveItemFamily(entry);
+      if (!fam || !METAL_FAMILY_KEYS.has(fam.key)) return null;
+      const units = metalUnitsForEntry(entry);
+      if (units == null || units <= 0) return null;
+      const blended = blendedPerMetalUnit(fam.key);
+      if (blended.price == null) return null;
+      return {
+        price: blended.price * units,
+        itemId: iid,
+        confidence: confidenceFor(blended.count),
+        derived: true,
+        note: `estimated from ${fam.label.toLowerCase()} metal-content value`,
+      };
+    };
+
     // Resolve one concrete code's per-unit price: first from direct sales, else
-    // (recursively) derived from its own recipe's cheapest fully-priced variant.
-    // A derived price's confidence is its worst sub-ingredient's. `visiting`
-    // guards against recipe cycles; `depth` caps the derivation chain.
-    const resolveCode = (
-      bare: string,
-      depth: number,
-      visiting: Set<string>,
-    ): { price: number | null; itemId: number | null; confidence: Conf; derived: boolean } => {
+    // (recursively) derived from its own recipe's cheapest fully-priced variant,
+    // else a blended metal-content estimate for metal forms. A derived price's
+    // confidence is its worst sub-ingredient's. `visiting` guards recipe cycles;
+    // `depth` caps the derivation chain.
+    const resolveCode = (bare: string, depth: number, visiting: Set<string>): ResolvePoint => {
       const direct = priceForCode(bare);
       if (direct.price != null) return { ...direct, derived: false };
 
@@ -233,6 +324,9 @@ export function IngredientFairPriceCard({
             };
         }
       }
+      // Metal forms (ingot/plate/nugget/ore…) fall back to blended content value.
+      const est = metalEstimate(bare);
+      if (est) return est;
       return {
         price: null,
         itemId: idsByCode.get(bare)?.[0] ?? null,
@@ -242,13 +336,7 @@ export function IngredientFairPriceCard({
     };
 
     // Resolve a (possibly wildcard) ingredient to its cheapest priced match.
-    type IngPoint = {
-      price: number | null;
-      itemId: number | null;
-      confidence: Conf;
-      derived: boolean;
-      code: string;
-    };
+    type IngPoint = ResolvePoint & { code: string };
     const resolveIngredient = (
       ing: { code: string; allowed?: string[] },
       depth: number,
@@ -295,6 +383,7 @@ export function IngredientFairPriceCard({
           subtotal: pp.price != null ? pp.price * ing.quantity : null,
           confidence: pp.confidence,
           derived: pp.derived,
+          derivedNote: pp.note,
         };
       });
       const known = ingredients.reduce((s, i) => s + (i.subtotal ?? 0), 0);
@@ -320,7 +409,7 @@ export function IngredientFairPriceCard({
     const pool = full.length ? full : all;
     pool.sort((a, b) => a.missing - b.missing || a.perItem - b.perItem);
     return pool[0];
-  }, [recipes, idsByCode, soldByItemId, priceMode, catalog, code]);
+  }, [recipes, idsByCode, soldByItemId, metalInfoByItemId, priceMode, catalog, code]);
 
   if (!costed) return null;
 
@@ -363,7 +452,8 @@ export function IngredientFairPriceCard({
                   <span className="inline-block size-2 rounded-full bg-red-500" />
                 </span>
                 (high → low, from how many sales backed it); a ringed dot means the price was
-                estimated from a sub-recipe.
+                estimated — from a sub-recipe, or (for metals with no sales) the blended value of
+                the metal it contains.
               </p>
             </PopoverContent>
           </Popover>
@@ -402,7 +492,7 @@ export function IngredientFairPriceCard({
           {costed.ingredients.map((ing) => (
             <li key={ing.code} className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 items-center gap-1.5">
-                <ConfDot confidence={ing.confidence} derived={ing.derived} />
+                <ConfDot confidence={ing.confidence} derived={ing.derived} note={ing.derivedNote} />
                 <span className="min-w-0 truncate">
                   <span className="tabular-nums text-muted-foreground">
                     ×{ing.quantity * scale}{" "}
@@ -417,7 +507,7 @@ export function IngredientFairPriceCard({
                   {ing.derived && (
                     <span
                       className="ml-1 text-xs text-muted-foreground"
-                      title="Estimated from its own recipe"
+                      title={ing.derivedNote ?? "Estimated from its own recipe"}
                     >
                       (est.)
                     </span>
