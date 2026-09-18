@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -154,6 +155,8 @@ export function QuotaFlagRow({
   pending: boolean;
   onSave: (value_int: number | null) => void;
 }) {
+  const { formatDate } = useDateFormat();
+
   const [draft, setDraft] = useState<string>(current === null ? "" : String(current));
 
   // Resync draft when the canonical value changes (e.g. after a successful
@@ -232,7 +235,7 @@ export function QuotaFlagRow({
       </div>
       {updatedAt && (
         <p className="text-[10px] text-muted-foreground">
-          Updated {new Date(updatedAt).toLocaleString()}
+          Updated {formatDate(new Date(updatedAt))}
         </p>
       )}
     </div>

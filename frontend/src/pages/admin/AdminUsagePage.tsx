@@ -28,7 +28,13 @@ import { SavedRoutesSection } from "@/components/admin/usage/SavedRoutesSection"
 import { PromoSection } from "@/components/admin/usage/PromoSection";
 import { useItemCatalog } from "@/lib/auction";
 import { formatDuration } from "@/lib/format-duration";
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 /**
  * Admin "Usage" dashboard.
  *
@@ -356,6 +362,12 @@ function ContributionsSection(props: { from: string; to: string; granularity: Us
 // Section: Pages — most-visited routes table + per-path trendline.
 // ---------------------------------------------------------------------------
 
+const SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "views", label: "Views" },
+  { value: "distinct_actors", label: "Distinct actors" },
+  { value: "distinct_ips", label: "Distinct IPs" },
+  { value: "path", label: "Path (A→Z)" },
+];
 function PagesSection(props: { from: string; to: string; granularity: UsageGranularity }) {
   const [showTrend, setShowTrend] = useState(true);
   const dispatch = useAppDispatch();
@@ -487,19 +499,26 @@ function PagesSection(props: { from: string; to: string; granularity: UsageGranu
               <Label htmlFor="pages-sort" className="text-xs text-muted-foreground">
                 Sort by
               </Label>
-              <select
+              <Select
                 id="pages-sort"
                 value={sortKey}
-                onChange={(e) =>
-                  dispatch(patchPagesFilters({ sortKey: e.target.value as PagesSortKey }))
-                }
-                className="h-9 rounded-md border bg-background px-2 text-sm"
+                onValueChange={(v) => dispatch(patchPagesFilters({ sortKey: v as PagesSortKey }))}
               >
-                <option value="views">Views</option>
-                <option value="distinct_actors">Distinct actors</option>
-                <option value="distinct_ips">Distinct IPs</option>
-                <option value="path">Path (A→Z)</option>
-              </select>
+                <SelectTrigger className="h-9 rounded-md border bg-background px-2 text-sm">
+                  <SelectValue>
+                    {(value) =>
+                      SORT_OPTIONS.find((s) => s.value === value)?.label || "Select a sort"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               size="sm"

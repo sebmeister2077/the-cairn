@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Switch } from "@/components/ui/switch";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import type { FeatureFlag } from "@/lib/api";
 import {
   Info,
@@ -146,6 +147,8 @@ export function OperationalFlagCard({
   onToggle: (enabled: boolean) => void;
   extra?: ReactNode;
 }) {
+  const { formatDate } = useDateFormat();
+
   const enabled = flag ? flag.enabled : spec.defaultEnabled;
   const inAlarm = (spec.alarmState === "on" && enabled) || (spec.alarmState === "off" && !enabled);
   const tone = spec.alarmTone ?? "danger";
@@ -232,7 +235,7 @@ export function OperationalFlagCard({
         )}
         {flag && (
           <p className="text-[10px] text-muted-foreground">
-            Last changed {new Date(flag.updated_at).toLocaleString()}
+            Last changed {formatDate(new Date(flag.updated_at))}
             {flag.updated_by_suffix ? ` by …${flag.updated_by_suffix}` : ""}
           </p>
         )}

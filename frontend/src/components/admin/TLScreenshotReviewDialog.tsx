@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ interface Props {
 
 export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Props) {
   const queryClient = useQueryClient();
+  const { formatDate } = useDateFormat();
+
   const detail = useQuery({
     queryKey: ["admin-tl-screenshot", requestId],
     queryFn: () => getAdminTLScreenshotRequest(requestId!),
@@ -179,7 +182,7 @@ export function TLScreenshotReviewDialog({ requestId, open, onOpenChange }: Prop
             <div className="text-xs text-muted-foreground space-y-0.5">
               <div>
                 Submitted by <strong>{r.submitter_display_name ?? "?"}</strong> on{" "}
-                {new Date(r.created_at).toLocaleString()}
+                {r.created_at ? formatDate(new Date(r.created_at)) : "—"}
               </div>
               <div>
                 Status: {r.status} · Analysis: {r.analysis_status}

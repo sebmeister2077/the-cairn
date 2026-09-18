@@ -265,7 +265,9 @@ export function ApiKeysPage() {
               }
             >
               <SelectTrigger className="w-45" aria-label="Sort active keys">
-                <SelectValue />
+                <SelectValue>
+                  {(value) => getSortOptionByValue(`${value}:${filters.order}`)?.label}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {ACTIVE_KEYS_SORT_OPTIONS.map((opt) => (
@@ -282,7 +284,11 @@ export function ApiKeysPage() {
               }
             >
               <SelectTrigger className="w-40" aria-label="Filter by bound identity">
-                <SelectValue />
+                <SelectValue>
+                  {(value) =>
+                    BOUND_IDENTITY_FILTER_OPTIONS.find((opt) => opt.value === value)?.label
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {BOUND_IDENTITY_FILTER_OPTIONS.map((opt) => (

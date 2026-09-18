@@ -28,6 +28,7 @@ import {
   Undo2,
   Clock,
 } from "lucide-react";
+import { useDateFormat } from "@/hooks/useDateFormat";
 
 const STATUS_QUERY_KEY = ["admin-tops-map-generation-status"];
 const POLL_INTERVAL_MS = 2000;
@@ -123,6 +124,7 @@ function StatusBadge({ status }: { status: MapGenerationLevelStatus["status"] })
 
 export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) {
   const queryClient = useQueryClient();
+  const { formatDate } = useDateFormat();
 
   const statusQuery = useQuery<MapGenerationStatus>({
     queryKey: STATUS_QUERY_KEY,
@@ -438,7 +440,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                     {entry?.pending_version && (
                       <p
                         className="mt-1 text-[10px] text-amber-700 dark:text-amber-400 truncate max-w-[18ch]"
-                        title={`Staged bundle ${entry.pending_version} (${formatBytes(entry.pending_size_bytes)}) generated ${formatTimestamp(entry.pending_generated_at)}. Awaiting activation.`}
+                        title={`Staged bundle ${entry.pending_version} (${formatBytes(entry.pending_size_bytes)}) generated ${entry.pending_generated_at ? formatDate(new Date(entry.pending_generated_at)) : "unknown date"}. Awaiting activation.`}
                       >
                         pending: {entry.pending_version}
                       </p>
@@ -484,7 +486,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                     {formatBytes(entry?.size_bytes)}
                   </td>
                   <td className="px-3 py-2 text-xs text-muted-foreground">
-                    {formatTimestamp(entry?.generated_at)}
+                    {entry?.generated_at ? formatDate(new Date(entry.generated_at)) : "—"}
                   </td>
                   <td className="px-3 py-2 text-right">
                     <div className="inline-flex flex-wrap justify-end gap-1">

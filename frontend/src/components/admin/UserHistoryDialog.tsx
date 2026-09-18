@@ -1,5 +1,6 @@
 import { type AdminUserListItem, adminUsage, type UsageActorHistory } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import {
   Dialog,
   DialogContent,
@@ -60,6 +61,8 @@ export function UserHistoryDialog({
 }
 
 function HistoryRow({ event }: { event: UsageActorHistory["events"][number] }) {
+  const { formatDate } = useDateFormat();
+
   const when = new Date(event.created_at);
   const meta = event.metadata ?? {};
   return (
@@ -76,7 +79,7 @@ function HistoryRow({ event }: { event: UsageActorHistory["events"][number] }) {
         {renderMetaDetail(meta)}
       </div>
       <time className="text-xs text-muted-foreground whitespace-nowrap" dateTime={event.created_at}>
-        {when.toLocaleString()}
+        {formatDate(when)}
       </time>
     </div>
   );

@@ -17,6 +17,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const REASONS: { value: BanReasonCode; label: string }[] = [
   { value: "spam", label: "Spam" },
@@ -76,21 +83,24 @@ export function BanDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
-          <div>
+          <div className="flex flex-col gap-2">
             <Label>Reason</Label>
-            <select
-              value={reasonCode}
-              onChange={(e) => setReasonCode(e.target.value as BanReasonCode)}
-              className="w-full rounded border bg-background px-2 py-1 mt-1"
-            >
-              {REASONS.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            <Select value={reasonCode} onValueChange={(v) => setReasonCode(v as BanReasonCode)}>
+              <SelectTrigger>
+                <SelectValue>
+                  {(value) => REASONS.find((r) => r.value === value)?.label || "Select a reason"}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {REASONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <Label>Reason details (visible internally)</Label>
             <Input
               value={reason}
@@ -98,11 +108,11 @@ export function BanDialog({
               placeholder="e.g. ban evasion"
             />
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <Label>Admin notes (optional)</Label>
             <Input value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} />
           </div>
-          <div>
+          <div className="flex flex-col gap-2">
             <Label>Duration (days)</Label>
             <Input
               type="number"
@@ -111,7 +121,7 @@ export function BanDialog({
             />
           </div>
           <Separator />
-          <div>
+          <div className="flex flex-col gap-2">
             <Label>Blast radius</Label>
             {preview.isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
             {preview.data && (

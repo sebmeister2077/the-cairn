@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Loader2,
@@ -80,6 +81,8 @@ function formatBytes(n: number): string {
 
 export function AdminBackupsPanel() {
   const queryClient = useQueryClient();
+  const { formatDate } = useDateFormat();
+
   const [open, setOpen] = useState(false);
 
   const totp = useQuery({
@@ -163,7 +166,7 @@ export function AdminBackupsPanel() {
               <div className="flex items-center gap-2 font-medium">
                 <HistoryIcon className="h-4 w-4 text-amber-700 dark:text-amber-300" />
                 Map was restored from a backup on{" "}
-                {new Date(lastRestore.data.last_restore.restored_at).toLocaleString()}
+                {formatDate(new Date(lastRestore.data.last_restore.restored_at))}
               </div>
               <p className="text-xs text-amber-900/80 dark:text-amber-200/80 mt-1">
                 Source: <code>{lastRestore.data.last_restore.backup_key}</code> •{" "}
@@ -320,6 +323,8 @@ function BackupRow({
   onRestore: () => void;
   onGenerateLink: () => void;
 }) {
+  const { formatDate } = useDateFormat();
+
   return (
     <li className="flex items-center justify-between gap-3 p-2">
       <div className="min-w-0 flex-1">
@@ -335,7 +340,7 @@ function BackupRow({
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">
           {formatBytes(backup.size)} •{" "}
-          {backup.last_modified ? new Date(backup.last_modified).toLocaleString() : "unknown date"}
+          {backup.last_modified ? formatDate(new Date(backup.last_modified)) : "unknown date"}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -577,6 +582,8 @@ function RestoreDialog({
   onClose: () => void;
   onRestored: () => void;
 }) {
+  const { formatDate } = useDateFormat();
+
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [confirmFinal, setConfirmFinal] = useState(false);
@@ -593,9 +600,7 @@ function RestoreDialog({
 
   const restoreSummary = useMemo(() => {
     if (!backup) return "";
-    const when = backup.last_modified
-      ? new Date(backup.last_modified).toLocaleString()
-      : "unknown date";
+    const when = backup.last_modified ? formatDate(new Date(backup.last_modified)) : "unknown date";
     return `${backup.key} (${when})`;
   }, [backup]);
 
@@ -720,6 +725,7 @@ function GenerateLinkDialog({
   const [generated, setGenerated] = useState<BackupDownloadLink | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const { formatDate } = useDateFormat();
 
   useEffect(() => {
     if (!backup) {
@@ -832,7 +838,7 @@ function GenerateLinkDialog({
               </div>
               <p className="text-[10px] text-muted-foreground mt-1">
                 Expires {formatRelative(generated.expires_at)} (
-                {generated.expires_at ? new Date(generated.expires_at).toLocaleString() : "unknown"}
+                {generated.expires_at ? formatDate(new Date(generated.expires_at)) : "unknown"}
                 ). Revoke from the <strong>Active download links</strong> list to invalidate early.
               </p>
             </div>
@@ -958,6 +964,7 @@ function DownloadLinkRow({ link }: { link: BackupDownloadLink }) {
   const [showRedemptions, setShowRedemptions] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { formatDate } = useDateFormat();
 
   const revoke = useMutation({
     mutationFn: () => adminRevokeBackupDownloadLink(link.id),
@@ -1068,7 +1075,7 @@ function DownloadLinkRow({ link }: { link: BackupDownloadLink }) {
                     {r.success ? "✓" : "✗"}
                   </span>
                   <span className="text-muted-foreground tabular-nums">
-                    {r.redeemed_at ? new Date(r.redeemed_at).toLocaleString() : "?"}
+                    {r.redeemed_at ? formatDate(new Date(r.redeemed_at)) : "?"}
                   </span>
                   <code className="font-mono">ip:{r.ip_hash_short ?? "?"}</code>
                   {r.failure_reason && (

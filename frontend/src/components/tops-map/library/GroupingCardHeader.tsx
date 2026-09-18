@@ -7,9 +7,12 @@ import { useTranslation } from "@/lib/i18n";
 
 import { ReputationBadge } from "./ReputationBadge";
 import { ExpandableDescription } from "./ExpandableDescription";
+import { useDateFormat } from "@/hooks/useDateFormat";
 
 export function GroupingCardHeader({ card }: { card: LibraryGroupingCard }) {
   const { t } = useTranslation();
+  const { formatDate } = useDateFormat();
+
   return (
     <div className="min-w-0 flex-1">
       <div className="flex items-center gap-2">
@@ -45,7 +48,7 @@ export function GroupingCardHeader({ card }: { card: LibraryGroupingCard }) {
         {card.created_at && (
           <span>
             {t("topsMap.groupingsDrawer.library.publishedOn", {
-              date: new Date(card.created_at).toLocaleDateString(),
+              date: formatDate(new Date(card.created_at)),
             })}
           </span>
         )}
@@ -54,7 +57,7 @@ export function GroupingCardHeader({ card }: { card: LibraryGroupingCard }) {
             <span>·</span>
             <span>
               {t("topsMap.groupingsDrawer.library.updatedOn", {
-                date: new Date(card.last_edited_at).toLocaleDateString(),
+                date: formatDate(new Date(card.last_edited_at)),
               })}
             </span>
           </>

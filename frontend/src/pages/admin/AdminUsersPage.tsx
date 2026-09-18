@@ -27,12 +27,24 @@ import { Loader2, RefreshCw, Search } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAdminUsersFilters, type AdminUsersFilters } from "@/store/slices/adminUsersFilters";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Filters live in the Redux `adminUsersFilters` slice; the slice handles
 // load/persist/cross-tab sync. Keep the legacy type alias so existing
 // callsites in this file don't shift around.
 type StoredFilters = AdminUsersFilters;
 
+const SORT_OPTIONS = [
+  { value: "joined_at", label: "Newest first" },
+  { value: "last_login_at", label: "Recently active" },
+  { value: "is_hireable", label: "Hireable first" },
+];
 export function AdminUsersPage() {
   const queryClient = useQueryClient();
   const dispatch = useAppDispatch();
@@ -50,6 +62,7 @@ export function AdminUsersPage() {
   const [rekeyResult, setRekeyResult] = useState<{ user: string; key: string } | null>(null);
   const [rekeyConfirm, setRekeyConfirm] = useState<AdminUserListItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<AdminUserListItem | null>(null);
+  const [regenConfirm, setRegenConfirm] = useState<AdminUserListItem | null>(null);
 
   const stats = useQuery<{ stats: AdminUserStats; cached: boolean }>({
     queryKey: ["admin-user-stats"],
@@ -147,15 +160,23 @@ export function AdminUsersPage() {
                 className="pl-7"
               />
             </div>
-            <select
+            <Select
               value={filters.sort}
-              onChange={(e) => setFilters({ ...filters, sort: e.target.value })}
-              className="rounded border bg-background px-2 py-1 text-sm"
+              onValueChange={(sort) => sort && setFilters({ ...filters, sort })}
             >
-              <option value="joined_at">Newest first</option>
-              <option value="last_login_at">Recently active</option>
-              <option value="is_hireable">Hireable first</option>
-            </select>
+              <SelectTrigger className="w-40" aria-label="Sort users">
+                <SelectValue>
+                  {(value) => SORT_OPTIONS.find((opt) => opt.value === value)?.label}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-wrap gap-3 text-xs">
             <FilterToggle
@@ -247,7 +268,7 @@ export function AdminUsersPage() {
                       Flags ({u.flag_count})
                     </Button>
                   )}
-                  <Button size="sm" variant="outline" onClick={() => regenMut.mutate(u.api_key)}>
+                  <Button size="sm" variant="outline" onClick={() => setRegenConfirm(u)}>
                     Regen name
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => setPermsTarget(u)}>
@@ -325,6 +346,30 @@ export function AdminUsersPage() {
           if (rekeyConfirm) {
             rekeyMut.mutate(rekeyConfirm.api_key, {
               onSettled: () => setRekeyConfirm(null),
+            });
+          }
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!regenConfirm}
+        title="Regenerate this user's name?"
+        description={
+          regenConfirm ? (
+            <>
+              A new random display name will be generated for{" "}
+              <span className="font-mono">{regenConfirm.display_name}</span>, replacing the current
+              one. This cannot be undone.
+            </>
+          ) : null
+        }
+        confirmLabel="Regen name"
+        loading={regenMut.isPending}
+        onCancel={() => setRegenConfirm(null)}
+        onConfirm={() => {
+          if (regenConfirm) {
+            regenMut.mutate(regenConfirm.api_key, {
+              onSettled: () => setRegenConfirm(null),
             });
           }
         }}

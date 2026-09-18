@@ -1,4 +1,5 @@
 import type { UserFlag } from "@/lib/api";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +12,7 @@ export function FlagRow({
   onResolve?: (resolution: "valid" | "abuse" | "dismissed") => void;
   pending?: boolean;
 }) {
+  const { formatDate } = useDateFormat();
   return (
     <div className="border rounded p-2 text-sm space-y-1 min-w-0 overflow-hidden">
       <div className="flex items-center justify-between gap-2 flex-wrap min-w-0">
@@ -18,7 +20,7 @@ export function FlagRow({
           {flag.reason}
         </Badge>
         <span className="text-xs text-muted-foreground break-all">
-          {new Date(flag.created_at).toLocaleString()}
+          {flag.created_at ? formatDate(new Date(flag.created_at)) : "—"}
         </span>
       </div>
       {flag.related_display_name && (
@@ -33,7 +35,7 @@ export function FlagRow({
       )}
       {flag.resolved_at ? (
         <div className="text-xs text-muted-foreground">
-          Resolved {new Date(flag.resolved_at).toLocaleString()}
+          Resolved {flag.resolved_at ? formatDate(new Date(flag.resolved_at)) : "—"}
           {flag.resolution && (
             <>
               {" "}

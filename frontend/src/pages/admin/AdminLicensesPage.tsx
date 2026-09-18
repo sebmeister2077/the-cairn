@@ -63,6 +63,15 @@ const MACHINE_FILTER_OPTIONS: {
   { value: "3plus", label: "3+ machines", min: 3 },
 ];
 
+const STATUS_FILTER_OPTIONS: {
+  value: string;
+  label: string;
+}[] = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "revoked", label: "Revoked" },
+];
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -619,17 +628,27 @@ export function AdminLicensesPage() {
           </div>
           <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
             <SelectTrigger className="w-36">
-              <SelectValue />
+              <SelectValue>
+                {(value) =>
+                  STATUS_FILTER_OPTIONS.find((s) => s.value === value)?.label || "Select a status"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="revoked">Revoked</SelectItem>
+              {STATUS_FILTER_OPTIONS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Select value={machines} onValueChange={(v) => setMachines(v ?? "any")}>
             <SelectTrigger className="w-40">
-              <SelectValue />
+              <SelectValue>
+                {(value) =>
+                  MACHINE_FILTER_OPTIONS.find((m) => m.value === value)?.label || "Select a machine"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               {MACHINE_FILTER_OPTIONS.map((m) => (
