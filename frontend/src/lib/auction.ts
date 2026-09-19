@@ -694,7 +694,7 @@ const METAL_FORM_UNITS: Record<string, number> = {
     // Metal plates (`metalplate-copper`, `metalplate-gold`, …) — hammered from an
     // ingot on the anvil, so they hold the same 100 units of metal. The catalog
     // category is the code's first segment, i.e. `metalplate` (NOT `plate`).
-    metalplate: 100,
+    metalplate: 200,
     // 20 nuggets = 1 ingot, so a nugget is 5 units (per the game's smelting recipes).
     nugget: 5,
     // "Metal bits" — the small surface fragments (e.g. `metalbit-gold`); smelt
