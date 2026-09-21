@@ -4,12 +4,15 @@ Each source is a ``MapExportDocument`` (the combined export the proxy uploads):
 ``{generatedUtc, upstream, worldSpawn, translocators[], traders[], rapids[],
 traderClaims[], playerClaims[]}``. The merge is a **union per category, keyed by
 position/identity**, with **last-writer-wins** on conflict (the record from the
-source with the newest ``generatedUtc`` wins) while preserving the **earliest
-``firstSeenUtc``** across all sources.
+source with the newest ``generatedUtc`` wins).
 
 The result is deterministic and order-independent: sources are sorted by
 ``(generatedUtc, source_id)`` and applied in ascending order, so the newest
 observation of any given feature is the one that survives.
+
+The per-feature ``firstSeenUtc`` timestamp is intentionally dropped from the
+merged output so the published dataset cannot be used to chronologically trace
+when (or by whom) a feature was first submitted.
 """
 
 from __future__ import annotations
@@ -79,14 +82,6 @@ _KEY_FNS: Dict[str, Callable[[Dict[str, Any]], Optional[FeatureKey]]] = {
 }
 
 
-def _min_iso(a: Optional[str], b: Optional[str]) -> Optional[str]:
-    if not a:
-        return b
-    if not b:
-        return a
-    return a if a <= b else b
-
-
 def _source_sort_key(item: Tuple[str, Dict[str, Any]]) -> Tuple[str, str]:
     sid, doc = item
     return (str(doc.get("generatedUtc") or ""), sid)
@@ -99,9 +94,8 @@ def merge_documents(sources: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]
     stamps that at publish time)."""
     ordered = sorted((s for s in sources if isinstance(s[1], dict)), key=_source_sort_key)
 
-    # Per category: key -> winning feature, and key -> earliest firstSeenUtc.
+    # Per category: key -> winning feature.
     winners: Dict[str, Dict[FeatureKey, Dict[str, Any]]] = {k: {} for k, _ in CATEGORIES}
-    earliest: Dict[str, Dict[FeatureKey, Optional[str]]] = {k: {} for k, _ in CATEGORIES}
 
     upstream: Optional[str] = None
     world_spawn: Optional[Dict[str, Any]] = None
@@ -116,14 +110,13 @@ def merge_documents(sources: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]
             if not isinstance(feats, list):
                 continue
             key_fn = _KEY_FNS[doc_key]
-            wmap, emap = winners[doc_key], earliest[doc_key]
+            wmap = winners[doc_key]
             for f in feats:
                 if not isinstance(f, dict):
                     continue
                 k = key_fn(f)
                 if k is None:
                     continue
-                emap[k] = _min_iso(emap.get(k), f.get("firstSeenUtc"))
                 wmap[k] = f  # ascending order => newest source wins
 
     out: Dict[str, Any] = {}
@@ -133,10 +126,9 @@ def merge_documents(sources: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]
         out["worldSpawn"] = world_spawn
     for doc_key, _cat in CATEGORIES:
         feats: List[Dict[str, Any]] = []
-        for k, f in winners[doc_key].items():
-            fs = earliest[doc_key].get(k)
-            if fs and "firstSeenUtc" in f:
-                f = {**f, "firstSeenUtc": fs}
+        for f in winners[doc_key].values():
+            if "firstSeenUtc" in f:
+                f = {k: v for k, v in f.items() if k != "firstSeenUtc"}
             feats.append(f)
         out[doc_key] = feats
     return out
