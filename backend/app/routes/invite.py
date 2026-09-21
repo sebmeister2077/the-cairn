@@ -9,12 +9,50 @@ POST /api/invite/{token}/claim
 
 import secrets
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from ..core import database as db
 
 router = APIRouter()
+
+# Substrings that mark a User-Agent as an automated client rather than a real
+# browser. Invite claims are meant for humans arriving via a shared link, so we
+# refuse to mint a key for anything that looks like a crawler/script. Browsers
+# cannot override their User-Agent on fetch/XHR, so real visitors always pass.
+_BOT_UA_MARKERS = (
+    "bot",
+    "crawl",
+    "spider",
+    "slurp",
+    "curl",
+    "wget",
+    "python-requests",
+    "python-httpx",
+    "httpclient",
+    "libwww",
+    "scrapy",
+    "headless",
+    "phantomjs",
+    "selenium",
+    "playwright",
+    "puppeteer",
+    "go-http-client",
+    "java/",
+    "okhttp",
+    "node-fetch",
+    "aiohttp",
+    "postman",
+    "insomnia",
+)
+
+
+def _looks_like_bot(user_agent: str | None) -> bool:
+    """Heuristic: does this User-Agent look like an automated client?"""
+    if not user_agent or not user_agent.strip():
+        return True
+    ua = user_agent.lower()
+    return any(marker in ua for marker in _BOT_UA_MARKERS)
 
 
 class ClaimResponse(BaseModel):
@@ -51,9 +89,16 @@ async def get_default_invite():
 
 
 @router.post("/invite/{token}/claim", response_model=ClaimResponse)
-async def claim_invite(token: str):
+async def claim_invite(token: str, request: Request):
     if not db.is_available():
         raise HTTPException(status_code=503, detail="Database not configured")
+
+    # Don't mint keys for crawlers/scripts hitting the (often public) claim URL.
+    if _looks_like_bot(request.headers.get("user-agent")):
+        raise HTTPException(
+            status_code=403,
+            detail="Invite links can only be claimed from a web browser.",
+        )
 
     link = db.get_invite_link(token)
     if not link:

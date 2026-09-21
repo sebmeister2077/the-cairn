@@ -18,7 +18,6 @@ import {
   clearOverviewCategories,
   patchPagesFilters,
   resetPagesFilters,
-  setAccountsExcludeUnused,
   setPagesSelectedPath,
   toggleOverviewCategory,
   type PagesSortKey,
@@ -154,7 +153,7 @@ export function AdminUsagePage() {
         <ModerationSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "api_keys" && (
-        <ApiKeysSection from={range.from} to={range.to} granularity={granularity} />
+        <AccountsSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "actors" && <TopActorsSection from={range.from} to={range.to} />}
       {section === "promo" && (
@@ -1210,21 +1209,20 @@ function ModerationSection(props: { from: string; to: string; granularity: Usage
 }
 
 // ---------------------------------------------------------------------------
-// Section: API keys — new vs active.
+// Section: Accounts — new vs active.
 // ---------------------------------------------------------------------------
 
-function ApiKeysSection(props: { from: string; to: string; granularity: UsageGranularity }) {
-  const dispatch = useAppDispatch();
-  const excludeUnused = useAppSelector((s) => s.adminUsageFilters.accountsExcludeUnused);
+function AccountsSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  // Accounts with zero lifetime activity are always excluded here.
   const q = useQuery({
-    queryKey: ["usage", "api-keys", props.from, props.to, props.granularity, excludeUnused],
+    queryKey: ["usage", "api-keys", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>
       adminUsage.apiKeys(
         {
           from: props.from,
           to: props.to,
           granularity: props.granularity,
-          exclude_unused: excludeUnused,
+          exclude_unused: true,
         },
         signal,
       ),
@@ -1239,27 +1237,12 @@ function ApiKeysSection(props: { from: string; to: string; granularity: UsageGra
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0 gap-4">
-        <div className="space-y-1.5">
-          <CardTitle>Accounts</CardTitle>
-          <CardDescription>
-            New accounts created vs. accounts that made at least one request, per bucket.
-          </CardDescription>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Switch
-            id="accounts-exclude-unused"
-            checked={excludeUnused}
-            onCheckedChange={(v) => dispatch(setAccountsExcludeUnused(v))}
-            size="sm"
-          />
-          <Label
-            htmlFor="accounts-exclude-unused"
-            className="text-xs text-muted-foreground cursor-pointer"
-          >
-            Hide unused accounts
-          </Label>
-        </div>
+      <CardHeader className="space-y-1.5">
+        <CardTitle>Accounts</CardTitle>
+        <CardDescription>
+          New accounts created vs. accounts that made at least one request, per bucket. Accounts
+          that never made a request are excluded.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <TimeSeriesChart
