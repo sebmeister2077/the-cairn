@@ -51,7 +51,7 @@ export const SMART_BASE_DAYS = 30;
 /** Sold-listing count at which a price becomes "high" confidence (mirrors
  * `confidenceFor`). The Smart window extends back per item until it has at least
  * this many sales, or includes the item's whole (shorter) history. */
-export const HIGH_CONFIDENCE_SALES = 20;
+export const HIGH_CONFIDENCE_SALES = 30;
 
 /** Plain-language explanation of the adaptive Smart window, reused for the
  * button tooltip and the caption shown on the market pages when it's active. */
