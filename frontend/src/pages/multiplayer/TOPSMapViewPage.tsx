@@ -755,7 +755,13 @@ export function TOPSMapViewPage() {
     [allLandmarks],
   );
   const translocatorCount = allTranslocators?.length ?? 0;
-  const traderCount = allTraders?.length ?? 0;
+  // Claims assigned a (non-empty) trader type in trader_claim_types.json are
+  // surfaced as trader markers too, so fold their count into the trader total.
+  const claimTypeCount = useMemo(
+    () => Object.keys(traderClaimTypesQuery.data?.data ?? {}).length,
+    [traderClaimTypesQuery.data],
+  );
+  const traderCount = (allTraders?.length ?? 0) + claimTypeCount;
   const showTraders = useAppSelector((s) => s.mapView.showTraders);
   const setShowTraders = useCallback(
     (next: boolean) => dispatch(setShowTradersAction(next)),
