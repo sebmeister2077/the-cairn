@@ -4043,10 +4043,13 @@ export interface UsageMapLayers extends UsageWindow {
         distinct_actors: number;
         total_dwell_ms: number;
         avg_dwell_ms: number;
+        median_dwell_ms: number;
+        p90_dwell_ms: number;
         snapshot_on_count: number;
         snapshot_on_actors: number;
     }>;
     timeline: Array<{ bucket: string; series: string; count: number }>;
+    snapshot_timeline: Array<{ bucket: string; series: string; count: number }>;
     top_settings: Array<{ layer: string; setting: string; value: string; count: number }>;
 }
 

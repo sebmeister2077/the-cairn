@@ -63,11 +63,22 @@ interface QueuedEvent {
 
 const QUEUE_KEY = "vsw:layer-telemetry-queue";
 const FLUSH_TS_KEY = "vsw:layer-telemetry-flush";
-const SNAPSHOT_TS_KEY = "vsw:layer-telemetry-snapshot";
+// Stores the UTC day (YYYY-MM-DD) of the last snapshot so cadence aligns to
+// calendar days instead of a drifting rolling-24h window.
+const SNAPSHOT_DAY_KEY = "vsw:layer-telemetry-snapshot-day";
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Safety valve: if the queue somehow grows past this without a daily flush
 // (e.g. a very active user across many short sessions), flush early.
 const MAX_QUEUE = 200;
+// Reject implausible dwell samples (clock skew, tab left open for days) so a
+// single outlier can't dominate the average/percentiles server-side.
+const MAX_DWELL_MS = 6 * 60 * 60 * 1000;
+
+/** Clamp a raw dwell duration; returns undefined for non-positive/absurd values. */
+function cleanDuration(ms: number): number | undefined {
+    if (!Number.isFinite(ms) || ms <= 0) return undefined;
+    return Math.min(ms, MAX_DWELL_MS);
+}
 
 // In-memory diff baseline + per-layer dwell start timestamps. Reset per page
 // load; the first `syncState` establishes the baseline without emitting.
@@ -113,6 +124,26 @@ function writeTs(key: string, value: number): void {
     } catch {
         /* ignore */
     }
+}
+
+function readStr(key: string): string {
+    try {
+        return window.localStorage.getItem(key) ?? "";
+    } catch {
+        return "";
+    }
+}
+
+function writeStr(key: string, value: string): void {
+    try {
+        window.localStorage.setItem(key, value);
+    } catch {
+        /* ignore */
+    }
+}
+
+function utcDayKey(ts: number): string {
+    return new Date(ts).toISOString().slice(0, 10);
 }
 
 function settingsEqual(a: LayerSettings, b: LayerSettings): boolean {
@@ -165,7 +196,7 @@ export function syncLayerState(next: AdvancedLayersState): void {
                 enqueue({ layer: id, action: "enable", settings: n.settings });
             } else {
                 const started = dwellStart[id];
-                const duration = started != null ? now - started : undefined;
+                const duration = started != null ? cleanDuration(now - started) : undefined;
                 dwellStart[id] = undefined;
                 enqueue({
                     layer: id,
@@ -181,10 +212,11 @@ export function syncLayerState(next: AdvancedLayersState): void {
     lastState = next;
 }
 
-/** Emit a full-config snapshot if 24h have elapsed since the last one. */
+/** Emit a full-config snapshot once per UTC calendar day. */
 function maybeSnapshot(state: AdvancedLayersState): void {
-    if (Date.now() - readTs(SNAPSHOT_TS_KEY) < DAY_MS) return;
-    writeTs(SNAPSHOT_TS_KEY, Date.now());
+    const today = utcDayKey(Date.now());
+    if (readStr(SNAPSHOT_DAY_KEY) === today) return;
+    writeStr(SNAPSHOT_DAY_KEY, today);
     enqueue({ action: "snapshot", settings: buildSnapshotSettings(state) });
 }
 
@@ -221,12 +253,27 @@ export function closeOpenDwell(): void {
         const started = dwellStart[id];
         if (started == null) continue;
         dwellStart[id] = undefined;
+        const duration = cleanDuration(now - started);
+        if (duration == null) continue;
         enqueue({
             layer: id,
             action: "disable",
             settings: lastState[id].settings,
-            duration_ms: now - started,
+            duration_ms: duration,
         });
+    }
+}
+
+/**
+ * Re-open dwell timers for currently-enabled layers after the tab becomes
+ * visible again. `closeOpenDwell` clears them on hide; without this, all time
+ * spent after a tab-away/return would be dropped.
+ */
+export function resumeOpenDwell(): void {
+    if (!gated() || lastState == null) return;
+    const now = Date.now();
+    for (const id of LAYER_IDS) {
+        if (lastState[id].enabled && dwellStart[id] == null) dwellStart[id] = now;
     }
 }
 

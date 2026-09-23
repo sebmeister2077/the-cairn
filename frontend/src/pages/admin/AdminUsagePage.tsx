@@ -8,12 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { adminUsage, type UsageGranularity } from "@/lib/api";
 import { Info, Loader2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { HeatmapGrid } from "@/components/usage/HeatmapGrid";
 import { StatCard } from "@/components/usage/StatCard";
@@ -771,6 +766,9 @@ function layerLabel(id: string): string {
 
 function MapLayersSection(props: { from: string; to: string; granularity: UsageGranularity }) {
   const [showTrend, setShowTrend] = useState(true);
+  // "enables" counts switch-on events; "snapshots" counts how many daily
+  // config snapshots had the layer on (reflects sustained, not just new, use).
+  const [timelineMode, setTimelineMode] = useState<"enables" | "snapshots">("enables");
   const q = useQuery({
     queryKey: ["usage", "map-layers", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>
@@ -790,15 +788,14 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
     return rows;
   }, [q.data?.layers]);
 
-  const timelineSeries = useMemo(
-    () =>
-      (q.data?.timeline ?? []).map((b) => ({
-        bucket: b.bucket,
-        series: layerLabel(b.series),
-        count: b.count,
-      })),
-    [q.data?.timeline],
-  );
+  const timelineSeries = useMemo(() => {
+    const source = timelineMode === "snapshots" ? q.data?.snapshot_timeline : q.data?.timeline;
+    return (source ?? []).map((b) => ({
+      bucket: b.bucket,
+      series: layerLabel(b.series),
+      count: b.count,
+    }));
+  }, [q.data?.timeline, q.data?.snapshot_timeline, timelineMode]);
 
   // Group the flat top-settings list by layer for a compact per-layer view.
   const settingsByLayer = useMemo(() => {
@@ -827,14 +824,29 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 gap-4">
           <div className="space-y-1">
-            <CardTitle>Layer enables over time</CardTitle>
+            <CardTitle>
+              {timelineMode === "snapshots" ? "Layers on over time" : "Layer enables over time"}
+            </CardTitle>
             <CardDescription>
-              How often each advanced overlay was switched on, per {props.granularity}.
+              {timelineMode === "snapshots"
+                ? `Daily snapshots that had each overlay on, per ${props.granularity}. Reflects sustained use — a layer left on keeps counting.`
+                : `How often each advanced overlay was switched on, per ${props.granularity}. Counts new activations only.`}
             </CardDescription>
           </div>
-          <TrendToggle checked={showTrend} onChange={setShowTrend} id="map-layers-trend" />
+          <div className="flex items-center gap-3">
+            <Tabs
+              value={timelineMode}
+              onValueChange={(v) => setTimelineMode(v as "enables" | "snapshots")}
+            >
+              <TabsList>
+                <TabsTrigger value="enables">Enables</TabsTrigger>
+                <TabsTrigger value="snapshots">Layers on</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <TrendToggle checked={showTrend} onChange={setShowTrend} id="map-layers-trend" />
+          </div>
         </CardHeader>
         <CardContent>
           <TimeSeriesChart
@@ -875,7 +887,7 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
                     />
                     <MetricHeader
                       className="py-2 pr-4 font-medium tabular-nums text-right"
-                      label="Snapshots on"
+                      label="User-days on"
                       hint="Daily config snapshots (roughly one per active user per day) that had this layer on. This is the primary popularity measure and drives the ranking + share bar."
                     />
                     <MetricHeader
@@ -885,38 +897,46 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
                     />
                     <MetricHeader
                       className="py-2 pr-4 font-medium tabular-nums text-right"
-                      label="Avg dwell"
-                      hint="Average time the layer stayed on per viewing session — from switch-on until it was switched off or the map page was closed/hidden. Time away from the page is not counted."
+                      label="Median dwell"
+                      hint="Typical (50th-percentile) time the layer stayed on per viewing session — from switch-on until it was switched off or the map tab was hidden/closed. Median is used because a few very long sessions skew the mean. Time away from the page is not counted."
+                    />
+                    <MetricHeader
+                      className="py-2 pr-4 font-medium tabular-nums text-right"
+                      label="p90 dwell"
+                      hint="90th-percentile session dwell: 9 in 10 sessions kept the layer on for less than this. Highlights the heavier-usage tail."
                     />
                     <th className="py-2 font-medium w-1/4">Share</th>
                   </tr>
                 </thead>
                 <tbody>
-                {rankedLayers.map((row) => (
-                  <tr key={row.layer} className="border-b">
-                    <td className="py-2 pr-4">{layerLabel(row.layer)}</td>
-                    <td className="py-2 pr-4 text-right tabular-nums">
-                      {row.snapshot_on_actors.toLocaleString()}
-                    </td>
-                    <td className="py-2 pr-4 text-right tabular-nums">
-                      {row.snapshot_on_count.toLocaleString()}
-                    </td>
-                    <td className="py-2 pr-4 text-right tabular-nums">
-                      {row.enable_count.toLocaleString()}
-                    </td>
-                    <td className="py-2 pr-4 text-right tabular-nums">
-                      {row.avg_dwell_ms > 0 ? formatDuration(row.avg_dwell_ms / 1000) : "—"}
-                    </td>
-                    <td className="py-2">
-                      <div className="h-2 bg-muted rounded">
-                        <div
-                          className="h-2 bg-primary rounded"
-                          style={{ width: `${(row.snapshot_on_count / maxOn) * 100}%` }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                  {rankedLayers.map((row) => (
+                    <tr key={row.layer} className="border-b">
+                      <td className="py-2 pr-4">{layerLabel(row.layer)}</td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {row.snapshot_on_actors.toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {row.snapshot_on_count.toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {row.enable_count.toLocaleString()}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {row.median_dwell_ms > 0 ? formatDuration(row.median_dwell_ms / 1000) : "—"}
+                      </td>
+                      <td className="py-2 pr-4 text-right tabular-nums">
+                        {row.p90_dwell_ms > 0 ? formatDuration(row.p90_dwell_ms / 1000) : "—"}
+                      </td>
+                      <td className="py-2">
+                        <div className="h-2 bg-muted rounded">
+                          <div
+                            className="h-2 bg-primary rounded"
+                            style={{ width: `${(row.snapshot_on_count / maxOn) * 100}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </TooltipProvider>
@@ -1366,14 +1386,10 @@ function MetricHeader({
   return (
     <th className={className}>
       <Tooltip>
-        <TooltipTrigger
-          render={
-            <span className="inline-flex items-center gap-1 cursor-help underline decoration-dotted decoration-muted-foreground/60 underline-offset-2">
-              {label}
-              <Info className="h-3 w-3 opacity-60" aria-hidden />
-            </span>
-          }
-        />
+        <TooltipTrigger className="inline-flex items-center gap-1 cursor-help underline decoration-dotted decoration-muted-foreground/60 underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm">
+          {label}
+          <Info className="h-3 w-3 opacity-60" aria-hidden />
+        </TooltipTrigger>
         <TooltipContent>{hint}</TooltipContent>
       </Tooltip>
     </th>

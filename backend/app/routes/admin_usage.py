@@ -1346,7 +1346,15 @@ async def usage_map_layers(
                               FILTER (WHERE metadata ? 'duration_ms'), 0)::bigint
                               AS total_dwell_ms,
                           COUNT(*) FILTER (WHERE metadata ? 'duration_ms')::int
-                              AS dwell_samples
+                              AS dwell_samples,
+                          percentile_cont(0.5) WITHIN GROUP (
+                              ORDER BY (metadata->>'duration_ms')::bigint)
+                              FILTER (WHERE metadata ? 'duration_ms')
+                              AS median_dwell_ms,
+                          percentile_cont(0.9) WITHIN GROUP (
+                              ORDER BY (metadata->>'duration_ms')::bigint)
+                              FILTER (WHERE metadata ? 'duration_ms')
+                              AS p90_dwell_ms
                        FROM usage_events
                       WHERE category = 'map_layer'
                         AND event_type <> 'layer.snapshot'
@@ -1406,6 +1414,32 @@ async def usage_map_layers(
                 for r in cur.fetchall()
             ]
 
+            # Snapshots-on timeline: how many daily snapshots had each layer on
+            # per bucket. Unlike the enable timeline, this reflects sustained
+            # usage (a layer left on for days keeps counting).
+            cur.execute(
+                """SELECT date_trunc(%s, created_at) AS bucket,
+                          kv.key AS layer,
+                          COUNT(*)::int AS count
+                       FROM usage_events,
+                            jsonb_each_text(metadata->'settings') AS kv(key, value)
+                      WHERE event_type = 'layer.snapshot'
+                        AND created_at >= %s AND created_at < %s
+                        AND kv.value = 'true'
+                        AND kv.key = ANY(%s)
+                   GROUP BY bucket, layer
+                   ORDER BY bucket""",
+                (gran, start, end, _MAP_LAYER_IDS),
+            )
+            snapshot_timeline = [
+                {
+                    "bucket": _iso(r["bucket"]),
+                    "series": r["layer"],
+                    "count": int(r["count"]),
+                }
+                for r in cur.fetchall()
+            ]
+
             # Most common per-layer setting values across enable/adjust rows.
             cur.execute(
                 """SELECT metadata->>'layer' AS layer,
@@ -1446,6 +1480,8 @@ async def usage_map_layers(
                 "distinct_actors": int(c.get("distinct_actors") or 0),
                 "total_dwell_ms": total_dwell,
                 "avg_dwell_ms": int(total_dwell / samples) if samples else 0,
+                "median_dwell_ms": int(c.get("median_dwell_ms") or 0),
+                "p90_dwell_ms": int(c.get("p90_dwell_ms") or 0),
                 "snapshot_on_count": int(s.get("on_count") or 0),
                 "snapshot_on_actors": int(s.get("distinct_on_actors") or 0),
             }
@@ -1458,6 +1494,7 @@ async def usage_map_layers(
         "snapshot_total": snapshot_total,
         "layers": layers,
         "timeline": timeline,
+        "snapshot_timeline": snapshot_timeline,
         "top_settings": top_settings,
     }
     _cache_put(cache_key, payload)

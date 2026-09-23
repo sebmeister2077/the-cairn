@@ -14,6 +14,7 @@ import { useAppSelector } from "@/store/hooks";
 import {
     syncLayerState,
     closeOpenDwell,
+    resumeOpenDwell,
     flush,
     type AdvancedLayersState,
 } from "@/lib/mapLayerTelemetry";
@@ -131,6 +132,7 @@ export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {
         };
         const onVisibility = () => {
             if (document.visibilityState === "hidden") onHide();
+            else resumeOpenDwell();
         };
         document.addEventListener("visibilitychange", onVisibility);
         window.addEventListener("pagehide", onHide);
