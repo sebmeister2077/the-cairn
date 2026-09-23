@@ -7,7 +7,13 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { adminUsage, type UsageGranularity } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { HeatmapGrid } from "@/components/usage/HeatmapGrid";
 import { StatCard } from "@/components/usage/StatCard";
@@ -847,8 +853,8 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
         <CardHeader>
           <CardTitle>Most used advanced layers</CardTitle>
           <CardDescription>
-            Ranked by how many daily config snapshots had the layer enabled. Dwell = time a layer
-            stayed on before being switched off. Distinct users = signed-in accounts.
+            Ranked by how many daily config snapshots had the layer enabled. Hover a column heading
+            for its exact meaning.
           </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
@@ -857,18 +863,35 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
               No map-layer telemetry recorded in this window.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs text-muted-foreground border-b">
-                  <th className="py-2 pr-4 font-medium">Layer</th>
-                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Users w/ on</th>
-                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Snapshots on</th>
-                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Enables</th>
-                  <th className="py-2 pr-4 font-medium tabular-nums text-right">Avg dwell</th>
-                  <th className="py-2 font-medium w-1/4">Share</th>
-                </tr>
-              </thead>
-              <tbody>
+            <TooltipProvider>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground border-b">
+                    <th className="py-2 pr-4 font-medium">Layer</th>
+                    <MetricHeader
+                      className="py-2 pr-4 font-medium tabular-nums text-right"
+                      label="Users w/ on"
+                      hint="Distinct signed-in accounts whose daily config snapshot had this layer switched on at least once in the window."
+                    />
+                    <MetricHeader
+                      className="py-2 pr-4 font-medium tabular-nums text-right"
+                      label="Snapshots on"
+                      hint="Daily config snapshots (roughly one per active user per day) that had this layer on. This is the primary popularity measure and drives the ranking + share bar."
+                    />
+                    <MetricHeader
+                      className="py-2 pr-4 font-medium tabular-nums text-right"
+                      label="Enables"
+                      hint="How many times the layer was switched on during the window. Each toggle-on counts once; leaving it on across days does not add to this."
+                    />
+                    <MetricHeader
+                      className="py-2 pr-4 font-medium tabular-nums text-right"
+                      label="Avg dwell"
+                      hint="Average time the layer stayed on per viewing session — from switch-on until it was switched off or the map page was closed/hidden. Time away from the page is not counted."
+                    />
+                    <th className="py-2 font-medium w-1/4">Share</th>
+                  </tr>
+                </thead>
+                <tbody>
                 {rankedLayers.map((row) => (
                   <tr key={row.layer} className="border-b">
                     <td className="py-2 pr-4">{layerLabel(row.layer)}</td>
@@ -894,8 +917,9 @@ function MapLayersSection(props: { from: string; to: string; granularity: UsageG
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
@@ -1328,6 +1352,32 @@ function Loading() {
 
 function ErrorMsg({ msg }: { msg: string }) {
   return <div className="text-sm text-red-600 py-6 text-center">{msg}</div>;
+}
+
+function MetricHeader({
+  label,
+  hint,
+  className,
+}: {
+  label: string;
+  hint: string;
+  className?: string;
+}) {
+  return (
+    <th className={className}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="inline-flex items-center gap-1 cursor-help underline decoration-dotted decoration-muted-foreground/60 underline-offset-2">
+              {label}
+              <Info className="h-3 w-3 opacity-60" aria-hidden />
+            </span>
+          }
+        />
+        <TooltipContent>{hint}</TooltipContent>
+      </Tooltip>
+    </th>
+  );
 }
 
 function TrendToggle({
