@@ -87,48 +87,74 @@ def _source_sort_key(item: Tuple[str, Dict[str, Any]]) -> Tuple[str, str]:
     return (str(doc.get("generatedUtc") or ""), sid)
 
 
+class Accumulator:
+    """Running merge state, so sources can be folded ONE AT A TIME (streaming)
+    instead of holding every parsed source document in memory at once. Peak RAM
+    is then one source doc + this accumulator, not the sum of all sources."""
+
+    __slots__ = ("winners", "upstream", "world_spawn")
+
+    def __init__(self) -> None:
+        self.winners: Dict[str, Dict[FeatureKey, Dict[str, Any]]] = {
+            k: {} for k, _ in CATEGORIES
+        }
+        self.upstream: Optional[str] = None
+        self.world_spawn: Optional[Dict[str, Any]] = None
+
+
+def new_accumulator() -> Accumulator:
+    return Accumulator()
+
+
+def fold_document(acc: Accumulator, doc: Dict[str, Any]) -> None:
+    """Merge one source document into ``acc``. Call in ascending priority order
+    (oldest first) so the newest observation of any feature wins."""
+    if not isinstance(doc, dict):
+        return
+    if doc.get("upstream"):
+        acc.upstream = doc.get("upstream")
+    if isinstance(doc.get("worldSpawn"), dict):
+        acc.world_spawn = doc.get("worldSpawn")
+    for doc_key, _cat in CATEGORIES:
+        feats = doc.get(doc_key)
+        if not isinstance(feats, list):
+            continue
+        key_fn = _KEY_FNS[doc_key]
+        wmap = acc.winners[doc_key]
+        for f in feats:
+            if not isinstance(f, dict):
+                continue
+            k = key_fn(f)
+            if k is None:
+                continue
+            wmap[k] = f  # ascending order => newest source wins
+
+
+def finalize(acc: Accumulator) -> Dict[str, Any]:
+    """Produce the merged ``MapExportDocument`` from an accumulator (without
+    ``generatedUtc`` — the caller stamps that at publish time)."""
+    out: Dict[str, Any] = {}
+    if acc.upstream:
+        out["upstream"] = acc.upstream
+    if acc.world_spawn is not None:
+        out["worldSpawn"] = acc.world_spawn
+    for doc_key, _cat in CATEGORIES:
+        feats: List[Dict[str, Any]] = []
+        for f in acc.winners[doc_key].values():
+            if "firstSeenUtc" in f:
+                f = {k: v for k, v in f.items() if k != "firstSeenUtc"}
+            feats.append(f)
+        out[doc_key] = feats
+    return out
+
+
 def merge_documents(sources: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]:
     """Union-merge the given ``(source_id, MapExportDocument)`` pairs.
 
     Returns a ``MapExportDocument`` (without ``generatedUtc`` — the caller
     stamps that at publish time)."""
     ordered = sorted((s for s in sources if isinstance(s[1], dict)), key=_source_sort_key)
-
-    # Per category: key -> winning feature.
-    winners: Dict[str, Dict[FeatureKey, Dict[str, Any]]] = {k: {} for k, _ in CATEGORIES}
-
-    upstream: Optional[str] = None
-    world_spawn: Optional[Dict[str, Any]] = None
-
+    acc = new_accumulator()
     for _sid, doc in ordered:
-        if doc.get("upstream"):
-            upstream = doc.get("upstream")
-        if isinstance(doc.get("worldSpawn"), dict):
-            world_spawn = doc.get("worldSpawn")
-        for doc_key, _cat in CATEGORIES:
-            feats = doc.get(doc_key)
-            if not isinstance(feats, list):
-                continue
-            key_fn = _KEY_FNS[doc_key]
-            wmap = winners[doc_key]
-            for f in feats:
-                if not isinstance(f, dict):
-                    continue
-                k = key_fn(f)
-                if k is None:
-                    continue
-                wmap[k] = f  # ascending order => newest source wins
-
-    out: Dict[str, Any] = {}
-    if upstream:
-        out["upstream"] = upstream
-    if world_spawn is not None:
-        out["worldSpawn"] = world_spawn
-    for doc_key, _cat in CATEGORIES:
-        feats: List[Dict[str, Any]] = []
-        for f in winners[doc_key].values():
-            if "firstSeenUtc" in f:
-                f = {k: v for k, v in f.items() if k != "firstSeenUtc"}
-            feats.append(f)
-        out[doc_key] = feats
-    return out
+        fold_document(acc, doc)
+    return finalize(acc)

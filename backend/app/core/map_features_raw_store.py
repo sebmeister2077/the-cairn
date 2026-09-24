@@ -107,11 +107,15 @@ def delete_raw(source_id: str) -> None:
     _client().delete_object(Bucket=_bucket(), Key=object_key(source_id))
 
 
-def list_raw_ids() -> List[str]:
-    """Return the source ids present under the raw prefix (no prefix/suffix)."""
+def list_raw_objects() -> List[Dict[str, Any]]:
+    """Return ``{id, etag, last_modified}`` for every raw source object.
+
+    The rebuild uses ``etag`` to detect (cheaply, without downloading) whether
+    any source changed since the last publish, and ``last_modified`` to order
+    sources by upload time for the last-writer-wins merge."""
     client = _client()
     prefix = _prefix() + "/"
-    ids: List[str] = []
+    out: List[Dict[str, Any]] = []
     token = None
     while True:
         kwargs = {"Bucket": _bucket(), "Prefix": prefix}
@@ -121,12 +125,23 @@ def list_raw_ids() -> List[str]:
         for obj in resp.get("Contents", []):
             name = obj["Key"][len(prefix):]
             if name.endswith(".json.gz"):
-                ids.append(name[: -len(".json.gz")])
+                out.append(
+                    {
+                        "id": name[: -len(".json.gz")],
+                        "etag": (obj.get("ETag") or "").strip('"'),
+                        "last_modified": obj.get("LastModified"),
+                    }
+                )
         if resp.get("IsTruncated"):
             token = resp.get("NextContinuationToken")
         else:
             break
-    return ids
+    return out
+
+
+def list_raw_ids() -> List[str]:
+    """Return the source ids present under the raw prefix (no prefix/suffix)."""
+    return [o["id"] for o in list_raw_objects()]
 
 
 def get_document(source_id: str) -> Optional[Dict[str, Any]]:

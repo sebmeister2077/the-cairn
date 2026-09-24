@@ -7,9 +7,19 @@ max interval so a steady stream still refreshes periodically.
 
 A rebuild reads every NON-revoked raw object from the private bucket (plus the
 seed), union-merges them per category, and publishes the merged per-category
-files (``map-features.<cat>.json``), a combined backup document
-(``map-features.json``) and a ``manifest.json`` pointer to the PUBLIC bucket.
-The raw documents never leave the private bucket.
+files (``map-features.<cat>.json``) and a ``manifest.json`` pointer to the
+PUBLIC bucket. The raw documents never leave the private bucket.
+
+Two cost controls keep this cheap enough for a small (sub-1 GB) container even
+though the proxy re-uploads its full export ~1/min:
+
+* **ETag short-circuit** — before doing any download/parse/merge, the coalescer
+  fingerprints the active sources by their R2 ETags. If nothing changed since
+  the last publish it skips the whole rebuild.
+* **Streaming merge in a subprocess** — when a rebuild is actually needed the
+  merge/publish runs in a short-lived child process that folds one source
+  document at a time, so peak RAM is one source + the accumulator, and the OS
+  reclaims all of it when the child exits (glibc keeps freed arenas otherwise).
 """
 
 from __future__ import annotations
@@ -17,23 +27,31 @@ from __future__ import annotations
 import asyncio
 import ctypes
 import ctypes.util
+import functools
 import gc
 import hashlib
 import json
 import logging
 import os
+import subprocess
 import sys
 import tempfile
 import time
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ..config import settings
 from . import map_features_merge, map_features_raw_store, database
 
 logger = logging.getLogger("uvicorn.error")
+
+# Set in the short-lived rebuild subprocess so it never tries to spawn its own
+# child (it calls the heavy worker directly). Result line prefix the parent
+# scans for on the child's stdout.
+_CHILD = os.environ.get("MAP_FEATURES_REBUILD_RUN_CHILD") == "1"
+_RESULT_PREFIX = "__MFRESULT__ "
 
 # glibc malloc_trim(0): return freed heap to the OS. Python frees the big
 # transient JSON buffers after each rebuild/ingest, but glibc keeps them in its
@@ -152,44 +170,77 @@ def _has_publish_permission(row: Dict[str, Any]) -> bool:
     return bool(isinstance(extras, dict) and extras.get(_PUBLISH_PERMISSION))
 
 
-def _active_source_ids(exclude_ids: Set[str]) -> List[str]:
-    """Raw object ids to include: the seed + every non-revoked contributor that
-    still holds the map-features publish permission."""
-    out: List[str] = []
-    for sid in map_features_raw_store.list_raw_ids():
+def _active_sources(exclude_ids: Set[str] | None = None) -> List[Tuple[str, str, Any]]:
+    """``(source_id, etag, last_modified)`` for every source a rebuild includes:
+    the seed + every non-revoked contributor that still holds the map-features
+    publish permission."""
+    exclude_ids = exclude_ids or set()
+    out: List[Tuple[str, str, Any]] = []
+    for obj in map_features_raw_store.list_raw_objects():
+        sid = obj["id"]
         if sid in exclude_ids:
             continue
         if sid == map_features_raw_store.SEED_ID:
-            out.append(sid)
+            out.append((sid, obj["etag"], obj["last_modified"]))
             continue
         row = database.get_api_key_by_id(sid)
         if not row or row.get("revoked") or not _has_publish_permission(row):
             continue
-        out.append(sid)
+        out.append((sid, obj["etag"], obj["last_modified"]))
     return out
 
 
-def _merge(exclude_ids: Set[str] | None = None) -> Dict[str, Any]:
-    exclude_ids = exclude_ids or set()
-    sids = _active_source_ids(exclude_ids)
-    sources: List[Tuple[str, Dict[str, Any]]] = []
-    for sid in sids:
+def _fingerprint(active: List[Tuple[str, str, Any]]) -> Tuple[Tuple[str, str], ...]:
+    """A cheap identity of the active dataset: the sorted (id, etag) pairs. Two
+    fingerprints are equal iff the same sources with the same content are
+    present — so an unchanged fingerprint means the merge would reproduce
+    identical output and can be skipped entirely."""
+    return tuple(sorted((sid, etag) for sid, etag, _lm in active))
+
+
+def _order_key(item: Tuple[str, str, Any]) -> Tuple[float, str]:
+    """Sort key for the last-writer-wins fold: oldest upload first. R2's
+    LastModified approximates each document's ``generatedUtc``; a missing time
+    sorts first (treated as oldest)."""
+    sid, _etag, lm = item
+    ts = lm.timestamp() if hasattr(lm, "timestamp") else 0.0
+    return (ts, sid)
+
+
+def _merge_streaming(active: List[Tuple[str, str, Any]]) -> Dict[str, Any]:
+    """Fold every active source into the merge ONE AT A TIME, so peak memory is
+    a single source document plus the winners accumulator — not the sum of all
+    parsed sources at once."""
+    acc = map_features_merge.new_accumulator()
+    n = 0
+    for sid, _etag, _lm in sorted(active, key=_order_key):
         doc = map_features_raw_store.get_document(sid)
-        if doc is not None:
-            sources.append((sid, doc))
-    merged = map_features_merge.merge_documents(sources)
+        if doc is None:
+            continue
+        map_features_merge.fold_document(acc, doc)
+        del doc  # release this source before fetching the next
+        n += 1
+    merged = map_features_merge.finalize(acc)
+    del acc
     logger.info(
         "[map-features-rebuild] merged %d sources -> %s",
-        len(sources),
+        n,
         ", ".join(f"{c}={len(merged.get(k, []))}" for k, c in map_features_merge.CATEGORIES),
     )
     return merged
+
+
+def _merge(exclude_ids: Set[str] | None = None) -> Dict[str, Any]:
+    return _merge_streaming(_active_sources(exclude_ids))
 
 
 # Content hash of the last dataset published to R2, so an unchanged dataset is
 # never rewritten. ``None`` until the first publish or a baseline read from R2.
 _last_published_hash: "str | None" = None
 _baseline_seeded = False
+# Fingerprint (sorted id/etag pairs) of the sources behind the last rebuild, so
+# a rebuild whose sources are byte-identical can skip the merge entirely.
+_last_source_fingerprint: "Tuple[Tuple[str, str], ...] | None" = None
 
 
 def _stable_data_hash(merged: Dict[str, Any]) -> str:
@@ -237,32 +288,31 @@ def _feature_file(cat: str, merged: Dict[str, Any], doc_key: str, now_iso: str) 
     return env
 
 
-def _build_and_publish() -> Dict[str, int]:
-    global _last_published_hash, _baseline_seeded
+def _do_merge_and_publish(prev_hash: "str | None") -> Tuple[Dict[str, int], str, bool]:
+    """Merge every active source and publish the per-category files + manifest.
+
+    Skips the R2 write when the merged data hash equals ``prev_hash`` (the
+    dataset is byte-identical to what's already published). Pure worker: reads
+    no module cache and mutates none — usable from the parent process OR the
+    short-lived rebuild subprocess. Returns ``(counts, data_hash, published)``.
+    """
     import auction_r2_publish  # noqa: WPS433 — backend/ module (shared R2 uploader)
     import process_auction_data as pad  # noqa: WPS433 — backend/ module (write_json/manifest)
 
-    merged = _merge()
+    merged = _merge_streaming(_active_sources())
     data_hash = _stable_data_hash(merged)
     counts = {c: len(merged.get(k, [])) for k, c in map_features_merge.CATEGORIES}
 
-    # Seed the baseline from whatever is already published (once per process) so
-    # a restart never republishes an unchanged dataset.
-    if not _baseline_seeded:
-        _last_published_hash = _published_version_on_r2(auction_r2_publish)
-        _baseline_seeded = True
-
-    # Change-detection: skip the R2 write entirely when the merged features are
-    # byte-for-byte the same as what's already published (the proxy re-uploads
-    # its full export ~1/min, so most rebuilds carry no new data).
-    if data_hash == _last_published_hash:
+    # Change-detection: skip the R2 write when the merged features are the same
+    # as what's already published (the proxy re-uploads its full export ~1/min,
+    # so most rebuilds carry no new data).
+    if data_hash == prev_hash:
         logger.info(
             "[map-features-rebuild] data unchanged (v=%s) — skipping R2 publish.", data_hash
         )
-        return counts
+        return counts, data_hash, False
 
     now_iso = datetime.now(timezone.utc).isoformat()
-
     with tempfile.TemporaryDirectory(prefix="map-features-rebuild-") as tmp:
         out = Path(tmp)
         files: List[Path] = []
@@ -270,12 +320,6 @@ def _build_and_publish() -> Dict[str, int]:
             path = out / f"map-features.{cat}.json"
             pad.write_json(path, _feature_file(cat, merged, doc_key, now_iso))
             files.append(path)
-
-        # Combined backup document (all categories) — the "main" file.
-        combined = {"generatedUtc": now_iso, **merged}
-        combined_path = out / "map-features.json"
-        pad.write_json(combined_path, combined)
-        files.append(combined_path)
 
         # Manifest version is the stable data hash (not a hash of the timestamped
         # files) so the frontend's ``?v=`` only flips when features actually
@@ -295,8 +339,101 @@ def _build_and_publish() -> Dict[str, int]:
             prefix=settings.MAP_FEATURES_PREFIX,
             log=lambda m: logger.info("%s", m),
         )
+    # Retire the deprecated combined map-features.json (frontend reads only the
+    # per-category files now). Best-effort/idempotent.
+    auction_r2_publish.delete_object_from_bucket(
+        bucket=settings.MAP_FEATURES_PUBLIC_BUCKET,
+        key=f"{settings.MAP_FEATURES_PREFIX}/map-features.json",
+    )
+    return counts, data_hash, True
+
+
+def _parse_child_result(stdout: str) -> "Tuple[Dict[str, int], str, bool] | None":
+    for line in (stdout or "").splitlines():
+        if line.startswith(_RESULT_PREFIX):
+            try:
+                data = json.loads(line[len(_RESULT_PREFIX):])
+            except (json.JSONDecodeError, ValueError):
+                return None
+            return (
+                data.get("counts") or {},
+                str(data.get("hash") or ""),
+                bool(data.get("published")),
+            )
+    return None
+
+
+def _run_child_rebuild(prev_hash: "str | None") -> Tuple[Dict[str, int], str, bool]:
+    """Run the merge/publish in a short-lived subprocess so the OS reclaims all
+    transient heap on exit (glibc keeps freed arenas in-process otherwise)."""
+    env = dict(os.environ)
+    env["MAP_FEATURES_REBUILD_RUN_CHILD"] = "1"
+    env["MAP_FEATURES_REBUILD_PREV_HASH"] = prev_hash or ""
+    proc = subprocess.run(
+        [sys.executable, "-m", "app.core.map_features_rebuild"],
+        cwd=str(_BACKEND_DIR),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=max(60, settings.MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS),
+    )
+    for stream in (proc.stdout, proc.stderr):
+        for line in (stream or "").splitlines():
+            line = line.rstrip()
+            if line and not line.startswith(_RESULT_PREFIX):
+                logger.info("%s", line)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"rebuild subprocess exit {proc.returncode}: {(proc.stderr or '').strip()[-300:]}"
+        )
+    result = _parse_child_result(proc.stdout)
+    if result is None:
+        raise RuntimeError("rebuild subprocess produced no result line")
+    return result
+
+
+def _build_and_publish(force: bool = False) -> Dict[str, int]:
+    """Coalescer entry point (runs in an executor thread). Applies the ETag
+    short-circuit, then delegates the heavy merge/publish to a subprocess (or
+    in-process on fallback / when disabled)."""
+    global _last_published_hash, _baseline_seeded, _last_source_fingerprint
+
+    active = _active_sources()
+    fingerprint = _fingerprint(active)
+
+    # Seed the baseline from whatever is already published (once per process) so
+    # a restart never republishes an unchanged dataset.
+    if not _baseline_seeded:
+        import auction_r2_publish  # noqa: WPS433
+        _last_published_hash = _published_version_on_r2(auction_r2_publish)
+        _baseline_seeded = True
+
+    # Cheap short-circuit: no source object changed since our last publish, so a
+    # rebuild would reproduce identical output — skip download/parse/merge.
+    if (
+        not force
+        and _last_source_fingerprint is not None
+        and fingerprint == _last_source_fingerprint
+        and _last_published_hash is not None
+    ):
+        logger.info("[map-features-rebuild] sources unchanged — skipping rebuild.")
+        return {}
+
+    if settings.MAP_FEATURES_REBUILD_SUBPROCESS and not _CHILD:
+        try:
+            counts, data_hash, _published = _run_child_rebuild(_last_published_hash)
+        except Exception as exc:  # noqa: BLE001 — fall back to in-process
+            logger.warning(
+                "[map-features-rebuild] subprocess failed (%s) — running in-process.", exc
+            )
+            counts, data_hash, _published = _do_merge_and_publish(_last_published_hash)
+    else:
+        counts, data_hash, _published = _do_merge_and_publish(_last_published_hash)
+
     _last_published_hash = data_hash
+    _last_source_fingerprint = fingerprint
     return counts
+
 
 
 def source_impact(key_id: str) -> Dict[str, int]:
@@ -314,14 +451,15 @@ def source_impact(key_id: str) -> Dict[str, int]:
 # --------------------------------------------------------------------------- #
 # Async coalescer
 # --------------------------------------------------------------------------- #
-async def rebuild_now() -> Dict[str, int]:
-    """Run a rebuild immediately (single-flight). Awaitable; used by admin ops."""
+async def rebuild_now(force: bool = False) -> Dict[str, int]:
+    """Run a rebuild immediately (single-flight). Awaitable; used by admin ops.
+    ``force`` bypasses the ETag short-circuit so it always re-merges."""
     global _build_lock
     if _build_lock is None:
         _build_lock = asyncio.Lock()
     async with _build_lock:
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, _build_and_publish)
+        return await loop.run_in_executor(None, functools.partial(_build_and_publish, force))
 
 
 async def _worker() -> None:
@@ -345,13 +483,15 @@ async def _worker() -> None:
             rss_before = _rss_mb()
             result = await rebuild_now()
             # Release the merge/encode graph AND hand the freed heap back to the
-            # OS — glibc otherwise keeps it in-arena and RSS only grows.
+            # OS — glibc otherwise keeps it in-arena and RSS only grows. (When the
+            # rebuild ran in a subprocess the heavy allocations never touched this
+            # process, so RSS stays flat here.)
             gc.collect()
             _malloc_trim()
             cur, lim = _cgroup_mem_mb()
             logger.info(
-                "[map-features-rebuild] published %s rss=%.0fMB (was %.0fMB) cgroup=%.0f/%.0fMB",
-                result,
+                "[map-features-rebuild] %s rss=%.0fMB (was %.0fMB) cgroup=%.0f/%.0fMB",
+                f"published {result}" if result else "no source changes",
                 _rss_mb(),
                 rss_before,
                 cur,
@@ -388,3 +528,29 @@ async def stop() -> None:
         except (asyncio.CancelledError, Exception):  # noqa: BLE001
             pass
         _worker_task = None
+
+
+# --------------------------------------------------------------------------- #
+# Subprocess entry point
+# --------------------------------------------------------------------------- #
+def _main_child() -> int:
+    """Run one merge/publish and print a machine-readable result line. Invoked
+    as ``python -m app.core.map_features_rebuild`` by :func:`_run_child_rebuild`
+    so the heavy allocations live in a process that exits afterwards."""
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
+    prev = os.environ.get("MAP_FEATURES_REBUILD_PREV_HASH") or None
+    try:
+        counts, data_hash, published = _do_merge_and_publish(prev)
+    except Exception as exc:  # noqa: BLE001 — surfaced to the parent via exit code
+        sys.stderr.write(f"map-features rebuild child failed: {exc}\n")
+        return 1
+    print(
+        _RESULT_PREFIX
+        + json.dumps({"counts": counts, "hash": data_hash, "published": published}),
+        flush=True,
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main_child())

@@ -344,11 +344,17 @@ class Settings:
     )
     # Rebuild coalescer timings (same shape as the auction coalescer).
     MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS: int = int(
-        os.environ.get("MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS", "45")
+        os.environ.get("MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS", "120")
     )
     MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS: int = int(
         os.environ.get("MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS", "600")
     )
+    # Run each rebuild's merge/publish in a short-lived subprocess so the OS
+    # reclaims all transient heap on exit (glibc keeps freed arenas otherwise).
+    # Falls back to in-process automatically if the subprocess can't be spawned.
+    MAP_FEATURES_REBUILD_SUBPROCESS: bool = os.environ.get(
+        "MAP_FEATURES_REBUILD_SUBPROCESS", "1"
+    ).strip().lower() not in ("0", "false", "no", "")
 
 
     # Supabase PostgreSQL

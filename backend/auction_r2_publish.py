@@ -196,6 +196,20 @@ def read_bytes_from_bucket(*, bucket: str, key: str) -> "bytes | None":
             pass
 
 
+def delete_object_from_bucket(*, bucket: str, key: str) -> None:
+    """Best-effort DELETE of one object from ``bucket`` using env credentials.
+
+    Idempotent (R2 succeeds even if the key is absent). Used by the map-features
+    rebuild to retire the deprecated combined ``map-features.json`` now that the
+    per-category files are the only artifacts the frontend reads."""
+    if not bucket:
+        return
+    try:
+        _client_from_env().delete_object(Bucket=bucket, Key=key)
+    except Exception:  # noqa: BLE001 - best-effort; ignore missing/transient errors
+        pass
+
+
 def publish_files_to_bucket(
     files: Iterable[Path],
     *,
