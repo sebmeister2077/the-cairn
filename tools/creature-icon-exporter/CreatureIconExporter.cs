@@ -30,7 +30,6 @@ using System.IO;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
-using Vintagestory.API.Config;
 
 // Mod metadata lives in modinfo.json (this ships as a zipped code mod). Do not
 // also add an [assembly: ModInfo] attribute here — VS rejects mods that define
@@ -52,7 +51,11 @@ namespace CreatureIconExporter
         public double RenderOrder => 1.0;
         public int RenderRange => 1;
 
-        public override bool ShouldLoad(EnumAppSide side) => side == EnumAppSide.Client;
+        // Universal: the item type is registered by the server (even the integrated
+        // singleplayer one) and synced to the client, so the mod must load on both
+        // sides for `creatureiconexporter:creaturerender` to exist. All the actual
+        // work is client-only (StartClientSide); the server side does nothing.
+        public override bool ShouldLoad(EnumAppSide side) => true;
 
         public override void StartClientSide(ICoreClientAPI api)
         {
@@ -154,7 +157,9 @@ namespace CreatureIconExporter
             r.OrthoMode(sz, sz);
 
             float[] clear = new float[4]; // transparent
-            string outDir = Path.Combine(GamePaths.DataPath, "icons", "creature");
+            // Write next to the game's own `.blockitempngexport` output (CWD/icons),
+            // so `creature/` sits alongside `item/` and `block/` under one icons dir.
+            string outDir = Path.Combine(Path.GetFullPath("icons"), "creature");
             Directory.CreateDirectory(outDir);
 
             int written = 0;

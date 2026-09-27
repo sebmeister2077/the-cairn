@@ -5,9 +5,9 @@
 	"description": "Client tool: exports transparent PNG icons of every creature for the market explorer. Adds the .creatureexport command.",
 	"authors": ["extract-VS-waypoints"],
 	"version": "1.0.0",
-	"side": "client",
+	"side": "universal",
 	"requiredonclient": true,
-	"requiredonserver": false,
+	"requiredonserver": true,
 	"dependencies": {
 		"game": ""
 	}
