@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Optional: build this into a compiled mod DLL. Not required — the single
+       CreatureIconExporter.cs can be dropped straight into the Mods folder as a
+       source-code mod (Vintage Story compiles it on load). This project mainly
+       lets you verify it compiles and produce a DLL if you prefer. -->
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>disable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <AssemblyName>CreatureIconExporter</AssemblyName>
+        <Deterministic>true</Deterministic>
+        <!-- Point at the game install. Override with the VINTAGE_STORY env var; the
+         default is this machine's data dir where the DLLs live. -->
+        <VintagestoryDir Condition="'$(VINTAGE_STORY)' != ''">$(VINTAGE_STORY)</VintagestoryDir>
+        <VintagestoryDir Condition="'$(VintagestoryDir)' == ''">$(APPDATA)\Vintagestory</VintagestoryDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <Reference Include="VintagestoryAPI">
+            <HintPath>$(VintagestoryDir)\VintagestoryAPI.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+</Project>

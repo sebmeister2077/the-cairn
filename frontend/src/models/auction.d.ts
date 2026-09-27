@@ -49,6 +49,31 @@ export interface LiquidInfo {
     litres: number;
 }
 
+/**
+ * A caught live animal split out of the container (basket / crate / henbox) it
+ * was auctioned inside. When a container holds a captured creature the value is
+ * the animal, not the vessel, so the backend lifts it out and aggregates every
+ * caught animal of the same species under one market item priced per animal.
+ * Each listing keeps its exact breed / age / sex so the item page can filter by
+ * them. See `animal_variant` in `backend/process_auction_data.py`.
+ */
+export interface AnimalInfo {
+    /** The full creature code minus the "creature-" prefix (e.g.
+     *  "pig-eurasian-baby-female", "chicken-hen"). */
+    creatureCode: string;
+    /** The animal's species (the market grouping): "pig", "chicken", "goat"… */
+    species: string;
+    /** The breed within the species (e.g. "eurasian", "angora"); null when the
+     *  species has no breeds (e.g. chicken). */
+    breed: string | null;
+    /** Life stage: "baby" | "adult" | "elder"; null when unknown. */
+    age: string | null;
+    /** "male" | "female"; null when unknown (e.g. a chick). */
+    sex: string | null;
+    /** The container the animal shipped in (e.g. "stationarybasket-east"). */
+    containerCode: string | null;
+}
+
 /** One deduplicated auction (latest observed state). */
 export interface AuctionListing {
     auctionId: number;
@@ -69,6 +94,13 @@ export interface AuctionListing {
      * is the volume in litres and `pricePerUnit` is gears per litre.
      */
     liquid?: LiquidInfo | null;
+    /**
+     * The caught live animal split out of its container (basket / crate /
+     * henbox), when this listing is a container holding a creature. Null for
+     * everything else. When present the item is grouped by species and priced
+     * per animal.
+     */
+    animal?: AnimalInfo | null;
     category: string;
     classType: "Item" | "Block";
     attrs: Record<string, unknown> | null;
@@ -456,6 +488,9 @@ export interface ItemCatalogEntry {
     /** True when this item is a liquid (category "liquid") split out from the
      *  containers it was sold in; its listings are priced per litre. */
     liquid?: boolean;
+    /** True when this item is a caught-animal species group (category "animal")
+     *  split out from the containers the creatures were auctioned in. */
+    animal?: boolean;
 }
 
 export type ItemCatalog = Record<string, ItemCatalogEntry>;

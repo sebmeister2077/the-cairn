@@ -138,6 +138,24 @@ def build(items_path: Path, icons_dir: Path, out_dir: Path, size: int) -> Tuple[
         (out_dir / f"{key}.png").write_bytes(png)
         matched[key] = hashlib.sha1(png).hexdigest()[:12]
 
+    # Caught-animal market items (Pig, Chicken, Goat, ...) are keyed by a
+    # creature code, which the game's block/item exporter never renders. If the
+    # export dir carries a `creature/` tree (creature PNGs dropped in by hand or
+    # by an entity-render tool), ingest every one under an `item-creature-<code>`
+    # key so both the species image and each breed/age/sex image resolve through
+    # the same manifest. These are ingested wholesale (not gated by the catalog)
+    # since individual breeds aren't their own catalog items.
+    for norm, src in index_icons(icons_dir, "creature").items():
+        bare = norm[len("creature-"):] if norm.startswith("creature-") else norm
+        key = f"item-creature-{bare}"
+        if key in matched:
+            continue
+        png = process_icon(src, size)
+        if png is None:
+            continue
+        (out_dir / f"{key}.png").write_bytes(png)
+        matched[key] = hashlib.sha1(png).hexdigest()[:12]
+
     # Version = hash of the sorted (key, content-hash) pairs, so any pixel change
     # from a re-export flips the version and busts the frontend/CDN cache.
     fingerprint = hashlib.sha1(
@@ -162,7 +180,8 @@ def main() -> None:
         type=Path,
         required=True,
         help="The game's exported 'icons' folder (contains item/ and block/), "
-        "printed in chat by '.blockitempngexport'.",
+        "printed in chat by '.blockitempngexport'. An optional creature/ subfolder "
+        "of entity PNGs is ingested for the caught-animal market items.",
     )
     ap.add_argument("--items", type=Path, default=DEFAULT_ITEMS, help="items.json catalog path")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT, help="output icons folder")

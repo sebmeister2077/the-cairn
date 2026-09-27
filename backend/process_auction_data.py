@@ -870,6 +870,98 @@ def liquid_variant(
 
 
 # --------------------------------------------------------------------------- #
+# Caught-animal splitting (baskets / crates / henboxes carrying a live creature)
+# --------------------------------------------------------------------------- #
+# Some containers can hold a captured live animal: a stationary basket, a
+# reinforced crate trap, a henbox, etc. When one is auctioned WITH an animal
+# inside, the container's stack carries the caught entity in its attributes:
+#   * `creaturecode`     — the entity code minus the "creature-" prefix, e.g.
+#                          "pig-eurasian-baby-female" or "chicken-hen".
+#   * `classname`        — usually "EntityAgent".
+#   * `animalSerialized` — the full serialized entity tree (ignored here).
+# The container item itself (e.g. "Crate") is useless as a market item once it
+# holds an animal — the value is the animal, not the vessel. We split these out
+# and aggregate every caught animal of the same SPECIES under one synthetic item
+# (all pigs together, all chickens together, ...), priced per animal, while each
+# listing keeps its exact breed / age / sex so the item page can filter by them.
+# Empty containers (no `creaturecode`) are left untouched, so the crate/chest/
+# basket pages only ever show empties.
+_ANIMAL_SEXES = {"male", "female"}
+_ANIMAL_AGES = {"baby", "adult", "elder", "senior"}
+
+
+def parse_creature_code(code: str) -> Dict[str, Optional[str]]:
+    """Break a creature code into ``species`` / ``breed`` / ``age`` / ``sex``.
+
+    Handles the two in-game shapes: the common
+    ``<species>-<breed…>-<age>-<sex>`` (e.g. "pig-eurasian-baby-female",
+    "goat-angora-adult-male") and the chicken special case, where sex/age are
+    encoded in words ("chicken-rooster" = adult male, "chicken-hen" = adult
+    female, "chicken-baby" = chick). A leading "creature-" prefix is tolerated.
+    Unknown segments accumulate into the breed.
+    """
+    bare = re.sub(r"^creature-", "", code.strip().lower())
+    segments = [s for s in bare.split("-") if s]
+    if not segments:
+        return {"species": None, "breed": None, "age": None, "sex": None}
+    species = segments[0]
+    rest = segments[1:]
+    sex: Optional[str] = None
+    age: Optional[str] = None
+    breed_parts: List[str] = []
+    if species == "chicken":
+        if "rooster" in rest:
+            sex, age = "male", "adult"
+        elif "hen" in rest:
+            sex, age = "female", "adult"
+        elif "baby" in rest or "chick" in rest:
+            age = "baby"
+    else:
+        for seg in rest:
+            if seg in _ANIMAL_SEXES:
+                sex = seg
+            elif seg in _ANIMAL_AGES:
+                age = seg
+            else:
+                breed_parts.append(seg)
+    breed = "-".join(breed_parts) or None
+    return {"species": species, "breed": breed, "age": age, "sex": sex}
+
+
+def animal_variant(
+    item: Dict[str, Any], attrs: Optional[Dict[str, Any]]
+) -> Optional[Tuple[int, str, Dict[str, Any]]]:
+    """Split a caught live animal out of the container it was auctioned in.
+
+    Returns ``(synthetic_item_id, species_display_name, animal_payload)`` keyed
+    by the animal's species so every caught animal of that species aggregates
+    under one item; else ``None`` when the listing is not a container holding a
+    creature. The payload carries the creature code, its parsed species / breed /
+    age / sex and the container it shipped in.
+    """
+    if not attrs:
+        return None
+    raw = attrs.get("creaturecode")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    parsed = parse_creature_code(raw)
+    species = parsed["species"]
+    if not species:
+        return None
+    sid = _variant_synth_id(f"animal:{species}")
+    name = species[:1].upper() + species[1:]
+    payload = {
+        "creatureCode": raw.strip(),
+        "species": species,
+        "breed": parsed["breed"],
+        "age": parsed["age"],
+        "sex": parsed["sex"],
+        "containerCode": item.get("code"),
+    }
+    return sid, name, payload
+
+
+# --------------------------------------------------------------------------- #
 # Stats helpers (pure python; no numpy dependency)
 # --------------------------------------------------------------------------- #
 def percentile(sorted_vals: List[float], q: float) -> float:
@@ -1206,6 +1298,29 @@ def build_records(
             item["category"] = "liquid"
             item["code"] = liquid["liquidCode"]
 
+        # Baskets/crates/henboxes auctioned with a live animal inside carry the
+        # caught creature in `attrs.creaturecode`. Split the animal out so every
+        # caught animal of the same species aggregates under one item (priced per
+        # animal), while the listing keeps its exact breed / age / sex. Empty
+        # containers have no `creaturecode`, so they remain their own item.
+        animal = None
+        av = animal_variant(item, attrs)
+        if av is not None:
+            item["itemId"], item["name"], animal = av
+            item["category"] = "animal"
+            # Species-level creature code drives the item image (build_item_icons
+            # ingests creature renders); each listing's breed gets its own image.
+            item["code"] = f"creature-{animal['species']}"
+            item["classType"] = "Item"
+            # A caught animal is one creature per container, never a stack, so
+            # force a stack size of 1 (the container's own stack size is
+            # irrelevant) to keep every price figure strictly per-animal.
+            item["maxStackSize"] = 1
+            # The serialized entity tree is a large byte array of no use to the
+            # frontend — drop it so listings.json stays compact.
+            if isinstance(attrs, dict):
+                attrs.pop("animalSerialized", None)
+
         items_catalog[str(item["itemId"])] = {
             "name": item["name"],
             "category": item["category"],
@@ -1217,6 +1332,8 @@ def build_records(
             items_catalog[str(item["itemId"])]["chisel"] = chisel
         if liquid is not None:
             items_catalog[str(item["itemId"])]["liquid"] = True
+        if animal is not None:
+            items_catalog[str(item["itemId"])]["animal"] = True
 
         price = float(row.get("Price") or 0)
         stack_size = stack["stackSize"]
@@ -1274,6 +1391,9 @@ def build_records(
                 # Liquid split out from its container (code, vessel, litres); null
                 # for non-liquid listings. `qty` is this listing's litres.
                 "liquid": liquid,
+                # Caught live animal split out of its container (species, breed,
+                # age, sex); null for everything else.
+                "animal": animal,
                 "attrs": attrs,
                 "price": price,
                 "qty": qty,

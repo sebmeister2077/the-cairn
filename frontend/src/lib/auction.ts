@@ -15,6 +15,7 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type {
+    AnimalInfo,
     AuctionListing,
     AuctionSummary,
     ItemCatalog,
@@ -189,6 +190,31 @@ export function useItemImages() {
                 if (!key || !data?.keys.has(key)) return null;
                 return auctionUrl(`icons/${key}.png`, data.version);
             },
+            /**
+             * URL of a creature render for the caught-animal market items. Tries
+             * the exact creature code first, then progressively broader forms
+             * (dropping sex, then age), then any ingested render that shares the
+             * species/breed prefix — so a selected breed still shows a picture
+             * even when only one age/sex was rendered. Null when none exist.
+             */
+            creatureImage(creatureCode: string | null | undefined): string | null {
+                if (!creatureCode || !data) return null;
+                const bare = creatureCode.replace(/^creature-/, "");
+                const parts = bare.split("-");
+                const candidates: string[] = [];
+                for (let i = parts.length; i >= 1; i--) {
+                    candidates.push(`item-creature-${parts.slice(0, i).join("-")}`);
+                }
+                for (const key of candidates) {
+                    if (data.keys.has(key)) return auctionUrl(`icons/${key}.png`, data.version);
+                }
+                // Prefix fallback: any render whose key starts with this code.
+                const prefix = `item-creature-${bare}`;
+                for (const key of data.keys) {
+                    if (key.startsWith(prefix)) return auctionUrl(`icons/${key}.png`, data.version);
+                }
+                return null;
+            },
         }),
         [data],
     );
@@ -308,6 +334,120 @@ export function humanizeItemCode(code: string): string {
     if (words.length === 0) return code;
     const text = words.join(" ");
     return text.slice(0, 1).toUpperCase() + text.slice(1);
+}
+
+/** The parsed pieces of a creature code (mirrors the backend
+ *  `parse_creature_code`). */
+export interface CreatureParts {
+    species: string | null;
+    breed: string | null;
+    age: string | null;
+    sex: string | null;
+}
+
+const CREATURE_SEXES = new Set(["male", "female"]);
+const CREATURE_AGES = new Set(["baby", "adult", "elder", "senior"]);
+
+/**
+ * Break a creature code into species / breed / age / sex, mirroring the backend
+ * `parse_creature_code`. Handles the common `<species>-<breed…>-<age>-<sex>`
+ * shape and the chicken special case ("chicken-rooster" = adult male,
+ * "chicken-hen" = adult female, "chicken-baby" = chick). A leading "creature-"
+ * prefix is tolerated.
+ */
+export function parseCreatureCode(code: string): CreatureParts {
+    const bare = code.trim().toLowerCase().replace(/^creature-/, "");
+    const segments = bare.split("-").filter(Boolean);
+    if (segments.length === 0) return { species: null, breed: null, age: null, sex: null };
+    const species = segments[0];
+    const rest = segments.slice(1);
+    let sex: string | null = null;
+    let age: string | null = null;
+    const breedParts: string[] = [];
+    if (species === "chicken") {
+        if (rest.includes("rooster")) {
+            sex = "male";
+            age = "adult";
+        } else if (rest.includes("hen")) {
+            sex = "female";
+            age = "adult";
+        } else if (rest.includes("baby") || rest.includes("chick")) {
+            age = "baby";
+        }
+    } else {
+        for (const seg of rest) {
+            if (CREATURE_SEXES.has(seg)) sex = seg;
+            else if (CREATURE_AGES.has(seg)) age = seg;
+            else breedParts.push(seg);
+        }
+    }
+    return { species, breed: breedParts.join("-") || null, age, sex };
+}
+
+/** Title-case a single word (e.g. "pig" -> "Pig", "eurasian" -> "Eurasian"). */
+export function titleCase(word: string): string {
+    return word.slice(0, 1).toUpperCase() + word.slice(1);
+}
+
+/** Natural life-stage order for sorting the age facet. */
+const AGE_ORDER: Record<string, number> = { baby: 0, adult: 1, elder: 2, senior: 3 };
+
+/** The distinct sub-selections available for a caught-animal species page. */
+export interface AnimalGroup {
+    /** The species key (e.g. "pig"). */
+    species: string;
+    /** Display name (e.g. "Pig"). */
+    name: string;
+    /** Distinct breeds seen (sorted); empty when the species has no breeds. */
+    breeds: string[];
+    /** Distinct life stages seen, in natural order (baby → adult → elder). */
+    ages: string[];
+    /** Distinct sexes seen ("male"/"female"). */
+    sexes: string[];
+}
+
+/**
+ * Derive the breed / age / sex facets present across a species' animal listings,
+ * so the item page can offer exactly the sub-selections that actually occur.
+ * Returns null when none of the listings carry animal info.
+ */
+export function computeAnimalGroup(listings: { animal?: AnimalInfo | null }[]): AnimalGroup | null {
+    const breeds = new Set<string>();
+    const ages = new Set<string>();
+    const sexes = new Set<string>();
+    let species: string | null = null;
+    for (const l of listings) {
+        const a = l.animal;
+        if (!a) continue;
+        species = species ?? a.species;
+        if (a.breed) breeds.add(a.breed);
+        if (a.age) ages.add(a.age);
+        if (a.sex) sexes.add(a.sex);
+    }
+    if (!species) return null;
+    return {
+        species,
+        name: titleCase(species),
+        breeds: Array.from(breeds).sort((a, b) => a.localeCompare(b)),
+        ages: Array.from(ages).sort((a, b) => (AGE_ORDER[a] ?? 9) - (AGE_ORDER[b] ?? 9)),
+        sexes: Array.from(sexes).sort((a, b) => a.localeCompare(b)),
+    };
+}
+
+/** A user's chosen animal sub-selection. An empty set on a facet means "all". */
+export interface AnimalSelection {
+    breeds: Set<string>;
+    ages: Set<string>;
+    sexes: Set<string>;
+}
+
+/** Whether a listing's animal matches the active selection (empty facet = all). */
+export function animalListingMatches(a: AnimalInfo | null | undefined, sel: AnimalSelection): boolean {
+    if (!a) return false;
+    if (sel.breeds.size && (!a.breed || !sel.breeds.has(a.breed))) return false;
+    if (sel.ages.size && (!a.age || !sel.ages.has(a.age))) return false;
+    if (sel.sexes.size && (!a.sex || !sel.sexes.has(a.sex))) return false;
+    return true;
 }
 
 /**

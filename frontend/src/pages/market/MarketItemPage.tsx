@@ -53,6 +53,10 @@ import {
   liquidContainerLabel,
   liquidContainerShort,
   useItemImages,
+  computeAnimalGroup,
+  animalListingMatches,
+  titleCase,
+  type AnimalSelection,
 } from "@/lib/auction";
 import type { PriceTrend } from "@/models/auction";
 import type { ChiselDesign } from "@/models/auction";
@@ -97,7 +101,7 @@ import { ItemTrendBadge } from "@/components/market/item/ItemTrendBadge";
 import { UpperBoundUnknownBadge } from "@/components/market/item/UpperBoundUnknownBadge";
 import { MetalBlendedStatCard } from "@/components/market/item/MetalBlendedStatCard";
 import { ChiselDesignCard } from "@/components/market/item/ChiselDesignCard";
-
+import { AnimalSelectionCard } from "@/components/market/item/AnimalSelectionCard";
 // The 3D chiseled-block viewer pulls in three.js — lazy-load it so it never
 // weighs on the main market bundle.
 const ChiseledBlockViewer = lazy(() => import("@/components/market/ChiseledBlockViewer"));
@@ -227,6 +231,35 @@ export function MarketItemPage() {
   // loaded. Drives the metal-content features below.
   const currentEntry = catalogQ.data?.[String(id)] ?? null;
 
+  // Caught-animal species page: every listing for this synthetic species item
+  // carries the animal it holds (breed/age/sex). This base set (external-trade
+  // filtered, but NOT narrowed by the user's sub-selection) drives the facet
+  // controls, per-breed images and the listing-table columns, so those stay
+  // stable as the selection changes.
+  const animalBaseListings = useMemo(() => {
+    const all = listingsQ.data ?? [];
+    let base = all.filter((l) => l.itemId === id && l.animal);
+    if (excludeExternalTrades) base = base.filter((l) => !l.externalTrade);
+    return base;
+  }, [listingsQ.data, id, excludeExternalTrades]);
+  const animalGroup = useMemo(() => computeAnimalGroup(animalBaseListings), [animalBaseListings]);
+  const isAnimal = animalGroup != null;
+
+  // The user's chosen sub-selection (breed / sex / age). An empty facet = all.
+  const [animalSel, setAnimalSel] = useState<AnimalSelection>(() => ({
+    breeds: new Set<string>(),
+    ages: new Set<string>(),
+    sexes: new Set<string>(),
+  }));
+  // Reset the selection when the viewed item changes so a pig filter doesn't
+  // leak onto a goat page. Done during render (React's "reset state on prop
+  // change" pattern) rather than in an effect to avoid a cascading re-render.
+  const [animalSelId, setAnimalSelId] = useState(id);
+  if (animalSelId !== id) {
+    setAnimalSelId(id);
+    setAnimalSel({ breeds: new Set(), ages: new Set(), sexes: new Set() });
+  }
+
   // If this item is a smeltable metal, resolve its family (gold, iron…). Gates
   // the "value by metal content" comparison and the blended fair price — both
   // hinge on a form's pure-metal unit content, which only metals have.
@@ -321,6 +354,9 @@ export function MarketItemPage() {
       base = all.filter((l) => l.itemId === id);
     }
     if (excludeExternalTrades) base = base.filter((l) => !l.externalTrade);
+    // On a caught-animal species page, narrow to the user's chosen breed / age /
+    // sex so every figure (and the listing table) reflects the selection.
+    if (isAnimal) base = base.filter((l) => animalListingMatches(l.animal, animalSel));
     return base;
   }, [
     listingsQ.data,
@@ -330,6 +366,8 @@ export function MarketItemPage() {
     combineOres,
     oreGroup,
     excludeExternalTrades,
+    isAnimal,
+    animalSel,
   ]);
 
   // Listings that feed the price/market figures (fair price, distribution,
@@ -705,6 +743,9 @@ export function MarketItemPage() {
   const itemImages = useItemImages();
   const itemImageUrl = useMemo(() => {
     if (!currentEntry?.code || tapestryImage || chiselDesign) return null;
+    // Caught-animal species items have no species-level render; resolve a
+    // representative creature image by falling back across breed/age/sex.
+    if (currentEntry.category === "animal") return itemImages.creatureImage(currentEntry.code);
     return itemImages.url(currentEntry.code, currentEntry.classType);
   }, [currentEntry, tapestryImage, chiselDesign, itemImages]);
 
@@ -758,6 +799,54 @@ export function MarketItemPage() {
                   title="Rock stratum this ore was found in"
                 >
                   {oreGroup.rockByItemId.get(l.itemId) ?? "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(animalGroup && animalGroup.breeds.length > 0
+        ? [
+            {
+              key: "animalBreed",
+              header: "Breed",
+              width: "minmax(6rem,1fr)",
+              cell: (l) => (
+                <span className="text-xs font-medium capitalize" title="Breed of the caught animal">
+                  {l.animal?.breed ? titleCase(l.animal.breed) : "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(animalGroup && animalGroup.sexes.length > 0
+        ? [
+            {
+              key: "animalSex",
+              header: "Sex",
+              width: "minmax(4rem,0.6fr)",
+              cell: (l) => (
+                <span className="text-xs capitalize" title="Sex of the caught animal">
+                  {l.animal?.sex
+                    ? l.animal.sex === "male"
+                      ? "Male ♂"
+                      : l.animal.sex === "female"
+                        ? "Female ♀"
+                        : titleCase(l.animal.sex)
+                    : "—"}
+                </span>
+              ),
+            } satisfies ListingColumn,
+          ]
+        : []),
+      ...(animalGroup && animalGroup.ages.length > 0
+        ? [
+            {
+              key: "animalAge",
+              header: "Age",
+              width: "minmax(4rem,0.6fr)",
+              cell: (l) => (
+                <span className="text-xs capitalize" title="Life stage of the caught animal">
+                  {l.animal?.age ? titleCase(l.animal.age) : "—"}
                 </span>
               ),
             } satisfies ListingColumn,
@@ -1001,6 +1090,7 @@ export function MarketItemPage() {
       hasToolAttrs,
       hasMetalAttr,
       hasLiningAttr,
+      animalGroup,
       currentGameHours,
     ],
   );
@@ -1022,6 +1112,51 @@ export function MarketItemPage() {
     );
   }
   if (itemListings.length === 0) {
+    // A caught-animal species page whose current breed/age/sex selection matched
+    // nothing (but the species does have listings): keep the selector on-screen
+    // so the user can widen the selection instead of hitting a dead end.
+    if (isAnimal && animalGroup && animalBaseListings.length > 0) {
+      return (
+        <div className="space-y-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 -ml-2"
+            onClick={() =>
+              location.key !== "default" ? navigate(-1) : navigate("/market/listings")
+            }
+          >
+            <ArrowLeft className="size-4" /> Back
+          </Button>
+          <div className="flex items-center gap-3">
+            {itemImageUrl && (
+              <img
+                src={itemImageUrl}
+                alt={animalGroup.name}
+                className="size-24 shrink-0 rounded-md border bg-muted/30 object-contain p-1"
+                loading="lazy"
+              />
+            )}
+            <div>
+              <h1 className="text-2xl font-semibold">{animalGroup.name}</h1>
+              <p className="text-sm text-muted-foreground">animal · #{id}</p>
+            </div>
+          </div>
+          <AnimalSelectionCard
+            group={animalGroup}
+            selection={animalSel}
+            onChange={setAnimalSel}
+            listings={animalBaseListings}
+            images={itemImages}
+          />
+          <Card>
+            <CardContent className="py-4 text-sm text-muted-foreground">
+              No listings match this selection. Widen the breed, sex or age filters above.
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
     // Catalogue item with no auction activity yet: still surface its rarity and trader
     // availability so people can research it before hunting one down.
     if (currentEntry) {
@@ -1356,6 +1491,16 @@ export function MarketItemPage() {
 
       {chiselDesign && (
         <ChiselDesignCard chiselDesign={chiselDesign} chiselDescription={chiselDescription} />
+      )}
+
+      {animalGroup && (
+        <AnimalSelectionCard
+          group={animalGroup}
+          selection={animalSel}
+          onChange={setAnimalSel}
+          listings={animalBaseListings}
+          images={itemImages}
+        />
       )}
 
       {/* Time-range window (shared with the Insights page) */}

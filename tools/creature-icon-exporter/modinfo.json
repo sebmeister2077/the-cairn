@@ -1,0 +1,14 @@
+{
+	"type": "code",
+	"modid": "creatureiconexporter",
+	"name": "Creature Icon Exporter",
+	"description": "Client tool: exports transparent PNG icons of every creature for the market explorer. Adds the .creatureexport command.",
+	"authors": ["extract-VS-waypoints"],
+	"version": "1.0.0",
+	"side": "client",
+	"requiredonclient": true,
+	"requiredonserver": false,
+	"dependencies": {
+		"game": ""
+	}
+}
