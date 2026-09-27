@@ -148,6 +148,28 @@ def deposit_fee_for_hours(initial_duration_hours: Any) -> int:
 
 
 # --------------------------------------------------------------------------- #
+# Delivery fee
+# --------------------------------------------------------------------------- #
+# The delivery fee the buyer pays (in gears) mirrors
+# Vintagestory.GameContent.SystemAuction.DeliveryCostsByDistance: a nonlinear curve
+# ceil(3.5 * ln((distance - 200) / 10000 + 1) * mul), where `mul` is the server's
+# `auctionHouseDeliveryPriceMul` worldconfig (assumed default 1). The raw capture's own
+# `DeliveryFeeGears` field was computed with a wrong linear formula and is IGNORED — the
+# fee is recomputed here from the src->dst trader distance.
+AUCTION_DELIVERY_PRICE_MUL = 1.0
+
+
+def delivery_fee_for_distance(distance: Any) -> int:
+    """Delivery fee (in gears) for a src->dst trader distance, matching the game's
+    log curve. Returns 0 for a missing or short distance (short deliveries are free)."""
+    d = float(distance or 0)
+    if d <= 0:
+        return 0
+    fee = math.ceil(3.5 * math.log((d - 200) / 10000 + 1) * AUCTION_DELIVERY_PRICE_MUL)
+    return max(0, fee)
+
+
+# --------------------------------------------------------------------------- #
 # RawHex ItemStack decoding
 # --------------------------------------------------------------------------- #
 # Vintage Story TreeAttribute type ids (subset we can decode safely).
@@ -1363,12 +1385,15 @@ def build_records(
         src = (_to_relative(row.get("SrcX")), _to_relative(row.get("SrcZ")))
         dst = (_to_relative(row.get("DstX")), _to_relative(row.get("DstZ")))
         delivered = bool(row.get("WithDelivery"))
-        # Delivery fee the buyer paid (in gears) for delivered listings; 0 for
-        # pickup. Present on every row as `DeliveryFeeGears`.
-        delivery_fee = round(float(row.get("DeliveryFeeGears") or 0), 2)
         trade_distance = None
         if delivered and dst[0] and dst[1]:
             trade_distance = round(math.hypot(src[0] - dst[0], src[1] - dst[1]), 1)
+        # Delivery fee the buyer paid (in gears), recomputed from the trader-to-
+        # trader distance via the game's log curve. The raw `DeliveryFeeGears`
+        # field used a wrong linear formula and is deliberately ignored.
+        delivery_fee = float(
+            delivery_fee_for_distance(trade_distance) if delivered else 0
+        )
 
         # For a liquid the market unit is litres, not the container count, so its
         # quantity (and thus price-per-unit) is expressed per litre. Everything
