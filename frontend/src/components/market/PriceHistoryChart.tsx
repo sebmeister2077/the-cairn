@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { formatGears, percentileSorted } from "@/lib/auction";
 import { formatGameDate, formatListingDate } from "../../components/market/VirtualTable";
+import { createGameDateTick, makeRealDateLookup } from "./DualDateAxisTick";
 
 /** One sold sale: its in-game conclusion time, per-unit price, quantity, total
  * gears, and the real-world timestamp it was observed at (for the tooltip). */
@@ -73,7 +74,7 @@ export function PriceHistoryChart({
     onShowUnsoldChange ? onShowUnsoldChange(v) : setInternalShowExpired(v);
   const hasExpired = (expiredPoints?.length ?? 0) > 0;
 
-  const { rows, chartData, median, min, max, cap, clampedCount } = useMemo(() => {
+  const { chartData, median, min, max, cap, clampedCount } = useMemo(() => {
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
     const ma = movingAverage(scaled, 7);
@@ -111,7 +112,6 @@ export function PriceHistoryChart({
         : [];
     const chartData = [...rows, ...expiredRows].sort((a, b) => a.t - b.t);
     return {
-      rows,
       chartData,
       median: medianVal,
       min: sorted[0] ?? 0,
@@ -122,6 +122,11 @@ export function PriceHistoryChart({
   }, [points, expiredPoints, showExpired, perUnit, stackSize]);
 
   const unit = perUnit ? "unit" : "stack";
+
+  // Ticks sit at in-game times (`t`), not real timestamps, so snap each to the
+  // nearest recorded sale's real-world date for the second axis line.
+  const realDateAt = useMemo(() => makeRealDateLookup(chartData), [chartData]);
+  const renderXTick = useMemo(() => createGameDateTick(realDateAt), [realDateAt]);
 
   return (
     <div className="space-y-3">
@@ -163,13 +168,14 @@ export function PriceHistoryChart({
       </div>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 18, left: 4 }}>
+          <ComposedChart data={chartData} margin={{ top: 8, right: 12, bottom: 28, left: 4 }}>
             <XAxis
               dataKey="t"
               type="number"
               domain={["dataMin", "dataMax"]}
               scale="linear"
-              tick={{ fontSize: 11 }}
+              height={42}
+              tick={renderXTick}
               tickFormatter={(v: number) => formatGameDate(v)}
               minTickGap={40}
             />
@@ -240,12 +246,12 @@ export function PriceHistoryChart({
             )}
             <Scatter dataKey="price" fill="#6366f1" name="Sale" isAnimationActive={false} />
             <Line
-              data={rows}
               type="monotone"
               dataKey="ma"
               stroke="#f59e0b"
               strokeWidth={2}
               dot={false}
+              connectNulls
               name="7-sale avg"
               isAnimationActive={false}
             />

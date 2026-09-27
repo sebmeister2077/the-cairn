@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatGears } from "@/lib/auction";
 import { formatGameDate } from "./VirtualTable";
+import { createLabelRealDateTick } from "./DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
 
 // The metrics a viewer can chart over in-game time. `gears` flags currency
@@ -113,9 +114,13 @@ const AUCTION_LIMIT_GAME_HOURS =
 export function MarketTrendsChart({
   series,
   recordingStart,
+  realDateForGameHours,
 }: {
   series: MarketTimePoint[];
   recordingStart?: number | null;
+  /** Maps a bucket's in-game hours to a real-world date for the second x-axis
+   *  line; omit to show in-game dates only. */
+  realDateForGameHours?: (gameHours: number) => string | null;
 }) {
   const [metricKey, setMetricKey] = useState(METRICS[0].key);
   const [cumulative, setCumulative] = useState(false);
@@ -178,6 +183,15 @@ export function MarketTrendsChart({
   const fmt = (v: number) =>
     metric.pct ? `${(v * 100).toFixed(0)}%` : metric.gears ? formatGears(v) : v.toLocaleString();
 
+  // The x-axis plots the formatted `label`, so map each label back to its
+  // in-game hours to resolve the real-world date shown beneath it.
+  const renderXTick = useMemo(() => {
+    if (!realDateForGameHours) return undefined;
+    const labelToGameHours = new Map<string, number>();
+    for (const p of series) labelToGameHours.set(formatGameDate(p.gameHours), p.gameHours);
+    return createLabelRealDateTick(labelToGameHours, realDateForGameHours);
+  }, [series, realDateForGameHours]);
+
   if (series.length === 0) {
     return (
       <Card>
@@ -225,7 +239,7 @@ export function MarketTrendsChart({
 
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 18, left: 4 }}>
+            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 24, left: 4 }}>
               <defs>
                 <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={metric.color} stopOpacity={0.35} />
@@ -235,7 +249,8 @@ export function MarketTrendsChart({
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 10 }}
+                tick={renderXTick ?? { fontSize: 10 }}
+                height={renderXTick ? 40 : undefined}
                 interval="preserveStartEnd"
                 minTickGap={28}
               />

@@ -41,7 +41,7 @@ import type {
 
 /** In-game hours the clock advances per real day of play (1 in-game min = 2 real
  * sec → 720 in-game hours = 30 in-game days = one in-game month per real day). */
-const GAME_HOURS_PER_REAL_DAY = 720;
+export const GAME_HOURS_PER_REAL_DAY = 720;
 
 /** Base look-back for the adaptive "Smart" window. Busy items are priced from
  * roughly this recent span; rarely-traded items reach further back per item (see

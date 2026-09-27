@@ -59,6 +59,7 @@ import {
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
 import { formatGameDate } from "./VirtualTable";
+import { createLabelRealDateTick } from "./DualDateAxisTick";
 import { INSIGHTS_WINDOWS } from "@/hooks/useMarketInsights";
 
 const ELITE_SEG = {
@@ -158,9 +159,13 @@ function countAtLeast(players: WealthPlayer[], threshold: number): number {
 export function MarketWealthChart({
   wealth,
   recordingStart,
+  realDateForGameHours,
 }: {
   wealth?: WealthConcentration;
   recordingStart?: number | null;
+  /** Maps a bucket's in-game hours to a real-world date for the second x-axis
+   *  line; omit to show in-game dates only. */
+  realDateForGameHours?: (gameHours: number) => string | null;
 }) {
   const players = wealth?.players;
   const n = wealth?.traderCount ?? 0;
@@ -358,6 +363,16 @@ export function MarketWealthChart({
     }
     return formatGameDate(best.gameHours);
   }, [recordingStart, wealth?.timeSeries]);
+
+  // The over-time x-axis plots the formatted `label`, so map each label back to
+  // its in-game hours to resolve the real-world date shown beneath it.
+  const renderXTick = useMemo(() => {
+    const ts = wealth?.timeSeries;
+    if (!realDateForGameHours || !ts) return undefined;
+    const labelToGameHours = new Map<string, number>();
+    for (const p of ts) labelToGameHours.set(formatGameDate(p.gameHours), p.gameHours);
+    return createLabelRealDateTick(labelToGameHours, realDateForGameHours);
+  }, [wealth?.timeSeries, realDateForGameHours]);
 
   if (!wealth || !players || players.length === 0 || wealth.matchedGears <= 0 || !sums) {
     return null;
@@ -753,7 +768,7 @@ export function MarketWealthChart({
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
                     data={overTimeData}
-                    margin={{ top: 4, right: 8, bottom: 18, left: 4 }}
+                    margin={{ top: 4, right: 8, bottom: 24, left: 4 }}
                   >
                     <CartesianGrid
                       strokeDasharray="3 3"
@@ -762,7 +777,8 @@ export function MarketWealthChart({
                     />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 10 }}
+                      tick={renderXTick ?? { fontSize: 10 }}
+                      height={renderXTick ? 40 : undefined}
                       interval="preserveStartEnd"
                       minTickGap={28}
                     />
