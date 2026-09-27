@@ -449,6 +449,16 @@ export function formatGameDate(totalHours: number | null | undefined): string {
   return `Y${year} M${month} D${day}`;
 }
 
+// Smallest px width a column needs before the table should scroll rather than
+// squeeze: the min of a `minmax(a,b)` track, or a fixed `Nrem`/`Npx` value.
+function columnMinPx(width: string): number {
+  const rem = width.match(/([\d.]+)rem/);
+  if (rem) return parseFloat(rem[1]) * 16;
+  const px = width.match(/([\d.]+)px/);
+  if (px) return parseFloat(px[1]);
+  return 64;
+}
+
 export function VirtualTable({
   listings,
   columns,
@@ -462,50 +472,64 @@ export function VirtualTable({
     overscan: 12,
   });
   const gridTemplate = columns.map((c) => c.width).join(" ");
+  // Total width below which the table scrolls horizontally (column mins + the
+  // gap-2 between columns + the px-3 side padding). Keeps the header aligned
+  // with the body when there isn't room for every column.
+  const minWidth =
+    columns.reduce((sum, c) => sum + columnMinPx(c.width), 0) +
+    Math.max(0, columns.length - 1) * 8 +
+    24;
 
   return (
-    <div className="rounded-md border">
-      {/* Header */}
-      <div
-        className="grid items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground"
-        style={{ gridTemplateColumns: gridTemplate }}
-      >
-        {columns.map((c) => (
-          <span key={c.key} className={cn("min-w-0", c.align === "right" && "text-right")}>
-            {c.header}
-          </span>
-        ))}
-      </div>
+    // Horizontal scroll lives here so the header and body scroll together; the
+    // inner min-width forces the overflow when the columns don't all fit.
+    <div className="overflow-x-auto rounded-md border">
+      <div style={{ minWidth }}>
+        {/* Header */}
+        <div
+          className="grid items-center gap-2 border-b bg-muted/40 px-3 py-2 text-xs font-medium text-muted-foreground"
+          style={{ gridTemplateColumns: gridTemplate }}
+        >
+          {columns.map((c) => (
+            <span
+              key={c.key}
+              className={cn("min-w-0 truncate", c.align === "right" && "text-right")}
+            >
+              {c.header}
+            </span>
+          ))}
+        </div>
 
-      {/* Virtualized body */}
-      <div ref={parentRef} className={cn("overflow-auto", maxHeightClass)}>
-        <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
-          {virtualizer.getVirtualItems().map((vr) => {
-            const l = listings[vr.index];
-            return (
-              <div
-                key={l.auctionId}
-                className="absolute left-0 top-0 grid w-full items-center gap-2 border-b border-border/60 px-3 text-sm"
-                style={{
-                  height: `${vr.size}px`,
-                  transform: `translateY(${vr.start}px)`,
-                  gridTemplateColumns: gridTemplate,
-                }}
-              >
-                {columns.map((c) => (
-                  <span
-                    key={c.key}
-                    className={cn(
-                      "min-w-0 truncate",
-                      c.align === "right" && "text-right tabular-nums",
-                    )}
-                  >
-                    {c.cell(l)}
-                  </span>
-                ))}
-              </div>
-            );
-          })}
+        {/* Virtualized body (vertical scroll only; horizontal handled above) */}
+        <div ref={parentRef} className={cn("overflow-y-auto", maxHeightClass)}>
+          <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+            {virtualizer.getVirtualItems().map((vr) => {
+              const l = listings[vr.index];
+              return (
+                <div
+                  key={l.auctionId}
+                  className="absolute left-0 top-0 grid w-full items-center gap-2 border-b border-border/60 px-3 text-sm"
+                  style={{
+                    height: `${vr.size}px`,
+                    transform: `translateY(${vr.start}px)`,
+                    gridTemplateColumns: gridTemplate,
+                  }}
+                >
+                  {columns.map((c) => (
+                    <span
+                      key={c.key}
+                      className={cn(
+                        "min-w-0 truncate",
+                        c.align === "right" && "text-right tabular-nums",
+                      )}
+                    >
+                      {c.cell(l)}
+                    </span>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>

@@ -973,6 +973,19 @@ export function MarketItemPage() {
         ),
       },
       {
+        key: "realDate",
+        header: "Real date",
+        width: "6rem",
+        cell: (l) => (
+          <span
+            className="text-xs text-muted-foreground"
+            title="Real-world date this listing was first seen"
+          >
+            {formatListingDate(l.observedUtc ?? l.lastObservedUtc)}
+          </span>
+        ),
+      },
+      {
         key: "price",
         header: "Price",
         width: "6rem",
