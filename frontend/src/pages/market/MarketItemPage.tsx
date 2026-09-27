@@ -90,178 +90,13 @@ import { PriceHistoryChart, type SalePoint } from "@/components/market/PriceHist
 import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { patchAuctionFilters } from "@/store/slices/auctionFilters";
-
-/** Build a price histogram plus a fitted log-normal density curve. `markerValue`
- * is the price the dashed "fair price" reference line should snap to (the plain
- * median by default; the quantity-weighted price when that mode is active). */
-function buildHistogram(prices: number[], bins = 24, markerValue?: number) {
-  if (prices.length === 0) return { bars: [], median: 0, p25: 0, p75: 0, medianBucket: 0 };
-  const sorted = [...prices].sort((a, b) => a - b);
-  const median = percentileSorted(sorted, 0.5);
-  const p25 = percentileSorted(sorted, 0.25);
-  const p75 = percentileSorted(sorted, 0.75);
-  const min = sorted[0];
-  const max = sorted[sorted.length - 1];
-  const span = max - min || 1;
-  const width = span / bins;
-
-  // Pick a label precision fine enough that adjacent buckets don't round to
-  // the same value. Without this, sub-gear per-unit prices collapsed every
-  // bucket to "0" or "1", producing repeated x-axis labels on bars of
-  // different heights.
-  const decimals = width >= 1 ? 0 : Math.min(3, Math.max(1, Math.ceil(-Math.log10(width))));
-  const round = (v: number) => Number(v.toFixed(decimals));
-
-  const counts = new Array(bins).fill(0);
-  for (const p of prices) {
-    const idx = Math.min(bins - 1, Math.floor((p - min) / width));
-    counts[idx] += 1;
-  }
-
-  // Log-normal fit on positive prices.
-  const logs = prices.filter((p) => p > 0).map((p) => Math.log(p));
-  const mu = logs.reduce((s, x) => s + x, 0) / (logs.length || 1);
-  const variance = logs.reduce((s, x) => s + (x - mu) ** 2, 0) / (logs.length || 1);
-  const sigma = Math.sqrt(variance) || 1;
-  const total = prices.length;
-
-  const bars = counts.map((count, i) => {
-    const lo = min + i * width;
-    const center = lo + width / 2;
-    // Log-normal PDF scaled to expected count in this bin.
-    const pdf =
-      center > 0
-        ? (1 / (center * sigma * Math.sqrt(2 * Math.PI))) *
-          Math.exp(-((Math.log(center) - mu) ** 2) / (2 * sigma * sigma))
-        : 0;
-    return {
-      bucket: round(center),
-      count,
-      fit: Math.round(pdf * width * total),
-    };
-  });
-  // Snap the fair-price marker to the bucket that actually contains it so the
-  // reference line lands on a real category on the axis. Defaults to the median,
-  // but follows the active price mode when a weighted marker is supplied.
-  const marker = markerValue != null && Number.isFinite(markerValue) ? markerValue : median;
-  const medianIdx = Math.min(bins - 1, Math.max(0, Math.floor((marker - min) / width)));
-  const medianBucket = bars[medianIdx]?.bucket ?? round(marker);
-  return { bars, median, p25, p75, medianBucket };
-}
-
-/** Small colored pill showing whether the recent price is trending up/down. */
-function TrendBadge({
-  trend,
-  perUnit,
-  stackSize,
-}: {
-  trend: PriceTrend;
-  perUnit: boolean;
-  stackSize: number;
-}) {
-  const { direction, changePct } = trend;
-  const up = direction === "up";
-  const down = direction === "down";
-  const cls = up
-    ? "bg-emerald-500/15 text-emerald-600 border-emerald-500/30"
-    : down
-      ? "bg-red-500/15 text-red-600 border-red-500/30"
-      : "bg-muted text-muted-foreground border-input";
-  const arrow = up ? "▲" : down ? "▼" : "→";
-  const sign = changePct > 0 ? "+" : "";
-  const label = direction === "flat" ? "Stable price" : `${sign}${changePct}% recently`;
-  // The trend medians are per-unit (server-side). When the page is stack-priced
-  // the per-unit figures round below 1 gear and read poorly (e.g. 0.703/unit),
-  // so scale them to whole-stack prices to match the rest of the page. The
-  // percentage change is a ratio, so it's unaffected by the scaling.
-  const unit = perUnit ? "unit" : "stack";
-  const scale = perUnit ? 1 : stackSize || 1;
-  const fmt = (m: number) => (m * scale).toLocaleString(undefined, { maximumFractionDigits: 2 });
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-sm font-medium ${cls}`}
-    >
-      <span aria-hidden>{arrow}</span>
-      {label}
-      <Popover>
-        <PopoverTrigger
-          render={
-            <button
-              type="button"
-              aria-label="How is the price trend calculated?"
-              className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              <Info className="size-4" />
-            </button>
-          }
-        />
-        <PopoverContent className="max-w-xs">
-          <div className="space-y-1.5 text-left">
-            <p>
-              Compares this item&apos;s recent sale prices against older ones to show whether
-              it&apos;s getting more expensive (▲), cheaper (▼), or holding steady (→).
-            </p>
-            <p>
-              Timeframe: the most recent third of recorded sales (by real-world time) vs. the rest —
-              here the latest {trend.recentCount} sales (median {fmt(trend.recentMedian)}/{unit})
-              against the {trend.olderCount} older sales (median {fmt(trend.olderMedian)}/{unit}).
-            </p>
-            <p>Changes within ±8% are treated as “Stable price”.</p>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </span>
-  );
-}
-
-/** Amber caveat chip shown when the market never revealed a price ceiling for
- * an item: no expired listing was ever priced above the highest one that sold.
- * In that case the "fair price" is really a floor — buyers might have paid more
- * — so we flag that the true upper bound is unknown. */
-function UpperBoundUnknownBadge() {
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/15 px-2.5 py-1 text-sm font-medium text-amber-600">
-      <ArrowUp className="size-4" aria-hidden />
-      Upper price bound unknown
-      <Popover>
-        <PopoverTrigger
-          render={
-            <button
-              type="button"
-              aria-label="Why is the upper price bound unknown?"
-              className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              <Info className="size-4" />
-            </button>
-          }
-        />
-        <PopoverContent className="max-w-xs">
-          <div className="space-y-1.5 text-left">
-            <p>
-              No expired listing for this item was ever priced above the highest one that actually
-              sold.
-            </p>
-            <p>
-              That means the market never showed a price too high to sell at, so the true ceiling is
-              unknown — the fair price here is likely a{" "}
-              <span className="text-foreground">floor</span>, and buyers may have been willing to
-              pay more.
-            </p>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </span>
-  );
-}
-
-/** Selectable histogram resolutions. More bins = smaller price step, which
- * resolves tight clusters when an item has big price swings. */
-const BIN_OPTIONS = [
-  { label: "Coarse", bins: 12 },
-  { label: "Standard", bins: 24 },
-  { label: "Fine", bins: 48 },
-  { label: "Ultra-fine", bins: 96 },
-] as const;
+import { ItemVolumeOverTimeSection } from "@/components/market/item/ItemVolumeOverTimeSection";
+import { ItemPriceStatsSection } from "@/components/market/item/ItemPriceStatsSection";
+import { buildHistogram } from "@/lib/market/buildHistogram";
+import { ItemTrendBadge } from "@/components/market/item/ItemTrendBadge";
+import { UpperBoundUnknownBadge } from "@/components/market/item/UpperBoundUnknownBadge";
+import { MetalBlendedStatCard } from "@/components/market/item/MetalBlendedStatCard";
+import { ChiselDesignCard } from "@/components/market/item/ChiselDesignCard";
 
 // The 3D chiseled-block viewer pulls in three.js — lazy-load it so it never
 // weighs on the main market bundle.
@@ -325,8 +160,6 @@ export function MarketItemPage() {
   // Shared price mode (median vs quantity-weighted), synced across market pages.
   const [priceMode, setPriceMode] = useMarketPriceMode();
 
-  // Histogram bin count. Higher = finer price buckets (smaller per-unit step).
-  const [bins, setBins] = useState(24);
   // Volume-over-time series unit: total gears vs total units.
   const [volumeMode, setVolumeMode] = useState<"price" | "unit">("price");
   // Whether the expanded, hoverable price-history chart is shown under the title.
@@ -699,10 +532,6 @@ export function MarketItemPage() {
   // histogram keeps snapping to its own median (unchanged behaviour).
   const markerValue =
     priceMode === "weighted" ? (perUnitUseful ? weightedUnit : weightedStack) : null;
-  const hist = useMemo(
-    () => buildHistogram(chartPrices, bins, markerValue ?? undefined),
-    [chartPrices, bins, markerValue],
-  );
 
   const medianStackPrice = useMemo(() => {
     const prices = [...soldStackPrices].sort((a, b) => a - b);
@@ -1323,7 +1152,7 @@ export function MarketItemPage() {
                   }
                 />
               )}
-              <TrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
+              <ItemTrendBadge trend={trend} perUnit={perUnitUseful} stackSize={stackSize} />
               {salePoints.length >= 2 && (
                 <button
                   type="button"
@@ -1526,45 +1355,7 @@ export function MarketItemPage() {
       )}
 
       {chiselDesign && (
-        <Card>
-          <CardContent className="space-y-3 py-4">
-            <Suspense
-              fallback={
-                <div className="flex h-72 items-center justify-center gap-2 rounded-md border bg-muted/30 text-sm text-muted-foreground">
-                  <Spinner /> Loading 3D preview…
-                </div>
-              }
-            >
-              <ChiseledBlockViewer design={chiselDesign} />
-            </Suspense>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-              <span>Drag to rotate · scroll to zoom</span>
-              {chiselDesign.materials.length > 0 && (
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span>Materials:</span>
-                  {Array.from(new Set(chiselDesign.materials)).map((code) => (
-                    <span key={code} className="inline-flex items-center gap-1">
-                      <span
-                        className="inline-block size-3 rounded-sm border"
-                        style={{ background: chiselColor(code) }}
-                      />
-                      {code}
-                    </span>
-                  ))}
-                </span>
-              )}
-            </div>
-            {chiselDescription && (
-              <p className="whitespace-pre-line text-sm text-muted-foreground">
-                {chiselDescription}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Rendered from the block&apos;s chisel data. Colours approximate each material — the
-              exact in-game textures aren&apos;t available here.
-            </p>
-          </CardContent>
-        </Card>
+        <ChiselDesignCard chiselDesign={chiselDesign} chiselDescription={chiselDescription} />
       )}
 
       {/* Time-range window (shared with the Insights page) */}
@@ -1682,53 +1473,14 @@ export function MarketItemPage() {
           hint="Real-world time"
         />
         {isMetal && currentMetalUnits != null && (
-          <Card>
-            <CardContent className="py-4">
-              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                {perUnitUseful ? "Blended price / unit" : "Blended price / stack"}
-                <Popover>
-                  <PopoverTrigger
-                    render={
-                      <button
-                        type="button"
-                        aria-label="What is the blended fair price?"
-                        className="inline-flex cursor-pointer items-center rounded-full p-0.5 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-                      >
-                        <Info className="size-4" />
-                      </button>
-                    }
-                  />
-                  <PopoverContent className="max-w-xs">
-                    <div className="space-y-1.5 text-left">
-                      <p>
-                        Combines the sold prices of <span className="text-foreground">every</span>{" "}
-                        form of this metal — ore chunks, nuggets, metal bits, ingots — each reduced
-                        to its pure-metal content, then scaled back up to this item&apos;s content.
-                      </p>
-                      <p>
-                        Useful when one form has few sales of its own: the other forms fill in a
-                        content-consistent price. Crystallized chunks are excluded.
-                      </p>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="text-3xl font-semibold tabular-nums">
-                {perUnitUseful
-                  ? blendedFairUnit != null
-                    ? formatGears(blendedFairUnit)
-                    : "—"
-                  : blendedFairStack != null
-                    ? formatGears(blendedFairStack)
-                    : "—"}
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {blendedMetal
-                  ? `${priceModeWeighted ? "Qty-weighted" : "Median"} across ${blendedMetal.formsUsed} ${metalFamily?.label.toLowerCase()} form${blendedMetal.formsUsed === 1 ? "" : "s"}, by metal content`
-                  : "No sold data across forms in this range"}
-              </div>
-            </CardContent>
-          </Card>
+          <MetalBlendedStatCard
+            perUnitUseful={perUnitUseful}
+            blendedFairUnit={blendedFairUnit}
+            blendedFairStack={blendedFairStack}
+            blendedMetal={blendedMetal}
+            priceModeWeighted={priceModeWeighted}
+            metalFamily={metalFamily}
+          />
         )}
       </div>
 
@@ -1758,218 +1510,20 @@ export function MarketItemPage() {
         />
       )}
 
-      {ps && (
-        <Card>
-          <CardContent className="py-4">
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-              <h2 className="font-semibold">
-                {perUnitUseful
-                  ? `Price-per-${unitWord} distribution (sold)`
-                  : "Price-per-stack distribution (sold)"}
-              </h2>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-muted-foreground">
-                  p25 {hist.p25.toLocaleString()} · median {hist.median.toLocaleString()} · p75{" "}
-                  {hist.p75.toLocaleString()}
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted-foreground">Detail</span>
-                  <Select value={String(bins)} onValueChange={(v) => setBins(Number(v))}>
-                    <SelectTrigger className="h-7 w-30 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BIN_OPTIONS.map((o) => (
-                        <SelectItem key={o.bins} value={String(o.bins)}>
-                          {o.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={hist.bars} margin={{ top: 4, right: 8, bottom: 18, left: 4 }}>
-                  <XAxis
-                    dataKey="bucket"
-                    tick={{ fontSize: 11 }}
-                    label={{
-                      value: perUnitUseful
-                        ? `Price / ${unitWord} (gears)`
-                        : "Price / stack (gears)",
-                      position: "insideBottom",
-                      offset: -4,
-                      fontSize: 11,
-                    }}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    allowDecimals={false}
-                    label={{
-                      value: "Sold listings",
-                      angle: -90,
-                      position: "insideLeft",
-                      fontSize: 11,
-                    }}
-                  />
-                  <ChartTooltip
-                    contentStyle={{
-                      fontSize: 12,
-                      background: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 6,
-                    }}
-                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    labelFormatter={(label) =>
-                      `≈ ${Number(label).toLocaleString()} gears / ${perUnitUseful ? "unit" : "stack"}`
-                    }
-                    formatter={(value, name) => [
-                      value,
-                      name === "Log-normal fit" ? "Expected (fit)" : "Sold listings",
-                    ]}
-                  />
-                  <Bar dataKey="count" fill="#6366f1" name="Listings" radius={[2, 2, 0, 0]} />
-                  <Line
-                    dataKey="fit"
-                    stroke="#f59e0b"
-                    dot={false}
-                    strokeWidth={2}
-                    name="Log-normal fit"
-                  />
-                  <ReferenceLine x={hist.medianBucket} stroke="#10b981" strokeDasharray="4 4" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              {!perUnitUseful && (
-                <p>
-                  This item almost always sells as full stacks, so per-unit prices round below 1
-                  gear and aren&apos;t meaningful. The chart and fair price below use the{" "}
-                  <span className="text-foreground">whole-stack</span> price instead.
-                </p>
-              )}
-              <p>
-                Each bar counts how many <span className="text-foreground">sold</span> listings
-                traded at that price per {perUnitUseful ? "unit" : "stack"} (x-axis, in gears).
-                Taller bars are the more common prices — so the tall cluster shows what most players
-                actually paid.
-              </p>
-              <ul className="space-y-0.5">
-                <li className="flex items-center gap-2">
-                  <span className="inline-block h-2 w-3 shrink-0 rounded-sm bg-[#6366f1]" />
-                  <span>
-                    <span className="text-foreground">Listings</span> — number of real sales in each
-                    price bucket.
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="inline-block h-0.5 w-3 shrink-0 bg-[#f59e0b]" />
-                  <span>
-                    <span className="text-foreground">Log-normal fit</span> — the typical bell-like
-                    shape auction prices follow, smoothing out noise to show the overall trend.
-                  </span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className="inline-block h-0 w-3 shrink-0 border-t-2 border-dashed border-[#10b981]" />
-                  <span>
-                    <span className="text-foreground">
-                      Fair price ({priceModeWeighted ? "qty-weighted" : "median"})
-                    </span>{" "}
-                    —{" "}
-                    {priceModeWeighted
-                      ? "the quantity-weighted typical price, where bulk trades count for more."
-                      : "half of sales were cheaper and half more expensive."}{" "}
-                    Listings far left of this line are bargains; far right are overpriced.
-                  </span>
-                </li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <ItemPriceStatsSection
+        ps={ps}
+        perUnitUseful={perUnitUseful}
+        unitWord={unitWord}
+        priceModeWeighted={priceModeWeighted}
+        chartPrices={chartPrices}
+        markerValue={markerValue}
+      />
 
-      {/* Volume over time */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-            <div>
-              <h2 className="font-semibold">Volume over time</h2>
-              <p className="text-xs text-muted-foreground">
-                {volumeMode === "price" ? "Gears traded" : "Units sold"} per period, over the
-                selected range (by in-game sale date).
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant={volumeMode === "price" ? "default" : "outline"}
-                onClick={() => setVolumeMode("price")}
-              >
-                Gears
-              </Button>
-              <Button
-                size="sm"
-                variant={volumeMode === "unit" ? "default" : "outline"}
-                onClick={() => setVolumeMode("unit")}
-              >
-                Units
-              </Button>
-            </div>
-          </div>
-          {volumeSeries.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No sales in this range.
-            </p>
-          ) : (
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={volumeSeries} margin={{ top: 4, right: 8, bottom: 18, left: 4 }}>
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fontSize: 10 }}
-                    interval="preserveStartEnd"
-                    minTickGap={16}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11 }}
-                    allowDecimals={false}
-                    width={48}
-                    tickFormatter={(v: number) =>
-                      v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
-                    }
-                  />
-                  <ChartTooltip
-                    contentStyle={{
-                      fontSize: 12,
-                      background: "hsl(var(--popover))",
-                      color: "hsl(var(--popover-foreground))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 6,
-                    }}
-                    labelStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                    labelFormatter={(label) => `≈ ${label}`}
-                    formatter={(value) => [
-                      Number(value).toLocaleString(),
-                      volumeMode === "price" ? "Gears traded" : "Units sold",
-                    ]}
-                  />
-                  <Bar
-                    dataKey={volumeMode === "price" ? "gears" : "units"}
-                    fill="#6366f1"
-                    name={volumeMode === "price" ? "Gears traded" : "Units sold"}
-                    radius={[2, 2, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ItemVolumeOverTimeSection
+        volumeMode={volumeMode}
+        setVolumeMode={setVolumeMode}
+        volumeSeries={volumeSeries}
+      />
 
       <ItemConcentrationSection listings={windowListings} />
 
