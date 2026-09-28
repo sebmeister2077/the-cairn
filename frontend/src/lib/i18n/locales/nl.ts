@@ -51,6 +51,7 @@ const nl = {
                 general: "Algemeen",
                 singleplayer: "Singleplayer",
                 multiplayer: "Multiplayer",
+                tops: "TOPS",
                 tools: "Gereedschap",
                 manage: "Beheren",
                 usage: "Gebruik",
@@ -295,7 +296,7 @@ const nl = {
         cairnDefinition:
             "<strong><link>cairn</link></strong> <noun>(zelfstandig naamwoord)</noun>: wat je voorouders bouwden toen ze geen verf en borden meer hadden, maar toch de plek wilden markeren waar ze stierven voor een zwerver. We hebben de technologie een beetje opgewaardeerd.",
         intro:
-            "Een web‑toolkit voor het beheren van Vintage Story‑waypoints en kaartgegevens. Kies een categorie hierboven om te beginnen.",
+            "Een web‑toolkit voor het beheren van <link>Vintage Story TOPS</link>‑waypoints en kaartgegevens. Kies een categorie hierboven om te beginnen.",
         singleplayerTitle: "Singleplayer",
         extractDescription: "Haal waypoints uit je <code>.vcdbs</code> save‑bestand naar JSON.",
         importDescription: "Schrijf waypoints terug in een save‑bestand (toevoegen of vervangen).",

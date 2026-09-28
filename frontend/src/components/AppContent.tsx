@@ -60,6 +60,7 @@ import { AccountPage } from "@/pages/other/AccountPage";
 import { PreferencesPage } from "@/pages/other/PreferencesPage";
 import { PrivacyPage } from "@/pages/other/PrivacyPage";
 import { TermsPage } from "@/pages/other/TermsPage";
+import { NotFoundPage } from "@/pages/other/NotFoundPage";
 import { CookieConsent } from "@/components/CookieConsent";
 import { openCookieSettings } from "@/lib/consent";
 import { EventPromoBanner } from "@/components/EventPromoBanner";
@@ -96,7 +97,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
   // { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
-  { value: "/multiplayer", labelKey: "app.nav.categories.multiplayer" },
+  { value: "/multiplayer", labelKey: "app.nav.categories.tops" },
   { value: "/market", labelKey: "app.nav.categories.market" },
   { value: "/rarity", labelKey: "app.nav.categories.rarity" },
   { value: "/tools", labelKey: "app.nav.categories.tools" },
@@ -228,7 +229,7 @@ const subTabs: Subtabs = {
     // { value: "/multiplayer/identify", labelKey: "app.nav.subtabs.identifyMaps" },
     // { value: "/multiplayer/map-viewer", labelKey: "app.nav.subtabs.localMapViewer" },
     { value: "/multiplayer/tops-map", labelKey: "app.nav.subtabs.topsMapViewer" },
-    { value: "/multiplayer/contribute-map", labelKey: "app.nav.subtabs.contributeMap" },
+    // { value: "/multiplayer/contribute-map", labelKey: "app.nav.subtabs.contributeMap" },
     {
       value: "/multiplayer/contribute-tls",
       labelKey: "app.nav.subtabs.contributeTls",
@@ -871,7 +872,7 @@ export function AppContent() {
               send them straight there instead of greeting them with the
               project intro. The intro / tool overview is still reachable via
               the "General" tab in the nav. */}
-          <Route path="/" element={<Navigate to="/multiplayer/tops-map" replace />} />
+          <Route path="/" element={<Navigate to="/general" replace />} />
           <Route path="/singleplayer" element={<Navigate to="/singleplayer/extract" replace />} />
           <Route
             path="/singleplayer/extract"
@@ -1273,6 +1274,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Blog Post failed" resetKeys={[location.pathname]}>
                 <BlogPostPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="*"
+            element={
+              <ErrorBoundary title="Not found" resetKeys={[location.pathname]}>
+                <NotFoundPage />
               </ErrorBoundary>
             }
           />

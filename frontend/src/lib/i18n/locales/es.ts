@@ -49,6 +49,7 @@ const es = {
                 "general": "General",
                 "singleplayer": "Un jugador",
                 "multiplayer": "Multijugador",
+                "tops": "TOPS",
                 "tools": "Herramientas",
                 "manage": "Gestionar",
                 "usage": "Uso"
@@ -321,7 +322,7 @@ const es = {
         "tagline": "Tu atlas comunitario para Vintage Story",
         "disclaimer": "<strong>Proyecto no oficial de fans.</strong> Este sitio no está afiliado, respaldado ni patrocinado por Anego Studios, los desarrolladores de <em>Vintage Story</em>. \"Vintage Story\" es una marca comercial de Anego Studios.",
         "cairnDefinition": "<strong><link>Cairn</link></strong> <noun>(sustantivo)</noun>: lo que construyeron tus antepasados cuando se quedaron sin tinte y señales pero aún necesitaban marcar el lugar donde murieron a manos de un vagabundo. Hemos mejorado un poco la tecnología.",
-        "intro": "Cairn es un mapa web y un conjunto de herramientas impulsado por la comunidad para Vintage Story. Explora un mapa de servidor compartido y creado por los jugadores, planifica rutas a través de la red de translocadores, sigue el mercado de subastas y gestiona tus propios puntos de ruta, todo en un solo lugar. Elige una categoría arriba para empezar.",
+        "intro": "Cairn es un mapa web y un conjunto de herramientas impulsado por la comunidad para <link>Vintage Story TOPS</link>. Explora un mapa de servidor compartido y creado por los jugadores, planifica rutas a través de la red de translocadores, sigue el mercado de subastas y gestiona tus propios puntos de ruta, todo en un solo lugar. Elige una categoría arriba para empezar.",
         "featuresTitle": "Qué incluye",
         "features": {
             "mapTitle": "Mapa comunitario del servidor",

@@ -57,6 +57,7 @@ export const en = {
                 general: "General",
                 singleplayer: "Singleplayer",
                 multiplayer: "Multiplayer",
+                tops: "TOPS",
                 tools: "Tools",
                 manage: "Manage",
                 usage: "Usage",
@@ -155,6 +156,12 @@ export const en = {
                 "Cairn is free to use and always will be — it is an unofficial fan project run as a hobby. If you would like to help cover its hosting and running costs, you can leave a voluntary donation. It is entirely optional and never unlocks anything.",
         },
         skipToContent: "Skip to main content",
+        notFound: {
+            title: "Page not found",
+            description:
+                "The page you are looking for doesn't exist or may have moved.",
+            goHome: "Go to the map",
+        },
     },
     account: {
         noApiKey: {
@@ -364,7 +371,7 @@ export const en = {
         cairnDefinition:
             "<strong><link>cairn</link></strong> <noun>(noun)</noun>: what your ancestors built when they ran out of dye and signs but still needed to mark the spot where they died to a drifter. We've upgraded the tech a little.",
         intro:
-            "Cairn is a community-driven web map and toolkit for Vintage Story TOPS. Explore a shared, player-built server map, plan routes across the translocator network, keep an eye on the auction market, and manage your own waypoints — all in one place. Pick a category above to dive in.",
+            "Cairn is a community-driven web map and toolkit for <link>Vintage Story TOPS</link>. Explore a shared, player-built server map, plan routes across the translocator network, keep an eye on the auction market, and manage your own waypoints — all in one place. Pick a category above to dive in.",
         featuresTitle: "What's inside",
         features: {
             mapTitle: "Community server map",

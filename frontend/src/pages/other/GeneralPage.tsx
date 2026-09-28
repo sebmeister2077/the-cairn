@@ -68,7 +68,21 @@ export function GeneralPage() {
           <p className="text-sm font-medium text-muted-foreground">{t("generalPage.tagline")}</p>
         </CardHeader>
         <CardContent className="space-y-4 text-sm text-muted-foreground">
-          <p className="text-base text-foreground">{t("generalPage.intro")}</p>
+          <p className="text-base text-foreground">
+            <Trans
+              path="generalPage.intro"
+              components={{
+                link: (
+                  <a
+                    href="https://topsinfo.vintagestory.at"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline decoration-dotted underline-offset-2 hover:text-primary"
+                  />
+                ),
+              }}
+            />
+          </p>
           <div className="flex flex-wrap gap-2">
             {QUICK_LINKS.map(({ to, icon: Icon, labelKey }) => (
               <Button key={to} size="sm" variant="secondary" render={<NavLink to={to} />}>
@@ -150,7 +164,7 @@ export function GeneralPage() {
       )}
 
       {/* Detailed tool overview */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* <div className="grid gap-4 sm:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">{t("generalPage.singleplayerTitle")}</CardTitle>
@@ -231,7 +245,7 @@ export function GeneralPage() {
             </ul>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 }
