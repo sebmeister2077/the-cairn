@@ -193,6 +193,11 @@ def generate_presigned_upload_url(
     )
 
 
+def delete_object(key: str) -> None:
+    """Delete an object from R2. Idempotent — a missing key is not an error."""
+    _get_client().delete_object(Bucket=_bucket(), Key=key)
+
+
 # ---------------------------------------------------------------------------
 # Multipart upload helpers (browser → R2 direct, used for files >5 GiB which
 # exceed the single-PUT cap, and recommended for any large upload to get

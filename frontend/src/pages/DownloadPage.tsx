@@ -60,34 +60,43 @@ export function DownloadPage() {
 
           {!info.isLoading && !unavailable && info.data && (
             <>
-              <div className="rounded-md border px-3 py-2 text-sm">
-                <div className="font-medium">{info.data.filename}</div>
-                {fmtBytes(info.data.size_bytes) && (
-                  <div className="text-xs text-muted-foreground">
-                    {fmtBytes(info.data.size_bytes)}
-                  </div>
-                )}
-              </div>
-
-              <a
-                href={programDownloadUrl(token)}
-                download
-                className={buttonVariants({ className: "w-full" })}
-              >
-                <Download className="size-4" /> Download zip
-              </a>
+              {info.data.platforms.length === 0 ? (
+                <div className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
+                  No build is available for download yet. Check back shortly.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Choose your platform</div>
+                  {info.data.platforms.map((p) => (
+                    <a
+                      key={p.platform}
+                      href={programDownloadUrl(token, p.platform)}
+                      download
+                      className={buttonVariants({ variant: "outline", className: "w-full justify-between" })}
+                    >
+                      <span className="flex items-center gap-2">
+                        <Download className="size-4" /> {p.label}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {p.version_label ? `v${p.version_label}` : ""}
+                        {fmtBytes(p.size_bytes) ? ` · ${fmtBytes(p.size_bytes)}` : ""}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              )}
 
               <p className="text-xs text-muted-foreground">
                 {info.data.include_keys ? (
                   <>
                     The zip contains the program plus your personal <code>license.key</code> and{" "}
-                    <code>publish.key</code>. Keep all files together in one folder and run the exe
-                    — no extra setup needed.
+                    <code>publish.key</code>. Keep all files together in one folder and run the
+                    program — no extra setup needed.
                   </>
                 ) : (
                   <>
-                    This is a program update — the zip contains only the exe. Replace your existing{" "}
-                    VSProxy.exe and keep your current <code>license.key</code> and{" "}
+                    This is a program update — the zip contains only the program. Replace your
+                    existing VSProxy program and keep your current <code>license.key</code> and{" "}
                     <code>publish.key</code> in the same folder.
                   </>
                 )}{" "}

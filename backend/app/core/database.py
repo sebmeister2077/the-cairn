@@ -2479,31 +2479,43 @@ def dismiss_activation_flag(license_code: str, fingerprint: str) -> None:
 def create_program_build(
     r2_key: str,
     *,
+    platform: str,
     original_filename: Optional[str],
     version_label: Optional[str],
     size_bytes: Optional[int],
     sha256: Optional[str],
     uploaded_by: Optional[str],
 ) -> dict:
-    """Register an uploaded build and flag it as the sole current one."""
+    """Register an uploaded build and flag it as the current one for its platform.
+
+    Returns ``{"build": <new row>, "previous": <demoted row or None>}`` so the
+    caller can purge the superseded R2 object.
+    """
     from . import api_key_cache  # local import avoids a load-time cycle
 
     uploaded_by_id = api_key_cache.ensure_id(uploaded_by) if uploaded_by else None
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            # Demote any previous current build first so the partial unique
-            # index (one is_current=true row) is never violated.
+            # Demote the previous current build for THIS platform first so the
+            # partial unique index (one is_current per platform) is never
+            # violated, and capture it so its blob can be purged.
             cur.execute(
-                "UPDATE program_builds SET is_current = FALSE WHERE is_current"
+                """UPDATE program_builds SET is_current = FALSE
+                       WHERE is_current AND platform = %s
+                   RETURNING *""",
+                (platform,),
             )
+            prev_row = cur.fetchone()
+            previous = dict(prev_row) if prev_row else None
             cur.execute(
                 """INSERT INTO program_builds
-                       (r2_key, original_filename, version_label, size_bytes,
-                        sha256, uploaded_by_key_id, is_current)
-                   VALUES (%s, %s, %s, %s, %s, %s, TRUE)
+                       (r2_key, platform, original_filename, version_label,
+                        size_bytes, sha256, uploaded_by_key_id, is_current)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, TRUE)
                    RETURNING *""",
                 (
                     r2_key,
+                    platform,
                     original_filename,
                     version_label,
                     size_bytes,
@@ -2511,17 +2523,75 @@ def create_program_build(
                     str(uploaded_by_id) if uploaded_by_id else None,
                 ),
             )
-            return dict(cur.fetchone())
+            return {"build": dict(cur.fetchone()), "previous": previous}
 
 
-def get_current_program_build() -> Optional[dict]:
+def get_current_program_build(platform: Optional[str] = None) -> Optional[dict]:
+    """Current build for a platform. When ``platform`` is None, returns the
+    most recently uploaded current build (any platform) for legacy callers."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            if platform is None:
+                cur.execute(
+                    "SELECT * FROM program_builds WHERE is_current "
+                    "ORDER BY uploaded_at DESC LIMIT 1"
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM program_builds WHERE is_current AND platform = %s "
+                    "LIMIT 1",
+                    (platform,),
+                )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def list_current_program_builds() -> List[dict]:
+    """Every platform's current build (newest first)."""
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                "SELECT * FROM program_builds WHERE is_current LIMIT 1"
+                "SELECT * FROM program_builds WHERE is_current "
+                "ORDER BY platform ASC"
             )
-            row = cur.fetchone()
-            return dict(row) if row else None
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_program_builds(
+    *, platform: Optional[str] = None, offset: int = 0, limit: int = 50
+) -> dict:
+    """Paginated build history (audit trail), newest first. Returns
+    ``{"items": [...], "total": N}``."""
+    where = ""
+    params: List[object] = []
+    if platform:
+        where = "WHERE platform = %s"
+        params.append(platform)
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"""SELECT *, COUNT(*) OVER() AS _total
+                        FROM program_builds
+                        {where}
+                        ORDER BY uploaded_at DESC
+                        LIMIT %s OFFSET %s""",
+                (*params, int(limit), int(offset)),
+            )
+            rows = [dict(r) for r in cur.fetchall()]
+    total = int(rows[0].pop("_total")) if rows else 0
+    for r in rows:
+        r.pop("_total", None)
+    return {"items": rows, "total": total}
+
+
+def mark_program_build_r2_deleted(build_id: int) -> None:
+    """Flag a build's R2 blob as purged (the audit row is kept)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE program_builds SET r2_deleted = TRUE WHERE id = %s",
+                (build_id,),
+            )
 
 
 def get_program_build(build_id: int) -> Optional[dict]:
@@ -2727,6 +2797,42 @@ def record_program_download_redemption(
                    VALUES (%s, %s, %s, %s, %s)""",
                 (link_id, ip_hash, user_agent, success, failure_reason),
             )
+
+
+# ---------------------------------------------------------------------------
+# Program settings (key/value): VSProxy client version gate + messages.
+# ---------------------------------------------------------------------------
+def get_program_settings() -> dict:
+    """All program settings as a ``{key: value}`` dict."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT key, value FROM program_settings")
+            return {k: v for (k, v) in cur.fetchall()}
+
+
+def set_program_settings(values: dict, *, updated_by: Optional[str] = None) -> dict:
+    """Upsert several settings at once. A None/empty value clears the key.
+    Returns the full settings dict afterwards."""
+    from . import api_key_cache  # local import avoids a load-time cycle
+
+    updated_by_id = api_key_cache.ensure_id(updated_by) if updated_by else None
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            for key, value in values.items():
+                v = (value or "").strip() or None
+                if v is None:
+                    cur.execute("DELETE FROM program_settings WHERE key = %s", (key,))
+                else:
+                    cur.execute(
+                        """INSERT INTO program_settings (key, value, updated_by_key_id)
+                               VALUES (%s, %s, %s)
+                           ON CONFLICT (key) DO UPDATE
+                               SET value = EXCLUDED.value,
+                                   updated_at = now(),
+                                   updated_by_key_id = EXCLUDED.updated_by_key_id""",
+                        (key, v, str(updated_by_id) if updated_by_id else None),
+                    )
+    return get_program_settings()
 
 
 # ---------------------------------------------------------------------------

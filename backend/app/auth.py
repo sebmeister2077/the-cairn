@@ -192,6 +192,22 @@ async def require_admin_keyonly(
     return x_api_key
 
 
+async def require_publish_token(
+    x_publish_token: str = Header(..., alias="X-Publish-Token"),
+) -> str:
+    """Dedicated machine credential for the headless build-publish endpoints
+    (``deploy/publish.ps1`` → program build upload/finalize).
+
+    Kept separate from the passkey-gated admin key so a CI/CLI publisher never
+    needs a WebAuthn session, and so this narrow capability can be rotated
+    independently of the admin key.
+    """
+    token = (settings.PROGRAM_PUBLISH_TOKEN or "").strip()
+    if not token or not hmac.compare_digest(x_publish_token, token):
+        raise HTTPException(status_code=403, detail="Invalid publish token")
+    return x_publish_token
+
+
 def is_admin_key(api_key: str) -> bool:
     """Return True if ``api_key`` is the env-var admin key."""
     return bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY

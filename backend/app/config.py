@@ -85,6 +85,34 @@ class Settings:
         "LICENSE_SIGNING_PRIVATE_KEY", ""
     ).replace("\\n", "\n")
 
+    # VSProxy client version gating + auto-update advertisement. All optional;
+    # empty values disable the corresponding behaviour. These are folded into the
+    # signed license token so the client can trust them (and enforce them offline
+    # from its cached token). Change them any time via the Railway dashboard —
+    # they take effect on the next client activation/validate.
+    #   * MIN_SUPPORTED_VERSION: clients strictly below this refuse to start.
+    #   * LATEST_VERSION: clients below this are offered an (optional) update.
+    #   * UPDATE_URL_WIN/LINUX: direct download of the published single-file build
+    #     for that platform; the client picks by the platform it reports.
+    #   * UPDATE_MESSAGE / BLOCKED_MESSAGE: human text shown on update / block.
+    VSPROXY_MIN_SUPPORTED_VERSION: str = os.environ.get(
+        "VSPROXY_MIN_SUPPORTED_VERSION", ""
+    ).strip()
+    VSPROXY_LATEST_VERSION: str = os.environ.get("VSPROXY_LATEST_VERSION", "").strip()
+    VSPROXY_UPDATE_URL_WIN: str = os.environ.get("VSPROXY_UPDATE_URL_WIN", "").strip()
+    VSPROXY_UPDATE_URL_LINUX: str = os.environ.get(
+        "VSPROXY_UPDATE_URL_LINUX", ""
+    ).strip()
+    VSPROXY_UPDATE_MESSAGE: str = os.environ.get("VSPROXY_UPDATE_MESSAGE", "").strip()
+    VSPROXY_BLOCKED_MESSAGE: str = os.environ.get(
+        "VSPROXY_BLOCKED_MESSAGE", ""
+    ).strip()
+
+    # Dedicated machine secret for the headless build-publish endpoints
+    # (deploy/publish.ps1). Separate from ADMIN_API_KEY so a CI/CLI publisher
+    # never needs a WebAuthn session and can be rotated independently.
+    PROGRAM_PUBLISH_TOKEN: str = os.environ.get("PROGRAM_PUBLISH_TOKEN", "").strip()
+
     # Per-contribution archived .db retention (days). Recent Contributions
     # grid previews are kept forever; these values govern only the
     # ``archived/<id>.db`` lifetime in R2 (used to power per-contribution

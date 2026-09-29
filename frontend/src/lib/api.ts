@@ -2182,13 +2182,33 @@ export async function adminDismissActivationFlag(
 // ---------------------------------------------------------------------------
 // Program download links (admin: distribute a pre-configured VSProxy build)
 // ---------------------------------------------------------------------------
+export type ProgramPlatform = "win-x64" | "linux-x64";
+
 export interface ProgramBuild {
     id: number;
+    platform: ProgramPlatform | string | null;
     original_filename: string | null;
     version_label: string | null;
     size_bytes: number | null;
     sha256: string | null;
     uploaded_at: string | null;
+    is_current: boolean;
+    r2_deleted: boolean;
+}
+
+export interface ProgramVersionGate {
+    min_supported_version: string;
+    blocked_message: string;
+    update_message: string;
+    latest: Record<
+        string,
+        {
+            version_label: string | null;
+            size_bytes: number | null;
+            uploaded_at: string | null;
+            update_url: string;
+        } | null
+    >;
 }
 
 export interface ProgramDownloadLink {
@@ -2222,52 +2242,45 @@ export interface ProgramDownloadRedemption {
     failure_reason: string | null;
 }
 
-export async function adminGetProgramBuild(): Promise<{ build: ProgramBuild | null }> {
+/** Current build for each platform (keys: "win-x64", "linux-x64"). */
+export async function adminGetProgramBuilds(): Promise<{
+    builds: Record<string, ProgramBuild | null>;
+}> {
     const res = await fetch(`${API_BASE}/admin/program-downloads/build`, {
         headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
-export async function adminProgramBuildUploadUrl(filename: string): Promise<{
-    token: string;
-    r2_key: string;
-    upload_url: string;
-    content_type: string;
-    expires_in: number;
-}> {
-    const res = await fetch(`${API_BASE}/admin/program-downloads/build/upload-url`, {
-        method: "POST",
-        headers: authHeaders({ "Content-Type": "application/json" }),
-        body: JSON.stringify({ filename }),
+/** Paginated build history (audit trail). */
+export async function adminListProgramBuilds(
+    params: { platform?: string; offset?: number; limit?: number } = {},
+): Promise<{ builds: ProgramBuild[]; total: number; next_offset: number | null }> {
+    const search = new URLSearchParams();
+    if (params.platform) search.set("platform", params.platform);
+    search.set("offset", String(params.offset ?? 0));
+    search.set("limit", String(params.limit ?? 50));
+    const res = await fetch(
+        `${API_BASE}/admin/program-downloads/builds?${search.toString()}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminGetProgramVersionGate(): Promise<ProgramVersionGate> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/version-gate`, {
+        headers: authHeaders(),
     });
     return (await handleResponse(res)).json();
 }
 
-/** PUT the build bytes straight to R2 using the presigned URL (no auth header). */
-export async function uploadProgramBuildToR2(
-    uploadUrl: string,
-    contentType: string,
-    file: File | Blob,
-): Promise<void> {
-    const res = await fetch(uploadUrl, {
+export async function adminSetProgramVersionGate(data: {
+    min_supported_version?: string | null;
+    blocked_message?: string | null;
+    update_message?: string | null;
+}): Promise<ProgramVersionGate> {
+    const res = await fetch(`${API_BASE}/admin/program-downloads/version-gate`, {
         method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: file,
-    });
-    if (!res.ok) {
-        throw new Error(`Upload failed (${res.status})`);
-    }
-}
-
-export async function adminProgramBuildFinalize(data: {
-    r2_key: string;
-    original_filename?: string | null;
-    version_label?: string | null;
-    sha256?: string | null;
-}): Promise<{ build: ProgramBuild }> {
-    const res = await fetch(`${API_BASE}/admin/program-downloads/build/finalize`, {
-        method: "POST",
         headers: authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(data),
     });
@@ -2336,13 +2349,20 @@ export async function adminRevokeProgramDownloadLink(
     return (await handleResponse(res)).json();
 }
 
+export interface ProgramDownloadPlatform {
+    platform: string;
+    label: string;
+    filename: string;
+    size_bytes: number | null;
+    version_label: string | null;
+}
+
 export interface ProgramDownloadInfo {
     label: string | null;
     status: "active" | "expired" | "revoked";
     expires_at: string | null;
-    filename: string;
-    size_bytes: number | null;
     include_keys: boolean;
+    platforms: ProgramDownloadPlatform[];
 }
 
 /** Public (no auth): metadata for the /download/<token> landing page. */
@@ -2355,9 +2375,9 @@ export async function getProgramDownloadInfo(
     return (await handleResponse(res)).json();
 }
 
-/** Public: the direct URL that streams the zip (browser navigates here). */
-export function programDownloadUrl(token: string): string {
-    return `${API_BASE}/public/program-download/${encodeURIComponent(token)}`;
+/** Public: the direct URL that streams the zip for a platform (browser navigates here). */
+export function programDownloadUrl(token: string, platform: string): string {
+    return `${API_BASE}/public/program-download/${encodeURIComponent(token)}?platform=${encodeURIComponent(platform)}`;
 }
 
 /**

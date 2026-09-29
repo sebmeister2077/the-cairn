@@ -24,6 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from ..auth import require_admin
+from ..config import settings
 from ..core import database as db
 from ..core import license_signing
 from .. import auth as _auth
@@ -46,7 +47,7 @@ def _iso(dt: Optional[datetime]) -> Optional[str]:
     return dt.astimezone(timezone.utc).isoformat()
 
 
-def _sign_token(license_row: dict, fingerprint: str) -> dict:
+def _sign_token(license_row: dict, fingerprint: str, platform: Optional[str] = None) -> dict:
     now = datetime.now(timezone.utc)
     token_expiry = now + _TOKEN_GRACE
     lic_expiry = license_row.get("expires_at")
@@ -62,12 +63,66 @@ def _sign_token(license_row: dict, fingerprint: str) -> dict:
         "token_expires_at": _iso(token_expiry),
         "license_expires_at": _iso(lic_expiry) if isinstance(lic_expiry, datetime) else None,
     }
+    # Version-gate + auto-update advertisement (all optional). Signed into the
+    # token so the client trusts and can enforce them even offline.
+    _add_version_policy(payload, platform)
     try:
         signed = license_signing.sign_payload(payload)
     except license_signing.LicenseSigningUnavailable as exc:
         logger.error("License signing unavailable: %s", exc)
         raise HTTPException(status_code=503, detail="License signing not configured")
     return signed
+
+
+def _update_url_for(platform: Optional[str]) -> Optional[str]:
+    p = (platform or "").lower()
+    if "linux" in p:
+        return settings.VSPROXY_UPDATE_URL_LINUX or None
+    # Default to the Windows build for win-* and any unrecognised platform.
+    return settings.VSPROXY_UPDATE_URL_WIN or None
+
+
+def _add_version_policy(payload: dict, platform: Optional[str]) -> None:
+    # Admin-editable gate lives in the DB (program_settings); env vars are a
+    # fallback so a fresh deploy still works before anything is configured.
+    stored: dict = {}
+    try:
+        stored = db.get_program_settings()
+    except Exception:
+        logger.exception("failed to read program_settings")
+
+    min_v = stored.get("min_supported_version") or settings.VSPROXY_MIN_SUPPORTED_VERSION
+    blocked_msg = stored.get("blocked_message") or settings.VSPROXY_BLOCKED_MESSAGE
+    update_msg = stored.get("update_message") or settings.VSPROXY_UPDATE_MESSAGE
+    if min_v:
+        payload["min_supported_version"] = min_v
+    if blocked_msg:
+        payload["blocked_message"] = blocked_msg
+    if update_msg:
+        payload["update_message"] = update_msg
+
+    # latest_version + update_url are auto-derived from the current published
+    # build for this platform, so publishing a new build both bumps the update
+    # prompt and keeps the download URL valid with no extra admin step.
+    build = None
+    try:
+        if platform:
+            build = db.get_current_program_build(platform)
+    except Exception:
+        logger.exception("failed to read current program build")
+
+    latest = (build or {}).get("version_label")
+    if latest:
+        payload["latest_version"] = latest
+
+    if build and settings.PUBLIC_BASE_URL:
+        payload["update_url"] = (
+            f"{settings.PUBLIC_BASE_URL}/api/public/program/latest/{platform}"
+        )
+    else:
+        env_url = _update_url_for(platform)
+        if env_url:
+            payload["update_url"] = env_url
 
 
 def _check_license(license_code: str) -> dict:
@@ -88,6 +143,9 @@ class ActivateRequest(BaseModel):
     license_code: str = Field(..., min_length=8, max_length=200)
     fingerprint: str = Field(..., min_length=8, max_length=200)
     app_version: Optional[str] = Field(None, max_length=64)
+    # Runtime identifier the client runs on (e.g. "win-x64", "linux-x64"); used
+    # to hand back the matching auto-update download URL.
+    platform: Optional[str] = Field(None, max_length=64)
     # Effective runtime parameters (CLI flags / config, minus licensing secrets).
     parameters: Optional[dict] = None
 
@@ -124,7 +182,7 @@ async def activate(req: ActivateRequest, request: Request) -> dict:
     db.upsert_activation(
         req.license_code, req.fingerprint, req.app_version, req.parameters
     )
-    return _sign_token(lic, req.fingerprint)
+    return _sign_token(lic, req.fingerprint, req.platform)
 
 
 @router.post("/license/validate")
@@ -138,7 +196,7 @@ async def validate(req: ActivateRequest) -> dict:
     db.upsert_activation(
         req.license_code, req.fingerprint, req.app_version, req.parameters
     )
-    return _sign_token(lic, req.fingerprint)
+    return _sign_token(lic, req.fingerprint, req.platform)
 
 
 # --------------------------------------------------------------------------

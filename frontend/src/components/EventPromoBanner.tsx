@@ -217,7 +217,7 @@ export function EventPromoBanner() {
             }
           />
           <p className="text-center text-xs italic text-muted-foreground">
-            Unofficial community event — not affiliated with Anego Studios.
+            Unofficial community event
           </p>
         </DialogContent>
       </Dialog>

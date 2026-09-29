@@ -28,7 +28,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from ..auth import require_admin
+from ..auth import require_admin, require_publish_token
 from ..config import settings
 from ..core import accounts_db
 from ..core import database as db
@@ -47,6 +47,21 @@ _UPLOAD_URL_TTL_SECONDS = 15 * 60
 # Hard ceiling on the declared build size (self-contained single-file exe is
 # well under this; guards against a bogus finalize registering a huge object).
 _MAX_BUILD_BYTES = 300 * 1024 * 1024
+# Platforms we publish a build for. Values match the .NET runtime identifiers
+# the publish script and the VSProxy client report.
+_ALLOWED_PLATFORMS = ("win-x64", "linux-x64")
+# Editable version-gate keys held in the program_settings table.
+_GATE_KEYS = ("min_supported_version", "blocked_message", "update_message")
+
+
+def _default_filename(platform: str) -> str:
+    return "VSProxy.exe" if platform.startswith("win") else "VSProxy"
+
+
+def _latest_raw_url(request: Request, platform: str) -> str:
+    """Public, unauthenticated raw-exe URL the VSProxy auto-updater downloads."""
+    base = settings.PUBLIC_BASE_URL or str(request.base_url).rstrip("/")
+    return f"{base}/api/public/program/latest/{platform}"
 
 
 def _iso(dt: Optional[datetime]) -> Optional[str]:
@@ -72,11 +87,14 @@ def _serialize_build(build: Optional[dict]) -> Optional[dict]:
         return None
     return {
         "id": build["id"],
+        "platform": build.get("platform"),
         "original_filename": build.get("original_filename"),
         "version_label": build.get("version_label"),
         "size_bytes": build.get("size_bytes"),
         "sha256": build.get("sha256"),
         "uploaded_at": _iso(build.get("uploaded_at")),
+        "is_current": bool(build.get("is_current")),
+        "r2_deleted": bool(build.get("r2_deleted")),
     }
 
 
@@ -125,15 +143,18 @@ def _serialize_link(
 # ---------------------------------------------------------------------------
 class BuildUploadUrlBody(BaseModel):
     filename: str = Field(..., max_length=260)
+    platform: str = Field("win-x64", max_length=32)
 
 
 @router.post("/build/upload-url")
 async def create_build_upload_url(
-    body: BuildUploadUrlBody, _admin: str = Depends(require_admin)
+    body: BuildUploadUrlBody, _pub: str = Depends(require_publish_token)
 ):
+    if body.platform not in _ALLOWED_PLATFORMS:
+        raise HTTPException(status_code=400, detail="invalid_platform")
     # Opaque, unguessable object key so a leaked URL can't enumerate builds.
     token = secrets.token_urlsafe(16)
-    r2_key = f"program/builds/{token}.exe"
+    r2_key = f"program/builds/{body.platform}/{token}.bin"
     try:
         upload_url = r2_storage.generate_presigned_upload_url(
             r2_key,
@@ -154,6 +175,7 @@ async def create_build_upload_url(
 
 class BuildFinalizeBody(BaseModel):
     r2_key: str = Field(..., max_length=300)
+    platform: str = Field("win-x64", max_length=32)
     original_filename: Optional[str] = Field(None, max_length=260)
     version_label: Optional[str] = Field(None, max_length=100)
     sha256: Optional[str] = Field(None, max_length=64)
@@ -161,11 +183,13 @@ class BuildFinalizeBody(BaseModel):
 
 @router.post("/build/finalize")
 async def finalize_build(
-    body: BuildFinalizeBody, admin_key: str = Depends(require_admin)
+    body: BuildFinalizeBody, _pub: str = Depends(require_publish_token)
 ):
+    if body.platform not in _ALLOWED_PLATFORMS:
+        raise HTTPException(status_code=400, detail="invalid_platform")
     # Only accept keys we minted, to stop a finalize pointing at an arbitrary
     # object elsewhere in the bucket.
-    if not body.r2_key.startswith("program/builds/"):
+    if not body.r2_key.startswith(f"program/builds/{body.platform}/"):
         raise HTTPException(status_code=400, detail="invalid_r2_key")
     try:
         size_bytes = r2_storage.get_object_size(body.r2_key)
@@ -176,31 +200,131 @@ async def finalize_build(
     if size_bytes > _MAX_BUILD_BYTES:
         raise HTTPException(status_code=413, detail="upload_too_large")
 
-    build = db.create_program_build(
+    result = db.create_program_build(
         body.r2_key,
-        original_filename=(body.original_filename or "VSProxy.exe"),
+        platform=body.platform,
+        original_filename=(body.original_filename or _default_filename(body.platform)),
         version_label=body.version_label,
         size_bytes=size_bytes,
         sha256=body.sha256,
-        uploaded_by=admin_key,
+        uploaded_by=None,
     )
+    build = result["build"]
+    previous = result["previous"]
+    # Purge the superseded blob from R2 but keep its audit row (with size +
+    # sha256) so a compromised version stays traceable.
+    if previous and previous.get("r2_key") and not previous.get("r2_deleted"):
+        try:
+            r2_storage.delete_object(previous["r2_key"])
+            db.mark_program_build_r2_deleted(previous["id"])
+        except Exception:
+            logger.exception(
+                "program build: failed to purge superseded blob %s",
+                previous.get("r2_key"),
+            )
+
+    # Actor is the publish token (a machine), not an admin key → null actor.
     accounts_db.audit_log(
-        admin_key,
+        "",
         "program.build_upload",
         target=body.r2_key,
         metadata={
             "build_id": build["id"],
+            "platform": body.platform,
             "filename": body.original_filename,
             "version": body.version_label,
             "size_bytes": size_bytes,
+            "superseded_build_id": (previous or {}).get("id"),
         },
+        admin_key_id="",
     )
     return {"build": _serialize_build(build)}
 
 
 @router.get("/build")
-async def get_current_build(_admin: str = Depends(require_admin)):
-    return {"build": _serialize_build(db.get_current_program_build())}
+async def get_current_builds(_admin: str = Depends(require_admin)):
+    """Current build per platform, keyed by runtime identifier."""
+    current = {b.get("platform"): b for b in db.list_current_program_builds()}
+    return {
+        "builds": {
+            p: _serialize_build(current.get(p)) for p in _ALLOWED_PLATFORMS
+        }
+    }
+
+
+@router.get("/builds")
+async def list_build_history(
+    platform: Optional[str] = Query(None, max_length=32),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+    _admin: str = Depends(require_admin),
+):
+    if platform is not None and platform not in _ALLOWED_PLATFORMS:
+        raise HTTPException(status_code=400, detail="invalid_platform")
+    result = db.list_program_builds(platform=platform, offset=offset, limit=limit)
+    items = [_serialize_build(b) for b in result["items"]]
+    total = result["total"]
+    next_offset = offset + len(items) if offset + len(items) < total else None
+    return {"builds": items, "total": total, "next_offset": next_offset}
+
+
+# ---------------------------------------------------------------------------
+# Version gate (client min-version block + auto-update messages)
+# ---------------------------------------------------------------------------
+class VersionGateBody(BaseModel):
+    min_supported_version: Optional[str] = Field(None, max_length=64)
+    blocked_message: Optional[str] = Field(None, max_length=500)
+    update_message: Optional[str] = Field(None, max_length=500)
+
+
+def _serialize_gate(request: Request) -> dict:
+    stored = db.get_program_settings()
+    current = {b.get("platform"): b for b in db.list_current_program_builds()}
+    return {
+        "min_supported_version": stored.get("min_supported_version") or "",
+        "blocked_message": stored.get("blocked_message") or "",
+        "update_message": stored.get("update_message") or "",
+        # Read-only, auto-derived from the latest published build per platform.
+        "latest": {
+            p: (
+                {
+                    "version_label": current[p].get("version_label"),
+                    "size_bytes": current[p].get("size_bytes"),
+                    "uploaded_at": _iso(current[p].get("uploaded_at")),
+                    "update_url": _latest_raw_url(request, p),
+                }
+                if p in current
+                else None
+            )
+            for p in _ALLOWED_PLATFORMS
+        },
+    }
+
+
+@router.get("/version-gate")
+async def get_version_gate(request: Request, _admin: str = Depends(require_admin)):
+    return _serialize_gate(request)
+
+
+@router.put("/version-gate")
+async def set_version_gate(
+    body: VersionGateBody, request: Request, admin_key: str = Depends(require_admin)
+):
+    db.set_program_settings(
+        {
+            "min_supported_version": body.min_supported_version,
+            "blocked_message": body.blocked_message,
+            "update_message": body.update_message,
+        },
+        updated_by=admin_key,
+    )
+    accounts_db.audit_log(
+        admin_key,
+        "program.set_version_gate",
+        target="version-gate",
+        metadata={"min_supported_version": (body.min_supported_version or "").strip()},
+    )
+    return _serialize_gate(request)
 
 
 # ---------------------------------------------------------------------------
@@ -220,13 +344,12 @@ class CreateLinkBody(BaseModel):
 async def create_download_link(
     body: CreateLinkBody, request: Request, admin_key: str = Depends(require_admin)
 ):
-    build = db.get_current_program_build()
-    if build is None:
+    if not db.list_current_program_builds():
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "no_build",
-                "message": "Upload a VSProxy build before generating links.",
+                "message": "Publish a VSProxy build before generating links.",
             },
         )
 
@@ -258,13 +381,15 @@ async def create_download_link(
             )
 
     # 3. Record the link. Its expiry tracks the license expiry (may be None).
+    #    Links are platform-agnostic — the recipient chooses win/linux at
+    #    download time and always gets that platform's current build.
     token = secrets.token_urlsafe(24)
     link = db.create_program_download_link(
         token=token,
         label=label,
         license_code=license_code,
         api_key=api_key,
-        build_id=build["id"],
+        build_id=None,
         max_activations=body.max_activations,
         expires_at=body.expires_at,
         notes=body.notes,
@@ -278,11 +403,10 @@ async def create_download_link(
         metadata={
             "link_id": link["id"],
             "license_code": license_code,
-            "build_id": build["id"],
             "include_keys": body.include_keys,
         },
     )
-    return _serialize_link(link, request=request, build=build)
+    return _serialize_link(link, request=request, build=None)
 
 
 @router.get("")

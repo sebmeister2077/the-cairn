@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -7,7 +7,6 @@ import {
   Loader2,
   ChevronDown,
   ChevronRight,
-  Upload,
   KeyRound,
   ExternalLink,
   Package,
@@ -16,16 +15,17 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import {
-  adminGetProgramBuild,
-  adminProgramBuildUploadUrl,
-  uploadProgramBuildToR2,
-  adminProgramBuildFinalize,
+  adminGetProgramBuilds,
+  adminListProgramBuilds,
+  adminGetProgramVersionGate,
+  adminSetProgramVersionGate,
   adminCreateProgramDownloadLink,
   adminListProgramDownloadLinks,
   adminListProgramDownloadRedemptions,
   adminListLicenseAttempts,
   adminRevokeProgramDownloadLink,
   programDownloadPageUrl,
+  type ProgramBuild,
   type ProgramDownloadLink,
   type ProgramDownloadRedemption,
   type LicenseAttempt,
@@ -117,102 +117,235 @@ function CopyButton({ value, label = "Copy" }: { value: string; label?: string }
   );
 }
 
-function BuildCard() {
-  const queryClient = useQueryClient();
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
-  const [versionLabel, setVersionLabel] = useState("");
+const PLATFORMS: { id: string; label: string }[] = [
+  { id: "win-x64", label: "Windows (x64)" },
+  { id: "linux-x64", label: "Linux (x64)" },
+];
 
-  const build = useQuery({
-    queryKey: ["admin-program-build"],
-    queryFn: adminGetProgramBuild,
+function CurrentBuildsCard() {
+  const [showHistory, setShowHistory] = useState(false);
+  const builds = useQuery({
+    queryKey: ["admin-program-builds"],
+    queryFn: adminGetProgramBuilds,
+  });
+  const history = useQuery({
+    queryKey: ["admin-program-build-history"],
+    queryFn: () => adminListProgramBuilds({ limit: 30 }),
+    enabled: showHistory,
   });
 
-  const uploadMut = useMutation({
-    mutationFn: async () => {
-      if (!file) throw new Error("Choose a .exe file first");
-      const { upload_url, content_type, r2_key } = await adminProgramBuildUploadUrl(file.name);
-      await uploadProgramBuildToR2(upload_url, content_type, file);
-      return adminProgramBuildFinalize({
-        r2_key,
-        original_filename: file.name,
-        version_label: versionLabel.trim() || null,
-      });
-    },
-    onSuccess: () => {
-      setFile(null);
-      setVersionLabel("");
-      if (fileRef.current) fileRef.current.value = "";
-      queryClient.invalidateQueries({ queryKey: ["admin-program-build"] });
-    },
-  });
-
-  const current = build.data?.build ?? null;
+  const byPlatform = builds.data?.builds ?? {};
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Package className="size-4" /> Current build
+          <Package className="size-4" /> Current builds
         </CardTitle>
         <CardDescription>
-          Upload the compiled <code>VSProxy.exe</code> (built locally with its baked-in default
-          arguments, but <strong>without</strong> a license or publish key — those are injected
-          per-recipient). Uploading replaces the current build; new links use it.
+          Builds are published automatically by <code>deploy/publish.ps1</code> — there is no
+          manual upload. Each platform keeps one current build; superseded binaries are purged from
+          storage while their version history (below) is kept for auditing.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        {current ? (
-          <div className="rounded-md border px-3 py-2 text-sm">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium">{current.original_filename || "VSProxy.exe"}</span>
-              {current.version_label && <Badge variant="secondary">{current.version_label}</Badge>}
-              <Badge variant="outline">{fmtBytes(current.size_bytes)}</Badge>
-            </div>
-            <div className="text-xs text-muted-foreground">
-              uploaded {fmtDate(current.uploaded_at)}
-            </div>
+        {builds.isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Loading…
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No build uploaded yet. Upload one before generating download links.
-          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {PLATFORMS.map((p) => {
+              const b = byPlatform[p.id] ?? null;
+              return (
+                <div key={p.id} className="rounded-md border px-3 py-2 text-sm">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium">{p.label}</span>
+                    {b?.version_label && <Badge variant="secondary">{b.version_label}</Badge>}
+                    {b ? (
+                      <Badge variant="outline">{fmtBytes(b.size_bytes)}</Badge>
+                    ) : (
+                      <Badge variant="destructive">not published</Badge>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {b ? `published ${fmtDate(b.uploaded_at)}` : "no build yet"}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="build-file">Build file (.exe)</Label>
-            <Input
-              id="build-file"
-              ref={fileRef}
-              type="file"
-              accept=".exe,application/octet-stream"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
+        <button
+          type="button"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setShowHistory((v) => !v)}
+        >
+          {showHistory ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+          Version history
+        </button>
+        {showHistory && (
+          <div className="space-y-1.5">
+            {history.isLoading ? (
+              <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" /> Loading history…
+              </div>
+            ) : (history.data?.builds ?? []).length === 0 ? (
+              <p className="py-2 text-sm text-muted-foreground">No builds yet.</p>
+            ) : (
+              (history.data?.builds ?? []).map((b: ProgramBuild) => (
+                <div key={b.id} className="rounded-md border px-3 py-1.5 text-xs">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline">{b.platform}</Badge>
+                      {b.version_label && <span className="font-medium">{b.version_label}</span>}
+                      {b.is_current && <Badge variant="secondary">current</Badge>}
+                      {b.r2_deleted && !b.is_current && (
+                        <span className="text-muted-foreground">purged</span>
+                      )}
+                    </span>
+                    <span className="text-muted-foreground">{fmtBytes(b.size_bytes)}</span>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between gap-2 flex-wrap text-muted-foreground">
+                    <span>{fmtDate(b.uploaded_at)}</span>
+                    {b.sha256 && (
+                      <span className="font-mono break-all">
+                        sha256 {b.sha256.slice(0, 16)}…
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="build-version">Version label (optional)</Label>
-            <Input
-              id="build-version"
-              value={versionLabel}
-              onChange={(e) => setVersionLabel(e.target.value)}
-              placeholder="e.g. 1.2.5"
-            />
-          </div>
-        </div>
-
-        {uploadMut.isError && (
-          <p className="text-sm text-destructive">{(uploadMut.error as Error).message}</p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
 
-        <Button onClick={() => uploadMut.mutate()} disabled={!file || uploadMut.isPending}>
-          {uploadMut.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Upload className="size-4" />
-          )}
-          {uploadMut.isPending ? "Uploading…" : "Upload build"}
-        </Button>
+function VersionGateCard() {
+  const queryClient = useQueryClient();
+  const gate = useQuery({
+    queryKey: ["admin-program-version-gate"],
+    queryFn: adminGetProgramVersionGate,
+  });
+
+  // Local edit state overlays the loaded values; null means "not yet edited".
+  const [minVersion, setMinVersion] = useState<string | null>(null);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
+  const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+
+  const data = gate.data;
+  const minV = minVersion ?? data?.min_supported_version ?? "";
+  const blockedM = blockedMessage ?? data?.blocked_message ?? "";
+  const updateM = updateMessage ?? data?.update_message ?? "";
+
+  const saveMut = useMutation({
+    mutationFn: () =>
+      adminSetProgramVersionGate({
+        min_supported_version: minV.trim() || null,
+        blocked_message: blockedM.trim() || null,
+        update_message: updateM.trim() || null,
+      }),
+    onSuccess: (fresh) => {
+      queryClient.setQueryData(["admin-program-version-gate"], fresh);
+      setMinVersion(null);
+      setBlockedMessage(null);
+      setUpdateMessage(null);
+    },
+  });
+
+  const textareaClass =
+    "w-full min-h-[56px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShieldAlert className="size-4" /> Version gate
+        </CardTitle>
+        <CardDescription>
+          Block outdated clients and message users without touching their licenses. Clients strictly
+          below the minimum version refuse to start; the update prompt and download URL are derived
+          automatically from the latest published build per platform.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {gate.isLoading ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" /> Loading…
+          </div>
+        ) : (
+          <>
+            <div className="space-y-1">
+              <Label htmlFor="gate-min">Minimum supported version</Label>
+              <Input
+                id="gate-min"
+                value={minV}
+                onChange={(e) => setMinVersion(e.target.value)}
+                placeholder="e.g. 1.2.7 (blank = no block)"
+              />
+              <p className="text-xs text-muted-foreground">
+                Clients below this version are blocked from running. Leave blank to allow all
+                versions.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="gate-blocked">Blocked message</Label>
+              <textarea
+                id="gate-blocked"
+                className={textareaClass}
+                value={blockedM}
+                onChange={(e) => setBlockedMessage(e.target.value)}
+                placeholder="Shown to blocked users, e.g. “This version is retired, please update.”"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="gate-update">Update prompt message</Label>
+              <textarea
+                id="gate-update"
+                className={textareaClass}
+                value={updateM}
+                onChange={(e) => setUpdateMessage(e.target.value)}
+                placeholder="Optional note shown when an update is offered."
+              />
+            </div>
+
+            <div className="rounded-md border px-3 py-2 text-xs">
+              <div className="mb-1 font-medium text-muted-foreground">
+                Auto update targets (from latest builds)
+              </div>
+              {PLATFORMS.map((p) => {
+                const l = data?.latest?.[p.id] ?? null;
+                return (
+                  <div key={p.id} className="flex items-center justify-between gap-2 py-0.5">
+                    <span>{p.label}</span>
+                    {l ? (
+                      <Badge variant="secondary">{l.version_label || "—"}</Badge>
+                    ) : (
+                      <span className="text-muted-foreground">none</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {saveMut.isError && (
+              <p className="text-sm text-destructive">{(saveMut.error as Error).message}</p>
+            )}
+            <div className="flex items-center gap-2">
+              <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+                {saveMut.isPending ? <Loader2 className="size-4 animate-spin" /> : null}
+                {saveMut.isPending ? "Saving…" : "Save version gate"}
+              </Button>
+              {saveMut.isSuccess && !saveMut.isPending && (
+                <span className="text-xs text-muted-foreground">Saved.</span>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -511,10 +644,11 @@ export function AdminProgramDownloadsPage() {
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Program Downloads</h1>
         <p className="text-sm text-muted-foreground">
-          Distribute a pre-configured VSProxy build. Upload the exe once, then generate a
-          per-recipient link. Each link mints a license + an upload key (Map features export) and
-          packages them as <code>license.key</code> + <code>publish.key</code> next to the exe in a
-          zip. The label tracks who you handed each link to.
+          Distribute a pre-configured VSProxy build. Builds are published automatically by the
+          deploy script; generate a per-recipient link, and the recipient picks their platform
+          (Windows/Linux) at download time. Each full link mints a license + an upload key (Map
+          features export) packaged as <code>license.key</code> + <code>publish.key</code> next to
+          the program in a zip. The label tracks who you handed each link to.
         </p>
       </div>
 
@@ -533,7 +667,8 @@ export function AdminProgramDownloadsPage() {
         </CardContent>
       </Card>
 
-      <BuildCard />
+      <CurrentBuildsCard />
+      <VersionGateCard />
 
       <Card>
         <CardHeader>
