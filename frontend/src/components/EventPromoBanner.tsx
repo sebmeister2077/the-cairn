@@ -12,7 +12,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { dismissPromo, markPromoDetailsOpened } from "@/store/slices/promo";
 import { recordPromoEvent } from "@/lib/promo-analytics";
-import chiselCompetitionImg from "@/assets/Promotions/chisel_competition.png";
+import chiselCompetitionImg from "@/assets/Promotions/halloween_chisel_competition.webp";
 
 // --- Time-limited event promo ------------------------------------------------
 // This is intentionally self-contained: a single component with the event data
@@ -21,29 +21,30 @@ import chiselCompetitionImg from "@/assets/Promotions/chisel_competition.png";
 // in AppContent, or bump PROMO to the next event.
 
 const PROMO = {
-  id: "tops-chisel-competition-2026-09",
-  title: "TOPS Chisel Competition",
+  id: "tops-halloween-chiseling-2026-10",
+  title: "TOPS Halloween Chiseling Event",
   // The banner (and its dialog) stop rendering after this moment. Registration
-  // closes Sep 1, 2026 7:00 AM, so the promo auto-removes itself then.
-  endsAt: new Date("2026-09-01T07:00:00"),
+  // closes Sep 30, 2026 11:59 PM, so the promo auto-removes itself then.
+  endsAt: new Date("2026-09-30T23:59:00"),
   image: chiselCompetitionImg,
-  hosts: "Yoma22k, Nudge & DuStPaInFuL",
+  hosts: "DuStPaInFuL, Yoma22K & Nudge",
   hostedBy: "The Community Centre",
   discordUrl:
-    "https://discord.com/channels/302152934249070593/1369341219737436200/1541603219661258843",
-  registration: "White building on West Road at -1390, -20 (between Perch Point and Sandwich)",
+    "https://discord.com/channels/1482111581549629745/1484173234160140319/1553263253575176243",
+  registration:
+    "Chests under the trees, next to the staircase to Travelers Rest TL at -1390, -20 (between Perch Point and Sandwich)",
   // Deep-link into the TOPS map viewer centered on the registration building.
   // (`zoom` is pixels-per-block; ~4 frames the surrounding blocks nicely.)
   mapUrl: "/multiplayer/tops-map?x=-1390&z=-20&zoom=4",
   summary:
-    "The first TOPS chiseling event! Build a piece of chisel art between 2×2×2 and 4×4×4 using any blocks in the game. No theme this round — just be creative.",
+    'The TOPS Halloween chiseling event! Build a spooky piece of chisel art with visible creative glow blocks. Size: min 8 blocks, max 216 blocks, with no side longer than 6 blocks. Name each block "player name"-"title"-"block position" (e.g. Nudge-Snuggles the Bear-1.1). No explicit, derogatory, or offensive designs — that means instant disqualification.',
   prize:
-    "Prize pool by placement — 1st ~5k, 2nd ~3.5k, 3rd ~2.5k (rusty-gear net worth) in clothes, clutter, RG, armor, ingots & gold. Extra RG donations are split among the remaining entries.",
+    "First, second and third place prize pools — RG, ingots, clothes, clutter and more (viewable at the chiseling entry point). RG donation crates go to the runner-ups.",
   schedule: [
-    { label: "Registration", value: "Aug 25 – Sep 1, 2026" },
-    { label: "Chiseling", value: "Sep 1 – Sep 26, 2026" },
-    { label: "Voting", value: "Sep 26 – Sep 30, 2026" },
-    { label: "Winners announced", value: "Oct 1, 2026" },
+    { label: "Registration", value: "Sep 26 – Sep 30, 2026" },
+    { label: "Chiseling", value: "Oct 1 – Oct 23, 2026" },
+    { label: "Voting", value: "Oct 26 – Oct 28, 2026" },
+    { label: "Winners announced", value: "Oct 30, 2026" },
   ],
 } as const;
 
@@ -113,7 +114,7 @@ export function EventPromoBanner() {
           <span className="font-medium">{PROMO.title}</span>
           <span className="hidden sm:inline text-amber-800 dark:text-amber-200/90">
             {" "}
-            — a TOPS community event. Register by Sep 1.
+            — a TOPS community event. Register by Sep 30.
           </span>
         </div>
         <Button size="xs" variant="secondary" className="shrink-0" onClick={openDetails}>
@@ -144,7 +145,7 @@ export function EventPromoBanner() {
 
           <img
             src={PROMO.image}
-            alt="The Community Centre — Chisel Competition"
+            alt="The Community Centre — Halloween Chiseling Event"
             className="w-full rounded-lg border border-border"
             loading="lazy"
           />
