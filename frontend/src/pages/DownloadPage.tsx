@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Loader2, PackageOpen, XCircle } from "lucide-react";
@@ -19,6 +20,7 @@ function fmtBytes(n: number | null | undefined): string {
 
 export function DownloadPage() {
   const { token = "" } = useParams();
+  const [startedPlatform, setStartedPlatform] = useState<string | null>(null);
   const info = useQuery({
     queryKey: ["program-download-info", token],
     queryFn: () => getProgramDownloadInfo(token),
@@ -67,25 +69,49 @@ export function DownloadPage() {
               ) : (
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Choose your platform</div>
-                  {info.data.platforms.map((p) => (
-                    <a
-                      key={p.platform}
-                      href={programDownloadUrl(token, p.platform)}
-                      download
-                      className={buttonVariants({
-                        variant: "outline",
-                        className: "w-full justify-between",
-                      })}
-                    >
-                      <span className="flex items-center gap-2">
-                        <Download className="size-4" /> {p.label}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {p.version_label ? `v${p.version_label}` : ""}
-                        {fmtBytes(p.size_bytes) ? ` · ${fmtBytes(p.size_bytes)}` : ""}
-                      </span>
-                    </a>
-                  ))}
+                  {info.data.platforms.map((p) => {
+                    const started = startedPlatform === p.platform;
+                    const disabled = startedPlatform !== null;
+                    const meta = [
+                      p.version_label ? `v${p.version_label}` : "",
+                      fmtBytes(p.size_bytes),
+                    ]
+                      .filter(Boolean)
+                      .join(" · ");
+                    return (
+                      <a
+                        key={p.platform}
+                        href={programDownloadUrl(token, p.platform)}
+                        download
+                        aria-disabled={disabled}
+                        onClick={(e) => {
+                          if (disabled) {
+                            e.preventDefault();
+                            return;
+                          }
+                          setStartedPlatform(p.platform);
+                        }}
+                        className={buttonVariants({
+                          variant: "outline",
+                          className: `w-full justify-between ${
+                            disabled ? "pointer-events-none opacity-60" : ""
+                          }`,
+                        })}
+                      >
+                        <span className="flex min-w-0 items-center gap-2">
+                          {started ? (
+                            <Loader2 className="size-4 shrink-0 animate-spin" />
+                          ) : (
+                            <Download className="size-4 shrink-0" />
+                          )}
+                          <span className="truncate">{started ? "Preparing…" : p.label}</span>
+                        </span>
+                        {meta && (
+                          <span className="shrink-0 text-xs text-muted-foreground">{meta}</span>
+                        )}
+                      </a>
+                    );
+                  })}
                 </div>
               )}
 
