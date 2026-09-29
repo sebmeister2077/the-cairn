@@ -72,7 +72,10 @@ export function DownloadPage() {
                       key={p.platform}
                       href={programDownloadUrl(token, p.platform)}
                       download
-                      className={buttonVariants({ variant: "outline", className: "w-full justify-between" })}
+                      className={buttonVariants({
+                        variant: "outline",
+                        className: "w-full justify-between",
+                      })}
                     >
                       <span className="flex items-center gap-2">
                         <Download className="size-4" /> {p.label}

@@ -143,9 +143,9 @@ function CurrentBuildsCard() {
           <Package className="size-4" /> Current builds
         </CardTitle>
         <CardDescription>
-          Builds are published automatically by <code>deploy/publish.ps1</code> — there is no
-          manual upload. Each platform keeps one current build; superseded binaries are purged from
-          storage while their version history (below) is kept for auditing.
+          Builds are published automatically by <code>deploy/publish.ps1</code> — there is no manual
+          upload. Each platform keeps one current build; superseded binaries are purged from storage
+          while their version history (below) is kept for auditing.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -210,9 +210,7 @@ function CurrentBuildsCard() {
                   <div className="mt-0.5 flex items-center justify-between gap-2 flex-wrap text-muted-foreground">
                     <span>{fmtDate(b.uploaded_at)}</span>
                     {b.sha256 && (
-                      <span className="font-mono break-all">
-                        sha256 {b.sha256.slice(0, 16)}…
-                      </span>
+                      <span className="font-mono break-all">sha256 {b.sha256.slice(0, 16)}…</span>
                     )}
                   </div>
                 </div>

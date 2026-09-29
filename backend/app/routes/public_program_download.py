@@ -53,7 +53,7 @@ def _platform_label(platform: str) -> str:
 _README_TEXT = """VSProxy — pre-configured build
 ================================
 
-This package was prepared for you by the map-features project administrator.
+This package was prepared for you by the Cairn project administrator.
 
 Contents
 --------
@@ -69,8 +69,6 @@ How to run
 
 The program reads license.key and publish.key from this folder automatically —
 you do not need to pass any command-line arguments.
-
-Unofficial tool — not affiliated with or endorsed by Anego Studios.
 """
 
 _README_TEXT_EXE_ONLY = """VSProxy — program update
@@ -91,7 +89,6 @@ How to update
 This update does not change your license or upload key — reuse the ones you
 already have.
 
-Unofficial tool — not affiliated with or endorsed by Anego Studios.
 """
 
 
