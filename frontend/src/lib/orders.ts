@@ -185,7 +185,7 @@ export function useOrdersUnread(enabled = true): number {
         enabled,
         retry: (count, err) => !isNotFound(err) && count < 2,
         staleTime: 30_000,
-        refetchInterval: 60_000,
+        refetchInterval: 600_000,
         refetchOnWindowFocus: true,
     });
     return query.data ?? 0;
