@@ -1174,11 +1174,18 @@ const fr = {
         "viewerDescription": "Explorez la carte mondiale du serveur, contribué par la communauté, construite à partir des contributions des joueurs.",
         "layerGroups": {
             "layers": "Calques de la carte",
+            "navigate": "Naviguer",
+            "routes": "Itinéraires",
+            "worldData": "Données du monde",
             "translocators": "Translocateurs",
             "landmarks": "Points d'intérêt",
             "traders": "Marchands",
             "advanced": "Calques avancés"
         },
+        "mapSourceLabel": "Source de la carte",
+        "mapSourceConnected": "Connecté",
+        "mapSettings": "Paramètres de la carte",
+        "changeMapSource": "Changer la source de la carte",
         "readingGlobalServerMap": "Lecture de la carte mondiale du serveur...",
         "loadingMapChunks": "Chargement des blocs de carte...",
         "buildingPng": "Création du PNG...",

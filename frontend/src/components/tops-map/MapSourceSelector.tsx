@@ -1,7 +1,4 @@
-import { useState } from "react";
 import { Globe, LifeBuoy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -46,15 +43,9 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
   const mapSource = useReduxState("mapView.mapSource");
   const storedUrl = useReduxState("mapView.webCartographerUrl");
 
-  // Local draft so the URL Input can be typed into freely without each
-  // keystroke triggering a Redux dispatch + re-render cascade. Committed
-  // on blur / Enter / preset selection.
-  const [draftUrl, setDraftUrl] = useState(storedUrl);
-
   const commitUrl = (next: string) => {
     const trimmed = next.trim();
     const effective = trimmed.length > 0 ? trimmed : DEFAULT_WEBCARTOGRAPHER_URL;
-    setDraftUrl(effective);
     if (effective !== storedUrl) dispatch(setWebCartographerUrl(effective));
   };
 
@@ -118,48 +109,6 @@ export function MapSourceSelector({ className, compact = false }: MapSourceSelec
                 ))}
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="wc-url" className="text-xs">
-              Host URL
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="wc-url"
-                value={draftUrl}
-                readOnly
-                // onChange={(e) => setDraftUrl(e.target.value)}
-                // onBlur={() => commitUrl(draftUrl)}
-                onKeyDown={(e) => {
-                  // if (e.key === "Enter") {
-                  //   e.currentTarget.blur();
-                  // }
-                }}
-                placeholder="https://map.tops.vintagestory.at"
-                spellCheck={false}
-                autoComplete="off"
-                className="h-8 font-mono text-xs"
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled
-                // onClick={() => commitUrl(draftUrl)}
-                // disabled={draftUrl.trim() === storedUrl}
-              >
-                Apply
-              </Button>
-            </div>
-            {!compact && (
-              <p className="text-[11px] text-muted-foreground">
-                Tiles are loaded directly from <code>{storedUrl}</code>
-                <span className="font-mono">
-                  /data/world/&#123;z&#125;/&#123;x&#125;_&#123;y&#125;.&#123;png|webp&#125;
-                </span>
-                .
-              </p>
-            )}
           </div>
         </div>
       )}

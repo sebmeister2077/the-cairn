@@ -1174,11 +1174,18 @@ const es = {
         "viewerDescription": "Explora el mapa global del servidor aportado por la comunidad, construido a partir de contribuciones de jugadores.",
         "layerGroups": {
             "layers": "Capas del mapa",
+            "navigate": "Navegar",
+            "routes": "Rutas",
+            "worldData": "Datos del mundo",
             "translocators": "Translocadores",
             "landmarks": "Puntos de interés",
             "traders": "Comerciantes",
             "advanced": "Capas avanzadas"
         },
+        "mapSourceLabel": "Fuente del mapa",
+        "mapSourceConnected": "Conectado",
+        "mapSettings": "Ajustes del mapa",
+        "changeMapSource": "Cambiar fuente del mapa",
         "readingGlobalServerMap": "Leyendo mapa global del servidor...",
         "loadingMapChunks": "Cargando fragmentos del mapa...",
         "buildingPng": "Construyendo PNG...",

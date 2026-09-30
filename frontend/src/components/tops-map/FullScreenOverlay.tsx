@@ -1,8 +1,10 @@
 import {
+  Compass,
   Layers,
   Minimize2,
   PanelRightClose,
   PanelRightOpen,
+  Route,
   Search,
   SlidersHorizontal,
   Waypoints,
@@ -380,226 +382,237 @@ export function FullscreenControlsOverlay({
             <X className="size-4" />
           </Button>
         </div>
-        <div
-          onClick={() => setShowServerLandmarks(!showServerLandmarks)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch
-            checked={showServerLandmarks}
-            aria-label={t("topsMap.showServerLandmarksOverlay")}
-          />
-          <Label className="cursor-pointer text-xs leading-tight">
-            {t("topsMap.showServerLandmarks")}
-            <span className="block text-[10px] text-muted-foreground">
-              {t("topsMap.showServerLandmarksSubtitle")}
-            </span>
-          </Label>
-          <span className="ml-auto text-xs text-muted-foreground select-none">
-            {serverLandmarkCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowTranslocators(!showTranslocators)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showTranslocators} aria-label={t("topsMap.showTranslocatorOverlay")} />
-          <Label className="cursor-pointer">{t("topsMap.showTranslocators")}</Label>
-          <span className="ml-auto text-xs text-muted-foreground select-none">
-            {filteringActive
-              ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
-              : translocatorCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => showTranslocators && toggleShowRecentlyAddedTLs(!showRecentlyAddedTLs)}
-          className={cn(
-            "flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            {
-              "opacity-50": !showTranslocators,
-              "cursor-pointer": showTranslocators,
-              // "hidden": usingWebCartographer,
-            },
-          )}
-        >
-          <Switch
-            disabled={!showTranslocators}
-            checked={showRecentlyAddedTLs}
-            aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
-          />
-          <Label
-            className={cn(" text-xs leading-tight", {
-              "cursor-pointer": showTranslocators,
-            })}
-          >
-            {t("topsMap.recentlyAddedTitle")}
-            <span className="block text-[10px] text-muted-foreground">
-              {t("topsMap.recentlyAddedSubtitle", { days: 14 })}
-            </span>
-          </Label>
-          <span className="ml-auto text-xs text-muted-foreground select-none">
-            {recentTLCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          className={cn(
-            "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
-            {
-              "opacity-50": !showTranslocators,
-            },
-          )}
+        <CollapsibleSection
+          title={t("topsMap.layerGroups.navigate")}
+          icon={<Compass className="size-4 text-muted-foreground" />}
+          className="shadow-md backdrop-blur"
+          contentClassName="px-2 pb-2"
+          defaultOpen
         >
           <div
-            onClick={() => showTranslocators && setShowTLsInRadius(!showTLsInRadius)}
-            className={cn("flex items-center gap-2", {
-              "cursor-pointer": showTranslocators,
-            })}
+            onClick={() => setShowServerLandmarks(!showServerLandmarks)}
+            className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          >
+            <Switch
+              checked={showServerLandmarks}
+              aria-label={t("topsMap.showServerLandmarksOverlay")}
+            />
+            <Label className="cursor-pointer text-xs leading-tight">
+              {t("topsMap.showServerLandmarks")}
+              <span className="block text-[10px] text-muted-foreground">
+                {t("topsMap.showServerLandmarksSubtitle")}
+              </span>
+            </Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {serverLandmarkCount.toLocaleString()}
+            </span>
+          </div>
+          <div
+            onClick={() => setShowTranslocators(!showTranslocators)}
+            className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          >
+            <Switch checked={showTranslocators} aria-label={t("topsMap.showTranslocatorOverlay")} />
+            <Label className="cursor-pointer">{t("topsMap.showTranslocators")}</Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {filteringActive
+                ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
+                : translocatorCount.toLocaleString()}
+            </span>
+          </div>
+          <div
+            onClick={() => showTranslocators && toggleShowRecentlyAddedTLs(!showRecentlyAddedTLs)}
+            className={cn(
+              "flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+              {
+                "opacity-50": !showTranslocators,
+                "cursor-pointer": showTranslocators,
+                // "hidden": usingWebCartographer,
+              },
+            )}
           >
             <Switch
               disabled={!showTranslocators}
-              checked={showTLsInRadius}
-              aria-label={t("topsMap.showTLsInRadius")}
+              checked={showRecentlyAddedTLs}
+              aria-label={t("topsMap.emphasizeRecentlyAddedTranslocators")}
             />
             <Label
-              className={cn("text-xs leading-tight", {
+              className={cn(" text-xs leading-tight", {
                 "cursor-pointer": showTranslocators,
               })}
             >
-              {t("topsMap.showTLsInRadiusTitle")}
+              {t("topsMap.recentlyAddedTitle")}
               <span className="block text-[10px] text-muted-foreground">
-                {t("topsMap.showTLsInRadiusSubtitle")}
+                {t("topsMap.recentlyAddedSubtitle", { days: 14 })}
               </span>
             </Label>
-          </div>
-          {showTLsInRadius && showTranslocators && (
-            <div className="flex flex-col gap-1 pl-6">
-              <div className="flex items-center justify-between text-xs">
-                <Label className="text-xs">{t("topsMap.tlRadiusBlocks")}</Label>
-                <span className="font-medium text-foreground tabular-nums">
-                  {tlRadiusBlocks.toLocaleString()} {t("topsMap.blocks")}
-                </span>
-              </div>
-              <Slider
-                value={tlRadiusBlocks}
-                min={100}
-                max={5000}
-                step={50}
-                onValueChange={setTLRadiusBlocks}
-                aria-label={t("topsMap.tlRadiusBlocks")}
-              />
-            </div>
-          )}
-        </div>
-        <div
-          onClick={() => setShowLandmarks(!showLandmarks)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showLandmarks} aria-label={t("topsMap.showLandmarksOverlay")} />
-          <Label className="cursor-pointer">{t("topsMap.showLandmarks")}</Label>
-          <span className="ml-auto text-xs text-muted-foreground select-none">
-            {landmarkCount.toLocaleString()}
-          </span>
-        </div>
-        <div
-          onClick={() => setShowTerminus(!showTerminus)}
-          className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
-        >
-          <Switch checked={showTerminus} aria-label={t("topsMap.showTerminusTeleportersOverlay")} />
-          <Label className="cursor-pointer">{t("topsMap.showTerminusTeleporters")}</Label>
-          <span className="ml-auto text-xs text-muted-foreground select-none">
-            {terminusCount.toLocaleString()}
-          </span>
-        </div>
-        <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
-          <div
-            onClick={() => setShowTraders(!showTraders)}
-            className="cursor-pointer flex items-center gap-2"
-          >
-            <Switch checked={showTraders} aria-label={t("topsMap.showTradersOverlay")} />
-            <Label className="cursor-pointer">{t("topsMap.showTraders")}</Label>
             <span className="ml-auto text-xs text-muted-foreground select-none">
-              {traderCount.toLocaleString()}
+              {recentTLCount.toLocaleString()}
             </span>
           </div>
           <div
-            className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
-            style={{
-              gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
-            }}
-            aria-hidden={!(showTraders && traderCount > 0)}
+            className={cn(
+              "flex flex-col gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur",
+              {
+                "opacity-50": !showTranslocators,
+              },
+            )}
           >
-            <div className="overflow-hidden min-h-0">
-              <div className="flex flex-wrap gap-1 pt-2">
-                {TRADER_TYPES.map((t, i) => {
-                  const active = traderTypeFilterSet.has(t);
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleTraderType(t);
-                      }}
-                      tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+            <div
+              onClick={() => showTranslocators && setShowTLsInRadius(!showTLsInRadius)}
+              className={cn("flex items-center gap-2", {
+                "cursor-pointer": showTranslocators,
+              })}
+            >
+              <Switch
+                disabled={!showTranslocators}
+                checked={showTLsInRadius}
+                aria-label={t("topsMap.showTLsInRadius")}
+              />
+              <Label
+                className={cn("text-xs leading-tight", {
+                  "cursor-pointer": showTranslocators,
+                })}
+              >
+                {t("topsMap.showTLsInRadiusTitle")}
+                <span className="block text-[10px] text-muted-foreground">
+                  {t("topsMap.showTLsInRadiusSubtitle")}
+                </span>
+              </Label>
+            </div>
+            {showTLsInRadius && showTranslocators && (
+              <div className="flex flex-col gap-1 pl-6">
+                <div className="flex items-center justify-between text-xs">
+                  <Label className="text-xs">{t("topsMap.tlRadiusBlocks")}</Label>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {tlRadiusBlocks.toLocaleString()} {t("topsMap.blocks")}
+                  </span>
+                </div>
+                <Slider
+                  value={tlRadiusBlocks}
+                  min={100}
+                  max={5000}
+                  step={50}
+                  onValueChange={setTLRadiusBlocks}
+                  aria-label={t("topsMap.tlRadiusBlocks")}
+                />
+              </div>
+            )}
+          </div>
+          <div
+            onClick={() => setShowLandmarks(!showLandmarks)}
+            className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          >
+            <Switch checked={showLandmarks} aria-label={t("topsMap.showLandmarksOverlay")} />
+            <Label className="cursor-pointer">{t("topsMap.showLandmarks")}</Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {landmarkCount.toLocaleString()}
+            </span>
+          </div>
+          <div
+            onClick={() => setShowTerminus(!showTerminus)}
+            className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          >
+            <Switch
+              checked={showTerminus}
+              aria-label={t("topsMap.showTerminusTeleportersOverlay")}
+            />
+            <Label className="cursor-pointer">{t("topsMap.showTerminusTeleporters")}</Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {terminusCount.toLocaleString()}
+            </span>
+          </div>
+          <div className="flex flex-col rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur">
+            <div
+              onClick={() => setShowTraders(!showTraders)}
+              className="cursor-pointer flex items-center gap-2"
+            >
+              <Switch checked={showTraders} aria-label={t("topsMap.showTradersOverlay")} />
+              <Label className="cursor-pointer">{t("topsMap.showTraders")}</Label>
+              <span className="ml-auto text-xs text-muted-foreground select-none">
+                {traderCount.toLocaleString()}
+              </span>
+            </div>
+            <div
+              className="grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none"
+              style={{
+                gridTemplateRows: showTraders && traderCount > 0 ? "1fr" : "0fr",
+              }}
+              aria-hidden={!(showTraders && traderCount > 0)}
+            >
+              <div className="overflow-hidden min-h-0">
+                <div className="flex flex-wrap gap-1 pt-2">
+                  {TRADER_TYPES.map((t, i) => {
+                    const active = traderTypeFilterSet.has(t);
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTraderType(t);
+                        }}
+                        tabIndex={showTraders && traderCount > 0 ? 0 : -1}
+                        className={cn(
+                          "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
+                          showTraders &&
+                            traderCount > 0 &&
+                            "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
+                          "transition-colors duration-150",
+                          active ? "bg-foreground text-background" : "bg-background",
+                        )}
+                        style={{
+                          borderColor: traderColors[t],
+                          animationDelay: `${i * 35}ms`,
+                          animationDuration: "260ms",
+                        }}
+                        aria-pressed={active}
+                        title={TRADER_TYPE_LABELS[t]}
+                      >
+                        <span
+                          aria-hidden
+                          className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
+                          style={{ backgroundColor: traderColors[t] }}
+                        />
+                        {TRADER_TYPE_LABELS[t]}
+                      </button>
+                    );
+                  })}
+                  {traderTypeFilterSet.size > 0 && (
+                    <span
                       className={cn(
-                        "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer",
-                        showTraders &&
-                          traderCount > 0 &&
-                          "animate-in fade-in-0 slide-in-from-top-1 fill-mode-both",
-                        "transition-colors duration-150",
-                        active ? "bg-foreground text-background" : "bg-background",
+                        "text-[10px] text-muted-foreground ml-1 self-center",
+                        showTraders && traderCount > 0 && "animate-in fade-in-0 fill-mode-both",
                       )}
                       style={{
-                        borderColor: traderColors[t],
-                        animationDelay: `${i * 35}ms`,
+                        animationDelay: `${TRADER_TYPES.length * 35}ms`,
                         animationDuration: "260ms",
                       }}
-                      aria-pressed={active}
-                      title={TRADER_TYPE_LABELS[t]}
                     >
-                      <span
-                        aria-hidden
-                        className="mr-1 inline-block h-2 w-2 rounded-full align-middle"
-                        style={{ backgroundColor: traderColors[t] }}
-                      />
-                      {TRADER_TYPE_LABELS[t]}
-                    </button>
-                  );
-                })}
-                {traderTypeFilterSet.size > 0 && (
-                  <span
-                    className={cn(
-                      "text-[10px] text-muted-foreground ml-1 self-center",
-                      showTraders && traderCount > 0 && "animate-in fade-in-0 fill-mode-both",
-                    )}
-                    style={{
-                      animationDelay: `${TRADER_TYPES.length * 35}ms`,
-                      animationDuration: "260ms",
-                    }}
-                  >
-                    {t("topsMap.showingTypes", {
-                      shown: traderTypeFilterSet.size,
-                      total: TRADER_TYPES.length,
-                    })}
-                  </span>
-                )}
+                      {t("topsMap.showingTypes", {
+                        shown: traderTypeFilterSet.size,
+                        total: TRADER_TYPES.length,
+                      })}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-        <AuctionHeatmapControl
-          variant="fullscreen"
-          layer={auctionLayer}
-          onLayerChange={onAuctionLayerChange}
-          opacity={auctionOpacity}
-          onOpacityChange={onAuctionOpacityChange}
-        />
+        </CollapsibleSection>
         {showAdvancedMapOptions && (
           <CollapsibleSection
-            title={t("topsMap.layerGroups.advanced")}
+            title={t("topsMap.layerGroups.worldData")}
             icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
             className="shadow-md backdrop-blur"
             contentClassName="px-2 pb-2"
           >
+            <AuctionHeatmapControl
+              variant="fullscreen"
+              layer={auctionLayer}
+              onLayerChange={onAuctionLayerChange}
+              opacity={auctionOpacity}
+              onOpacityChange={onAuctionOpacityChange}
+            />
             <div
               onClick={() => setShowOceans(!showOceans)}
               className={cn(
@@ -771,65 +784,73 @@ export function FullscreenControlsOverlay({
             </div>
           </CollapsibleSection>
         )}
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={onOpenGroupings}
-          className="shadow-md"
+        <CollapsibleSection
+          title={t("topsMap.layerGroups.routes")}
+          icon={<Route className="size-4 text-muted-foreground" />}
+          className="shadow-md backdrop-blur"
+          contentClassName="px-2 pb-2"
+          defaultOpen
         >
-          <Layers className="size-4 mr-1" />
-          {t("topsMap.groupings")}
-          {activeGroupingCount > 0 && (
-            <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground select-none">
-              {activeGroupingCount}
-            </span>
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant={activeRoute || routePlannerOpen ? "default" : "secondary"}
-          size="sm"
-          onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
-          className={cn(
-            "shadow-md",
-            activeRoute &&
-              "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700",
-          )}
-          aria-label={
-            activeRoute
-              ? t("routePlanner.routeActiveAria", {
-                  duration: formatDuration(activeRoute.totalSeconds),
-                  action: routePlannerOpen
-                    ? t("routePlanner.routePlannerHide")
-                    : t("routePlanner.routePlannerShow"),
-                })
-              : routePlannerOpen
-                ? t("routePlanner.routePlannerHide")
-                : t("routePlanner.routePlannerShow")
-          }
-          title={
-            activeRoute
-              ? t("routePlanner.routeActiveTitle", {
-                  duration: formatDuration(activeRoute.totalSeconds),
-                  count: t("routePlanner.tlHops", { count: activeRoute.tlHops }),
-                })
-              : undefined
-          }
-        >
-          <Waypoints className="size-4 mr-1" />
-          {t("routePlanner.routeButton")}
-          {activeRoute ? (
-            <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
-              {formatDuration(activeRoute.totalSeconds)}
-            </span>
-          ) : routeFrom || routeTo ? (
-            <span
-              className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
-              aria-hidden="true"
-            />
-          ) : null}
-        </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onOpenGroupings}
+            className="shadow-md"
+          >
+            <Layers className="size-4 mr-1" />
+            {t("topsMap.groupings")}
+            {activeGroupingCount > 0 && (
+              <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground select-none">
+                {activeGroupingCount}
+              </span>
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant={activeRoute || routePlannerOpen ? "default" : "secondary"}
+            size="sm"
+            onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
+            className={cn(
+              "shadow-md",
+              activeRoute &&
+                "bg-emerald-600 text-white hover:bg-emerald-700 focus-visible:ring-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-700",
+            )}
+            aria-label={
+              activeRoute
+                ? t("routePlanner.routeActiveAria", {
+                    duration: formatDuration(activeRoute.totalSeconds),
+                    action: routePlannerOpen
+                      ? t("routePlanner.routePlannerHide")
+                      : t("routePlanner.routePlannerShow"),
+                  })
+                : routePlannerOpen
+                  ? t("routePlanner.routePlannerHide")
+                  : t("routePlanner.routePlannerShow")
+            }
+            title={
+              activeRoute
+                ? t("routePlanner.routeActiveTitle", {
+                    duration: formatDuration(activeRoute.totalSeconds),
+                    count: t("routePlanner.tlHops", { count: activeRoute.tlHops }),
+                  })
+                : undefined
+            }
+          >
+            <Waypoints className="size-4 mr-1" />
+            {t("routePlanner.routeButton")}
+            {activeRoute ? (
+              <span className="ml-1.5 rounded-full bg-white/25 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums leading-none">
+                {formatDuration(activeRoute.totalSeconds)}
+              </span>
+            ) : routeFrom || routeTo ? (
+              <span
+                className="ml-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500"
+                aria-hidden="true"
+              />
+            ) : null}
+          </Button>
+        </CollapsibleSection>
       </div>
 
       {/* Bottom-left: landmark search. Collapsed behind a FAB on phones. */}

@@ -115,7 +115,7 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
   const { t } = useTranslation();
   return (
     <CollapsibleSection
-      title={t("topsMap.layerGroups.advanced")}
+      title={t("topsMap.layerGroups.worldData")}
       icon={<SlidersHorizontal className="size-4 text-muted-foreground" />}
     >
       {showAdvancedMapOptions && (
@@ -131,6 +131,52 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
           </span>
         </div>
       )}
+      {/* Analyze-first ordering: headline world-data layers, then niche overlays. */}
+      <RockStrataLegendPanel
+        enabled={showRockStrata}
+        onEnabledChange={setShowRockStrata}
+        layerKind={rockStrataKind}
+        onLayerKindChange={setRockStrataKind}
+        halfBlocks={rockStrataHalfBlocks}
+        onHalfBlocksChange={setRockStrataHalfBlocks}
+        opacity={rockStrataOpacity}
+        onOpacityChange={setRockStrataOpacity}
+        keepCodes={rockStrataKeepCodes}
+        onKeepCodesChange={setRockStrataKeepCodes}
+        legend={rockStrataLegend}
+        warnBlocky={rockStrataWarnBlocky}
+        sourceBlocksPerPixel={rockStrataSourceBlocksPerPixel}
+        status={rockStrataStatus}
+        error={rockStrataError}
+      />
+      {usingWebCartographer && (
+        <ClimateControlsPanel
+          layerMeta={climateLayerMeta}
+          status={climateStatus}
+          error={climateError}
+        />
+      )}
+      {usingWebCartographer && (
+        <TemporalStabilityPanel
+          sliceMeta={stabilitySliceMeta}
+          status={stabilityStatus}
+          error={stabilityError}
+        />
+      )}
+      {climateVisible && (
+        <ClimateHoverReadout
+          hoverCoords={climateHoverCoords}
+          sample={climateHoverSample}
+          visible={climateVisible}
+          altitudeY={climateAltitudeY}
+        />
+      )}
+      <AuctionHeatmapControl
+        layer={auctionLayer}
+        onLayerChange={setAuctionLayer}
+        opacity={auctionOpacity}
+        onOpacityChange={setAuctionOpacity}
+      />
       {showAdvancedMapOptions && hasAccount && (
         <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
           <Switch
@@ -178,51 +224,6 @@ export const AdvancedLayersSection = memo(function AdvancedLayersSection({
         </div>
       )}
       <PlayerClaimsControl />
-      <AuctionHeatmapControl
-        layer={auctionLayer}
-        onLayerChange={setAuctionLayer}
-        opacity={auctionOpacity}
-        onOpacityChange={setAuctionOpacity}
-      />
-      <RockStrataLegendPanel
-        enabled={showRockStrata}
-        onEnabledChange={setShowRockStrata}
-        layerKind={rockStrataKind}
-        onLayerKindChange={setRockStrataKind}
-        halfBlocks={rockStrataHalfBlocks}
-        onHalfBlocksChange={setRockStrataHalfBlocks}
-        opacity={rockStrataOpacity}
-        onOpacityChange={setRockStrataOpacity}
-        keepCodes={rockStrataKeepCodes}
-        onKeepCodesChange={setRockStrataKeepCodes}
-        legend={rockStrataLegend}
-        warnBlocky={rockStrataWarnBlocky}
-        sourceBlocksPerPixel={rockStrataSourceBlocksPerPixel}
-        status={rockStrataStatus}
-        error={rockStrataError}
-      />
-      {usingWebCartographer && (
-        <ClimateControlsPanel
-          layerMeta={climateLayerMeta}
-          status={climateStatus}
-          error={climateError}
-        />
-      )}
-      {usingWebCartographer && (
-        <TemporalStabilityPanel
-          sliceMeta={stabilitySliceMeta}
-          status={stabilityStatus}
-          error={stabilityError}
-        />
-      )}
-      {climateVisible && (
-        <ClimateHoverReadout
-          hoverCoords={climateHoverCoords}
-          sample={climateHoverSample}
-          visible={climateVisible}
-          altitudeY={climateAltitudeY}
-        />
-      )}
     </CollapsibleSection>
   );
 });

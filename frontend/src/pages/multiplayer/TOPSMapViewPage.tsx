@@ -167,7 +167,7 @@ import { AdminTraderAreaPanel } from "@/components/tops-map/AdminTraderAreaPanel
 import { AdminTraderAreaOverlay } from "@/components/tops-map/AdminTraderAreaOverlay";
 import { useAdminTraderAreaTool } from "@/hooks/useAdminTraderAreaTool";
 import { HomePositionControls } from "@/components/tops-map/HomePositionControls";
-import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
+import { MapSourceStatus } from "@/components/tops-map/MapSourceStatus";
 import { WebCartographerMapViewer } from "@/components/tops-map/WebCartographerMapViewer";
 import { WCOfficialDownDialog } from "@/components/tops-map/WCOfficialDownDialog";
 import { useDrawingViewerProps } from "@/components/tops-map/drawing/useDrawingViewerProps";
@@ -1778,9 +1778,7 @@ export function TOPSMapViewPage() {
       <CardContent className={isFullscreen ? "absolute inset-0 p-0" : "grid grid-cols-1 gap-4"}>
         {!isFullscreen && (
           <>
-            <div className="rounded-lg border bg-muted/30 p-3">
-              <MapSourceSelector />
-            </div>
+            <MapSourceStatus />
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border bg-muted/30 p-2">
               {loading && !usingWebCartographer && (
                 <Button disabled>
