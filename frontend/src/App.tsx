@@ -157,7 +157,11 @@ export default function App() {
         // gained `saleGearsEliteSoldDelta`, splitting the "elite ↔ everyone
         // else" flow into elite-selling vs elite-buying. Stale snapshots lack
         // it and fall back to the single combined bucket until they refetch.
-        buster: "v11-2026-08-08-auction-wealth-flow-direction",
+        // 2026-09-30 — v12: summary.json gained a `priceIndex` block (the
+        // inflation index: headline, biweekly trend with confidence band, and a
+        // per-category breakdown). Stale snapshots lack it and the Inflation tab
+        // shows an empty state until they refetch.
+        buster: "v12-2026-09-30-auction-price-index",
         dehydrateOptions: {
           shouldDehydrateQuery: (query) => {
             if ((query.meta as { persist?: boolean } | undefined)?.persist !== true) return false;

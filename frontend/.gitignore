@@ -26,6 +26,7 @@ dist-ssr
 # Auction data files
 public/auction/
 src/assets/Auction/auction-events.jsonl
+src/assets/Auction/auction_summary.json
 src/assets/Auction/auctions.csv
 
 # Temporal-stability rasters are hosted on R2, not committed (~2.3 GB of
