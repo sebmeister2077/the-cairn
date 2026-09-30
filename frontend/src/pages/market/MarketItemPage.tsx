@@ -73,6 +73,7 @@ import {
   type ListingColumn,
 } from "@/components/market/VirtualTable";
 import { RecentListingsSection } from "@/components/market/RecentListingsSection";
+import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
 import {
   INSIGHTS_WINDOWS,
   computeMarketInsights,
@@ -144,6 +145,9 @@ export function MarketItemPage() {
   const location = useLocation();
   const currentGameHours = useCurrentGameHours();
   const { data: summary } = useAuctionSummary();
+  // Consistent in-game-hours → real-world date mapping (shared with the market
+  // overview charts), used by the price-history axis and recent-listings table.
+  const realDateForGameHours = useRealDateForGameHours();
 
   // Shared market time-range window (kept in sync with the Insights page).
   const [windowKey, setWindowKey] = useMarketWindow();
@@ -979,9 +983,9 @@ export function MarketItemPage() {
         cell: (l) => (
           <span
             className="text-xs text-muted-foreground"
-            title="Real-world date this listing was first seen"
+            title="Real-world date this listing was posted (derived from its in-game posting time)"
           >
-            {formatListingDate(l.observedUtc ?? l.lastObservedUtc)}
+            {formatListingDate(realDateForGameHours(l.postedTotalHours))}
           </span>
         ),
       },
@@ -1105,6 +1109,7 @@ export function MarketItemPage() {
       hasLiningAttr,
       animalGroup,
       currentGameHours,
+      realDateForGameHours,
     ],
   );
 
@@ -1451,6 +1456,7 @@ export function MarketItemPage() {
                     onShowUnsoldChange={(v) =>
                       dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
                     }
+                    realDateForGameHours={realDateForGameHours}
                   />
                 </CardContent>
               </Card>

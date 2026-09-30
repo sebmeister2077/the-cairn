@@ -1,16 +1,9 @@
 import { Link } from "react-router-dom";
-import { useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
-import {
-  useAuctionSummary,
-  formatGears,
-  getCurrentGameHours,
-  getLatestObservedUtc,
-} from "@/lib/auction";
-import { GAME_HOURS_PER_REAL_DAY } from "@/hooks/useMarketInsights";
-import { makeGameHoursToRealIso } from "@/components/market/DualDateAxisTick";
+import { useAuctionSummary, formatGears } from "@/lib/auction";
+import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
 import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
 import { MarketWealthChart } from "@/components/market/MarketWealthChart";
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
@@ -21,18 +14,7 @@ export function MarketOverviewPage() {
   // Anchor in-game hours to real time so the charts can label the x-axis with
   // real dates. Prefer the live app clock (exact sweep time ↔ game clock); fall
   // back to the summary's generation time mapped to the end of the last bucket.
-  const realDateForGameHours = useMemo(() => {
-    if (!data) return undefined;
-    const clockHours = getCurrentGameHours();
-    const clockUtc = getLatestObservedUtc();
-    const haveClock = clockHours > 0 && clockUtc !== "";
-    const maxSeriesHours = (data.timeSeries ?? []).reduce((m, p) => Math.max(m, p.gameHours), 0);
-    const anchorGameHours = haveClock
-      ? clockHours
-      : maxSeriesHours + (data.timeSeriesBucketHours ?? 0);
-    const anchorRealMs = haveClock ? Date.parse(clockUtc) : Date.parse(data.generatedUtc);
-    return makeGameHoursToRealIso(anchorGameHours, anchorRealMs, GAME_HOURS_PER_REAL_DAY);
-  }, [data]);
+  const realDateForGameHours = useRealDateForGameHours();
 
   if (isPending) {
     return (

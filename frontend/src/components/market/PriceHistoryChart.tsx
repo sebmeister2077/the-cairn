@@ -54,6 +54,7 @@ export function PriceHistoryChart({
   defaultPerUnit,
   showUnsold,
   onShowUnsoldChange,
+  realDateForGameHours,
 }: {
   points: SalePoint[];
   /** Expired-but-not-cancelled listings that never sold, plotted at their asking
@@ -65,6 +66,10 @@ export function PriceHistoryChart({
   /** Controlled "show unsold" state; when omitted the component keeps its own. */
   showUnsold?: boolean;
   onShowUnsoldChange?: (v: boolean) => void;
+  /** Maps an in-game total-hours value to a real-world date (ISO). When given,
+   * the x-axis secondary line uses this consistent linear anchor instead of
+   * snapping to the nearest recorded sale's observed timestamp. */
+  realDateForGameHours?: (gameHours: number) => string | null;
 }) {
   const canStack = stackSize > 1;
   const [perUnit, setPerUnit] = useState(defaultPerUnit || !canStack);
@@ -123,10 +128,14 @@ export function PriceHistoryChart({
 
   const unit = perUnit ? "unit" : "stack";
 
-  // Ticks sit at in-game times (`t`), not real timestamps, so snap each to the
-  // nearest recorded sale's real-world date for the second axis line.
+  // Ticks sit at in-game times (`t`), not real timestamps. Prefer the shared
+  // game-hours→real-date anchor when provided (consistent with the overview
+  // charts); otherwise snap each tick to the nearest recorded sale's date.
   const realDateAt = useMemo(() => makeRealDateLookup(chartData), [chartData]);
-  const renderXTick = useMemo(() => createGameDateTick(realDateAt), [realDateAt]);
+  const renderXTick = useMemo(
+    () => createGameDateTick(realDateForGameHours ?? realDateAt),
+    [realDateForGameHours, realDateAt],
+  );
 
   return (
     <div className="space-y-3">
