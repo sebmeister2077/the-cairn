@@ -72,6 +72,23 @@ export function MarketOverviewPage() {
       />
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
+        {data.priceIndex && (
+          <Link to="/market/inflation">
+            <Card className="hover:border-primary transition-colors h-full">
+              <CardContent className="py-4">
+                <div className="font-medium">Inflation</div>
+                <p className="text-sm text-muted-foreground">
+                  Prices are about{" "}
+                  <strong>
+                    {data.priceIndex.headline.inflationPct >= 0 ? "+" : ""}
+                    {data.priceIndex.headline.inflationPct.toFixed(0)}%
+                  </strong>{" "}
+                  vs {Math.max(1, Math.round(data.priceIndex.headline.spanDays / 30))} months ago.
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
         <Link to="/market/listings">
           <Card className="hover:border-primary transition-colors h-full">
             <CardContent className="py-4">

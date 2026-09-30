@@ -442,6 +442,71 @@ export interface MarketTimePoint {
     firstTimeBuyers: number;
 }
 
+/**
+ * Inflation index (a Consumer-Price-Index-style measure of how much Auction House
+ * prices, in Rusty Gears, rose over the recorded window). Built from a
+ * matched-model basket — only items that traded in both periods count — and
+ * aggregated with a robust trimmed mean, so sticky-priced items correctly show
+ * little change and a few volatile big-ticket goods can't distort it. See
+ * `build_price_index` in `backend/process_auction_data.py`.
+ */
+export interface PriceIndexHeadline {
+    /** Estimated % price change from the first window to the last. */
+    inflationPct: number;
+    /** 95% confidence bounds on `inflationPct` (bootstrap). */
+    ciLowPct: number;
+    ciHighPct: number;
+    /** Plain confidence grade from CI width + basket size + coverage. */
+    confidence: "high" | "medium" | "low";
+    /** Days between the first and last recorded sale. */
+    spanDays: number;
+    /** Length in days of each comparison window (first vs last). */
+    windowDays: number;
+    baseWindowSales: number;
+    recentWindowSales: number;
+    /** Items in the matched basket behind the headline. */
+    basketItems: number;
+    /** Share of the recent window's gears the basket covers (0..1). */
+    gearsCoverage: number;
+    /** Alternate index methods for transparency (all % change). */
+    crossChecks: { tornqvist: number; jevons: number; median: number };
+}
+
+/** One point on the biweekly chained price-index trend (base 100 at the start). */
+export interface PriceIndexTrendPoint {
+    binIndex: number;
+    /** UTC start of the bucket. */
+    startUtc: string;
+    /** Index level (100 = prices at the start of recording). */
+    index: number;
+    /** 95% confidence band around `index`. */
+    ciLow: number;
+    ciHigh: number;
+    /** Items in this step's matched basket (0 at the base point). */
+    basketItems: number;
+    gearsCoverage: number;
+}
+
+/** Inflation for one category of goods (first vs last window). */
+export interface PriceIndexCategory {
+    category: string;
+    inflationPct: number;
+    basketItems: number;
+    gears: number;
+}
+
+export interface PriceIndex {
+    method: string;
+    currency: string;
+    startUtc: string;
+    endUtc: string;
+    binDays: number;
+    minSales: number;
+    headline: PriceIndexHeadline;
+    trend: PriceIndexTrendPoint[];
+    categories: PriceIndexCategory[];
+}
+
 export interface AuctionSummary {
     generatedUtc: string;
     totals: MarketTotals;
@@ -469,6 +534,9 @@ export interface AuctionSummary {
     /** Wealth concentration & rich-to-rich trade flows. Optional — absent in
      *  data generated before this metric existed (and any stale cache). */
     wealth?: WealthConcentration;
+    /** Inflation index over the recorded window. Optional — absent in data
+     *  generated before this metric existed (and any stale cache). */
+    priceIndex?: PriceIndex | null;
 }
 
 export interface ItemCatalogEntry {

@@ -47,6 +47,7 @@ import { ToolsWaypointMacroPage } from "@/pages/tools/ToolsWaypointMacroPage";
 import { MarketOverviewPage } from "@/pages/market/MarketOverviewPage";
 import { MarketConverterPage } from "@/pages/market/MarketConverterPage";
 import { MarketListingsPage } from "@/pages/market/MarketListingsPage";
+import { MarketInflationPage } from "@/pages/market/MarketInflationPage";
 import { MarketInsightsPage } from "@/pages/market/MarketInsightsPage";
 import { MarketItemPage } from "@/pages/market/MarketItemPage";
 import { MarketItemsPage } from "@/pages/market/MarketItemsPage";
@@ -129,6 +130,7 @@ const NavigationRoutes = {
     Overview: "/market",
     Listings: "/market/listings",
     Items: "/market/items",
+    Inflation: "/market/inflation",
     Insights: "/market/insights",
     Converter: "/market/converter",
     Orders: "/market/orders",
@@ -214,6 +216,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketLeaderboards"
   | "app.nav.subtabs.marketPlayers"
   | "app.nav.subtabs.marketMap"
+  | "app.nav.subtabs.marketInflation"
   | "app.nav.categories.rarity"
   | "app.nav.subtabs.rarityRocks"
   | "app.nav.chip.new"
@@ -248,6 +251,7 @@ const subTabs: Subtabs = {
     { value: "/market", labelKey: "app.nav.subtabs.marketOverview" },
     { value: "/market/listings", labelKey: "app.nav.subtabs.marketListings" },
     { value: "/market/items", labelKey: "app.nav.subtabs.marketItems" },
+    { value: "/market/inflation", labelKey: "app.nav.subtabs.marketInflation" },
     { value: "/market/insights", labelKey: "app.nav.subtabs.marketInsights" },
     { value: "/market/converter", labelKey: "app.nav.subtabs.marketConverter" },
     { value: "/market/orders", labelKey: "app.nav.subtabs.marketOrders" },
@@ -1137,6 +1141,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
                 <MarketInsightsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/market/inflation"
+            element={
+              <ErrorBoundary title="Auction House failed" resetKeys={[location.pathname]}>
+                <MarketInflationPage />
               </ErrorBoundary>
             }
           />

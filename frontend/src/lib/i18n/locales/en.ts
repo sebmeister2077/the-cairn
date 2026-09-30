@@ -94,6 +94,7 @@ export const en = {
                 marketOverview: "Overview",
                 marketListings: "Listings",
                 marketItems: "Items",
+                marketInflation: "Inflation",
                 marketInsights: "Insights",
                 marketConverter: "Converter",
                 marketOrders: "Orders",

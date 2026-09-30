@@ -37,11 +37,12 @@ import bisect
 import hashlib
 import json
 import math
+import random
 import re
 import struct
 import zlib
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
@@ -1936,6 +1937,307 @@ def latest_board_cutoff(records: List[Dict[str, Any]]) -> Optional[datetime]:
     return cutoff
 
 
+# --------------------------------------------------------------------------- #
+# Price index (inflation)
+# --------------------------------------------------------------------------- #
+# A Consumer-Price-Index-style measure of how much Auction House prices (in Rusty
+# Gears) rose over the recorded window. Per-item inflation is unreliable — many
+# sellers never adjust prices and thin items are noisy — so we never trust one
+# item. Instead we build a *matched-model* index: for items that traded in both
+# periods, take each period's MEDIAN per-unit price, form price relatives, and
+# aggregate them with a weighted TRIMMED mean (robust to a few volatile big-ticket
+# goods). Sticky items contribute ~no change, correctly. The headline compares a
+# first-vs-last window directly (no chain drift); a biweekly chained series gives
+# the trend shape. Confidence = bootstrap 95% interval + basket-size / coverage.
+# backend/analyze_price_index.py is the exploratory tool behind these choices.
+PRICE_INDEX_BIN_DAYS = 14          # biweekly trend buckets
+PRICE_INDEX_WINDOW_DAYS = 30       # first-vs-last window for the headline number
+PRICE_INDEX_MIN_SALES = 3          # min sales for an item to enter a basket, per side
+PRICE_INDEX_TRIM = 0.16            # weight trimmed from each tail before averaging
+PRICE_INDEX_BOOTSTRAP = 600        # resamples for the confidence interval
+
+
+class _PICell:
+    """Per-(period, item) price sample: per-unit prices, total gears, sale count."""
+
+    __slots__ = ("prices", "gears", "count")
+
+    def __init__(self) -> None:
+        self.prices: List[float] = []
+        self.gears = 0.0
+        self.count = 0
+
+    def add(self, ppu: float, price: float) -> None:
+        self.prices.append(ppu)
+        self.gears += price
+        self.count += 1
+
+    @property
+    def median(self) -> float:
+        return percentile(sorted(self.prices), 0.5)
+
+
+def price_index_sale_time(rec: Dict[str, Any]) -> Optional[datetime]:
+    """Real-world moment a sale was confirmed (`lastObservedUtc`, else first-seen)."""
+    return _parse_utc(rec.get("lastObservedUtc")) or _parse_utc(rec.get("observedUtc"))
+
+
+def price_index_clean_sold(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Sold listings usable for the index: exclude spam, barter, and written
+    parchments/books; require a positive per-unit price, quantity and sale time."""
+    out = []
+    for r in records:
+        if not r.get("sold") or r.get("spam") or r.get("externalTrade"):
+            continue
+        if _has_written_text(r):
+            continue
+        if not r.get("pricePerUnit") or r["pricePerUnit"] <= 0 or not r.get("qty"):
+            continue
+        if price_index_sale_time(r) is None:
+            continue
+        out.append(r)
+    return out
+
+
+def _pi_window_cells(
+    recs: List[Dict[str, Any]], lo: datetime, hi: datetime
+) -> Dict[int, _PICell]:
+    """itemId -> price sample over every sale whose time is in [lo, hi)."""
+    cells: Dict[int, _PICell] = defaultdict(_PICell)
+    for r in recs:
+        ts = price_index_sale_time(r)
+        if lo <= ts < hi:
+            cells[r["itemId"]].add(r["pricePerUnit"], r["price"])
+    return cells
+
+
+# One matched item between two periods: (log price relative, gears before, gears after).
+_PIRel = Tuple[float, float, float]
+
+
+def _pi_relatives(
+    prev: Dict[int, _PICell], now: Dict[int, _PICell], min_sales: int
+) -> List[_PIRel]:
+    """Matched-model relatives for items that traded >= min_sales times in BOTH."""
+    rels: List[_PIRel] = []
+    for item_id, c_now in now.items():
+        c_prev = prev.get(item_id)
+        if c_prev is None or c_prev.count < min_sales or c_now.count < min_sales:
+            continue
+        m_prev, m_now = c_prev.median, c_now.median
+        if m_prev <= 0 or m_now <= 0:
+            continue
+        rels.append((math.log(m_now / m_prev), c_prev.gears, c_now.gears))
+    return rels
+
+
+def _pi_weights(rels: List[_PIRel]) -> List[float]:
+    """Törnqvist weight per item = mean of its gears-share across the two periods."""
+    tp = sum(gp for _, gp, _ in rels) or 1.0
+    tn = sum(gn for _, _, gn in rels) or 1.0
+    return [0.5 * (gp / tp + gn / tn) for _, gp, gn in rels]
+
+
+def _pi_weighted_mean(vals: List[float], w: List[float]) -> float:
+    return sum(v * wi for v, wi in zip(vals, w)) / (sum(w) or 1.0)
+
+
+def _pi_weighted_median(vals: List[float], w: List[float]) -> float:
+    pairs = sorted(zip(vals, w))
+    total = sum(w)
+    if total <= 0:
+        return 0.0
+    half, cum = total / 2, 0.0
+    for v, wi in pairs:
+        cum += wi
+        if cum >= half:
+            return v
+    return pairs[-1][0]
+
+
+def _pi_weighted_trimmed_mean(
+    vals: List[float], w: List[float], trim: float = PRICE_INDEX_TRIM
+) -> float:
+    """Weighted mean after discarding `trim` of the weight from each tail; boundary
+    weights split fractionally so the trim is exact."""
+    pairs = sorted(zip(vals, w))
+    total = sum(w)
+    if total <= 0:
+        return 0.0
+    lo_cut, hi_cut = total * trim, total * (1 - trim)
+    cum = num = wsum = 0.0
+    for v, wi in pairs:
+        seg_lo, seg_hi = max(cum, lo_cut), min(cum + wi, hi_cut)
+        cum += wi
+        if seg_hi > seg_lo:
+            num += v * (seg_hi - seg_lo)
+            wsum += seg_hi - seg_lo
+    return num / wsum if wsum > 0 else _pi_weighted_median(vals, w)
+
+
+def _pi_factors(rels: List[_PIRel]) -> Dict[str, float]:
+    """Aggregate multiplicative price factors for a relative-set (1.0 = no change)."""
+    if not rels:
+        return {"trimmed": 1.0, "tornqvist": 1.0, "jevons": 1.0, "median": 1.0}
+    logs = [lr for lr, _, _ in rels]
+    w = _pi_weights(rels)
+    return {
+        "trimmed": math.exp(_pi_weighted_trimmed_mean(logs, w)),
+        "tornqvist": math.exp(_pi_weighted_mean(logs, w)),
+        "jevons": math.exp(sum(logs) / len(logs)),
+        "median": math.exp(_pi_weighted_median(logs, w)),
+    }
+
+
+def _pi_bootstrap(
+    step_rels: List[List[_PIRel]],
+    method: str,
+    iterations: int = PRICE_INDEX_BOOTSTRAP,
+    seed: int = 12345,
+) -> List[Tuple[float, float]]:
+    """Per-point 95% CI for the chained index by resampling each step's basket of
+    item relatives with replacement. Returns [(lo, hi)] aligned to the index path
+    (including the fixed base point)."""
+    rng = random.Random(seed)
+    paths: List[List[float]] = [[] for _ in range(len(step_rels) + 1)]
+    for _ in range(iterations):
+        val = 100.0
+        paths[0].append(val)
+        for i, rels in enumerate(step_rels, start=1):
+            if rels:
+                sample = [rels[rng.randrange(len(rels))] for _ in range(len(rels))]
+                val *= _pi_factors(sample)[method]
+            paths[i].append(val)
+    return [
+        (percentile(sorted(p), 0.025), percentile(sorted(p), 0.975)) if p else (0.0, 0.0)
+        for p in paths
+    ]
+
+
+def _pi_pct(factor: float) -> float:
+    return round((factor - 1.0) * 100, 2)
+
+
+def _pi_confidence(ci_width_pp: float, basket: int, coverage: float) -> str:
+    """Plain confidence grade from headline CI width, basket size and coverage."""
+    if basket >= 60 and coverage >= 0.5 and ci_width_pp <= 12:
+        return "high"
+    if basket >= 25 and coverage >= 0.35 and ci_width_pp <= 22:
+        return "medium"
+    return "low"
+
+
+def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Inflation index for summary.json: a drift-free first-vs-last headline, a
+    biweekly chained trend line with a bootstrap confidence band, and a per-category
+    breakdown. Returns None when there isn't enough sold data to measure change."""
+    sold = price_index_clean_sold(records)
+    if len(sold) < 100:
+        return None
+    t0 = min(price_index_sale_time(r) for r in sold)
+    tmax = max(price_index_sale_time(r) for r in sold)
+    span_days = (tmax - t0).days
+    if span_days < PRICE_INDEX_BIN_DAYS * 2:
+        return None
+
+    # --- Trend: biweekly chained trimmed index (drop an incomplete final bin) -- #
+    bin_w = timedelta(days=PRICE_INDEX_BIN_DAYS)
+    last_full = int((tmax - t0) / bin_w)
+    if (tmax - t0) < last_full * bin_w + bin_w:
+        last_full -= 1
+    bin_cells = [
+        _pi_window_cells(sold, t0 + b * bin_w, t0 + (b + 1) * bin_w)
+        for b in range(last_full + 1)
+    ]
+    step_rels, basket_sizes, coverages = [], [], []
+    for a in range(1, len(bin_cells)):
+        rels = _pi_relatives(bin_cells[a - 1], bin_cells[a], PRICE_INDEX_MIN_SALES)
+        step_rels.append(rels)
+        basket_sizes.append(len(rels))
+        total = sum(c.gears for c in bin_cells[a].values()) or 1.0
+        coverages.append(sum(g for _, _, g in rels) / total)
+    factors = [_pi_factors(r)["trimmed"] for r in step_rels]
+    ci = _pi_bootstrap(step_rels, "trimmed")
+    trend, idx = [], 100.0
+    for i in range(len(bin_cells)):
+        if i > 0:
+            idx *= factors[i - 1]
+        trend.append(
+            {
+                "binIndex": i,
+                "startUtc": (t0 + i * bin_w).isoformat(),
+                "index": round(idx, 2),
+                "ciLow": round(ci[i][0], 2),
+                "ciHigh": round(ci[i][1], 2),
+                "basketItems": basket_sizes[i - 1] if i > 0 else 0,
+                "gearsCoverage": round(coverages[i - 1], 3) if i > 0 else 0.0,
+            }
+        )
+
+    # --- Headline: drift-free first vs last window --------------------------- #
+    win = min(PRICE_INDEX_WINDOW_DAYS, max(7, span_days // 3))
+    base = _pi_window_cells(sold, t0, t0 + timedelta(days=win))
+    recent = _pi_window_cells(
+        sold, tmax - timedelta(days=win), tmax + timedelta(seconds=1)
+    )
+    tw = _pi_relatives(base, recent, PRICE_INDEX_MIN_SALES)
+    tw_ci = _pi_bootstrap([tw], "trimmed")
+    f = _pi_factors(tw)
+    coverage = sum(g for _, _, g in tw) / (sum(c.gears for c in recent.values()) or 1.0)
+    ci_low_pct = round(tw_ci[-1][0] - 100.0, 2)
+    ci_high_pct = round(tw_ci[-1][1] - 100.0, 2)
+    headline = {
+        "inflationPct": _pi_pct(f["trimmed"]),
+        "ciLowPct": ci_low_pct,
+        "ciHighPct": ci_high_pct,
+        "confidence": _pi_confidence(ci_high_pct - ci_low_pct, len(tw), coverage),
+        "spanDays": span_days,
+        "windowDays": win,
+        "baseWindowSales": sum(c.count for c in base.values()),
+        "recentWindowSales": sum(c.count for c in recent.values()),
+        "basketItems": len(tw),
+        "gearsCoverage": round(coverage, 3),
+        "crossChecks": {
+            "tornqvist": _pi_pct(f["tornqvist"]),
+            "jevons": _pi_pct(f["jevons"]),
+            "median": _pi_pct(f["median"]),
+        },
+    }
+
+    # --- Per-category breakdown (first vs last window) ----------------------- #
+    by_cat: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+    for r in sold:
+        by_cat[r.get("category") or "unknown"].append(r)
+    categories = []
+    for cat, recs in by_cat.items():
+        b = _pi_window_cells(recs, t0, t0 + timedelta(days=win))
+        rc = _pi_window_cells(recs, tmax - timedelta(days=win), tmax + timedelta(seconds=1))
+        rels = _pi_relatives(b, rc, PRICE_INDEX_MIN_SALES)
+        if len(rels) < 5:
+            continue
+        categories.append(
+            {
+                "category": cat,
+                "inflationPct": _pi_pct(_pi_factors(rels)["trimmed"]),
+                "basketItems": len(rels),
+                "gears": round(sum(g for _, _, g in rels)),
+            }
+        )
+    categories.sort(key=lambda c: c["gears"], reverse=True)
+
+    return {
+        "method": "matched-model trimmed-mean; headline compares first vs last window",
+        "currency": "Rusty Gears",
+        "startUtc": t0.isoformat(),
+        "endUtc": tmax.isoformat(),
+        "binDays": PRICE_INDEX_BIN_DAYS,
+        "minSales": PRICE_INDEX_MIN_SALES,
+        "headline": headline,
+        "trend": trend,
+        "categories": categories[:20],
+    }
+
+
 def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     clean = [r for r in records if not r["spam"] and not r["externalTrade"]]
     sold = [r for r in clean if r["sold"]]
@@ -2137,6 +2439,7 @@ def build_summary(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         "auctioneers": auctioneer_list,
         "heatmapBin": HEATMAP_BIN,
         "wealth": wealth,
+        "priceIndex": build_price_index(records),
     }
 
 
