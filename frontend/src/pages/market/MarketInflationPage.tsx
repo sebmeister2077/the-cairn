@@ -92,9 +92,9 @@ function CategoryBreakdown({ categories }: { categories: PriceIndexCategory[] })
       <CardContent className="py-4">
         <div className="mb-1 font-medium">Which goods moved the most</div>
         <p className="mb-3 text-sm text-muted-foreground">
-          Price change by type of item, from the start of tracking to now. Sorted by how much of
-          the market they make up. The item count shows how many products back each figure —
-          categories with only one or two are rougher estimates.
+          Price change by type of item, from the start of tracking to now. Sorted by how much of the
+          market they make up. The item count shows how many products back each figure — categories
+          with only one or two are rougher estimates.
         </p>
         <ul className="divide-y divide-border text-sm">
           {visible.map((c) => (

@@ -48,6 +48,8 @@ const KNOWN_ROUTES: string[] = [
     "/market",
     "/market/listings",
     "/market/insights",
+    "/market/inflation",
+    "/market/players",
     "/market/converter",
     "/market/orders",
     "/market/leaderboards",
