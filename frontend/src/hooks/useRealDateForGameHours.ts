@@ -9,7 +9,7 @@ import { makeGameHoursToRealIso } from "@/components/market/DualDateAxisTick";
  * falling back to the summary's generation time mapped to the end of the last
  * bucket. The returned function yields null when no usable anchor exists.
  */
-export function useRealDateForGameHours(): (gameHours: number) => string | null {
+export function useRealDateForGameHours(): (gameHours: number | null | undefined) => string | null {
     const { data } = useAuctionSummary();
     return useMemo(() => {
         const clockHours = getCurrentGameHours();
@@ -24,6 +24,8 @@ export function useRealDateForGameHours(): (gameHours: number) => string | null 
             : data
                 ? Date.parse(data.generatedUtc)
                 : NaN;
-        return makeGameHoursToRealIso(anchorGameHours, anchorRealMs, GAME_HOURS_PER_REAL_DAY);
+        const toIso = makeGameHoursToRealIso(anchorGameHours, anchorRealMs, GAME_HOURS_PER_REAL_DAY);
+        return (gameHours: number | null | undefined) =>
+            gameHours == null ? null : toIso(gameHours);
     }, [data]);
 }
