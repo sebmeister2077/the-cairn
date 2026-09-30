@@ -1955,6 +1955,8 @@ PRICE_INDEX_WINDOW_DAYS = 30       # first-vs-last window for the headline numbe
 PRICE_INDEX_MIN_SALES = 3          # min sales for an item to enter a basket, per side
 PRICE_INDEX_TRIM = 0.16            # weight trimmed from each tail before averaging
 PRICE_INDEX_BOOTSTRAP = 600        # resamples for the confidence interval
+PRICE_INDEX_CATEGORY_MIN_ITEMS = 1  # matched items a category needs to be listed
+PRICE_INDEX_CATEGORY_LIMIT = 60     # most categories to emit (sorted by market share)
 
 
 class _PICell:
@@ -2213,7 +2215,7 @@ def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
         b = _pi_window_cells(recs, t0, t0 + timedelta(days=win))
         rc = _pi_window_cells(recs, tmax - timedelta(days=win), tmax + timedelta(seconds=1))
         rels = _pi_relatives(b, rc, PRICE_INDEX_MIN_SALES)
-        if len(rels) < 5:
+        if len(rels) < PRICE_INDEX_CATEGORY_MIN_ITEMS:
             continue
         categories.append(
             {
@@ -2234,7 +2236,7 @@ def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
         "minSales": PRICE_INDEX_MIN_SALES,
         "headline": headline,
         "trend": trend,
-        "categories": categories[:20],
+        "categories": categories[:PRICE_INDEX_CATEGORY_LIMIT],
     }
 
 

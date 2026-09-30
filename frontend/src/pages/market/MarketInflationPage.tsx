@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuctionSummary } from "@/lib/auction";
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
 import { MarketInflationChart } from "@/components/market/MarketInflationChart";
-import type { PriceIndexHeadline } from "@/models/auction";
+import type { PriceIndexCategory, PriceIndexHeadline } from "@/models/auction";
 
 const CONFIDENCE_STYLE: Record<string, { label: string; cls: string; blurb: string }> = {
   high: {
@@ -82,6 +83,46 @@ function Headline({ h }: { h: PriceIndexHeadline }) {
   );
 }
 
+function CategoryBreakdown({ categories }: { categories: PriceIndexCategory[] }) {
+  const INITIAL = 15;
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? categories : categories.slice(0, INITIAL);
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <div className="mb-1 font-medium">Which goods moved the most</div>
+        <p className="mb-3 text-sm text-muted-foreground">
+          Price change by type of item, from the start of tracking to now. Sorted by how much of
+          the market they make up. The item count shows how many products back each figure —
+          categories with only one or two are rougher estimates.
+        </p>
+        <ul className="divide-y divide-border text-sm">
+          {visible.map((c) => (
+            <li key={c.category} className="flex items-center justify-between gap-3 py-1.5">
+              <span className="capitalize">{c.category}</span>
+              <span className="flex items-center gap-3 tabular-nums">
+                <span className="text-xs text-muted-foreground">
+                  {c.basketItems} item{c.basketItems === 1 ? "" : "s"}
+                </span>
+                <Pill pct={c.inflationPct} />
+              </span>
+            </li>
+          ))}
+        </ul>
+        {categories.length > INITIAL && (
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="mt-3 text-sm text-primary hover:underline"
+          >
+            {showAll ? "Show fewer" : `Show all ${categories.length} categories`}
+          </button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function Explainer() {
   return (
     <Card>
@@ -140,27 +181,7 @@ export function MarketInflationPage() {
           <Headline h={pi.headline} />
           <MarketInflationChart trend={pi.trend} />
 
-          {pi.categories.length > 0 && (
-            <Card>
-              <CardContent className="py-4">
-                <div className="mb-1 font-medium">Which goods moved the most</div>
-                <p className="mb-3 text-sm text-muted-foreground">
-                  Price change by type of item, from the start of tracking to now. Sorted by how
-                  much of the market they make up.
-                </p>
-                <ul className="divide-y divide-border text-sm">
-                  {pi.categories.slice(0, 12).map((c) => (
-                    <li key={c.category} className="flex items-center justify-between py-1.5">
-                      <span className="capitalize">{c.category}</span>
-                      <span className="tabular-nums">
-                        <Pill pct={c.inflationPct} />
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
+          {pi.categories.length > 0 && <CategoryBreakdown categories={pi.categories} />}
 
           <Explainer />
         </>
