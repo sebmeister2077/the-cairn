@@ -25,8 +25,12 @@ though they share the same account/keys and differ only in ``R2_BUCKET_NAME``.
 
 from __future__ import annotations
 
+import gzip
 import mimetypes
+import os
+import tempfile
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Callable, Iterable, List
 
@@ -63,6 +67,89 @@ def _content_type(path: Path) -> str:
     if ext in _CONTENT_TYPES:
         return _CONTENT_TYPES[ext]
     return mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+
+
+# Text artifacts we store gzip-compressed on R2. The object keeps its original
+# key/extension (e.g. ``listings.json``) and simply gains a ``Content-Encoding:
+# gzip`` header, so browsers transparently decompress it — no frontend change —
+# while the on-the-wire transfer shrinks ~8-10x (a 70MB listings.json -> ~8MB).
+# We compress at publish time rather than relying on the CDN because Cloudflare
+# skips on-the-fly compression for very large responses.
+_GZIP_EXTS = {".json", ".jsonl"}
+# Skip tiny files (e.g. the ~100-byte manifest): gzip's framing overhead can
+# make them larger and the transfer saving is nil. The manifest also stays plain
+# so it remains trivially debuggable as the no-cache invalidation pointer.
+_GZIP_MIN_BYTES = 1024
+# Stream in 1 MiB chunks so compressing a 70MB file never loads it all into RAM
+# (important for the ~1/min server-side rebuild's memory budget).
+_GZIP_CHUNK = 1 << 20
+
+
+def _should_gzip(path: Path) -> bool:
+    return path.suffix.lower() in _GZIP_EXTS and path.stat().st_size >= _GZIP_MIN_BYTES
+
+
+@contextmanager
+def _gzip_source(path: Path):
+    """Yield ``(fileobj, content_encoding, upload_size)`` for uploading ``path``.
+
+    For compressible text artifacts this streams a gzip-compressed copy to a
+    temp file and reports ``"gzip"`` so the caller sets ``Content-Encoding``;
+    otherwise it opens the original file as-is. Any temp file is removed on exit.
+    """
+    if not _should_gzip(path):
+        with path.open("rb") as fh:
+            yield fh, None, path.stat().st_size
+        return
+
+    tmp = tempfile.NamedTemporaryFile(suffix=".gz", delete=False)
+    try:
+        # mtime=0 -> deterministic output (identical data -> identical bytes).
+        with path.open("rb") as src, gzip.GzipFile(fileobj=tmp, mode="wb", mtime=0) as gz:
+            for chunk in iter(lambda: src.read(_GZIP_CHUNK), b""):
+                gz.write(chunk)
+        tmp.flush()
+        tmp.close()
+        with open(tmp.name, "rb") as fh:
+            yield fh, "gzip", os.path.getsize(tmp.name)
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+
+def _upload_file(
+    client,
+    path: Path,
+    *,
+    bucket: str,
+    key: str,
+    cache: str,
+    log: Callable[[str], None],
+    label: str,
+) -> None:
+    """Upload one artifact to ``bucket/key``, gzip-compressing text data.
+
+    Best-effort: a per-file failure is logged and swallowed so one bad object
+    can never abort the rest of the publish.
+    """
+    try:
+        orig = path.stat().st_size
+        with _gzip_source(path) as (fileobj, encoding, size):
+            extra = {"ContentType": _content_type(path), "CacheControl": cache}
+            if encoding:
+                extra["ContentEncoding"] = encoding
+            client.upload_fileobj(fileobj, bucket, key, ExtraArgs=extra)
+        if encoding == "gzip":
+            log(
+                f"[r2] {label}:   {key}  "
+                f"({orig / 1024:,.1f} KB -> {size / 1024:,.1f} KB gzip)"
+            )
+        else:
+            log(f"[r2] {label}:   {key}  ({size / 1024:,.1f} KB)")
+    except Exception as exc:  # noqa: BLE001 - best-effort per file
+        log(f"[r2] {label}:   FAILED {key}: {exc}")
 
 
 def _client_for(values: dict):
@@ -132,21 +219,9 @@ def publish_auction_files(
         for f in resolved:
             key = f"{prefix}/{f.name}"
             cache = _MANIFEST_CACHE if f.name == manifest_name else _IMMUTABLE_CACHE
-            try:
-                with f.open("rb") as fh:
-                    client.upload_fileobj(
-                        fh,
-                        bucket,
-                        key,
-                        ExtraArgs={
-                            "ContentType": _content_type(f),
-                            "CacheControl": cache,
-                        },
-                    )
-                size_kb = f.stat().st_size / 1024
-                log(f"[r2] {env}:   {key}  ({size_kb:,.1f} KB)")
-            except Exception as exc:  # noqa: BLE001 - best-effort per file
-                log(f"[r2] {env}:   FAILED {key}: {exc}")
+            _upload_file(
+                client, f, bucket=bucket, key=key, cache=cache, log=log, label=env
+            )
 
 
 def _client_from_env():
@@ -239,18 +314,6 @@ def publish_files_to_bucket(
     for f in resolved:
         key = f"{prefix}/{f.name}"
         cache = _MANIFEST_CACHE if f.name == manifest_name else _IMMUTABLE_CACHE
-        try:
-            with f.open("rb") as fh:
-                client.upload_fileobj(
-                    fh,
-                    bucket,
-                    key,
-                    ExtraArgs={
-                        "ContentType": _content_type(f),
-                        "CacheControl": cache,
-                    },
-                )
-            size_kb = f.stat().st_size / 1024
-            log(f"[r2] env:   {key}  ({size_kb:,.1f} KB)")
-        except Exception as exc:  # noqa: BLE001 - best-effort per file
-            log(f"[r2] env:   FAILED {key}: {exc}")
+        _upload_file(
+            client, f, bucket=bucket, key=key, cache=cache, log=log, label="env"
+        )
