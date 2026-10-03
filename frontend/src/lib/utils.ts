@@ -19,3 +19,11 @@ export function formatTimestamp(s: string | number | null | undefined): string {
   const { i18n, dateFormat } = store.getState();
   return formatDateTime(s, dateFormat.pref, LOCALE_META[i18n.locale].intlCode);
 }
+
+export function formatSeconds(s: number | null | undefined): string {
+  if (s == null) return "—";
+  if (s < 60) return `${s.toFixed(0)}s`;
+  if (s < 3600) return `${(s / 60).toFixed(1)}m`;
+  if (s < 86400) return `${(s / 3600).toFixed(1)}h`;
+  return `${(s / 86400).toFixed(1)}d`;
+}
