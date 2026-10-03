@@ -21,6 +21,10 @@ export type PagesFilters = {
     selectedPath: string | null;
 };
 
+export type MapLayerFilters = {
+    timelineMode: "enables" | "snapshots";
+}
+
 export const DEFAULT_PAGES_FILTERS: PagesFilters = {
     query: "",
     minViews: 0,
@@ -35,12 +39,17 @@ export type AdminUsageFilters = {
     pages: PagesFilters;
     /** Accounts section: when true, exclude API keys that never made a request. */
     accountsExcludeUnused: boolean;
+
+    mapLayer: MapLayerFilters;
 };
 
 export const DEFAULT_ADMIN_USAGE_FILTERS: AdminUsageFilters = {
     overviewCategories: [],
     pages: DEFAULT_PAGES_FILTERS,
     accountsExcludeUnused: false,
+    mapLayer: {
+        timelineMode: "enables",
+    },
 };
 
 export const adminUsageFiltersSlice = createSlice({
@@ -73,6 +82,9 @@ export const adminUsageFiltersSlice = createSlice({
         setPagesSelectedPath(state, action: PayloadAction<string | null>) {
             state.pages.selectedPath = action.payload;
         },
+        setMapLayerTimelineMode(state, action: PayloadAction<"enables" | "snapshots">) {
+            state.mapLayer.timelineMode = action.payload;
+        },
         setAccountsExcludeUnused(state, action: PayloadAction<boolean>) {
             state.accountsExcludeUnused = action.payload;
         },
@@ -99,5 +111,6 @@ export const {
     patchPagesFilters,
     resetPagesFilters,
     setPagesSelectedPath,
+    setMapLayerTimelineMode,
     setAccountsExcludeUnused,
 } = adminUsageFiltersSlice.actions;

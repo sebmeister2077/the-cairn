@@ -101,12 +101,6 @@ export function TimeSeriesChart({
     return { wide, series: seriesList, effectiveWindow };
   }, [data, xKey, yKey, seriesKey, trendWindow]);
 
-  if (wide.length === 0) {
-    return (
-      <div className="text-sm text-muted-foreground py-10 text-center">No data in window.</div>
-    );
-  }
-
   const trendVisible = showTrend && wide.length >= 2;
   const trendLabel = `Trend (${effectiveWindow}-bucket avg)`;
   const isDark = useIsDarkTheme();
@@ -126,6 +120,12 @@ export function TimeSeriesChart({
   } as const;
   const tooltipLabelStyle = { color: "hsl(var(--popover-foreground))" } as const;
   const tooltipItemStyle = { color: "hsl(var(--popover-foreground))" } as const;
+
+  if (wide.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground py-10 text-center">No data in window.</div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={height}>

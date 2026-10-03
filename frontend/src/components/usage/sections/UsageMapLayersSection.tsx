@@ -11,6 +11,8 @@ import { formatDuration } from "@/lib/format-duration";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { TrendToggle } from "./UsageTrendToggle";
 import { Info } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setMapLayerTimelineMode } from "@/store/slices/adminUsageFilters";
 
 // ---------------------------------------------------------------------------
 // Section: Map Layers — TOPS map advanced-overlay usage.
@@ -40,7 +42,10 @@ export function MapLayersSection(props: {
   const [showTrend, setShowTrend] = useState(true);
   // "enables" counts switch-on events; "snapshots" counts how many daily
   // config snapshots had the layer on (reflects sustained, not just new, use).
-  const [timelineMode, setTimelineMode] = useState<"enables" | "snapshots">("enables");
+  const dispatch = useAppDispatch();
+  const filters = useAppSelector((s) => s.adminUsageFilters.mapLayer);
+  const timelineMode = filters.timelineMode;
+
   const q = useQuery({
     queryKey: ["usage", "map-layers", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>
@@ -110,7 +115,7 @@ export function MapLayersSection(props: {
           <div className="flex items-center gap-3">
             <Tabs
               value={timelineMode}
-              onValueChange={(v) => setTimelineMode(v as "enables" | "snapshots")}
+              onValueChange={(v) => dispatch(setMapLayerTimelineMode(v as "enables" | "snapshots"))}
             >
               <TabsList>
                 <TabsTrigger value="enables">Enables</TabsTrigger>
