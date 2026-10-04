@@ -316,10 +316,16 @@ async def export_data(ctx: dict = Depends(require_active_user)) -> dict:
         raise HTTPException(status_code=400, detail="No exportable account")
 
     contributions = accounts_db.list_contributions_for_user(ctx["key"])
+    traders = accounts_db.list_traders_for_user(ctx["key"])
+    landmarks = accounts_db.list_landmarks_for_user(ctx["key"])
+    orders = accounts_db.list_orders_for_user(ctx["key"])
     return {
         "exported_at": datetime.now(timezone.utc).isoformat(),
         "user": _serialise_user(user, include_key=True),
         "contributions": contributions,
+        "traders": traders,
+        "landmarks": landmarks,
+        "orders": orders,
     }
 
 

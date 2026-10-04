@@ -874,6 +874,69 @@ def list_contributions_for_user(api_key: str) -> List[dict]:
             return [dict(r) for r in cur.fetchall()]
 
 
+def list_traders_for_user(api_key: str) -> List[dict]:
+    """All trader audit records authored by api_key (any action), for export."""
+    if not api_key:
+        return []
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return []
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, trader_id, action, source, trader_type,
+                          actor_display_name, before_payload, after_payload,
+                          submission_stats, duplicate_flagged, created_at
+                       FROM traders_audit
+                       WHERE actor_api_key_id = %s
+                       ORDER BY created_at DESC, id DESC""",
+                (str(key_id),),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_landmarks_for_user(api_key: str) -> List[dict]:
+    """All landmark audit records authored by api_key (any action), for export."""
+    if not api_key:
+        return []
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return []
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, landmark_id, action, actor_display_name,
+                          before_payload, after_payload, created_at
+                       FROM landmarks_audit
+                       WHERE actor_api_key_id = %s
+                       ORDER BY created_at DESC, id DESC""",
+                (str(key_id),),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def list_orders_for_user(api_key: str) -> List[dict]:
+    """All orders authored by api_key (any status), for export."""
+    if not api_key:
+        return []
+    key_id = api_key_cache.ensure_id(api_key)
+    if key_id is None:
+        return []
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT id, side, item_id, item_name, preview_text, notes,
+                          unit_price, quantity, quantity_remaining, sell_unit,
+                          stack_size, status, location, mobility,
+                          created_at, updated_at
+                       FROM orders
+                       WHERE author_api_key_id = %s
+                       ORDER BY created_at DESC""",
+                (str(key_id),),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
 # ---------------------------------------------------------------------------
 # Stats cache
 # ---------------------------------------------------------------------------
