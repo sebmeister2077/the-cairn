@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
-import { ContributionRegionPicker } from "../ContributionRegionPicker";
+import { ContributionRegionPicker } from "@/components/contributions/ContributionRegionPicker";
 import type { ContributeInfo } from "@/models/contributions";
 import type { ContributionRegion, TopsMapResolutionMeta } from "@/lib/api";
 

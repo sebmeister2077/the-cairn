@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { deleteWaypoints } from "@/lib/api";
-import { FileUpload } from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -8,8 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
-import { SaveFileHelp } from "@/components/SaveFileHelp";
-import { SafetyNotice } from "@/components/SafetyNotice";
+import { SaveFileHelp } from "@/components/other/SaveFileHelp";
+import { SafetyNotice } from "@/components/singleplayer/SafetyNotice";
 import { useTranslation } from "@/lib/i18n";
 import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
 

@@ -27,7 +27,7 @@ import {
   adminWebauthnLogout,
   getAdminSession,
 } from "@/lib/api";
-import { AdminPasskeyDialog, useAdminSessionExpiry } from "@/components/AdminPasskeyDialog";
+import { AdminPasskeyDialog, useAdminSessionExpiry } from "@/components/admin/AdminPasskeyDialog";
 import { Trans, useFormat, useTranslation } from "@/lib/i18n";
 
 export function AdminPasskeyPanel() {

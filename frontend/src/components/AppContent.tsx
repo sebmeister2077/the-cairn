@@ -8,12 +8,12 @@ import { Menu } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Logo } from "@/assets/Logo";
-import { ApiKeyDialog } from "@/components/ApiKeyDialog";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/AdminPasskeyDialog";
-import { ContactDialog, useContactDialog } from "@/components/ContactDialog";
-import { SupportDialog, useSupportDialog } from "@/components/SupportDialog";
+import { ApiKeyDialog } from "@/components/other/ApiKeyDialog";
+import { LanguageSwitcher } from "@/components/prefferences/LanguageSwitcher";
+import { ThemeSwitcher } from "@/components/prefferences/ThemeSwitcher";
+import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/admin/AdminPasskeyDialog";
+import { ContactDialog, useContactDialog } from "@/components/other/ContactDialog";
+import { SupportDialog, useSupportDialog } from "@/components/other/SupportDialog";
 import { hasSupport } from "@/lib/support-links";
 import { ExtractPage } from "@/pages/singleplayer/ExtractPage";
 import { ImportPage } from "@/pages/singleplayer/ImportPage";
@@ -25,7 +25,7 @@ import { TOPSMapViewPage } from "@/pages/multiplayer/TOPSMapViewPage";
 import { ContributePage } from "@/pages/multiplayer/ContributePage";
 import { ContributeTLsPage } from "@/pages/multiplayer/ContributeTLsPage";
 import { ContributeTradersPage } from "@/pages/multiplayer/ContributeTradersPage";
-import { ApiKeysPage } from "@/pages/admin/ApiKeysPage";
+import { ApiKeysPage } from "@/pages/admin/AdminApiKeysPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminBannedIpsPage } from "@/pages/admin/AdminBannedIpsPage";
 import { AdminFlagsPage } from "@/pages/admin/AdminFlagsPage";
@@ -37,7 +37,7 @@ import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
-import { DownloadPage } from "@/pages/DownloadPage";
+import { DownloadPage } from "@/pages/other/DownloadPage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
@@ -62,9 +62,9 @@ import { PreferencesPage } from "@/pages/other/PreferencesPage";
 import { PrivacyPage } from "@/pages/other/PrivacyPage";
 import { TermsPage } from "@/pages/other/TermsPage";
 import { NotFoundPage } from "@/pages/other/NotFoundPage";
-import { CookieConsent } from "@/components/CookieConsent";
+import { CookieConsent } from "@/components/other/CookieConsent";
 import { openCookieSettings } from "@/lib/consent";
-import { EventPromoBanner } from "@/components/EventPromoBanner";
+import { EventPromoBanner } from "@/components/other/EventPromoBanner";
 import { GeneralPage } from "@/pages/other/GeneralPage";
 import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
 import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
@@ -87,13 +87,13 @@ import {
   type AdminPendingCounts,
   type DefaultInviteRecord,
 } from "@/lib/api";
-import { AuthRejectedBanner } from "./AuthRejectedBanner";
+import { AuthRejectedBanner } from "./other/AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useOrdersUnread } from "@/lib/orders";
 import { useReduxState } from "@/store/hooks";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { ErrorBoundary } from "./ErrorBoundary";
+import { ErrorBoundary } from "./other/ErrorBoundary";
 
 const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },

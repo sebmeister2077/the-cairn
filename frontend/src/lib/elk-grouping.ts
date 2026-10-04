@@ -10,7 +10,7 @@
 // grouping the user expects *every* short walk to appear, and the K-NN cap
 // silently dropped edges when several TLs clustered close together.
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import {
     canonicalEdgeKey,
     classifyWalkLeg,

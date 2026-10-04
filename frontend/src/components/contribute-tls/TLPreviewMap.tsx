@@ -17,7 +17,7 @@
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { MapViewer, type WorldLineSegment } from "@/components/MapViewer";
+import { MapViewer, type WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   navigateToTL,

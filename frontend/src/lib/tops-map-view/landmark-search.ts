@@ -1,4 +1,4 @@
-import type { WorldPointMarker } from "@/components/MapViewer";
+import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 
 /** Deduped, sorted list of landmark labels for the search combobox. */
 export function buildLandmarkSuggestions(

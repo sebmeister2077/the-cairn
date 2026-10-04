@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Loader2, Maximize2 } from "lucide-react";
-import { TLLegendButton } from "@/components/TLLegendButton";
+import { TLLegendButton } from "@/components/tops-map-viewer/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import {

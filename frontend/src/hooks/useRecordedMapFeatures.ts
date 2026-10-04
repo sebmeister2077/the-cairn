@@ -15,7 +15,7 @@
 // plus the ABSOLUTE Y (the true in-game altitude).
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import type { WorldPointMarker } from "@/components/MapViewer";
+import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import { TRADER_TYPE_COLORS, mapExportTraderType, type TraderType } from "@/lib/trader-types";
 import { loadMapFeatures } from "@/lib/mapFeatures";
 

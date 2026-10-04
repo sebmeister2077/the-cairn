@@ -23,7 +23,7 @@
  * forbidden-edge tracking is a `Uint8Array` mask rather than a string set.
  */
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 
 // ---------------------------------------------------------------------------
 // Public types

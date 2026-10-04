@@ -21,7 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileUpload } from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Loader2, Trash2, CheckCircle2 } from "lucide-react";
 import {
   contributeTraders,
@@ -44,8 +44,8 @@ import {
 } from "@/lib/trader-types";
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
 import { useTraderColors } from "@/hooks/useTraderColors";
-import { MaintenanceChip } from "@/components/MaintenanceChip";
-import { FilePathHelp, type FilePathHelpItem } from "@/components/FilePathHelp";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
+import { FilePathHelp, type FilePathHelpItem } from "@/components/other/FilePathHelp";
 import { useTranslation } from "@/lib/i18n";
 import { NavLink } from "react-router-dom";
 

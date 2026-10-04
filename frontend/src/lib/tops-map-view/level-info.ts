@@ -1,4 +1,4 @@
-import type { MapStats, MapTileSet } from "@/components/MapViewer";
+import type { MapStats, MapTileSet } from "@/components/tops-map-viewer/MapViewer";
 import type { TopsMapLevelChunks, TopsMapResolutionMeta } from "@/lib/api";
 
 export const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours

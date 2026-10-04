@@ -3,7 +3,7 @@ import { Provider } from "react-redux";
 import "./index.css";
 import App from "./App.tsx";
 import { I18nProvider } from "./lib/i18n";
-import { ThemeProvider } from "./components/ThemeProvider.tsx";
+import { ThemeProvider } from "./components/prefferences/ThemeProvider.tsx";
 import { setPrototypes } from "./lib/prototypes.ts";
 import { store } from "./store";
 

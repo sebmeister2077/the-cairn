@@ -13,7 +13,7 @@ import {
   X,
 } from "lucide-react";
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

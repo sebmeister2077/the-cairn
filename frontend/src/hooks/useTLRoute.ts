@@ -18,7 +18,7 @@ import {
     type TLGraph,
 } from "@/lib/tl-routing";
 import { computeRoutesAsync, isRouteWorkerAvailable } from "@/lib/tl-routing-client";
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import {
     setRouteComputing,
     setRoutePlannerError,

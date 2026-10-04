@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Check, Copy, Loader2, Trash2 } from "lucide-react";
 import { listMyTLScreenshotRequests, withdrawTLScreenshotRequest } from "@/lib/api";
 import type { TLScreenshotCoords, TLScreenshotRequest } from "@/models/tlScreenshots";
-import { useCopy } from "@/components/useCopy";
+import { useCopy } from "@/hooks/useCopy";
 import { useTranslation } from "@/lib/i18n";
 
 const QUERY_KEY = ["my-tl-screenshot-requests"] as const;

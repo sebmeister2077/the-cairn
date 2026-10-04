@@ -38,15 +38,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { KeyRow } from "@/components/ApiKeyRow";
+import { KeyRow } from "@/components/admin/api-keys/ApiKeyRow";
 import { PermissionsDialog } from "@/components/admin/PermissionsDialog";
-import { CreatedKeyDialog } from "@/components/CreatedKeyDialog";
-import { GenerateKeyDialog } from "@/components/GenerateKeyDialog";
-import { InviteLinkRow } from "@/components/InviteLinkRow";
-import { CreateInviteLinkDialog } from "@/components/CreateInviteLinkDialog";
-import { CreatedInviteLinkDialog } from "@/components/CreatedInviteLinkDialog";
-import { LoadMoreButton } from "@/components/LoadMoreButton";
-import { Pagination } from "@/components/Pagination";
+import { CreatedKeyDialog } from "@/components/admin/api-keys/CreatedKeyDialog";
+import { GenerateKeyDialog } from "@/components/admin/api-keys/GenerateKeyDialog";
+import { InviteLinkRow } from "@/components/admin/api-keys/InviteLinkRow";
+import { CreateInviteLinkDialog } from "@/components/admin/api-keys/CreateInviteLinkDialog";
+import { CreatedInviteLinkDialog } from "@/components/admin/api-keys/CreatedInviteLinkDialog";
+import { LoadMoreButton } from "@/components/other/LoadMoreButton";
+import { Pagination } from "@/components/other/Pagination";
 import { useDebounced } from "@/hooks/useDebounced";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { adminQueries } from "@/lib/constants/react-query";

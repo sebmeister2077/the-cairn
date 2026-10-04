@@ -19,7 +19,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Combobox } from "@/components/ui/combobox";
-import { QtyStepper } from "@/components/QtyStepper";
+import { QtyStepper } from "@/components/market/QtyStepper";
 import {
   Select,
   SelectContent,

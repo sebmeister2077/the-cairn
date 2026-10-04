@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PawPrint, Pencil, Share2, Trash2 } from "lucide-react";
 import { useDebounceCallback } from "@react-hook/debounce";
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TLGrouping } from "@/lib/tl-groupings";
@@ -111,16 +111,16 @@ export function TLGroupingListItem({
     );
     return summary;
   }, [g, allSegments, confirmedEdges, pendingAttest, pendingUnattest, kNeighbors, walkSpeed]);
-  const elkAllDone =
-    elkSummary != null && elkSummary.total > 0 && elkSummary.unconfirmed === 0;
-  const elkTitle = elkSummary == null
-    ? t("topsMap.groupingsDrawer.elk.notEnoughTls")
-    : elkAllDone
-      ? t("topsMap.groupingsDrawer.elk.allDone", { total: elkSummary.total })
-      : t("topsMap.groupingsDrawer.elk.progress", {
-          confirmed: elkSummary.confirmed,
-          total: elkSummary.total,
-        });
+  const elkAllDone = elkSummary != null && elkSummary.total > 0 && elkSummary.unconfirmed === 0;
+  const elkTitle =
+    elkSummary == null
+      ? t("topsMap.groupingsDrawer.elk.notEnoughTls")
+      : elkAllDone
+        ? t("topsMap.groupingsDrawer.elk.allDone", { total: elkSummary.total })
+        : t("topsMap.groupingsDrawer.elk.progress", {
+            confirmed: elkSummary.confirmed,
+            total: elkSummary.total,
+          });
 
   function handleColorChange(next: string) {
     setColorDraft(next);
@@ -241,9 +241,7 @@ export function TLGroupingListItem({
             title={elkTitle}
             aria-label={elkTitle}
           >
-            <PawPrint
-              className={`size-4 ${elkAllDone ? "text-emerald-600" : ""}`}
-            />
+            <PawPrint className={`size-4 ${elkAllDone ? "text-emerald-600" : ""}`} />
           </Button>
           <Button
             type="button"

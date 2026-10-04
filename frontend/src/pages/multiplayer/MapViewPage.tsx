@@ -1,8 +1,8 @@
 import { useState, useCallback, type FormEvent } from "react";
 import { getMapStats, renderMap } from "@/lib/api";
-import { MapViewer, type MapStats } from "@/components/MapViewer";
-import { FileUpload } from "@/components/FileUpload";
-import { MapDbFileHelp } from "@/components/MapDbFileHelp";
+import { MapViewer, type MapStats } from "@/components/tops-map-viewer/MapViewer";
+import { FileUpload } from "@/components/ui/FileUpload";
+import { MapDbFileHelp } from "@/components/singleplayer/MapDbFileHelp";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";

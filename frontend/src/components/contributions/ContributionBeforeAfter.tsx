@@ -25,7 +25,7 @@ import {
 import { useTranslation } from "@/lib/i18n";
 import { Loader2 } from "lucide-react";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
-import { MapViewer, type MapStats, type WorldPointMarker } from "./MapViewer";
+import { MapViewer, type MapStats, type WorldPointMarker } from "../tops-map-viewer/MapViewer";
 import { useLandmarksOverlay } from "@/hooks/useOverlayData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";

@@ -62,9 +62,9 @@ import {
   type RouteOverlay,
   type WorldLineSegment,
   type WorldPointMarker,
-} from "@/components/MapViewer";
-import { AdminResolutionPanel } from "@/components/AdminResolutionPanel";
-import { MaintenanceChip } from "@/components/MaintenanceChip";
+} from "@/components/tops-map-viewer/MapViewer";
+import { AdminResolutionPanel } from "@/components/admin/AdminResolutionPanel";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

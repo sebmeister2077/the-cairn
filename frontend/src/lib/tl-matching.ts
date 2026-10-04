@@ -29,7 +29,7 @@
  * are already on the map.
  */
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import type {
     ParsedWaypoint,
     UserTL,

@@ -5,15 +5,15 @@ import {
   isRegionSelectionValid,
   type ContributionMode,
 } from "./ContributionRegionField";
-import { FileUpload } from "../FileUpload";
-import { MapDbFileHelp } from "../MapDbFileHelp";
+import { FileUpload } from "@/components/ui/FileUpload";
+import { MapDbFileHelp } from "@/components/singleplayer/MapDbFileHelp";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import type { ContributeInfo } from "@/models/contributions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { Input } from "../ui/input";
+import { Input } from "@/components/ui/input";
 import {
   contributeMap,
   getMyAccountSafe,
@@ -26,7 +26,7 @@ import { useState, type FormEvent } from "react";
 import { contributeQueries } from "@/lib/constants/react-query";
 import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
-import { MaintenanceChip } from "../MaintenanceChip";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 export function ContributeUploadCard({
   contributionInfo,

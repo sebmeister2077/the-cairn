@@ -2,8 +2,8 @@ import type { ContributeInfo, PendingContribution } from "@/models/contributions
 import { PendingLifecycleBadge } from "./PendingLyfecycleBadge";
 import { Button } from "../ui/button";
 import { Check, Eye, Loader2, Undo2, XIcon } from "lucide-react";
-import { MapViewer } from "../MapViewer";
-import { ContributionBeforeAfter } from "../ContributionBeforeAfter";
+import { MapViewer } from "../tops-map-viewer/MapViewer";
+import { ContributionBeforeAfter } from "./ContributionBeforeAfter";
 import { AdminRegionReviewPanel } from "../admin/AdminRegionReviewPanel";
 import { MatchScoreBadge } from "./MatchScoreBadge";
 import { useTranslation } from "@/lib/i18n";

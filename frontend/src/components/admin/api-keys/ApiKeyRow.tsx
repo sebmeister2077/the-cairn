@@ -3,8 +3,8 @@ import { Check, Copy, Trash2, ShieldCheck } from "lucide-react";
 import { type ApiKeyRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fmt } from "@/components/DateFormatter";
-import { useCopy } from "@/components/useCopy";
+import { fmt } from "@/lib/dateFormat";
+import { useCopy } from "@/hooks/useCopy";
 import {
   Dialog,
   DialogContent,

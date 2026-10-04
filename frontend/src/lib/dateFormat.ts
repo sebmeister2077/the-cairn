@@ -1,3 +1,7 @@
+import { LOCALE_META } from "@/lib/i18n";
+import { store } from "@/store";
+
+
 // User-selectable date formatting.
 //
 // The month is always rendered as a localized 3-letter abbreviation
@@ -128,4 +132,14 @@ export function formatWithOptions(
         out[slot] = values[i];
     });
     return out.join("");
+}
+
+
+/** Format an ISO date string (or null) as date+time using the user's
+ *  selected date-format preference. Non-React callers only — components
+ *  should prefer the `useDateFormat()` hook. */
+export function fmt(iso: string | null): string {
+    if (!iso) return "—";
+    const { i18n, dateFormat } = store.getState();
+    return formatDateTime(iso, dateFormat.pref, LOCALE_META[i18n.locale].intlCode);
 }

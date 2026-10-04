@@ -31,7 +31,7 @@ import {
   type ContributionRegion,
 } from "@/lib/api";
 import { contributeQueries } from "@/lib/constants/react-query";
-import { ContributionBeforeAfter } from "../ContributionBeforeAfter";
+import { ContributionBeforeAfter } from "../contributions/ContributionBeforeAfter";
 import type { ContributeInfo, PendingContribution } from "@/models/contributions";
 
 const TILE_SIZE = 32;

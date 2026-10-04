@@ -2,7 +2,7 @@ import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setGroupings as setGroupingsAction } from "@/store/slices/tlGroupings";
 
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 
 /**
  * Local-only "favorite TL groupings" feature.

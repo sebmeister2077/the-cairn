@@ -2,7 +2,7 @@ import type { HistoryEntry } from "@/models/contributions";
 import { ImageOff, Loader2, Undo2, History } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "@/lib/i18n";
-import { MapViewer } from "../MapViewer";
+import { MapViewer } from "../tops-map-viewer/MapViewer";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";

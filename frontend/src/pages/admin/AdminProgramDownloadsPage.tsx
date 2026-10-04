@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useDebounced } from "@/hooks/useDebounced";
-import { InfiniteScrollSentinel } from "@/components/InfiniteScrollSentinel";
+import { InfiniteScrollSentinel } from "@/components/other/InfiniteScrollSentinel";
 
 const PAGE_SIZE = 25;
 

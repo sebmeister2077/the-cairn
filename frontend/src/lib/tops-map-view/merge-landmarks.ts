@@ -1,4 +1,4 @@
-import type { WorldPointMarker } from "@/components/MapViewer";
+import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 
 export interface MergeLandmarksArgs {
     usingWebCartographer: boolean;

@@ -4,7 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkerStylePicker } from "@/components/account/MarkerStylePicker";
 import { TraderColorPicker } from "@/components/account/TraderColorPicker";
-import { DateFormatSwitcher } from "@/components/DateFormatSwitcher";
+import { DateFormatSwitcher } from "@/components/prefferences/DateFormatSwitcher";
 import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 import type { HeatmapBin } from "@/models/auction";
 
 interface AuctionHeatmapOverlayLayerProps {

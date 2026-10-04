@@ -14,7 +14,7 @@
 
 import { useMemo } from "react";
 import { useAppSelector } from "@/store/hooks";
-import type { WorldLineSegment } from "@/components/MapViewer";
+import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { useTranslocatorsOverlay } from "@/hooks/useOverlayData";
 import { useWebCartographerTranslocators } from "@/hooks/useWebCartographerOverlays";
 import { TOPS_MAP_LAST_UPDATE } from "@/store/slices/mapView";

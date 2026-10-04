@@ -27,9 +27,10 @@ import {
   uploadScreenshotToR2,
 } from "@/lib/api";
 import { useTranslation } from "@/lib/i18n";
-import { MaintenanceChip } from "../MaintenanceChip";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
+import { MB } from "@/lib/constants/file-size";
 
-const MAX_BYTES = 8 * 1024 * 1024;
+const MAX_BYTES = 8 * MB;
 const ACCEPTED_TYPES = ["image/png"];
 
 interface SlotState {

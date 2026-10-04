@@ -10,9 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { useCopy } from "@/components/useCopy";
-import { fmt } from "@/components/DateFormatter";
-import { Pagination } from "@/components/Pagination";
+import { useCopy } from "@/hooks/useCopy";
+import { fmt } from "@/lib/dateFormat";
+import { Pagination } from "@/components/other/Pagination";
 import {
   Dialog,
   DialogContent,

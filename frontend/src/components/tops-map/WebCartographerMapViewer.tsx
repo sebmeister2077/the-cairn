@@ -9,7 +9,7 @@ import {
 } from "react";
 import { Button } from "@/components/ui/button";
 import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Maximize2 } from "lucide-react";
-import { TLLegendButton } from "@/components/TLLegendButton";
+import { TLLegendButton } from "@/components/tops-map-viewer/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
 import {
@@ -50,7 +50,7 @@ import type {
   RouteOverlay,
   WorldLineSegment,
   WorldPointMarker,
-} from "@/components/MapViewer";
+} from "@/components/tops-map-viewer/MapViewer";
 import { useMapDrawing } from "@/hooks/useMapDrawing";
 import { drawElements } from "@/lib/drawing/render";
 import { translateElement as translateDrawElement } from "@/lib/drawing/elements";

@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileUpload } from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import {
   Select,

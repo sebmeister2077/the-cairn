@@ -4,7 +4,7 @@ import { Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { listActiveMaintenanceNotices, type MaintenanceNotice } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // refresh notice list every 5 minutes
 

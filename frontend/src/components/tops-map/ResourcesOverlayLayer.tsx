@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 import type { ResourceDeposit } from "@/lib/api";
 import type { ResourcesOverlayState } from "@/hooks/useResourcesOverlay";
 

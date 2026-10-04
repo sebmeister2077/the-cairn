@@ -1,4 +1,4 @@
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 import { useTranslation } from "@/lib/i18n";
 import { formatTimestamp } from "@/lib/utils";
 

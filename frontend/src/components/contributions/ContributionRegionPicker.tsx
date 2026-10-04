@@ -33,7 +33,12 @@ import {
   type TopsMapLevelChunks,
   type TopsMapResolutionMeta,
 } from "@/lib/api";
-import { MapViewer, type MapStats, type MapTileSet, type WorldPointMarker } from "./MapViewer";
+import {
+  MapViewer,
+  type MapStats,
+  type MapTileSet,
+  type WorldPointMarker,
+} from "@/components/tops-map-viewer/MapViewer";
 import { useLandmarksOverlay } from "@/hooks/useOverlayData";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";

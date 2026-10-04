@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useCopy } from "@/components/useCopy";
+import { useCopy } from "@/hooks/useCopy";
 import { useTranslation } from "@/lib/i18n";
 
 const DISCORD_USERNAME = "vintagecreeper";

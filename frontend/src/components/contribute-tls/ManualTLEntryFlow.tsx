@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Trash2, CheckCircle2, Clipboard, ClipboardCheck } from "lucide-react";
 import { ApiError, contributeTLsManual } from "@/lib/api";
-import { MaintenanceChip } from "@/components/MaintenanceChip";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 import { TRANSLOCATORS_QUERY_KEY } from "@/hooks/useOverlayData";
 import { useTranslation } from "@/lib/i18n";
 

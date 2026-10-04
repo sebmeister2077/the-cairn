@@ -1,4 +1,4 @@
-import type { RouteOverlay, WorldLineSegment } from "@/components/MapViewer";
+import type { RouteOverlay, WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { walkLegEdgeRef, classifyWalkLeg } from "@/lib/elk-walkable";
 import type { ElkWalkableEdge } from "@/lib/elk-walkable";
 import type { RendezvousResult, RouteResult } from "@/lib/tl-routing";

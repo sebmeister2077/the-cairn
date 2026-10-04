@@ -13,7 +13,7 @@
 // the marker accordingly and expose an X/Y/Z hover tooltip.
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import type { WorldPointMarker } from "@/components/MapViewer";
+import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import { loadMapFeatures } from "@/lib/mapFeatures";
 
 /** Fill colour for a rapid source that is inside a land claim ("taken"). */

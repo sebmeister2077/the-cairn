@@ -1,5 +1,5 @@
-import { FilePathHelp } from "@/components/FilePathHelp";
-import { FileUpload } from "@/components/FileUpload";
+import { FilePathHelp } from "@/components/other/FilePathHelp";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { IdentifyMapsResult } from "@/components/identify-maps/IdentifyMapsResult";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

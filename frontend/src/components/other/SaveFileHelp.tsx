@@ -1,4 +1,4 @@
-import { FilePathHelp } from "@/components/FilePathHelp";
+import { FilePathHelp } from "@/components/other/FilePathHelp";
 
 const SAVE_PATHS = [
   { label: "Windows", path: "%appdata%\\VintagestoryData\\Saves\\" },

@@ -1,4 +1,4 @@
-import { FilePathHelp } from "@/components/FilePathHelp";
+import { FilePathHelp } from "@/components/other/FilePathHelp";
 import { Trans, useTranslation } from "@/lib/i18n";
 
 interface MapDbFileHelpProps {

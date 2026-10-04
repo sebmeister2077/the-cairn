@@ -18,7 +18,7 @@ import type {
     LandmarkProperty,
     WorldLineSegment,
     WorldPointMarker,
-} from "@/components/MapViewer";
+} from "@/components/tops-map-viewer/MapViewer";
 import { TRADER_TYPE_COLORS, isTraderType, type TraderType } from "@/lib/trader-types";
 
 export interface CachedOverlay<T> {

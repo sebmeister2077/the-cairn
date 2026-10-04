@@ -5,7 +5,7 @@ import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { AppContent } from "@/components/AppContent";
-import { PageViewTracker } from "@/components/PageViewTracker";
+import { PageViewTracker } from "@/components/other/PageViewTracker";
 import {
   getStoredApiKey,
   clearPersistedQueryCache,

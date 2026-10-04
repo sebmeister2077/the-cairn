@@ -1,4 +1,4 @@
-import { AdminBackupsPanel } from "@/components/AdminBackupsPanel";
+import { AdminBackupsPanel } from "@/components/admin/AdminBackupsPanel";
 import { ApprovedContributionsCard } from "@/components/contributions/ApprovedContributionsCard";
 import { CantContributeCard } from "@/components/contributions/CantContributeCard";
 import { ContributeUploadCard } from "@/components/contributions/ContributeUploadCard";

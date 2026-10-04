@@ -24,7 +24,7 @@
 // anyway; if it has, the cache is transparently replaced.
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import type { WorldLineSegment, WorldPointMarker } from "@/components/MapViewer";
+import type { WorldLineSegment, WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import { API_BASE } from "@/lib/api";
 import { parseLandmarks, parseTranslocators } from "./useOverlayData";
 

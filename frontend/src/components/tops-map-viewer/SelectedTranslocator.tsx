@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Check, Copy, Pin, PinOff, X } from "lucide-react";
-import type { WorldLineSegment } from "../MapViewer";
+import type { WorldLineSegment } from "./MapViewer";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 

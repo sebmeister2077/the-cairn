@@ -1,4 +1,4 @@
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 
 interface AdminTraderAreaOverlayProps {
   stats: MapStats | null;

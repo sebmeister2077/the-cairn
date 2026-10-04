@@ -10,8 +10,8 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { useCopy } from "@/components/useCopy";
-import { fmt } from "@/components/DateFormatter";
+import { useCopy } from "@/hooks/useCopy";
+import { fmt } from "@/lib/dateFormat";
 
 export function CreatedInviteLinkDialog({
   record,
@@ -42,7 +42,11 @@ export function CreatedInviteLinkDialog({
           <div className="space-y-1.5">
             <Label>Invite Link</Label>
             <div className="flex gap-2">
-              <Input readOnly value={inviteUrl} className="font-mono text-xs text-muted-foreground" />
+              <Input
+                readOnly
+                value={inviteUrl}
+                className="font-mono text-xs text-muted-foreground"
+              />
               <Button
                 variant="outline"
                 size="sm"
@@ -59,13 +63,24 @@ export function CreatedInviteLinkDialog({
           </div>
 
           <div className="rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground space-y-0.5">
-            <p><span className="font-medium text-foreground">Permissions:</span> {record.permissions === "contribute" ? "Read & Contribute" : "Read only"}</p>
-            <p><span className="font-medium text-foreground">Max claims:</span> {record.max_uses !== null ? record.max_uses : "Unlimited"}</p>
-            <p><span className="font-medium text-foreground">Expires:</span> {record.expires_at ? fmt(record.expires_at) : "Never"}</p>
+            <p>
+              <span className="font-medium text-foreground">Permissions:</span>{" "}
+              {record.permissions === "contribute" ? "Read & Contribute" : "Read only"}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Max claims:</span>{" "}
+              {record.max_uses !== null ? record.max_uses : "Unlimited"}
+            </p>
+            <p>
+              <span className="font-medium text-foreground">Expires:</span>{" "}
+              {record.expires_at ? fmt(record.expires_at) : "Never"}
+            </p>
           </div>
         </div>
 
-        <Button onClick={onClose} className="w-full">Done</Button>
+        <Button onClick={onClose} className="w-full">
+          Done
+        </Button>
       </DialogContent>
     </Dialog>
   );

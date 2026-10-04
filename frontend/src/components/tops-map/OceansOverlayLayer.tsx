@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 import oceanImg from "@/assets/Oceans/oceans.svg";
 
 // The oceans image is a 140k-block-radius scan centred on the player

@@ -1,14 +1,14 @@
 import { useState, type FormEvent } from "react";
 import { importWaypoints } from "@/lib/api";
-import { FileUpload } from "@/components/FileUpload";
+import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { HelpTip } from "@/components/ui/help-tip";
-import { SaveFileHelp } from "@/components/SaveFileHelp";
-import { SafetyNotice } from "@/components/SafetyNotice";
+import { SaveFileHelp } from "@/components/other/SaveFileHelp";
+import { SafetyNotice } from "@/components/singleplayer/SafetyNotice";
 import { useTranslation } from "@/lib/i18n";
 import {
   Select,

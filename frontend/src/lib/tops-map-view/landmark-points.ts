@@ -1,4 +1,4 @@
-import type { WorldPointMarker } from "@/components/MapViewer";
+import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import type { TraderMarker, ClaimTypeMap, EmptyClaimSet } from "@/hooks/useOverlayData";
 import type { RecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";

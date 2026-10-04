@@ -1,4 +1,4 @@
-import type { MapStats } from "@/components/MapViewer";
+import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
 import type { ClimateOverlayBounds } from "@/lib/climate/types";
 
 interface ClimateOverlayLayerProps {
