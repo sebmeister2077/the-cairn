@@ -743,17 +743,44 @@ async def usage_api_keys(
     to: Optional[str] = Query(None),
     granularity: str = Query("day"),
     exclude_unused: bool = Query(False),
+    min_activity_gap_seconds: int = Query(0, ge=0),
 ) -> dict:
     _ensure_db()
     start, end = _resolve_window(frm, to)
     gran = _resolve_granularity(granularity)
-    cache_key = ("api-keys", _iso(start), _iso(end), gran, exclude_unused)
+    gap_seconds = max(0, int(min_activity_gap_seconds))
+    cache_key = (
+        "api-keys",
+        _iso(start),
+        _iso(end),
+        gran,
+        exclude_unused,
+        gap_seconds,
+    )
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
 
     # When excluding unused keys, only count keys that made at least one request.
     unused_filter = "AND usage_count > 0" if exclude_unused else ""
+
+    # When a minimum activity gap is requested, only count accounts that made
+    # at least one usage event at least `gap_seconds` after they were created.
+    # This filters out keys that were only ever used immediately after creation
+    # (e.g. a user clearing their browser cache) from those that kept returning
+    # days or weeks later.
+    new_keys_params: list = [gran, start, end]
+    gap_filter = ""
+    if gap_seconds > 0:
+        gap_filter = """
+                        AND EXISTS (
+                            SELECT 1
+                              FROM usage_events ue
+                             WHERE ue.actor_api_key_id = api_keys.id::text
+                               AND ue.created_at >= api_keys.created_at
+                                                    + make_interval(secs => %s)
+                        )"""
+        new_keys_params.append(gap_seconds)
 
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -763,9 +790,10 @@ async def usage_api_keys(
                        FROM api_keys
                       WHERE created_at >= %s AND created_at < %s
                         {unused_filter}
+                        {gap_filter}
                    GROUP BY bucket
                    ORDER BY bucket""",
-                (gran, start, end),
+                tuple(new_keys_params),
             )
             new_keys = [
                 {"bucket": _iso(r["bucket"]), "count": int(r["count"])}
@@ -790,6 +818,7 @@ async def usage_api_keys(
         "from": _iso(start),
         "to": _iso(end),
         "granularity": gran,
+        "min_activity_gap_seconds": gap_seconds,
         "new_keys": new_keys,
         "active_keys": active_keys,
     }

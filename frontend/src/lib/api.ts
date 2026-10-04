@@ -4059,6 +4059,7 @@ export interface UsageModeration extends UsageWindow {
 
 export interface UsageApiKeys extends UsageWindow {
     granularity: UsageGranularity;
+    min_activity_gap_seconds?: number;
     new_keys: Array<{ bucket: string; count: number }>;
     active_keys: Array<{ bucket: string; count: number }>;
 }
@@ -4203,8 +4204,8 @@ export const adminUsage = {
         _usageGet<UsageDownloads>("downloads", { from: p.from, to: p.to, granularity: p.granularity, limit_recent: p.limit_recent }, signal),
     moderation: (p: UsageGranularityParams, signal?: AbortSignal) =>
         _usageGet<UsageModeration>("moderation", { from: p.from, to: p.to, granularity: p.granularity }, signal),
-    apiKeys: (p: UsageGranularityParams & { exclude_unused?: boolean }, signal?: AbortSignal) =>
-        _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity, exclude_unused: p.exclude_unused ? "true" : undefined }, signal),
+    apiKeys: (p: UsageGranularityParams & { exclude_unused?: boolean; min_activity_gap_seconds?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageApiKeys>("api-keys", { from: p.from, to: p.to, granularity: p.granularity, exclude_unused: p.exclude_unused ? "true" : undefined, min_activity_gap_seconds: p.min_activity_gap_seconds ? p.min_activity_gap_seconds : undefined }, signal),
     topActors: (p: UsageWindowParams & { category?: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsageTopActors>("top-actors", { from: p.from, to: p.to, category: p.category, limit: p.limit }, signal),
     pages: (p: UsageGranularityParams & { limit?: number; path?: string }, signal?: AbortSignal) =>
