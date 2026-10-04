@@ -250,8 +250,13 @@ export function AdminPasskeyPanel() {
             <p className="text-sm text-destructive">{(removeMut.error as Error).message}</p>
           )}
 
-          <div className="flex justify-end">
-            <Button onClick={() => setDialog("register")}>
+          <div className="flex flex-col items-end gap-1">
+            {strictMode && (
+              <p className="text-xs text-muted-foreground">
+                Turn off strict mode to add a new passkey.
+              </p>
+            )}
+            <Button onClick={() => setDialog("register")} disabled={strictMode}>
               <KeyRound className="h-4 w-4" /> {t("account.passkeys.addPasskey")}
             </Button>
           </div>

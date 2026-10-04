@@ -142,6 +142,24 @@ def _require_configured() -> None:
         )
 
 
+def _block_registration_in_strict_mode() -> None:
+    """Refuse new passkey enrolment while global strict mode is enabled.
+
+    In strict mode the admin surface is locked down to already-enrolled
+    passkeys, so no new credentials may be created. Admins must enrol their
+    passkeys *before* strict mode is turned on; to add more afterwards an
+    authorised admin must disable strict mode first.
+    """
+    if _auth._strict_mode_enabled():
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "registration_disabled_strict_mode",
+                "message": "Passkey registration is disabled while strict mode is enabled",
+            },
+        )
+
+
 def _admin_user_id(api_key: str) -> bytes:
     """Stable, opaque 32-byte user handle for this admin key.
 
@@ -278,6 +296,7 @@ async def register_begin(
     api_key: str = Depends(require_admin_keyonly),
 ):
     _require_configured()
+    _block_registration_in_strict_mode()
     from webauthn import generate_registration_options, options_to_json
     from webauthn.helpers.structs import (
         AuthenticatorSelectionCriteria,
@@ -320,6 +339,7 @@ async def register_complete(
     api_key: str = Depends(require_admin_keyonly),
 ):
     _require_configured()
+    _block_registration_in_strict_mode()
     challenge = _take_challenge(_pending_register, api_key)
     if not challenge:
         raise HTTPException(
