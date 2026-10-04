@@ -23,6 +23,12 @@ export type PagesFilters = {
 
 export type MapLayerFilters = {
     timelineMode: "enables" | "snapshots";
+    /**
+     * Minimum seconds between an account's creation and a later usage event
+     * for its map-layer telemetry to count as legitimate. ``0`` = no minimum.
+     * Independent from the Accounts section's own gap value.
+     */
+    minActivityGapSeconds: number;
 }
 
 export const DEFAULT_PAGES_FILTERS: PagesFilters = {
@@ -55,6 +61,7 @@ export const DEFAULT_ADMIN_USAGE_FILTERS: AdminUsageFilters = {
     accountsMinActivityGapSeconds: 0,
     mapLayer: {
         timelineMode: "enables",
+        minActivityGapSeconds: 0,
     },
 };
 
@@ -91,6 +98,9 @@ export const adminUsageFiltersSlice = createSlice({
         setMapLayerTimelineMode(state, action: PayloadAction<"enables" | "snapshots">) {
             state.mapLayer.timelineMode = action.payload;
         },
+        setMapLayerMinActivityGap(state, action: PayloadAction<number>) {
+            state.mapLayer.minActivityGapSeconds = Math.max(0, action.payload);
+        },
         setAccountsExcludeUnused(state, action: PayloadAction<boolean>) {
             state.accountsExcludeUnused = action.payload;
         },
@@ -108,6 +118,10 @@ export const adminUsageFiltersSlice = createSlice({
                 ...DEFAULT_ADMIN_USAGE_FILTERS,
                 ...next,
                 pages: { ...DEFAULT_PAGES_FILTERS, ...(next.pages ?? {}) },
+                mapLayer: {
+                    ...DEFAULT_ADMIN_USAGE_FILTERS.mapLayer,
+                    ...(next.mapLayer ?? {}),
+                },
             };
         });
     },
@@ -121,6 +135,7 @@ export const {
     resetPagesFilters,
     setPagesSelectedPath,
     setMapLayerTimelineMode,
+    setMapLayerMinActivityGap,
     setAccountsExcludeUnused,
     setAccountsMinActivityGap,
 } = adminUsageFiltersSlice.actions;

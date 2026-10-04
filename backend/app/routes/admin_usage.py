@@ -1370,6 +1370,7 @@ async def usage_map_layers(
     to: Optional[str] = Query(None),
     granularity: str = Query("day"),
     settings_limit: int = Query(50, ge=1, le=200),
+    min_activity_gap_seconds: int = Query(0, ge=0),
 ) -> dict:
     """Aggregate advanced-layer usage: per-layer enable counts + dwell, the
     daily-snapshot "on" counts, an enable timeline, and the most common
@@ -1377,10 +1378,37 @@ async def usage_map_layers(
     _ensure_db()
     start, end = _resolve_window(frm, to)
     gran = _resolve_granularity(granularity)
-    cache_key = ("map-layers", _iso(start), _iso(end), gran, int(settings_limit))
+    gap_seconds = max(0, int(min_activity_gap_seconds))
+    cache_key = (
+        "map-layers",
+        _iso(start),
+        _iso(end),
+        gran,
+        int(settings_limit),
+        gap_seconds,
+    )
     cached = _cache_get(cache_key)
     if cached is not None:
         return cached
+
+    # When a minimum activity gap is requested, keep a row only if it is
+    # anonymous (no account) or its account made some event at least
+    # `gap_seconds` after it was created — i.e. the telemetry of throwaway
+    # accounts (used only right after creation) is dropped. Mirrors the
+    # Accounts section filter. The clause carries a single %s (the gap).
+    if gap_seconds > 0:
+        gap_clause = (
+            "\n                        AND (actor_api_key_id IS NULL OR EXISTS ("
+            "SELECT 1 FROM api_keys ak "
+            "WHERE ak.id::text = usage_events.actor_api_key_id "
+            "AND EXISTS (SELECT 1 FROM usage_events g "
+            "WHERE g.actor_api_key_id = usage_events.actor_api_key_id "
+            "AND g.created_at >= ak.created_at + make_interval(secs => %s))))"
+        )
+        gap_param: list = [gap_seconds]
+    else:
+        gap_clause = ""
+        gap_param = []
 
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -1409,9 +1437,9 @@ async def usage_map_layers(
                       WHERE category = 'map_layer'
                         AND event_type <> 'layer.snapshot'
                         AND created_at >= %s AND created_at < %s
-                        AND metadata ? 'layer'
+                        AND metadata ? 'layer'""" + gap_clause + """
                    GROUP BY metadata->>'layer'""",
-                (start, end),
+                [start, end] + gap_param,
             )
             change_rows = {r["layer"]: r for r in cur.fetchall()}
 
@@ -1427,9 +1455,9 @@ async def usage_map_layers(
                             jsonb_each_text(metadata->'settings') AS kv(key, value)
                       WHERE event_type = 'layer.snapshot'
                         AND created_at >= %s AND created_at < %s
-                        AND kv.key = ANY(%s)
+                        AND kv.key = ANY(%s)""" + gap_clause + """
                    GROUP BY kv.key""",
-                (start, end, _MAP_LAYER_IDS),
+                [start, end, _MAP_LAYER_IDS] + gap_param,
             )
             snap_rows = {r["layer"]: r for r in cur.fetchall()}
 
@@ -1437,8 +1465,8 @@ async def usage_map_layers(
                 """SELECT COUNT(*)::int AS n
                        FROM usage_events
                       WHERE event_type = 'layer.snapshot'
-                        AND created_at >= %s AND created_at < %s""",
-                (start, end),
+                        AND created_at >= %s AND created_at < %s""" + gap_clause + """""",
+                [start, end] + gap_param,
             )
             snapshot_total = int((cur.fetchone() or {}).get("n") or 0)
 
@@ -1450,10 +1478,10 @@ async def usage_map_layers(
                        FROM usage_events
                       WHERE event_type = 'layer.enable'
                         AND created_at >= %s AND created_at < %s
-                        AND metadata ? 'layer'
+                        AND metadata ? 'layer'""" + gap_clause + """
                    GROUP BY bucket, layer
                    ORDER BY bucket""",
-                (gran, start, end),
+                [gran, start, end] + gap_param,
             )
             timeline = [
                 {
@@ -1476,10 +1504,10 @@ async def usage_map_layers(
                       WHERE event_type = 'layer.snapshot'
                         AND created_at >= %s AND created_at < %s
                         AND kv.value = 'true'
-                        AND kv.key = ANY(%s)
+                        AND kv.key = ANY(%s)""" + gap_clause + """
                    GROUP BY bucket, layer
                    ORDER BY bucket""",
-                (gran, start, end, _MAP_LAYER_IDS),
+                [gran, start, end, _MAP_LAYER_IDS] + gap_param,
             )
             snapshot_timeline = [
                 {
@@ -1501,11 +1529,11 @@ async def usage_map_layers(
                       WHERE category = 'map_layer'
                         AND event_type IN ('layer.enable', 'layer.adjust')
                         AND created_at >= %s AND created_at < %s
-                        AND metadata ? 'layer'
+                        AND metadata ? 'layer'""" + gap_clause + """
                    GROUP BY layer, setting, value
                    ORDER BY count DESC
                       LIMIT %s""",
-                (start, end, int(settings_limit)),
+                [start, end] + gap_param + [int(settings_limit)],
             )
             top_settings = [
                 {
@@ -1541,6 +1569,7 @@ async def usage_map_layers(
         "from": _iso(start),
         "to": _iso(end),
         "granularity": gran,
+        "min_activity_gap_seconds": gap_seconds,
         "snapshot_total": snapshot_total,
         "layers": layers,
         "timeline": timeline,

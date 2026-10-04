@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
@@ -12,7 +12,33 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { TrendToggle } from "./UsageTrendToggle";
 import { Info } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setMapLayerTimelineMode } from "@/store/slices/adminUsageFilters";
+import { setMapLayerTimelineMode, setMapLayerMinActivityGap } from "@/store/slices/adminUsageFilters";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// ---------------------------------------------------------------------------
+// Section: Map Layers — TOPS map advanced-overlay usage.
+// ---------------------------------------------------------------------------
+
+// Minimum time between an account's creation and a later usage event for its
+// map-layer telemetry to count. Filters out throwaway accounts. Independent
+// from the Accounts section (a 3h default is a common choice here).
+const MIN_GAP_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "0", label: "No minimum" },
+  { value: "3600", label: "1 hour" },
+  { value: "10800", label: "3 hours" },
+  { value: "21600", label: "6 hours" },
+  { value: "43200", label: "12 hours" },
+  { value: "86400", label: "1 day" },
+  { value: "259200", label: "3 days" },
+  { value: "604800", label: "1 week" },
+];
 
 // ---------------------------------------------------------------------------
 // Section: Map Layers — TOPS map advanced-overlay usage.
@@ -45,14 +71,25 @@ export function MapLayersSection(props: {
   const dispatch = useAppDispatch();
   const filters = useAppSelector((s) => s.adminUsageFilters.mapLayer);
   const timelineMode = filters.timelineMode;
+  const minGapSeconds = filters.minActivityGapSeconds;
+  const minGap = String(minGapSeconds);
+  const minGapLabel =
+    MIN_GAP_OPTIONS.find((o) => o.value === minGap)?.label ?? "No minimum";
 
   const q = useQuery({
-    queryKey: ["usage", "map-layers", props.from, props.to, props.granularity],
+    queryKey: ["usage", "map-layers", props.from, props.to, props.granularity, minGap],
     queryFn: ({ signal }) =>
       adminUsage.mapLayers(
-        { from: props.from, to: props.to, granularity: props.granularity, settings_limit: 60 },
+        {
+          from: props.from,
+          to: props.to,
+          granularity: props.granularity,
+          settings_limit: 60,
+          min_activity_gap_seconds: minGapSeconds > 0 ? minGapSeconds : undefined,
+        },
         signal,
       ),
+    placeholderData: keepPreviousData,
   });
 
   // Rank layers by how many daily snapshots had them on (the "most used"
@@ -92,6 +129,29 @@ export function MapLayersSection(props: {
 
   return (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-end justify-end gap-2">
+        <div className="flex flex-col gap-1">
+          <Label htmlFor="map-layers-min-gap" className="text-xs text-muted-foreground">
+            Min. activity gap
+          </Label>
+          <Select
+            id="map-layers-min-gap"
+            value={minGap}
+            onValueChange={(v) => dispatch(setMapLayerMinActivityGap(Number(v ?? "0")))}
+          >
+            <SelectTrigger className="h-9 min-w-[9rem]">
+              <SelectValue>{() => minGapLabel}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {MIN_GAP_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <StatCard label="Daily snapshots" value={q.data.snapshot_total} />
         <StatCard

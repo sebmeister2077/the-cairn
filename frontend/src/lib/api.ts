@@ -4098,6 +4098,7 @@ export interface UsagePageEntities extends UsageWindow {
 
 export interface UsageMapLayers extends UsageWindow {
     granularity: UsageGranularity;
+    min_activity_gap_seconds?: number;
     snapshot_total: number;
     layers: Array<{
         layer: string;
@@ -4212,8 +4213,8 @@ export const adminUsage = {
         _usageGet<UsagePages>("pages", { from: p.from, to: p.to, granularity: p.granularity, limit: p.limit, path: p.path }, signal),
     pageEntities: (p: UsageWindowParams & { path: string; limit?: number }, signal?: AbortSignal) =>
         _usageGet<UsagePageEntities>("page-entities", { from: p.from, to: p.to, path: p.path, limit: p.limit }, signal),
-    mapLayers: (p: UsageGranularityParams & { settings_limit?: number }, signal?: AbortSignal) =>
-        _usageGet<UsageMapLayers>("map-layers", { from: p.from, to: p.to, granularity: p.granularity, settings_limit: p.settings_limit }, signal),
+    mapLayers: (p: UsageGranularityParams & { settings_limit?: number; min_activity_gap_seconds?: number }, signal?: AbortSignal) =>
+        _usageGet<UsageMapLayers>("map-layers", { from: p.from, to: p.to, granularity: p.granularity, settings_limit: p.settings_limit, min_activity_gap_seconds: p.min_activity_gap_seconds ? p.min_activity_gap_seconds : undefined }, signal),
     actorHistory: (
         p: UsageWindowParams & { api_key: string; limit?: number; offset?: number },
         signal?: AbortSignal,
