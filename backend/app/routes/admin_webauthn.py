@@ -86,13 +86,36 @@ def _take_challenge(store: dict, api_key: str) -> Optional[bytes]:
 # Config / availability helpers
 # ---------------------------------------------------------------------------
 
+def _normalize_origin(origin: str) -> str:
+    """Return a full WebAuthn origin (scheme + host) for ``origin``.
+
+    The browser always reports a complete origin (e.g. ``https://the-cairn.com``)
+    in ``clientDataJSON``, so a bare hostname such as ``the-cairn.com`` — which is
+    valid for ``ALLOWED_ORIGINS``/CORS — can never match. When an entry has no
+    scheme we add one: ``http://`` for localhost/loopback (the only non-HTTPS
+    origin browsers accept for WebAuthn) and ``https://`` for everything else.
+    """
+    origin = origin.strip().rstrip("/")
+    if not origin or "://" in origin:
+        return origin
+    host = origin.split(":", 1)[0]
+    scheme = "http" if host in ("localhost", "127.0.0.1", "::1") else "https"
+    return f"{scheme}://{origin}"
+
+
 def _allowed_origins() -> list[str]:
     """Origins the browser is allowed to assert from. Falls back to
     ``ALLOWED_ORIGINS`` so a single-host deployment works without
     duplicating config."""
-    if settings.WEBAUTHN_ORIGINS:
-        return settings.WEBAUTHN_ORIGINS
-    return settings.ALLOWED_ORIGINS or []
+    raw = settings.WEBAUTHN_ORIGINS or settings.ALLOWED_ORIGINS or []
+    seen: set[str] = set()
+    origins: list[str] = []
+    for entry in raw:
+        normalized = _normalize_origin(entry)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            origins.append(normalized)
+    return origins
 
 
 def _require_configured() -> None:
