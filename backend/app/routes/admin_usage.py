@@ -770,7 +770,9 @@ async def usage_api_keys(
     # (e.g. a user clearing their browser cache) from those that kept returning
     # days or weeks later.
     new_keys_params: list = [gran, start, end]
+    active_keys_params: list = [gran, start, end]
     gap_filter = ""
+    active_gap_filter = ""
     if gap_seconds > 0:
         gap_filter = """
                         AND EXISTS (
@@ -781,6 +783,24 @@ async def usage_api_keys(
                                                     + make_interval(secs => %s)
                         )"""
         new_keys_params.append(gap_seconds)
+        # Mirror the filter onto the "active" line so both series describe the
+        # same population of legitimate accounts: only count an actor in a
+        # bucket if that account also made some event at least `gap_seconds`
+        # after it was created.
+        active_gap_filter = """
+                        AND EXISTS (
+                            SELECT 1
+                              FROM api_keys ak
+                             WHERE ak.id::text = ue.actor_api_key_id
+                               AND EXISTS (
+                                   SELECT 1
+                                     FROM usage_events ue2
+                                    WHERE ue2.actor_api_key_id = ue.actor_api_key_id
+                                      AND ue2.created_at >= ak.created_at
+                                                            + make_interval(secs => %s)
+                               )
+                        )"""
+        active_keys_params.append(gap_seconds)
 
     with db.get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
@@ -800,14 +820,15 @@ async def usage_api_keys(
                 for r in cur.fetchall()
             ]
             cur.execute(
-                """SELECT date_trunc(%s, created_at) AS bucket,
-                          COUNT(DISTINCT actor_api_key_id)::int AS count
-                       FROM usage_events
-                      WHERE created_at >= %s AND created_at < %s
-                        AND actor_api_key_id IS NOT NULL
+                f"""SELECT date_trunc(%s, ue.created_at) AS bucket,
+                          COUNT(DISTINCT ue.actor_api_key_id)::int AS count
+                       FROM usage_events ue
+                      WHERE ue.created_at >= %s AND ue.created_at < %s
+                        AND ue.actor_api_key_id IS NOT NULL
+                        {active_gap_filter}
                    GROUP BY bucket
                    ORDER BY bucket""",
-                (gran, start, end),
+                tuple(active_keys_params),
             )
             active_keys = [
                 {"bucket": _iso(r["bucket"]), "count": int(r["count"])}

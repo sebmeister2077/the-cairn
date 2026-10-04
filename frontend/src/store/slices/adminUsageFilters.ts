@@ -39,6 +39,11 @@ export type AdminUsageFilters = {
     pages: PagesFilters;
     /** Accounts section: when true, exclude API keys that never made a request. */
     accountsExcludeUnused: boolean;
+    /**
+     * Accounts section: minimum seconds between an account's creation and a
+     * later usage event for it to count as legitimate. ``0`` = no minimum.
+     */
+    accountsMinActivityGapSeconds: number;
 
     mapLayer: MapLayerFilters;
 };
@@ -47,6 +52,7 @@ export const DEFAULT_ADMIN_USAGE_FILTERS: AdminUsageFilters = {
     overviewCategories: [],
     pages: DEFAULT_PAGES_FILTERS,
     accountsExcludeUnused: false,
+    accountsMinActivityGapSeconds: 0,
     mapLayer: {
         timelineMode: "enables",
     },
@@ -88,6 +94,9 @@ export const adminUsageFiltersSlice = createSlice({
         setAccountsExcludeUnused(state, action: PayloadAction<boolean>) {
             state.accountsExcludeUnused = action.payload;
         },
+        setAccountsMinActivityGap(state, action: PayloadAction<number>) {
+            state.accountsMinActivityGapSeconds = Math.max(0, action.payload);
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(hydrateRoot, (state, action) => {
@@ -113,4 +122,5 @@ export const {
     setPagesSelectedPath,
     setMapLayerTimelineMode,
     setAccountsExcludeUnused,
+    setAccountsMinActivityGap,
 } = adminUsageFiltersSlice.actions;

@@ -1,6 +1,7 @@
-import { useState } from "react";
 import { adminUsage } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setAccountsMinActivityGap } from "@/store/slices/adminUsageFilters";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { UsageGranularity } from "@/lib/api";
@@ -21,7 +22,7 @@ import {
 
 // Minimum time between an account's creation and a later usage event. Accounts
 // whose only activity happened sooner than this are treated as throwaway (e.g.
-// a user clearing their browser cache) and excluded from the "new" line.
+// a user clearing their browser cache) and excluded from both lines.
 const MIN_GAP_OPTIONS: Array<{ value: string; label: string }> = [
   { value: "0", label: "No minimum" },
   { value: "3600", label: "1 hour" },
@@ -38,8 +39,9 @@ export function AccountsSection(props: {
   to: string;
   granularity: UsageGranularity;
 }) {
-  const [minGap, setMinGap] = useState("0");
-  const minGapSeconds = Number(minGap);
+  const dispatch = useAppDispatch();
+  const minGapSeconds = useAppSelector((s) => s.adminUsageFilters.accountsMinActivityGapSeconds);
+  const minGap = String(minGapSeconds);
 
   // Accounts with zero lifetime activity are always excluded here.
   const q = useQuery({
@@ -79,8 +81,8 @@ export function AccountsSection(props: {
               {minGapSeconds > 0 && (
                 <>
                   {" "}
-                  The <strong>new</strong> line only counts accounts that made a usage event at
-                  least <strong>{selectedLabel.toLowerCase()}</strong> after being created.
+                  Both lines only count accounts that made a usage event at least{" "}
+                  <strong>{selectedLabel.toLowerCase()}</strong> after being created.
                 </>
               )}
             </CardDescription>
@@ -89,7 +91,11 @@ export function AccountsSection(props: {
             <Label htmlFor="accounts-min-gap" className="text-xs text-muted-foreground">
               Min. activity gap
             </Label>
-            <Select id="accounts-min-gap" value={minGap} onValueChange={(v) => setMinGap(v ?? "0")}>
+            <Select
+              id="accounts-min-gap"
+              value={minGap}
+              onValueChange={(v) => dispatch(setAccountsMinActivityGap(Number(v ?? "0")))}
+            >
               <SelectTrigger className="h-9 min-w-[9rem]">
                 <SelectValue>{() => selectedLabel}</SelectValue>
               </SelectTrigger>
