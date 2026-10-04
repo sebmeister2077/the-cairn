@@ -119,6 +119,12 @@ def _add_version_policy(payload: dict, platform: Optional[str]) -> None:
         payload["update_url"] = (
             f"{settings.PUBLIC_BASE_URL}/api/public/program/latest/{platform}"
         )
+        # Sign the build's content hash into the token so the client can verify
+        # the integrity of the downloaded binary before swapping it in. Only set
+        # for the build-derived URL, whose bytes we know the digest of.
+        sha = build.get("sha256")
+        if sha:
+            payload["update_sha256"] = sha.strip().lower()
     else:
         env_url = _update_url_for(platform)
         if env_url:
