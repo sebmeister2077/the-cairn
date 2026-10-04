@@ -471,7 +471,7 @@ export function AccountPage() {
 
       {/* User-contributed translocators self-history. The card hides itself
           when the caller has no contributions. */}
-      <MyTranslocatorContributionsCard />
+      {/* <MyTranslocatorContributionsCard /> */}
 
       {/* Admin-only: passkey 2FA management. Renders nothing for non-admins
           or when the server has WebAuthn unconfigured. */}
