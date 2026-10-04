@@ -34,6 +34,11 @@ load_dotenv(_env_file, override=True)
 class Settings:
     """Central configuration — reads from env vars with sensible defaults."""
 
+    # Deployment environment, resolved in the module header above from APP_ENV
+    # / the selected .env file. ``"local"`` (default) or ``"prod"``.
+    APP_ENV: str = _APP_ENV
+    IS_PRODUCTION: bool = _APP_ENV == "prod"
+
     # Comma-separated list of valid API keys
     API_KEYS: List[str] = [
         k.strip()

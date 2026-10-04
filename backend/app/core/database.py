@@ -3287,6 +3287,39 @@ def list_api_keys_by_invite(token: str) -> List[dict]:
             return [dict(r) for r in cur.fetchall()]
 
 
+def list_active_invite_keys_for_ip(ip_hash: str) -> List[dict]:
+    """Return non-revoked API keys minted from a public invite link that have
+    been used from ``ip_hash`` (per the ``usage_events`` log), ordered
+    most-recently-used first.
+
+    Used by the public invite-claim endpoint to recycle an existing key for an
+    IP that has already created several still-active accounts, instead of
+    minting yet another one. The ``bound_identity`` column can't be relied on
+    for this (it is populated on almost no keys), so the account<->IP link is
+    taken from ``usage_events``. Admin keys are never returned.
+    """
+    if not ip_hash:
+        return []
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT k.*
+                       FROM api_keys k
+                      WHERE k.revoked = FALSE
+                        AND k.is_admin = FALSE
+                        AND k.source_invite_token IS NOT NULL
+                        AND EXISTS (
+                            SELECT 1
+                              FROM usage_events ue
+                             WHERE ue.actor_api_key_id = k.id::text
+                               AND ue.ip_hash = %s
+                        )
+                      ORDER BY k.last_used_at DESC NULLS LAST, k.created_at DESC""",
+                (ip_hash,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
 # ---------------------------------------------------------------------------
 # Map lock — single-row mutex for combined-DB mutations (Phase 0a)
 # ---------------------------------------------------------------------------
