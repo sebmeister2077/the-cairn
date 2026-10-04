@@ -161,9 +161,68 @@ def regenerate_user_display_name(api_key: str, new_name: str) -> Optional[dict]:
             return dict(row) if row else None
 
 
+# Denormalised display-name columns that snapshot a user's name at action
+# time across the contribution features (landmarks / translocators / traders /
+# elk-walkable). On soft-delete we overwrite these with the account tombstone
+# so the audit/report history stays intact and traceable while no longer
+# revealing who the (now-deleted) contributor was. The R2 geojson/JSON files
+# that back these features are intentionally left untouched — the database is
+# the only thing anonymised here.
+#
+# Each entry is ``(table, name_column, key_column)``. ``key_column`` holds the
+# ``api_keys.id`` UUID as text (matching ``str(key_id)``).
+_ANONYMISE_NAME_TABLES = (
+    ("landmarks_audit", "actor_display_name", "actor_api_key_id"),
+    ("landmark_edit_requests", "submitted_by_display_name", "submitted_by_api_key_id"),
+    ("translocators_audit", "actor_display_name", "actor_api_key_id"),
+    ("translocator_screenshot_requests", "submitter_display_name", "submitter_api_key_id"),
+    ("traders_audit", "actor_display_name", "actor_api_key_id"),
+    ("trader_claim_types_audit", "actor_display_name", "actor_api_key_id"),
+    ("trader_claim_empty_audit", "actor_display_name", "actor_api_key_id"),
+    ("elk_walkable_audit", "actor_display_name", "actor_api_key_id"),
+    ("elk_walkable_reports", "reporter_display_name", "reporter_api_key_id"),
+)
+
+
+def _anonymise_user_content(cur, key_id, tombstone_name: str) -> None:
+    """Scrub a soft-deleted user's denormalised identity from contribution
+    tables and deactivate their marketplace orders.
+
+    Runs on the caller's cursor so every statement shares the soft-delete
+    transaction (all-or-nothing). Does not touch R2 objects.
+
+    * Contribution features (landmarks / translocators / traders /
+      elk-walkable): overwrite the snapshotted display name with the
+      account tombstone, keeping the audit/report rows for traceability.
+    * Orders marketplace: close the user's still-open listings so they stop
+      being browseable (reversible via ``reopen_order`` if the account is
+      later reactivated). Author/requester names elsewhere in the orders
+      feature are resolved live via a JOIN on ``users.display_name`` and so
+      are already anonymised by the tombstone above.
+    * Grouping library + usage events: identity is stored only as an
+      ``api_key_id`` (names resolved live via JOIN), so the ``users``
+      tombstone already anonymises them with no extra writes.
+    """
+    key_str = str(key_id)
+    for table, name_col, key_col in _ANONYMISE_NAME_TABLES:
+        cur.execute(
+            f"UPDATE {table} SET {name_col} = %s "
+            f"WHERE {key_col} = %s AND {name_col} IS NOT NULL",
+            (tombstone_name, key_str),
+        )
+    cur.execute(
+        """UPDATE orders
+               SET status = 'closed', updated_at = now()
+               WHERE author_api_key_id = %s AND status = 'open'""",
+        (key_str,),
+    )
+
+
 def soft_delete_user(api_key: str, tombstone_name: str) -> Optional[dict]:
     """Mark the user deleted, replace display_name with tombstone, clear personal fields,
-    and revoke their API key. Returns the updated row, or None if not found."""
+    revoke their API key, anonymise denormalised names across the contribution
+    features, and deactivate their open marketplace orders. Returns the updated
+    row, or None if not found. R2 geojson/JSON files are left untouched."""
     now = datetime.now(timezone.utc)
     key_id = api_key_cache.ensure_id(api_key)
     if key_id is None:
@@ -186,6 +245,7 @@ def soft_delete_user(api_key: str, tombstone_name: str) -> Optional[dict]:
             if not row:
                 return None
             cur.execute("UPDATE api_keys SET revoked = TRUE WHERE id = %s", (str(key_id),))
+            _anonymise_user_content(cur, key_id, tombstone_name)
             api_key_cache.invalidate(api_key)
             return dict(row)
 

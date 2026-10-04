@@ -59,7 +59,29 @@ WHERE api_key = ? AND deleted_at IS NULL;
 UPDATE api_keys SET revoked = TRUE WHERE key = ?;
 ```
 
-The user's contributions stay attached to the (now anonymised) display name. The api_key is revoked and can no longer authenticate.
+In the same transaction the soft-delete also **anonymises the user's denormalised
+name across the contribution features** and **deactivates their open marketplace
+orders** — the R2 geojson/JSON files that back these features are left untouched
+(database-only anonymisation):
+
+```sql
+-- Snapshotted contributor names overwritten with the same tombstone
+-- (key column holds the api_keys.id UUID as text):
+UPDATE landmarks_audit                   SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE landmark_edit_requests            SET submitted_by_display_name = '<tombstone>' WHERE submitted_by_api_key_id = ? AND submitted_by_display_name IS NOT NULL;
+UPDATE translocators_audit               SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE translocator_screenshot_requests  SET submitter_display_name = '<tombstone>' WHERE submitter_api_key_id = ? AND submitter_display_name IS NOT NULL;
+UPDATE traders_audit                     SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE trader_claim_types_audit          SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE trader_claim_empty_audit          SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE elk_walkable_audit                SET actor_display_name     = '<tombstone>' WHERE actor_api_key_id     = ? AND actor_display_name     IS NOT NULL;
+UPDATE elk_walkable_reports              SET reporter_display_name  = '<tombstone>' WHERE reporter_api_key_id  = ? AND reporter_display_name  IS NOT NULL;
+
+-- Marketplace: stop the user's listings from being browseable (reversible on reactivate):
+UPDATE orders SET status = 'closed', updated_at = now() WHERE author_api_key_id = ? AND status = 'open';
+```
+
+The user's audit/report rows and published groupings stay in place for traceability, but the identity is scrubbed. In the **grouping library**, **orders** (author/requester) and **usage events**, names are not denormalised — they're resolved live via a JOIN on `users.display_name` (or keyed only by `api_key_id`), so the `users` tombstone above already anonymises them. The api_key is revoked and can no longer authenticate.
 
 Tombstone formats:
 - User-initiated: `[deleted-<unix-ts>]`
