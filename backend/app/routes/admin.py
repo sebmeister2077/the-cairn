@@ -18,8 +18,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_critical, require_admin_passkey
+from ..config import settings
 from ..core import database as db
+from ..core import accounts_db
 from ..core import generation_tracker, r2_storage
 from ..core import grouping_library_db
 from ..core.mapdb import RESOLUTION_LEVELS
@@ -44,6 +46,10 @@ class CreateKeyRequest(BaseModel):
     name: str
     permissions: str = "read"
     consume_once: bool = False
+
+
+class SetAdminRequest(BaseModel):
+    is_admin: bool
 
 
 class CreateInviteLinkRequest(BaseModel):
@@ -88,7 +94,7 @@ async def pending_counts(_: str = Depends(require_admin)) -> dict:
 
 @router.get("/admin/keys")
 async def list_keys(
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_critical),
     status: str = Query("all", pattern="^(all|active|revoked)$"),
     q: str = Query("", max_length=128),
     offset: int = Query(0, ge=0),
@@ -147,6 +153,49 @@ async def revoke_key(key_id: str, _: str = Depends(require_admin)):
         raise HTTPException(status_code=404, detail="Key not found")
     db.revoke_api_key(key_id)
     return JSONResponse(status_code=204, content=None)
+
+
+@router.patch("/admin/keys/{key_id}/admin")
+async def set_key_admin(
+    key_id: str,
+    body: SetAdminRequest,
+    admin_key: str = Depends(require_admin_passkey),
+) -> dict:
+    """Promote or demote an API key to/from admin.
+
+    Privileged action: the acting admin must personally have a passkey + valid
+    session (``require_admin_passkey``) regardless of strict-mode state — this
+    is what makes "more admins only after the first admin adds a passkey" hold.
+
+    The env-var super-admin key can never be demoted.
+    """
+    if not db.is_available():
+        raise HTTPException(status_code=503, detail="Database not configured")
+    record = db.get_api_key(key_id)
+    if not record:
+        raise HTTPException(status_code=404, detail="Key not found")
+    if not body.is_admin and settings.ADMIN_API_KEY and key_id == settings.ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=400,
+            detail="The bootstrap super-admin key cannot be demoted",
+        )
+    # Refuse to demote the last remaining admin — doing so would lock everyone
+    # out of the admin panel. Only relevant when the target is currently an
+    # admin and being demoted.
+    if not body.is_admin and record.get("is_admin") and db.count_admin_keys() <= 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot remove the only remaining admin",
+        )
+    updated = db.set_api_key_admin(key_id, body.is_admin)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Failed to update admin status")
+    accounts_db.audit_log(
+        admin_key,
+        "admin.grant" if body.is_admin else "admin.revoke",
+        target=key_id,
+    )
+    return _serialise(db.get_api_key(key_id))
 
 
 def _serialise_invite(record: dict) -> dict:

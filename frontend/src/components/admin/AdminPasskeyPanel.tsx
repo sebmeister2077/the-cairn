@@ -25,8 +25,10 @@ import {
   adminWebauthnListCredentials,
   adminWebauthnDeleteCredential,
   adminWebauthnLogout,
+  adminWebauthnSetStrictMode,
   getAdminSession,
 } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
 import { AdminPasskeyDialog, useAdminSessionExpiry } from "@/components/admin/AdminPasskeyDialog";
 import { Trans, useFormat, useTranslation } from "@/lib/i18n";
 
@@ -69,6 +71,13 @@ export function AdminPasskeyPanel() {
     },
   });
 
+  const strictMut = useMutation({
+    mutationFn: adminWebauthnSetStrictMode,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-webauthn-status"] });
+    },
+  });
+
   // Server doesn't have WebAuthn configured (missing RP_ID etc.) — nothing to do here.
   if (status.isError) return null;
   if (status.isLoading) {
@@ -89,6 +98,7 @@ export function AdminPasskeyPanel() {
 
   const enrolled = status.data.enrolled;
   const enforced = status.data.enforced;
+  const strictMode = !!status.data.strict_mode;
 
   return (
     <>
@@ -150,6 +160,49 @@ export function AdminPasskeyPanel() {
               </>
             )}
           </div>
+
+          {/* Strict mode toggle */}
+          <div className="flex flex-wrap items-center gap-3 rounded border bg-muted/40 px-3 py-2 text-sm">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 font-medium">
+                <ShieldCheck className="h-4 w-4" /> Strict mode
+              </div>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                When on, every admin who makes changes (or views API keys) must have a passkey.
+                Admins without one are limited to read-only actions until they enrol one.
+              </p>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <span
+                className={
+                  strictMode
+                    ? "text-xs text-emerald-700 dark:text-emerald-400"
+                    : "text-xs text-muted-foreground"
+                }
+              >
+                {strictMode ? "On" : "Off"}
+              </span>
+              <Switch
+                checked={strictMode}
+                disabled={!enrolled || !hasVerifiedSession || strictMut.isPending}
+                onCheckedChange={(v) => strictMut.mutate(v)}
+                aria-label="Toggle admin strict mode"
+              />
+            </div>
+          </div>
+          {!enrolled && (
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Add a passkey below to enable strict mode.
+            </p>
+          )}
+          {enrolled && !hasVerifiedSession && (
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Verify your passkey to change strict mode.
+            </p>
+          )}
+          {strictMut.error && (
+            <p className="-mt-1 text-sm text-destructive">{(strictMut.error as Error).message}</p>
+          )}
 
           {/* Credential list */}
           <div className="space-y-2">

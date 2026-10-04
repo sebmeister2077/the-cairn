@@ -1978,6 +1978,9 @@ export interface ApiKeyRecord {
     usage_count: number;
     created_at: string;
     last_used_at: string | null;
+    /** True when this key has been promoted to admin (DB-backed). The env-var
+     *  super-admin key is also reported as true. */
+    is_admin?: boolean;
 }
 
 export type ApiKeySort =
@@ -2041,6 +2044,20 @@ export async function revokeApiKey(key: string): Promise<void> {
     });
     if (res.status === 204) return;
     await handleResponse(res);
+}
+
+/**
+ * Promote or demote an API key to/from admin. Privileged action — the backend
+ * requires the acting admin to have a passkey + valid X-Admin-Session,
+ * regardless of strict-mode state. Returns the updated key record.
+ */
+export async function setApiKeyAdmin(key: string, isAdmin: boolean): Promise<ApiKeyRecord> {
+    const res = await fetch(`${API_BASE}/admin/keys/${encodeURIComponent(key)}/admin`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ is_admin: isAdmin }),
+    });
+    return (await handleResponse(res)).json();
 }
 
 // ---------------------------------------------------------------------------
@@ -3698,7 +3715,17 @@ export interface WebAuthnStatus {
     configured: boolean;
     enrolled: boolean;
     enforced: boolean;
+    /** Global strict-mode toggle (admin-controlled, stored server-side). */
+    strict_mode?: boolean;
     session_ttl_seconds: number;
+}
+
+export interface StrictModeStatus {
+    enabled: boolean;
+    /** True when the acting admin has enrolled at least one passkey. */
+    self_enrolled: boolean;
+    /** True when this admin may toggle strict mode (i.e. is self_enrolled). */
+    can_toggle: boolean;
 }
 
 export interface WebAuthnCredential {
@@ -3710,6 +3737,20 @@ export interface WebAuthnCredential {
 
 export async function adminWebauthnStatus(): Promise<WebAuthnStatus> {
     const res = await fetch(`${API_BASE}/admin/webauthn/status`, { headers: authHeaders() });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnGetStrictMode(): Promise<StrictModeStatus> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/strict-mode`, { headers: authHeaders() });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminWebauthnSetStrictMode(enabled: boolean): Promise<{ enabled: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/webauthn/strict-mode`, {
+        method: "PUT",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ enabled }),
+    });
     return (await handleResponse(res)).json();
 }
 

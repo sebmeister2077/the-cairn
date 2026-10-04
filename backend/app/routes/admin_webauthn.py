@@ -35,7 +35,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from .. import auth as _auth
-from ..auth import require_admin_keyonly
+from ..auth import require_admin_keyonly, require_admin_passkey
 from ..config import settings
 from ..core import accounts_db
 from ..core import database as db
@@ -184,8 +184,45 @@ async def webauthn_status(api_key: str = Depends(require_admin_keyonly)):
         "configured": configured,
         "enrolled": enrolled,
         "enforced": settings.WEBAUTHN_ENFORCE,
+        "strict_mode": _auth._strict_mode_enabled(),
         "session_ttl_seconds": settings.WEBAUTHN_SESSION_TTL_SECONDS,
     }
+
+
+class StrictModeBody(BaseModel):
+    enabled: bool
+
+
+@router.get("/strict-mode")
+async def get_strict_mode(api_key: str = Depends(require_admin_keyonly)):
+    """Current global strict-mode state plus whether *this* admin may toggle it.
+
+    ``can_toggle`` is True only when the acting admin has enrolled at least one
+    passkey — the frontend uses it to enable/disable the toggle control."""
+    self_enrolled = db.is_available() and db.count_webauthn_credentials(api_key) > 0
+    return {
+        "enabled": _auth._strict_mode_enabled(),
+        "self_enrolled": bool(self_enrolled),
+        "can_toggle": bool(self_enrolled),
+    }
+
+
+@router.put("/strict-mode")
+async def set_strict_mode(
+    body: StrictModeBody,
+    api_key: str = Depends(require_admin_passkey),
+):
+    """Enable/disable global strict mode.
+
+    Guarded by :func:`require_admin_passkey` — the acting admin must personally
+    have a passkey + valid session, so strict mode can only ever be turned on
+    (or off) by a strongly-authenticated admin."""
+    enabled = _auth.set_strict_mode(body.enabled, api_key)
+    accounts_db.audit_log(
+        api_key,
+        "webauthn.strict_mode_enabled" if enabled else "webauthn.strict_mode_disabled",
+    )
+    return {"enabled": enabled}
 
 
 @router.get("/credentials")

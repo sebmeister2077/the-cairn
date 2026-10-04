@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Copy, Trash2, ShieldCheck } from "lucide-react";
+import { Check, Copy, Trash2, ShieldCheck, Crown } from "lucide-react";
 import { type ApiKeyRecord } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +18,23 @@ export function KeyRow({
   record,
   onRevoke,
   onEditPermissions,
+  onToggleAdmin,
 }: {
   record: ApiKeyRecord;
   onRevoke: (key: string) => void;
   /** When provided (admin view), renders a Permissions button opening the granular-permission
    *  editor for this key. */
   onEditPermissions?: (key: string) => void;
+  /** When provided (privileged admin view), renders a promote/demote-admin control.
+   *  The backend requires the acting admin to have a verified passkey session.
+   *  Returns a promise so the dialog can show pending/error state and stay open
+   *  on failure (e.g. 403 passkey_enrollment_required / "only remaining admin"). */
+  onToggleAdmin?: (key: string, isAdmin: boolean) => Promise<unknown>;
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [adminConfirmOpen, setAdminConfirmOpen] = useState(false);
+  const [adminPending, setAdminPending] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
   const { copied, copy } = useCopy();
   const isCopied = copied === record.key;
 
@@ -68,6 +77,14 @@ export function KeyRow({
       </div>
       <div className="flex items-center gap-1.5">
         {permBadge}
+        {record.is_admin && (
+          <Badge
+            variant="outline"
+            className="text-amber-700 border-amber-300 bg-amber-50 dark:text-amber-300 dark:border-amber-400/40 dark:bg-amber-400/10"
+          >
+            <Crown className="size-3" /> Admin
+          </Badge>
+        )}
         {record.consume_once && (
           <Badge variant="outline" className="text-amber-600 border-amber-300">
             Once
@@ -104,6 +121,17 @@ export function KeyRow({
           >
             <ShieldCheck className="size-4" />
             Permissions
+          </Button>
+        )}
+        {!record.revoked && onToggleAdmin && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setAdminConfirmOpen(true)}
+            title={record.is_admin ? "Remove admin access" : "Grant admin access"}
+          >
+            <Crown className="size-4" />
+            {record.is_admin ? "Remove admin" : "Make admin"}
           </Button>
         )}
         {!record.revoked ? (
@@ -143,6 +171,70 @@ export function KeyRow({
             >
               <Trash2 className="size-4" />
               Revoke
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={adminConfirmOpen}
+        onOpenChange={(open) => {
+          setAdminConfirmOpen(open);
+          if (!open) setAdminError(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {record.is_admin ? "Remove admin access?" : "Grant admin access?"}
+            </DialogTitle>
+            <DialogDescription>
+              {record.is_admin ? (
+                <>
+                  This will revoke admin access from{" "}
+                  <strong className="text-foreground">{record.name || "this unnamed key"}</strong>.
+                  They will lose access to the admin panel.
+                </>
+              ) : (
+                <>
+                  This will grant full admin access to{" "}
+                  <strong className="text-foreground">{record.name || "this unnamed key"}</strong>.
+                  They will be able to manage keys, contributions and settings. Under strict mode
+                  they must enrol their own passkey before making changes.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {adminError && <p className="text-sm text-destructive">{adminError}</p>}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAdminConfirmOpen(false)}
+              disabled={adminPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={adminPending}
+              onClick={async () => {
+                if (!onToggleAdmin) return;
+                setAdminError(null);
+                setAdminPending(true);
+                try {
+                  await onToggleAdmin(record.key, !record.is_admin);
+                  setAdminConfirmOpen(false);
+                } catch (err) {
+                  setAdminError(err instanceof Error ? err.message : "Request failed");
+                } finally {
+                  setAdminPending(false);
+                }
+              }}
+            >
+              <Crown className="size-4" />
+              {adminPending
+                ? "Working…"
+                : record.is_admin
+                  ? "Remove admin"
+                  : "Make admin"}
             </Button>
           </DialogFooter>
         </DialogContent>

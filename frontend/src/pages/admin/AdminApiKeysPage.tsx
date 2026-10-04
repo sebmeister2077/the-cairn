@@ -19,6 +19,7 @@ import {
 import {
   listApiKeys,
   revokeApiKey,
+  setApiKeyAdmin,
   type ApiKeyRecord,
   type ApiKeySort,
   type ApiKeySortOrder,
@@ -191,6 +192,12 @@ export function ApiKeysPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] }),
   });
 
+  const adminMutation = useMutation({
+    mutationFn: ({ key, isAdmin }: { key: string; isAdmin: boolean }) =>
+      setApiKeyAdmin(key, isAdmin),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-api-keys"] }),
+  });
+
   const revokeInviteMutation = useMutation({
     mutationFn: revokeInviteLink,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-invite-links"] }),
@@ -326,6 +333,7 @@ export function ApiKeysPage() {
                     record={k}
                     onRevoke={(key) => revokeMutation.mutate(key)}
                     onEditPermissions={setPermsKey}
+                    onToggleAdmin={(key, isAdmin) => adminMutation.mutateAsync({ key, isAdmin })}
                   />
                 ))}
               </div>

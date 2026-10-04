@@ -261,9 +261,13 @@ def bootstrap_env_keys() -> dict:
 
     with db.get_conn() as conn, conn.cursor() as cur:
         if settings.ADMIN_API_KEY:
+            # The env-var admin is the permanent bootstrap/super-admin: ensure
+            # the row exists AND is flagged is_admin=TRUE even if it predates
+            # the is_admin column (ON CONFLICT re-asserts the flag every start).
             cur.execute(
-                "INSERT INTO api_keys (key, name, permissions) "
-                "VALUES (%s, %s, %s) ON CONFLICT (key) DO NOTHING",
+                "INSERT INTO api_keys (key, name, permissions, is_admin) "
+                "VALUES (%s, %s, %s, TRUE) "
+                "ON CONFLICT (key) DO UPDATE SET is_admin = TRUE",
                 (settings.ADMIN_API_KEY, "env:ADMIN_API_KEY", "contribute"),
             )
             if cur.rowcount > 0:

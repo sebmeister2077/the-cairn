@@ -76,7 +76,9 @@ def _resolve_key(key: str, request: Request) -> Optional[dict]:
             )
 
     info = dict(record)
-    info["is_admin"] = bool(settings.ADMIN_API_KEY and key == settings.ADMIN_API_KEY)
+    info["is_admin"] = bool(record.get("is_admin")) or bool(
+        settings.ADMIN_API_KEY and key == settings.ADMIN_API_KEY
+    )
     return api_key_cache.put(key, info)
 
 
@@ -160,21 +162,62 @@ async def require_admin(
     x_api_key: str = Header(..., alias="X-API-Key"),
     x_admin_session: Optional[str] = Header(None, alias="X-Admin-Session"),
 ) -> str:
-    """FastAPI dependency that requires the admin API key.
+    """FastAPI dependency that requires an admin API key (env super-admin or a
+    DB key with ``is_admin``).
 
-    When the admin has registered at least one WebAuthn passkey and
-    ``WEBAUTHN_ENFORCE`` is on (the default), this dependency *also* requires
-    a valid ``X-Admin-Session`` header obtained by completing a passkey
-    assertion at ``POST /admin/webauthn/auth/complete``. This makes a leaked
-    API key alone insufficient to call admin routes.
+    Passkey enforcement is layered:
+
+    * **Per-admin opt-in** (legacy): when the acting admin has registered at
+      least one passkey and ``WEBAUTHN_ENFORCE`` is on, a valid
+      ``X-Admin-Session`` is required.
+    * **Strict mode** (global, admin-toggled): when enabled, every *mutating*
+      request (POST/PUT/PATCH/DELETE) additionally requires the acting admin to
+      have an enrolled passkey AND a valid session — so an admin without a
+      passkey is limited to read-only actions.
 
     Endpoints that need to be reachable with the API key only (passkey
     registration and assertion themselves) must use
     :func:`require_admin_keyonly` instead.
     """
-    if not settings.ADMIN_API_KEY or x_api_key != settings.ADMIN_API_KEY:
+    if not is_admin_key(x_api_key):
         raise HTTPException(status_code=403, detail="Admin access required")
-    _enforce_passkey_session(x_api_key, x_admin_session)
+    strict = _strict_mode_enabled() and _is_mutating(request)
+    _enforce_passkey_session(x_api_key, x_admin_session, strict=strict)
+    return x_api_key
+
+
+async def require_admin_critical(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+    x_admin_session: Optional[str] = Header(None, alias="X-Admin-Session"),
+) -> str:
+    """Like :func:`require_admin` but classifies the action as *critical*
+    regardless of HTTP method — under strict mode it requires an enrolled
+    passkey + valid session even for a GET. Used for sensitive read endpoints
+    such as ``GET /admin/keys`` (which exposes raw API keys)."""
+    if not is_admin_key(x_api_key):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    _enforce_passkey_session(
+        x_api_key, x_admin_session, strict=_strict_mode_enabled()
+    )
+    return x_api_key
+
+
+async def require_admin_passkey(
+    request: Request,
+    x_api_key: str = Header(..., alias="X-API-Key"),
+    x_admin_session: Optional[str] = Header(None, alias="X-Admin-Session"),
+) -> str:
+    """Strongest admin gate: the acting admin MUST personally have an enrolled
+    passkey AND a valid session, *regardless of strict-mode state*.
+
+    Used for privileged, trust-bootstrapping actions — promoting/demoting other
+    admins and toggling strict mode — so these can never be performed with a
+    leaked API key alone.
+    """
+    if not is_admin_key(x_api_key):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    _enforce_passkey_session(x_api_key, x_admin_session, strict=True)
     return x_api_key
 
 
@@ -187,7 +230,7 @@ async def require_admin_keyonly(
     otherwise the admin could never enrol a passkey or complete the
     assertion that produces a session token in the first place.
     """
-    if not settings.ADMIN_API_KEY or x_api_key != settings.ADMIN_API_KEY:
+    if not is_admin_key(x_api_key):
         raise HTTPException(status_code=403, detail="Admin access required")
     return x_api_key
 
@@ -209,8 +252,26 @@ async def require_publish_token(
 
 
 def is_admin_key(api_key: str) -> bool:
-    """Return True if ``api_key`` is the env-var admin key."""
-    return bool(settings.ADMIN_API_KEY) and api_key == settings.ADMIN_API_KEY
+    """Return True if ``api_key`` is an admin — either the env-var super-admin
+    key or a DB-backed key promoted via ``api_keys.is_admin``.
+
+    Cache-first (``peek`` doesn't bump usage counters); falls back to a single
+    ``SELECT`` only when the key isn't cached.
+    """
+    if settings.ADMIN_API_KEY and api_key == settings.ADMIN_API_KEY:
+        return True
+    if not api_key:
+        return False
+    cached = api_key_cache.peek(api_key)
+    if cached is not None:
+        return bool(cached.get("is_admin"))
+    if not db.is_available():
+        return False
+    try:
+        row = db.get_api_key(api_key)
+    except Exception:
+        return False
+    return bool(row and row.get("is_admin"))
 
 
 def verify_permission(api_key: str, perm_name: str) -> bool:
@@ -556,20 +617,100 @@ def revoke_all_admin_sessions(api_key: str) -> int:
         return len(victims)
 
 
-def _enforce_passkey_session(api_key: str, token: Optional[str]) -> None:
-    """Raise 401 ``passkey_required`` when this admin has registered passkeys
-    and no valid session token is supplied. No-op if WEBAUTHN_ENFORCE is off
-    or the admin has no passkeys yet."""
-    if not settings.WEBAUTHN_ENFORCE:
+# ---------------------------------------------------------------------------
+# Strict-mode toggle (global) + passkey enforcement
+# ---------------------------------------------------------------------------
+#
+# Strict mode is persisted in the ``app_settings`` table under this key so it
+# is *not* reachable via the generic feature-flags PATCH endpoint (which would
+# bypass the passkey gate). It is toggled only through the dedicated
+# ``/admin/webauthn/strict-mode`` endpoint guarded by ``require_admin_passkey``.
+STRICT_MODE_SETTING_KEY = "webauthn_strict_mode"
+
+_MUTATING_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+
+
+def _is_mutating(request: Optional[Request]) -> bool:
+    try:
+        return bool(request) and request.method.upper() in _MUTATING_METHODS
+    except Exception:
+        return False
+
+
+def _strict_mode_enabled() -> bool:
+    """Return True when the global admin strict-mode toggle is on.
+
+    Fails *open* to the legacy per-admin behaviour (returns False) when the DB
+    is unavailable or the setting is missing — the critical/privileged gates
+    that need to fail *closed* pass ``strict=True`` explicitly regardless of
+    this flag."""
+    if not db.is_available():
+        return False
+    try:
+        row = db.get_app_setting(STRICT_MODE_SETTING_KEY)
+    except Exception:
+        return False
+    if not row:
+        return False
+    val = row.get("value")
+    if isinstance(val, dict):
+        return bool(val.get("enabled"))
+    return bool(val is True or val in ("true", "1", 1))
+
+
+def set_strict_mode(enabled: bool, updated_by_key: str = "") -> bool:
+    """Persist the global strict-mode toggle. Returns the stored value."""
+    db.set_app_setting(STRICT_MODE_SETTING_KEY, bool(enabled), updated_by_key)
+    return bool(enabled)
+
+
+def _enforce_passkey_session(
+    api_key: str, token: Optional[str], *, strict: bool = False
+) -> None:
+    """Enforce the admin passkey session gate for ``api_key``.
+
+    ``strict=False`` (default, legacy opt-in): no-op when ``WEBAUTHN_ENFORCE``
+    is off or the admin has not enrolled any passkey; otherwise a valid session
+    token is required.
+
+    ``strict=True``: the admin MUST have an enrolled passkey AND a valid
+    session. Fails *closed* — if the DB is unavailable the action is refused,
+    and an admin with zero passkeys is rejected with ``passkey_enrollment_required``.
+    """
+    if not strict and not settings.WEBAUTHN_ENFORCE:
         return
     if not db.is_available():
+        if strict:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "passkey_verification_unavailable",
+                    "message": "Passkey verification temporarily unavailable",
+                },
+            )
         return
     try:
         n = db.count_webauthn_credentials(api_key)
     except Exception:
+        if strict:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "passkey_verification_unavailable",
+                    "message": "Passkey verification temporarily unavailable",
+                },
+            )
         return
     if n == 0:
-        return  # admin has not enrolled — passkey is opt-in until they do
+        if not strict:
+            return  # admin has not enrolled — passkey is opt-in until they do
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "code": "passkey_enrollment_required",
+                "message": "Register a passkey before performing this action",
+            },
+        )
 
     # Admin has at least one passkey; a session token is mandatory.
     if not token:

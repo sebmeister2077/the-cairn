@@ -342,6 +342,14 @@ ADD COLUMN IF NOT EXISTS show_contributions BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE api_keys
 ADD COLUMN IF NOT EXISTS extra_permissions JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+-- Phase 4d: DB-backed multiple admins. The env-var ``ADMIN_API_KEY`` stays the
+-- bootstrap/super-admin (marked TRUE on every startup); additional admins can
+-- be promoted from the admin panel once the acting admin has a passkey.
+ALTER TABLE api_keys
+ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_api_keys_is_admin
+    ON api_keys (is_admin) WHERE is_admin;
+
 -- Phase 1: async match-score result storage on contributions.
 -- ``match_score_status`` is one of ('pending', 'ready', 'failed') or NULL
 -- (legacy / feature disabled at submit-time). ``match_score_json`` carries
@@ -5064,6 +5072,39 @@ def set_api_key_extra_permission(key: str, perm_name: str, enabled: bool) -> boo
                 ('{' + perm_name + '}', enabled, key),
             )
             return (cur.rowcount or 0) > 0
+
+
+def set_api_key_admin(key: str, is_admin: bool) -> bool:
+    """Promote/demote an API key to/from admin. Returns True on update.
+
+    Invalidates the api_key cache so the next request re-reads the row and
+    sees the new ``is_admin`` state immediately.
+    """
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "UPDATE api_keys SET is_admin = %s WHERE key = %s",
+                (bool(is_admin), key),
+            )
+            updated = (cur.rowcount or 0) > 0
+    if updated:
+        try:
+            from . import api_key_cache
+            api_key_cache.invalidate(key)
+        except Exception:
+            pass
+    return updated
+
+
+def count_admin_keys() -> int:
+    """Number of non-revoked admin keys. Used to refuse demoting the last one."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FROM api_keys WHERE is_admin AND NOT revoked"
+            )
+            row = cur.fetchone()
+            return int(row[0]) if row else 0
 
 
 # ---------------------------------------------------------------------------
