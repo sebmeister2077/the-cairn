@@ -764,41 +764,34 @@ async def usage_api_keys(
     # When excluding unused keys, only count keys that made at least one request.
     unused_filter = "AND usage_count > 0" if exclude_unused else ""
 
-    # When a minimum activity gap is requested, only count accounts that made
-    # at least one usage event at least `gap_seconds` after they were created.
-    # This filters out keys that were only ever used immediately after creation
-    # (e.g. a user clearing their browser cache) from those that kept returning
-    # days or weeks later.
+    # When a minimum activity gap is requested, only count accounts whose last
+    # recorded activity was at least `gap_seconds` after they were created
+    # (``last_used_at - created_at``). ``last_used_at``/``usage_count`` update on
+    # every authenticated request — the same signal the "new" base count uses —
+    # so this catches accounts that kept being used without emitting telemetry.
+    # It filters out keys only ever used right after creation (e.g. a user
+    # clearing their browser cache) from those that kept returning.
     new_keys_params: list = [gran, start, end]
     active_keys_params: list = [gran, start, end]
     gap_filter = ""
     active_gap_filter = ""
     if gap_seconds > 0:
         gap_filter = """
-                        AND EXISTS (
-                            SELECT 1
-                              FROM usage_events ue
-                             WHERE ue.actor_api_key_id = api_keys.id::text
-                               AND ue.created_at >= api_keys.created_at
-                                                    + make_interval(secs => %s)
-                        )"""
+                        AND last_used_at IS NOT NULL
+                        AND last_used_at - created_at >= make_interval(secs => %s)"""
         new_keys_params.append(gap_seconds)
         # Mirror the filter onto the "active" line so both series describe the
         # same population of legitimate accounts: only count an actor in a
-        # bucket if that account also made some event at least `gap_seconds`
-        # after it was created.
+        # bucket if its account's lifespan (last_used_at - created_at) is at
+        # least `gap_seconds`.
         active_gap_filter = """
                         AND EXISTS (
                             SELECT 1
                               FROM api_keys ak
                              WHERE ak.id::text = ue.actor_api_key_id
-                               AND EXISTS (
-                                   SELECT 1
-                                     FROM usage_events ue2
-                                    WHERE ue2.actor_api_key_id = ue.actor_api_key_id
-                                      AND ue2.created_at >= ak.created_at
-                                                            + make_interval(secs => %s)
-                               )
+                               AND ak.last_used_at IS NOT NULL
+                               AND ak.last_used_at - ak.created_at
+                                       >= make_interval(secs => %s)
                         )"""
         active_keys_params.append(gap_seconds)
 
@@ -1392,18 +1385,18 @@ async def usage_map_layers(
         return cached
 
     # When a minimum activity gap is requested, keep a row only if it is
-    # anonymous (no account) or its account made some event at least
-    # `gap_seconds` after it was created — i.e. the telemetry of throwaway
-    # accounts (used only right after creation) is dropped. Mirrors the
-    # Accounts section filter. The clause carries a single %s (the gap).
+    # anonymous (no account) or its account's lifespan
+    # (``last_used_at - created_at``) is at least `gap_seconds` — i.e. the
+    # telemetry of throwaway accounts (used only right after creation) is
+    # dropped. Mirrors the Accounts section filter. The clause carries a
+    # single %s (the gap).
     if gap_seconds > 0:
         gap_clause = (
             "\n                        AND (actor_api_key_id IS NULL OR EXISTS ("
             "SELECT 1 FROM api_keys ak "
             "WHERE ak.id::text = usage_events.actor_api_key_id "
-            "AND EXISTS (SELECT 1 FROM usage_events g "
-            "WHERE g.actor_api_key_id = usage_events.actor_api_key_id "
-            "AND g.created_at >= ak.created_at + make_interval(secs => %s))))"
+            "AND ak.last_used_at IS NOT NULL "
+            "AND ak.last_used_at - ak.created_at >= make_interval(secs => %s)))"
         )
         gap_param: list = [gap_seconds]
     else:

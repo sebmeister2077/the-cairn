@@ -81,8 +81,8 @@ export function AccountsSection(props: {
               {minGapSeconds > 0 && (
                 <>
                   {" "}
-                  Both lines only count accounts that made a usage event at least{" "}
-                  <strong>{selectedLabel.toLowerCase()}</strong> after being created.
+                  Both lines only count accounts whose last activity was at least{" "}
+                  <strong>{selectedLabel.toLowerCase()}</strong> after they were created.
                 </>
               )}
             </CardDescription>
