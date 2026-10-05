@@ -169,6 +169,7 @@ type SubTab<V extends any = string> = {
   labelKey: PathOf<TranslationSchema>;
   chip?: PathOf<TranslationSchema>;
   chipShownUntil?: string;
+  disabled?: boolean;
 };
 type SubtabKey = keyof typeof NavigationRoutes;
 type SubtabKeyToValue<K extends SubtabKey> =
@@ -234,7 +235,11 @@ const subTabs: Subtabs = {
     // { value: "/multiplayer/identify", labelKey: "app.nav.subtabs.identifyMaps" },
     // { value: "/multiplayer/map-viewer", labelKey: "app.nav.subtabs.localMapViewer" },
     { value: "/multiplayer/tops-map", labelKey: "app.nav.subtabs.topsMapViewer" },
-    // { value: "/multiplayer/contribute-map", labelKey: "app.nav.subtabs.contributeMap" },
+    {
+      value: "/multiplayer/contribute-map",
+      labelKey: "app.nav.subtabs.contributeMap",
+      disabled: true,
+    },
     {
       value: "/multiplayer/contribute-tls",
       labelKey: "app.nav.subtabs.contributeTls",
@@ -246,6 +251,7 @@ const subTabs: Subtabs = {
       labelKey: "app.nav.subtabs.contributeTraders",
       chip: "app.nav.chip.new",
       chipShownUntil: "2026-06-02",
+      disabled: true,
     },
   ],
   "/general": [],
@@ -782,38 +788,54 @@ export function AppContent() {
                       const pending = getPendingCountFor(tab.value, pendingCounts);
                       const showOrdersDot =
                         tab.value === NavigationRoutes.Market.Orders && ordersUnread > 0;
+
+                      const triggerContent = (
+                        <TabsTrigger
+                          value={tab.value}
+                          disabled={tab.disabled}
+                          aria-disabled={tab.disabled}
+                          className="relative"
+                        >
+                          {tStatic(tab.labelKey as StaticNavLabelKey)}
+                          {shouldShowChip(tab) && (
+                            <Badge
+                              variant="default"
+                              className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
+                            >
+                              {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
+                            </Badge>
+                          )}
+                          {showOrdersDot && (
+                            <span
+                              aria-label={t("app.nav.ordersUnreadAria")}
+                              title={t("app.nav.ordersUnreadAria")}
+                              className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
+                            />
+                          )}
+                          {pending > 0 && (
+                            <Badge
+                              variant="default"
+                              aria-label={t("app.nav.pendingReviewAria", { count: pending })}
+                              title={t("app.nav.pendingReviewTitle", { count: pending })}
+                              className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
+                            >
+                              {formatPendingCount(pending)}
+                            </Badge>
+                          )}
+                        </TabsTrigger>
+                      );
+
+                      if (tab.disabled) {
+                        return (
+                          <span key={tab.value} aria-disabled className="cursor-not-allowed">
+                            {triggerContent}
+                          </span>
+                        );
+                      }
+
                       return (
                         <NavLink key={tab.value} to={tab.value} end>
-                          {() => (
-                            <TabsTrigger value={tab.value} className="relative">
-                              {tStatic(tab.labelKey as StaticNavLabelKey)}
-                              {shouldShowChip(tab) && (
-                                <Badge
-                                  variant="default"
-                                  className="absolute -top-2 -right-3 h-4 px-1.5 text-[10px] leading-none bg-amber-500 text-white hover:bg-amber-500"
-                                >
-                                  {tab.chip ? tStatic(tab.chip as StaticNavLabelKey) : null}
-                                </Badge>
-                              )}
-                              {showOrdersDot && (
-                                <span
-                                  aria-label={t("app.nav.ordersUnreadAria")}
-                                  title={t("app.nav.ordersUnreadAria")}
-                                  className="absolute top-0.5 -right-1 h-2 w-2 rounded-full bg-red-500"
-                                />
-                              )}
-                              {pending > 0 && (
-                                <Badge
-                                  variant="default"
-                                  aria-label={t("app.nav.pendingReviewAria", { count: pending })}
-                                  title={t("app.nav.pendingReviewTitle", { count: pending })}
-                                  className="absolute -top-2 -right-3 h-4 min-w-4 px-1 text-[10px] leading-none bg-red-500 text-white hover:bg-red-500"
-                                >
-                                  {formatPendingCount(pending)}
-                                </Badge>
-                              )}
-                            </TabsTrigger>
-                          )}
+                          {() => triggerContent}
                         </NavLink>
                       );
                     })}
@@ -1070,10 +1092,7 @@ export function AppContent() {
           <Route
             path="/manage/map-features-traders"
             element={
-              <ErrorBoundary
-                title="Map-features traders failed"
-                resetKeys={[location.pathname]}
-              >
+              <ErrorBoundary title="Map-features traders failed" resetKeys={[location.pathname]}>
                 <AdminMapFeaturesTradersPage />
               </ErrorBoundary>
             }

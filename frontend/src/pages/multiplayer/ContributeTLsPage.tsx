@@ -25,15 +25,17 @@ export function ContributeTLsPage() {
     <div className="max-w-3xl mx-auto space-y-4">
       <Tabs defaultValue="manual">
         <TabsList variant="line">
-          <TabsTrigger value="screenshots">
+          <TabsTrigger value="screenshots" disabled>
             {t("contributeTLsPage.tabs.fromScreenshots")}
           </TabsTrigger>
-          <TabsTrigger value="chatlog">{t("contributeTLsPage.tabs.fromChatLog")}</TabsTrigger>
+          <TabsTrigger value="chatlog" disabled>
+            {t("contributeTLsPage.tabs.fromChatLog")}
+          </TabsTrigger>
           <TabsTrigger value="manual">{t("contributeTLsPage.tabs.manualEntry")}</TabsTrigger>
         </TabsList>
-        <TabsContent value="chatlog" className="pt-2">
+        {/* <TabsContent value="chatlog" className="pt-2">
           <ChatLogContributeFlow />
-        </TabsContent>
+        </TabsContent> */}
         <TabsContent value="manual" className="pt-2">
           <ManualTLEntryFlow />
         </TabsContent>
