@@ -26,6 +26,7 @@ import {
   setShowServerLandmarks as setShowServerLandmarksAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
+  setShowElkConnections as setShowElkConnectionsAction,
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
@@ -68,6 +69,7 @@ import { cn } from "@/lib/utils";
 type FullscreenControlsOverlayProps = {
   translocatorCount: number;
   visibleTranslocatorCount: number;
+  elkConnectionCount: number;
   filteringActive: boolean;
   landmarkCount: number;
   serverLandmarkCount: number;
@@ -115,6 +117,7 @@ type FullscreenControlsOverlayProps = {
 export function FullscreenControlsOverlay({
   translocatorCount,
   visibleTranslocatorCount,
+  elkConnectionCount,
   filteringActive,
   landmarkCount,
   serverLandmarkCount,
@@ -151,6 +154,11 @@ export function FullscreenControlsOverlay({
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
   const setShowTranslocators = useCallback(
     (next: boolean) => dispatch(setShowTranslocatorsAction(next)),
+    [dispatch],
+  );
+  const showElkConnections = useAppSelector((s) => s.mapView.showElkConnections);
+  const setShowElkConnections = useCallback(
+    (next: boolean) => dispatch(setShowElkConnectionsAction(next)),
     [dispatch],
   );
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
@@ -417,6 +425,21 @@ export function FullscreenControlsOverlay({
               {filteringActive
                 ? `${visibleTranslocatorCount.toLocaleString()} / ${translocatorCount.toLocaleString()}`
                 : translocatorCount.toLocaleString()}
+            </span>
+          </div>
+          <div
+            onClick={() => setShowElkConnections(!showElkConnections)}
+            className="cursor-pointer flex items-center gap-2 rounded-md border bg-background/95 px-3 py-2 text-sm shadow-md backdrop-blur"
+          >
+            <Switch
+              checked={showElkConnections}
+              aria-label={t("topsMap.emphasizeElkConnectionsOverlay")}
+            />
+            <Label className="cursor-pointer text-xs leading-tight">
+              {t("topsMap.emphasizeElkConnections")}
+            </Label>
+            <span className="ml-auto text-xs text-muted-foreground select-none">
+              {elkConnectionCount.toLocaleString()}
             </span>
           </div>
           <div

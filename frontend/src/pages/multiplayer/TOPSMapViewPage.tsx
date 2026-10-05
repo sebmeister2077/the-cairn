@@ -30,6 +30,7 @@ import {
   setShowServerLandmarks as setShowServerLandmarksAction,
   setShowTerminus as setShowTerminusAction,
   setShowTranslocators as setShowTranslocatorsAction,
+  setShowElkConnections as setShowElkConnectionsAction,
   setShowTraders as setShowTradersAction,
   setShowOceans as setShowOceansAction,
   setShowRecordedBrokenTLs as setShowRecordedBrokenTLsAction,
@@ -60,6 +61,7 @@ import {
   type MapStats,
   type MapTileSet,
   type RouteOverlay,
+  type ConnectionSegment,
   type WorldLineSegment,
   type WorldPointMarker,
 } from "@/components/tops-map-viewer/MapViewer";
@@ -310,6 +312,11 @@ export function TOPSMapViewPage() {
   const showTranslocators = useAppSelector((s) => s.mapView.showTranslocators);
   const setShowTranslocators = useCallback(
     (next: boolean) => dispatch(setShowTranslocatorsAction(next)),
+    [dispatch],
+  );
+  const showElkConnections = useAppSelector((s) => s.mapView.showElkConnections);
+  const setShowElkConnections = useCallback(
+    (next: boolean) => dispatch(setShowElkConnectionsAction(next)),
     [dispatch],
   );
   const showLandmarks = useAppSelector((s) => s.mapView.showLandmarks);
@@ -1408,6 +1415,53 @@ export function TOPSMapViewPage() {
     return set;
   }, [activeGroupingIds, groupingsStore.groupings]);
 
+  // Elk-walkable edges: hydrate the slice + read the server-confirmed edge
+  // set. Used both to narrow the visible TL set to connection participants
+  // and to draw the black/white walkable connection lines.
+  useElkWalkable();
+  const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
+
+  // Walkable connection overlay: resolve each community-confirmed elk-walkable
+  // edge to the world coordinates of the two TL endpoints it links, so the
+  // viewer can draw black/white connection lines between them. Edges reference
+  // TLs by their stable `properties.id`, so we index the segment list by `id`.
+  // Also collect the canonical TLIds of every TL that participates in a
+  // connection so the overlay can narrow the visible TL set down to just
+  // those (avoiding the lag of rendering all ~8000 TLs).
+  const elkConnections = useMemo(() => {
+    const empty = {
+      segments: undefined as ConnectionSegment[] | undefined,
+      tlIdSet: new Set<string>(),
+    };
+    if (!showElkConnections) return empty;
+    const edges = Object.values(elkEdges);
+    if (edges.length === 0) return empty;
+    const byId = new Map<string, WorldLineSegment>();
+    for (const seg of translocatorSegments) {
+      if (seg.id) byId.set(seg.id, seg);
+    }
+    const endpointOf = (ref: { tl_id: string; ep: 0 | 1 }) => {
+      const seg = byId.get(ref.tl_id);
+      if (!seg) return null;
+      return ref.ep === 0 ? { x: seg.x1, z: seg.z1 } : { x: seg.x2, z: seg.z2 };
+    };
+    const segments: ConnectionSegment[] = [];
+    const tlIdSet = new Set<string>();
+    for (const edge of edges) {
+      const segA = byId.get(edge.a.tl_id);
+      const segB = byId.get(edge.b.tl_id);
+      const from = endpointOf(edge.a);
+      const to = endpointOf(edge.b);
+      if (!from || !to) continue;
+      segments.push({ from, to });
+      if (segA) tlIdSet.add(tlIdFor(segA));
+      if (segB) tlIdSet.add(tlIdFor(segB));
+    }
+    return { segments: segments.length > 0 ? segments : undefined, tlIdSet };
+  }, [showElkConnections, elkEdges, translocatorSegments]);
+  const elkConnectionSegments = elkConnections.segments;
+  const elkConnectionTLIdSet = elkConnections.tlIdSet;
+
   // Set of TLIds whose `meta.addedAt` is within the recent-window. Only user-
   // contributed segments carry `meta`, so seeded TLs naturally never appear
   // here. Memoised on the segment list so it only recomputes when the
@@ -1431,11 +1485,14 @@ export function TOPSMapViewPage() {
     if (!showTranslocators) return undefined;
     if (editingGrouping) return translocatorSegments;
     const filterByGroupings = groupingsViewMode === "filter" && activeTLIdSet.size > 0;
-    if (!filterByGroupings && !showRecentlyAddedTLs) return translocatorSegments;
+    if (!filterByGroupings && !showRecentlyAddedTLs && !showElkConnections) {
+      return translocatorSegments;
+    }
     return translocatorSegments.filter((seg) => {
       const id = tlIdFor(seg);
       if (filterByGroupings && activeTLIdSet.has(id)) return true;
       if (showRecentlyAddedTLs && recentTLIdSet.has(id)) return true;
+      if (showElkConnections && elkConnectionTLIdSet.has(id)) return true;
       return false;
     });
   }, [
@@ -1446,6 +1503,8 @@ export function TOPSMapViewPage() {
     translocatorSegments,
     showRecentlyAddedTLs,
     recentTLIdSet,
+    showElkConnections,
+    elkConnectionTLIdSet,
   ]);
 
   // Segments the viewer should highlight. In edit mode = current grouping's
@@ -1485,10 +1544,13 @@ export function TOPSMapViewPage() {
   ]);
 
   // Filtering is active when the visible TL list has actually been narrowed
-  // — either by the favourites filter or the include-recently-added filter.
+  // — by the favourites filter, the include-recently-added filter, or the
+  // elk-friendly connections filter.
   const filteringActive =
     !editingGrouping &&
-    ((groupingsViewMode === "filter" && activeTLIdSet.size > 0) || showRecentlyAddedTLs) &&
+    ((groupingsViewMode === "filter" && activeTLIdSet.size > 0) ||
+      showRecentlyAddedTLs ||
+      showElkConnections) &&
     visibleTranslocatorSegments != null &&
     visibleTranslocatorSegments.length !== translocatorSegments.length;
 
@@ -1582,8 +1644,6 @@ export function TOPSMapViewPage() {
 
   // Elk-walkable: hydrate slice + read draft/server state so the route
   // overlay can recolour walk legs based on community attestation.
-  useElkWalkable();
-  const elkEdges = useAppSelector((s) => s.elkWalkable.edges);
   const elkPendingAttest = useAppSelector((s) => s.elkWalkable.pendingAttest);
   const elkPendingUnattest = useAppSelector((s) => s.elkWalkable.pendingUnattest);
   const accountMeQuery = useQuery({
@@ -1682,6 +1742,7 @@ export function TOPSMapViewPage() {
     ? previewGroupingSegments
     : visibleTranslocatorSegments;
   const finalOverlayPoints = previewActive ? [] : landmarkPoints;
+  const finalConnectionSegments = previewActive ? undefined : elkConnectionSegments;
   const finalHighlightedSegments = previewActive
     ? previewGroupingSegments
     : highlightedTranslocatorSegments;
@@ -1934,6 +1995,9 @@ export function TOPSMapViewPage() {
             <LayersSection
               showTranslocators={showTranslocators}
               setShowTranslocators={setShowTranslocators}
+              showElkConnections={showElkConnections}
+              setShowElkConnections={setShowElkConnections}
+              elkConnectionCount={elkConnectionSegments?.length ?? 0}
               filteringActive={filteringActive}
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? 0}
               translocatorCount={translocatorCount}
@@ -2190,6 +2254,7 @@ export function TOPSMapViewPage() {
               }
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
+              connectionSegments={finalConnectionSegments}
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}
             />
@@ -2310,6 +2375,7 @@ export function TOPSMapViewPage() {
               }
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
+              connectionSegments={finalConnectionSegments}
             />
           )}
           {!controlsCollapsed && <CenterCrosshair />}
@@ -2347,6 +2413,7 @@ export function TOPSMapViewPage() {
             <FullscreenControlsOverlay
               translocatorCount={translocatorCount}
               visibleTranslocatorCount={visibleTranslocatorSegments?.length ?? translocatorCount}
+              elkConnectionCount={elkConnectionSegments?.length ?? 0}
               filteringActive={filteringActive}
               landmarkCount={landmarkCount}
               serverLandmarkCount={serverLandmarkCount}

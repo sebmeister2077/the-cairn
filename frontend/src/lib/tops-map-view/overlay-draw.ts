@@ -46,6 +46,12 @@ export interface OverlayDrawArgs {
     tlIdSet: Set<string>;
     focusedWalkLegKey?: string | null;
   } | null;
+  /**
+   * Optional walkable connection lines (elk-friendly TL links), already
+   * projected to screen space. Drawn as a black base + white dashes
+   * beneath the route overlay.
+   */
+  connections?: Array<{ x1: number; y1: number; x2: number; y2: number }> | null;
   hoveredSegmentIndex: number | null;
   highlightedSegmentIndices: Set<number>;
   routeTLBaseSkipIndices: Set<number>;
@@ -85,6 +91,7 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
     segments,
     points,
     route,
+    connections,
     hoveredSegmentIndex,
     highlightedSegmentIndices,
     routeTLBaseSkipIndices,
@@ -95,7 +102,7 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
     radiusCull,
   } = args;
 
-  if (segments.length === 0 && points.length === 0 && !route) return;
+  if (segments.length === 0 && points.length === 0 && !route && !connections) return;
 
   // Pre-compute the cursor-radius cull set: segments whose `tlId` is not
   // in `alwaysShowTLIds` and whose endpoints are both outside the radius
@@ -371,6 +378,35 @@ export function drawOverlaysScreenSpace(ctx: CanvasRenderingContext2D, args: Ove
         p.claimed,
       );
     }
+  }
+
+  // ── Walkable connections (elk-friendly TL links) ─────────────────────────
+  // Drawn above the TL overlay but below the route overlay. Black base line
+  // with white dashes so it reads as a neutral walkable path distinct from
+  // the coloured route walk legs.
+  if (connections && connections.length > 0) {
+    ctx.save();
+    ctx.lineCap = "round";
+    ctx.setLineDash([]);
+    ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (const c of connections) {
+      ctx.moveTo(c.x1, c.y1);
+      ctx.lineTo(c.x2, c.y2);
+    }
+    ctx.stroke();
+    ctx.setLineDash([8, 8]);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    for (const c of connections) {
+      ctx.moveTo(c.x1, c.y1);
+      ctx.lineTo(c.x2, c.y2);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   // ── Route overlay ────────────────────────────────────────────────────────

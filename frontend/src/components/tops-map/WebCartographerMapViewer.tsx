@@ -44,6 +44,7 @@ import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCac
 import type {
   MapStats,
   RouteOverlay,
+  ConnectionSegment,
   WorldLineSegment,
   WorldPointMarker,
 } from "@/components/tops-map-viewer/MapViewer";
@@ -166,6 +167,11 @@ interface WebCartographerMapViewerProps {
    *  claim (all mode). */
   playerClaimLabelMode?: "always" | "hover";
   routeOverlay?: RouteOverlay | null;
+  /**
+   * Optional world-space walkable connections (elk-friendly TL links),
+   * drawn as black/white barber-stripe lines beneath the route overlay.
+   */
+  connectionSegments?: ConnectionSegment[];
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
   /**
@@ -300,6 +306,7 @@ export function WebCartographerMapViewer({
   playerClaimMarkers,
   playerClaimLabelMode = "always",
   routeOverlay = null,
+  connectionSegments,
   highlightedSegment,
   highlightedSegments,
   segmentColors,
@@ -866,6 +873,18 @@ export function WebCartographerMapViewer({
     };
   }, [routeOverlay, projectWorld]);
 
+  const projectedConnections = useMemo(() => {
+    if (!connectionSegments || connectionSegments.length === 0) return null;
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const c of connectionSegments) {
+      const a = projectWorld(c.from.x, c.from.z);
+      const b = projectWorld(c.to.x, c.to.z);
+      if (![a.x, a.y, b.x, b.y].every(Number.isFinite)) continue;
+      out.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+    }
+    return out.length > 0 ? out : null;
+  }, [connectionSegments, projectWorld]);
+
   const highlightedSegmentIndices = useMemo(() => {
     if (!overlaySegments || overlaySegments.length === 0) return new Set<number>();
     const targets = new Set<string>();
@@ -1332,6 +1351,7 @@ export function WebCartographerMapViewer({
       segments: projectedSegments,
       points: projectedPoints,
       route: projectedRoute,
+      connections: projectedConnections,
       hoveredSegmentIndex,
       highlightedSegmentIndices,
       routeTLBaseSkipIndices,
@@ -1513,6 +1533,7 @@ export function WebCartographerMapViewer({
     projectedSegments,
     projectedPoints,
     projectedRoute,
+    projectedConnections,
     hoveredSegmentIndex,
     highlightedSegmentIndices,
     routeTLBaseSkipIndices,

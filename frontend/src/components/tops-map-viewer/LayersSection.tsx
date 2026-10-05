@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 interface LayersSectionProps {
   showTranslocators: boolean;
   setShowTranslocators: (next: boolean) => void;
+  showElkConnections: boolean;
+  setShowElkConnections: (next: boolean) => void;
+  elkConnectionCount: number;
   filteringActive: boolean;
   visibleTranslocatorCount: number;
   translocatorCount: number;
@@ -50,6 +53,9 @@ interface LayersSectionProps {
 export const LayersSection = memo(function LayersSection({
   showTranslocators,
   setShowTranslocators,
+  showElkConnections,
+  setShowElkConnections,
+  elkConnectionCount,
   filteringActive,
   visibleTranslocatorCount,
   translocatorCount,
@@ -105,6 +111,19 @@ export const LayersSection = memo(function LayersSection({
                   })
                 : translocatorCount.toLocaleString()}
             </span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+          <Switch
+            checked={showElkConnections}
+            onCheckedChange={setShowElkConnections}
+            aria-label={t("topsMap.emphasizeElkConnectionsOverlay")}
+          />
+          <Label>{t("topsMap.emphasizeElkConnections")}</Label>
+          <span className="text-xs text-muted-foreground ml-2">
+            {t("topsMap.elkConnectionCount", {
+              count: elkConnectionCount.toLocaleString(),
+            })}
           </span>
         </div>
         {/* {!usingWebCartographer && ( */}

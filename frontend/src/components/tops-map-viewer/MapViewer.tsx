@@ -95,6 +95,14 @@ export interface RouteOverlay {
   focusedWalkLegKey?: string | null;
 }
 
+/** A world-space walkable connection between two points, drawn as a
+ *  black/white barber-stripe line. Used to emphasise community-confirmed
+ *  elk-friendly TL endpoint links independently of the route planner. */
+export interface ConnectionSegment {
+  from: { x: number; z: number };
+  to: { x: number; z: number };
+}
+
 export interface WorldPointMarker {
   x: number;
   z: number;
@@ -328,6 +336,12 @@ interface MapViewerProps {
    */
   routeOverlay?: RouteOverlay | null;
   /**
+   * Optional world-space walkable connections drawn as black/white
+   * barber-stripe lines beneath the route overlay. Independent of the
+   * route planner — used to emphasise elk-friendly TL endpoint links.
+   */
+  connectionSegments?: ConnectionSegment[];
+  /**
    * When true, render a small "color palette" button in the toolbar that
    * opens a popover explaining what each translocator overlay color means.
    * Off by default — enable on pages that show the TL overlay.
@@ -400,6 +414,7 @@ export function MapViewer({
   cursorMode = "default",
   onWorldClick,
   routeOverlay = null,
+  connectionSegments,
 }: MapViewerProps) {
   const { t } = useTranslation();
   const [zoom, setZoom] = useState(1);
@@ -674,7 +689,24 @@ export function MapViewer({
     };
   }, [imgNatural.h, imgNatural.w, routeOverlay, stats]);
 
-  // Set of segment indices to skip in the default-colour pass because the
+  // Project the walkable connection overlay (elk-friendly TL links) into
+  // image-space pixels using the same map-stats math as the route overlay.
+  const projectedConnectionSegments = useMemo(() => {
+    if (!stats || !connectionSegments || connectionSegments.length === 0) return null;
+    if (imgNatural.w <= 0 || imgNatural.h <= 0) return null;
+    const toImgX = (x: number) => ((x - stats.start_x) / stats.width_blocks) * imgNatural.w;
+    const toImgY = (z: number) => ((z - stats.start_z) / stats.height_blocks) * imgNatural.h;
+    const out: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+    for (const c of connectionSegments) {
+      const x1 = toImgX(c.from.x);
+      const y1 = toImgY(c.from.z);
+      const x2 = toImgX(c.to.x);
+      const y2 = toImgY(c.to.z);
+      if (![x1, y1, x2, y2].every(Number.isFinite)) continue;
+      out.push({ x1, y1, x2, y2 });
+    }
+    return out.length > 0 ? out : null;
+  }, [connectionSegments, imgNatural.h, imgNatural.w, stats]);
   // route overlay will redraw them in emerald — keeps the route highlight
   // visually unambiguous instead of layering colours.
   const routeTLBaseSkipIndices = useMemo(() => {
@@ -1349,6 +1381,37 @@ export function MapViewer({
       }
     }
 
+    // ----- Walkable connection overlay (elk-friendly TL links). Drawn above
+    //       the TL segments but below the route overlay, as a black base line
+    //       with white dashes on top so it reads as a neutral walkable path
+    //       distinct from the coloured route walk legs.
+    if (projectedConnectionSegments) {
+      const baseWidth = Math.max(1.0, 2.4 / Math.max(zoom, 0.1));
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(15, 23, 42, 0.95)";
+      ctx.lineWidth = baseWidth;
+      ctx.beginPath();
+      for (const c of projectedConnectionSegments) {
+        ctx.moveTo(c.x1, c.y1);
+        ctx.lineTo(c.x2, c.y2);
+      }
+      ctx.stroke();
+      const dashUnit = Math.max(4, 8 / Math.max(zoom, 0.1));
+      ctx.setLineDash([dashUnit, dashUnit]);
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.lineWidth = baseWidth;
+      ctx.beginPath();
+      for (const c of projectedConnectionSegments) {
+        ctx.moveTo(c.x1, c.y1);
+        ctx.lineTo(c.x2, c.y2);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     // ----- Route overlay (drawn last so it sits on top of every other layer).
     if (projectedRouteOverlay) {
       // 1. Walk legs: dashed line(s) with a thin dark outline so they
@@ -1581,6 +1644,7 @@ export function MapViewer({
     projectedOverlayPoints,
     projectedOverlaySegments,
     projectedRouteOverlay,
+    projectedConnectionSegments,
     routeTLBaseSkipIndices,
     zoom,
     traderStyle,

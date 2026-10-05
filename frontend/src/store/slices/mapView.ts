@@ -154,6 +154,15 @@ export interface MapViewState {
      */
     showTerminus: boolean;
     showTranslocators: boolean;
+    /**
+     * Show-only filter for elk-friendly TL connections: when on, the TL
+     * overlay is narrowed to just the translocators that participate in a
+     * community-confirmed elk-walkable edge, and those edges are drawn as
+     * black/white walkable connection lines. Lets the user cut through the
+     * ~8000-TL overlay to navigate the elk-friendly network. Implies
+     * {@link showTranslocators} (the connections anchor onto visible TLs).
+     */
+    showElkConnections: boolean;
     showTraders: boolean;
     /** When non-empty, restrict trader markers to these trader_type values. */
     traderTypeFilter: string[];
@@ -381,6 +390,7 @@ export function loadInitialMapViewState(): MapViewState {
         showServerLandmarks: true,
         showTerminus: false,
         showTranslocators: false,
+        showElkConnections: false,
         showTraders: false,
         traderTypeFilter: [],
         showRecentlyAdded: false,
@@ -462,6 +472,15 @@ export const mapViewSlice = createSlice({
             state.showTranslocators = action.payload;
             if (!state.showTranslocators) {
                 state.showRecentlyAdded = false;
+                state.showElkConnections = false;
+            }
+        },
+        setShowElkConnections(state, action: PayloadAction<boolean>) {
+            state.showElkConnections = action.payload;
+            // The connections are drawn anchored onto the TL overlay, so
+            // emphasising them implies the TL overlay is visible.
+            if (state.showElkConnections) {
+                state.showTranslocators = true;
             }
         },
         setShowTraders(state, action: PayloadAction<boolean>) {
@@ -739,6 +758,7 @@ export const {
     setShowServerLandmarks,
     setShowTerminus,
     setShowTranslocators,
+    setShowElkConnections,
     setShowTraders,
     setTraderTypeFilter,
     toggleTraderTypeFilter,
