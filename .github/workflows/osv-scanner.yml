@@ -1,0 +1,29 @@
+name: Dependency Vulnerability Scan
+
+on:
+  push:
+    branches: ["main"]
+  schedule:
+    # Weekly re-scan catches newly-disclosed CVEs in deps you haven't changed.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  osv-scan:
+    name: Scan dependencies for known vulnerabilities (OSV)
+    # Reusable workflow uploads results to the Security tab (Code scanning alerts).
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.0.2"
+    with:
+      # Scan the whole repo; OSV auto-detects pip, npm and nuget manifests/lockfiles.
+      scan-args: |-
+        --recursive
+        ./
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
