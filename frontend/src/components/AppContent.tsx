@@ -35,7 +35,6 @@ import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
-import { AdminRoutePlannerPage } from "@/components/usage/sections/UsageRoutePlannerSection";
 import { AdminMapFeaturesTradersPage } from "@/pages/admin/AdminMapFeaturesTradersPage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
