@@ -52,6 +52,24 @@ export const QUOTA_FLAGS: QuotaFlagSpec[] = [
     max: 1000,
   },
   {
+    key: "trader_claims_manual_daily_cap",
+    label: "Trader claim-type manual daily cap",
+    help: "Per-user max manual trader claim-type markings per rolling 24h window. Admins bypass.",
+    unit: "per 24h",
+    defaultValue: 30,
+    min: 0,
+    max: 500,
+  },
+  {
+    key: "trader_claim_empty_manual_daily_cap",
+    label: "Empty trader-claim manual daily cap",
+    help: "Per-user max manual empty trader-claim (no-trader) markings per rolling 24h window. Admins bypass.",
+    unit: "per 24h",
+    defaultValue: 30,
+    min: 0,
+    max: 500,
+  },
+  {
     key: "translocators_chatlog_daily_cap",
     label: "Translocator chat-log daily cap",
     help: "Per-API-key max translocator chat-log submissions per rolling 24h window (in-memory).",
@@ -141,6 +159,24 @@ export const QUOTA_FLAGS: QuotaFlagSpec[] = [
     min: 0,
     max: 20,
   },
+  {
+    key: "elk_walkable_daily_cap",
+    label: "Elk-walkable daily cap",
+    help: "Per-API-key max elk-walkable edge submissions (attest / unattest) per rolling 24h window.",
+    unit: "per 24h",
+    defaultValue: 100,
+    min: 0,
+    max: 1000,
+  },
+  {
+    key: "elk_walkable_snapshot_interval_days",
+    label: "Elk-walkable snapshot interval",
+    help: "Days to reuse the most recent elk-walkable snapshot before writing a new one. Set 0 to snapshot on every mutation.",
+    unit: "days",
+    defaultValue: 14,
+    min: 0,
+    max: 365,
+  },
 ];
 export function QuotaFlagRow({
   spec,
@@ -182,7 +218,7 @@ export function QuotaFlagRow({
   };
 
   return (
-    <div className="flex flex-col gap-1 border-b last:border-0 pb-3 last:pb-0">
+    <div className="flex flex-col gap-1.5 border-b border-border/60 py-3 first:pt-0 last:border-0 last:pb-0">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="font-medium text-sm">{spec.label}</span>
         <Badge variant="outline" className="font-mono text-[10px]">
@@ -198,7 +234,7 @@ export function QuotaFlagRow({
           </Badge>
         )}
       </div>
-      {spec.help && <p className="text-xs text-muted-foreground">{spec.help}</p>}
+      {spec.help && <p className="text-xs leading-relaxed text-muted-foreground">{spec.help}</p>}
       <div className="flex items-center gap-2 mt-1">
         <input
           type="number"
@@ -216,7 +252,7 @@ export function QuotaFlagRow({
               (e.target as HTMLInputElement).blur();
             }
           }}
-          className="h-8 w-28 rounded border bg-background px-2 text-sm"
+          className="h-8 w-28 rounded-md border bg-background px-2 text-sm transition-shadow outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
         />
         <span className="text-xs text-muted-foreground">{spec.unit}</span>
         <span className="text-[10px] text-muted-foreground">

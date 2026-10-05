@@ -11,6 +11,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -56,6 +57,21 @@ interface ProductFlagSpec {
   key: string;
   title: string;
   help: string;
+}
+
+/**
+ * Consistent heading treatment shared by every section on this page so the
+ * eyebrow label + optional description keep the same spacing and hierarchy.
+ */
+function SectionHeader({ title, description }: { title: string; description?: ReactNode }) {
+  return (
+    <div className="space-y-0.5">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h3>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </div>
+  );
 }
 
 interface FlagCategory {
@@ -179,10 +195,80 @@ const PRODUCT_FLAG_CATEGORIES: FlagCategory[] = [
       },
     ],
   },
+  {
+    id: "trader-claims",
+    label: "Trader claim overlays",
+    description:
+      "Community overlays that annotate the static trader-claim boxes — which claim holds which trader type, and which claims are empty (no trader inside). Manual submissions are capped by trader_claims_manual_daily_cap / trader_claim_empty_manual_daily_cap.",
+    flags: [
+      {
+        key: "trader_claims_viewer",
+        title: "Trader claim types — viewer",
+        help: "ON = GET /api/trader-claim-types returns a presigned URL to the merged claim-type overlay (which static claim box holds which trader type) so the map can show the layer. OFF = the endpoint reports the overlay as disabled and the map hides the claim-type layer.",
+      },
+      {
+        key: "trader_claims_manual",
+        title: "Trader claim types — manual marking",
+        help: "ON = logged-in users can POST /api/trader-claim-types to manually mark a claim box's trader type (their guess). Rate-limited by trader_claims_manual_daily_cap (default 30/day). A manual guess only fills a claim that has no authoritative value yet. OFF = the endpoint returns 503.",
+      },
+      {
+        key: "trader_claims_authoritative",
+        title: "Trader claim types — authoritative publish",
+        help: "ON = the VSProxy (admin key, or a key with the trader_claims_publish permission) can POST /api/trader-claim-types/authoritative to publish claim types derived from the in-game trader entity code. Authoritative values always win over manual guesses. OFF = the endpoint returns 503.",
+      },
+      {
+        key: "trader_claim_empty_viewer",
+        title: "Empty trader claims — viewer",
+        help: "ON = GET /api/trader-claim-empty returns a presigned URL to the \u201cno-trader claim\u201d overlay (claim boxes known to contain no actual trader) so the map can show the layer. OFF = the endpoint reports the overlay as disabled and the map hides the empty-claim layer.",
+      },
+      {
+        key: "trader_claim_empty_manual",
+        title: "Empty trader claims — manual marking",
+        help: "ON = logged-in users can POST /api/trader-claim-empty to mark a claim box as empty (no trader inside). Rate-limited by trader_claim_empty_manual_daily_cap (default 30/day). OFF = the endpoint returns 503.",
+      },
+      {
+        key: "trader_claim_empty_authoritative",
+        title: "Empty trader claims — authoritative publish",
+        help: "ON = the VSProxy (admin key, or a key with the map-features publish permission) can POST /api/trader-claim-empty/authoritative to publish empty-claim markings derived from an actual scan of the claim volume. Always wins over manual markings. OFF = the endpoint returns 503.",
+      },
+    ],
+  },
+  {
+    id: "elk-walkable",
+    label: "Elk-walkable routes",
+    description:
+      "Elk-accessible walkable edges between translocators used by the Route Planner, plus the moderation queue for wrongly attested edges. The per-user submission cap is elk_walkable_daily_cap.",
+    flags: [
+      {
+        key: "elk_walkable_contributions",
+        title: "Elk-walkable contributions",
+        help: "ON = users can POST /api/elk-walkable/submit to attest elk-accessible walkable edges between translocators, and the Route-Planner draft UI is enabled. Rate-limited by elk_walkable_daily_cap (default 10 per 24h). OFF = submissions are rejected and the draft UI is hidden.",
+      },
+      {
+        key: "elk_walkable_reports_enabled",
+        title: "Elk-walkable reports",
+        help: "ON = users can flag a confirmed elk-walkable edge as wrongly attested, feeding an admin moderation queue (post-moderation, so the edge stays live until a reviewer acts). OFF = the reporting endpoint and UI are disabled.",
+      },
+    ],
+  },
+  {
+    id: "marketplace",
+    label: "Orders marketplace",
+    description:
+      "Community buy/sell marketplace (Market → Orders), independent of the static Auction House capture data.",
+    flags: [
+      {
+        key: "orders_enabled",
+        title: "Orders marketplace",
+        help: "ON = the community Orders marketplace is live: account holders can post buy/sell orders, negotiate via requests / counter-offers, and log fills. OFF = all /api/orders/* endpoints return 404 and the frontend hides the Orders UI.",
+      },
+    ],
+  },
 ];
 
 export function AdminFeatureFlagsPage() {
   const queryClient = useQueryClient();
+  const { formatDate } = useDateFormat();
   const flagsQuery = useQuery({
     queryKey: ["admin-feature-flags"],
     queryFn: adminListFeatureFlags,
@@ -233,12 +319,12 @@ export function AdminFeatureFlagsPage() {
   }, [flagMap, flagsQuery.data]);
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-8">
+      <div className="space-y-1 border-b pb-4">
         <h2 className="text-xl font-semibold flex items-center gap-2">
           <Power className="h-5 w-5" /> Feature Flags
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground">
           Runtime kill switches. Changes take effect within ~30 seconds (the in-process flag cache
           TTL). For the full reference, see{" "}
           <span className="font-mono">docs/users/feature-flags.md</span>.
@@ -256,9 +342,7 @@ export function AdminFeatureFlagsPage() {
 
       {/* Operational kill switches */}
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Operational kill switches
-        </h3>
+        <SectionHeader title="Operational kill switches" />
         <div className="space-y-3">
           {OPERATIONAL_FLAGS.map((spec) => {
             const flag = flagMap.get(spec.key);
@@ -286,25 +370,18 @@ export function AdminFeatureFlagsPage() {
       {/* Map-lock infrastructure (lives next to the kill switches because
           force-releasing the lock is an operational action, not a flag). */}
       <section className="space-y-3">
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Infrastructure
-        </h3>
+        <SectionHeader title="Infrastructure" />
         <MapLockCard />
       </section>
 
       {/* Per-user quotas & rate limits (numeric) */}
       <section className="space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Quotas &amp; rate limits
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Numeric caps applied to non-admin contributions. Leave blank (Reset) to use the built-in
-            default. Admins always bypass these caps. Changes propagate within ~30s.
-          </p>
-        </div>
+        <SectionHeader
+          title="Quotas & rate limits"
+          description="Numeric caps applied to non-admin contributions. Leave blank (Reset) to use the built-in default. Admins always bypass these caps. Changes propagate within ~30s."
+        />
         <Card>
-          <CardContent className="pt-4 space-y-3">
+          <CardContent className="pt-4 space-y-1">
             {QUOTA_FLAGS.map((spec) => {
               const f = flagMap.get(spec.key);
               const current = f?.value_int ?? null;
@@ -327,31 +404,32 @@ export function AdminFeatureFlagsPage() {
       {/* Product / experimental flags, grouped by category */}
       {categorizedProductFlags.map((cat) => (
         <section key={cat.id} className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-              {cat.label}
-            </h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{cat.description}</p>
-          </div>
+          <SectionHeader title={cat.label} description={cat.description} />
           <Card>
-            <CardContent className="pt-4 space-y-2">
+            <CardContent className="pt-4 space-y-1">
               {cat.flags.map((spec) => {
                 const f = flagMap.get(spec.key);
                 if (!f) return null;
                 return (
                   <div
                     key={spec.key}
-                    className="flex flex-col gap-3 border-b last:border-0 pb-2 last:pb-0"
+                    className="flex flex-col gap-3 border-b border-border/60 py-3 first:pt-0 last:border-0 last:pb-0"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-1.5">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-medium text-sm">{spec.title}</span>
                           <Badge variant="outline" className="font-mono text-[10px]">
                             {spec.key}
                           </Badge>
                           {f.enabled ? (
-                            <Badge className="text-[10px]">on</Badge>
+                            <Badge
+                              variant="outline"
+                              className="gap-1 text-[10px] text-emerald-600 border-emerald-500/40"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              on
+                            </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-[10px]">
                               off
@@ -359,13 +437,16 @@ export function AdminFeatureFlagsPage() {
                           )}
                         </div>
                         {spec.help && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{spec.help}</p>
+                          <p className="text-xs leading-relaxed text-muted-foreground">
+                            {spec.help}
+                          </p>
                         )}
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
-                          Updated {new Date(f.updated_at).toLocaleString()}
+                        <p className="text-[10px] text-muted-foreground">
+                          Updated {formatDate(new Date(f.updated_at))}
                         </p>
                       </div>
                       <Switch
+                        className="mt-0.5"
                         checked={f.enabled}
                         disabled={setFlag.isPending && setFlag.variables?.key === spec.key}
                         onCheckedChange={(v) =>
