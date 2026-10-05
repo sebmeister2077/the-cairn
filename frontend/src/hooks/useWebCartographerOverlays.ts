@@ -26,6 +26,7 @@
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import type { WorldLineSegment, WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
 import { API_BASE } from "@/lib/api";
+import { normaliseBaseUrl } from "@/lib/tops-map-view/wc-tiles";
 import { parseLandmarks, parseTranslocators } from "./useOverlayData";
 
 const THREE_MONTHS_MS = 90 * 24 * 60 * 60 * 1000;
@@ -50,10 +51,6 @@ export class WebCartographerOverlayError extends Error {
         this.name = "WebCartographerOverlayError";
         this.status = status;
     }
-}
-
-function normaliseBaseUrl(url: string): string {
-    return url.trim().replace(/\/+$/, "");
 }
 
 async function fetchGeoJson<T>(
