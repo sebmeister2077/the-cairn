@@ -87,6 +87,7 @@ export const en = {
                 traders: "Traders",
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
+                mapFeaturesTraders: "Map-features traders",
                 licenses: "Licenses",
                 programDownloads: "Program Downloads",
                 tunnelPreviewer: "Tunnel Previewer",

@@ -78,6 +78,7 @@ const ru = {
                 traders: "Торговцы",
                 tlScreenshots: "Скриншоты TL",
                 elkWalkable: "Лосиные тропы",
+                mapFeaturesTraders: "Торговцы map-features",
                 tunnelPreviewer: "Превью туннеля",
             },
             chip: {

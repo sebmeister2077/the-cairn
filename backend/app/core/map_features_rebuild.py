@@ -421,17 +421,32 @@ def _build_and_publish(force: bool = False) -> Dict[str, int]:
 
     if settings.MAP_FEATURES_REBUILD_SUBPROCESS and not _CHILD:
         try:
-            counts, data_hash, _published = _run_child_rebuild(_last_published_hash)
+            counts, data_hash, published = _run_child_rebuild(_last_published_hash)
         except Exception as exc:  # noqa: BLE001 — fall back to in-process
             logger.warning(
                 "[map-features-rebuild] subprocess failed (%s) — running in-process.", exc
             )
-            counts, data_hash, _published = _do_merge_and_publish(_last_published_hash)
+            counts, data_hash, published = _do_merge_and_publish(_last_published_hash)
     else:
-        counts, data_hash, _published = _do_merge_and_publish(_last_published_hash)
+        counts, data_hash, published = _do_merge_and_publish(_last_published_hash)
 
     _last_published_hash = data_hash
     _last_source_fingerprint = fingerprint
+
+    # Record every real publish (a new merged version actually hit R2) in the
+    # traders audit trail so admins see when the list changed + its new size.
+    # Best-effort — a logging failure must never break the rebuild.
+    if published:
+        try:
+            from . import database as _db
+            _db.insert_map_features_traders_audit(
+                action="rebuild_publish",
+                actor_display_name="rebuild",
+                traders_accepted=counts.get("traders"),
+                published_version=data_hash or None,
+            )
+        except Exception:
+            logger.exception("[map-features-rebuild] failed to write traders audit row")
     return counts
 
 

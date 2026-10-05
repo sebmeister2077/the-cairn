@@ -77,6 +77,7 @@ const fr = {
                 "traders": "Marchands",
                 "tlScreenshots": "Captures d'écran TL",
                 "elkWalkable": "Traversable par les élans",
+                "mapFeaturesTraders": "Marchands map-features",
                 "tunnelPreviewer": "Aperçu de tunnel"
             },
             "chip": {

@@ -79,6 +79,7 @@ const nl = {
                 traders: "Handelaars",
                 tlScreenshots: "TL‑screenshots",
                 elkWalkable: "Elk‑loopbaar",
+                mapFeaturesTraders: "Map-features handelaars",
                 tunnelPreviewer: "Tunnel‑previewer",
             },
             chip: {

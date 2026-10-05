@@ -77,6 +77,7 @@ const es = {
                 "traders": "Comerciantes",
                 "tlScreenshots": "Capturas de pantalla de TL",
                 "elkWalkable": "Caminable para alces",
+                "mapFeaturesTraders": "Comerciantes de map-features",
                 "tunnelPreviewer": "Vista previa de túnel"
             },
             "chip": {

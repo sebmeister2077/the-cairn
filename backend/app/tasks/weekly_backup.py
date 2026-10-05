@@ -238,6 +238,7 @@ def run_now() -> dict:
     """Synchronous: snapshot if due + run cleanup. Returns a small report."""
     created = None
     geojson_created: List[str] = []
+    mf_traders_created: Optional[str] = None
     if ff.is_feature_enabled("weekly_backups"):
         try:
             created = create_scheduled_snapshot_if_due()
@@ -247,9 +248,18 @@ def run_now() -> dict:
             geojson_created = create_scheduled_geojson_snapshots_if_due()
         except Exception:
             logger.exception("weekly_backup: geojson snapshot failed")
+        try:
+            mf_traders_created = create_scheduled_map_features_traders_snapshot_if_due()
+        except Exception:
+            logger.exception("weekly_backup: map-features traders snapshot failed")
     cleanup = cleanup_old_backups() if ff.is_feature_enabled("weekly_backups") else {"deleted": 0}
     geojson_cleanup = (
         cleanup_old_geojson_backups()
+        if ff.is_feature_enabled("weekly_backups")
+        else {"deleted": 0}
+    )
+    mf_traders_cleanup = (
+        cleanup_old_map_features_traders_backups()
         if ff.is_feature_enabled("weekly_backups")
         else {"deleted": 0}
     )
@@ -258,6 +268,8 @@ def run_now() -> dict:
         "cleanup": cleanup,
         "geojson_created": geojson_created,
         "geojson_cleanup": geojson_cleanup,
+        "map_features_traders_created": mf_traders_created,
+        "map_features_traders_cleanup": mf_traders_cleanup,
     }
 
 
@@ -272,7 +284,11 @@ def _scheduled_run() -> None:
             logger.debug("weekly_backup: skipping tick — not leader")
         else:
             result = run_now()
-            if result.get("created") or result["cleanup"]["deleted"]:
+            if (
+                result.get("created")
+                or result["cleanup"]["deleted"]
+                or result.get("map_features_traders_created")
+            ):
                 logger.info("weekly_backup: tick %s", result)
     except Exception:
         logger.exception("weekly_backup: scheduled run failed")
@@ -347,9 +363,6 @@ _GEOJSON_ASSETS = (
     ("translocators", r2_storage.translocators_live_key,
      r2_storage.translocators_backup_scheduled_key,
      r2_storage.translocators_backup_manual_key),
-    ("traders", r2_storage.traders_live_key,
-     r2_storage.traders_backup_scheduled_key,
-     r2_storage.traders_backup_manual_key),
 )
 
 
@@ -472,3 +485,121 @@ def restore_geojson_from_backup(asset: str, backup_key: str) -> str:
     logger.info("weekly_backup: restored %s from %s", asset, backup_key)
     return live_key
 
+
+# ---------------------------------------------------------------------------
+# Merged public map-features traders list — biweekly snapshots
+# ---------------------------------------------------------------------------
+#
+# The crowd-sourced ``map-features.traders.json`` (rebuilt from every
+# /contribute-map-features upload and published to the PUBLIC map-features
+# bucket) is snapshotted once every two weeks into ``backups/``. Unlike the
+# geojson assets above there is no restore path — the merged data is
+# authoritative and only ever grows from contributor uploads.
+#
+# Storage layout (under ``backups/``):
+#   map-features-traders-YYYY-Www.json
+#   map-features-traders-YYYY-Www-manual-<unix>.json
+#
+# Cadence: scheduled snapshots are taken only on EVEN ISO weeks, giving one
+# snapshot roughly every two weeks (idempotent per ISO week).
+
+_RE_MF_TRADERS_SCHEDULED = re.compile(
+    r"^backups/map-features-traders-(\d{4})-W(\d{2})\.json$"
+)
+_RE_MF_TRADERS_MANUAL = re.compile(
+    r"^backups/map-features-traders-(\d{4})-W(\d{2})-manual-(\d+)\.json$"
+)
+
+
+def _classify_mf_traders(key: str) -> Optional[str]:
+    if _RE_MF_TRADERS_SCHEDULED.match(key):
+        return "scheduled"
+    if _RE_MF_TRADERS_MANUAL.match(key):
+        return "manual"
+    return None
+
+
+def list_map_features_traders_backups() -> List[dict]:
+    """Return all map-features traders backup objects, newest first."""
+    out = []
+    for obj in r2_storage.list_backup_objects():
+        kind = _classify_mf_traders(obj["key"])
+        if kind is None:
+            continue
+        lm = obj.get("last_modified")
+        out.append(
+            {
+                "key": obj["key"],
+                "kind": kind,
+                "size": obj["size"],
+                "last_modified": lm.isoformat() if lm else None,
+            }
+        )
+    out.sort(key=lambda r: r["last_modified"] or "", reverse=True)
+    return out
+
+
+def _snapshot_map_features_traders_to(target_key: str) -> str:
+    """Cross-bucket copy of the live merged traders list into ``target_key``."""
+    src_bucket, src_key = r2_storage.map_features_traders_live()
+    r2_storage.copy_object_from_bucket(src_bucket, src_key, target_key)
+    return target_key
+
+
+def create_scheduled_map_features_traders_snapshot_if_due() -> Optional[str]:
+    """Create this period's scheduled snapshot of ``map-features.traders.json``.
+
+    Biweekly: only runs on even ISO weeks. Idempotent — skips when the current
+    ISO week already has a snapshot. Skips silently when the live file is
+    missing (e.g. no contributions published yet). Returns the new key or None.
+    """
+    iso_year, iso_week = _now_iso_week()
+    if iso_week % 2 != 0:
+        return None
+    target = r2_storage.map_features_traders_backup_scheduled_key(iso_year, iso_week)
+    if r2_storage.object_exists(target):
+        return None
+    src_bucket, src_key = r2_storage.map_features_traders_live()
+    if not r2_storage.object_exists_in_bucket(src_bucket, src_key):
+        logger.info(
+            "weekly_backup: map-features traders live file missing — skipping snapshot"
+        )
+        return None
+    try:
+        _snapshot_map_features_traders_to(target)
+    except Exception:
+        logger.exception("weekly_backup: failed to snapshot map-features traders")
+        return None
+    logger.info("weekly_backup: created scheduled map-features traders snapshot %s", target)
+    return target
+
+
+def create_manual_map_features_traders_snapshot() -> str:
+    """Force-create a manual snapshot of ``map-features.traders.json`` now."""
+    src_bucket, src_key = r2_storage.map_features_traders_live()
+    if not r2_storage.object_exists_in_bucket(src_bucket, src_key):
+        raise FileNotFoundError("map-features traders live file is not present in R2")
+    iso_year, iso_week = _now_iso_week()
+    ts = int(datetime.now(timezone.utc).timestamp())
+    target = r2_storage.map_features_traders_backup_manual_key(iso_year, iso_week, ts)
+    _snapshot_map_features_traders_to(target)
+    logger.info("weekly_backup: created manual map-features traders snapshot %s", target)
+    return target
+
+
+def cleanup_old_map_features_traders_backups() -> dict:
+    """Trim scheduled + manual map-features traders backups to retention."""
+    backups = list_map_features_traders_backups()
+    scheduled = [b for b in backups if b["kind"] == "scheduled"]
+    manual = [b for b in backups if b["kind"] == "manual"]
+    to_delete: List[str] = []
+    if settings.BACKUP_KEEP_SCHEDULED >= 0:
+        to_delete.extend(b["key"] for b in scheduled[settings.BACKUP_KEEP_SCHEDULED:])
+    if settings.BACKUP_KEEP_MANUAL >= 0:
+        to_delete.extend(b["key"] for b in manual[settings.BACKUP_KEEP_MANUAL:])
+    if to_delete:
+        r2_storage.delete_keys(to_delete)
+        logger.info(
+            "weekly_backup: deleted %d old map-features traders snapshots", len(to_delete)
+        )
+    return {"deleted": len(to_delete)}

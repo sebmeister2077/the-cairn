@@ -4751,6 +4751,89 @@ def list_trader_claim_type_audit_paginated(
     return {"items": items, "total": total}
 
 
+# ---------------------------------------------------------------------------
+# Map-features merged traders list audit (map-features.traders.json)
+# ---------------------------------------------------------------------------
+
+
+def insert_map_features_traders_audit(
+    *,
+    action: str,
+    actor_api_key_id: Optional[str] = None,
+    actor_display_name: Optional[str] = None,
+    upstream_host: Optional[str] = None,
+    traders_received: Optional[int] = None,
+    traders_accepted: Optional[int] = None,
+    total_accepted: Optional[int] = None,
+    published_version: Optional[str] = None,
+    note: Optional[str] = None,
+) -> int:
+    """Append-only audit record for the merged ``map-features.traders.json``
+    list. ``action`` is ``contribute`` (an accepted upload), ``rebuild_publish``
+    (a new merged version was published) or ``admin_snapshot`` (manual backup).
+    Returns the new row id."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO map_features_traders_audit
+                       (action, actor_api_key_id, actor_display_name,
+                        upstream_host, traders_received, traders_accepted,
+                        total_accepted, published_version, note)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    action,
+                    actor_api_key_id,
+                    actor_display_name,
+                    upstream_host,
+                    int(traders_received) if traders_received is not None else None,
+                    int(traders_accepted) if traders_accepted is not None else None,
+                    int(total_accepted) if total_accepted is not None else None,
+                    published_version,
+                    note,
+                ),
+            )
+            return int(cur.fetchone()[0])
+
+
+def list_map_features_traders_audit_paginated(
+    *,
+    action: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if action:
+        where.append("action = %s")
+        params.append(action)
+    if actor_api_key_id:
+        where.append("actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM map_features_traders_audit {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT id, action, actor_api_key_id, actor_display_name,
+                           upstream_host, traders_received, traders_accepted,
+                           total_accepted, published_version, note, created_at
+                       FROM map_features_traders_audit
+                       {where_sql}
+                       ORDER BY created_at DESC, id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
 
 def insert_landmark_edit_request(
     *,

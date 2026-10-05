@@ -1172,6 +1172,69 @@ export async function adminRestoreGeojsonBackup(
     return (await handleResponse(res)).json();
 }
 
+// ---------------------------------------------------------------------------
+// Merged map-features traders list (map-features.traders.json): read-only audit
+// feed + biweekly backup snapshots. No revert — the merged data is authoritative.
+// ---------------------------------------------------------------------------
+
+export interface AdminMapFeaturesTradersAuditEntry {
+    id: number;
+    action: string;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    upstream_host: string | null;
+    traders_received: number | null;
+    traders_accepted: number | null;
+    total_accepted: number | null;
+    published_version: string | null;
+    note: string | null;
+    created_at: string;
+}
+
+export interface MapFeaturesTradersBackupEntry {
+    key: string;
+    kind: "scheduled" | "manual";
+    size: number;
+    last_modified: string | null;
+}
+
+export async function adminListMapFeaturesTradersAudit(
+    opts: { action?: string; limit?: number; offset?: number } = {},
+): Promise<{
+    audit: AdminMapFeaturesTradersAuditEntry[];
+    total: number;
+    limit: number;
+    offset: number;
+}> {
+    const params = new URLSearchParams();
+    if (opts.action) params.set("action", opts.action);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(
+        `${API_BASE}/admin/map-features-traders/audit${qs ? `?${qs}` : ""}`,
+        { headers: authHeaders() },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListMapFeaturesTradersBackups(): Promise<{
+    backups: MapFeaturesTradersBackupEntry[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/map-features-traders/backups`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateMapFeaturesTradersBackup(): Promise<{ key: string }> {
+    const res = await fetch(`${API_BASE}/admin/map-features-traders/backups/create`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 /**
  * Fetch an image from a presigned URL (no auth header � the URL is self-contained).
  * Falls back to null on network error or non-200 status so callers can degrade gracefully.

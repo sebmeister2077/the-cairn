@@ -35,6 +35,7 @@ import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
+import { AdminMapFeaturesTradersPage } from "@/pages/admin/AdminMapFeaturesTradersPage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
 import { DownloadPage } from "@/pages/other/DownloadPage";
@@ -155,6 +156,7 @@ const NavigationRoutes = {
     Traders: "/manage/traders",
     TLScreenshots: "/manage/tl-screenshots",
     ElkWalkable: "/manage/elk-walkable",
+    MapFeaturesTraders: "/manage/map-features-traders",
     Licenses: "/manage/licenses",
     ProgramDownloads: "/manage/program-downloads",
   },
@@ -277,6 +279,7 @@ const subTabs: Subtabs = {
     { value: "/manage/traders", labelKey: "app.nav.subtabs.traders" },
     { value: "/manage/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
     { value: "/manage/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
+    { value: "/manage/map-features-traders", labelKey: "app.nav.subtabs.mapFeaturesTraders" },
     { value: "/manage/licenses", labelKey: "app.nav.subtabs.licenses" },
     { value: "/manage/program-downloads", labelKey: "app.nav.subtabs.programDownloads" },
   ],
@@ -1061,6 +1064,17 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Elk-walkable failed" resetKeys={[location.pathname]}>
                 <AdminElkWalkablePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/map-features-traders"
+            element={
+              <ErrorBoundary
+                title="Map-features traders failed"
+                resetKeys={[location.pathname]}
+              >
+                <AdminMapFeaturesTradersPage />
               </ErrorBoundary>
             }
           />

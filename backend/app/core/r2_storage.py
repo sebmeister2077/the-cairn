@@ -866,6 +866,67 @@ def traders_backup_manual_key(iso_year: int, iso_week: int, unix_timestamp: int)
 
 
 # ---------------------------------------------------------------------------
+# Merged public map-features traders list (crowd-sourced, rebuilt from every
+# /contribute-map-features upload). Lives in the PUBLIC map-features bucket at
+# ``{MAP_FEATURES_PREFIX}/map-features.traders.json`` — distinct from the
+# manual ``traders.geojson`` above. Backups are copied cross-bucket into the
+# default backup bucket under ``backups/``.
+# ---------------------------------------------------------------------------
+
+
+def map_features_traders_live() -> tuple:
+    """Return ``(bucket, key)`` of the live merged traders list in R2."""
+    return (
+        settings.MAP_FEATURES_PUBLIC_BUCKET,
+        f"{settings.MAP_FEATURES_PREFIX}/map-features.traders.json",
+    )
+
+
+def map_features_traders_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}map-features-traders-{iso_year:04d}-W{iso_week:02d}.json"
+
+
+def map_features_traders_backup_manual_key(
+    iso_year: int, iso_week: int, unix_timestamp: int
+) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}map-features-traders-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.json"
+    )
+
+
+def copy_object_from_bucket(source_bucket: str, source_key: str, destination_key: str):
+    """Copy an object from ``source_bucket`` into the default backup bucket.
+
+    Single-shot CopyObject (the merged list is tiny JSON). Raises
+    ``FileNotFoundError`` if the source is missing. Works cross-bucket because
+    every bucket shares the same R2 client/credentials.
+    """
+    client = _get_client()
+    try:
+        client.copy_object(
+            Bucket=_bucket(),
+            Key=destination_key,
+            CopySource={"Bucket": source_bucket, "Key": source_key},
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {source_bucket}/{source_key}")
+        raise
+
+
+def object_exists_in_bucket(bucket: str, key: str) -> bool:
+    """HEAD an object in an arbitrary bucket. Returns False if it's missing."""
+    try:
+        _get_client().head_object(Bucket=bucket, Key=key)
+        return True
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404", "NoSuchBucket"):
+            return False
+        raise
+
+
+# ---------------------------------------------------------------------------
 # Screenshot-based TL contributions (Phase: screenshot path)
 # ---------------------------------------------------------------------------
 #
