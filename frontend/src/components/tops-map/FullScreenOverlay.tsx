@@ -1,5 +1,6 @@
 import {
   Compass,
+  Flame,
   Layers,
   Minimize2,
   PanelRightClose,
@@ -41,7 +42,7 @@ import {
   setTLRadiusBlocks as setTLRadiusBlocksAction,
   setFullscreenControlsCollapsed as setFullscreenControlsCollapsedAction,
 } from "@/store/slices/mapView";
-import { setRoutePlannerOpen } from "@/store/slices/routePlanner";
+import { setRoutePlannerOpen, setRouteShowMovementHeatmap } from "@/store/slices/routePlanner";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
@@ -290,6 +291,8 @@ export function FullscreenControlsOverlay({
   // Route planner state — the open button mirrors the non-fullscreen one
   // so users can summon the planner sheet without leaving fullscreen.
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
+  const isAdmin = useReduxState("auth.isAdmin");
+  const showMovementHeatmap = useAppSelector((s) => s.routePlanner.showMovementHeatmap);
   // Active-route signals so the fullscreen Route button can advertise an
   // active route the same way the non-fullscreen toolbar button does.
   const routes = useAppSelector((s) => s.routePlanner.routes);
@@ -873,6 +876,19 @@ export function FullscreenControlsOverlay({
               />
             ) : null}
           </Button>
+          {isAdmin && (
+            <Button
+              type="button"
+              variant={showMovementHeatmap ? "default" : "secondary"}
+              size="sm"
+              className="shadow-md"
+              onClick={() => dispatch(setRouteShowMovementHeatmap(!showMovementHeatmap))}
+              title={t("topsMap.movementHeatmap.tooltip")}
+            >
+              <Flame className="size-4 mr-1" />
+              {t("topsMap.movementHeatmap.button")}
+            </Button>
+          )}
         </CollapsibleSection>
       </div>
 

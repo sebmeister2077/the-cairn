@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Compass, Layers, Route, Waypoints } from "lucide-react";
+import { Compass, Flame, Layers, Route, Waypoints } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -28,6 +28,9 @@ interface LayersSectionProps {
   routeFrom: unknown;
   routeTo: unknown;
   onToggleRoutePlanner: () => void;
+  isAdmin?: boolean;
+  showMovementHeatmap?: boolean;
+  onToggleMovementHeatmap?: () => void;
   showRecentlyAddedTLs: boolean;
   toggleShowRecentlyAddedTLs: () => void;
   recentTLCount: number;
@@ -67,6 +70,9 @@ export const LayersSection = memo(function LayersSection({
   routeFrom,
   routeTo,
   onToggleRoutePlanner,
+  isAdmin,
+  showMovementHeatmap,
+  onToggleMovementHeatmap,
   showRecentlyAddedTLs,
   toggleShowRecentlyAddedTLs,
   recentTLCount,
@@ -316,6 +322,18 @@ export const LayersSection = memo(function LayersSection({
               />
             ) : null}
           </Button>
+          {isAdmin && onToggleMovementHeatmap && (
+            <Button
+              type="button"
+              variant={showMovementHeatmap ? "default" : "outline"}
+              size="sm"
+              onClick={onToggleMovementHeatmap}
+              title={t("topsMap.movementHeatmap.tooltip")}
+            >
+              <Flame className="size-4 mr-1" />
+              {t("topsMap.movementHeatmap.button")}
+            </Button>
+          )}
         </div>
       </CollapsibleSection>
     </>

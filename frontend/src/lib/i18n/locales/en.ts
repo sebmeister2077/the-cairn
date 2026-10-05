@@ -89,6 +89,7 @@ export const en = {
                 traders: "Traders",
                 tlScreenshots: "TL Screenshots",
                 elkWalkable: "Elk-walkable",
+                routePlanner: "Route Planner",
                 mapFeaturesTraders: "Map-features traders",
                 licenses: "Licenses",
                 programDownloads: "Program Downloads",
@@ -1402,6 +1403,11 @@ export const en = {
         emphasizeElkConnections: "Show only elk-friendly TL connections",
         elkConnectionCount: "{count} connections",
         groupings: "Groupings",
+        movementHeatmap: {
+          button: "Movement",
+          tooltip:
+            "Admin: show aggregated planned-route movement — endpoint heatmap and route flows.",
+        },
         emphasizeRecentlyAddedTranslocators: "Emphasize recently added translocators",
         emphasizeRecentlyAddedTls: "Emphasize recently added TLs (last {days} days)",
         recentlyAddedTitle: "Recently added TLs",

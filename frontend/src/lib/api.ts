@@ -4406,9 +4406,62 @@ export interface RouteAnalyticsSaveResponse {
     save_count: number;
 }
 
+export type RouteEndpointSource = "map-click" | "landmark" | "paste" | "favorite" | "url";
+export type RoutePlannerModeKind = "route" | "rendezvous";
+
+export interface RouteAnalyticsPlanPayload {
+    mode: RoutePlannerModeKind;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    from_label?: string | null;
+    to_label?: string | null;
+    from_source?: RouteEndpointSource | null;
+    to_source?: RouteEndpointSource | null;
+    legs: SavedRouteLeg[];
+    total_seconds: number;
+    walk_blocks: number;
+    tl_hops: number;
+    walk_speed?: number | null;
+    tl_penalty_seconds?: number | null;
+    k_neighbors?: number | null;
+    number_of_routes?: number | null;
+    elk_friendly_only?: boolean | null;
+    /** Only the settings that differ from client defaults. */
+    settings?: Record<string, string | number | boolean>;
+    selected_index?: number | null;
+    num_alternatives?: number | null;
+}
+
+export interface RouteAnalyticsPlanResponse {
+    status: "inserted" | "merged";
+    plan_count: number;
+}
+
+export type RouteAnalyticsInteractionPayload =
+    | { type: "segment_focused"; leg_kind: "walk" | "tl" }
+    | { type: "selected"; selected_index: number; num_alternatives?: number };
+
 export const routeAnalytics = {
     async save(payload: RouteAnalyticsSavePayload, signal?: AbortSignal): Promise<RouteAnalyticsSaveResponse> {
         const res = await fetch(`${API_BASE}/route-analytics/save`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+    async plan(payload: RouteAnalyticsPlanPayload, signal?: AbortSignal): Promise<RouteAnalyticsPlanResponse> {
+        const res = await fetch(`${API_BASE}/route-analytics/plan`, {
+            method: "POST",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify(payload),
+            signal,
+        });
+        return (await handleResponse(res)).json();
+    },
+    async interaction(payload: RouteAnalyticsInteractionPayload, signal?: AbortSignal): Promise<{ status: string }> {
+        const res = await fetch(`${API_BASE}/route-analytics/interaction`, {
             method: "POST",
             headers: authHeaders({ "Content-Type": "application/json" }),
             body: JSON.stringify(payload),
@@ -4507,6 +4560,166 @@ export const publicRoadWorkers = {
         });
         return (await handleResponse(res)).json();
     },
+};
+
+
+// --- Admin Route Planner analytics (planned_routes) ------------------------
+
+export interface RoutePlannerSummary {
+    total_plans: number;
+    distinct_routes: number;
+    distinct_identities: number;
+    route_plans: number;
+    rendezvous_plans: number;
+    avg_detour_ratio: number | null;
+}
+
+export interface RoutePlannerTimelineBucket {
+    bucket: string;
+    plans: number;
+    rendezvous_plans: number;
+}
+
+export interface RoutePlannerSourceRow {
+    source: string;
+    plans: number;
+}
+
+export interface RoutePlannerSourceBreakdown {
+    from: RoutePlannerSourceRow[];
+    to: RoutePlannerSourceRow[];
+}
+
+export interface RoutePlannerSettingValue {
+    value: string | null;
+    plans: number;
+}
+
+export interface RoutePlannerSettingRow {
+    key: string;
+    changed_plans: number;
+    values: RoutePlannerSettingValue[];
+}
+
+export interface RoutePlannerSettingsBreakdown {
+    total_plans: number;
+    settings: RoutePlannerSettingRow[];
+}
+
+export interface RoutePlannerRankRow {
+    rank: number;
+    plans: number;
+}
+
+export interface RoutePlannerSelectedRankBreakdown {
+    total_plans: number;
+    overrode_best: number;
+    ranks: RoutePlannerRankRow[];
+}
+
+export interface RoutePlannerInteractionCounts {
+    segment_focused: number;
+    selected: number;
+}
+
+export interface RoutePlannerTopRoute {
+    route_signature: string;
+    plans: number;
+    last_planned_at: string;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    from_label: string | null;
+    to_label: string | null;
+    total_seconds: number;
+    walk_blocks: number;
+    tl_hops: number;
+    straight_line_blocks: number;
+    detour_ratio: number | null;
+    mode: string;
+}
+
+export interface RoutePlannerEdgeRow {
+    edge: string;
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    plans: number;
+}
+
+export interface RoutePlannerEndpointHeatmap {
+    cell_blocks: number;
+    from: Array<{ x: number; z: number; plans: number }>;
+    to: Array<{ x: number; z: number; plans: number }>;
+}
+
+export interface RoutePlannerBundle extends UsageWindow {
+    granularity: UsageGranularity;
+    summary: RoutePlannerSummary;
+    timeline: RoutePlannerTimelineBucket[];
+    source_breakdown: RoutePlannerSourceBreakdown;
+    settings_breakdown: RoutePlannerSettingsBreakdown;
+    selected_rank_breakdown: RoutePlannerSelectedRankBreakdown;
+    interaction_counts: RoutePlannerInteractionCounts;
+    top_routes: RoutePlannerTopRoute[];
+    top_tl_edges: RoutePlannerEdgeRow[];
+    endpoint_heatmap: RoutePlannerEndpointHeatmap;
+}
+
+export interface RoutePlannerFlowSegment {
+    from: { x: number; z: number };
+    to: { x: number; z: number };
+    kind: "walk" | "tl";
+    plans: number;
+}
+
+export interface RoutePlannerMapBundle {
+    from: string;
+    to: string;
+    endpoint_heatmap: RoutePlannerEndpointHeatmap;
+    route_flows: RoutePlannerFlowSegment[];
+}
+
+async function _routePlannerGet<T>(
+    path: string,
+    params: Record<string, string | number | undefined | null>,
+    signal?: AbortSignal,
+): Promise<T> {
+    const res = await fetch(`${API_BASE}/admin/route-planner${path}${_usageQS(params)}`, {
+        headers: authHeaders(),
+        signal,
+    });
+    return (await handleResponse(res)).json();
+}
+
+export const adminRoutePlanner = {
+    bundle: (
+        p: UsageGranularityParams & { top_limit?: number; heatmap_cell?: number },
+        signal?: AbortSignal,
+    ) =>
+        _routePlannerGet<RoutePlannerBundle>(
+            "",
+            {
+                from: p.from,
+                to: p.to,
+                granularity: p.granularity,
+                top_limit: p.top_limit,
+                heatmap_cell: p.heatmap_cell,
+            },
+            signal,
+        ),
+    map: (
+        p: UsageWindowParams & { heatmap_cell?: number; flow_limit?: number },
+        signal?: AbortSignal,
+    ) =>
+        _routePlannerGet<RoutePlannerMapBundle>(
+            "/map",
+            {
+                from: p.from,
+                to: p.to,
+                heatmap_cell: p.heatmap_cell,
+                flow_limit: p.flow_limit,
+            },
+            signal,
+        ),
 };
 
 // ---------------------------------------------------------------------------

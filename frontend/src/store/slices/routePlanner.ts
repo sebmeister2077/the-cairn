@@ -89,6 +89,9 @@ export interface RoutePlannerState {
      * on the midpoint. Omitted = use the viewer's default focus zoom.
      */
     focusRequest: (WorldPoint & { spanBlocks?: number }) | null;
+    /** Admin-only: show the aggregated movement heatmap + route flows
+     *  overlay (planned-route analytics) on the map. */
+    showMovementHeatmap: boolean;
 }
 
 export const initialRoutePlannerState: RoutePlannerState = {
@@ -114,6 +117,7 @@ export const initialRoutePlannerState: RoutePlannerState = {
     rendezvousIsComputing: false,
     rendezvousError: null,
     focusRequest: null,
+    showMovementHeatmap: false,
 };
 
 export const routePlannerSlice = createSlice({
@@ -388,6 +392,9 @@ export const routePlannerSlice = createSlice({
                 }
                 : null;
         },
+        setShowMovementHeatmap(state, action: PayloadAction<boolean>) {
+            state.showMovementHeatmap = action.payload;
+        },
     },
 });
 
@@ -417,5 +424,6 @@ export const {
     setNumberOfRoutes: setRouteNumberOfRoutes,
     setElkFriendlyOnly: setRouteElkFriendlyOnly,
     setFocusRequest: setRouteFocusRequest,
+    setShowMovementHeatmap: setRouteShowMovementHeatmap,
     hydrateFromShare: hydrateRoutePlannerFromShare,
 } = routePlannerSlice.actions;

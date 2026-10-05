@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 import {
@@ -93,8 +93,47 @@ import {
 import { SaveRouteForRoadWorkersSection } from "./routeplanner/SaveRouteForRoadWorkersSection";
 import { renderTemplate, routeWaypointChain } from "@/lib/route-waypoints";
 import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
+import {
+  DEFAULT_WALK_SPEED,
+  DEFAULT_TL_PENALTY_S,
+  DEFAULT_K_NEIGHBORS,
+  DEFAULT_NUMBER_OF_ROUTES,
+} from "@/lib/tl-routing";
 
 const LS_TEMPLATE_KEY = "routePlanner.waypointLabelTemplate";
+
+const DEFAULT_RENDEZVOUS_OBJECTIVE = "minimax";
+
+/** Map computed route legs to the serializable analytics leg shape. */
+function toSavedLegs(legs: RouteLeg[]): SavedRouteLeg[] {
+  return legs.map((leg) =>
+    leg.kind === "walk"
+      ? {
+          kind: "walk",
+          from: { x: leg.from.x, z: leg.from.z },
+          to: { x: leg.to.x, z: leg.to.z },
+          seconds: leg.seconds,
+          blocks: leg.blocks,
+        }
+      : {
+          kind: "tl",
+          from: { x: leg.from.x, z: leg.from.z },
+          to: { x: leg.to.x, z: leg.to.z },
+          seconds: leg.seconds,
+          tlId: leg.tlId,
+        },
+  );
+}
+
+/** Stable signature of a route's TL hop chain — used for client-side dedupe
+ *  so we only log a completed computation once per distinct route. */
+function routeTlChain(legs: RouteLeg[]): string {
+  return legs
+    .filter((l) => l.kind === "tl")
+    .map((l) => `${l.from.x},${l.from.z}>${l.to.x},${l.to.z}`)
+    .join("|");
+}
+
 
 /**
  * Right-anchored floating panel that hosts the full route-planner UX.
@@ -263,6 +302,121 @@ export function RoutePlannerPanel() {
     return () => window.clearTimeout(t);
   }, [analyticsState]);
 
+  // --- Usage analytics: log a completed planner computation once per
+  // distinct route/rendezvous result. Deliberately best-effort: a failed
+  // POST must never disturb the planner UX. Dedupe keys exclude the chosen
+  // alternative so switching routes doesn't re-fire a "planned" event
+  // (that is captured separately as a lightweight `selected` interaction).
+  const lastPlanKeyRef = useRef<string | null>(null);
+
+  function buildNonDefaultSettings(
+    planMode: "route" | "rendezvous",
+  ): Record<string, number | boolean | string> {
+    const settings: Record<string, number | boolean | string> = {};
+    if (walkSpeed !== DEFAULT_WALK_SPEED) settings.walk_speed = walkSpeed;
+    if (tlPenaltySeconds !== DEFAULT_TL_PENALTY_S)
+      settings.tl_penalty_seconds = tlPenaltySeconds;
+    if (kNeighbors !== DEFAULT_K_NEIGHBORS) settings.k_neighbors = kNeighbors;
+    if (planMode === "route") {
+      if (numberOfRoutes !== DEFAULT_NUMBER_OF_ROUTES)
+        settings.number_of_routes = numberOfRoutes;
+      if (elkFriendlyOnly) settings.elk_friendly_only = true;
+    } else if (rendezvousObjective !== DEFAULT_RENDEZVOUS_OBJECTIVE) {
+      settings.rendezvous_objective = rendezvousObjective;
+    }
+    return settings;
+  }
+
+  useEffect(() => {
+    if (mode !== "route") return;
+    if (!from || !to || !primary || isComputing) return;
+    const key = `route|${from.point.x},${from.point.z}|${to.point.x},${to.point.z}|${routeTlChain(
+      primary.legs,
+    )}`;
+    if (lastPlanKeyRef.current === key) return;
+    lastPlanKeyRef.current = key;
+    routeAnalytics
+      .plan({
+        mode: "route",
+        from: { x: from.point.x, z: from.point.z },
+        to: { x: to.point.x, z: to.point.z },
+        from_label: from.label ?? null,
+        to_label: to.label ?? null,
+        from_source: from.source ?? null,
+        to_source: to.source ?? null,
+        legs: toSavedLegs(primary.legs),
+        total_seconds: primary.totalSeconds,
+        walk_blocks: primary.walkBlocks,
+        tl_hops: primary.tlHops,
+        walk_speed: walkSpeed,
+        tl_penalty_seconds: tlPenaltySeconds,
+        k_neighbors: kNeighbors,
+        number_of_routes: numberOfRoutes,
+        elk_friendly_only: elkFriendlyOnly,
+        settings: buildNonDefaultSettings("route"),
+        selected_index: selectedIndex,
+        num_alternatives: routes.length,
+      })
+      .catch(() => {
+        /* analytics are best-effort */
+      });
+    // buildNonDefaultSettings reads settings from closure; deps below cover
+    // every input that changes the logged payload / dedupe key.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, from, to, primary, isComputing, routes.length, selectedIndex]);
+
+  useEffect(() => {
+    if (mode !== "rendezvous") return;
+    if (!rendezvousResult || rendezvousIsComputing) return;
+    const filled = players.filter((p): p is NonNullable<typeof p> => p != null);
+    if (filled.length < 2) return;
+    const meeting = rendezvousResult.meeting;
+    const playersSig = filled.map((p) => `${p.point.x},${p.point.z}`).join("|");
+    const key = `rdv|${rendezvousObjective}|${meeting.x},${meeting.z}|${playersSig}`;
+    if (lastPlanKeyRef.current === key) return;
+    lastPlanKeyRef.current = key;
+    const allLegs = rendezvousResult.perPlayer.flatMap((pp) => pp.route.legs);
+    const walkBlocks = rendezvousResult.perPlayer.reduce(
+      (a, pp) => a + pp.route.walkBlocks,
+      0,
+    );
+    const tlHops = rendezvousResult.perPlayer.reduce(
+      (a, pp) => a + pp.route.tlHops,
+      0,
+    );
+    const first = filled[0];
+    routeAnalytics
+      .plan({
+        mode: "rendezvous",
+        from: { x: first.point.x, z: first.point.z },
+        to: { x: meeting.x, z: meeting.z },
+        from_label: first.label ?? null,
+        to_label: null,
+        from_source: first.source ?? null,
+        to_source: null,
+        legs: allLegs.length > 0 ? toSavedLegs(allLegs) : [
+          {
+            kind: "walk",
+            from: { x: first.point.x, z: first.point.z },
+            to: { x: meeting.x, z: meeting.z },
+            seconds: Math.max(1, Math.round(rendezvousResult.totalSeconds)),
+            blocks: 0,
+          },
+        ],
+        total_seconds: Math.max(1, rendezvousResult.totalSeconds),
+        walk_blocks: walkBlocks,
+        tl_hops: tlHops,
+        walk_speed: walkSpeed,
+        tl_penalty_seconds: tlPenaltySeconds,
+        k_neighbors: kNeighbors,
+        settings: buildNonDefaultSettings("rendezvous"),
+      })
+      .catch(() => {
+        /* analytics are best-effort */
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, rendezvousResult, rendezvousIsComputing, players, rendezvousObjective]);
+
   function handleSaveAsDraft() {
     if (!primary) return;
     const tlIds = primary.legs
@@ -312,23 +466,7 @@ export function RoutePlannerPanel() {
     setAnalyticsState("sending");
     setAnalyticsError(null);
     try {
-      const legs: SavedRouteLeg[] = primary.legs.map((leg) =>
-        leg.kind === "walk"
-          ? {
-              kind: "walk",
-              from: { x: leg.from.x, z: leg.from.z },
-              to: { x: leg.to.x, z: leg.to.z },
-              seconds: leg.seconds,
-              blocks: leg.blocks,
-            }
-          : {
-              kind: "tl",
-              from: { x: leg.from.x, z: leg.from.z },
-              to: { x: leg.to.x, z: leg.to.z },
-              seconds: leg.seconds,
-              tlId: leg.tlId,
-            },
-      );
+      const legs: SavedRouteLeg[] = toSavedLegs(primary.legs);
       await routeAnalytics.save({
         from: { x: from.point.x, z: from.point.z },
         to: { x: to.point.x, z: to.point.z },
@@ -609,7 +747,21 @@ export function RoutePlannerPanel() {
                 {routes.length > 1 && (
                   <Tabs
                     value={String(selectedIndex)}
-                    onValueChange={(v) => dispatch(setRouteSelectedIndex(Number(v)))}
+                    onValueChange={(v) => {
+                      const next = Number(v);
+                      dispatch(setRouteSelectedIndex(next));
+                      if (next !== selectedIndex) {
+                        routeAnalytics
+                          .interaction({
+                            type: "selected",
+                            selected_index: next,
+                            num_alternatives: routes.length,
+                          })
+                          .catch(() => {
+                            /* best-effort */
+                          });
+                      }
+                    }}
                   >
                     <TabsList
                       className="grid w-full"

@@ -26,6 +26,7 @@ import {
 } from "@/lib/trader-types";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
+import type { MovementOverlayData } from "@/lib/tops-map-view/movement-overlay";
 import {
   type ClaimTypeMap,
   type EmptyClaimSet,
@@ -161,6 +162,11 @@ interface WebCartographerMapViewerProps {
    * Player-claim concentration heatmap (density mode). A precomputed raster
    * blitted once per frame — panning/zooming only re-scales the image. */
   claimDensity?: (PlayerClaimDensity & { opacity: number }) | null;
+  /**
+   * Admin-only aggregated movement overlay (planned-route analytics):
+   * an endpoint density raster blitted beneath weighted route-flow lines.
+   */
+  movementOverlay?: MovementOverlayData | null;
   /** Filtered player claims drawn as footprint boxes + dots (search mode). */
   playerClaimMarkers?: PlayerClaim[];
   /** "always" labels every marker (search); "hover" labels only the hovered
@@ -303,6 +309,7 @@ export function WebCartographerMapViewer({
   claimMarkingEnabled = false,
   claimMarkingHasAccount = false,
   claimDensity = null,
+  movementOverlay = null,
   playerClaimMarkers,
   playerClaimLabelMode = "always",
   routeOverlay = null,
@@ -1247,6 +1254,56 @@ export function WebCartographerMapViewer({
       }
     }
 
+    // ── Movement overlay (admin: planned-route analytics) ─────────────────
+    // Endpoint density raster first, then weighted route-flow lines on top.
+    if (movementOverlay) {
+      const md = movementOverlay.density;
+      if (md && movementOverlay.densityOpacity > 0) {
+        const left = (md.originX - cWx) * ppb + cw / 2;
+        const top = (md.originZ - cWz) * ppb + ch / 2;
+        const w = md.cols * md.blocksPerCell * ppb;
+        const h = md.rows * md.blocksPerCell * ppb;
+        if (left < cw && top < ch && left + w > 0 && top + h > 0) {
+          octx.save();
+          octx.globalAlpha = movementOverlay.densityOpacity;
+          octx.imageSmoothingEnabled = true;
+          octx.drawImage(md.canvas, left, top, w, h);
+          octx.restore();
+        }
+      }
+      const flows = movementOverlay.flows;
+      if (flows.length > 0) {
+        const maxW = Math.max(1, movementOverlay.maxWeight);
+        octx.save();
+        octx.lineCap = "round";
+        for (const f of flows) {
+          const x1 = (f.from.x - cWx) * ppb + cw / 2;
+          const y1 = (f.from.z - cWz) * ppb + ch / 2;
+          const x2 = (f.to.x - cWx) * ppb + cw / 2;
+          const y2 = (f.to.z - cWz) * ppb + ch / 2;
+          // Cull segments wholly outside the viewport.
+          if (
+            (x1 < 0 && x2 < 0) ||
+            (x1 > cw && x2 > cw) ||
+            (y1 < 0 && y2 < 0) ||
+            (y1 > ch && y2 > ch)
+          ) {
+            continue;
+          }
+          const t = Math.sqrt(f.weight / maxW);
+          octx.globalAlpha = 0.18 + 0.62 * t;
+          octx.lineWidth = 1 + 5 * t;
+          // TL hops in violet, walking legs in amber.
+          octx.strokeStyle = f.kind === "tl" ? "#a855f7" : "#f59e0b";
+          octx.beginPath();
+          octx.moveTo(x1, y1);
+          octx.lineTo(x2, y2);
+          octx.stroke();
+        }
+        octx.restore();
+      }
+    }
+
     // ── Player-claim markers (search / all modes) ──────────────────────
     // In "search" the set is a single owner (labels always on); in "all" it's
     // every claim (owner label on hover only). Viewport-culled; hover-mode
@@ -1546,6 +1603,7 @@ export function WebCartographerMapViewer({
     claimTypes,
     emptyClaims,
     claimDensity,
+    movementOverlay,
     playerClaimMarkers,
     playerClaimLabelMode,
     hoveredPlayerClaim,

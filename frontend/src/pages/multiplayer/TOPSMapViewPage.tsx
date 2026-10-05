@@ -5,6 +5,7 @@ import {
   getTopsMapStats,
   getTopsMapLevel,
   getMyAccountSafe,
+  adminRoutePlanner,
   type TopsMapLevelChunks,
 } from "@/lib/api";
 import {
@@ -116,6 +117,7 @@ import {
   setRouteTo,
   hydrateRoutePlannerFromShare,
   setRouteFocusRequest,
+  setRouteShowMovementHeatmap,
 } from "@/store/slices/routePlanner";
 import {
   exitPreview as exitPreviewAction,
@@ -143,6 +145,10 @@ import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { usePlayerClaims, buildPlayerClaimDensity } from "@/hooks/usePlayerClaims";
+import {
+  buildWeightedDensity,
+  type MovementOverlayData,
+} from "@/lib/tops-map-view/movement-overlay";
 import {
   useLandmarksOverlay,
   useTranslocatorsOverlay,
@@ -1635,6 +1641,41 @@ export function TOPSMapViewPage() {
     () => dispatch(setRoutePlannerOpen(!routePlannerOpen)),
     [dispatch, routePlannerOpen],
   );
+  // Admin-only "movement" overlay: aggregated planned-route heatmap + flows.
+  const showMovementHeatmap = useAppSelector((s) => s.routePlanner.showMovementHeatmap);
+  const toggleMovementHeatmap = useCallback(
+    () => dispatch(setRouteShowMovementHeatmap(!showMovementHeatmap)),
+    [dispatch, showMovementHeatmap],
+  );
+  const movementMapQuery = useQuery({
+    queryKey: ["route-planner-map"],
+    queryFn: ({ signal }) => adminRoutePlanner.map({ heatmap_cell: 128, flow_limit: 600 }, signal),
+    enabled: Boolean(isAdmin) && showMovementHeatmap,
+    staleTime: 60_000,
+    retry: false,
+  });
+  const movementOverlay = useMemo<MovementOverlayData | null>(() => {
+    if (!isAdmin || !showMovementHeatmap) return null;
+    const data = movementMapQuery.data;
+    if (!data) return null;
+    const points = [
+      ...data.endpoint_heatmap.from.map((c) => ({ x: c.x, z: c.z, weight: c.plans })),
+      ...data.endpoint_heatmap.to.map((c) => ({ x: c.x, z: c.z, weight: c.plans })),
+    ];
+    const flows = data.route_flows.map((f) => ({
+      from: f.from,
+      to: f.to,
+      kind: f.kind,
+      weight: f.plans,
+    }));
+    const maxWeight = flows.reduce((m, f) => Math.max(m, f.weight), 1);
+    return {
+      density: buildWeightedDensity(points),
+      densityOpacity: 0.65,
+      flows,
+      maxWeight,
+    };
+  }, [isAdmin, showMovementHeatmap, movementMapQuery.data]);
   const routeFrom = useAppSelector((s) => s.routePlanner.from);
   const routeTo = useAppSelector((s) => s.routePlanner.to);
   const routes = useAppSelector((s) => s.routePlanner.routes);
@@ -2009,6 +2050,9 @@ export function TOPSMapViewPage() {
               routeFrom={routeFrom}
               routeTo={routeTo}
               onToggleRoutePlanner={toggleRoutePlanner}
+              isAdmin={Boolean(isAdmin)}
+              showMovementHeatmap={showMovementHeatmap}
+              onToggleMovementHeatmap={toggleMovementHeatmap}
               showRecentlyAddedTLs={showRecentlyAddedTLs}
               toggleShowRecentlyAddedTLs={toggleShowRecentlyAddedTLs}
               recentTLCount={recentTLIdSet.size}
@@ -2140,6 +2184,7 @@ export function TOPSMapViewPage() {
               claimMarkingEnabled={traderClaimsVisible}
               claimMarkingHasAccount={Boolean(accountMeQuery.data?.user)}
               claimDensity={playerClaimDensity}
+              movementOverlay={movementOverlay}
               playerClaimMarkers={playerClaimMarkers}
               playerClaimLabelMode={playerClaimLabelMode}
               radiusFilter={previewActive ? null : radiusFilter}

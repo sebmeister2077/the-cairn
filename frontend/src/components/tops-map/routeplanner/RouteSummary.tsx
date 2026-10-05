@@ -374,6 +374,14 @@ export function RouteSummary({
                 onClick={() => {
                   setLocatedIndex(i);
                   onLocate({ x: midX, z: midZ, spanBlocks });
+                  routeAnalytics
+                    .interaction({
+                      type: "segment_focused",
+                      leg_kind: leg.kind,
+                    })
+                    .catch(() => {
+                      /* analytics are best-effort */
+                    });
                 }}
                 title={
                   leg.kind === "tl"
