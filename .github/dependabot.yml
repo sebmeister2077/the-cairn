@@ -9,6 +9,11 @@ updates:
     labels:
       - "dependencies"
       - "python"
+    groups:
+      # One consolidated PR for all backend Python updates.
+      backend-python:
+        patterns:
+          - "*"
 
   # npm (frontend)
   - package-ecosystem: "npm"
@@ -19,6 +24,11 @@ updates:
     labels:
       - "dependencies"
       - "javascript"
+    groups:
+      # One consolidated PR for all frontend npm updates.
+      frontend-npm:
+        patterns:
+          - "*"
 
   # NuGet (.NET tools)
   # - package-ecosystem: "nuget"
@@ -38,3 +48,8 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
+    groups:
+      # One consolidated PR for all GitHub Actions updates.
+      github-actions:
+        patterns:
+          - "*"
