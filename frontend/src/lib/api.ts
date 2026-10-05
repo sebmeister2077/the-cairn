@@ -1235,6 +1235,63 @@ export async function adminCreateMapFeaturesTradersBackup(): Promise<{ key: stri
     return (await handleResponse(res)).json();
 }
 
+export async function adminRestoreMapFeaturesTradersBackup(
+    key: string,
+): Promise<{ restored: string; from_key: string; live_key: string }> {
+    const res = await fetch(`${API_BASE}/admin/map-features-traders/backups/restore`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ key, confirm: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Elk-walkable: manual snapshot creation (list + restore live elsewhere).
+// ---------------------------------------------------------------------------
+
+export async function adminCreateElkWalkableSnapshot(): Promise<{
+    change_id: string;
+    snapshot_key: string;
+    audit_id: number;
+}> {
+    const res = await fetch(`${API_BASE}/admin/elk-walkable/snapshots/create`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Per-category backup schedule (Audit → Backups page)
+// ---------------------------------------------------------------------------
+
+export type BackupInterval = "weekly" | "biweekly" | "monthly" | "disabled";
+
+export interface BackupSchedule {
+    traders: BackupInterval;
+    map_features_traders: BackupInterval;
+    elk_walkable: BackupInterval;
+}
+
+export async function adminGetBackupSchedule(): Promise<BackupSchedule> {
+    const res = await fetch(`${API_BASE}/admin/backup-schedule`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminPatchBackupSchedule(
+    patch: Partial<BackupSchedule>,
+): Promise<BackupSchedule> {
+    const res = await fetch(`${API_BASE}/admin/backup-schedule`, {
+        method: "PATCH",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+    });
+    return (await handleResponse(res)).json();
+}
+
 /**
  * Fetch an image from a presigned URL (no auth header � the URL is self-contained).
  * Falls back to null on network error or non-200 status so callers can degrade gracefully.

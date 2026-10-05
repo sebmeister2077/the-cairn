@@ -237,6 +237,12 @@ def _resolve_snapshot_key(pre_mutation: dict, change_id: str) -> Optional[str]:
         return None
 
 
+def newest_snapshot_mtime() -> Optional[datetime]:
+    """Return the ``LastModified`` of the newest snapshot, or None."""
+    latest = _latest_snapshot_with_mtime()
+    return latest[1] if latest else None
+
+
 def list_snapshots(limit: int = 200) -> List[dict]:
     prefix = r2_storage.ELK_WALKABLE_SNAPSHOTS_PREFIX
     try:
@@ -246,6 +252,39 @@ def list_snapshots(limit: int = 200) -> List[dict]:
         return []
     keys.sort(reverse=True)
     return [{"key": k} for k in keys[:limit]]
+
+
+def create_manual_snapshot(
+    *,
+    actor_api_key_id: Optional[str],
+    actor_display_name: Optional[str],
+) -> dict:
+    """Force-write a fresh snapshot of the current live file right now.
+
+    Unlike the rolling pre-mutation snapshots, this always uploads a new
+    object (it never reuses a recent one) so admins get an explicit,
+    on-demand restore point. Records one ``admin_snapshot`` audit row.
+
+    Caller must hold :func:`elk_walkable_write_lock`.
+    """
+    current = load_live()
+    change_id = uuid.uuid4().hex
+    snapshot_key = _write_snapshot(current, change_id)
+    audit_id = db.insert_elk_walkable_audit(
+        change_id=change_id,
+        action="admin_snapshot",
+        edge_key=None,
+        actor_api_key_id=actor_api_key_id,
+        actor_display_name=actor_display_name,
+        before_payload=None,
+        after_payload={"edge_count": len(current.get("edges") or [])},
+        snapshot_key=snapshot_key,
+    )
+    return {
+        "change_id": change_id,
+        "snapshot_key": snapshot_key,
+        "audit_id": audit_id,
+    }
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 /**
- * Admin: Elk-walkable edges (route: /manage/elk-walkable).
+ * Admin: Elk-walkable edges (route: /audit/elk-walkable).
  *
  * Two stacked cards:
  *   1. Recent audit feed — per-row revert for attest / unattest entries.

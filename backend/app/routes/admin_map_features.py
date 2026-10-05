@@ -15,6 +15,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 
 from ..auth import require_admin
 from ..core import database as db
@@ -90,3 +91,38 @@ async def create_backup(_: str = Depends(require_admin)) -> dict:
     except Exception:
         logger.exception("admin map-features traders: failed to write snapshot audit row")
     return {"key": key}
+
+
+class RestoreBackupBody(BaseModel):
+    key: str
+    confirm: bool = False
+
+
+@router.post("/backups/restore")
+async def restore_backup(
+    body: RestoreBackupBody,
+    _: str = Depends(require_admin),
+) -> dict:
+    if not body.confirm:
+        raise HTTPException(
+            status_code=400,
+            detail="confirm must be true — restore overwrites the live file",
+        )
+    try:
+        result = await asyncio.to_thread(
+            weekly_backup.restore_map_features_traders_from_backup, body.key
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    try:
+        await asyncio.to_thread(
+            db.insert_map_features_traders_audit,
+            action="admin_restore_backup",
+            actor_display_name="admin",
+            note=body.key,
+        )
+    except Exception:
+        logger.exception("admin map-features traders: failed to write restore audit row")
+    return result

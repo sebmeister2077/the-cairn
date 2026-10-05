@@ -1,5 +1,5 @@
 /**
- * Admin: User-contributed Translocators (route: /manage/translocators).
+ * Admin: User-contributed Translocators (route: /audit/translocators).
  *
  * Two stacked cards:
  *   1. Live user-contributed translocators — one row per still-present

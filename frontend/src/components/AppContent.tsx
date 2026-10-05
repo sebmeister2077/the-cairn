@@ -38,6 +38,7 @@ import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
 import { AdminMapFeaturesTradersPage } from "@/pages/admin/AdminMapFeaturesTradersPage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
+import { AdminBackupsOverviewPage } from "@/pages/admin/AdminBackupsOverviewPage";
 import { DownloadPage } from "@/pages/other/DownloadPage";
 import { AdminTradersPage } from "@/pages/admin/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/admin/AdminTLScreenshotsPage";
@@ -106,6 +107,7 @@ const BASE_CATEGORIES = [
 ] as const;
 
 const ADMIN_CATEGORY = { value: "/manage", labelKey: "app.nav.categories.manage" } as const;
+const AUDIT_CATEGORY = { value: "/audit", labelKey: "app.nav.categories.audit" } as const;
 const USAGE_CATEGORY = { value: "/usage", labelKey: "app.nav.categories.usage" } as const;
 
 const NavigationRoutes = {
@@ -151,14 +153,17 @@ const NavigationRoutes = {
     FeatureFlags: "/manage/feature-flags",
     Maintenance: "/manage/maintenance",
     Resources: "/manage/resources",
-    WaypointsBackup: "/manage/waypoints-backup",
-    Translocators: "/manage/translocators",
-    Traders: "/manage/traders",
-    TLScreenshots: "/manage/tl-screenshots",
-    ElkWalkable: "/manage/elk-walkable",
-    MapFeaturesTraders: "/manage/map-features-traders",
     Licenses: "/manage/licenses",
     ProgramDownloads: "/manage/program-downloads",
+  },
+  Audit: {
+    Translocators: "/audit/translocators",
+    Traders: "/audit/traders",
+    MapFeaturesTraders: "/audit/map-features-traders",
+    TLScreenshots: "/audit/tl-screenshots",
+    ElkWalkable: "/audit/elk-walkable",
+    Waypoints: "/audit/waypoints",
+    Backups: "/audit/backups",
   },
   Usage: {
     Overview: "/usage",
@@ -185,6 +190,7 @@ type StaticNavLabelKey =
   | "app.nav.categories.multiplayer"
   | "app.nav.categories.tools"
   | "app.nav.categories.manage"
+  | "app.nav.categories.audit"
   | "app.nav.categories.usage"
   | "app.nav.subtabs.extract"
   | "app.nav.subtabs.import"
@@ -204,6 +210,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.maintenance"
   | "app.nav.subtabs.resources"
   | "app.nav.subtabs.waypointsBackup"
+  | "app.nav.subtabs.backups"
   | "app.nav.subtabs.translocators"
   | "app.nav.subtabs.traders"
   | "app.nav.subtabs.tlScreenshots"
@@ -280,20 +287,23 @@ const subTabs: Subtabs = {
     { value: "/manage/feature-flags", labelKey: "app.nav.subtabs.featureFlags" },
     { value: "/manage/maintenance", labelKey: "app.nav.subtabs.maintenance" },
     { value: "/manage/resources", labelKey: "app.nav.subtabs.resources" },
-    { value: "/manage/waypoints-backup", labelKey: "app.nav.subtabs.waypointsBackup" },
-    { value: "/manage/translocators", labelKey: "app.nav.subtabs.translocators" },
-    { value: "/manage/traders", labelKey: "app.nav.subtabs.traders" },
-    { value: "/manage/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
-    { value: "/manage/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
-    { value: "/manage/map-features-traders", labelKey: "app.nav.subtabs.mapFeaturesTraders" },
     { value: "/manage/licenses", labelKey: "app.nav.subtabs.licenses" },
     { value: "/manage/program-downloads", labelKey: "app.nav.subtabs.programDownloads" },
+  ],
+  "/audit": [
+    { value: "/audit/translocators", labelKey: "app.nav.subtabs.translocators" },
+    { value: "/audit/traders", labelKey: "app.nav.subtabs.traders" },
+    { value: "/audit/map-features-traders", labelKey: "app.nav.subtabs.mapFeaturesTraders" },
+    { value: "/audit/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
+    { value: "/audit/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
+    { value: "/audit/waypoints", labelKey: "app.nav.subtabs.waypointsBackup" },
+    { value: "/audit/backups", labelKey: "app.nav.subtabs.backups" },
   ],
   "/usage": [],
 };
 
 function getActiveCategory(pathname: string): `/${Lowercase<SubtabKey>}` | null {
-  for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]) {
+  for (const cat of [...BASE_CATEGORIES, ADMIN_CATEGORY, AUDIT_CATEGORY, USAGE_CATEGORY]) {
     if (pathname.startsWith(cat.value)) return cat.value;
   }
   // Standalone pages like /privacy and /terms intentionally have no
@@ -343,13 +353,13 @@ function getPendingCountFor(value: string, counts: AdminPendingCounts | undefine
   switch (value) {
     case "/multiplayer/contribute-map":
       return counts.map_contributions;
-    case "/manage/waypoints-backup":
+    case "/audit/waypoints":
       return counts.landmark_renames;
-    case "/manage/tl-screenshots":
+    case "/audit/tl-screenshots":
       return counts.translocator_screenshots;
     case "/multiplayer":
       return counts.map_contributions;
-    case "/manage":
+    case "/audit":
       return counts.landmark_renames + counts.translocator_screenshots;
     default:
       return 0;
@@ -431,7 +441,7 @@ export function AppContent() {
   });
   const ordersUnread = useOrdersUnread(hasApiKey);
   const categories = isAdmin
-    ? [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]
+    ? [...BASE_CATEGORIES, ADMIN_CATEGORY, AUDIT_CATEGORY, USAGE_CATEGORY]
     : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
   const activeSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
@@ -1050,54 +1060,6 @@ export function AppContent() {
             }
           />
           <Route
-            path="/manage/waypoints-backup"
-            element={
-              <ErrorBoundary title="Waypoints failed" resetKeys={[location.pathname]}>
-                <AdminLandmarksPage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/manage/translocators"
-            element={
-              <ErrorBoundary title="Translocators failed" resetKeys={[location.pathname]}>
-                <AdminTranslocatorsPage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/manage/traders"
-            element={
-              <ErrorBoundary title="Traders failed" resetKeys={[location.pathname]}>
-                <AdminTradersPage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/manage/tl-screenshots"
-            element={
-              <ErrorBoundary title="TL Screenshots failed" resetKeys={[location.pathname]}>
-                <AdminTLScreenshotsPage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/manage/elk-walkable"
-            element={
-              <ErrorBoundary title="Elk-walkable failed" resetKeys={[location.pathname]}>
-                <AdminElkWalkablePage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/manage/map-features-traders"
-            element={
-              <ErrorBoundary title="Map-features traders failed" resetKeys={[location.pathname]}>
-                <AdminMapFeaturesTradersPage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
             path="/manage/licenses"
             element={
               <ErrorBoundary title="Licenses failed" resetKeys={[location.pathname]}>
@@ -1112,6 +1074,85 @@ export function AppContent() {
                 <AdminProgramDownloadsPage />
               </ErrorBoundary>
             }
+          />
+          <Route path="/audit" element={<Navigate to="/audit/translocators" replace />} />
+          <Route
+            path="/audit/translocators"
+            element={
+              <ErrorBoundary title="Translocators failed" resetKeys={[location.pathname]}>
+                <AdminTranslocatorsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/traders"
+            element={
+              <ErrorBoundary title="Traders failed" resetKeys={[location.pathname]}>
+                <AdminTradersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/map-features-traders"
+            element={
+              <ErrorBoundary title="Map-features traders failed" resetKeys={[location.pathname]}>
+                <AdminMapFeaturesTradersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/tl-screenshots"
+            element={
+              <ErrorBoundary title="TL Screenshots failed" resetKeys={[location.pathname]}>
+                <AdminTLScreenshotsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/elk-walkable"
+            element={
+              <ErrorBoundary title="Elk-walkable failed" resetKeys={[location.pathname]}>
+                <AdminElkWalkablePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/waypoints"
+            element={
+              <ErrorBoundary title="Waypoints failed" resetKeys={[location.pathname]}>
+                <AdminLandmarksPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/backups"
+            element={
+              <ErrorBoundary title="Backups failed" resetKeys={[location.pathname]}>
+                <AdminBackupsOverviewPage />
+              </ErrorBoundary>
+            }
+          />
+          {/* Legacy /manage/* audit routes → redirect to their new /audit/* home */}
+          <Route
+            path="/manage/waypoints-backup"
+            element={<Navigate to="/audit/waypoints" replace />}
+          />
+          <Route
+            path="/manage/translocators"
+            element={<Navigate to="/audit/translocators" replace />}
+          />
+          <Route path="/manage/traders" element={<Navigate to="/audit/traders" replace />} />
+          <Route
+            path="/manage/tl-screenshots"
+            element={<Navigate to="/audit/tl-screenshots" replace />}
+          />
+          <Route
+            path="/manage/elk-walkable"
+            element={<Navigate to="/audit/elk-walkable" replace />}
+          />
+          <Route
+            path="/manage/map-features-traders"
+            element={<Navigate to="/audit/map-features-traders" replace />}
           />
           <Route
             path="/download/:token"

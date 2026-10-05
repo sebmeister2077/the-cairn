@@ -1,5 +1,5 @@
 /**
- * Admin: User-contributed Traders (route: /manage/traders).
+ * Admin: User-contributed Traders (route: /audit/traders).
  *
  * Mirrors AdminTranslocatorsPage but for the traders dataset:
  *   1. Live user-contributed traders list with filter by contributor +

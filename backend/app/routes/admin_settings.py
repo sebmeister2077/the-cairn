@@ -29,6 +29,7 @@ from ..auth import require_admin
 from ..core import accounts_db, database as db
 from ..core import compression as comp
 from ..core import r2_storage
+from ..tasks import weekly_backup
 
 
 router = APIRouter(prefix="/admin", tags=["admin-settings"])
@@ -329,6 +330,47 @@ async def patch_region_overwrite(
         admin_key,
         "settings.region_overwrite.set",
         target="region_overwrite_settings",
+        metadata=value,
+    )
+    return value
+
+
+# ---------------------------------------------------------------------------
+# Per-category backup schedule (Audit → Backups page)
+#
+# Governs how often the traders / map-features-traders / elk-walkable
+# categories get an automatic scheduled snapshot (or whether it's disabled).
+# The actual gating logic + persistence lives in the backup task module so the
+# scheduler and these endpoints share one source of truth.
+# ---------------------------------------------------------------------------
+
+_BACKUP_INTERVAL_PATTERN = "^(weekly|biweekly|monthly|disabled)$"
+
+
+class BackupSchedulePatch(BaseModel):
+    traders: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
+    map_features_traders: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
+    elk_walkable: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
+
+
+@router.get("/backup-schedule")
+async def get_backup_schedule(_: str = Depends(require_admin)):
+    return weekly_backup.get_backup_schedule()
+
+
+@router.patch("/backup-schedule")
+async def patch_backup_schedule(
+    body: BackupSchedulePatch,
+    admin_key: str = Depends(require_admin),
+):
+    patch = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not patch:
+        raise HTTPException(status_code=400, detail="no schedule fields supplied")
+    value = weekly_backup.set_backup_schedule(patch, updated_by_key=admin_key)
+    accounts_db.audit_log(
+        admin_key,
+        "settings.backup_schedule.set",
+        target="category_backup_schedule",
         metadata=value,
     )
     return value

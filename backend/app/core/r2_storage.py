@@ -926,6 +926,26 @@ def object_exists_in_bucket(bucket: str, key: str) -> bool:
         raise
 
 
+def copy_object_to_bucket(source_key: str, destination_bucket: str, destination_key: str):
+    """Copy an object from the default backup bucket into ``destination_bucket``.
+
+    The inverse of :func:`copy_object_from_bucket`. Single-shot CopyObject —
+    these payloads are tiny JSON files. Raises ``FileNotFoundError`` if the
+    source is missing. Works cross-bucket (shared R2 client/credentials).
+    """
+    client = _get_client()
+    try:
+        client.copy_object(
+            Bucket=destination_bucket,
+            Key=destination_key,
+            CopySource={"Bucket": _bucket(), "Key": source_key},
+        )
+    except ClientError as e:
+        if e.response["Error"]["Code"] in ("NoSuchKey", "404"):
+            raise FileNotFoundError(f"R2 object not found: {source_key}")
+        raise
+
+
 # ---------------------------------------------------------------------------
 # Screenshot-based TL contributions (Phase: screenshot path)
 # ---------------------------------------------------------------------------

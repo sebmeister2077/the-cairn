@@ -22,7 +22,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from ..config import settings
@@ -54,6 +54,84 @@ _RE_GEOJSON_MANUAL = re.compile(
 def _now_iso_week() -> tuple:
     iso = datetime.now(timezone.utc).isocalendar()
     return int(iso[0]), int(iso[1])
+
+
+# ---------------------------------------------------------------------------
+# Per-category backup schedule (traders / map-features-traders / elk-walkable)
+# ---------------------------------------------------------------------------
+#
+# Admins tune how often each of these three categories gets a scheduled
+# snapshot — or disable it entirely — from the Audit → Backups page. The
+# config lives under the ``category_backup_schedule`` app_settings key, e.g.
+# ``{"traders": "weekly", "map_features_traders": "biweekly",
+#    "elk_walkable": "disabled"}``.
+#
+# landmarks + translocators are intentionally NOT configurable here — they
+# keep their original always-weekly cadence.
+
+_BACKUP_SCHEDULE_KEY = "category_backup_schedule"
+BACKUP_SCHEDULE_CATEGORIES = ("traders", "map_features_traders", "elk_walkable")
+BACKUP_SCHEDULE_INTERVALS = ("weekly", "biweekly", "monthly", "disabled")
+_BACKUP_SCHEDULE_DEFAULT = "weekly"
+_INTERVAL_DAYS = {"weekly": 7, "biweekly": 14, "monthly": 30}
+
+
+def _normalise_backup_schedule(raw) -> dict:
+    raw = raw if isinstance(raw, dict) else {}
+    out = {}
+    for cat in BACKUP_SCHEDULE_CATEGORIES:
+        val = raw.get(cat)
+        out[cat] = val if val in BACKUP_SCHEDULE_INTERVALS else _BACKUP_SCHEDULE_DEFAULT
+    return out
+
+
+def get_backup_schedule() -> dict:
+    """Return the normalised per-category schedule dict (always complete)."""
+    try:
+        row = db.get_app_setting(_BACKUP_SCHEDULE_KEY)
+    except Exception:
+        logger.exception("weekly_backup: failed to read backup schedule")
+        row = None
+    return _normalise_backup_schedule(row["value"] if row else None)
+
+
+def set_backup_schedule(patch: dict, updated_by_key: str = "") -> dict:
+    """Merge ``patch`` into the stored schedule (ignoring unknown keys/values)
+    and persist it. Returns the resulting normalised dict."""
+    current = get_backup_schedule()
+    for cat, val in (patch or {}).items():
+        if cat in BACKUP_SCHEDULE_CATEGORIES and val in BACKUP_SCHEDULE_INTERVALS:
+            current[cat] = val
+    db.set_app_setting(_BACKUP_SCHEDULE_KEY, current, updated_by_key=updated_by_key)
+    return current
+
+
+def _parse_iso(dt_str: Optional[str]) -> Optional[datetime]:
+    if not dt_str:
+        return None
+    try:
+        dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+    except Exception:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+def _interval_due(category: str, last_modified: Optional[datetime]) -> bool:
+    """True if ``category`` is due for a scheduled snapshot given the timestamp
+    of its newest existing backup (or None when it has none)."""
+    schedule = get_backup_schedule().get(category, _BACKUP_SCHEDULE_DEFAULT)
+    if schedule == "disabled":
+        return False
+    days = _INTERVAL_DAYS.get(schedule, 7)
+    if last_modified is None:
+        return True
+    now = datetime.now(timezone.utc)
+    if last_modified.tzinfo is None:
+        last_modified = last_modified.replace(tzinfo=timezone.utc)
+    # 12-hour tolerance so a tick that lands slightly early still fires.
+    return (now - last_modified) >= (timedelta(days=days) - timedelta(hours=12))
 
 
 def _classify(key: str) -> Optional[str]:
@@ -239,6 +317,7 @@ def run_now() -> dict:
     created = None
     geojson_created: List[str] = []
     mf_traders_created: Optional[str] = None
+    elk_created: Optional[str] = None
     if ff.is_feature_enabled("weekly_backups"):
         try:
             created = create_scheduled_snapshot_if_due()
@@ -252,6 +331,10 @@ def run_now() -> dict:
             mf_traders_created = create_scheduled_map_features_traders_snapshot_if_due()
         except Exception:
             logger.exception("weekly_backup: map-features traders snapshot failed")
+        try:
+            elk_created = create_scheduled_elk_walkable_snapshot_if_due()
+        except Exception:
+            logger.exception("weekly_backup: elk-walkable snapshot failed")
     cleanup = cleanup_old_backups() if ff.is_feature_enabled("weekly_backups") else {"deleted": 0}
     geojson_cleanup = (
         cleanup_old_geojson_backups()
@@ -270,6 +353,7 @@ def run_now() -> dict:
         "geojson_cleanup": geojson_cleanup,
         "map_features_traders_created": mf_traders_created,
         "map_features_traders_cleanup": mf_traders_cleanup,
+        "elk_walkable_created": elk_created,
     }
 
 
@@ -363,6 +447,9 @@ _GEOJSON_ASSETS = (
     ("translocators", r2_storage.translocators_live_key,
      r2_storage.translocators_backup_scheduled_key,
      r2_storage.translocators_backup_manual_key),
+    ("traders", r2_storage.traders_live_key,
+     r2_storage.traders_backup_scheduled_key,
+     r2_storage.traders_backup_manual_key),
 )
 
 
@@ -410,7 +497,18 @@ def create_scheduled_geojson_snapshots_if_due() -> List[str]:
     """
     iso_year, iso_week = _now_iso_week()
     created: List[str] = []
+    existing = list_geojson_backups()
     for asset, live_key_fn, sched_key_fn, _manual in _GEOJSON_ASSETS:
+        # Configurable categories (currently just ``traders``) honour the
+        # admin-set interval / disabled switch; landmarks + translocators
+        # keep their original always-weekly cadence.
+        if asset in BACKUP_SCHEDULE_CATEGORIES:
+            scheduled = [
+                b for b in existing if b["asset"] == asset and b["kind"] == "scheduled"
+            ]
+            newest = _parse_iso(scheduled[0]["last_modified"]) if scheduled else None
+            if not _interval_due(asset, newest):
+                continue
         live_key = live_key_fn()
         target = sched_key_fn(iso_year, iso_week)
         if r2_storage.object_exists(target):
@@ -549,12 +647,17 @@ def _snapshot_map_features_traders_to(target_key: str) -> str:
 def create_scheduled_map_features_traders_snapshot_if_due() -> Optional[str]:
     """Create this period's scheduled snapshot of ``map-features.traders.json``.
 
-    Biweekly: only runs on even ISO weeks. Idempotent — skips when the current
-    ISO week already has a snapshot. Skips silently when the live file is
-    missing (e.g. no contributions published yet). Returns the new key or None.
+    Cadence follows the admin-configured ``map_features_traders`` schedule
+    (weekly / biweekly / monthly / disabled). Idempotent — skips when the
+    current ISO week already has a snapshot. Skips silently when the live file
+    is missing (e.g. no contributions published yet). Returns the new key or
+    None.
     """
     iso_year, iso_week = _now_iso_week()
-    if iso_week % 2 != 0:
+    existing = list_map_features_traders_backups()
+    scheduled = [b for b in existing if b["kind"] == "scheduled"]
+    newest = _parse_iso(scheduled[0]["last_modified"]) if scheduled else None
+    if not _interval_due("map_features_traders", newest):
         return None
     target = r2_storage.map_features_traders_backup_scheduled_key(iso_year, iso_week)
     if r2_storage.object_exists(target):
@@ -603,3 +706,59 @@ def cleanup_old_map_features_traders_backups() -> dict:
             "weekly_backup: deleted %d old map-features traders snapshots", len(to_delete)
         )
     return {"deleted": len(to_delete)}
+
+
+def _snapshot_map_features_traders_restore(backup_key: str) -> dict:
+    """Copy a map-features-traders backup object back over the live file.
+
+    The backup lives in the default backup bucket; the live file lives in the
+    public map-features bucket. Returns a small report dict. Raises
+    ``FileNotFoundError`` when the backup key is missing and ``ValueError``
+    when it isn't a recognised snapshot.
+    """
+    if _classify_mf_traders(backup_key) is None:
+        raise ValueError(f"backup key {backup_key!r} is not a map-features traders backup")
+    if not r2_storage.object_exists(backup_key):
+        raise FileNotFoundError(f"backup not found: {backup_key}")
+    live_bucket, live_key = r2_storage.map_features_traders_live()
+    r2_storage.copy_object_to_bucket(backup_key, live_bucket, live_key)
+    r2_storage.invalidate_presigned_download_url(live_key)
+    logger.info("weekly_backup: restored map-features traders from %s", backup_key)
+    return {"restored": "map_features_traders", "from_key": backup_key, "live_key": live_key}
+
+
+def restore_map_features_traders_from_backup(backup_key: str) -> dict:
+    """Public wrapper around :func:`_snapshot_map_features_traders_restore`."""
+    return _snapshot_map_features_traders_restore(backup_key)
+
+
+# ---------------------------------------------------------------------------
+# Elk-walkable — scheduled on-demand snapshots
+# ---------------------------------------------------------------------------
+#
+# Unlike the geojson / map-features assets, elk-walkable already writes a
+# rolling pre-mutation snapshot on every edit. The scheduled job here just
+# guarantees a periodic restore point exists even during quiet periods,
+# honouring the admin-configured ``elk_walkable`` cadence.
+
+def create_scheduled_elk_walkable_snapshot_if_due() -> Optional[str]:
+    """Force an elk-walkable snapshot when the configured interval has elapsed
+    since the newest existing snapshot. Returns the new key or None."""
+    from ..core import elk_walkable_store as elk
+
+    newest = elk.newest_snapshot_mtime()
+    if not _interval_due("elk_walkable", newest):
+        return None
+    if not r2_storage.object_exists(r2_storage.elk_walkable_live_key()):
+        logger.info("weekly_backup: elk-walkable live file missing — skipping snapshot")
+        return None
+    try:
+        result = elk.create_manual_snapshot(
+            actor_api_key_id=None, actor_display_name="scheduler"
+        )
+    except Exception:
+        logger.exception("weekly_backup: failed to snapshot elk-walkable")
+        return None
+    key = result.get("snapshot_key")
+    logger.info("weekly_backup: created scheduled elk-walkable snapshot %s", key)
+    return key

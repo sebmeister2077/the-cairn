@@ -1,5 +1,5 @@
 /**
- * Admin: Merged map-features traders list (route: /manage/map-features-traders).
+ * Admin: Merged map-features traders list (route: /audit/map-features-traders).
  *
  * The crowd-sourced `map-features.traders.json` is rebuilt from every
  * `/contribute-map-features` upload and published to the public map-features
@@ -12,22 +12,18 @@
  */
 
 import { useState } from "react";
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   adminListMapFeaturesTradersAudit,
-  adminListMapFeaturesTradersBackups,
-  adminCreateMapFeaturesTradersBackup,
   type AdminMapFeaturesTradersAuditEntry,
-  type MapFeaturesTradersBackupEntry,
 } from "@/lib/api";
-import { formatBytes, formatTimestamp } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 
 const AUDIT_KEY = ["admin-map-features-traders-audit"] as const;
-const BACKUPS_KEY = ["admin-map-features-traders-backups"] as const;
 const AUDIT_PAGE_SIZE = 25;
 
 function actionBadgeVariant(
@@ -45,11 +41,11 @@ export function AdminMapFeaturesTradersPage() {
         <h2 className="text-xl font-semibold">Map-features traders</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
           The crowd-sourced traders list (<code>map-features.traders.json</code>) merged from
-          every contributor upload. Audit every change and manage the biweekly backups.
+          every contributor upload. Audit every change here; manage snapshots from the Backups
+          tab.
         </p>
       </div>
       <AuditCard />
-      <BackupsCard />
     </div>
   );
 }
@@ -158,71 +154,5 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
         {formatTimestamp(row.created_at)}
       </div>
     </div>
-  );
-}
-
-function BackupsCard() {
-  const queryClient = useQueryClient();
-  const { data, isLoading, error } = useQuery({
-    queryKey: BACKUPS_KEY,
-    queryFn: adminListMapFeaturesTradersBackups,
-  });
-
-  const createMut = useMutation({
-    mutationFn: adminCreateMapFeaturesTradersBackup,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: BACKUPS_KEY }),
-  });
-
-  const backups: MapFeaturesTradersBackupEntry[] = data?.backups ?? [];
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2">
-        <CardTitle className="text-base">Biweekly backups</CardTitle>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => createMut.mutate()}
-          disabled={createMut.isPending}
-        >
-          {createMut.isPending ? <Loader2 className="size-3 animate-spin mr-1" /> : null}
-          Snapshot now
-        </Button>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {isLoading && (
-          <div className="flex justify-center py-6">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-          </div>
-        )}
-        {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
-        {createMut.error && (
-          <p className="text-xs text-destructive">{(createMut.error as Error).message}</p>
-        )}
-        {data && backups.length === 0 && (
-          <p className="text-xs text-muted-foreground italic">No backups yet.</p>
-        )}
-        {backups.length > 0 && (
-          <div className="border rounded-md divide-y">
-            {backups.map((b) => (
-              <div
-                key={b.key}
-                className="px-3 py-2 text-xs flex items-center justify-between gap-2"
-              >
-                <div className="min-w-0">
-                  <div className="font-mono break-all">{b.key.replace(/^backups\//, "")}</div>
-                  <div className="text-muted-foreground">
-                    <Badge variant="outline" className="mr-1">
-                      {b.kind}
-                    </Badge>
-                    {formatBytes(b.size)} · {formatTimestamp(b.last_modified)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
   );
 }

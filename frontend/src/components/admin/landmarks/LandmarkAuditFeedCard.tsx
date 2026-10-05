@@ -5,12 +5,15 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { adminDeleteLandmark, adminListLandmarkAudit, type LandmarkAuditEntry } from "@/lib/api";
 import { formatTimestamp } from "@/lib/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
+
+const COLLAPSED_COUNT = 2;
 
 export function LandmarkAuditFeedCard() {
   const queryClient = useQueryClient();
   const [selectedForDeleteId, setSelectedForDeleteId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-landmark-audit"],
     queryFn: () => adminListLandmarkAudit({ limit: 100 }),
@@ -24,6 +27,10 @@ export function LandmarkAuditFeedCard() {
     },
   });
 
+  const allRows = data?.audit ?? [];
+  const visibleRows = expanded ? allRows : allRows.slice(0, COLLAPSED_COUNT);
+  const hiddenCount = allRows.length - visibleRows.length;
+
   return (
     <Card>
       <CardHeader>
@@ -36,24 +43,44 @@ export function LandmarkAuditFeedCard() {
           </div>
         )}
         {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
-        {data && data.audit.length === 0 && (
+        {data && allRows.length === 0 && (
           <p className="text-sm text-muted-foreground">No audit entries yet.</p>
         )}
         {deleteMut.error && (
           <p className="text-xs text-destructive">{(deleteMut.error as Error).message}</p>
         )}
-        <div className="divide-y border rounded-md">
-          {data?.audit.map((row) => (
-            <AuditRow
-              key={row.id}
-              row={row}
-              onDelete={() => {
-                setSelectedForDeleteId(row.landmark_id);
-              }}
-              deleting={deleteMut.isPending && deleteMut.variables === row.landmark_id}
-            />
-          ))}
-        </div>
+        {visibleRows.length > 0 && (
+          <div className="divide-y border rounded-md">
+            {visibleRows.map((row) => (
+              <AuditRow
+                key={row.id}
+                row={row}
+                onDelete={() => {
+                  setSelectedForDeleteId(row.landmark_id);
+                }}
+                deleting={deleteMut.isPending && deleteMut.variables === row.landmark_id}
+              />
+            ))}
+          </div>
+        )}
+        {allRows.length > COLLAPSED_COUNT && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={() => setExpanded((v) => !v)}
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="size-4" /> Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="size-4" /> Show {hiddenCount} more
+              </>
+            )}
+          </Button>
+        )}
         <ConfirmDialog
           title="Confirm hard-delete"
           description={`Hard-delete landmark ${selectedForDeleteId}?`}

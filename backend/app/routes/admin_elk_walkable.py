@@ -117,6 +117,19 @@ async def list_snapshots(
     return {"snapshots": snapshots}
 
 
+@router.post("/snapshots/create")
+async def create_snapshot(
+    api_key: str = Depends(require_admin),
+) -> dict:
+    async with elk_walkable_store.elk_walkable_write_lock("admin_create_snapshot"):
+        result = await asyncio.to_thread(
+            elk_walkable_store.create_manual_snapshot,
+            actor_api_key_id=None,
+            actor_display_name=_ADMIN_DISPLAY_NAME,
+        )
+    return result
+
+
 class RestoreSnapshotBody(BaseModel):
     snapshot_key: str
 

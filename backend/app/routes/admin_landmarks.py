@@ -33,6 +33,8 @@ from ..core import database as db
 from ..core import r2_storage
 from ..tasks import weekly_backup
 from . import landmarks as landmarks_routes
+from . import contribute_tls as contribute_tls_routes
+from . import contribute_traders as contribute_traders_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -300,7 +302,17 @@ async def delete_landmark(
 # loss surface is at most a week of edits and the audit log preserves what
 # was there.
 
-_VALID_ASSETS = ("landmarks", "translocators")
+_VALID_ASSETS = ("landmarks", "translocators", "traders")
+
+
+def _asset_write_lock(asset: str, action: str):
+    """Return the correct per-asset geojson write lock so a manual snapshot
+    or restore can't race a concurrent contributor write to that asset."""
+    if asset == "translocators":
+        return contribute_tls_routes.translocators_write_lock(action)
+    if asset == "traders":
+        return contribute_traders_routes.traders_write_lock(action)
+    return landmarks_routes.landmarks_write_lock(action)
 
 
 class GeojsonBackupCreateBody(BaseModel):
@@ -327,7 +339,7 @@ async def create_geojson_backup(
         raise HTTPException(status_code=400, detail=f"asset must be one of {_VALID_ASSETS}")
     # Hold the per-asset lock so the manual snapshot can't capture a torn
     # write from a concurrent user POST/PATCH.
-    async with landmarks_routes.landmarks_write_lock("admin_backup_create"):
+    async with _asset_write_lock(body.asset, "admin_backup_create"):
         try:
             key = await asyncio.to_thread(weekly_backup.create_manual_geojson_snapshot, body.asset)
         except FileNotFoundError as exc:
@@ -347,7 +359,7 @@ async def restore_geojson_backup(
             status_code=400,
             detail="confirm must be true — restore overwrites the live file",
         )
-    async with landmarks_routes.landmarks_write_lock("admin_backup_restore"):
+    async with _asset_write_lock(body.asset, "admin_backup_restore"):
         try:
             live_key = await asyncio.to_thread(
                 weekly_backup.restore_geojson_from_backup, body.asset, body.key
