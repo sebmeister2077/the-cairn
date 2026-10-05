@@ -6,16 +6,13 @@ import type { UsageGranularity } from "@/lib/api";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { Loading } from "@/components/usage/Loading";
 import { useMemo } from "react";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Moderation — bans created, flags created/resolved.
 // ---------------------------------------------------------------------------
 
-export function ModerationSection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function ModerationSection(props: UsageSectionProps) {
   const q = useQuery({
     queryKey: ["usage", "moderation", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>

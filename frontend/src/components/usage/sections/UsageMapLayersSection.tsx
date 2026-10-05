@@ -12,7 +12,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { TrendToggle } from "./UsageTrendToggle";
 import { Info } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { setMapLayerTimelineMode, setMapLayerMinActivityGap } from "@/store/slices/adminUsageFilters";
+import {
+  setMapLayerTimelineMode,
+  setMapLayerMinActivityGap,
+} from "@/store/slices/adminUsageFilters";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -21,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Map Layers — TOPS map advanced-overlay usage.
@@ -60,11 +64,7 @@ function layerLabel(id: string): string {
   return MAP_LAYER_LABELS[id] ?? id;
 }
 
-export function MapLayersSection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function MapLayersSection(props: UsageSectionProps) {
   const [showTrend, setShowTrend] = useState(true);
   // "enables" counts switch-on events; "snapshots" counts how many daily
   // config snapshots had the layer on (reflects sustained, not just new, use).
@@ -73,8 +73,7 @@ export function MapLayersSection(props: {
   const timelineMode = filters.timelineMode;
   const minGapSeconds = filters.minActivityGapSeconds;
   const minGap = String(minGapSeconds);
-  const minGapLabel =
-    MIN_GAP_OPTIONS.find((o) => o.value === minGap)?.label ?? "No minimum";
+  const minGapLabel = MIN_GAP_OPTIONS.find((o) => o.value === minGap)?.label ?? "No minimum";
 
   const q = useQuery({
     queryKey: ["usage", "map-layers", props.from, props.to, props.granularity, minGap],

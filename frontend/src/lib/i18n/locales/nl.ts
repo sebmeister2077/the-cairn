@@ -52,6 +52,7 @@ const nl = {
                 singleplayer: "Singleplayer",
                 multiplayer: "Multiplayer",
                 tops: "TOPS",
+                webmap: "Webmap",
                 tools: "Gereedschap",
                 manage: "Beheren",
                 usage: "Gebruik",

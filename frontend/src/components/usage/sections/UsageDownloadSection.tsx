@@ -5,16 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { UsageGranularity } from "@/lib/api";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { Loading } from "@/components/usage/Loading";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Downloads — backup link redemptions.
 // ---------------------------------------------------------------------------
 
-export function DownloadsSection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function DownloadsSection(props: UsageSectionProps) {
   const q = useQuery({
     queryKey: ["usage", "downloads", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>

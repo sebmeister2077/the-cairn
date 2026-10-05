@@ -58,6 +58,7 @@ export const en = {
                 singleplayer: "Singleplayer",
                 multiplayer: "Multiplayer",
                 tops: "TOPS",
+                webmap: "Webmap",
                 tools: "Tools",
                 manage: "Manage",
                 audit: "Audit",
@@ -1404,9 +1405,9 @@ export const en = {
         elkConnectionCount: "{count} connections",
         groupings: "Groupings",
         movementHeatmap: {
-          button: "Movement",
-          tooltip:
-            "Admin: show aggregated planned-route movement — endpoint heatmap and route flows.",
+            button: "Movement",
+            tooltip:
+                "Admin: show aggregated planned-route movement — endpoint heatmap and route flows.",
         },
         emphasizeRecentlyAddedTranslocators: "Emphasize recently added translocators",
         emphasizeRecentlyAddedTls: "Emphasize recently added TLs (last {days} days)",

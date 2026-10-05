@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loading } from "@/components/usage/Loading";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { useItemCatalog } from "@/lib/auction";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Items & Players — most-viewed market entities (per-ref analytics).
@@ -37,7 +38,7 @@ const ENTITY_KINDS: {
   },
 ];
 
-export function EntitiesSection(props: { from: string; to: string }) {
+export function EntitiesSection(props: UsageSectionProps) {
   const [kind, setKind] = useState<EntityKind>("items");
   const cfg = ENTITY_KINDS.find((k) => k.key === kind) ?? ENTITY_KINDS[0];
   // Item names are also resolvable client-side from the catalog, so item rows

@@ -8,19 +8,10 @@ import { DateRangeBar } from "@/components/usage/DateRangeBar";
 import { GranularityToggle } from "@/components/usage/GranularityToggle";
 import { StatCard } from "@/components/usage/StatCard";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
-import {
-  adminRoutePlanner,
-  type RoutePlannerEdgeRow,
-  type UsageGranularity,
-} from "@/lib/api";
+import { adminRoutePlanner, type RoutePlannerEdgeRow, type UsageGranularity } from "@/lib/api";
 import { MONTH_MS } from "@/lib/constants/time";
 import { formatDuration } from "@/lib/format-duration";
-
-function defaultWindow(): { from: string; to: string } {
-  const to = new Date();
-  const from = new Date(to.getTime() - MONTH_MS);
-  return { from: from.toISOString(), to: to.toISOString() };
-}
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 const SETTING_LABELS: Record<string, string> = {
   walk_speed: "Walk speed",
@@ -40,9 +31,8 @@ const SOURCE_LABELS: Record<string, string> = {
   unknown: "Unknown",
 };
 
-export function AdminRoutePlannerPage() {
-  const [range, setRange] = useState<{ from: string; to: string }>(defaultWindow);
-  const [granularity, setGranularity] = useState<UsageGranularity>("day");
+export function UsageRoutePlannerSection({ from, to, granularity }: UsageSectionProps) {
+  const range = { from, to };
 
   const q = useQuery({
     queryKey: ["route-planner", range.from, range.to, granularity],
@@ -72,13 +62,6 @@ export function AdminRoutePlannerPage() {
           aggregated. All times UTC.
         </p>
       </div>
-
-      <Card>
-        <CardContent className="space-y-4 py-4">
-          <DateRangeBar value={range} onChange={setRange} />
-          <GranularityToggle value={granularity} onChange={setGranularity} />
-        </CardContent>
-      </Card>
 
       {q.isLoading ? (
         <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">

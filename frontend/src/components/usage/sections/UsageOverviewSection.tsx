@@ -12,16 +12,13 @@ import { StatCard } from "../StatCard";
 import { TrendToggle } from "./UsageTrendToggle";
 import { Button } from "@/components/ui/button";
 import { HeatmapGrid } from "../HeatmapGrid";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Overview — headline counters, totals, category bars + heatmap.
 // ---------------------------------------------------------------------------
 
-export function OverviewSection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function OverviewSection(props: UsageSectionProps) {
   const [showTrend, setShowTrend] = useState(true);
   const dispatch = useAppDispatch();
   const selectedCategories = useAppSelector((s) => s.adminUsageFilters.overviewCategories);

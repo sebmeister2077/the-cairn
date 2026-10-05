@@ -6,16 +6,13 @@ import { Loading } from "@/components/usage/Loading";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { TrendToggle } from "@/components/usage/sections/UsageTrendToggle";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Contributions — submitted / approved / per-type stacked bars.
 // ---------------------------------------------------------------------------
 
-export function ContributionsSection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function ContributionsSection(props: UsageSectionProps) {
   const [showTrend, setShowTrend] = useState(true);
   const q = useQuery({
     queryKey: ["usage", "contributions", props.from, props.to, props.granularity],

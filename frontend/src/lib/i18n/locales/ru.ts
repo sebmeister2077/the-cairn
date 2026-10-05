@@ -52,6 +52,7 @@ const ru = {
                 multiplayer: "Мультиплеер",
                 tops: "TOPS",
                 tools: "Инструменты",
+                webmap: "Веб-карта",
                 manage: "Управление",
                 usage: "Использование",
             },

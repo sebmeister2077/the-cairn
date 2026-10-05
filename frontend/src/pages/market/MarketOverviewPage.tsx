@@ -32,7 +32,17 @@ export function MarketOverviewPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Auction House</h1>
+        <h1 className="text-2xl font-semibold">
+          <a
+            href="https://topsinfo.vintagestory.at"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline decoration-dotted underline-offset-2 hover:text-primary"
+          >
+            TOPS
+          </a>{" "}
+          Auction House
+        </h1>
         <FreshnessBanner generatedUtc={data.generatedUtc} />
       </div>
 

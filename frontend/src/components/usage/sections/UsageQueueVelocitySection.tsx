@@ -4,12 +4,13 @@ import { adminUsage } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorMsg } from "../ErrorMsg";
 import { Loading } from "../Loading";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Queue velocity — review latency per queue.
 // ---------------------------------------------------------------------------
 
-export function QueueVelocitySection(props: { from: string; to: string }) {
+export function QueueVelocitySection(props: UsageSectionProps) {
   const q = useQuery({
     queryKey: ["usage", "queue-velocity", props.from, props.to],
     queryFn: ({ signal }) => adminUsage.queueVelocity({ from: props.from, to: props.to }, signal),

@@ -50,6 +50,7 @@ const fr = {
                 "singleplayer": "Solo",
                 "multiplayer": "Multijoueur",
                 "tops": "TOPS",
+                "webmap": "Carte web",
                 "tools": "Outils",
                 "manage": "Gérer",
                 "usage": "Utilisation"

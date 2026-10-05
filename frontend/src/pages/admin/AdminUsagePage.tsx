@@ -14,6 +14,7 @@ import { ModerationSection } from "@/components/usage/sections/UsageModerationSe
 import { OverviewSection } from "@/components/usage/sections/UsageOverviewSection";
 import { PagesSection } from "@/components/usage/sections/UsagePagesSection";
 import { QueueVelocitySection } from "@/components/usage/sections/UsageQueueVelocitySection";
+import { UsageRoutePlannerSection } from "@/components/usage/sections/UsageRoutePlannerSection";
 import { TopActorsSection } from "@/components/usage/sections/UsageTopActorsSection";
 import { type UsageGranularity } from "@/lib/api";
 import { MONTH_MS } from "@/lib/constants/time";
@@ -38,6 +39,7 @@ type SectionKey =
   | "downloads"
   | "moderation"
   | "api_keys"
+  | "route_planner"
   | "actors"
   | "promo";
 
@@ -49,15 +51,21 @@ const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "map_layers", label: "Map Layers" },
   { key: "saved_routes", label: "Saved Routes" },
   { key: "admin", label: "Admin Activity" },
-  { key: "queues", label: "Queue Velocity" },
-  { key: "downloads", label: "Downloads" },
+  // { key: "queues", label: "Queue Velocity" },
+  // { key: "downloads", label: "Downloads" },
   { key: "moderation", label: "Moderation" },
   { key: "api_keys", label: "Accounts" },
+  { key: "route_planner", label: "Route Planner" },
   { key: "actors", label: "Top Actors" },
   { key: "promo", label: "Promo" },
 ];
 
-function defaultWindow(): { from: string; to: string } {
+export type UsageSectionProps = {
+  from: string;
+  to: string;
+  granularity: UsageGranularity;
+};
+function defaultWindow(): Pick<UsageSectionProps, "from" | "to"> {
   const to = new Date();
   const from = new Date(to.getTime() - MONTH_MS);
   return { from: from.toISOString(), to: to.toISOString() };
@@ -83,7 +91,7 @@ export function AdminUsagePage() {
       { replace: true },
     );
   };
-  const [range, setRange] = useState<{ from: string; to: string }>(defaultWindow);
+  const [range, setRange] = useState<Pick<UsageSectionProps, "from" | "to">>(defaultWindow);
   const [granularity, setGranularity] = useState<UsageGranularity>("day");
 
   return (
@@ -114,13 +122,18 @@ export function AdminUsagePage() {
       {section === "overview" && (
         <OverviewSection from={range.from} to={range.to} granularity={granularity} />
       )}
+      {section === "route_planner" && (
+        <UsageRoutePlannerSection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "contributions" && (
         <ContributionsSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "pages" && (
         <PagesSection from={range.from} to={range.to} granularity={granularity} />
       )}
-      {section === "entities" && <EntitiesSection from={range.from} to={range.to} />}
+      {section === "entities" && (
+        <EntitiesSection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "map_layers" && (
         <MapLayersSection from={range.from} to={range.to} granularity={granularity} />
       )}
@@ -130,7 +143,9 @@ export function AdminUsagePage() {
       {section === "admin" && (
         <AdminActivitySection from={range.from} to={range.to} granularity={granularity} />
       )}
-      {section === "queues" && <QueueVelocitySection from={range.from} to={range.to} />}
+      {section === "queues" && (
+        <QueueVelocitySection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "downloads" && (
         <DownloadsSection from={range.from} to={range.to} granularity={granularity} />
       )}
@@ -140,7 +155,9 @@ export function AdminUsagePage() {
       {section === "api_keys" && (
         <AccountsSection from={range.from} to={range.to} granularity={granularity} />
       )}
-      {section === "actors" && <TopActorsSection from={range.from} to={range.to} />}
+      {section === "actors" && (
+        <TopActorsSection from={range.from} to={range.to} granularity={granularity} />
+      )}
       {section === "promo" && (
         <PromoSection from={range.from} to={range.to} granularity={granularity} />
       )}

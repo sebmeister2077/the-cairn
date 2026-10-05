@@ -18,6 +18,7 @@ import { ErrorMsg } from "../ErrorMsg";
 import { Loading } from "../Loading";
 import { TimeSeriesChart } from "../TimeSeriesChart";
 import { TrendToggle } from "./UsageTrendToggle";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Pages — most-visited routes table + per-path trendline.
@@ -29,7 +30,7 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: "distinct_ips", label: "Distinct IPs" },
   { value: "path", label: "Path (A→Z)" },
 ];
-export function PagesSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+export function PagesSection(props: UsageSectionProps) {
   const [showTrend, setShowTrend] = useState(true);
   const dispatch = useAppDispatch();
   const filters = useAppSelector((s) => s.adminUsageFilters.pages);

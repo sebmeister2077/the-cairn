@@ -50,6 +50,7 @@ const es = {
                 "singleplayer": "Un jugador",
                 "multiplayer": "Multijugador",
                 "tops": "TOPS",
+                "webmap": "Mapa web",
                 "tools": "Herramientas",
                 "manage": "Gestionar",
                 "usage": "Uso"

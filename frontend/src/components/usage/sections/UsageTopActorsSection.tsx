@@ -5,12 +5,13 @@ import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Loading } from "@/components/usage/Loading";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Top actors.
 // ---------------------------------------------------------------------------
 
-export function TopActorsSection(props: { from: string; to: string }) {
+export function TopActorsSection(props: UsageSectionProps) {
   const [category, setCategory] = useState<string>("");
   const q = useQuery({
     queryKey: ["usage", "top-actors", props.from, props.to, category],

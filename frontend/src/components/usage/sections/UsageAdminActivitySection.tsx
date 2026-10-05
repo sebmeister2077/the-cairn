@@ -5,16 +5,13 @@ import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import type { UsageGranularity } from "@/lib/api";
+import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------
 // Section: Admin activity — bucketed counts + recent table.
 // ---------------------------------------------------------------------------
 
-export function AdminActivitySection(props: {
-  from: string;
-  to: string;
-  granularity: UsageGranularity;
-}) {
+export function AdminActivitySection(props: UsageSectionProps) {
   const q = useQuery({
     queryKey: ["usage", "admin", props.from, props.to, props.granularity],
     queryFn: ({ signal }) =>

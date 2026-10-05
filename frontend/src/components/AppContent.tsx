@@ -35,7 +35,7 @@ import { AdminResourcesPage } from "@/pages/admin/AdminResourcesPage";
 import { AdminLandmarksPage } from "@/pages/admin/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/admin/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/admin/AdminElkWalkablePage";
-import { AdminRoutePlannerPage } from "@/pages/admin/AdminRoutePlannerPage";
+import { AdminRoutePlannerPage } from "@/components/usage/sections/UsageRoutePlannerSection";
 import { AdminMapFeaturesTradersPage } from "@/pages/admin/AdminMapFeaturesTradersPage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
@@ -299,7 +299,6 @@ const subTabs: Subtabs = {
     { value: "/audit/map-features-traders", labelKey: "app.nav.subtabs.mapFeaturesTraders" },
     { value: "/audit/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
     { value: "/audit/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
-    { value: "/audit/route-planner", labelKey: "app.nav.subtabs.routePlanner" },
     { value: "/audit/waypoints", labelKey: "app.nav.subtabs.waypointsBackup" },
     { value: "/audit/backups", labelKey: "app.nav.subtabs.backups" },
   ],
@@ -1117,14 +1116,6 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Elk-walkable failed" resetKeys={[location.pathname]}>
                 <AdminElkWalkablePage />
-              </ErrorBoundary>
-            }
-          />
-          <Route
-            path="/audit/route-planner"
-            element={
-              <ErrorBoundary title="Route Planner failed" resetKeys={[location.pathname]}>
-                <AdminRoutePlannerPage />
               </ErrorBoundary>
             }
           />
