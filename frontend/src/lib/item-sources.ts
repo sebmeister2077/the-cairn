@@ -66,6 +66,8 @@ function isCommonStaple(bare: string): boolean {
 export function marketRarity(code: string | null | undefined): Rarity | null {
     const info = lookupItemSources(code);
     if (!info) return null;
-    if (info.craftable || isCommonStaple(bareItemCode(code!)) || lookupTraderInfo(code)) return null;
+    if (info.craftable || isCommonStaple(bareItemCode(code!))) return null;
+    const traderInfo = lookupTraderInfo(code)
+    if (traderInfo?.sells) return null;
     return info.rarity;
 }
