@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 import {
@@ -303,11 +303,27 @@ export function RoutePlannerPanel() {
   }, [analyticsState]);
 
   // --- Usage analytics: log a completed planner computation once per
-  // distinct route/rendezvous result. Deliberately best-effort: a failed
-  // POST must never disturb the planner UX. Dedupe keys exclude the chosen
-  // alternative so switching routes doesn't re-fire a "planned" event
+  // distinct route/rendezvous result, but DEFER the "planned" event until
+  // the user actually engages with the result. Deliberately best-effort: a
+  // failed POST must never disturb the planner UX. Dedupe keys exclude the
+  // chosen alternative so switching routes doesn't re-fire a "planned" event
   // (that is captured separately as a lightweight `selected` interaction).
-  const lastPlanKeyRef = useRef<string | null>(null);
+  //
+  // The event is withheld until one of two gates opens, whichever comes
+  // first: the user focuses one of the route's legs on the map (a
+  // `segment_focused`-style interaction), or the result has been on screen
+  // for at least PLAN_GATE_MS. This keeps the "planned" signal focused on
+  // routes people act on, while still eventually capturing long-lived
+  // results nobody interacted with.
+  const PLAN_GATE_MS = 60_000;
+  // Keys already POSTed (so a route is reported at most once).
+  const sentPlanKeyRef = useRef<string | null>(null);
+  // Key of the route whose gate is currently armed (awaiting focus/timeout).
+  const pendingPlanKeyRef = useRef<string | null>(null);
+  // Handle for the PLAN_GATE_MS fallback timer.
+  const planTimerRef = useRef<number | null>(null);
+  // Latest "flush the armed plan" closure, kept current for timers/children.
+  const sendPendingPlanRef = useRef<() => void>(() => {});
 
   function buildNonDefaultSettings(
     planMode: "route" | "rendezvous",
@@ -327,14 +343,10 @@ export function RoutePlannerPanel() {
     return settings;
   }
 
-  useEffect(() => {
-    if (mode !== "route") return;
-    if (!from || !to || !primary || isComputing) return;
-    const key = `route|${from.point.x},${from.point.z}|${to.point.x},${to.point.z}|${routeTlChain(
-      primary.legs,
-    )}`;
-    if (lastPlanKeyRef.current === key) return;
-    lastPlanKeyRef.current = key;
+  // Build + POST the route-mode "planned" event from the CURRENT values.
+  // No-op if the route has been torn down since the gate was armed.
+  function sendRoutePlan() {
+    if (!from || !to || !primary) return;
     routeAnalytics
       .plan({
         mode: "route",
@@ -360,21 +372,14 @@ export function RoutePlannerPanel() {
       .catch(() => {
         /* analytics are best-effort */
       });
-    // buildNonDefaultSettings reads settings from closure; deps below cover
-    // every input that changes the logged payload / dedupe key.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, from, to, primary, isComputing, routes.length, selectedIndex]);
+  }
 
-  useEffect(() => {
-    if (mode !== "rendezvous") return;
-    if (!rendezvousResult || rendezvousIsComputing) return;
+  // Build + POST the rendezvous-mode "planned" event from CURRENT values.
+  function sendRendezvousPlan() {
+    if (!rendezvousResult) return;
     const filled = players.filter((p): p is NonNullable<typeof p> => p != null);
     if (filled.length < 2) return;
     const meeting = rendezvousResult.meeting;
-    const playersSig = filled.map((p) => `${p.point.x},${p.point.z}`).join("|");
-    const key = `rdv|${rendezvousObjective}|${meeting.x},${meeting.z}|${playersSig}`;
-    if (lastPlanKeyRef.current === key) return;
-    lastPlanKeyRef.current = key;
     const allLegs = rendezvousResult.perPlayer.flatMap((pp) => pp.route.legs);
     const walkBlocks = rendezvousResult.perPlayer.reduce(
       (a, pp) => a + pp.route.walkBlocks,
@@ -414,8 +419,99 @@ export function RoutePlannerPanel() {
       .catch(() => {
         /* analytics are best-effort */
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, rendezvousResult, rendezvousIsComputing, players, rendezvousObjective]);
+  }
+
+  // Flush the armed "planned" event, if any, exactly once. Invoked by the
+  // PLAN_GATE_MS fallback timer and by the first leg-focus interaction on
+  // the current route.
+  function flushPendingPlan() {
+    const key = pendingPlanKeyRef.current;
+    if (!key || sentPlanKeyRef.current === key) return;
+    sentPlanKeyRef.current = key;
+    pendingPlanKeyRef.current = null;
+    if (planTimerRef.current != null) {
+      window.clearTimeout(planTimerRef.current);
+      planTimerRef.current = null;
+    }
+    if (mode === "rendezvous") sendRendezvousPlan();
+    else sendRoutePlan();
+  }
+
+  // Keep the latest flush closure reachable from timers / child callbacks
+  // without re-arming the gate on every render.
+  useEffect(() => {
+    sendPendingPlanRef.current = flushPendingPlan;
+  });
+
+  // Arm the deferred "planned" gate whenever a new distinct route/meeting
+  // result appears. Nothing is POSTed here — flushPendingPlan does that once
+  // the gate opens (leg focus or PLAN_GATE_MS elapsed). An invalid/cleared
+  // result drops any armed gate so a stale route is never flushed.
+  useEffect(() => {
+    let key: string | null = null;
+    if (mode === "route") {
+      if (from && to && primary && !isComputing) {
+        key = `route|${from.point.x},${from.point.z}|${to.point.x},${to.point.z}|${routeTlChain(
+          primary.legs,
+        )}`;
+      }
+    } else if (mode === "rendezvous") {
+      if (rendezvousResult && !rendezvousIsComputing) {
+        const filled = players.filter((p): p is NonNullable<typeof p> => p != null);
+        if (filled.length >= 2) {
+          const meeting = rendezvousResult.meeting;
+          const playersSig = filled.map((p) => `${p.point.x},${p.point.z}`).join("|");
+          key = `rdv|${rendezvousObjective}|${meeting.x},${meeting.z}|${playersSig}`;
+        }
+      }
+    }
+
+    if (!key) {
+      if (planTimerRef.current != null) {
+        window.clearTimeout(planTimerRef.current);
+        planTimerRef.current = null;
+      }
+      pendingPlanKeyRef.current = null;
+      return;
+    }
+    if (sentPlanKeyRef.current === key) return; // already reported
+    if (pendingPlanKeyRef.current === key) return; // gate already armed
+
+    if (planTimerRef.current != null) window.clearTimeout(planTimerRef.current);
+    pendingPlanKeyRef.current = key;
+    planTimerRef.current = window.setTimeout(() => {
+      sendPendingPlanRef.current();
+    }, PLAN_GATE_MS);
+  }, [
+    mode,
+    from,
+    to,
+    primary,
+    isComputing,
+    routes.length,
+    selectedIndex,
+    rendezvousResult,
+    rendezvousIsComputing,
+    players,
+    rendezvousObjective,
+  ]);
+
+  // Clear the fallback timer on unmount so it can't fire after teardown.
+  useEffect(() => {
+    return () => {
+      if (planTimerRef.current != null) {
+        window.clearTimeout(planTimerRef.current);
+        planTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Opens the deferred "planned" gate immediately when the user focuses one
+  // of the current route's legs on the map. Best-effort: a no-op when no
+  // gate is armed (already sent, or no reportable route).
+  const handleSegmentFocusedForPlan = useCallback(() => {
+    sendPendingPlanRef.current();
+  }, []);
 
   function handleSaveAsDraft() {
     if (!primary) return;
@@ -578,6 +674,7 @@ export function RoutePlannerPanel() {
             onCopyShareLink={handleCopyShareLink}
             shareCopied={shareCopied}
             canShare={canShare}
+            onSegmentFocused={handleSegmentFocusedForPlan}
           />
         )}
 
@@ -791,6 +888,7 @@ export function RoutePlannerPanel() {
                   <RouteSummary
                     route={primary}
                     onLocate={(p) => dispatch(setRouteFocusRequest(p))}
+                    onSegmentFocused={handleSegmentFocusedForPlan}
                     elk={
                       isLoggedIn
                         ? {

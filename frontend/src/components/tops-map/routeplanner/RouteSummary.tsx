@@ -196,6 +196,7 @@ function describeLeg(leg: RouteLeg, index: number, t: TranslateFn): string {
 export function RouteSummary({
   route,
   onLocate,
+  onSegmentFocused,
   elk,
 }: {
   route: RouteResult;
@@ -204,6 +205,10 @@ export function RouteSummary({
    *  `spanBlocks` so the viewer can pick a zoom that keeps both leg
    *  endpoints in frame for long TL hops / walks. */
   onLocate: (point: { x: number; z: number; spanBlocks?: number }) => void;
+  /** Called when the user focuses a leg on the map (the locate/crosshair
+   *  button). Used by the planner to open the deferred "planned" analytics
+   *  gate once the user actually engages with the route. */
+  onSegmentFocused?: () => void;
   /** Optional elk-walkable attestation hooks. When omitted (e.g. anon
    *  user, contributions disabled), walk rows render with the legacy
    *  muted-foreground style and no toggle. */
@@ -374,6 +379,7 @@ export function RouteSummary({
                 onClick={() => {
                   setLocatedIndex(i);
                   onLocate({ x: midX, z: midZ, spanBlocks });
+                  onSegmentFocused?.();
                   routeAnalytics
                     .interaction({
                       type: "segment_focused",

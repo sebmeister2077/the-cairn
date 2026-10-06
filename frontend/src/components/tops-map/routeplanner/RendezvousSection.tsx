@@ -50,6 +50,7 @@ export function RendezvousSection({
   onCopyShareLink,
   shareCopied,
   canShare,
+  onSegmentFocused,
 }: {
   players: Array<EndpointPick | null>;
   objective: RendezvousObjective;
@@ -59,6 +60,10 @@ export function RendezvousSection({
   onCopyShareLink: () => void;
   shareCopied: boolean;
   canShare: boolean;
+  /** Called when the user focuses the meeting point or one of the per-player
+   *  routes on the map. Lets the planner open the deferred "planned"
+   *  analytics gate once the user engages with the computed result. */
+  onSegmentFocused?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
@@ -187,15 +192,16 @@ export function RendezvousSection({
                 size="sm"
                 variant="ghost"
                 className="w-full gap-1.5"
-                onClick={() =>
+                onClick={() => {
+                  onSegmentFocused?.();
                   dispatch(
                     setRouteFocusRequest({
                       x: result.meeting.x,
                       z: result.meeting.z,
                       spanBlocks: 400,
                     }),
-                  )
-                }
+                  );
+                }}
               >
                 <Crosshair className="h-3.5 w-3.5" /> {t("routePlanner.showMeetingPointOnMap")}
               </Button>
@@ -232,9 +238,10 @@ export function RendezvousSection({
                         size="icon-sm"
                         variant="ghost"
                         className="h-6 w-6 shrink-0 opacity-70 hover:opacity-100"
-                        onClick={() =>
-                          dispatch(setRouteFocusRequest({ x: midX, z: midZ, spanBlocks: span }))
-                        }
+                        onClick={() => {
+                          onSegmentFocused?.();
+                          dispatch(setRouteFocusRequest({ x: midX, z: midZ, spanBlocks: span }));
+                        }}
                         title={t("routePlanner.showPlayerRouteOnMap")}
                         aria-label={t("routePlanner.showOnMap")}
                       >
