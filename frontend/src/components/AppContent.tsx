@@ -100,7 +100,7 @@ import { ErrorBoundary } from "./other/ErrorBoundary";
 const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
   // { value: "/singleplayer", labelKey: "app.nav.categories.singleplayer" },
-  { value: "/multiplayer", labelKey: "app.nav.categories.tops" },
+  { value: "/multiplayer", labelKey: "app.nav.categories.webmap" },
   { value: "/market", labelKey: "app.nav.categories.market" },
   { value: "/rarity", labelKey: "app.nav.categories.rarity" },
   { value: "/tools", labelKey: "app.nav.categories.tools" },
