@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Sprout } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -158,6 +158,25 @@ const TEMP_MODE_VARIANTS = [
   { value: "tempcrop", key: "topsMap.climateCrop" },
 ] satisfies { value: ClimateTempVariant; key: PathOf<TranslationSchema> }[];
 
+function tempHintKey(
+  variant: ClimateTempVariant,
+):
+  | "topsMap.climateHintTempAvg"
+  | "topsMap.climateHintTempMin"
+  | "topsMap.climateHintTempMax"
+  | "topsMap.climateHintTempCrop" {
+  switch (variant) {
+    case "tempavg":
+      return "topsMap.climateHintTempAvg";
+    case "tempmin":
+      return "topsMap.climateHintTempMin";
+    case "tempmax":
+      return "topsMap.climateHintTempMax";
+    case "tempcrop":
+      return "topsMap.climateHintTempCrop";
+  }
+}
+
 export function ClimateControlsPanel({ layerMeta, status, error }: ClimateControlsPanelProps) {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
@@ -307,9 +326,16 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
             {/* Temperature-specific controls */}
             {isTempMode && (
               <div className="flex flex-col gap-2">
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {t("topsMap.climateTemperatureHint")}
-                </p>
+                {tempVariant === "tempcrop" && cropActive ? (
+                  <p className="flex items-start gap-1.5 rounded-md border border-emerald-600/30 bg-emerald-600/10 px-2 py-1 text-[11px] leading-snug text-emerald-800 dark:text-emerald-300">
+                    <Sprout className="mt-0.5 size-3 shrink-0" />
+                    <span>{t("topsMap.climateCropYearRound")}</span>
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-muted-foreground leading-snug">
+                    {t(tempHintKey(tempVariant))}
+                  </p>
+                )}
                 {/* Variant radio */}
                 <div
                   className="flex flex-wrap gap-1"

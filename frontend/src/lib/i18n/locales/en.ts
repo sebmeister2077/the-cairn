@@ -1488,7 +1488,16 @@ export const en = {
         climateTempMax: "Warmest",
         climateCrop: "Crop",
         climateTemperatureHint:
-            "Map colors show the seasonal mean temperature at sea level. Crop highlights use the estimated momentary extremes instead — a spot grows a crop year-round only if its coldest winter night stays at or above the crop's minimum and its hottest summer day stays at or below its maximum (winter nights run well below the seasonal mean).",
+            "Colors show the average sea-level temperature. Pick a crop to highlight where it can grow year-round.",
+        climateHintTempAvg:
+            "Showing each area's average temperature across the year (at sea level).",
+        climateHintTempMin:
+            "Showing how cold each area gets on its coldest winter nights (at sea level).",
+        climateHintTempMax:
+            "Showing how hot each area gets on its hottest summer days (at sea level).",
+        climateHintTempCrop: "Pick one or more crops to highlight where they can grow year-round.",
+        climateCropYearRound:
+            "Green areas can grow the selected crops year-round — winters never get too cold and summers never get too hot for them.",
         climateCropTitle: "Crop tolerance",
         climateCropLinenTag: "linen",
         climateCropAmaranth: "Amaranth",
