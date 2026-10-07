@@ -1486,6 +1486,7 @@ export const en = {
         climateTempAvg: "Average",
         climateTempMin: "Coldest",
         climateTempMax: "Warmest",
+        climateCrop: "Crop",
         climateTemperatureHint:
             "Map colors show the seasonal mean temperature at sea level. Crop highlights use the estimated momentary extremes instead — a spot grows a crop year-round only if its coldest winter night stays at or above the crop's minimum and its hottest summer day stays at or below its maximum (winter nights run well below the seasonal mean).",
         climateCropTitle: "Crop tolerance",

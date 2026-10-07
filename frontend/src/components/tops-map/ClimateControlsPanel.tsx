@@ -25,7 +25,7 @@ import {
   type CropId,
   type CropTolerance,
 } from "@/lib/climate/types";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { CLIMATE_SEA_LEVEL } from "@/lib/climate/altitude";
 import { cn } from "@/lib/utils";
 
@@ -150,6 +150,13 @@ function NumberField({
     />
   );
 }
+
+const TEMP_MODE_VARIANTS = [
+  { value: "tempavg", key: "topsMap.climateTempAvg" },
+  { value: "tempmin", key: "topsMap.climateTempMin" },
+  { value: "tempmax", key: "topsMap.climateTempMax" },
+  { value: "tempcrop", key: "topsMap.climateCrop" },
+] satisfies { value: ClimateTempVariant; key: PathOf<TranslationSchema> }[];
 
 export function ClimateControlsPanel({ layerMeta, status, error }: ClimateControlsPanelProps) {
   const { t } = useTranslation();
@@ -309,17 +316,12 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                   role="radiogroup"
                   aria-label={t("topsMap.climateTemperatureVariant")}
                 >
-                  {(["tempavg", "tempmin", "tempmax"] as ClimateTempVariant[]).map((v) => {
-                    const active = tempVariant === v;
-                    const labelKey =
-                      v === "tempavg"
-                        ? "topsMap.climateTempAvg"
-                        : v === "tempmin"
-                          ? "topsMap.climateTempMin"
-                          : "topsMap.climateTempMax";
+                  {TEMP_MODE_VARIANTS.map((v) => {
+                    const active = tempVariant === v.value;
+                    const labelKey = v.key;
                     return (
                       <button
-                        key={v}
+                        key={v.value}
                         type="button"
                         role="radio"
                         aria-checked={active}
@@ -329,7 +331,7 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                           // uses tempmin + tempmax internally), so changing
                           // which gradient is shown as the legend does NOT
                           // disturb the selected crop.
-                          setTempVariant(v);
+                          setTempVariant(v.value);
                         }}
                         className={cn(
                           "select-none rounded border px-2 py-0.5 text-[11px] cursor-pointer transition-colors duration-150",
@@ -343,72 +345,74 @@ export function ClimateControlsPanel({ layerMeta, status, error }: ClimateContro
                 </div>
 
                 {/* Crop chips */}
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                    {t("topsMap.climateCropTitle")}
-                  </span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
-                    {sortedCrops.map((crop) => {
-                      const active = cropIds.includes(crop.id);
-                      const isLinen = crop.kind === "linen";
-                      const label = cropLabel(crop.id, t as never);
-                      const tooltip = `${label} \u2014 ${formatTempRange(crop)}${
-                        isLinen
-                          ? ` (${(t as (k: string) => string)("topsMap.climateCropLinenTag")})`
-                          : ""
-                      }`;
-                      return (
+                {tempVariant === "tempcrop" && (
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {t("topsMap.climateCropTitle")}
+                    </span>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1">
+                      {sortedCrops.map((crop) => {
+                        const active = cropIds.includes(crop.id);
+                        const isLinen = crop.kind === "linen";
+                        const label = cropLabel(crop.id, t as never);
+                        const tooltip = `${label} \u2014 ${formatTempRange(crop)}${
+                          isLinen
+                            ? ` (${(t as (k: string) => string)("topsMap.climateCropLinenTag")})`
+                            : ""
+                        }`;
+                        return (
+                          <button
+                            key={crop.id}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              toggleCrop(crop.id);
+                            }}
+                            title={tooltip}
+                            className={cn(
+                              "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer transition-colors duration-150",
+                              active && isLinen
+                                ? "bg-sky-600 text-white border-sky-700 hover:bg-sky-700"
+                                : active
+                                  ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
+                                  : "bg-background hover:bg-muted",
+                              isLinen && !active && "italic",
+                            )}
+                          >
+                            {label}
+                            {isLinen && (
+                              <span className="ml-1 text-[9px] opacity-70 align-middle">
+                                {t("topsMap.climateCropLinenTag")}
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                      {cropActive && (
                         <button
-                          key={crop.id}
                           type="button"
-                          aria-pressed={active}
                           onClick={(ev) => {
                             ev.stopPropagation();
-                            toggleCrop(crop.id);
+                            clearCropIds();
                           }}
-                          title={tooltip}
-                          className={cn(
-                            "select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer transition-colors duration-150",
-                            active && isLinen
-                              ? "bg-sky-600 text-white border-sky-700 hover:bg-sky-700"
-                              : active
-                                ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700"
-                                : "bg-background hover:bg-muted",
-                            isLinen && !active && "italic",
-                          )}
+                          className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
                         >
-                          {label}
-                          {isLinen && (
-                            <span className="ml-1 text-[9px] opacity-70 align-middle">
-                              {t("topsMap.climateCropLinenTag")}
-                            </span>
-                          )}
+                          {t("topsMap.climateClearPreset")}
                         </button>
-                      );
-                    })}
+                      )}
+                    </div>
                     {cropActive && (
-                      <button
-                        type="button"
-                        onClick={(ev) => {
-                          ev.stopPropagation();
-                          clearCropIds();
-                        }}
-                        className="select-none rounded-full border px-2 py-0.5 text-xs cursor-pointer text-muted-foreground hover:bg-muted"
-                      >
-                        {t("topsMap.climateClearPreset")}
-                      </button>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
+                        {cropIds
+                          .map((id) => sortedCrops.find((c) => c.id === id))
+                          .filter((c): c is CropTolerance => c != null)
+                          .map((c) => `${cropLabel(c.id, t as never)}: ${formatTempRange(c)}`)
+                          .join("  \u2022  ")}
+                      </span>
                     )}
                   </div>
-                  {cropActive && (
-                    <span className="text-[10px] text-muted-foreground tabular-nums">
-                      {cropIds
-                        .map((id) => sortedCrops.find((c) => c.id === id))
-                        .filter((c): c is CropTolerance => c != null)
-                        .map((c) => `${cropLabel(c.id, t as never)}: ${formatTempRange(c)}`)
-                        .join("  \u2022  ")}
-                    </span>
-                  )}
-                </div>
+                )}
 
                 {/* Custom range */}
                 <div className="flex flex-col gap-1">

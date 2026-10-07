@@ -17,7 +17,13 @@ export type ClimateLayerKind =
 /** UI-level grouping. "temperature" expands to one of the three temp* layers. */
 export type ClimateSubToggle = "off" | "temperature" | "rainfall" | "geoactivity";
 
-export type ClimateTempVariant = "tempavg" | "tempmin" | "tempmax";
+/** Which temperature view the user has selected.
+ *  - "tempavg"/"tempmin"/"tempmax" each map 1:1 to a bundled raster layer.
+ *  - "tempcrop" is a *virtual* variant with no raster of its own: it is the
+ *    crop-tolerance filter view. It renders on top of a real base raster
+ *    while the crop mask AND-checks `tempmin` + `tempmax` internally, so it
+ *    must never be used directly as a `ClimateLayerKind`. */
+export type ClimateTempVariant = "tempavg" | "tempmin" | "tempmax" | "tempcrop";
 
 /** Threshold mode for the Temperature panel.
  *  - "none":   show the raw temperature gradient (no masking).

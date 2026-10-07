@@ -96,6 +96,10 @@ function resolveActiveKind(
     if (subToggle === "off") return null;
     if (subToggle === "rainfall") return "rainfall";
     if (subToggle === "geoactivity") return "geoactivity";
+    // "tempcrop" is a virtual filter view with no raster of its own. Render it
+    // on top of the coldest-month layer (cold tolerance is usually the binding
+    // constraint); the crop mask still AND-checks tempmin + tempmax internally.
+    if (tempVariant === "tempcrop") return "tempmin";
     return tempVariant;
 }
 
@@ -306,11 +310,16 @@ export function useClimateOverlay({
         };
     }, [activeKind]);
 
-    const op = useMemo(
-        () =>
-            activeKind ? resolveOp(thresholdMode, cropIds, customMin, customMax) : null,
-        [activeKind, thresholdMode, cropIds, customMin, customMax],
-    );
+    const op = useMemo(() => {
+        if (!activeKind) return null;
+        // Crop masking is exclusive to the dedicated "crop" variant tab.
+        // The crop selection persists in the store while the user browses
+        // other temperature variants, but we don't render its mask there —
+        // otherwise the green crop overlay would leak onto the raw
+        // avg/min/max gradients.
+        if (thresholdMode === "crop" && tempVariant !== "tempcrop") return null;
+        return resolveOp(thresholdMode, cropIds, customMin, customMax);
+    }, [activeKind, tempVariant, thresholdMode, cropIds, customMin, customMax]);
 
     // Debounce custom-mode re-renders so dragging the dual slider doesn't
     // re-encode every frame. Pass-through (color asset) and discrete
