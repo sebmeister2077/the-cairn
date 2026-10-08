@@ -15,6 +15,8 @@ import { useTranslation } from "@/lib/i18n";
 interface TLLegendButtonProps {
   /** When true, also show the light-blue "Your new TLs" entry. */
   showContributeColors?: boolean;
+  /** When true, also show the boat-friendly translocator entry (TOPS map). */
+  showBoatFriendlyColor?: boolean;
   /** Optional extra classes for the trigger button (positioning, etc.). */
   className?: string;
 }
@@ -32,13 +34,19 @@ interface LegendEntry {
 const SERVER_COLOR = "rgb(139, 92, 246)"; // violet-500
 const USER_COLOR = "rgb(37, 99, 235)"; // blue-600
 const NEW_COLOR = "rgb(14, 165, 233)"; // sky-500
+// Mirrors the boat-friendly TL tint in TOPSMapViewPage.tsx (`#0ea5e9`).
+const BOAT_COLOR = "rgb(14, 165, 233)"; // sky-500
 // Mirrors `hoverLineColor` in MapViewer.tsx — used to outline emphasised
 // segments (favourite groupings, recently-added emphasis).
 const HIGHLIGHT_COLOR = "rgb(243, 232, 255)"; // violet-100
 // Mirrors the emerald route stroke in MapViewer.tsx route overlay.
 const ROUTE_COLOR = "rgb(16, 185, 129)"; // emerald-500
 
-export function TLLegendButton({ showContributeColors = false, className }: TLLegendButtonProps) {
+export function TLLegendButton({
+  showContributeColors = false,
+  showBoatFriendlyColor = false,
+  className,
+}: TLLegendButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const buttonRef = React.useRef<HTMLButtonElement>(null);
@@ -99,6 +107,15 @@ export function TLLegendButton({ showContributeColors = false, className }: TLLe
       title: t("topsMap.translocatorLegend.routeTitle"),
       description: t("topsMap.translocatorLegend.routeDescription"),
     },
+    ...(showBoatFriendlyColor
+      ? [
+          {
+            color: BOAT_COLOR,
+            title: t("topsMap.translocatorLegend.boatFriendlyTitle"),
+            description: t("topsMap.translocatorLegend.boatFriendlyDescription"),
+          },
+        ]
+      : []),
     ...(showContributeColors
       ? [
           {

@@ -2282,6 +2282,7 @@ export function TOPSMapViewPage() {
               alt="TOPS global server map"
               height={isFullscreen ? "calc(100vh - 3rem)" : undefined}
               showTLLegend={showTranslocators}
+              tlLegendShowBoatFriendlyColor
               showFullscreenControl
               starfield={starfieldEnabled}
               overlaySegments={finalOverlaySegments}

@@ -43,6 +43,31 @@ import type { SailboatTL, SailboatRouteFailure } from "@/lib/sailboat/sailboat-r
 
 type TFn = ReturnType<typeof useTranslation>["t"];
 
+/**
+ * Non-linear land-penalty scale. Most routes only need a gentle nudge away
+ * from terrain (×1.1–×2), so the low end gets fine 0.1 steps while the rarely
+ * used high end jumps in bigger increments. Penalties above ×10 are so slow
+ * they're not practical, so that's the cap. The slider indexes into this list,
+ * which gives small values plenty of travel without a cramped linear scale.
+ */
+const LAND_PENALTY_STEPS = [
+  1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 4, 5, 6, 8, 10,
+] as const;
+
+/** Snap an arbitrary penalty to the index of the nearest scale step. */
+function nearestLandPenaltyIndex(value: number): number {
+  let best = 0;
+  let bestDist = Infinity;
+  for (let i = 0; i < LAND_PENALTY_STEPS.length; i++) {
+    const dist = Math.abs(LAND_PENALTY_STEPS[i] - value);
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = i;
+    }
+  }
+  return best;
+}
+
 function failureMessage(reason: SailboatRouteFailure | undefined, t: TFn): string {
   switch (reason) {
     case "no_data_at_start":
@@ -428,11 +453,16 @@ export function SailboatRoutePlannerPanel({
                   </span>
                 </Label>
                 <Slider
-                  min={1}
-                  max={30}
+                  min={0}
+                  max={LAND_PENALTY_STEPS.length - 1}
                   step={1}
-                  value={landPenalty}
-                  onValueChange={(v) => dispatch(setSailboatLandPenalty(v))}
+                  value={nearestLandPenaltyIndex(landPenalty)}
+                  snapMarkers={[1.5, 2, 5].map((v) => ({
+                    value: nearestLandPenaltyIndex(v),
+                  }))}
+                  onValueChange={(i) =>
+                    dispatch(setSailboatLandPenalty(LAND_PENALTY_STEPS[i]))
+                  }
                 />
                 <p className="text-[10px] text-muted-foreground">
                   {t("sailboatPlanner.landPenaltyHelp")}

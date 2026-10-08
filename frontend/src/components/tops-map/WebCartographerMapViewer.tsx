@@ -133,6 +133,8 @@ interface WebCartographerMapViewerProps {
   showFullscreenControl?: boolean;
   showTLLegend?: boolean;
   tlLegendShowContributeColors?: boolean;
+  /** Show the boat-friendly translocator entry in the TL legend (TOPS map). */
+  tlLegendShowBoatFriendlyColor?: boolean;
   toolbarStart?: React.ReactNode;
   legend?: React.ReactNode;
 
@@ -323,6 +325,7 @@ export function WebCartographerMapViewer({
   showFullscreenControl = false,
   showTLLegend = false,
   tlLegendShowContributeColors = false,
+  tlLegendShowBoatFriendlyColor = false,
   toolbarStart,
   legend,
   overlaySegments,
@@ -2621,7 +2624,10 @@ export function WebCartographerMapViewer({
             aria-hidden={!showTLLegend}
           >
             <div className="overflow-hidden min-w-0">
-              <TLLegendButton showContributeColors={tlLegendShowContributeColors} />
+              <TLLegendButton
+                showContributeColors={tlLegendShowContributeColors}
+                showBoatFriendlyColor={tlLegendShowBoatFriendlyColor}
+              />
             </div>
           </div>
         </div>

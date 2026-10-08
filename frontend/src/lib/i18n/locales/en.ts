@@ -1147,7 +1147,7 @@ export const en = {
         landPenalty: "Land penalty",
         landPenaltyValue: "×{value}",
         landPenaltyHelp:
-            "Cost multiplier for crossing land/tunnels relative to water (×1). Higher avoids terrain more aggressively.",
+            "Cost multiplier for crossing land/tunnels relative to water (×1). The low end has fine ×0.1 steps so you can nudge gently (×1.1–×2) for routes over more terrain without a big detour; higher avoids land harder. Capped at ×10 — beyond that the search is too slow to be useful.",
         tlHopCost: "Boat TL hop cost",
         tlHopCostValue: "{value} blocks",
         tlHopCostHelp:
@@ -1706,6 +1706,9 @@ export const en = {
             newTitle: "Your new TLs",
             newDescription:
                 "New translocators from your current contribution that aren't on the map yet. Only visible while you're working on the Contribute TLs page.",
+            boatFriendlyTitle: "Boat-friendly TL",
+            boatFriendlyDescription:
+                "Translocators an admin marked as boat-friendly. The Sailboat route planner can route water journeys through these, and they're always shown individually (not collapsed by the radius filter).",
         },
         groupingsDrawer: {
             title: "Favorite TL groupings",
