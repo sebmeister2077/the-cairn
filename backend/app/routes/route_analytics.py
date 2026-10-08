@@ -290,7 +290,7 @@ def _coerce_settings(raw: Any) -> Dict[str, Any]:
         val = raw[key]
         if key == "elk_friendly_only":
             out[key] = bool(val)
-        elif key == "rendezvous_objective":
+        elif key in ("rendezvous_objective", "search_detail"):
             if isinstance(val, str) and len(val) <= 32:
                 out[key] = _LABEL_STRIP_RE.sub("", val).strip()[:32]
         else:

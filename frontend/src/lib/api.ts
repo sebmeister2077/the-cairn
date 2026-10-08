@@ -4493,7 +4493,7 @@ export interface RouteAnalyticsSaveResponse {
 }
 
 export type RouteEndpointSource = "map-click" | "landmark" | "paste" | "favorite" | "url";
-export type RoutePlannerModeKind = "route" | "rendezvous";
+export type RoutePlannerModeKind = "route" | "rendezvous" | "sailboat";
 
 export interface RouteAnalyticsPlanPayload {
     mode: RoutePlannerModeKind;
@@ -4657,6 +4657,7 @@ export interface RoutePlannerSummary {
     distinct_identities: number;
     route_plans: number;
     rendezvous_plans: number;
+    sailboat_plans: number;
     avg_detour_ratio: number | null;
 }
 
@@ -4664,6 +4665,7 @@ export interface RoutePlannerTimelineBucket {
     bucket: string;
     plans: number;
     rendezvous_plans: number;
+    sailboat_plans: number;
 }
 
 export interface RoutePlannerSourceRow {

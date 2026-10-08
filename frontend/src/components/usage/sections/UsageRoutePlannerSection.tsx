@@ -20,6 +20,9 @@ const SETTING_LABELS: Record<string, string> = {
   number_of_routes: "Alternatives",
   elk_friendly_only: "Elk-friendly only",
   rendezvous_objective: "Rendezvous objective",
+  land_penalty: "Land penalty (sailboat)",
+  tl_hop_cost: "TL hop cost (sailboat)",
+  search_detail: "Search detail (sailboat)",
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -46,8 +49,13 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
   const timelineSeries = useMemo(() => {
     const rows: Array<{ bucket: string; series: string; count: number }> = [];
     for (const b of q.data?.timeline ?? []) {
-      rows.push({ bucket: b.bucket, series: "route", count: b.plans - b.rendezvous_plans });
+      rows.push({
+        bucket: b.bucket,
+        series: "route",
+        count: b.plans - b.rendezvous_plans - b.sailboat_plans,
+      });
       rows.push({ bucket: b.bucket, series: "rendezvous", count: b.rendezvous_plans });
+      rows.push({ bucket: b.bucket, series: "sailboat", count: b.sailboat_plans });
     }
     return rows;
   }, [q.data?.timeline]);
@@ -77,11 +85,11 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
             <StatCard
               label="Completed plans"
               value={q.data.summary.total_plans.toLocaleString()}
-              hint="Route + rendezvous computations (24h soft-dedup per identity)."
+              hint="Route + rendezvous + sailboat computations (24h soft-dedup per identity)."
             />
             <StatCard
-              label="Route / rendezvous"
-              value={`${q.data.summary.route_plans.toLocaleString()} / ${q.data.summary.rendezvous_plans.toLocaleString()}`}
+              label="Route / rendezvous / sailboat"
+              value={`${q.data.summary.route_plans.toLocaleString()} / ${q.data.summary.rendezvous_plans.toLocaleString()} / ${q.data.summary.sailboat_plans.toLocaleString()}`}
               hint="Split of completed plans by planner mode."
             />
             <StatCard
@@ -100,7 +108,7 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
             <CardHeader>
               <CardTitle>Plans over time</CardTitle>
               <CardDescription>
-                Completed route vs rendezvous computations per {granularity}.
+                Completed route vs rendezvous vs sailboat computations per {granularity}.
               </CardDescription>
             </CardHeader>
             <CardContent>

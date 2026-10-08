@@ -40,7 +40,7 @@ logger = logging.getLogger("app.planned_routes")
 DEDUP_WINDOW_HOURS = 24
 
 VALID_SOURCES = {"map-click", "landmark", "paste", "favorite", "url"}
-VALID_MODES = {"route", "rendezvous"}
+VALID_MODES = {"route", "rendezvous", "sailboat"}
 
 # Settings keys we track deviations for (must match the client payload).
 SETTING_KEYS = (
@@ -50,6 +50,10 @@ SETTING_KEYS = (
     "number_of_routes",
     "elk_friendly_only",
     "rendezvous_objective",
+    # Sailboat-planner cost knobs (mode == 'sailboat').
+    "land_penalty",
+    "tl_hop_cost",
+    "search_detail",
 )
 
 # Re-exported so callers don't need to import saved_routes_db directly.
@@ -240,6 +244,7 @@ def summary(start: datetime, end: datetime) -> Dict[str, Any]:
             "distinct_identities": 0,
             "route_plans": 0,
             "rendezvous_plans": 0,
+            "sailboat_plans": 0,
             "avg_detour_ratio": None,
         }
     with db.get_conn() as conn:
@@ -254,6 +259,8 @@ def summary(start: datetime, end: datetime) -> Dict[str, Any]:
                             AS route_plans,
                         COALESCE(SUM(plan_count) FILTER (WHERE mode = 'rendezvous'), 0)::bigint
                             AS rendezvous_plans,
+                        COALESCE(SUM(plan_count) FILTER (WHERE mode = 'sailboat'), 0)::bigint
+                            AS sailboat_plans,
                         AVG(CASE WHEN straight_line_blocks > 0
                                  THEN walk_blocks / straight_line_blocks
                                  ELSE NULL END)::float AS avg_detour_ratio
@@ -261,14 +268,15 @@ def summary(start: datetime, end: datetime) -> Dict[str, Any]:
                      WHERE {_window_clause()}""",
                 (start, end),
             )
-            row = cur.fetchone() or (0, 0, 0, 0, 0, None)
+            row = cur.fetchone() or (0, 0, 0, 0, 0, 0, None)
     return {
         "total_plans": int(row[0] or 0),
         "distinct_routes": int(row[1] or 0),
         "distinct_identities": int(row[2] or 0),
         "route_plans": int(row[3] or 0),
         "rendezvous_plans": int(row[4] or 0),
-        "avg_detour_ratio": float(row[5]) if row[5] is not None else None,
+        "sailboat_plans": int(row[5] or 0),
+        "avg_detour_ratio": float(row[6]) if row[6] is not None else None,
     }
 
 
@@ -284,7 +292,9 @@ def timeline(
                 f"""SELECT date_trunc(%s, last_planned_at) AS bucket,
                           COALESCE(SUM(plan_count), 0)::bigint AS plans,
                           COALESCE(SUM(plan_count) FILTER (WHERE mode = 'rendezvous'),
-                                   0)::bigint AS rendezvous_plans
+                                   0)::bigint AS rendezvous_plans,
+                          COALESCE(SUM(plan_count) FILTER (WHERE mode = 'sailboat'),
+                                   0)::bigint AS sailboat_plans
                      FROM planned_routes
                     WHERE {_window_clause()}
                  GROUP BY bucket
@@ -297,6 +307,7 @@ def timeline(
             "bucket": r[0].astimezone(timezone.utc).isoformat(),
             "plans": int(r[1]),
             "rendezvous_plans": int(r[2]),
+            "sailboat_plans": int(r[3]),
         }
         for r in rows
     ]
