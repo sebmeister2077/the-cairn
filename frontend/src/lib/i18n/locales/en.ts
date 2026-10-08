@@ -1135,6 +1135,24 @@ export const en = {
         debugTiles: "Debug: outline tiles",
         debugTilesHint:
             "Outlines each map tile the water detection reads, with its zoom/coords.",
+        settings: "Settings",
+        settingsSummary: "Land ×{landPenalty} · TL hop {tlHopCost}",
+        landPenalty: "Land penalty",
+        landPenaltyValue: "×{value}",
+        landPenaltyHelp:
+            "Cost multiplier for crossing land/tunnels relative to water (×1). Higher avoids terrain more aggressively.",
+        tlHopCost: "Boat TL hop cost",
+        tlHopCostValue: "{value} blocks",
+        tlHopCostHelp:
+            "Extra cost (in block-equivalents) added for taking a boat-friendly translocator.",
+        maxTiles: "Max tiles",
+        maxTilesValue: "{value}",
+        maxTilesHelp:
+            "Search budget: the most map tiles (256×256 blocks each) the planner will load before giving up. Raise it to reach farther destinations; lower it for faster, more local searches.",
+        maxVisited: "Max blocks searched",
+        maxVisitedValue: "{value}M",
+        maxVisitedHelp:
+            "Search budget: the most water/land blocks the planner will expand before giving up. Raise it for long or winding routes; lower it to cap runtime and memory.",
     },
     routePlanner: {
         panelAriaLabel: "Route planner",

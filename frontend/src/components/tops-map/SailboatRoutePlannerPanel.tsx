@@ -1,9 +1,21 @@
 import { useCallback, useState } from "react";
-import { Crosshair, Loader2, MapPin, Sailboat, Trash2, ArrowLeftRight, X, Ship } from "lucide-react";
+import {
+    Crosshair,
+    Loader2,
+    MapPin,
+    Sailboat,
+    Trash2,
+    ArrowLeftRight,
+    X,
+    Ship,
+    Settings2,
+    ChevronDown,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -14,8 +26,12 @@ import {
     clearSailboatRoute,
     setSailboatDebugTiles,
     setSailboatFrom,
+    setSailboatLandPenalty,
+    setSailboatMaxTiles,
+    setSailboatMaxVisited,
     setSailboatOpen,
     setSailboatPickMode,
+    setSailboatTlHopCost,
     setSailboatTo,
     swapSailboatEndpoints,
     type SailboatPickMode,
@@ -153,8 +169,12 @@ export function SailboatRoutePlannerPanel({ baseUrl, ext, boatTLs }: SailboatRou
     const isComputing = useAppSelector((s) => s.sailboatRoute.isComputing);
     const progressVisited = useAppSelector((s) => s.sailboatRoute.progressVisited);
     const error = useAppSelector((s) => s.sailboatRoute.error);
-    const isAdmin = useAppSelector((s) => s.auth.isAdmin);
     const debugTiles = useAppSelector((s) => s.sailboatRoute.debugTiles);
+    const landPenalty = useAppSelector((s) => s.sailboatRoute.landPenalty);
+    const tlHopCost = useAppSelector((s) => s.sailboatRoute.tlHopCost);
+    const maxTiles = useAppSelector((s) => s.sailboatRoute.maxTiles);
+    const maxVisited = useAppSelector((s) => s.sailboatRoute.maxVisited);
+    const [settingsOpen, setSettingsOpen] = useState(false);
 
     const { compute, cancel } = useSailboatRoute({ baseUrl, ext, boatTLs });
 
@@ -314,26 +334,142 @@ export function SailboatRoutePlannerPanel({ baseUrl, ext, boatTLs }: SailboatRou
                     </div>
                 )}
 
-                {isAdmin && (
-                    <div className="mt-1 space-y-1.5 rounded-md border border-dashed border-muted-foreground/30 p-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                            <Label
-                                htmlFor="sailboat-debug-tiles"
-                                className="text-xs font-medium"
-                            >
-                                {t("sailboatPlanner.debugTiles")}
-                            </Label>
-                            <Switch
-                                id="sailboat-debug-tiles"
-                                checked={debugTiles}
-                                onCheckedChange={(v) => dispatch(setSailboatDebugTiles(v))}
-                            />
+                {/* Cost-model + search-budget settings (collapsible, mirrors
+                    the route planner). Sliders dispatch immediately; changing
+                    any clears the stale route via the slice. */}
+                <div className="flex items-center justify-between pt-1">
+                    <span className="text-xs text-muted-foreground">
+                        {t("sailboatPlanner.settingsSummary", {
+                            landPenalty,
+                            tlHopCost,
+                        })}
+                    </span>
+                    <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 gap-1 px-2 text-xs"
+                        onClick={() => setSettingsOpen((v) => !v)}
+                        aria-expanded={settingsOpen}
+                    >
+                        <Settings2 className="h-3 w-3" /> {t("sailboatPlanner.settings")}
+                        <ChevronDown
+                            className={cn(
+                                "h-3 w-3 transition-transform duration-200",
+                                settingsOpen && "rotate-180",
+                            )}
+                        />
+                    </Button>
+                </div>
+
+                <div
+                    data-open={settingsOpen}
+                    className={cn(
+                        "grid transition-[grid-template-rows] duration-200 ease-out",
+                        settingsOpen ? "grid-rows-[1fr]" : "mt-0! grid-rows-[0fr]",
+                    )}
+                    aria-hidden={!settingsOpen}
+                >
+                    <div className="overflow-hidden">
+                        <div className="space-y-3 rounded-md border bg-muted/30 p-3">
+                            <div className="space-y-1">
+                                <Label className="flex items-center justify-between text-xs">
+                                    <span>{t("sailboatPlanner.landPenalty")}</span>
+                                    <span className="font-mono text-muted-foreground">
+                                        {t("sailboatPlanner.landPenaltyValue", {
+                                            value: landPenalty,
+                                        })}
+                                    </span>
+                                </Label>
+                                <Slider
+                                    min={1}
+                                    max={30}
+                                    step={1}
+                                    value={landPenalty}
+                                    onValueChange={(v) => dispatch(setSailboatLandPenalty(v))}
+                                />
+                                <p className="text-[10px] text-muted-foreground">
+                                    {t("sailboatPlanner.landPenaltyHelp")}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="flex items-center justify-between text-xs">
+                                    <span>{t("sailboatPlanner.tlHopCost")}</span>
+                                    <span className="font-mono text-muted-foreground">
+                                        {t("sailboatPlanner.tlHopCostValue", {
+                                            value: tlHopCost,
+                                        })}
+                                    </span>
+                                </Label>
+                                <Slider
+                                    min={0}
+                                    max={100}
+                                    step={5}
+                                    value={tlHopCost}
+                                    onValueChange={(v) => dispatch(setSailboatTlHopCost(v))}
+                                />
+                                <p className="text-[10px] text-muted-foreground">
+                                    {t("sailboatPlanner.tlHopCostHelp")}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="flex items-center justify-between text-xs">
+                                    <span>{t("sailboatPlanner.maxTiles")}</span>
+                                    <span className="font-mono text-muted-foreground">
+                                        {t("sailboatPlanner.maxTilesValue", {
+                                            value: maxTiles,
+                                        })}
+                                    </span>
+                                </Label>
+                                <Slider
+                                    min={50}
+                                    max={1000}
+                                    step={50}
+                                    value={maxTiles}
+                                    onValueChange={(v) => dispatch(setSailboatMaxTiles(v))}
+                                />
+                                <p className="text-[10px] text-muted-foreground">
+                                    {t("sailboatPlanner.maxTilesHelp")}
+                                </p>
+                            </div>
+                            <div className="space-y-1">
+                                <Label className="flex items-center justify-between text-xs">
+                                    <span>{t("sailboatPlanner.maxVisited")}</span>
+                                    <span className="font-mono text-muted-foreground">
+                                        {t("sailboatPlanner.maxVisitedValue", {
+                                            value: (maxVisited / 1_000_000).toFixed(1),
+                                        })}
+                                    </span>
+                                </Label>
+                                <Slider
+                                    min={500_000}
+                                    max={10_000_000}
+                                    step={500_000}
+                                    value={maxVisited}
+                                    onValueChange={(v) => dispatch(setSailboatMaxVisited(v))}
+                                />
+                                <p className="text-[10px] text-muted-foreground">
+                                    {t("sailboatPlanner.maxVisitedHelp")}
+                                </p>
+                            </div>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
-                            {t("sailboatPlanner.debugTilesHint")}
-                        </p>
                     </div>
-                )}
+                </div>
+
+                <div className="mt-1 space-y-1.5 rounded-md border border-dashed border-muted-foreground/30 p-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="sailboat-debug-tiles" className="text-xs font-medium">
+                            {t("sailboatPlanner.debugTiles")}
+                        </Label>
+                        <Switch
+                            id="sailboat-debug-tiles"
+                            checked={debugTiles}
+                            onCheckedChange={(v) => dispatch(setSailboatDebugTiles(v))}
+                        />
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">
+                        {t("sailboatPlanner.debugTilesHint")}
+                    </p>
+                </div>
             </div>
         </aside>
     );

@@ -13,7 +13,7 @@ import {
     type SailboatRouteResult,
     type SailboatTL,
 } from "@/lib/sailboat/sailboat-routing";
-import { createProxyTileLoader } from "@/lib/sailboat/tile-loader";
+import { createProxyTileSource } from "@/lib/sailboat/tile-loader";
 import type { WaterColor } from "@/lib/sailboat/water-mask";
 
 export interface SailboatWorkerRequest {
@@ -43,7 +43,7 @@ self.onmessage = async (ev: MessageEvent<SailboatWorkerRequest>) => {
     const req = ev.data;
     const post = (msg: SailboatWorkerResponse) => (self as unknown as Worker).postMessage(msg);
     try {
-        const loader = createProxyTileLoader({
+        const source = createProxyTileSource({
             proxyBase: req.proxyBase,
             baseUrl: req.baseUrl,
             ext: req.ext,
@@ -56,7 +56,7 @@ self.onmessage = async (ev: MessageEvent<SailboatWorkerRequest>) => {
             req.start,
             req.dest,
             req.boatTLs,
-            loader,
+            source,
             options,
             (p) => post({ kind: "progress", requestId: req.requestId, visited: p.visited, tilesLoaded: p.tilesLoaded, tiles: p.tiles }),
         );

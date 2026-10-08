@@ -100,3 +100,79 @@ def test_tile_proxy_rejects_bad_base_url():
     with pytest.raises(HTTPException) as exc:
         wc.fetch_webcartographer_tile(base_url="ftp://nope", z=9, x=1, y=1, ext="png")
     assert exc.value.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# Batch tile proxy
+# ---------------------------------------------------------------------------
+
+
+def _batch_request(**overrides):
+    params = {
+        "base_url": "https://example.com",
+        "z": 9,
+        "ext": "png",
+        "coords": [(1, 1), (2, 2)],
+    }
+    params.update(overrides)
+    return wc._TileBatchRequest(**params)
+
+
+def test_tile_batch_rejects_bad_extension():
+    with pytest.raises(HTTPException) as exc:
+        wc.fetch_webcartographer_tiles(_batch_request(ext="gif"))
+    assert exc.value.status_code == 400
+
+
+def test_tile_batch_rejects_out_of_range_coord():
+    with pytest.raises(HTTPException) as exc:
+        wc.fetch_webcartographer_tiles(_batch_request(coords=[(1, 1), (99999, 0)]))
+    assert exc.value.status_code == 400
+
+
+def test_tile_batch_encodes_found_missing_and_error(monkeypatch):
+    # Map each tile coord to a canned upstream behaviour.
+    def _fake_fetch(base, z, x, y, ext):
+        if (x, y) == (1, 1):
+            return b"\x89PNG-bytes", None, "image/png"
+        if (x, y) == (2, 2):
+            raise HTTPException(status_code=404, detail="tile not found")
+        raise HTTPException(status_code=502, detail="upstream unreachable")
+
+    monkeypatch.setattr(wc, "_fetch_tile_raw", _fake_fetch)
+
+    resp = wc.fetch_webcartographer_tiles(
+        _batch_request(coords=[(1, 1), (2, 2), (3, 3)])
+    )
+    payload = json.loads(bytes(resp.body))
+    by_coord = {(t["x"], t["y"]): t for t in payload["tiles"]}
+
+    # Found tile → base64 of the raw bytes.
+    import base64 as _b64
+
+    assert by_coord[(1, 1)]["found"] is True
+    assert _b64.b64decode(by_coord[(1, 1)]["data"]) == b"\x89PNG-bytes"
+    # 404 → not found, no error flag (genuinely empty pyramid cell).
+    assert by_coord[(2, 2)]["found"] is False
+    assert "error" not in by_coord[(2, 2)]
+    # Other failure → error flag so the client can retry individually.
+    assert by_coord[(3, 3)]["found"] is False
+    assert by_coord[(3, 3)]["error"] is True
+
+
+def test_tile_batch_dedupes_coords(monkeypatch):
+    calls = []
+
+    def _fake_fetch(base, z, x, y, ext):
+        calls.append((x, y))
+        return b"x", None, "image/png"
+
+    monkeypatch.setattr(wc, "_fetch_tile_raw", _fake_fetch)
+
+    resp = wc.fetch_webcartographer_tiles(
+        _batch_request(coords=[(1, 1), (1, 1), (2, 2)])
+    )
+    payload = json.loads(bytes(resp.body))
+    # Duplicate (1,1) fetched once; two distinct tiles returned.
+    assert sorted(calls) == [(1, 1), (2, 2)]
+    assert len(payload["tiles"]) == 2

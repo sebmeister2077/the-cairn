@@ -7,7 +7,10 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { EndpointPick } from "./routePlanner";
-import type { SailboatRouteResult } from "@/lib/sailboat/sailboat-routing";
+import {
+    DEFAULT_SAILBOAT_OPTIONS,
+    type SailboatRouteResult,
+} from "@/lib/sailboat/sailboat-routing";
 
 /** Which slot a map-click writes into while the sailboat planner is open. */
 export type SailboatPickMode = null | "from" | "to";
@@ -25,13 +28,25 @@ export interface SailboatRouteState {
     /** Admin-only: when true, clicking a TL on the map toggles its
      *  boat-friendly state (instead of normal TL selection). */
     boatTLEditMode: boolean;
-    /** Admin-only: outline WebCartographer tiles in the viewer so the admin
-     *  can see the tile grid the water detection samples. */
+    /** Outline WebCartographer tiles in the viewer so you can see the tile
+     *  grid the water detection samples (available to everyone). */
     debugTiles: boolean;
     /** Finest-level tile keys (`"cx_cy"`) the search has loaded so far.
-     *  Streamed from the worker; highlighted by the admin debug overlay so
-     *  the admin can watch which chunks are being scanned. */
+     *  Streamed from the worker; highlighted by the debug overlay so you can
+     *  watch which chunks are being scanned. */
     scannedTiles: string[];
+    /** User-configurable cost model. Cost multiplier for crossing a non-water
+     *  (terrain) block relative to water (×1). Higher = avoid land harder. */
+    landPenalty: number;
+    /** User-configurable cost model. Extra cost (in block-equivalents) added
+     *  for taking a boat-friendly translocator hop. */
+    tlHopCost: number;
+    /** User-configurable search budget. Max distinct map tiles the search may
+     *  load before giving up — bounds how far the planner reaches. */
+    maxTiles: number;
+    /** User-configurable search budget. Max settled blocks the search may
+     *  expand before giving up — bounds runtime/memory. */
+    maxVisited: number;
 }
 
 export const initialSailboatRouteState: SailboatRouteState = {
@@ -46,6 +61,10 @@ export const initialSailboatRouteState: SailboatRouteState = {
     boatTLEditMode: false,
     debugTiles: false,
     scannedTiles: [],
+    landPenalty: DEFAULT_SAILBOAT_OPTIONS.landPenalty,
+    tlHopCost: DEFAULT_SAILBOAT_OPTIONS.tlHopCost,
+    maxTiles: DEFAULT_SAILBOAT_OPTIONS.maxTiles,
+    maxVisited: DEFAULT_SAILBOAT_OPTIONS.maxVisited,
 };
 
 export const sailboatRouteSlice = createSlice({
@@ -105,6 +124,33 @@ export const sailboatRouteSlice = createSlice({
         setDebugTiles(state, action: PayloadAction<boolean>) {
             state.debugTiles = action.payload;
         },
+        setLandPenalty(state, action: PayloadAction<number>) {
+            // Clamp so a fat-fingered slider can't break the cost model; land
+            // must always cost at least as much as water (×1). Changing the
+            // cost model invalidates the cached route.
+            state.landPenalty = Math.max(1, Math.min(50, action.payload));
+            state.route = null;
+            state.error = null;
+        },
+        setTlHopCost(state, action: PayloadAction<number>) {
+            state.tlHopCost = Math.max(0, Math.min(500, action.payload));
+            state.route = null;
+            state.error = null;
+        },
+        setMaxTiles(state, action: PayloadAction<number>) {
+            // One tile = 256×256 blocks; bound the budget to a sane range.
+            state.maxTiles = Math.max(50, Math.min(2000, Math.round(action.payload)));
+            state.route = null;
+            state.error = null;
+        },
+        setMaxVisited(state, action: PayloadAction<number>) {
+            state.maxVisited = Math.max(
+                250_000,
+                Math.min(20_000_000, Math.round(action.payload)),
+            );
+            state.route = null;
+            state.error = null;
+        },
         clearSailboatRoute(state) {
             state.from = null;
             state.to = null;
@@ -131,5 +177,9 @@ export const {
     setError: setSailboatError,
     setBoatTLEditMode: setSailboatBoatTLEditMode,
     setDebugTiles: setSailboatDebugTiles,
+    setLandPenalty: setSailboatLandPenalty,
+    setTlHopCost: setSailboatTlHopCost,
+    setMaxTiles: setSailboatMaxTiles,
+    setMaxVisited: setSailboatMaxVisited,
     clearSailboatRoute,
 } = sailboatRouteSlice.actions;

@@ -46,7 +46,7 @@ export interface SailboatRouteOptions {
 export const DEFAULT_SAILBOAT_OPTIONS: SailboatRouteOptions = {
     maxTiles: 400,
     maxVisited: 3_000_000,
-    landPenalty: 15,
+    landPenalty: 10,
     tlHopCost: 20,
 };
 
@@ -87,6 +87,21 @@ export interface SailboatRouteResult {
  *  NOT null — null means "no data / impassable". */
 export type LoadTileMask = (cx: number, cy: number) => Promise<Uint8Array | null>;
 
+/** A tile's pyramid coordinate (finest level). */
+export interface TileCoord {
+    cx: number;
+    cy: number;
+}
+
+/** Bulk tile source. The engine prefetches a square block of tiles around each
+ *  search frontier and resolves them in one call so many HTTP round-trips can
+ *  collapse into a single batched request. The returned array is parallel to
+ *  `coords`; each entry is that tile's water mask, or null for a missing /
+ *  no-data tile. */
+export interface TileSource {
+    loadBatch(coords: ReadonlyArray<TileCoord>): Promise<Array<Uint8Array | null>>;
+}
+
 export interface SailboatProgress {
     visited: number;
     tilesLoaded: number;
@@ -117,6 +132,11 @@ class MinHeap {
 
     get size(): number {
         return this.cost.length;
+    }
+
+    /** Minimum cost on the heap, or Infinity when empty. */
+    topCost(): number {
+        return this.cost.length > 0 ? this.cost[0] : Infinity;
     }
 
     push(cost: number, node: number): void {
@@ -150,7 +170,7 @@ class MinHeap {
             n[0] = lastN;
             let i = 0;
             const len = c.length;
-            for (;;) {
+            for (; ;) {
                 const l = i * 2 + 1;
                 const r = l + 1;
                 let smallest = i;
@@ -183,6 +203,14 @@ const NEIGHBORS: Array<[number, number, number]> = [
     [-1, -1, SQRT2],
 ];
 
+/** Octile distance — the exact minimum cost of an 8-connected unit-grid path
+ *  (diagonal = √2). Used as the A* heuristic's all-water lower bound. */
+function octile(ax: number, az: number, bx: number, bz: number): number {
+    const dx = Math.abs(ax - bx);
+    const dz = Math.abs(az - bz);
+    return dx < dz ? SQRT2 * dx + (dz - dx) : SQRT2 * dz + (dx - dz);
+}
+
 /**
  * Compute a sailboat route. Prefers water, but will cross terrain (land /
  * tunnels / bridged canals) at a penalty so a route is still found when the
@@ -195,40 +223,47 @@ export async function findSailboatRoute(
     start: SailboatPoint,
     dest: SailboatPoint,
     boatTLs: SailboatTL[],
-    loadTileMask: LoadTileMask,
+    source: TileSource,
     options: SailboatRouteOptions = DEFAULT_SAILBOAT_OPTIONS,
     onProgress?: (p: SailboatProgress) => void,
 ): Promise<SailboatRouteResult> {
     const tiles = new Map<string, Uint8Array | null>();
-    const ensuredNbhd = new Set<number>();
+    const requested = new Set<string>();
+    const ensuredCenter = new Set<number>();
 
-    async function ensureTile(cx: number, cy: number): Promise<Uint8Array | null> {
-        if (cx < 0 || cy < 0) return null;
-        const k = `${cx}_${cy}`;
-        const hit = tiles.get(k);
-        if (hit !== undefined) return hit;
-        if (tiles.size >= options.maxTiles) return null; // budget exhausted
-        const mask = await loadTileMask(cx, cy);
-        tiles.set(k, mask);
-        // Invalidate the cellState tile cache so a previously-sampled "no
-        // data" result for this tile can't shadow the freshly-loaded mask.
+    // Prefetch a (2·PREFETCH_RADIUS+1)² block of tiles around each frontier
+    // tile in ONE batched request. Radius ≥ 1 guarantees every 8-neighbour of
+    // any pixel in the centre tile is resolvable; a larger radius trades a
+    // little over-fetch for far fewer HTTP round-trips (bulk loading).
+    const PREFETCH_RADIUS = 2;
+
+    async function ensureRegion(cx: number, cy: number): Promise<void> {
+        const ck = cy * 100000 + cx;
+        if (ensuredCenter.has(ck)) return;
+        ensuredCenter.add(ck);
+        const want: TileCoord[] = [];
+        for (let dy = -PREFETCH_RADIUS; dy <= PREFETCH_RADIUS; dy++) {
+            for (let dx = -PREFETCH_RADIUS; dx <= PREFETCH_RADIUS; dx++) {
+                const tx = cx + dx;
+                const ty = cy + dy;
+                if (tx < 0 || ty < 0) continue;
+                const key = `${tx}_${ty}`;
+                if (requested.has(key)) continue;
+                if (tiles.size + want.length >= options.maxTiles) break; // budget
+                requested.add(key);
+                want.push({ cx: tx, cy: ty });
+            }
+        }
+        if (want.length === 0) return;
+        const masks = await source.loadBatch(want);
+        for (let i = 0; i < want.length; i++) {
+            tiles.set(`${want[i].cx}_${want[i].cy}`, masks[i] ?? null);
+        }
+        // Invalidate the cellState tile cache so a previously-sampled "no data"
+        // result can't shadow a freshly-loaded mask.
         lastTileCx = -1;
         lastTileCy = -1;
         lastTileMask = null;
-        return mask;
-    }
-
-    /** Load the 3×3 tile block around (cx, cy) so every 8-neighbour of any
-     *  pixel in (cx, cy) is resolvable without further awaits. */
-    async function ensureNeighborhood(cx: number, cy: number): Promise<void> {
-        const nk = cy * 100000 + cx;
-        if (ensuredNbhd.has(nk)) return;
-        ensuredNbhd.add(nk);
-        for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                await ensureTile(cx + dx, cy + dy);
-            }
-        }
     }
 
     /** Cell classification: 0 = water, 1 = terrain (traversable at penalty),
@@ -262,16 +297,19 @@ export async function findSailboatRoute(
     const startKey = keyOf(sgx, sgz);
     const destKey = keyOf(dgx, dgz);
 
-    // Make sure the start/dest neighbourhoods are loaded before we classify.
-    await ensureNeighborhood(sgx >> 8, sgz >> 8);
-    await ensureNeighborhood(dgx >> 8, dgz >> 8);
+    // Make sure the start/dest regions are loaded before we classify.
+    await ensureRegion(sgx >> 8, sgz >> 8);
+    await ensureRegion(dgx >> 8, dgz >> 8);
     if (cellState(sgx, sgz) === 2) return emptyFailure("no_data_at_start", tiles.size);
     if (cellState(dgx, dgz) === 2) return emptyFailure("no_data_at_dest", tiles.size);
 
     // Build boat-TL portal edges between the two endpoint pixels. Endpoints
     // are used as-is (no snapping) — the walk legs on either side handle any
-    // short hop onto water.
+    // short hop onto water. We also collect the endpoint global coords for
+    // the A* heuristics so they can "see through" a TL shortcut.
     const portals = new Map<number, Array<{ to: number; id: string }>>();
+    const epX: number[] = [];
+    const epZ: number[] = [];
     for (const tl of boatTLs) {
         const a = worldToGlobalPixel(Math.round(tl.a.x), Math.round(tl.a.z));
         const b = worldToGlobalPixel(Math.round(tl.b.x), Math.round(tl.b.z));
@@ -280,36 +318,140 @@ export async function findSailboatRoute(
         if (aKey === bKey) continue;
         addPortal(portals, aKey, bKey, tl.id);
         addPortal(portals, bKey, aKey, tl.id);
+        epX.push(a.gx, b.gx);
+        epZ.push(a.gz, b.gz);
     }
 
-    // ── Dijkstra over water (×1) + terrain (×landPenalty) + TL portals ───────
-    const dist = new Map<number, number>();
-    const prev = new Map<number, number>();
-    const viaTL = new Set<number>();
-    const heap = new MinHeap();
-    dist.set(startKey, 0);
-    heap.push(0, startKey);
-    let visited = 0;
+    const tlHopCost = options.tlHopCost;
+    const K = epX.length; // 2 × number of boat-TLs
     const landPenalty = Math.max(1, options.landPenalty);
+
+    // ── A* heuristic (per target) ────────────────────────────────────────────
+    // Octile distance is the exact minimum cost of an all-water 8-connected
+    // path (water = ×1), so it's an admissible lower bound on the true cost
+    // (terrain only ever costs more). With boat-TLs the straight-line bound
+    // could overestimate (a TL teleports for a flat cost), so we precompute,
+    // over a tiny abstract graph (TL endpoints + target), the cheapest
+    // optimistic cost from each endpoint to the target and let the heuristic
+    // route "through" a TL when that's cheaper. This keeps h a true lower
+    // bound for any number of TL hops. We build one heuristic toward the
+    // destination (forward search) and one toward the start (backward search).
+    function makeHeuristic(tgx: number, tgz: number): (gx: number, gz: number) => number {
+        const bestFromEndpoint = new Array<number>(K).fill(Infinity);
+        if (K > 0) {
+            const TGT = K;
+            const adist = new Array<number>(K + 1).fill(Infinity);
+            const adone = new Array<boolean>(K + 1).fill(false);
+            adist[TGT] = 0;
+            const ax = (i: number) => (i === TGT ? tgx : epX[i]);
+            const az = (i: number) => (i === TGT ? tgz : epZ[i]);
+            for (let iter = 0; iter <= K; iter++) {
+                let u = -1;
+                let ud = Infinity;
+                for (let i = 0; i <= K; i++) {
+                    if (!adone[i] && adist[i] < ud) {
+                        ud = adist[i];
+                        u = i;
+                    }
+                }
+                if (u < 0) break;
+                adone[u] = true;
+                const ux = ax(u);
+                const uz = az(u);
+                for (let v = 0; v <= K; v++) {
+                    if (v === u) continue;
+                    let w = octile(ux, uz, ax(v), az(v));
+                    if (u < K && v < K && (u >> 1) === (v >> 1) && (u ^ v) === 1) {
+                        if (tlHopCost < w) w = tlHopCost;
+                    }
+                    const nd = adist[u] + w;
+                    if (nd < adist[v]) adist[v] = nd;
+                }
+            }
+            for (let i = 0; i < K; i++) bestFromEndpoint[i] = adist[i];
+        }
+        return (gx: number, gz: number): number => {
+            let h = octile(gx, gz, tgx, tgz);
+            for (let i = 0; i < K; i++) {
+                const c = octile(gx, gz, epX[i], epZ[i]) + bestFromEndpoint[i];
+                if (c < h) h = c;
+            }
+            return h;
+        };
+    }
+
+    const hToDest = makeHeuristic(dgx, dgz);
+    const hToStart = makeHeuristic(sgx, sgz);
+
+    // ── Bidirectional ("double") A* ──────────────────────────────────────────
+    // A forward search grows from the start toward the destination; a backward
+    // search grows from the destination toward the start (over the reverse
+    // graph). They meet in the middle, so each explores far fewer nodes than a
+    // single-ended search — and, crucially, the backward frontier crosses a
+    // short land/tunnel gap near the goal itself instead of forcing the forward
+    // search to first exhaust every cheaper patch of water around the start.
+    //
+    // Edge costs are asymmetric (a step costs by the cell it ENTERS: terrain
+    // ×landPenalty, water ×1). The forward search prices a step by the entered
+    // neighbour; the backward (reverse-graph) search prices it by the cell it
+    // leaves, which is exactly the entered cell of the corresponding forward
+    // edge. TL portals are symmetric (flat `tlHopCost`). `mu`/`meetNode` track
+    // the best complete path found through any node reached from both sides.
+    interface Dir {
+        g: Map<number, number>;
+        prev: Map<number, number>;
+        viaTL: Set<number>;
+        heap: MinHeap;
+        h: (gx: number, gz: number) => number;
+        forward: boolean;
+    }
+    const fwd: Dir = {
+        g: new Map(),
+        prev: new Map(),
+        viaTL: new Set(),
+        heap: new MinHeap(),
+        h: hToDest,
+        forward: true,
+    };
+    const bwd: Dir = {
+        g: new Map(),
+        prev: new Map(),
+        viaTL: new Set(),
+        heap: new MinHeap(),
+        h: hToStart,
+        forward: false,
+    };
+    fwd.g.set(startKey, 0);
+    fwd.heap.push(hToDest(sgx, sgz), startKey);
+    bwd.g.set(destKey, 0);
+    bwd.heap.push(hToStart(dgx, dgz), destKey);
+
+    let mu = Infinity;
+    let meetNode = -1;
+    if (startKey === destKey) {
+        mu = 0;
+        meetNode = startKey;
+    }
+    let visited = 0;
     let lastReportedTiles = -1;
 
-    while (heap.size > 0) {
-        const popped = heap.pop()!;
+    async function expand(dir: Dir, other: Dir): Promise<SailboatRouteFailure | null> {
+        const popped = dir.heap.pop()!;
         const u = popped.node;
-        if (popped.cost > (dist.get(u) ?? Infinity)) continue;
-        if (u === destKey) break;
-
-        visited++;
-        if (visited > options.maxVisited) {
-            return emptyFailure("search_exhausted", tiles.size);
-        }
-
         const ux = gxOf(u);
         const uz = gzOf(u);
-        await ensureNeighborhood(ux >> 8, uz >> 8);
+        const gu = dir.g.get(u) ?? Infinity;
+        // Skip stale heap entries (a cheaper path to u was found after this
+        // entry was pushed).
+        if (popped.cost > gu + dir.h(ux, uz) + 1e-6) return null;
+
+        visited++;
+        if (visited > options.maxVisited) return "search_exhausted";
+
+        await ensureRegion(ux >> 8, uz >> 8);
 
         // Emit progress on a steady cadence AND whenever a new tile loads, so
-        // the admin debug overlay can highlight scanned chunks as they stream.
+        // the debug overlay can highlight scanned chunks as they stream.
         if (onProgress && ((visited & 8191) === 0 || tiles.size !== lastReportedTiles)) {
             lastReportedTiles = tiles.size;
             onProgress({
@@ -319,56 +461,97 @@ export async function findSailboatRoute(
             });
         }
 
-        const baseCost = dist.get(u)!;
+        const uState = cellState(ux, uz); // backward prices steps by the cell left
+
         for (let i = 0; i < NEIGHBORS.length; i++) {
             const nx = ux + NEIGHBORS[i][0];
             const nz = uz + NEIGHBORS[i][1];
-            const state = cellState(nx, nz);
-            if (state === 2) continue; // impassable (no data)
+            const vState = cellState(nx, nz);
+            if (vState === 2) continue; // impassable (no data)
             const v = keyOf(nx, nz);
-            // Terrain blocks cost the full penalty; a diagonal step onto
-            // terrain costs √2 × penalty.
-            const stepMult = state === 1 ? landPenalty : 1;
-            const nd = baseCost + NEIGHBORS[i][2] * stepMult;
-            if (nd < (dist.get(v) ?? Infinity)) {
-                dist.set(v, nd);
-                prev.set(v, u);
-                viaTL.delete(v);
-                heap.push(nd, v);
-            }
-        }
-
-        // Portal (boat-TL) edges out of u.
-        const outs = portals.get(u);
-        if (outs) {
-            for (const edge of outs) {
-                const nd = baseCost + options.tlHopCost;
-                if (nd < (dist.get(edge.to) ?? Infinity)) {
-                    dist.set(edge.to, nd);
-                    prev.set(edge.to, u);
-                    viaTL.add(edge.to);
-                    heap.push(nd, edge.to);
+            const enteredLand = dir.forward ? vState === 1 : uState === 1;
+            const stepMult = enteredLand ? landPenalty : 1;
+            const nd = gu + NEIGHBORS[i][2] * stepMult;
+            if (nd < (dir.g.get(v) ?? Infinity)) {
+                dir.g.set(v, nd);
+                dir.prev.set(v, u);
+                dir.viaTL.delete(v);
+                dir.heap.push(nd + dir.h(nx, nz), v);
+                const og = other.g.get(v);
+                if (og !== undefined && nd + og < mu) {
+                    mu = nd + og;
+                    meetNode = v;
                 }
             }
         }
+
+        // Portal (boat-TL) edges — symmetric, so usable by both directions.
+        const outs = portals.get(u);
+        if (outs) {
+            for (const edge of outs) {
+                const nd = gu + tlHopCost;
+                if (nd < (dir.g.get(edge.to) ?? Infinity)) {
+                    dir.g.set(edge.to, nd);
+                    dir.prev.set(edge.to, u);
+                    dir.viaTL.add(edge.to);
+                    dir.heap.push(nd + dir.h(gxOf(edge.to), gzOf(edge.to)), edge.to);
+                    const og = other.g.get(edge.to);
+                    if (og !== undefined && nd + og < mu) {
+                        mu = nd + og;
+                        meetNode = edge.to;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
-    if (!dist.has(destKey)) {
+    // Expand the frontier with the smaller top f-value; stop once neither side
+    // can possibly beat the best meeting found (both top f ≥ mu) or both are
+    // exhausted. An empty heap reports Infinity, so a one-sided dead end lets
+    // the other side keep improving mu until it too is spent.
+    for (;;) {
+        const topF = fwd.heap.topCost();
+        const topB = bwd.heap.topCost();
+        if (Math.min(topF, topB) >= mu) break;
+        if (topF === Infinity && topB === Infinity) break;
+        const fail = topF <= topB ? await expand(fwd, bwd) : await expand(bwd, fwd);
+        if (fail) return emptyFailure(fail, tiles.size);
+    }
+
+    if (meetNode < 0 || mu === Infinity) {
         return emptyFailure("unreachable", tiles.size);
     }
 
     // ── Reconstruct ──────────────────────────────────────────────────────────
-    const chain: number[] = [];
-    const tlFlags: boolean[] = [];
-    let cur: number | undefined = destKey;
+    // Forward half: start → meetNode (via fwd.prev). Backward half: meetNode →
+    // dest (via bwd.prev, which already points toward the destination).
+    const fPart: number[] = [];
+    let cur: number | undefined = meetNode;
     while (cur !== undefined) {
-        chain.push(cur);
-        tlFlags.push(viaTL.has(cur));
+        fPart.push(cur);
         if (cur === startKey) break;
-        cur = prev.get(cur);
+        cur = fwd.prev.get(cur);
     }
-    chain.reverse();
-    tlFlags.reverse();
+    fPart.reverse(); // start … meetNode
+
+    const bPart: number[] = [];
+    const bTLFlags: boolean[] = [];
+    cur = meetNode;
+    while (cur !== destKey) {
+        const nxt = bwd.prev.get(cur);
+        if (nxt === undefined) break;
+        bPart.push(nxt);
+        // viaTL on the backward node marks the (forward-oriented) edge cur→nxt
+        // as a TL hop.
+        bTLFlags.push(bwd.viaTL.has(cur));
+        cur = nxt;
+    }
+
+    const chain: number[] = fPart.concat(bPart);
+    const tlFlags: boolean[] = new Array(chain.length).fill(false);
+    for (let i = 1; i < fPart.length; i++) tlFlags[i] = fwd.viaTL.has(fPart[i]);
+    for (let j = 0; j < bPart.length; j++) tlFlags[fPart.length + j] = bTLFlags[j];
 
     const result = buildWaypoints(chain, tlFlags, cellState);
     return {

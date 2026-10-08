@@ -2421,9 +2421,9 @@ export function TOPSMapViewPage() {
               waterRoutePoints={waterRoutePoints}
               waterRouteFrom={waterRouteFrom}
               waterRouteTo={waterRouteTo}
-              debugTileOutlines={isAdmin && sailboatDebugTiles}
+              debugTileOutlines={sailboatDebugTiles}
               debugScannedTiles={
-                isAdmin && sailboatDebugTiles ? sailboatScannedTileSet : undefined
+                sailboatDebugTiles ? sailboatScannedTileSet : undefined
               }
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}

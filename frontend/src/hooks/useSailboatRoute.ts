@@ -26,6 +26,10 @@ export function useSailboatRoute({ baseUrl, ext, boatTLs }: UseSailboatRouteArgs
     const dispatch = useAppDispatch();
     const from = useAppSelector((s) => s.sailboatRoute.from);
     const to = useAppSelector((s) => s.sailboatRoute.to);
+    const landPenalty = useAppSelector((s) => s.sailboatRoute.landPenalty);
+    const tlHopCost = useAppSelector((s) => s.sailboatRoute.tlHopCost);
+    const maxTiles = useAppSelector((s) => s.sailboatRoute.maxTiles);
+    const maxVisited = useAppSelector((s) => s.sailboatRoute.maxVisited);
     const abortRef = useRef<AbortController | null>(null);
 
     const cancel = useCallback(() => {
@@ -51,6 +55,7 @@ export function useSailboatRoute({ baseUrl, ext, boatTLs }: UseSailboatRouteArgs
                 start: { x: from.point.x, z: from.point.z },
                 dest: { x: to.point.x, z: to.point.z },
                 boatTLs,
+                options: { landPenalty, tlHopCost, maxTiles, maxVisited },
                 signal: controller.signal,
                 onProgress: (p) => {
                     dispatch(setSailboatProgress(p.visited));
@@ -67,7 +72,7 @@ export function useSailboatRoute({ baseUrl, ext, boatTLs }: UseSailboatRouteArgs
         } finally {
             if (abortRef.current === controller) abortRef.current = null;
         }
-    }, [from, to, baseUrl, ext, boatTLs, cancel, dispatch]);
+    }, [from, to, baseUrl, ext, boatTLs, landPenalty, tlHopCost, maxTiles, maxVisited, cancel, dispatch]);
 
     // Abort any in-flight compute on unmount.
     useEffect(() => () => cancel(), [cancel]);
