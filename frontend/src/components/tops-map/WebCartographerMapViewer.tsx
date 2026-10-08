@@ -199,6 +199,9 @@ interface WebCartographerMapViewerProps {
    * which chunks are being scanned live.
    */
   debugScannedTiles?: ReadonlySet<string>;
+  /** Pyramid level the scanned tiles were loaded at, so the overlay can size
+   *  each tile rect correctly (a coarser tile covers more world blocks). */
+  debugScannedTilesZoom?: number;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
   /**
@@ -340,6 +343,7 @@ export function WebCartographerMapViewer({
   waterRouteTo = null,
   debugTileOutlines = false,
   debugScannedTiles,
+  debugScannedTilesZoom,
   highlightedSegment,
   highlightedSegments,
   segmentColors,
@@ -1265,11 +1269,13 @@ export function WebCartographerMapViewer({
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
 
-      // Scanned-chunk highlight: the routing search works at the finest level
-      // (1 block/px, 256-block tiles), independent of the current view zoom.
-      // Draw those as filled world-space rects so they're visible at any zoom.
+      // Scanned-chunk highlight: the routing search runs at a chosen pyramid
+      // level (`debugScannedTilesZoom`); a tile there covers
+      // 256·WC_RESOLUTIONS[zoom] world blocks. Draw those as filled world-space
+      // rects so they're visible and correctly sized at any view zoom.
       if (debugScannedTiles && debugScannedTiles.size > 0) {
-        const SCAN_SPAN_BLOCKS = WC_TILE_SIZE_PX; // finest level: 1 block/px
+        const scanRes = WC_RESOLUTIONS[debugScannedTilesZoom ?? WC_MAX_ZOOM] ?? 1;
+        const SCAN_SPAN_BLOCKS = WC_TILE_SIZE_PX * scanRes;
         const spanScreen = SCAN_SPAN_BLOCKS * ppb;
         ctx.fillStyle = "rgba(251, 146, 60, 0.28)"; // orange-400
         ctx.strokeStyle = "rgba(234, 88, 12, 0.9)"; // orange-600
@@ -1797,6 +1803,7 @@ export function WebCartographerMapViewer({
     projectedWaterPins,
     debugTileOutlines,
     debugScannedTiles,
+    debugScannedTilesZoom,
     hoveredSegmentIndex,
     highlightedSegmentIndices,
     routeTLBaseSkipIndices,

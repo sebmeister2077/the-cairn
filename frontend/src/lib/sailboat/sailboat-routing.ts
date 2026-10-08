@@ -11,10 +11,10 @@
 // real proxy-fetch loader.
 
 import {
-    globalPixelToWorld,
-    worldToGlobalPixel,
+    globalPixelToWorldAtZoom,
+    worldToGlobalPixelAtZoom,
 } from "./tile-coords";
-import { WC_TILE_SIZE_PX } from "@/lib/tops-map-view/wc-tiles";
+import { WC_MAX_ZOOM, WC_TILE_SIZE_PX } from "@/lib/tops-map-view/wc-tiles";
 
 export interface SailboatPoint {
     x: number;
@@ -41,13 +41,20 @@ export interface SailboatRouteOptions {
     landPenalty: number;
     /** Extra cost (in block-equivalents) added for taking a boat TL hop. */
     tlHopCost: number;
+    /** WebCartographer pyramid level to read water from. The finest level
+     *  (`WC_MAX_ZOOM` = 1 block/pixel) is per-block exact; a coarser level
+     *  reads 2^(WC_MAX_ZOOM-zoom) blocks per cell, so the grid (and the tiles
+     *  it loads) shrink dramatically — ideal for crossing open ocean, at the
+     *  cost of blurring coastlines and snapping endpoints to the coarser grid. */
+    zoom: number;
 }
 
 export const DEFAULT_SAILBOAT_OPTIONS: SailboatRouteOptions = {
     maxTiles: 400,
     maxVisited: 3_000_000,
-    landPenalty: 10,
+    landPenalty: 2,
     tlHopCost: 20,
+    zoom: WC_MAX_ZOOM,
 };
 
 export interface SailboatWaypoint {
@@ -79,6 +86,9 @@ export interface SailboatRouteResult {
     tlHops: number;
     /** Distinct tiles the search loaded (telemetry / debugging). */
     tilesLoaded: number;
+    /** Pyramid level the route was computed at (1 block/px at WC_MAX_ZOOM,
+     *  coarser below). Lets the UI scale the scanned-tile debug overlay. */
+    zoom: number;
 }
 
 /** Loader: resolve a tile's water mask (Uint8, len WC_TILE_SIZE_PX²), or null
@@ -108,6 +118,14 @@ export interface SailboatProgress {
     /** Keys (`"cx_cy"`, finest level) of every tile the search has loaded so
      *  far — used by the admin debug overlay to highlight scanned chunks. */
     tiles: string[];
+    /** Estimated completion in [0, 1). Derived from how far the two search
+     *  frontiers have closed the initial optimistic start↔dest gap, so it
+     *  advances smoothly even on straight open-water crossings. Never reaches
+     *  1 — the caller sets 100% when the final result lands. */
+    fraction: number;
+    /** Pyramid level the search is running at — lets the scanned-tile debug
+     *  overlay size each loaded tile correctly. */
+    zoom: number;
 }
 
 const TILE = WC_TILE_SIZE_PX; // 256
@@ -227,6 +245,7 @@ export async function findSailboatRoute(
     options: SailboatRouteOptions = DEFAULT_SAILBOAT_OPTIONS,
     onProgress?: (p: SailboatProgress) => void,
 ): Promise<SailboatRouteResult> {
+    const zoom = options.zoom;
     const tiles = new Map<string, Uint8Array | null>();
     const requested = new Set<string>();
     const ensuredCenter = new Set<number>();
@@ -292,16 +311,24 @@ export async function findSailboatRoute(
         return mask[py * TILE + px] === 1 ? 0 : 1;
     }
 
-    const { gx: sgx, gz: sgz } = worldToGlobalPixel(Math.round(start.x), Math.round(start.z));
-    const { gx: dgx, gz: dgz } = worldToGlobalPixel(Math.round(dest.x), Math.round(dest.z));
+    const { gx: sgx, gz: sgz } = worldToGlobalPixelAtZoom(
+        Math.round(start.x),
+        Math.round(start.z),
+        zoom,
+    );
+    const { gx: dgx, gz: dgz } = worldToGlobalPixelAtZoom(
+        Math.round(dest.x),
+        Math.round(dest.z),
+        zoom,
+    );
     const startKey = keyOf(sgx, sgz);
     const destKey = keyOf(dgx, dgz);
 
     // Make sure the start/dest regions are loaded before we classify.
     await ensureRegion(sgx >> 8, sgz >> 8);
     await ensureRegion(dgx >> 8, dgz >> 8);
-    if (cellState(sgx, sgz) === 2) return emptyFailure("no_data_at_start", tiles.size);
-    if (cellState(dgx, dgz) === 2) return emptyFailure("no_data_at_dest", tiles.size);
+    if (cellState(sgx, sgz) === 2) return emptyFailure("no_data_at_start", tiles.size, zoom);
+    if (cellState(dgx, dgz) === 2) return emptyFailure("no_data_at_dest", tiles.size, zoom);
 
     // Build boat-TL portal edges between the two endpoint pixels. Endpoints
     // are used as-is (no snapping) — the walk legs on either side handle any
@@ -311,8 +338,8 @@ export async function findSailboatRoute(
     const epX: number[] = [];
     const epZ: number[] = [];
     for (const tl of boatTLs) {
-        const a = worldToGlobalPixel(Math.round(tl.a.x), Math.round(tl.a.z));
-        const b = worldToGlobalPixel(Math.round(tl.b.x), Math.round(tl.b.z));
+        const a = worldToGlobalPixelAtZoom(Math.round(tl.a.x), Math.round(tl.a.z), zoom);
+        const b = worldToGlobalPixelAtZoom(Math.round(tl.b.x), Math.round(tl.b.z), zoom);
         const aKey = keyOf(a.gx, a.gz);
         const bKey = keyOf(b.gx, b.gz);
         if (aKey === bKey) continue;
@@ -435,6 +462,22 @@ export async function findSailboatRoute(
     let visited = 0;
     let lastReportedTiles = -1;
 
+    // Progress estimate: `D` is the initial optimistic start↔dest cost (the
+    // heuristic lower bound, which "sees through" TL shortcuts). As each
+    // frontier advances, the smallest remaining heuristic it has reached
+    // shrinks from `D` toward 0; the two closures sum to ≈ D when they meet in
+    // the middle, giving a smooth 0→1 fraction that also works for a straight
+    // open-water crossing (where cost ≈ D the whole way).
+    const D = hToDest(sgx, sgz);
+    let minHF = D;
+    let minHB = D;
+    function progressFraction(): number {
+        if (D <= 0) return 0.99;
+        const closure = D - minHF + (D - minHB);
+        const p = closure / D;
+        return p < 0 ? 0 : p > 0.99 ? 0.99 : p;
+    }
+
     async function expand(dir: Dir, other: Dir): Promise<SailboatRouteFailure | null> {
         const popped = dir.heap.pop()!;
         const u = popped.node;
@@ -443,7 +486,15 @@ export async function findSailboatRoute(
         const gu = dir.g.get(u) ?? Infinity;
         // Skip stale heap entries (a cheaper path to u was found after this
         // entry was pushed).
-        if (popped.cost > gu + dir.h(ux, uz) + 1e-6) return null;
+        const hu = dir.h(ux, uz);
+        if (popped.cost > gu + hu + 1e-6) return null;
+        // Track each frontier's closest optimistic approach to its target for
+        // the progress estimate.
+        if (dir.forward) {
+            if (hu < minHF) minHF = hu;
+        } else if (hu < minHB) {
+            minHB = hu;
+        }
 
         visited++;
         if (visited > options.maxVisited) return "search_exhausted";
@@ -452,12 +503,14 @@ export async function findSailboatRoute(
 
         // Emit progress on a steady cadence AND whenever a new tile loads, so
         // the debug overlay can highlight scanned chunks as they stream.
-        if (onProgress && ((visited & 8191) === 0 || tiles.size !== lastReportedTiles)) {
+        if (onProgress && ((visited & 4095) === 0 || tiles.size !== lastReportedTiles)) {
             lastReportedTiles = tiles.size;
             onProgress({
                 visited,
                 tilesLoaded: tiles.size,
                 tiles: Array.from(tiles.keys()),
+                fraction: progressFraction(),
+                zoom,
             });
         }
 
@@ -510,17 +563,17 @@ export async function findSailboatRoute(
     // can possibly beat the best meeting found (both top f ≥ mu) or both are
     // exhausted. An empty heap reports Infinity, so a one-sided dead end lets
     // the other side keep improving mu until it too is spent.
-    for (;;) {
+    for (; ;) {
         const topF = fwd.heap.topCost();
         const topB = bwd.heap.topCost();
         if (Math.min(topF, topB) >= mu) break;
         if (topF === Infinity && topB === Infinity) break;
         const fail = topF <= topB ? await expand(fwd, bwd) : await expand(bwd, fwd);
-        if (fail) return emptyFailure(fail, tiles.size);
+        if (fail) return emptyFailure(fail, tiles.size, zoom);
     }
 
     if (meetNode < 0 || mu === Infinity) {
-        return emptyFailure("unreachable", tiles.size);
+        return emptyFailure("unreachable", tiles.size, zoom);
     }
 
     // ── Reconstruct ──────────────────────────────────────────────────────────
@@ -553,7 +606,8 @@ export async function findSailboatRoute(
     for (let i = 1; i < fPart.length; i++) tlFlags[i] = fwd.viaTL.has(fPart[i]);
     for (let j = 0; j < bPart.length; j++) tlFlags[fPart.length + j] = bTLFlags[j];
 
-    const result = buildWaypoints(chain, tlFlags, cellState);
+    const toWorld = (gx: number, gz: number) => globalPixelToWorldAtZoom(gx, gz, zoom);
+    const result = buildWaypoints(chain, tlFlags, cellState, toWorld);
     return {
         found: true,
         waypoints: result.waypoints,
@@ -561,10 +615,15 @@ export async function findSailboatRoute(
         terrainBlocks: result.terrainBlocks,
         tlHops: result.tlHops,
         tilesLoaded: tiles.size,
+        zoom,
     };
 }
 
-function emptyFailure(reason: SailboatRouteFailure, tilesLoaded: number): SailboatRouteResult {
+function emptyFailure(
+    reason: SailboatRouteFailure,
+    tilesLoaded: number,
+    zoom: number,
+): SailboatRouteResult {
     return {
         found: false,
         reason,
@@ -573,6 +632,7 @@ function emptyFailure(reason: SailboatRouteFailure, tilesLoaded: number): Sailbo
         terrainBlocks: 0,
         tlHops: 0,
         tilesLoaded,
+        zoom,
     };
 }
 
@@ -596,13 +656,14 @@ function buildWaypoints(
     chain: number[],
     tlFlags: boolean[],
     cellState: (gx: number, gz: number) => 0 | 1 | 2,
+    toWorld: (gx: number, gz: number) => { x: number; z: number },
 ): { waypoints: SailboatWaypoint[]; waterBlocks: number; terrainBlocks: number; tlHops: number } {
     const waypoints: SailboatWaypoint[] = [];
     let waterBlocks = 0;
     let terrainBlocks = 0;
     let tlHops = 0;
 
-    const pts = chain.map((k) => globalPixelToWorld(gxOf(k), gzOf(k)));
+    const pts = chain.map((k) => toWorld(gxOf(k), gzOf(k)));
     // Segment class arriving at index i (i>=1): "tl" | "terrain" | "water".
     const segClass: Array<"tl" | "terrain" | "water"> = new Array(chain.length);
     for (let i = 1; i < chain.length; i++) {

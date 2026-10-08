@@ -1137,6 +1137,13 @@ export const en = {
             "Outlines each map tile the water detection reads, with its zoom/coords.",
         settings: "Settings",
         settingsSummary: "Land ×{landPenalty} · TL hop {tlHopCost}",
+        searchDetail: "Search detail",
+        detail_auto: "Auto",
+        detail_high: "High",
+        detail_medium: "Med",
+        detail_low: "Low",
+        searchDetailHelp:
+            "Map resolution the search reads. Auto uses a coarser level for long open-water crossings (far fewer chunks loaded) and the finest for short routes — and retries at full detail if a coarse pass finds nothing. High = per-block (best for canals); Med/Low = 4/8 blocks per cell (fast ocean hops, blurs coastlines).",
         landPenalty: "Land penalty",
         landPenaltyValue: "×{value}",
         landPenaltyHelp:

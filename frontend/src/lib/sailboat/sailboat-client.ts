@@ -21,7 +21,7 @@ let nextRequestId = 1;
 interface PendingEntry {
     resolve: (r: { result: SailboatRouteResult; elapsedMs: number }) => void;
     reject: (err: Error) => void;
-    onProgress?: (p: { visited: number; tilesLoaded: number; tiles: string[] }) => void;
+    onProgress?: (p: { visited: number; tilesLoaded: number; tiles: string[]; fraction: number; zoom: number }) => void;
 }
 
 const pending = new Map<number, PendingEntry>();
@@ -34,7 +34,7 @@ function getWorker(): Worker {
         const entry = pending.get(msg.requestId);
         if (!entry) return;
         if (msg.kind === "progress") {
-            entry.onProgress?.({ visited: msg.visited, tilesLoaded: msg.tilesLoaded, tiles: msg.tiles });
+            entry.onProgress?.({ visited: msg.visited, tilesLoaded: msg.tilesLoaded, tiles: msg.tiles, fraction: msg.fraction, zoom: msg.zoom });
             return;
         }
         pending.delete(msg.requestId);
@@ -69,7 +69,7 @@ export interface ComputeSailboatRouteArgs {
     colors?: WaterColor[];
     tolerance?: number;
     signal?: AbortSignal;
-    onProgress?: (p: { visited: number; tilesLoaded: number; tiles: string[] }) => void;
+    onProgress?: (p: { visited: number; tilesLoaded: number; tiles: string[]; fraction: number; zoom: number }) => void;
 }
 
 export function computeSailboatRouteAsync(

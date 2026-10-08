@@ -975,6 +975,7 @@ export function TOPSMapViewPage() {
   const sailboatOpen = useAppSelector((s) => s.sailboatRoute.isOpen);
   const sailboatDebugTiles = useAppSelector((s) => s.sailboatRoute.debugTiles);
   const sailboatScannedTiles = useAppSelector((s) => s.sailboatRoute.scannedTiles);
+  const sailboatScannedTilesZoom = useAppSelector((s) => s.sailboatRoute.scannedTilesZoom);
   const sailboatScannedTileSet = useMemo(
     () => new Set(sailboatScannedTiles),
     [sailboatScannedTiles],
@@ -2425,6 +2426,7 @@ export function TOPSMapViewPage() {
               debugScannedTiles={
                 sailboatDebugTiles ? sailboatScannedTileSet : undefined
               }
+              debugScannedTilesZoom={sailboatScannedTilesZoom}
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}
             />

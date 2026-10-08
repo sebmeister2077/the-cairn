@@ -30,7 +30,15 @@ export interface SailboatWorkerRequest {
 }
 
 export type SailboatWorkerResponse =
-    | { kind: "progress"; requestId: number; visited: number; tilesLoaded: number; tiles: string[] }
+    | {
+          kind: "progress";
+          requestId: number;
+          visited: number;
+          tilesLoaded: number;
+          tiles: string[];
+          fraction: number;
+          zoom: number;
+      }
     | {
           kind: "ok";
           requestId: number;
@@ -43,14 +51,15 @@ self.onmessage = async (ev: MessageEvent<SailboatWorkerRequest>) => {
     const req = ev.data;
     const post = (msg: SailboatWorkerResponse) => (self as unknown as Worker).postMessage(msg);
     try {
+        const options: SailboatRouteOptions = { ...DEFAULT_SAILBOAT_OPTIONS, ...req.options };
         const source = createProxyTileSource({
             proxyBase: req.proxyBase,
             baseUrl: req.baseUrl,
             ext: req.ext,
+            zoom: options.zoom,
             colors: req.colors,
             tolerance: req.tolerance,
         });
-        const options: SailboatRouteOptions = { ...DEFAULT_SAILBOAT_OPTIONS, ...req.options };
         const started = performance.now();
         const result = await findSailboatRoute(
             req.start,
@@ -58,7 +67,7 @@ self.onmessage = async (ev: MessageEvent<SailboatWorkerRequest>) => {
             req.boatTLs,
             source,
             options,
-            (p) => post({ kind: "progress", requestId: req.requestId, visited: p.visited, tilesLoaded: p.tilesLoaded, tiles: p.tiles }),
+            (p) => post({ kind: "progress", requestId: req.requestId, visited: p.visited, tilesLoaded: p.tilesLoaded, tiles: p.tiles, fraction: p.fraction, zoom: p.zoom }),
         );
         post({ kind: "ok", requestId: req.requestId, result, elapsedMs: performance.now() - started });
     } catch (err) {

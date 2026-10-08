@@ -82,6 +82,37 @@ export function globalPixelToWorld(gx: number, gz: number): { x: number; z: numb
     return { x: gx + WORLD_ORIGIN_BLOCK, z: gz + WORLD_ORIGIN_BLOCK };
 }
 
+// ── Zoom-aware global-pixel helpers ─────────────────────────────────────────
+//
+// At a coarser pyramid level each pixel spans `WC_RESOLUTIONS[zoom]` world
+// blocks, so the routing grid gets 2^(9-zoom)× coarser — far fewer cells and
+// tiles to cross open water. Tiles stay 256 px at every level, so the global
+// pixel still packs as `cx*256 + px`. These reduce exactly to the finest-level
+// helpers above when `zoom === SAILBOAT_ZOOM`.
+
+/** World X/Z → global pixel index at a given pyramid level. */
+export function worldToGlobalPixelAtZoom(
+    worldX: number,
+    worldZ: number,
+    zoom: number,
+): { gx: number; gz: number } {
+    const tp = worldToTilePixel(worldX, worldZ, zoom);
+    return { gx: tp.cx * WC_TILE_SIZE_PX + tp.px, gz: tp.cy * WC_TILE_SIZE_PX + tp.py };
+}
+
+/** Global pixel index → world X/Z (tile-pixel centre) at a given pyramid level. */
+export function globalPixelToWorldAtZoom(
+    gx: number,
+    gz: number,
+    zoom: number,
+): { x: number; z: number } {
+    const cx = gx >> 8;
+    const cy = gz >> 8;
+    const px = gx & (WC_TILE_SIZE_PX - 1);
+    const py = gz & (WC_TILE_SIZE_PX - 1);
+    return tilePixelToWorld(cx, cy, px, py, zoom);
+}
+
 /** Tile + in-tile pixel for a global pixel index (finest level). */
 export function globalPixelToTile(gx: number, gz: number): TilePixel {
     const cx = gx >> 8; // / WC_TILE_SIZE_PX (256)

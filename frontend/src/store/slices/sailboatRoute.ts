@@ -15,6 +15,11 @@ import {
 /** Which slot a map-click writes into while the sailboat planner is open. */
 export type SailboatPickMode = null | "from" | "to";
 
+/** Search resolution preference. `auto` picks a coarser pyramid level for long
+ *  open-water crossings (far fewer tiles/nodes) and the finest for short
+ *  routes; the explicit levels force a fixed detail. */
+export type SailboatSearchDetail = "auto" | "high" | "medium" | "low";
+
 export interface SailboatRouteState {
     isOpen: boolean;
     from: EndpointPick | null;
@@ -23,6 +28,9 @@ export interface SailboatRouteState {
     isComputing: boolean;
     /** Settled pixel count streamed from the worker while computing. */
     progressVisited: number;
+    /** Estimated completion in [0, 1] streamed while computing — drives the
+     *  progress bar. 1 once the result lands. */
+    progressFraction: number;
     error: string | null;
     pickMode: SailboatPickMode;
     /** Admin-only: when true, clicking a TL on the map toggles its
@@ -35,6 +43,9 @@ export interface SailboatRouteState {
      *  Streamed from the worker; highlighted by the debug overlay so you can
      *  watch which chunks are being scanned. */
     scannedTiles: string[];
+    /** Pyramid level the scanned tiles were loaded at — lets the debug overlay
+     *  size each tile rect correctly (a coarser tile covers more blocks). */
+    scannedTilesZoom: number;
     /** User-configurable cost model. Cost multiplier for crossing a non-water
      *  (terrain) block relative to water (×1). Higher = avoid land harder. */
     landPenalty: number;
@@ -47,6 +58,8 @@ export interface SailboatRouteState {
     /** User-configurable search budget. Max settled blocks the search may
      *  expand before giving up — bounds runtime/memory. */
     maxVisited: number;
+    /** Search resolution preference (see {@link SailboatSearchDetail}). */
+    searchDetail: SailboatSearchDetail;
 }
 
 export const initialSailboatRouteState: SailboatRouteState = {
@@ -56,15 +69,18 @@ export const initialSailboatRouteState: SailboatRouteState = {
     route: null,
     isComputing: false,
     progressVisited: 0,
+    progressFraction: 0,
     error: null,
     pickMode: null,
     boatTLEditMode: false,
     debugTiles: false,
     scannedTiles: [],
+    scannedTilesZoom: DEFAULT_SAILBOAT_OPTIONS.zoom,
     landPenalty: DEFAULT_SAILBOAT_OPTIONS.landPenalty,
     tlHopCost: DEFAULT_SAILBOAT_OPTIONS.tlHopCost,
     maxTiles: DEFAULT_SAILBOAT_OPTIONS.maxTiles,
     maxVisited: DEFAULT_SAILBOAT_OPTIONS.maxVisited,
+    searchDetail: "auto",
 };
 
 export const sailboatRouteSlice = createSlice({
@@ -101,11 +117,14 @@ export const sailboatRouteSlice = createSlice({
             if (action.payload) {
                 state.error = null;
                 state.progressVisited = 0;
+                state.progressFraction = 0;
                 state.scannedTiles = [];
             }
         },
-        setProgress(state, action: PayloadAction<number>) {
-            state.progressVisited = action.payload;
+        setProgress(state, action: PayloadAction<{ visited: number; fraction: number; zoom: number }>) {
+            state.progressVisited = action.payload.visited;
+            state.progressFraction = action.payload.fraction;
+            state.scannedTilesZoom = action.payload.zoom;
         },
         setScannedTiles(state, action: PayloadAction<string[]>) {
             state.scannedTiles = action.payload;
@@ -113,6 +132,7 @@ export const sailboatRouteSlice = createSlice({
         setRoute(state, action: PayloadAction<SailboatRouteResult | null>) {
             state.route = action.payload;
             state.isComputing = false;
+            state.progressFraction = 1;
         },
         setError(state, action: PayloadAction<string | null>) {
             state.error = action.payload;
@@ -151,6 +171,11 @@ export const sailboatRouteSlice = createSlice({
             state.route = null;
             state.error = null;
         },
+        setSearchDetail(state, action: PayloadAction<SailboatSearchDetail>) {
+            state.searchDetail = action.payload;
+            state.route = null;
+            state.error = null;
+        },
         clearSailboatRoute(state) {
             state.from = null;
             state.to = null;
@@ -159,6 +184,7 @@ export const sailboatRouteSlice = createSlice({
             state.pickMode = null;
             state.isComputing = false;
             state.progressVisited = 0;
+            state.progressFraction = 0;
             state.scannedTiles = [];
         },
     },
@@ -181,5 +207,6 @@ export const {
     setTlHopCost: setSailboatTlHopCost,
     setMaxTiles: setSailboatMaxTiles,
     setMaxVisited: setSailboatMaxVisited,
+    setSearchDetail: setSailboatSearchDetail,
     clearSailboatRoute,
 } = sailboatRouteSlice.actions;
