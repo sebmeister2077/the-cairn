@@ -1247,6 +1247,59 @@ export async function adminRestoreMapFeaturesTradersBackup(
 }
 
 // ---------------------------------------------------------------------------
+// Map-features rapids: list + snapshot + restore (mirrors traders).
+// ---------------------------------------------------------------------------
+
+export async function adminListMapFeaturesRapidsBackups(): Promise<{
+    backups: MapFeaturesTradersBackupEntry[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/map-features-rapids/backups`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateMapFeaturesRapidsBackup(): Promise<{ key: string }> {
+    const res = await fetch(`${API_BASE}/admin/map-features-rapids/backups/create`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminRestoreMapFeaturesRapidsBackup(
+    key: string,
+): Promise<{ restored: string; from_key: string; live_key: string }> {
+    const res = await fetch(`${API_BASE}/admin/map-features-rapids/backups/restore`, {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ key, confirm: true }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
+// Upstream TOPS translocators: list + snapshot only (no restore / download).
+// ---------------------------------------------------------------------------
+
+export async function adminListTopsTranslocatorsBackups(): Promise<{
+    backups: MapFeaturesTradersBackupEntry[];
+}> {
+    const res = await fetch(`${API_BASE}/admin/tops-translocators/backups`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreateTopsTranslocatorsBackup(): Promise<{ key: string }> {
+    const res = await fetch(`${API_BASE}/admin/tops-translocators/backups/create`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Elk-walkable: manual snapshot creation (list + restore live elsewhere).
 // ---------------------------------------------------------------------------
 
@@ -1272,6 +1325,8 @@ export interface BackupSchedule {
     traders: BackupInterval;
     map_features_traders: BackupInterval;
     elk_walkable: BackupInterval;
+    map_features_rapids: BackupInterval;
+    tops_translocators: BackupInterval;
 }
 
 export async function adminGetBackupSchedule(): Promise<BackupSchedule> {

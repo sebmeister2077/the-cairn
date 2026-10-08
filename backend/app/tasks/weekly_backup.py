@@ -70,7 +70,13 @@ def _now_iso_week() -> tuple:
 # keep their original always-weekly cadence.
 
 _BACKUP_SCHEDULE_KEY = "category_backup_schedule"
-BACKUP_SCHEDULE_CATEGORIES = ("traders", "map_features_traders", "elk_walkable")
+BACKUP_SCHEDULE_CATEGORIES = (
+    "traders",
+    "map_features_traders",
+    "elk_walkable",
+    "map_features_rapids",
+    "tops_translocators",
+)
 BACKUP_SCHEDULE_INTERVALS = ("weekly", "biweekly", "monthly", "disabled")
 _BACKUP_SCHEDULE_DEFAULT = "weekly"
 _INTERVAL_DAYS = {"weekly": 7, "biweekly": 14, "monthly": 30}
@@ -318,6 +324,8 @@ def run_now() -> dict:
     geojson_created: List[str] = []
     mf_traders_created: Optional[str] = None
     elk_created: Optional[str] = None
+    mf_rapids_created: Optional[str] = None
+    tops_tl_created: Optional[str] = None
     if ff.is_feature_enabled("weekly_backups"):
         try:
             created = create_scheduled_snapshot_if_due()
@@ -335,6 +343,14 @@ def run_now() -> dict:
             elk_created = create_scheduled_elk_walkable_snapshot_if_due()
         except Exception:
             logger.exception("weekly_backup: elk-walkable snapshot failed")
+        try:
+            mf_rapids_created = create_scheduled_map_features_rapids_snapshot_if_due()
+        except Exception:
+            logger.exception("weekly_backup: map-features rapids snapshot failed")
+        try:
+            tops_tl_created = create_scheduled_tops_translocators_snapshot_if_due()
+        except Exception:
+            logger.exception("weekly_backup: upstream translocators snapshot failed")
     cleanup = cleanup_old_backups() if ff.is_feature_enabled("weekly_backups") else {"deleted": 0}
     geojson_cleanup = (
         cleanup_old_geojson_backups()
@@ -346,6 +362,16 @@ def run_now() -> dict:
         if ff.is_feature_enabled("weekly_backups")
         else {"deleted": 0}
     )
+    mf_rapids_cleanup = (
+        cleanup_old_map_features_rapids_backups()
+        if ff.is_feature_enabled("weekly_backups")
+        else {"deleted": 0}
+    )
+    tops_tl_cleanup = (
+        cleanup_old_tops_translocators_backups()
+        if ff.is_feature_enabled("weekly_backups")
+        else {"deleted": 0}
+    )
     return {
         "created": created,
         "cleanup": cleanup,
@@ -354,6 +380,10 @@ def run_now() -> dict:
         "map_features_traders_created": mf_traders_created,
         "map_features_traders_cleanup": mf_traders_cleanup,
         "elk_walkable_created": elk_created,
+        "map_features_rapids_created": mf_rapids_created,
+        "map_features_rapids_cleanup": mf_rapids_cleanup,
+        "tops_translocators_created": tops_tl_created,
+        "tops_translocators_cleanup": tops_tl_cleanup,
     }
 
 
@@ -372,6 +402,8 @@ def _scheduled_run() -> None:
                 result.get("created")
                 or result["cleanup"]["deleted"]
                 or result.get("map_features_traders_created")
+                or result.get("map_features_rapids_created")
+                or result.get("tops_translocators_created")
             ):
                 logger.info("weekly_backup: tick %s", result)
     except Exception:
@@ -762,3 +794,294 @@ def create_scheduled_elk_walkable_snapshot_if_due() -> Optional[str]:
     key = result.get("snapshot_key")
     logger.info("weekly_backup: created scheduled elk-walkable snapshot %s", key)
     return key
+
+
+# ---------------------------------------------------------------------------
+# Merged public map-features rapids list — scheduled snapshots
+# ---------------------------------------------------------------------------
+#
+# Mirrors the map-features traders flow: the crowd-sourced
+# ``map-features.rapids.json`` (rebuilt from every /contribute-map-features
+# upload and published to the PUBLIC map-features bucket) is snapshotted into
+# ``backups/`` on the admin-configured ``map_features_rapids`` cadence.
+#
+# Storage layout (under ``backups/``):
+#   map-features-rapids-YYYY-Www.json
+#   map-features-rapids-YYYY-Www-manual-<unix>.json
+
+_RE_MF_RAPIDS_SCHEDULED = re.compile(
+    r"^backups/map-features-rapids-(\d{4})-W(\d{2})\.json$"
+)
+_RE_MF_RAPIDS_MANUAL = re.compile(
+    r"^backups/map-features-rapids-(\d{4})-W(\d{2})-manual-(\d+)\.json$"
+)
+
+
+def _classify_mf_rapids(key: str) -> Optional[str]:
+    if _RE_MF_RAPIDS_SCHEDULED.match(key):
+        return "scheduled"
+    if _RE_MF_RAPIDS_MANUAL.match(key):
+        return "manual"
+    return None
+
+
+def list_map_features_rapids_backups() -> List[dict]:
+    """Return all map-features rapids backup objects, newest first."""
+    out = []
+    for obj in r2_storage.list_backup_objects():
+        kind = _classify_mf_rapids(obj["key"])
+        if kind is None:
+            continue
+        lm = obj.get("last_modified")
+        out.append(
+            {
+                "key": obj["key"],
+                "kind": kind,
+                "size": obj["size"],
+                "last_modified": lm.isoformat() if lm else None,
+            }
+        )
+    out.sort(key=lambda r: r["last_modified"] or "", reverse=True)
+    return out
+
+
+def _snapshot_map_features_rapids_to(target_key: str) -> str:
+    """Cross-bucket copy of the live merged rapids list into ``target_key``."""
+    src_bucket, src_key = r2_storage.map_features_rapids_live()
+    r2_storage.copy_object_from_bucket(src_bucket, src_key, target_key)
+    return target_key
+
+
+def create_scheduled_map_features_rapids_snapshot_if_due() -> Optional[str]:
+    """Create this period's scheduled snapshot of ``map-features.rapids.json``.
+
+    Cadence follows the admin-configured ``map_features_rapids`` schedule
+    (weekly / biweekly / monthly / disabled). Idempotent — skips when the
+    current ISO week already has a snapshot. Skips silently when the live file
+    is missing. Returns the new key or None.
+    """
+    iso_year, iso_week = _now_iso_week()
+    existing = list_map_features_rapids_backups()
+    scheduled = [b for b in existing if b["kind"] == "scheduled"]
+    newest = _parse_iso(scheduled[0]["last_modified"]) if scheduled else None
+    if not _interval_due("map_features_rapids", newest):
+        return None
+    target = r2_storage.map_features_rapids_backup_scheduled_key(iso_year, iso_week)
+    if r2_storage.object_exists(target):
+        return None
+    src_bucket, src_key = r2_storage.map_features_rapids_live()
+    if not r2_storage.object_exists_in_bucket(src_bucket, src_key):
+        logger.info(
+            "weekly_backup: map-features rapids live file missing — skipping snapshot"
+        )
+        return None
+    try:
+        _snapshot_map_features_rapids_to(target)
+    except Exception:
+        logger.exception("weekly_backup: failed to snapshot map-features rapids")
+        return None
+    logger.info("weekly_backup: created scheduled map-features rapids snapshot %s", target)
+    return target
+
+
+def create_manual_map_features_rapids_snapshot() -> str:
+    """Force-create a manual snapshot of ``map-features.rapids.json`` now."""
+    src_bucket, src_key = r2_storage.map_features_rapids_live()
+    if not r2_storage.object_exists_in_bucket(src_bucket, src_key):
+        raise FileNotFoundError("map-features rapids live file is not present in R2")
+    iso_year, iso_week = _now_iso_week()
+    ts = int(datetime.now(timezone.utc).timestamp())
+    target = r2_storage.map_features_rapids_backup_manual_key(iso_year, iso_week, ts)
+    _snapshot_map_features_rapids_to(target)
+    logger.info("weekly_backup: created manual map-features rapids snapshot %s", target)
+    return target
+
+
+def cleanup_old_map_features_rapids_backups() -> dict:
+    """Trim scheduled + manual map-features rapids backups to retention."""
+    backups = list_map_features_rapids_backups()
+    scheduled = [b for b in backups if b["kind"] == "scheduled"]
+    manual = [b for b in backups if b["kind"] == "manual"]
+    to_delete: List[str] = []
+    if settings.BACKUP_KEEP_SCHEDULED >= 0:
+        to_delete.extend(b["key"] for b in scheduled[settings.BACKUP_KEEP_SCHEDULED:])
+    if settings.BACKUP_KEEP_MANUAL >= 0:
+        to_delete.extend(b["key"] for b in manual[settings.BACKUP_KEEP_MANUAL:])
+    if to_delete:
+        r2_storage.delete_keys(to_delete)
+        logger.info(
+            "weekly_backup: deleted %d old map-features rapids snapshots", len(to_delete)
+        )
+    return {"deleted": len(to_delete)}
+
+
+def _snapshot_map_features_rapids_restore(backup_key: str) -> dict:
+    """Copy a map-features-rapids backup object back over the live file."""
+    if _classify_mf_rapids(backup_key) is None:
+        raise ValueError(f"backup key {backup_key!r} is not a map-features rapids backup")
+    if not r2_storage.object_exists(backup_key):
+        raise FileNotFoundError(f"backup not found: {backup_key}")
+    live_bucket, live_key = r2_storage.map_features_rapids_live()
+    r2_storage.copy_object_to_bucket(backup_key, live_bucket, live_key)
+    r2_storage.invalidate_presigned_download_url(live_key)
+    logger.info("weekly_backup: restored map-features rapids from %s", backup_key)
+    return {"restored": "map_features_rapids", "from_key": backup_key, "live_key": live_key}
+
+
+def restore_map_features_rapids_from_backup(backup_key: str) -> dict:
+    """Public wrapper around :func:`_snapshot_map_features_rapids_restore`."""
+    return _snapshot_map_features_rapids_restore(backup_key)
+
+
+# ---------------------------------------------------------------------------
+# Upstream TOPS translocators geojson — scheduled snapshots
+# ---------------------------------------------------------------------------
+#
+# Unlike every other backed-up asset there is no "live" copy in our buckets:
+# the translocators data is proxied live from the upstream map host and never
+# stored. To keep a copy in case the upstream goes down, we fetch it fresh
+# from ``settings.TOPS_TRANSLOCATORS_BACKUP_URL`` and store the raw bytes
+# directly under ``backups/``. There is intentionally no restore path.
+#
+# Storage layout (under ``backups/``):
+#   tops-translocators-YYYY-Www.json
+#   tops-translocators-YYYY-Www-manual-<unix>.json
+
+_RE_TOPS_TL_SCHEDULED = re.compile(
+    r"^backups/tops-translocators-(\d{4})-W(\d{2})\.json$"
+)
+_RE_TOPS_TL_MANUAL = re.compile(
+    r"^backups/tops-translocators-(\d{4})-W(\d{2})-manual-(\d+)\.json$"
+)
+
+# Cap on the upstream response we'll buffer into memory (same as the proxy).
+_TOPS_TL_MAX_BYTES = 32 * 1024 * 1024
+_TOPS_TL_REQUEST_TIMEOUT_S = 20.0
+_TOPS_TL_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36 CairnMapProxy/1.0"
+)
+
+
+def _classify_tops_tl(key: str) -> Optional[str]:
+    if _RE_TOPS_TL_SCHEDULED.match(key):
+        return "scheduled"
+    if _RE_TOPS_TL_MANUAL.match(key):
+        return "manual"
+    return None
+
+
+def list_tops_translocators_backups() -> List[dict]:
+    """Return all upstream-translocators backup objects, newest first."""
+    out = []
+    for obj in r2_storage.list_backup_objects():
+        kind = _classify_tops_tl(obj["key"])
+        if kind is None:
+            continue
+        lm = obj.get("last_modified")
+        out.append(
+            {
+                "key": obj["key"],
+                "kind": kind,
+                "size": obj["size"],
+                "last_modified": lm.isoformat() if lm else None,
+            }
+        )
+    out.sort(key=lambda r: r["last_modified"] or "", reverse=True)
+    return out
+
+
+def _fetch_tops_translocators_bytes() -> bytes:
+    """Fetch the upstream translocators geojson. Raises on any failure so the
+    caller can surface it (manual) or log + skip (scheduled)."""
+    import urllib.error
+    import urllib.request
+
+    url = settings.TOPS_TRANSLOCATORS_BACKUP_URL
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Accept": "application/geo+json, application/json",
+            "Accept-Language": "en-US,en;q=0.9",
+            "User-Agent": _TOPS_TL_USER_AGENT,
+        },
+    )
+    with urllib.request.urlopen(  # noqa: S310 - fixed https URL from settings
+        req, timeout=_TOPS_TL_REQUEST_TIMEOUT_S
+    ) as resp:
+        raw = resp.read(_TOPS_TL_MAX_BYTES + 1)
+    if len(raw) > _TOPS_TL_MAX_BYTES:
+        raise ValueError("upstream translocators geojson too large")
+    # Validate it's JSON so we never store a Cloudflare error page as a backup.
+    import json as _json
+    try:
+        _json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, _json.JSONDecodeError) as exc:
+        raise ValueError("upstream returned invalid JSON") from exc
+    return raw
+
+
+def _snapshot_tops_translocators_to(target_key: str) -> str:
+    """Fetch the upstream translocators geojson and store it at ``target_key``."""
+    raw = _fetch_tops_translocators_bytes()
+    r2_storage.upload_bytes(target_key, raw, content_type="application/geo+json")
+    return target_key
+
+
+def create_scheduled_tops_translocators_snapshot_if_due() -> Optional[str]:
+    """Create this period's scheduled upstream-translocators snapshot.
+
+    Cadence follows the admin-configured ``tops_translocators`` schedule
+    (weekly / biweekly / monthly / disabled). Idempotent — skips when the
+    current ISO week already has a snapshot. Fetch failures are logged and
+    swallowed (the upstream may simply be down). Returns the new key or None.
+    """
+    iso_year, iso_week = _now_iso_week()
+    existing = list_tops_translocators_backups()
+    scheduled = [b for b in existing if b["kind"] == "scheduled"]
+    newest = _parse_iso(scheduled[0]["last_modified"]) if scheduled else None
+    if not _interval_due("tops_translocators", newest):
+        return None
+    target = r2_storage.tops_translocators_backup_scheduled_key(iso_year, iso_week)
+    if r2_storage.object_exists(target):
+        return None
+    try:
+        _snapshot_tops_translocators_to(target)
+    except Exception:
+        logger.exception(
+            "weekly_backup: failed to snapshot upstream translocators (upstream down?)"
+        )
+        return None
+    logger.info("weekly_backup: created scheduled upstream-translocators snapshot %s", target)
+    return target
+
+
+def create_manual_tops_translocators_snapshot() -> str:
+    """Force-create a manual snapshot of the upstream translocators now.
+
+    Raises on fetch/validation failure so the admin sees why it didn't work.
+    """
+    iso_year, iso_week = _now_iso_week()
+    ts = int(datetime.now(timezone.utc).timestamp())
+    target = r2_storage.tops_translocators_backup_manual_key(iso_year, iso_week, ts)
+    _snapshot_tops_translocators_to(target)
+    logger.info("weekly_backup: created manual upstream-translocators snapshot %s", target)
+    return target
+
+
+def cleanup_old_tops_translocators_backups() -> dict:
+    """Trim scheduled + manual upstream-translocators backups to retention."""
+    backups = list_tops_translocators_backups()
+    scheduled = [b for b in backups if b["kind"] == "scheduled"]
+    manual = [b for b in backups if b["kind"] == "manual"]
+    to_delete: List[str] = []
+    if settings.BACKUP_KEEP_SCHEDULED >= 0:
+        to_delete.extend(b["key"] for b in scheduled[settings.BACKUP_KEEP_SCHEDULED:])
+    if settings.BACKUP_KEEP_MANUAL >= 0:
+        to_delete.extend(b["key"] for b in manual[settings.BACKUP_KEEP_MANUAL:])
+    if to_delete:
+        r2_storage.delete_keys(to_delete)
+        logger.info(
+            "weekly_backup: deleted %d old upstream-translocators snapshots", len(to_delete)
+        )
+    return {"deleted": len(to_delete)}

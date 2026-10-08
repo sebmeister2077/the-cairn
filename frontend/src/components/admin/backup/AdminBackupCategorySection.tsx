@@ -34,7 +34,7 @@ interface BackupCategorySectionProps {
   queryKey: string;
   load: () => Promise<NormalizedBackup[]>;
   create: () => Promise<unknown>;
-  restore: (key: string) => Promise<unknown>;
+  restore?: (key: string) => Promise<unknown>;
 }
 
 export function AdminBackupCategorySection({
@@ -65,7 +65,10 @@ export function AdminBackupCategorySection({
   });
 
   const restoreMut = useMutation({
-    mutationFn: (key: string) => restore(key),
+    mutationFn: (key: string) => {
+      if (!restore) return Promise.resolve();
+      return restore(key);
+    },
     onSuccess: () => {
       setRestoreTarget(null);
       queryClient.invalidateQueries({ queryKey: [queryKey] });
@@ -166,39 +169,43 @@ export function AdminBackupCategorySection({
                   </div>
                   <div className="font-mono text-muted-foreground break-all">{b.key}</div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="shrink-0"
-                  onClick={() => setRestoreTarget(b.key)}
-                  disabled={restoreMut.isPending}
-                  title="Revert the live file to this snapshot"
-                >
-                  <HistoryIcon className="size-3" /> Revert
-                </Button>
+                {restore && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="shrink-0"
+                    onClick={() => setRestoreTarget(b.key)}
+                    disabled={restoreMut.isPending}
+                    title="Revert the live file to this snapshot"
+                  >
+                    <HistoryIcon className="size-3" /> Revert
+                  </Button>
+                )}
               </div>
             ))}
           </div>
         )}
       </CardContent>
 
-      <ConfirmDialog
-        open={restoreTarget !== null}
-        title={`Revert ${title}?`}
-        description={
-          <>
-            This overwrites the live file with the selected snapshot. The current state is captured
-            as a new restore point first, so the action is reversible.
-          </>
-        }
-        confirmLabel="Revert"
-        variant="destructive"
-        loading={restoreMut.isPending}
-        onCancel={() => setRestoreTarget(null)}
-        onConfirm={() => {
-          if (restoreTarget) restoreMut.mutate(restoreTarget);
-        }}
-      />
+      {restore && (
+        <ConfirmDialog
+          open={restoreTarget !== null}
+          title={`Revert ${title}?`}
+          description={
+            <>
+              This overwrites the live file with the selected snapshot. The current state is captured
+              as a new restore point first, so the action is reversible.
+            </>
+          }
+          confirmLabel="Revert"
+          variant="destructive"
+          loading={restoreMut.isPending}
+          onCancel={() => setRestoreTarget(null)}
+          onConfirm={() => {
+            if (restoreTarget) restoreMut.mutate(restoreTarget);
+          }}
+        />
+      )}
     </Card>
   );
 }

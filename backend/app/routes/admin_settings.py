@@ -351,6 +351,8 @@ class BackupSchedulePatch(BaseModel):
     traders: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
     map_features_traders: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
     elk_walkable: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
+    map_features_rapids: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
+    tops_translocators: Optional[str] = Field(default=None, pattern=_BACKUP_INTERVAL_PATTERN)
 
 
 @router.get("/backup-schedule")

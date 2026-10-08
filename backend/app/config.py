@@ -357,6 +357,13 @@ class Settings:
         "MAP_FEATURES_PINNED_UPSTREAM_HOST",
         os.environ.get("AUCTION_PINNED_UPSTREAM_HOST", "tops.vintagestory.at"),
     )
+    # Upstream TOPS translocators geojson, snapshotted into ``backups/`` so we
+    # keep a copy in case the upstream map host goes down. Full URL to the
+    # geojson file served by the WebCartographer host.
+    TOPS_TRANSLOCATORS_BACKUP_URL: str = os.environ.get(
+        "TOPS_TRANSLOCATORS_BACKUP_URL",
+        "https://map.tops.vintagestory.at/data/geojson/translocators.geojson",
+    )
     # Absolute world-coordinate cap for plausibility filtering.
     MAP_FEATURES_MAX_WORLD_COORD: float = float(
         os.environ.get(

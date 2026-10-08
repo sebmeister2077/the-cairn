@@ -895,6 +895,56 @@ def map_features_traders_backup_manual_key(
     )
 
 
+# ---------------------------------------------------------------------------
+# Merged public map-features rapids list (crowd-sourced, rebuilt from every
+# /contribute-map-features upload). Lives in the PUBLIC map-features bucket at
+# ``{MAP_FEATURES_PREFIX}/map-features.rapids.json``. Backups are copied
+# cross-bucket into the default backup bucket under ``backups/``.
+# ---------------------------------------------------------------------------
+
+
+def map_features_rapids_live() -> tuple:
+    """Return ``(bucket, key)`` of the live merged rapids list in R2."""
+    return (
+        settings.MAP_FEATURES_PUBLIC_BUCKET,
+        f"{settings.MAP_FEATURES_PREFIX}/map-features.rapids.json",
+    )
+
+
+def map_features_rapids_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}map-features-rapids-{iso_year:04d}-W{iso_week:02d}.json"
+
+
+def map_features_rapids_backup_manual_key(
+    iso_year: int, iso_week: int, unix_timestamp: int
+) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}map-features-rapids-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.json"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Upstream TOPS translocators geojson backups. Unlike the assets above there
+# is no "live" copy in our buckets — the data is fetched fresh from the
+# upstream map host (``TOPS_TRANSLOCATORS_BACKUP_URL``) and stored directly
+# under ``backups/`` so we keep a copy if the upstream goes down.
+# ---------------------------------------------------------------------------
+
+
+def tops_translocators_backup_scheduled_key(iso_year: int, iso_week: int) -> str:
+    return f"{BACKUP_KEY_PREFIX}tops-translocators-{iso_year:04d}-W{iso_week:02d}.json"
+
+
+def tops_translocators_backup_manual_key(
+    iso_year: int, iso_week: int, unix_timestamp: int
+) -> str:
+    return (
+        f"{BACKUP_KEY_PREFIX}tops-translocators-{iso_year:04d}-W{iso_week:02d}"
+        f"-manual-{unix_timestamp}.json"
+    )
+
+
 def copy_object_from_bucket(source_bucket: str, source_key: str, destination_key: str):
     """Copy an object from ``source_bucket`` into the default backup bucket.
 

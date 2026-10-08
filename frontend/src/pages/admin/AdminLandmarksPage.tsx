@@ -27,7 +27,7 @@ export function AdminLandmarksPage() {
 
       <LandmarkPendingEditRequestsCard />
       <LandmarkAuditFeedCard />
-      <LandmarkBackupsCard />
+      {/* <LandmarkBackupsCard /> */}
     </div>
   );
 }

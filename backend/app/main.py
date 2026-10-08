@@ -59,6 +59,7 @@ from .routes import webcartographer as webcartographer_routes
 from .routes import elk_walkable as elk_walkable_routes
 from .routes import admin_elk_walkable as admin_elk_walkable_routes
 from .routes import admin_map_features as admin_map_features_routes
+from .routes import admin_backups_extra as admin_backups_extra_routes
 from .routes import grouping_library as grouping_library_routes
 from .routes import orders as orders_routes
 from .routes import licenses as licenses_routes
@@ -823,6 +824,8 @@ app.include_router(webcartographer_routes.router, prefix="/api")
 app.include_router(elk_walkable_routes.router, prefix="/api")
 app.include_router(admin_elk_walkable_routes.router, prefix="/api")
 app.include_router(admin_map_features_routes.router, prefix="/api")
+app.include_router(admin_backups_extra_routes.rapids_router, prefix="/api")
+app.include_router(admin_backups_extra_routes.tops_translocators_router, prefix="/api")
 app.include_router(grouping_library_routes.router, prefix="/api")
 app.include_router(orders_routes.router, prefix="/api")
 app.include_router(licenses_routes.router, prefix="/api")

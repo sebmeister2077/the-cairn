@@ -1,29 +1,37 @@
 /**
  * Admin: Backups overview (route: /audit/backups).
  *
- * One place to manage the backup snapshots for the three crowd-sourced data
- * categories that support it:
+ * One place to manage the backup snapshots for the crowd-sourced /
+ * upstream data categories that support it:
  *   - Traders (`traders.geojson`)
  *   - Map-features traders (`map-features.traders.json`)
+ *   - Map-features rapids (`map-features.rapids.json`)
  *   - Elk-walkable (`elk_walkable.json`)
+ *   - Upstream translocators (TOPS `translocators.json`, snapshot-only)
  *
  * For each category an admin can: view existing snapshots, take a snapshot
- * now, revert to a snapshot, and tune the automatic schedule (weekly /
- * biweekly / monthly) or disable it entirely. Requires the env-var admin key.
+ * now, revert to a snapshot (where supported), and tune the automatic
+ * schedule (weekly / biweekly / monthly) or disable it entirely. Requires the
+ * env-var admin key.
  */
 
 import { AdminBackupCategorySection } from "@/components/admin/backup/AdminBackupCategorySection";
 import {
   adminCreateElkWalkableSnapshot,
   adminCreateGeojsonBackup,
+  adminCreateMapFeaturesRapidsBackup,
   adminCreateMapFeaturesTradersBackup,
+  adminCreateTopsTranslocatorsBackup,
   adminGetBackupSchedule,
   adminListElkWalkableSnapshots,
   adminListGeojsonBackups,
+  adminListMapFeaturesRapidsBackups,
   adminListMapFeaturesTradersBackups,
+  adminListTopsTranslocatorsBackups,
   adminPatchBackupSchedule,
   adminRestoreElkWalkableSnapshot,
   adminRestoreGeojsonBackup,
+  adminRestoreMapFeaturesRapidsBackup,
   adminRestoreMapFeaturesTradersBackup,
   type BackupInterval,
   type BackupSchedule,
@@ -122,6 +130,28 @@ export function AdminBackupsOverviewPage() {
       />
 
       <AdminBackupCategorySection
+        title="Map-features rapids"
+        description="The merged crowd-sourced rapids list (map-features.rapids.json)."
+        scheduleCategory="map_features_rapids"
+        schedule={schedule.data}
+        scheduleLoading={schedule.isLoading}
+        schedulePending={patchSchedule.isPending}
+        onIntervalChange={(v) => setInterval("map_features_rapids", v)}
+        queryKey="admin-backups-map-features-rapids"
+        load={async () => {
+          const { backups } = await adminListMapFeaturesRapidsBackups();
+          return backups.map<NormalizedBackup>((b) => ({
+            key: b.key,
+            timestampLabel: formatTimestamp(b.last_modified),
+            size: b.size,
+            kind: b.kind,
+          }));
+        }}
+        create={() => adminCreateMapFeaturesRapidsBackup()}
+        restore={(key) => adminRestoreMapFeaturesRapidsBackup(key)}
+      />
+
+      <AdminBackupCategorySection
         title="Elk-walkable"
         description="Walkable translocator edges (elk_walkable.json)."
         scheduleCategory="elk_walkable"
@@ -141,6 +171,27 @@ export function AdminBackupsOverviewPage() {
         }}
         create={() => adminCreateElkWalkableSnapshot()}
         restore={(key) => adminRestoreElkWalkableSnapshot(key)}
+      />
+
+      <AdminBackupCategorySection
+        title="Upstream translocators"
+        description="Snapshots of the upstream TOPS translocators geojson (translocators.json), kept in case the upstream host goes down. Snapshot-only — no restore."
+        scheduleCategory="tops_translocators"
+        schedule={schedule.data}
+        scheduleLoading={schedule.isLoading}
+        schedulePending={patchSchedule.isPending}
+        onIntervalChange={(v) => setInterval("tops_translocators", v)}
+        queryKey="admin-backups-tops-translocators"
+        load={async () => {
+          const { backups } = await adminListTopsTranslocatorsBackups();
+          return backups.map<NormalizedBackup>((b) => ({
+            key: b.key,
+            timestampLabel: formatTimestamp(b.last_modified),
+            size: b.size,
+            kind: b.kind,
+          }));
+        }}
+        create={() => adminCreateTopsTranslocatorsBackup()}
       />
     </div>
   );
