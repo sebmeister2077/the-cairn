@@ -13,7 +13,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_passkey
 from ..core import database as db
 from ..core import elk_walkable_store
 
@@ -137,7 +137,7 @@ class RestoreSnapshotBody(BaseModel):
 @router.post("/restore")
 async def restore_snapshot(
     payload: RestoreSnapshotBody,
-    api_key: str = Depends(require_admin),
+    api_key: str = Depends(require_admin_passkey),
 ) -> dict:
     async with elk_walkable_store.elk_walkable_write_lock("admin_restore_snapshot"):
         result = await asyncio.to_thread(

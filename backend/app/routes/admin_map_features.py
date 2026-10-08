@@ -17,7 +17,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_passkey
 from ..core import database as db
 from ..tasks import weekly_backup
 
@@ -101,7 +101,7 @@ class RestoreBackupBody(BaseModel):
 @router.post("/backups/restore")
 async def restore_backup(
     body: RestoreBackupBody,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_passkey),
 ) -> dict:
     if not body.confirm:
         raise HTTPException(

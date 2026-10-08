@@ -28,7 +28,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_passkey
 from ..core import database as db
 from ..core import r2_storage
 from ..tasks import weekly_backup
@@ -350,7 +350,7 @@ async def create_geojson_backup(
 @router.post("/backups/restore")
 async def restore_geojson_backup(
     body: GeojsonBackupRestoreBody,
-    api_key: str = Depends(require_admin),
+    api_key: str = Depends(require_admin_passkey),
 ) -> dict:
     if body.asset not in _VALID_ASSETS:
         raise HTTPException(status_code=400, detail=f"asset must be one of {_VALID_ASSETS}")

@@ -18,7 +18,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from ..auth import require_admin
+from ..auth import require_admin, require_admin_passkey
 from ..tasks import weekly_backup
 
 
@@ -62,7 +62,7 @@ async def create_rapids_backup(_: str = Depends(require_admin)) -> dict:
 @rapids_router.post("/backups/restore")
 async def restore_rapids_backup(
     body: RestoreBackupBody,
-    _: str = Depends(require_admin),
+    _: str = Depends(require_admin_passkey),
 ) -> dict:
     if not body.confirm:
         raise HTTPException(
