@@ -203,6 +203,9 @@ export function SailboatRoutePlannerPanel({
           <h2 className="flex items-center gap-2 text-base font-medium leading-none">
             <Sailboat className="h-4 w-4 text-sky-500" />
             {t("sailboatPlanner.title")}
+            <span className="inline-flex items-center rounded-full border border-amber-400/40 bg-amber-400/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase leading-none tracking-wide text-amber-600 dark:text-amber-400">
+              Beta
+            </span>
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">{t("sailboatPlanner.description")}</p>
         </div>
