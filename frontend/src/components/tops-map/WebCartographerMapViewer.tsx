@@ -178,6 +178,27 @@ interface WebCartographerMapViewerProps {
    * drawn as black/white barber-stripe lines beneath the route overlay.
    */
   connectionSegments?: ConnectionSegment[];
+  /**
+   * Optional sailboat route polyline (ordered world-space waypoints). Water
+   * legs draw as a solid blue path; `terrain`-flagged legs (land / tunnel
+   * crossings) draw dotted. Independent of `routeOverlay` so the walking
+   * planner and the sailboat planner can show their routes at the same time.
+   */
+  waterRoutePoints?: Array<{ x: number; z: number; terrain?: boolean; tl?: boolean }> | null;
+  /** Start / destination pins for the sailboat planner (world space). */
+  waterRouteFrom?: { x: number; z: number } | null;
+  waterRouteTo?: { x: number; z: number } | null;
+  /**
+   * Admin sailboat debug: outline each rendered WebCartographer tile so the
+   * admin can see tile boundaries (and which tiles the water detection reads).
+   */
+  debugTileOutlines?: boolean;
+  /**
+   * Admin sailboat debug: finest-level tile keys (`"cx_cy"`) the routing
+   * search has loaded so far. Highlighted (filled) so the admin can watch
+   * which chunks are being scanned live.
+   */
+  debugScannedTiles?: ReadonlySet<string>;
   highlightedSegment?: WorldLineSegment | null;
   highlightedSegments?: WorldLineSegment[];
   /**
@@ -314,6 +335,11 @@ export function WebCartographerMapViewer({
   playerClaimLabelMode = "always",
   routeOverlay = null,
   connectionSegments,
+  waterRoutePoints = null,
+  waterRouteFrom = null,
+  waterRouteTo = null,
+  debugTileOutlines = false,
+  debugScannedTiles,
   highlightedSegment,
   highlightedSegments,
   segmentColors,
@@ -892,6 +918,28 @@ export function WebCartographerMapViewer({
     return out.length > 0 ? out : null;
   }, [connectionSegments, projectWorld]);
 
+  const projectedWaterRoute = useMemo(() => {
+    if (!waterRoutePoints || waterRoutePoints.length < 2) return null;
+    const out: Array<{ x: number; y: number; terrain?: boolean; tl?: boolean }> = [];
+    for (const p of waterRoutePoints) {
+      const s = projectWorld(p.x, p.z);
+      if (!Number.isFinite(s.x) || !Number.isFinite(s.y)) continue;
+      out.push({ x: s.x, y: s.y, terrain: p.terrain, tl: p.tl });
+    }
+    return out.length >= 2 ? out : null;
+  }, [waterRoutePoints, projectWorld]);
+
+  const projectedWaterPins = useMemo(() => {
+    const pin = (p: { x: number; z: number } | null) => {
+      if (!p) return null;
+      const s = projectWorld(p.x, p.z);
+      return Number.isFinite(s.x) && Number.isFinite(s.y) ? s : null;
+    };
+    const from = pin(waterRouteFrom);
+    const to = pin(waterRouteTo);
+    return from || to ? { from, to } : null;
+  }, [waterRouteFrom, waterRouteTo, projectWorld]);
+
   const highlightedSegmentIndices = useMemo(() => {
     if (!overlaySegments || overlaySegments.length === 0) return new Set<number>();
     const targets = new Set<string>();
@@ -1205,6 +1253,74 @@ export function WebCartographerMapViewer({
 
     if (anyFading) scheduleRedraw();
 
+    // ── Admin sailboat debug: tile outlines ───────────────────────────────
+    // Outline every tile cell currently in view at the active level so the
+    // admin can see tile boundaries + the per-tile grid the water detection
+    // samples. Loaded tiles get a bright outline + coord label; cells with
+    // no data get a dim dashed box.
+    if (debugTileOutlines) {
+      ctx.save();
+      ctx.lineWidth = 1;
+      ctx.font = "10px ui-monospace, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+
+      // Scanned-chunk highlight: the routing search works at the finest level
+      // (1 block/px, 256-block tiles), independent of the current view zoom.
+      // Draw those as filled world-space rects so they're visible at any zoom.
+      if (debugScannedTiles && debugScannedTiles.size > 0) {
+        const SCAN_SPAN_BLOCKS = WC_TILE_SIZE_PX; // finest level: 1 block/px
+        const spanScreen = SCAN_SPAN_BLOCKS * ppb;
+        ctx.fillStyle = "rgba(251, 146, 60, 0.28)"; // orange-400
+        ctx.strokeStyle = "rgba(234, 88, 12, 0.9)"; // orange-600
+        ctx.setLineDash([]);
+        for (const key of debugScannedTiles) {
+          const us = key.indexOf("_");
+          if (us < 0) continue;
+          const scx = +key.slice(0, us);
+          const scy = +key.slice(us + 1);
+          if (!Number.isFinite(scx) || !Number.isFinite(scy)) continue;
+          const wx0 = startX + scx * SCAN_SPAN_BLOCKS;
+          const wz0 = startZ + scy * SCAN_SPAN_BLOCKS;
+          const sx = (wx0 - cWx) * ppb + cw / 2;
+          const sy = (wz0 - cWz) * ppb + ch / 2;
+          if (sx + spanScreen < 0 || sy + spanScreen < 0 || sx > cw || sy > ch) continue;
+          ctx.fillRect(sx, sy, spanScreen, spanScreen);
+          ctx.strokeRect(sx + 0.5, sy + 0.5, spanScreen - 1, spanScreen - 1);
+        }
+      }
+
+      for (let cy = cyMin; cy <= cyMax; cy++) {
+        for (let cx = cxMin; cx <= cxMax; cx++) {
+          const wx0 = startX + cx * tileSpanBlocks;
+          const wz0 = startZ + cy * tileSpanBlocks;
+          const sx = (wx0 - cWx) * ppb + cw / 2;
+          const sy = (wz0 - cWz) * ppb + ch / 2;
+          const entry = tileCacheRef.current.cache.get(`${level}/${cx}/${cy}`);
+          const loaded = entry?.status === "loaded" && !!entry.img;
+          if (loaded) {
+            ctx.setLineDash([]);
+            ctx.strokeStyle = "rgba(14, 165, 233, 0.9)"; // sky-500
+            ctx.strokeRect(sx + 0.5, sy + 0.5, tileSpanScreen - 1, tileSpanScreen - 1);
+            if (tileSpanScreen > 48) {
+              const label = `${level}/${cx}_${cy}`;
+              const tw = ctx.measureText(label).width;
+              ctx.fillStyle = "rgba(2, 132, 199, 0.85)";
+              ctx.fillRect(sx + 1, sy + 1, tw + 6, 13);
+              ctx.fillStyle = "rgba(248, 250, 252, 0.98)";
+              ctx.fillText(label, sx + 4, sy + 2);
+            }
+          } else {
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = "rgba(148, 163, 184, 0.45)"; // slate-400
+            ctx.strokeRect(sx + 0.5, sy + 0.5, tileSpanScreen - 1, tileSpanScreen - 1);
+          }
+        }
+      }
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     scheduleTileFetch();
 
     // ── Overlays ──────────────────────────────────────────────────────────
@@ -1444,6 +1560,92 @@ export function WebCartographerMapViewer({
       drawPointLabels(octx, projectedPoints, cw, ch);
     }
 
+    // ── Sailboat route polyline + pins ────────────────────────────────────
+    if (projectedWaterRoute && projectedWaterRoute.length >= 2) {
+      octx.save();
+      octx.lineJoin = "round";
+      octx.lineCap = "round";
+
+      // Soft white halo beneath the whole path (water + terrain) for contrast.
+      octx.beginPath();
+      octx.moveTo(projectedWaterRoute[0].x, projectedWaterRoute[0].y);
+      for (let i = 1; i < projectedWaterRoute.length; i++) {
+        octx.lineTo(projectedWaterRoute[i].x, projectedWaterRoute[i].y);
+      }
+      octx.lineWidth = 6;
+      octx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+      octx.stroke();
+
+      // Solid blue for water legs.
+      octx.beginPath();
+      for (let i = 1; i < projectedWaterRoute.length; i++) {
+        const seg = projectedWaterRoute[i];
+        if (seg.terrain || seg.tl) continue;
+        const a = projectedWaterRoute[i - 1];
+        octx.moveTo(a.x, a.y);
+        octx.lineTo(seg.x, seg.y);
+      }
+      octx.setLineDash([]);
+      octx.lineWidth = 3;
+      octx.strokeStyle = "rgba(2, 132, 199, 0.95)"; // sky-600
+      octx.stroke();
+
+      // Dotted amber for terrain (land / tunnel) crossings.
+      octx.beginPath();
+      for (let i = 1; i < projectedWaterRoute.length; i++) {
+        const seg = projectedWaterRoute[i];
+        if (!seg.terrain) continue;
+        const a = projectedWaterRoute[i - 1];
+        octx.moveTo(a.x, a.y);
+        octx.lineTo(seg.x, seg.y);
+      }
+      octx.setLineDash([3, 4]);
+      octx.lineWidth = 2.5;
+      octx.strokeStyle = "rgba(217, 119, 6, 0.95)"; // amber-600
+      octx.stroke();
+
+      // Dashed green for boat-TL hops.
+      octx.beginPath();
+      for (let i = 1; i < projectedWaterRoute.length; i++) {
+        const seg = projectedWaterRoute[i];
+        if (!seg.tl) continue;
+        const a = projectedWaterRoute[i - 1];
+        octx.moveTo(a.x, a.y);
+        octx.lineTo(seg.x, seg.y);
+      }
+      octx.setLineDash([8, 5]);
+      octx.lineWidth = 2.5;
+      octx.strokeStyle = "rgba(16, 185, 129, 0.95)"; // emerald-500
+      octx.stroke();
+
+      octx.setLineDash([]);
+      octx.restore();
+    }
+
+    if (projectedWaterPins) {
+      const pinRadius = 7.5;
+      const drawPin = (cx: number, cy: number, fill: string, label: string) => {
+        octx.beginPath();
+        octx.arc(cx, cy - pinRadius, pinRadius, Math.PI * 0.2, Math.PI * 0.8, true);
+        octx.lineTo(cx, cy);
+        octx.closePath();
+        octx.fillStyle = fill;
+        octx.fill();
+        octx.strokeStyle = "rgba(15, 23, 42, 0.9)";
+        octx.lineWidth = 1;
+        octx.stroke();
+        octx.fillStyle = "rgba(248, 250, 252, 0.98)";
+        octx.font = `bold ${pinRadius * 1.1}px system-ui, sans-serif`;
+        octx.textAlign = "center";
+        octx.textBaseline = "middle";
+        octx.fillText(label, cx, cy - pinRadius);
+      };
+      if (projectedWaterPins.from)
+        drawPin(projectedWaterPins.from.x, projectedWaterPins.from.y, "rgba(34, 197, 94, 0.98)", "A");
+      if (projectedWaterPins.to)
+        drawPin(projectedWaterPins.to.x, projectedWaterPins.to.y, "rgba(239, 68, 68, 0.98)", "B");
+    }
+
     // ── Planning-board drawings ───────────────────────────────────────────
     // World-anchored strokes/shapes/text/stamps, painted above the map + its
     // overlays. Elements + the in-progress preview all project through the
@@ -1591,6 +1793,10 @@ export function WebCartographerMapViewer({
     projectedPoints,
     projectedRoute,
     projectedConnections,
+    projectedWaterRoute,
+    projectedWaterPins,
+    debugTileOutlines,
+    debugScannedTiles,
     hoveredSegmentIndex,
     highlightedSegmentIndices,
     routeTLBaseSkipIndices,

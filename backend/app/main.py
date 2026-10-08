@@ -58,6 +58,7 @@ from .routes import public_road_workers as public_road_workers_routes
 from .routes import webcartographer as webcartographer_routes
 from .routes import elk_walkable as elk_walkable_routes
 from .routes import admin_elk_walkable as admin_elk_walkable_routes
+from .routes import boat_tls as boat_tls_routes
 from .routes import admin_map_features as admin_map_features_routes
 from .routes import admin_backups_extra as admin_backups_extra_routes
 from .routes import grouping_library as grouping_library_routes
@@ -823,6 +824,8 @@ app.include_router(public_road_workers_routes.router, prefix="/api")
 app.include_router(webcartographer_routes.router, prefix="/api")
 app.include_router(elk_walkable_routes.router, prefix="/api")
 app.include_router(admin_elk_walkable_routes.router, prefix="/api")
+app.include_router(boat_tls_routes.router, prefix="/api")
+app.include_router(boat_tls_routes.admin_router, prefix="/api")
 app.include_router(admin_map_features_routes.router, prefix="/api")
 app.include_router(admin_backups_extra_routes.rapids_router, prefix="/api")
 app.include_router(admin_backups_extra_routes.tops_translocators_router, prefix="/api")

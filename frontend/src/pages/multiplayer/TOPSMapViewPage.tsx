@@ -109,6 +109,15 @@ import {
 import { useTLRoute } from "@/hooks/useTLRoute";
 import { useElkWalkable } from "@/hooks/useElkWalkable";
 import { useMapLayerTelemetry } from "@/hooks/useMapLayerTelemetry";
+import { useBoatFriendlyTLs, useToggleBoatFriendlyTL } from "@/hooks/useBoatFriendlyTLs";
+import { SailboatRoutePlannerPanel } from "@/components/tops-map/SailboatRoutePlannerPanel";
+import { tlIdForSegment } from "@/lib/tl-routing";
+import type { SailboatTL } from "@/lib/sailboat/sailboat-routing";
+import {
+  setSailboatFrom,
+  setSailboatPickMode,
+  setSailboatTo,
+} from "@/store/slices/sailboatRoute";
 import {
   setRouteFrom,
   setRoutePickMode,
@@ -916,6 +925,69 @@ export function TOPSMapViewPage() {
   // still has the data via `allTranslocators` directly.
   const translocatorSegments = allTranslocators ?? [];
 
+  // ── Sailboat route planner state (declared early so TL-click handling,
+  //    the radius cull, and segment colouring can all reference it) ─────────
+  const { idSet: boatFriendlyIdSet } = useBoatFriendlyTLs();
+  const toggleBoatTL = useToggleBoatFriendlyTL();
+  const sailboatPickMode = useAppSelector((s) => s.sailboatRoute.pickMode);
+  const boatTLEditMode = useAppSelector((s) => s.sailboatRoute.boatTLEditMode);
+  const sailboatRouteResult = useAppSelector((s) => s.sailboatRoute.route);
+
+  // Boat-friendly TLs (both endpoints) for the routing engine's portals.
+  const boatTLs = useMemo<SailboatTL[]>(() => {
+    if (boatFriendlyIdSet.size === 0) return [];
+    const out: SailboatTL[] = [];
+    for (const seg of translocatorSegments) {
+      const id = tlIdForSegment(seg);
+      if (boatFriendlyIdSet.has(id)) {
+        out.push({ id, a: { x: seg.x1, z: seg.z1 }, b: { x: seg.x2, z: seg.z2 } });
+      }
+    }
+    return out;
+  }, [boatFriendlyIdSet, translocatorSegments]);
+
+  // Raw-order ids (matching the viewer's segment keys) of boat-friendly TLs,
+  // so they can be force-shown past the radius cull and tinted a boat colour.
+  const boatFriendlyRawIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (boatFriendlyIdSet.size === 0) return ids;
+    for (const seg of translocatorSegments) {
+      if (boatFriendlyIdSet.has(tlIdForSegment(seg))) ids.add(tlIdFor(seg));
+    }
+    return ids;
+  }, [boatFriendlyIdSet, translocatorSegments]);
+
+  // The computed route as a world-space polyline for the overlay (carrying
+  // terrain/TL flags so land crossings render dotted).
+  const waterRoutePoints = useMemo(() => {
+    if (!sailboatRouteResult?.found || sailboatRouteResult.waypoints.length < 2) return null;
+    return sailboatRouteResult.waypoints.map((w) => ({
+      x: w.x,
+      z: w.z,
+      terrain: w.terrain,
+      tl: w.tl,
+    }));
+  }, [sailboatRouteResult]);
+
+  // Sailboat endpoint pins (shown on the map while picking / after a route).
+  const sailboatFrom = useAppSelector((s) => s.sailboatRoute.from);
+  const sailboatTo = useAppSelector((s) => s.sailboatRoute.to);
+  const sailboatOpen = useAppSelector((s) => s.sailboatRoute.isOpen);
+  const sailboatDebugTiles = useAppSelector((s) => s.sailboatRoute.debugTiles);
+  const sailboatScannedTiles = useAppSelector((s) => s.sailboatRoute.scannedTiles);
+  const sailboatScannedTileSet = useMemo(
+    () => new Set(sailboatScannedTiles),
+    [sailboatScannedTiles],
+  );
+  const waterRouteFrom = useMemo(
+    () => (sailboatOpen && sailboatFrom ? sailboatFrom.point : null),
+    [sailboatOpen, sailboatFrom],
+  );
+  const waterRouteTo = useMemo(
+    () => (sailboatOpen && sailboatTo ? sailboatTo.point : null),
+    [sailboatOpen, sailboatTo],
+  );
+
   const statsQuery = useQuery<TopsMapStatsResponse>({
     queryKey: ["tops-map-stats"],
     queryFn: getTopsMapStats,
@@ -1173,6 +1245,14 @@ export function TOPSMapViewPage() {
 
   const handleTranslocatorClick = useCallback(
     (seg: WorldLineSegment | null) => {
+      // Admin boat-friendly edit mode: clicking a TL toggles its boat-friendly
+      // state on the server (takes priority over selection / grouping edits).
+      if (boatTLEditMode && seg) {
+        const id = tlIdForSegment(seg);
+        const enabled = !boatFriendlyIdSet.has(id);
+        toggleBoatTL.mutate({ tlId: id, enabled });
+        return;
+      }
       // Edit mode: clicks toggle membership of the editing grouping rather
       // than selecting / pinning.
       if (editingGroupingId && seg) {
@@ -1188,7 +1268,14 @@ export function TOPSMapViewPage() {
       }
       setSelectedTranslocator(seg);
     },
-    [editingGroupingId, groupingsStore, translocatorPinned],
+    [
+      editingGroupingId,
+      groupingsStore,
+      translocatorPinned,
+      boatTLEditMode,
+      boatFriendlyIdSet,
+      toggleBoatTL,
+    ],
   );
 
   const handleTranslocatorRightClick = useCallback((seg: WorldLineSegment) => {
@@ -1591,6 +1678,17 @@ export function TOPSMapViewPage() {
     return map.size > 0 ? map : undefined;
   }, [editingGrouping, groupingsViewMode, activeGroupingIds, groupingsStore.groupings]);
 
+  // Boat-friendly TLs render in a distinct boat-blue, merged on top of any
+  // grouping colours (grouping colours win if a TL is in both).
+  const finalSegmentColors = useMemo(() => {
+    if (boatFriendlyRawIds.size === 0) return groupingSegmentColors;
+    const map = new Map<string, string>(groupingSegmentColors ?? []);
+    for (const id of boatFriendlyRawIds) {
+      if (!map.has(id)) map.set(id, "#0ea5e9"); // sky-500
+    }
+    return map;
+  }, [groupingSegmentColors, boatFriendlyRawIds]);
+
   // Cursor-radius filter passed into the WC map viewer. When active, the
   // viewer culls drawn TLs to those within `tlRadiusBlocks` of the mouse,
   // plus any TLs whose canonical id is in `alwaysShowTLIds`. Always-show
@@ -1614,6 +1712,9 @@ export function TOPSMapViewPage() {
     if (translocatorPinned && selectedTranslocator) {
       ids.add(tlIdFor(selectedTranslocator));
     }
+    // Boat-friendly TLs are always shown so admins can click each one past the
+    // radius cull (and so the sailboat planner's portals are visible).
+    for (const id of boatFriendlyRawIds) ids.add(id);
     return { radiusBlocks: tlRadiusBlocks, alwaysShowTLIds: ids };
   }, [
     showTLsInRadius,
@@ -1624,6 +1725,7 @@ export function TOPSMapViewPage() {
     editingGrouping,
     translocatorPinned,
     selectedTranslocator,
+    boatFriendlyRawIds,
   ]);
 
   // ---------------------------------------------------------------------
@@ -1637,6 +1739,7 @@ export function TOPSMapViewPage() {
 
   const routePickMode = useAppSelector((s) => s.routePlanner.pickMode);
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
+
   const toggleRoutePlanner = useCallback(
     () => dispatch(setRoutePlannerOpen(!routePlannerOpen)),
     [dispatch, routePlannerOpen],
@@ -1855,9 +1958,24 @@ export function TOPSMapViewPage() {
         areaTool.handleWorldClick(x, z);
         return;
       }
+      // Sailboat planner endpoint capture takes priority over the walking
+      // route planner when its pick mode is active.
+      if (sailboatPickMode === "from" || sailboatPickMode === "to") {
+        const pick = { point: { x, z }, label: `${x}, ${z}`, source: "map-click" as const };
+        dispatch(sailboatPickMode === "from" ? setSailboatFrom(pick) : setSailboatTo(pick));
+        dispatch(setSailboatPickMode(null));
+        return;
+      }
       handleRouteWorldClick(x, z);
     },
-    [previewPickEpicenter, dispatch, areaPickActive, areaTool, handleRouteWorldClick],
+    [
+      previewPickEpicenter,
+      dispatch,
+      areaPickActive,
+      areaTool,
+      handleRouteWorldClick,
+      sailboatPickMode,
+    ],
   );
 
   return (
@@ -2177,7 +2295,7 @@ export function TOPSMapViewPage() {
                   : undefined
               }
               highlightedSegments={finalHighlightedSegments}
-              segmentColors={groupingSegmentColors}
+              segmentColors={finalSegmentColors}
               claimMarkers={traderClaimsVisible ? traderClaimsQuery.data : undefined}
               claimTypes={traderClaimTypesQuery.data?.data}
               emptyClaims={traderClaimEmptyQuery.data?.data}
@@ -2291,7 +2409,7 @@ export function TOPSMapViewPage() {
                   ? "pick"
                   : areaPickActive
                     ? "pick"
-                    : routePickMode
+                    : routePickMode || sailboatPickMode
                       ? "pick"
                       : drawingProps.enabled
                         ? "draw"
@@ -2300,6 +2418,13 @@ export function TOPSMapViewPage() {
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
               connectionSegments={finalConnectionSegments}
+              waterRoutePoints={waterRoutePoints}
+              waterRouteFrom={waterRouteFrom}
+              waterRouteTo={waterRouteTo}
+              debugTileOutlines={isAdmin && sailboatDebugTiles}
+              debugScannedTiles={
+                isAdmin && sailboatDebugTiles ? sailboatScannedTileSet : undefined
+              }
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}
             />
@@ -2324,7 +2449,7 @@ export function TOPSMapViewPage() {
                   : undefined
               }
               highlightedSegments={finalHighlightedSegments}
-              segmentColors={groupingSegmentColors}
+              segmentColors={finalSegmentColors}
               focusPoint={landmarkFocusPoint}
               focusSpanBlocks={landmarkFocusSpanBlocks}
               enhanceTilesFn={hasMap && completedLevels.length > 1 ? selectLevelForZoom : undefined}
@@ -2416,7 +2541,9 @@ export function TOPSMapViewPage() {
                 ) : null
               }
               cursorMode={
-                previewPickEpicenter || areaPickActive || routePickMode ? "pick" : "default"
+                previewPickEpicenter || areaPickActive || routePickMode || sailboatPickMode
+                  ? "pick"
+                  : "default"
               }
               onWorldClick={handleMapWorldClick}
               routeOverlay={finalRouteOverlay}
@@ -2509,6 +2636,11 @@ export function TOPSMapViewPage() {
           onStopEditing={() => setEditingGroupingId(null)}
         />
         <RoutePlannerPanel />
+        <SailboatRoutePlannerPanel
+          baseUrl={effectiveWcUrl}
+          ext={effectiveTileFormat}
+          boatTLs={boatTLs}
+        />
         {/* {isAdmin && (
           <ResourcesDrawer
             open={resourcesDrawerOpen}

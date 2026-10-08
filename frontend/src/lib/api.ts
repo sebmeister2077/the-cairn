@@ -421,6 +421,37 @@ export async function submitElkWalkable(
 }
 
 // ---------------------------------------------------------------------------
+// Boat-friendly translocators (sailboat route planner)
+// ---------------------------------------------------------------------------
+
+export interface BoatFriendlyTLsResponse {
+    /** Orientation-agnostic TL ids (`"x1,z1,x2,z2"`, see `tlIdForSegment`). */
+    tl_ids: string[];
+}
+
+/** Public: the admin-curated list of boat-friendly TL ids. */
+export async function getBoatFriendlyTLs(): Promise<BoatFriendlyTLsResponse> {
+    const res = await fetch(`${API_BASE}/boat-tls`);
+    if (!res.ok) {
+        throw new Error(`Failed to load boat-friendly TLs (${res.status})`);
+    }
+    return res.json();
+}
+
+/** Admin: add or remove one TL from the boat-friendly list. */
+export async function toggleBoatFriendlyTL(
+    tlId: string,
+    enabled: boolean,
+): Promise<BoatFriendlyTLsResponse> {
+    const res = await fetch(`${API_BASE}/admin/boat-tls/toggle`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify({ tl_id: tlId, enabled }),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Elk-walkable reports (user-facing)
 // ---------------------------------------------------------------------------
 

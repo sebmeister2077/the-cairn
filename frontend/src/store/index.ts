@@ -34,6 +34,7 @@ import { adminApiKeysFiltersSlice } from "./slices/adminApiKeysFilters";
 import { adminUsageFiltersSlice } from "./slices/adminUsageFilters";
 import { routePlannerSlice } from "./slices/routePlanner";
 import { elkWalkableSlice } from "./slices/elkWalkable";
+import { sailboatRouteSlice } from "./slices/sailboatRoute";
 import { i18nSlice } from "./slices/i18n";
 import { topsMapPreviewSlice } from "./slices/topsMapPreview";
 import { auctionFiltersSlice } from "./slices/auctionFilters";
@@ -64,6 +65,7 @@ const rootReducer = combineReducers({
     contributeTLs: contributeTLsSlice.reducer,
     routePlanner: routePlannerSlice.reducer,
     elkWalkable: elkWalkableSlice.reducer,
+    sailboatRoute: sailboatRouteSlice.reducer,
     i18n: i18nSlice.reducer,
     topsMapPreview: topsMapPreviewSlice.reducer,
     auctionFilters: auctionFiltersSlice.reducer,

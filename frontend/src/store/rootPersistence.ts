@@ -62,6 +62,9 @@ export const PERSIST_BLACKLIST: ReadonlyArray<keyof RootState> = [
     // Planning boards live in IndexedDB (large payloads); the Redux copy is
     // hydrated from there on load, never from the localStorage envelope.
     "drawing",
+    // The sailboat planner is fully ephemeral — endpoints, the computed water
+    // route, and the admin edit toggle should all reset on reload.
+    "sailboatRoute",
     // NOTE: `routePlanner` is intentionally NOT blacklisted — we want to
     // persist the user's cost-model preferences (walk speed, TL penalty,
     // kNeighbors) across reloads. Transient fields (endpoints, computed

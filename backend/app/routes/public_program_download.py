@@ -65,10 +65,13 @@ How to run
 ----------
   1. Keep all three files in the same folder.
   2. Run {exe} (double-click on Windows, or launch it from a terminal).
-  3. Launch Vintage Story and connect through the proxy as instructed.
+  3. Launch Vintage Story and connect through the proxy as instructed, add a new Multiplayer server with the ip and port written in the console.
 
 The program reads license.key and publish.key from this folder automatically —
 you do not need to pass any command-line arguments.
+
+Your identity will not be exposed by this program or by the Cairn project administrator, but you are free to share it if you choose so.
+
 """
 
 _README_TEXT_EXE_ONLY = """VSProxy — program update

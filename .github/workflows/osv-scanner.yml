@@ -1,8 +1,8 @@
 name: Dependency Vulnerability Scan
 
 on:
-  push:
-    branches: ["main"]
+  # push:
+  #   branches: ["main"]
   schedule:
     # Weekly re-scan catches newly-disclosed CVEs in deps you haven't changed.
     - cron: "0 6 * * 1"

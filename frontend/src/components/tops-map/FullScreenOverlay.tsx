@@ -6,6 +6,7 @@ import {
   PanelRightClose,
   PanelRightOpen,
   Route,
+  Sailboat,
   Search,
   SlidersHorizontal,
   Waypoints,
@@ -43,6 +44,10 @@ import {
   setFullscreenControlsCollapsed as setFullscreenControlsCollapsedAction,
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen, setRouteShowMovementHeatmap } from "@/store/slices/routePlanner";
+import {
+  setSailboatOpen,
+  setSailboatBoatTLEditMode,
+} from "@/store/slices/sailboatRoute";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
@@ -293,6 +298,11 @@ export function FullscreenControlsOverlay({
   const routePlannerOpen = useAppSelector((s) => s.routePlanner.isOpen);
   const isAdmin = useReduxState("auth.isAdmin");
   const showMovementHeatmap = useAppSelector((s) => s.routePlanner.showMovementHeatmap);
+  // Sailboat (water) route planner: an open toggle + the admin "mark
+  // boat-friendly TLs" edit mode.
+  const sailboatOpen = useAppSelector((s) => s.sailboatRoute.isOpen);
+  const boatTLEditMode = useAppSelector((s) => s.sailboatRoute.boatTLEditMode);
+  const sailboatRoute = useAppSelector((s) => s.sailboatRoute.route);
   // Active-route signals so the fullscreen Route button can advertise an
   // active route the same way the non-fullscreen toolbar button does.
   const routes = useAppSelector((s) => s.routePlanner.routes);
@@ -836,7 +846,13 @@ export function FullscreenControlsOverlay({
             type="button"
             variant={activeRoute || routePlannerOpen ? "default" : "secondary"}
             size="sm"
-            onClick={() => dispatch(setRoutePlannerOpen(!routePlannerOpen))}
+            onClick={() => {
+              const next = !routePlannerOpen;
+              dispatch(setRoutePlannerOpen(next));
+              // Both planner panels are right-anchored — keep them mutually
+              // exclusive so they never overlap.
+              if (next && sailboatOpen) dispatch(setSailboatOpen(false));
+            }}
             className={cn(
               "shadow-md",
               activeRoute &&
@@ -887,6 +903,40 @@ export function FullscreenControlsOverlay({
             >
               <Flame className="size-4 mr-1" />
               {t("topsMap.movementHeatmap.button")}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant={sailboatRoute?.found || sailboatOpen ? "default" : "secondary"}
+            size="sm"
+            onClick={() => {
+              const next = !sailboatOpen;
+              dispatch(setSailboatOpen(next));
+              // Keep the two right-anchored planner panels mutually exclusive.
+              if (next && routePlannerOpen) dispatch(setRoutePlannerOpen(false));
+            }}
+            className={cn(
+              "shadow-md",
+              sailboatRoute?.found &&
+                "bg-sky-600 text-white hover:bg-sky-700 focus-visible:ring-sky-500 dark:bg-sky-600 dark:hover:bg-sky-700",
+            )}
+            title={t("sailboatPlanner.buttonTooltip")}
+          >
+            <Sailboat className="size-4 mr-1" />
+            {t("sailboatPlanner.button")}
+          </Button>
+          {isAdmin && (
+            <Button
+              type="button"
+              variant={boatTLEditMode ? "default" : "secondary"}
+              size="sm"
+              className="shadow-md"
+              onClick={() => dispatch(setSailboatBoatTLEditMode(!boatTLEditMode))}
+              title={t("sailboatPlanner.adminToggleTooltip")}
+              aria-pressed={boatTLEditMode}
+            >
+              <Sailboat className="size-4 mr-1" />
+              {t("sailboatPlanner.adminToggle")}
             </Button>
           )}
         </CollapsibleSection>
