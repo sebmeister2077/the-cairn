@@ -96,6 +96,8 @@ export const en = {
                 programDownloads: "Program Downloads",
                 tunnelPreviewer: "Tunnel Previewer",
                 waypointMacro: "Waypoint Macros",
+                alloyCalculator: "Alloy Calculator",
+                charcoalCalculator: "Charcoal Calculator",
                 marketOverview: "Overview",
                 marketListings: "Listings",
                 marketItems: "Items",
@@ -2045,6 +2047,24 @@ export const en = {
                 dedup: "Find duplicates",
                 scratch: "Generate from scratch",
             },
+        },
+        alloyCalculator: {
+            pageTitle: "Alloy calculator",
+            pageDescription:
+                "Work out the exact metal units needed to hit a target alloy ratio for bronzes, brasses, and other Vintage Story alloys. This page embeds the excellent calculator from vintagecalc.eu so you can plan your smelts without leaving Tops.",
+            openExternal: "Open on vintagecalc.eu",
+            iframeTitle: "Alloy calculator (vintagecalc.eu)",
+            attribution:
+                "Calculator provided by <link>vintagecalc.eu</link>. All credit for the tool goes to its authors — if it ever fails to load here, open it directly using the link above.",
+        },
+        charcoalCalculator: {
+            pageTitle: "Charcoal calculator",
+            pageDescription:
+                "Calculate the amount of charcoal you would get for charcoal pits. This page embeds the excellent calculator from vintagecalc.eu so you can plan your fuel usage without leaving Tops.",
+            openExternal: "Open on vintagecalc.eu",
+            iframeTitle: "Charcoal calculator (vintagecalc.eu)",
+            attribution:
+                "Calculator provided by <link>vintagecalc.eu</link>. All credit for the tool goes to its authors — if it ever fails to load here, open it directly using the link above.",
         },
         tunnel: {
             pageTitle: "Tunnel & road builder",

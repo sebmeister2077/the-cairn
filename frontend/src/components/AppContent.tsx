@@ -96,6 +96,8 @@ import { useReduxState } from "@/store/hooks";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { ErrorBoundary } from "./other/ErrorBoundary";
+import { ToolsAlloyCalculatorPage } from "@/pages/tools/ToolsAlloyCalculatorPage";
+import { ToolsCharcoalCalculatorPage } from "@/pages/tools/ToolsCharcoalCalculatorPage";
 
 const BASE_CATEGORIES = [
   { value: "/general", labelKey: "app.nav.categories.general" },
@@ -128,6 +130,8 @@ const NavigationRoutes = {
   Tools: {
     TunnelPreviewer: "/tools",
     WaypointMacro: "/tools/waypoints",
+    AlloyCalculator: "/tools/alloy-calculator",
+    CharcoalCalculator: "/tools/charcoal-calculator",
   },
   Market: {
     Overview: "/market",
@@ -279,6 +283,8 @@ const subTabs: Subtabs = {
   "/tools": [
     { value: "/tools", labelKey: "app.nav.subtabs.tunnelPreviewer" },
     { value: "/tools/waypoints", labelKey: "app.nav.subtabs.waypointMacro" },
+    { value: "/tools/alloy-calculator", labelKey: "app.nav.subtabs.alloyCalculator" },
+    { value: "/tools/charcoal-calculator", labelKey: "app.nav.subtabs.charcoalCalculator" },
   ],
   "/rarity": [{ value: "/rarity/rocks", labelKey: "app.nav.subtabs.rarityRocks" }],
   "/manage": [
@@ -452,19 +458,19 @@ export function AppContent() {
   const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
   const isToolsPage = activeCategory === "/tools";
 
-  useEffect(() => {
-    const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
-    const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
-    if (isPageWithMapAssets) {
-      const linkEl = document.createElement("link");
-      linkEl.rel = "preconnect";
-      linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
-      document.head.appendChild(linkEl);
-      return () => {
-        document.head.removeChild(linkEl);
-      };
-    }
-  }, [location.pathname]);
+  // useEffect(() => {
+  //   const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
+  //   const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
+  //   if (isPageWithMapAssets) {
+  //     const linkEl = document.createElement("link");
+  //     linkEl.rel = "preconnect";
+  //     linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
+  //     document.head.appendChild(linkEl);
+  //     return () => {
+  //       document.head.removeChild(linkEl);
+  //     };
+  //   }
+  // }, [location.pathname]);
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -1193,6 +1199,22 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
                 <ToolsWaypointMacroPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/tools/alloy-calculator"
+            element={
+              <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
+                <ToolsAlloyCalculatorPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/tools/charcoal-calculator"
+            element={
+              <ErrorBoundary title="Tools failed" resetKeys={[location.pathname]}>
+                <ToolsCharcoalCalculatorPage />
               </ErrorBoundary>
             }
           />

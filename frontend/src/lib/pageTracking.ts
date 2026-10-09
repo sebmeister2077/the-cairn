@@ -49,6 +49,8 @@ const KNOWN_ROUTES: string[] = [
     "/public/road-workers",
     "/tools",
     "/tools/waypoints",
+    "/tools/charcoal-calculator",
+    "/tools/alloy-calculator",
     "/market",
     "/market/listings",
     "/market/insights",
