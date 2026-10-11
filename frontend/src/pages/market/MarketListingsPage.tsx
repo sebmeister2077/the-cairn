@@ -30,6 +30,7 @@ import {
   ListingStateBadge,
   ListingNotesCell,
 } from "../../components/market/VirtualTable";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {
@@ -83,7 +84,10 @@ export function MarketListingsPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-semibold">Auction Listings</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Auction Listings</h1>
+          <MaintenanceChip component="auction_listings" />
+        </div>
         <div className="flex items-center gap-3">
           <p className="text-sm text-muted-foreground">
             {rows.length.toLocaleString()} of {data.length.toLocaleString()} listings

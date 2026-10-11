@@ -9,6 +9,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { Trans, useTranslation } from "@/lib/i18n";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const CHARCOAL_CALCULATOR_URL = "https://vintagecalc.eu/charcoal/";
 
@@ -30,13 +31,15 @@ export function ToolsCharcoalCalculatorPage() {
   return (
     <div className="space-y-3">
       <header className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold">{t("tools.charcoalCalculator.pageTitle")}</h1>
+          <MaintenanceChip component="tools_charcoal_calculator" />
+
           <a
             href={CHARCOAL_CALCULATOR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline ml-auto"
           >
             {t("tools.charcoalCalculator.openExternal")}
             <ExternalLink className="size-4" aria-hidden="true" />

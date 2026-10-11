@@ -20,6 +20,7 @@ import { PlayerPurchasesSection } from "@/components/market/PlayerPurchasesSecti
 import { PlayerBehaviorSection } from "@/components/market/PlayerBehaviorSection";
 import { PlayerAchievementsBar } from "@/components/market/PlayerAchievements";
 import { SmartWindowNote } from "@/components/market/SmartWindowNote";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 // Auctioneer entities respawn a few blocks off (with a new entity id) after a
 // culling event, so the same physical stall shows up under slightly different
@@ -190,13 +191,16 @@ export function MarketPlayerPage() {
   return (
     <div className="space-y-5">
       <div>
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
-        </button>
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 text-lg text-primary hover:underline"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
+          </button>
+          <MaintenanceChip component="auction_player_id" />
+        </div>
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <h1 className="text-2xl font-semibold">{name}</h1>

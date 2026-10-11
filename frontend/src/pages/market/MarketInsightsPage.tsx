@@ -66,6 +66,7 @@ import { toggleFavorite } from "@/store/slices/marketFavorites";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import type { InsightsRow } from "@/models/auction";
 import { cn } from "@/lib/utils";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 type VolumeMode = "price" | "unit";
 
@@ -923,7 +924,10 @@ export function MarketInsightsPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Market Insights</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Market Insights</h1>
+          <MaintenanceChip component="auction_insights" />
+        </div>
         <p className="text-xs text-muted-foreground">
           Derived indicators per item. Listing dates use the in-game calendar; time to sell is
           real-world. Windows are real days of play (1 real day ≈ 1 in-game month).

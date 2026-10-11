@@ -7,6 +7,7 @@ import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
 import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
 import { MarketWealthChart } from "@/components/market/MarketWealthChart";
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 export function MarketOverviewPage() {
   const { data, isPending, isError } = useAuctionSummary();
@@ -33,15 +34,18 @@ export function MarketOverviewPage() {
     <div className="space-y-5">
       <div>
         <h1 className="text-2xl font-semibold">
-          <a
-            href="https://topsinfo.vintagestory.at"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline decoration-dotted underline-offset-2 hover:text-primary"
-          >
-            TOPS
-          </a>{" "}
-          Auction House
+          <div className="flex items-center gap-2">
+            <a
+              href="https://topsinfo.vintagestory.at"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline decoration-dotted underline-offset-2 hover:text-primary"
+            >
+              TOPS
+            </a>{" "}
+            Auction House
+            <MaintenanceChip component="auction_overview" />
+          </div>
         </h1>
         <FreshnessBanner generatedUtc={data.generatedUtc} />
       </div>

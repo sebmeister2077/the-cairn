@@ -103,6 +103,7 @@ import { UpperBoundUnknownBadge } from "@/components/market/item/UpperBoundUnkno
 import { MetalBlendedStatCard } from "@/components/market/item/MetalBlendedStatCard";
 import { ChiselDesignCard } from "@/components/market/item/ChiselDesignCard";
 import { AnimalSelectionCard } from "@/components/market/item/AnimalSelectionCard";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 // The 3D chiseled-block viewer pulls in three.js — lazy-load it so it never
 // weighs on the main market bundle.
 const ChiseledBlockViewer = lazy(() => import("@/components/market/ChiseledBlockViewer"));
@@ -1268,14 +1269,18 @@ export function MarketItemPage() {
 
   return (
     <div className="space-y-5">
-      <div className="mb-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
-        </button>
+      <div className="mb-3 flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 text-lg text-primary hover:underline"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden /> Back
+          </button>
+          <MaintenanceChip component="auction_item_id" />
+        </div>
+
         <div className="flex flex-wrap items-center gap-2">
           {itemImageUrl && (
             <img

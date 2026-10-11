@@ -38,6 +38,7 @@ import {
   ALL_RARITIES,
   type ItemSort,
 } from "@/hooks/useItemSearch";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
 const MAX_ROWS = 250;
@@ -175,7 +176,10 @@ export function MarketItemsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">Item Search</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">Item Search</h1>
+          <MaintenanceChip component="auction_items" />
+        </div>
         <p className="text-sm text-muted-foreground">
           Search {rows.length.toLocaleString()} items in the catalogue — including ones not yet
           listed on the Auction House, so you can check rarity before hunting them down.

@@ -39,6 +39,20 @@ KNOWN_COMPONENTS = {
     "tops_contribute_tls_screenshot": "TOPS Contribute TLS (screenshot)",
     "tops_contribute_traders_log": "TOPS Contribute Traders (chat-log)",
     "tops_contribute_traders_manual": "TOPS Contribute Traders (manual)",
+    "tools_alloy_calculator": "Tools Alloy Calculator",
+    "tools_charcoal_calculator": "Tools Charcoal Calculator",
+    "tools_waypoint_macro": "Tools Waypoint Macro",
+    "tools_tunnel_preview": "Tools Tunnel Preview",
+    "rarity_rocks": "Rarity Rocks",
+    "auction_overview": "Auction Overview",
+    "auction_listings": "Auction Listings",
+    "auction_items": "Auction Items",
+    "auction_item_id": "Auction Item (by ID)",
+    "auction_player_id": "Auction Player (by ID)",
+    "auction_insights": "Auction Insights",
+    "auction_orders": "Auction Orders"
+
+
 }
 
 

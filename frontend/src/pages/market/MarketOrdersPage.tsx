@@ -28,6 +28,7 @@ import { useOrdersList, useOrdersUnreadIds } from "@/lib/orders";
 import type { Order, OrderFilters, OrderSide, OrderSort, TraderMobility } from "@/models/orders";
 import { MOBILITY_SHORT, priceUnitLabel, unitTotalHint } from "./orders/ordersShared";
 import { CreateOrderDialog } from "./orders/CreateOrderDialog";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const ALL = "__all__";
 
@@ -83,7 +84,10 @@ export function MarketOrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Orders</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold">Orders</h1>
+            <MaintenanceChip component="auction_orders" />
+          </div>
           <p className="text-sm text-muted-foreground">
             Community buy &amp; sell orders — post what you have or want, negotiate directly, and
             track fair prices. Independent of the in-game Auction House.

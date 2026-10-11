@@ -26,6 +26,7 @@ import {
   setRockPolished,
 } from "@/store/slices/rockPricing";
 import { formatGears } from "@/lib/auction";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const CURVES: RarityCurve[] = ["linear", "sqrt", "log"];
 
@@ -86,7 +87,10 @@ export function RockRarityPage() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t("rarityPage.rocks.title")}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>{t("rarityPage.rocks.title")}</CardTitle>
+            <MaintenanceChip component="rarity_rocks" />
+          </div>
           <CardDescription>{t("rarityPage.rocks.subtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground">

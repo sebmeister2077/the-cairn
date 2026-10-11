@@ -13,6 +13,7 @@ import { ImportMode } from "@/components/tools/waypoint-macro/ImportMode";
 import { ScratchMode } from "@/components/tools/waypoint-macro/ScratchMode";
 import { DedupMode } from "@/components/tools/waypoint-macro/DedupMode";
 import { OutputPanel } from "@/components/tools/waypoint-macro/OutputPanel";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 type Mode = "upload" | "import" | "scratch" | "dedup";
 
@@ -31,9 +32,12 @@ export function ToolsWaypointMacroPage() {
   }
 
   return (
-    <div className="mx-auto max-w-12xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-12xl space-y-6 px-4 ">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{t("tools.waypointMacro.pageTitle")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">{t("tools.waypointMacro.pageTitle")}</h1>
+          <MaintenanceChip component="tools_waypoint_macro" />
+        </div>
         <p className="text-sm text-muted-foreground">{t("tools.waypointMacro.pageDescription")}</p>
       </header>
 

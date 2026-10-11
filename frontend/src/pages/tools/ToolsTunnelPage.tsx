@@ -30,6 +30,7 @@ import {
   type Topology,
 } from "@/lib/tunnel-multi";
 import { parseMultiTunnelParams, type Block3 } from "@/lib/tunnel-share";
+import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const TunnelViewer3D = lazy(() => import("@/components/tools/TunnelViewer3D"));
 
@@ -220,9 +221,12 @@ export function ToolsTunnelPage() {
   };
 
   return (
-    <div className="mx-auto max-w-12xl space-y-6 px-4 py-8">
+    <div className="mx-auto max-w-12xl space-y-6 px-4">
       <header className="space-y-2">
-        <h1 className="text-2xl font-semibold">{t("tools.tunnel.pageTitle")}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">{t("tools.tunnel.pageTitle")}</h1>
+          <MaintenanceChip component="tools_tunnel_preview" />
+        </div>
         <p className="max-w-3xl text-sm text-muted-foreground">
           {t("tools.tunnel.pageDescription")}
         </p>
