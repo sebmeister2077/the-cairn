@@ -84,6 +84,13 @@ CATEGORIES = [
         "kind": "lootvessel",
         "itembase": None,
     },
+    {
+        "id": "fishing",
+        "prefix": "fishing",
+        "source": "survival/entities/nonliving/bobber.json",
+        "kind": "bobber",
+        "itembase": None,
+    },
 ]
 
 # A loot pool is "once per server" when the only world structures that place it
@@ -135,6 +142,19 @@ def _quantity_bounds(stack: dict) -> tuple:
     return max(0, round(avg - var)), round(avg + var)
 
 
+def _stack_code(code: str, stack: dict) -> str:
+    """Effective item code for a loot stack. The ``clutter`` / ``tapestry`` blocks
+    are single codes whose real variant lives in ``attributes.type`` (e.g. a
+    "Broken anvil" is ``clutter`` + ``{type: "anvil-broken1"}``); without this
+    they'd all collapse into one bland "clutter" row, so fold the variant into the
+    code (``clutter-anvil-broken1``)."""
+    bc = bare_code(code)
+    attrs = stack.get("attributes")
+    if bc in ("clutter", "tapestry") and isinstance(attrs, dict) and attrs.get("type"):
+        return f"{bc}-{attrs['type']}"
+    return bc
+
+
 def _label_for(kind: str, key: str, lang: Dict[str, str]) -> str:
     """In-game randomizer / vessel name, falling back to a title-cased key."""
     if kind == "lootvessel":
@@ -157,7 +177,7 @@ def _build_stackrandomizer_pools(data: dict, cat: dict, lang: Dict[str, str]) ->
             chance = float(st.get("chance", 0) or 0)
             if not code or chance <= 0:
                 continue
-            bc = bare_code(code)
+            bc = _stack_code(code, st)
             weight_by_code[bc] += chance
             total += chance
             lo, hi = _quantity_bounds(st)
@@ -226,6 +246,45 @@ def _build_lootvessel_pools(data: dict, cat: dict, lang: Dict[str, str]) -> List
     return pools
 
 
+def _build_bobber_pools(data: dict, cat: dict, lang: Dict[str, str]) -> List[dict]:
+    """The fishing bobber's ``junkCatches`` — the weighted "garbage" bycatch
+    (old boot, counterfeit gear, cursed gemstone, ...) you can hook instead of a
+    fish. Deliberately excludes the actual caught animals, which are not part of
+    this weighted item table."""
+    attrs = data.get("attributes") or {}
+    catches = attrs.get("junkCatches") or []
+    weight_by_code: Dict[str, float] = defaultdict(float)
+    qty_by_code: Dict[str, list] = {}
+    total = 0.0
+    for en in catches:
+        code = en.get("code")
+        weight = float(en.get("weight", 0) or 0)
+        if not code or weight <= 0:
+            continue
+        bc = bare_code(code)
+        weight_by_code[bc] += weight
+        total += weight
+        lo, hi = _quantity_bounds(en)
+        prev = qty_by_code.get(bc)
+        qty_by_code[bc] = [lo, hi] if prev is None else [min(prev[0], lo), max(prev[1], hi)]
+    if total <= 0:
+        return []
+    items = _finish_pool_items(weight_by_code, total, qty_by_code)
+    pool = {
+        "id": f"{cat['prefix']}-junk",
+        "key": "junk",
+        "label": lang.get("item-bobber-junk") or "Fishing junk (bycatch)",
+        "category": cat["id"],
+        "itemCount": len(items),
+        "items": items,
+        "wgcode": None,
+    }
+    jc = attrs.get("junkCatchChance")
+    if jc is not None:
+        pool["junkChancePct"] = round(float(jc) * 100.0, 2)
+    return [pool]
+
+
 def _finish_pool_items(weight_by_code: Dict[str, float], total: float, qty_by_code: Dict[str, list]) -> List[dict]:
     """Turn per-code weights into sorted {code, chancePct, rarity, minQty, maxQty}."""
     items: List[dict] = []
@@ -256,6 +315,8 @@ def build(assets_root: Path) -> dict:
         sources.append(cat["source"])
         if cat["kind"] == "lootvessel":
             pools.extend(_build_lootvessel_pools(data, cat, lang))
+        elif cat["kind"] == "bobber":
+            pools.extend(_build_bobber_pools(data, cat, lang))
         else:
             pools.extend(_build_stackrandomizer_pools(data, cat, lang))
 

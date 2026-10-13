@@ -2331,7 +2331,7 @@ export const en = {
             intro:
                 "Ruins, story structures, abandoned mines and cracked vessels all draw their loot from named weighted pools. Each item's chance is its weight within the pool, so a higher percentage means it shows up more often. Rarity tiers are derived from that drop chance — rarer items appear in warmer colours.",
             fishingNote:
-                "Fishing basket traps aren't listed here: they catch creatures by bait and food-tag weight rather than from a fixed weighted item table, so they have no comparable rarity pool.",
+                "Fishing is included as the “Fishing junk” pool — the weighted garbage bycatch (old boot, counterfeit gear, cursed gemstone…) you can hook instead of a fish. The actual caught animals/fish aren't a weighted item table, so they're deliberately left out.",
             uniqueNote:
                 "Pools placed only by one-time structures (The Lazaret, Tobias Cave) are marked “Once per server”. An item found exclusively in such a pool is tagged “(Unique)” — exactly one exists on the whole server. Filter the rarity dropdown by “Unique” to list them all.",
             marketNote:
@@ -2342,6 +2342,7 @@ export const en = {
                 all: "All",
                 ruins: "Ruins",
                 vessel: "Cracked vessels",
+                fishing: "Fishing",
                 clutter: "Clutter",
                 library: "Library",
                 mines: "Mines",
@@ -2358,6 +2359,7 @@ export const en = {
                 other: "{count} items",
             },
             draws: "~{draws} draws/vessel",
+            junkChance: "~{pct}% of catches are junk",
             oncePerServer: "Once per server",
             uniqueTooltip:
                 "This item only drops from a one-time chest, so exactly one exists per server.",

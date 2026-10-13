@@ -1,27 +1,280 @@
 {
-  "generatedUtc": "2026-10-13T18:39:14.441437+00:00",
+  "generatedUtc": "2026-10-13T19:36:44.741666+00:00",
   "sources": [
     "survival/itemtypes/meta/stackrandomizer.json",
     "survival/itemtypes/meta/stackrandomizer-clutter.json",
     "survival/itemtypes/meta/stackrandomizer-library.json",
     "survival/itemtypes/meta/stackrandomizer-mines.json",
-    "survival/blocktypes/clay/lootvessel.json"
+    "survival/blocktypes/clay/lootvessel.json",
+    "survival/entities/nonliving/bobber.json"
   ],
-  "poolCount": 54,
+  "poolCount": 55,
   "oncePerServerPoolCount": 2,
-  "uniqueItemCount": 8,
+  "uniqueItemCount": 20,
   "pools": [
     {
       "id": "clutter-chains-and-fences",
       "key": "chains-and-fences",
       "label": "Chains And Fences",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 37,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-chains/chain-ceiling",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-ceiling-hook",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-double-ceiling-manacles",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-double-end-manacles",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-double-end1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-double-end2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-double-section",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-end-hook",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-end1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-end2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-floor",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/chain-section",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/hook-ceiling",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/manacles-ceiling",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/manacles-floor",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chains/manacles-wall",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chandelier-ruined1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chandelier-ruined2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-chandelier-ruined3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/empty1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/empty2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/empty3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/ew1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/ew2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/ew3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nesw1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nesw2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nesw3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nsw1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nsw2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/nsw3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/sw1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/sw2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/sw3",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/w1",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/w2",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fence/iron/w3",
+          "chancePct": 2.7,
+          "rarity": "rare",
           "minQty": 1,
           "maxQty": 1
         }
@@ -62,12 +315,75 @@
       "key": "furniture",
       "label": "Furniture",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 10,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-lantern/ground1",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground2",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground3",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground4",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground5",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground6",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box1",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box2",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box3",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box4",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
           "minQty": 1,
           "maxQty": 1
         }
@@ -78,11 +394,39 @@
       "key": "intact",
       "label": "Intact",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 5,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
+          "code": "clutter-globe1",
+          "chancePct": 20.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe2",
+          "chancePct": 20.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lecturn-book-closed",
+          "chancePct": 20.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lecturn-book-open",
+          "chancePct": 20.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lecturn-empty",
+          "chancePct": 20.0,
           "rarity": "common",
           "minQty": 1,
           "maxQty": 1
@@ -94,12 +438,159 @@
       "key": "lab",
       "label": "Lab",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 22,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-bucket1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bucket2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bucket3",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-flasks1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-flasks2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-lab-equipment",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-medical",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-pottery1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-pottery2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-pottery3",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass3",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass4",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass5",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass6",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass7",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass8",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-glass9",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-metal1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-metal2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tank-metal3",
+          "chancePct": 4.55,
+          "rarity": "rare",
           "minQty": 1,
           "maxQty": 1
         }
@@ -110,12 +601,131 @@
       "key": "ruined-toys-clothing",
       "label": "Ruined Toys Clothing",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 18,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-pile-cloth1",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-cloth2",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-cloth3",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-cloth4",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-cloth5",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy1",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy10",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy2",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy3",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy4",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy5",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy6",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy7",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy8",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-toy9",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-washboard1",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-washboard2",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-washboard3",
+          "chancePct": 5.56,
+          "rarity": "uncommon",
           "minQty": 1,
           "maxQty": 1
         }
@@ -126,12 +736,68 @@
       "key": "ruined-weapons",
       "label": "Ruined Weapons",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 9,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-pile-weapon1",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon2",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon3",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon4",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon5",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon6",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon7",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-weapon8",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-spear",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
           "minQty": 1,
           "maxQty": 1
         }
@@ -142,12 +808,124 @@
       "key": "science",
       "label": "Science",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 17,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-abacus1",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus2",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus3",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus4",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-alidade",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary1",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary2",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary3",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-astrolabe",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-diptych-dial",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-equi-dial",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe3",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe4",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe5",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe6",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-drafting-instrument",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-precisiontools",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
           "minQty": 1,
           "maxQty": 1
         }
@@ -158,15 +936,8 @@
       "key": "scribe",
       "label": "Scribe",
       "category": "clutter",
-      "itemCount": 11,
+      "itemCount": 25,
       "items": [
-        {
-          "code": "clutter",
-          "chancePct": 51.72,
-          "rarity": "common",
-          "minQty": 1,
-          "maxQty": 1
-        },
         {
           "code": "paper-parchment",
           "chancePct": 17.24,
@@ -217,6 +988,111 @@
           "maxQty": 1
         },
         {
+          "code": "clutter-bookshelves/bookpile-aged1",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookpile-aged2",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookpile-aged3",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookpile-aged4",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookpile-aged5",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lecturn-aged-book-closed",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lecturn-aged-book-open-tall",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lecturn-aged-empty",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lecturn-ruined",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestub-single",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch1",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch2",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch3",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch4",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lecturn-ruined",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
           "code": "inkandquill",
           "chancePct": 3.45,
           "rarity": "rare",
@@ -244,14 +1120,131 @@
       "key": "tobias",
       "label": "Tobias",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 16,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-alidade",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
           "minQty": 1,
           "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary-pristine",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-armillary1",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe1",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe2",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pottery/art1",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art10",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art18",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art2",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art20",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art8",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-pottery/art9",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-scrap-art2",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-scrap-art4",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-table-noble-double",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clutter-table-noble-single",
+          "chancePct": 6.25,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
         }
       ],
       "oncePerServer": true
@@ -261,12 +1254,159 @@
       "key": "workshop-advanced",
       "label": "Workshop Advanced",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 22,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-locust-body",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-full",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-lamp",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-limbs1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-limbs2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-parts",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine3",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine4",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine5",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine6",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine7",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine8",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mech-part1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mech-part2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mech-part5",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mechanics-ruined1",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mechanics-ruined2",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mechanics-ruined3",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mechanics-ruined4",
+          "chancePct": 4.55,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mechanics-ruined5",
+          "chancePct": 4.55,
+          "rarity": "rare",
           "minQty": 1,
           "maxQty": 1
         }
@@ -277,31 +1417,237 @@
       "key": "workshop-basic",
       "label": "Workshop Basic",
       "category": "clutter",
-      "itemCount": 1,
+      "itemCount": 21,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 100.0,
-          "rarity": "common",
+          "code": "clutter-anvil-broken1",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-anvil-broken2",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-anvil-broken3",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-brazier2",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-brazier3",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-brazier4",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools1",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools2",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools3",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools4",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-woodworkingtools",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pulley",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-axe",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-hammer",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-hoe",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-knife",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-pickaxe",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-saw",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-scythe",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-shovel",
+          "chancePct": 4.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-spear",
+          "chancePct": 4.76,
+          "rarity": "rare",
           "minQty": 1,
           "maxQty": 1
         }
       ]
     },
     {
-      "id": "library-library",
-      "key": "library",
-      "label": "Library randomizer",
-      "category": "library",
-      "itemCount": 11,
+      "id": "fishing-junk",
+      "key": "junk",
+      "label": "Fishing junk (bycatch)",
+      "category": "fishing",
+      "itemCount": 9,
       "items": [
         {
-          "code": "clutter",
-          "chancePct": 75.0,
+          "code": "stick",
+          "chancePct": 95.24,
           "rarity": "common",
           "minQty": 1,
           "maxQty": 1
         },
+        {
+          "code": "clutter-fishing/oldboot",
+          "chancePct": 1.43,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-cursedgemstone",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-flyingfishfigurine",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fishing/brokensword",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fishing/coprolite",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fishing/counterfeitgear",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fishing/heavilywornunderwear",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-fishing/oversizedspoon",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ],
+      "junkChancePct": 5.0
+    },
+    {
+      "id": "library-library",
+      "key": "library",
+      "label": "Library randomizer",
+      "category": "library",
+      "itemCount": 52,
+      "items": [
         {
           "code": "paper-parchment",
           "chancePct": 8.93,
@@ -352,6 +1698,300 @@
           "maxQty": 1
         },
         {
+          "code": "clutter-abacus1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-abacus4",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-alidade",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-armillary3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-astrolabe",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookstand-verylarge-book-closed",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/bookstand-verylarge-book-open",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-closed",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-pile1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-pile2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-pile3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing4",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing5",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/large-book-standing6",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lectern-large-book-closed",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-bookshelves/lectern-large-book-open",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestub-single",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch4",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-diptych-dial",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-equi-dial",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe1",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe2",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe3",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe4",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe5",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-globe6",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-jonas-lamp/floor4",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-jonas-lamp/floor5",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-jonas-lamp/floor6",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-jonas-lamp/floor7",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine6",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-drafting-instrument",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
           "code": "inkandquill",
           "chancePct": 1.79,
           "rarity": "rare",
@@ -379,15 +2019,8 @@
       "key": "mines",
       "label": "Mines randomizer",
       "category": "mines",
-      "itemCount": 8,
+      "itemCount": 47,
       "items": [
-        {
-          "code": "clutter",
-          "chancePct": 78.43,
-          "rarity": "common",
-          "minQty": 1,
-          "maxQty": 1
-        },
         {
           "code": "paper-parchment",
           "chancePct": 9.8,
@@ -432,6 +2065,286 @@
         },
         {
           "code": "book-rotten-rust",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-block-tackle",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch1",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-candlestubs-bunch4",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-grinding-stone",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground1",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground4",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground5",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-lantern/ground6",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-body",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-full",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-lamp",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-limbs1",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-limbs2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-locust-parts",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-machine8",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-mech-part6",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-music-box3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-medical",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools1",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-tools4",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pile-woodworkingtools",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-pulley",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-rubble-wood1",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-rubble-wood2",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-rubble-wood3",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-rubble-wood4",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-axe",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-hammer",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-knife",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-pickaxe",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-saw",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clutter-tool-shovel",
           "chancePct": 1.96,
           "rarity": "rare",
           "minQty": 1,

@@ -90,6 +90,11 @@ function PoolCard({
                 {t("rarityPage.lootPools.draws", { draws: pool.draws })}
               </Badge>
             )}
+            {pool.junkChancePct != null && (
+              <Badge variant="ghost">
+                {t("rarityPage.lootPools.junkChance", { pct: pool.junkChancePct })}
+              </Badge>
+            )}
             {pool.oncePerServer && (
               <Badge
                 className="border-transparent text-white"

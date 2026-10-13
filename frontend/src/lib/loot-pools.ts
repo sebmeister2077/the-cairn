@@ -14,6 +14,7 @@ export { RARITY_COLORS, RARITY_LABELS, RARITY_RANK };
 export const LOOT_CATEGORY_ORDER: LootPoolCategory[] = [
     "ruins",
     "vessel",
+    "fishing",
     "clutter",
     "library",
     "mines",
@@ -47,7 +48,7 @@ export function getPoolsByCategory(category: LootPoolCategory): LootPool[] {
  *  -> "Clothes Foot Shepherd Sandals". Mirrors the rock page's code prettifier. */
 export function prettifyItemCode(code: string): string {
     return code
-        .replace(/[-_]+/g, " ")
+        .replace(/[-_/]+/g, " ")
         .trim()
         .replace(/\b\w/g, (c) => c.toUpperCase());
 }

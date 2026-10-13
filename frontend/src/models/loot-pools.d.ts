@@ -8,7 +8,7 @@ import type { Rarity } from "./item-sources";
 export type { Rarity };
 
 /** Which source asset / in-game context a pool belongs to. */
-export type LootPoolCategory = "ruins" | "clutter" | "library" | "mines" | "vessel";
+export type LootPoolCategory = "ruins" | "clutter" | "library" | "mines" | "vessel" | "fishing";
 
 /** One item that can roll out of a loot pool, with its in-pool drop chance. */
 export interface LootPoolItem {
@@ -38,6 +38,8 @@ export interface LootPool {
     items: LootPoolItem[];
     /** Loot-vessel pools only: average number of draws made per vessel. */
     draws?: number;
+    /** Fishing pool only: chance (percent) that a catch is junk rather than a fish. */
+    junkChancePct?: number;
     /** True when this pool is only placed by once-per-world "story" structures. */
     oncePerServer?: boolean;
 }
