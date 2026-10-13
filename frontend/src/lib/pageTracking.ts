@@ -62,6 +62,7 @@ const KNOWN_ROUTES: string[] = [
     "/market/map",
     "/market/items",
     "/rarity/rocks",
+    "/rarity/loot-pools",
     "/usage",
     "/account",
     "/general",
