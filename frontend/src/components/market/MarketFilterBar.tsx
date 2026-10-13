@@ -58,7 +58,7 @@ export function MarketFilterBar({
 
   return (
     <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Search</Label>
         <Input
           value={f.q}
@@ -68,7 +68,7 @@ export function MarketFilterBar({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Category</Label>
         <Select
           value={f.category === "" ? ALL_CATEGORIES : f.category}
@@ -76,7 +76,7 @@ export function MarketFilterBar({
             dispatch(patchAuctionFilters({ category: v === ALL_CATEGORIES ? "" : (v ?? "") }))
           }
         >
-          <SelectTrigger size="sm" className="w-48">
+          <SelectTrigger size="sm" className="w-48 grow">
             <SelectValue>
               {(value) => (value === ALL_CATEGORIES || !value ? "All categories" : value)}
             </SelectValue>
@@ -92,13 +92,13 @@ export function MarketFilterBar({
         </Select>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Status</Label>
         <Select
           value={f.state}
           onValueChange={(v) => dispatch(patchAuctionFilters({ state: v as AuctionStateFilter }))}
         >
-          <SelectTrigger size="sm" className="w-32">
+          <SelectTrigger size="sm" className="w-32 grow">
             <SelectValue>{(value) => STATE_LABELS[value as string] ?? value}</SelectValue>
           </SelectTrigger>
           <SelectContent>
@@ -111,7 +111,7 @@ export function MarketFilterBar({
         </Select>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Price (gears)</Label>
         <div className="flex items-center gap-1">
           <Input
@@ -132,7 +132,7 @@ export function MarketFilterBar({
         </div>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1  min-h-14">
         <Label className="text-xs text-muted-foreground">Exclude players</Label>
         <Input
           value={f.excludePlayers ?? ""}
@@ -143,14 +143,14 @@ export function MarketFilterBar({
         />
       </div>
 
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Sort by</Label>
         <div className="flex items-center gap-1">
           <Select
             value={f.sort}
             onValueChange={(v) => dispatch(patchAuctionFilters({ sort: v as AuctionSortKey }))}
           >
-            <SelectTrigger size="sm" className="w-36">
+            <SelectTrigger className="w-40">
               <SelectValue>{(value) => SORT_LABELS[value as string] ?? value}</SelectValue>
             </SelectTrigger>
             <SelectContent>

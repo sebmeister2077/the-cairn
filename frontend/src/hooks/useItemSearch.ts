@@ -16,6 +16,8 @@ export interface ItemSearchState {
     /** Rarity value, or the `ALL_RARITIES` sentinel for "any rarity". */
     rarity: string;
     sort: ItemSort;
+    /** Sort direction: "desc" = largest/rarest/Z-A first, "asc" = the reverse. */
+    sortDir: "asc" | "desc";
 }
 
 // Sentinel for "no category" — base-ui Select can't hold an empty-string value.
@@ -28,6 +30,7 @@ export const DEFAULT_ITEM_SEARCH: ItemSearchState = {
     category: ALL_CATEGORIES,
     rarity: ALL_RARITIES,
     sort: "gears",
+    sortDir: "desc",
 };
 
 const STORAGE_KEY = "market.itemSearch";
@@ -47,6 +50,10 @@ function load(): ItemSearchState {
                 sort: VALID_SORTS.has(parsed.sort as ItemSort)
                     ? (parsed.sort as ItemSort)
                     : DEFAULT_ITEM_SEARCH.sort,
+                sortDir:
+                    parsed.sortDir === "asc" || parsed.sortDir === "desc"
+                        ? parsed.sortDir
+                        : DEFAULT_ITEM_SEARCH.sortDir,
             };
         }
     } catch {
@@ -85,7 +92,8 @@ export function isDefaultItemSearch(s: ItemSearchState): boolean {
         s.q === DEFAULT_ITEM_SEARCH.q &&
         s.category === DEFAULT_ITEM_SEARCH.category &&
         s.rarity === DEFAULT_ITEM_SEARCH.rarity &&
-        s.sort === DEFAULT_ITEM_SEARCH.sort
+        s.sort === DEFAULT_ITEM_SEARCH.sort &&
+        s.sortDir === DEFAULT_ITEM_SEARCH.sortDir
     );
 }
 

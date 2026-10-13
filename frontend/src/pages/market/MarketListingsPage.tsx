@@ -126,103 +126,103 @@ export function MarketListingsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {pageRows.map((l) => (
-              <TableRow key={l.auctionId}>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    {(() => {
-                      const entry = catalogQ.data?.[String(l.itemId)];
-                      return (
-                        <ItemThumb
-                          url={entry ? images.url(entry.code, entry.classType) : null}
-                          alt={l.name}
-                        />
-                      );
-                    })()}
-                    <div className="min-w-0">
-                      <Link
-                        to={`/market/items/${l.itemId}`}
-                        className="hover:underline"
-                        title={
-                          l.liquid
-                            ? `${l.name} · ${liquidContainerLabel(l.liquid.container)}`
-                            : l.variant
-                              ? `${l.name} · ${l.category}`
-                              : l.category
-                        }
-                      >
-                        {l.variant || l.name}
-                      </Link>
-                      {l.liquid && (
-                        <span className="ml-1 text-xs text-muted-foreground">
-                          ({liquidContainerShort(l.liquid.container)})
-                        </span>
-                      )}
+            {pageRows.map((l) => {
+              const entry = catalogQ.data?.[String(l.itemId)];
+              return (
+                <TableRow key={l.auctionId}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <ItemThumb
+                        url={entry ? images.url(entry.code, entry.classType) : null}
+                        alt={l.name}
+                      />
+                      <div className="min-w-0">
+                        <Link
+                          to={`/market/items/${l.itemId}`}
+                          className="hover:underline"
+                          title={
+                            l.liquid
+                              ? `${l.name} · ${liquidContainerLabel(l.liquid.container)}`
+                              : l.variant
+                                ? `${l.name} · ${l.category}`
+                                : l.category
+                          }
+                        >
+                          {l.variant || l.name}
+                        </Link>
+                        {l.liquid && (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            ({liquidContainerShort(l.liquid.container)})
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </TableCell>
-                {showAuctionId && (
-                  <TableCell className="text-right tabular-nums text-muted-foreground">
-                    {l.auctionId}
                   </TableCell>
-                )}
-                <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                  <span title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}>
-                    {formatGameDate(l.postedTotalHours)}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {l.price.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {l.pricePerUnit.toLocaleString()}
-                </TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {l.liquid ? `${l.qty.toLocaleString()} L` : l.qty}
-                </TableCell>
-                <TableCell>
-                  <ListingStateBadge listing={l} currentGameHours={currentGameHours} />
-                </TableCell>
-                <TableCell className="text-xs truncate max-w-[120px]">
-                  {l.sellerUid ? (
-                    <Link
-                      to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
-                      className="hover:underline"
-                    >
-                      {l.sellerName ?? "—"}
-                    </Link>
-                  ) : (
-                    (l.sellerName ?? "—")
+                  {showAuctionId && (
+                    <TableCell className="text-right tabular-nums text-muted-foreground">
+                      {l.auctionId}
+                    </TableCell>
                   )}
-                </TableCell>
-                <TableCell className="text-xs truncate max-w-[120px]">
-                  {l.buyerUid ? (
-                    <Link
-                      to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
-                      className="hover:underline"
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    <span
+                      title={`Observed ${formatListingDate(l.observedUtc ?? l.lastObservedUtc)}`}
                     >
-                      {l.buyerName ?? "—"}
-                    </Link>
-                  ) : (
-                    (l.buyerName ?? "—")
-                  )}
-                </TableCell>
-                <TableCell className="text-right tabular-nums text-muted-foreground">
-                  {l.delivered ? (
-                    <span title="Delivery fee the buyer paid for this listing">
-                      {l.deliveryFee > 0
-                        ? `+${Math.round(l.deliveryFee).toLocaleString()}⚙`
-                        : "Free"}
+                      {formatGameDate(l.postedTotalHours)}
                     </span>
-                  ) : (
-                    "—"
-                  )}
-                </TableCell>
-                <TableCell>
-                  <ListingNotesCell listing={l} />
-                </TableCell>
-              </TableRow>
-            ))}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {l.price.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {l.pricePerUnit.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {l.liquid ? `${l.qty.toLocaleString()} L` : l.qty}
+                  </TableCell>
+                  <TableCell>
+                    <ListingStateBadge listing={l} currentGameHours={currentGameHours} />
+                  </TableCell>
+                  <TableCell className="text-xs truncate max-w-[120px]">
+                    {l.sellerUid ? (
+                      <Link
+                        to={`/market/players/${encodeURIComponent(l.sellerUid)}`}
+                        className="hover:underline"
+                      >
+                        {l.sellerName ?? "—"}
+                      </Link>
+                    ) : (
+                      (l.sellerName ?? "—")
+                    )}
+                  </TableCell>
+                  <TableCell className="text-xs truncate max-w-[120px]">
+                    {l.buyerUid ? (
+                      <Link
+                        to={`/market/players/${encodeURIComponent(l.buyerUid)}`}
+                        className="hover:underline"
+                      >
+                        {l.buyerName ?? "—"}
+                      </Link>
+                    ) : (
+                      (l.buyerName ?? "—")
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-muted-foreground">
+                    {l.delivered ? (
+                      <span title="Delivery fee the buyer paid for this listing">
+                        {l.deliveryFee > 0
+                          ? `+${Math.round(l.deliveryFee).toLocaleString()}⚙`
+                          : "Free"}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <ListingNotesCell listing={l} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
             {pageRows.length === 0 && (
               <TableRow>
                 <TableCell

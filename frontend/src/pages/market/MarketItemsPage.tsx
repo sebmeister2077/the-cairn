@@ -67,29 +67,37 @@ interface SearchRow {
   rarity: Rarity | null;
 }
 
-function sortRows(rows: SearchRow[], key: SortKey): SearchRow[] {
+function sortRows(rows: SearchRow[], key: SortKey, dir: "asc" | "desc"): SearchRow[] {
   const sorted = [...rows];
-  switch (key) {
-    case "name":
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-      break;
-    case "sold":
-      sorted.sort((a, b) => b.unitsSold - a.unitsSold || a.name.localeCompare(b.name));
-      break;
-    case "listings":
-      sorted.sort((a, b) => b.listings - a.listings || a.name.localeCompare(b.name));
-      break;
-    case "rarity": {
-      // Rarest first; items with no known rarity sort last.
-      const rank = (r: SearchRow) => (r.rarity ? RARITY_RANK[r.rarity] : 0);
-      sorted.sort((a, b) => rank(b) - rank(a) || a.name.localeCompare(b.name));
-      break;
+  // Natural comparator is ascending (smallest / least-rare / A–Z first); "desc"
+  // flips it so the biggest values lead — matching the Listings page convention.
+  const mult = dir === "asc" ? 1 : -1;
+  const byName = (a: SearchRow, b: SearchRow) => a.name.localeCompare(b.name);
+  sorted.sort((a, b) => {
+    let cmp = 0;
+    switch (key) {
+      case "name":
+        cmp = byName(a, b);
+        break;
+      case "sold":
+        cmp = a.unitsSold - b.unitsSold || byName(a, b);
+        break;
+      case "listings":
+        cmp = a.listings - b.listings || byName(a, b);
+        break;
+      case "rarity": {
+        // Items with no known rarity sort as the least rare.
+        const rank = (r: SearchRow) => (r.rarity ? RARITY_RANK[r.rarity] : 0);
+        cmp = rank(a) - rank(b) || byName(a, b);
+        break;
+      }
+      case "gears":
+      default:
+        cmp = a.gearsTraded - b.gearsTraded || byName(a, b);
+        break;
     }
-    case "gears":
-    default:
-      sorted.sort((a, b) => b.gearsTraded - a.gearsTraded || a.name.localeCompare(b.name));
-      break;
-  }
+    return cmp * mult;
+  });
   return sorted;
 }
 
@@ -103,7 +111,7 @@ export function MarketItemsPage() {
   const summaryQ = useAuctionSummary();
   const images = useItemImages();
   const search = useItemSearch();
-  const { q, category, rarity, sort } = search;
+  const { q, category, rarity, sort, sortDir } = search;
 
   // Master list: every catalog item, enriched with stats where we have them.
   const rows = useMemo<SearchRow[]>(() => {
@@ -154,8 +162,8 @@ export function MarketItemsPage() {
         return false;
       return true;
     });
-    return sortRows(filtered, sort);
-  }, [rows, q, category, rarity, sort]);
+    return sortRows(filtered, sort, sortDir);
+  }, [rows, q, category, rarity, sort, sortDir]);
 
   const isPending = catalogQ.isPending || summaryQ.isPending;
   const isError = catalogQ.isError || summaryQ.isError;
@@ -201,13 +209,13 @@ export function MarketItemsPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-h-14">
           <Label className="text-xs text-muted-foreground">Category</Label>
           <Select
             value={category}
             onValueChange={(v) => patchItemSearch({ category: v ?? ALL_CATEGORIES })}
           >
-            <SelectTrigger className="h-9 w-44">
+            <SelectTrigger className="grow w-44">
               <SelectValue>
                 {(value) => categories.find((c) => c.value === value)?.label ?? "All categories"}
               </SelectValue>
@@ -223,13 +231,13 @@ export function MarketItemsPage() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-h-14">
           <Label className="text-xs text-muted-foreground">Rarity</Label>
           <Select
             value={rarity}
             onValueChange={(v) => patchItemSearch({ rarity: v ?? ALL_RARITIES })}
           >
-            <SelectTrigger className="h-9 w-40">
+            <SelectTrigger className="grow w-40">
               <SelectValue>
                 {(value) =>
                   value === ALL_RARITIES
@@ -249,25 +257,37 @@ export function MarketItemsPage() {
           </Select>
         </div>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 min-h-14">
           <Label className="text-xs text-muted-foreground">Sort by</Label>
-          <Select
-            value={sort}
-            onValueChange={(v) => patchItemSearch({ sort: (v as SortKey) ?? "gears" })}
-          >
-            <SelectTrigger className="h-9 w-40">
-              <SelectValue>
-                {(value) => SORT_LABELS[value as SortKey] ?? SORT_LABELS.gears}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-                <SelectItem key={k} value={k}>
-                  {SORT_LABELS[k]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-1 grow">
+            <Select
+              value={sort}
+              onValueChange={(v) => patchItemSearch({ sort: (v as SortKey) ?? "gears" })}
+            >
+              <SelectTrigger className="grow w-40">
+                <SelectValue>
+                  {(value) => SORT_LABELS[value as SortKey] ?? SORT_LABELS.gears}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                  <SelectItem key={k} value={k}>
+                    {SORT_LABELS[k]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => patchItemSearch({ sortDir: sortDir === "asc" ? "desc" : "asc" })}
+              title="Toggle sort direction"
+              aria-label="Toggle sort direction"
+            >
+              {sortDir === "asc" ? "↑" : "↓"}
+            </Button>
+          </div>
         </div>
 
         <div className="ml-auto flex items-center gap-3">
