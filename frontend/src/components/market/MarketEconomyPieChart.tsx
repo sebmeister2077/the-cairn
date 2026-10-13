@@ -33,6 +33,7 @@ import { useMarketWindow } from "@/hooks/useMarketWindow";
 import { formatGears } from "@/lib/auction";
 import type { AuctionListing } from "@/models/auction";
 import { capitalize } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 /** Keep drawing individual slices until at least this many are shown… */
 const MIN_INDIVIDUAL_SLICES = 12;
@@ -76,7 +77,7 @@ interface Slice extends Entry {
  * Collapse aggregated entries into pie slices, grouping the long tail into a
  * single "Others" slice once the chart would otherwise get too noisy.
  */
-function buildSlices(entries: Entry[], memberNoun: string): Slice[] {
+function buildSlices(entries: Entry[], formatOthers: (count: number) => string): Slice[] {
   const sorted = entries.filter((e) => e.value > 0).sort((a, b) => b.value - a.value);
   const total = sorted.reduce((sum, e) => sum + e.value, 0);
   if (total <= 0) return [];
@@ -107,7 +108,7 @@ function buildSlices(entries: Entry[], memberNoun: string): Slice[] {
   if (othersValue > 0) {
     individual.push({
       key: OTHERS_KEY,
-      name: `Others (${othersCount} ${memberNoun}${othersCount === 1 ? "" : "s"})`,
+      name: formatOthers(othersCount),
       value: othersValue,
       pct: (othersValue / total) * 100,
       memberCount: othersCount,
@@ -141,6 +142,7 @@ export function MarketEconomyPieChart({
   const [windowKey, setWindowKey] = useMarketWindow();
   const [groupBy, setGroupBy] = useState<GroupBy>("item");
   const [category, setCategory] = useState<string>(ALL_CATEGORIES);
+  const { t } = useTranslation();
 
   // Sold, non-spam, non-barter listings carry the traded value (gears).
   const sold = useMemo(
@@ -175,8 +177,12 @@ export function MarketEconomyPieChart({
       if (existing) existing.value += l.price;
       else agg.set(key, { key, name: byItem ? l.name : l.category, value: l.price });
     }
-    return buildSlices(Array.from(agg.values()), byItem ? "item" : "category");
-  }, [windowed, groupBy, category]);
+    return buildSlices(Array.from(agg.values()), (count) =>
+      byItem
+        ? t("marketEconomyPie.othersItems", { count })
+        : t("marketEconomyPie.othersCategories", { count }),
+    );
+  }, [windowed, groupBy, category, t]);
 
   const total = useMemo(() => slices.reduce((sum, s) => sum + s.value, 0), [slices]);
   const windowLabel = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.label ?? windowKey;

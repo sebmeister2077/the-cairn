@@ -2368,6 +2368,16 @@ export const en = {
                 "Showing {count} loot pools extracted from the game assets on {date}. Drop chance is each item's weight within its pool; quantities are the stack size rolled.",
         },
     },
+    marketEconomyPie: {
+        othersItems: {
+            one: "Others ({count} item)",
+            other: "Others ({count} items)",
+        },
+        othersCategories: {
+            one: "Others ({count} category)",
+            other: "Others ({count} categories)",
+        },
+    },
 } as const;
 
 export type TranslationSchema = typeof en;
