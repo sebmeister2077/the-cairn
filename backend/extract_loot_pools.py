@@ -103,7 +103,7 @@ CATEGORIES = [
 STORY_SCHEMATIC_SUBPATH = Path("survival/worldgen/schematics/story")
 WORLDGEN_SUBPATH = Path("survival/worldgen")
 STACKRANDOMIZER_TOKEN_RE = re.compile(r"stackrandomizer-[a-z0-9-]+")
-DEFAULT_ONCE_PER_SERVER_CODES = {"stackrandomizer-lazaret", "stackrandomizer-clutter-tobias"}
+DEFAULT_ONCE_PER_SERVER_CODES = {"stackrandomizer-lazaret"}
 
 
 def once_per_server_codes(assets_root: Path) -> set:
