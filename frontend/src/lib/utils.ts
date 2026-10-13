@@ -27,3 +27,9 @@ export function formatSeconds(s: number | null | undefined): string {
   if (s < 86400) return `${(s / 3600).toFixed(1)}h`;
   return `${(s / 86400).toFixed(1)}d`;
 }
+
+
+export function capitalize(str: string): string {
+  if (!str) return "";
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}

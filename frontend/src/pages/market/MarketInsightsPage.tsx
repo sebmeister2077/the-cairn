@@ -6,6 +6,7 @@
 // sell is shown in real-world time.
 
 import { InsightsFilterBar } from "@/components/market/InsightsFilterBar";
+import { MarketEconomyPieChart } from "@/components/market/MarketEconomyPieChart";
 import { ScreenerTable } from "@/components/market/InsightsScreenerTable";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
 import { SmartWindowNote } from "@/components/market/SmartWindowNote";
@@ -215,6 +216,12 @@ export function MarketInsightsPage() {
           }
         />
       </div>
+
+      {/* Economy composition */}
+      <MarketEconomyPieChart
+        listings={listings}
+        recordingStartGameHours={summary?.recordingStartGameHours}
+      />
 
       {/* Highlights */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
