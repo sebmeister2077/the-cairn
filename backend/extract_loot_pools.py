@@ -94,25 +94,34 @@ CATEGORIES = [
 ]
 
 # A loot pool is "once per server" when the only world structures that place it
-# generate exactly once per world. Those live in `worldgen/schematics/story/`
-# (The Lazaret, Tobias Cave, the Resonance Archive, Devastation, ...). We detect
-# this from the assets rather than hard-coding it (so it survives game updates):
-# a pool's `stackrandomizer-<code>` token must appear ONLY in story schematics
-# and never in a repeatable ruin. If the worldgen assets are unavailable the scan
-# falls back to the codes known to be exclusive at time of writing.
+# generate exactly once per world AND hold a single shared physical loot (first
+# player to reach it takes it — e.g. The Lazaret). We detect this from the assets
+# rather than hard-coding it (so it survives game updates): a pool's
+# `stackrandomizer-<code>` token must appear ONLY in story schematics and never in
+# a repeatable ruin. If the worldgen assets are unavailable the scan falls back to
+# the codes known to be exclusive at time of writing.
 STORY_SCHEMATIC_SUBPATH = Path("survival/worldgen/schematics/story")
 WORLDGEN_SUBPATH = Path("survival/worldgen")
 STACKRANDOMIZER_TOKEN_RE = re.compile(r"stackrandomizer-[a-z0-9-]+")
 DEFAULT_ONCE_PER_SERVER_CODES = {"stackrandomizer-lazaret"}
 
+# Pools that the worldgen scan would otherwise flag as once-per-server but whose
+# loot is a PER-PLAYER reward: the structure generates once per world, yet every
+# player can claim a copy of the loot (instanced), so an item found only there is
+# NOT the world's sole copy and must not be tagged unique. Tobias Cave works this
+# way (the cave is shared, but its reward can be collected once by each player).
+PER_PLAYER_ONCE_CODES = {"stackrandomizer-clutter-tobias"}
+
 
 def once_per_server_codes(assets_root: Path) -> set:
     """Set of ``stackrandomizer-<code>`` item codes whose loot is only ever placed
-    by once-per-world "story" structures (so an item found only there is unique)."""
+    by once-per-world "story" structures AND is a single shared physical pickup (so
+    an item found only there is the world's sole copy). Per-player instanced story
+    rewards (see ``PER_PLAYER_ONCE_CODES``) are excluded."""
     wg = assets_root / WORLDGEN_SUBPATH
     if not wg.is_dir():
         print(f"[warn] worldgen not found at {wg} — using default once-per-server codes")
-        return set(DEFAULT_ONCE_PER_SERVER_CODES)
+        return set(DEFAULT_ONCE_PER_SERVER_CODES) - PER_PLAYER_ONCE_CODES
     story_dir = assets_root / STORY_SCHEMATIC_SUBPATH
     all_codes: set = set()
     repeatable: set = set()
@@ -127,8 +136,8 @@ def once_per_server_codes(assets_root: Path) -> set:
         all_codes |= tokens
         if story_dir not in path.parents:
             repeatable |= tokens
-    exclusive = all_codes - repeatable
-    return exclusive or set(DEFAULT_ONCE_PER_SERVER_CODES)
+    exclusive = (all_codes - repeatable) - PER_PLAYER_ONCE_CODES
+    return exclusive or (set(DEFAULT_ONCE_PER_SERVER_CODES) - PER_PLAYER_ONCE_CODES)
 
 
 def _quantity_bounds(stack: dict) -> tuple:

@@ -1,5 +1,5 @@
 {
-  "generatedUtc": "2026-10-13T21:32:06.917510+00:00",
+  "generatedUtc": "2026-10-13T21:42:23.941034+00:00",
   "sources": [
     "survival/itemtypes/meta/stackrandomizer.json",
     "survival/itemtypes/meta/stackrandomizer-clutter.json",
@@ -9,8 +9,8 @@
     "survival/entities/nonliving/bobber.json"
   ],
   "poolCount": 55,
-  "oncePerServerPoolCount": 2,
-  "uniqueItemCount": 20,
+  "oncePerServerPoolCount": 1,
+  "uniqueItemCount": 8,
   "pools": [
     {
       "id": "clutter-chains-and-fences",
@@ -1134,8 +1134,7 @@
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-armillary1",
@@ -1163,91 +1162,79 @@
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art10",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art18",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art2",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art20",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art8",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-pottery/art9",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-scrap-art2",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-scrap-art4",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-table-noble-double",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         },
         {
           "code": "clutter-table-noble-single",
           "chancePct": 6.25,
           "rarity": "uncommon",
           "minQty": 1,
-          "maxQty": 1,
-          "uniquePerServer": true
+          "maxQty": 1
         }
-      ],
-      "oncePerServer": true
+      ]
     },
     {
       "id": "clutter-workshop-advanced",

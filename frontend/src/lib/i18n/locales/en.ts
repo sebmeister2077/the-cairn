@@ -2333,7 +2333,7 @@ export const en = {
             fishingNote:
                 "Fishing is included as the “Fishing junk” pool — the weighted garbage bycatch (old boot, counterfeit gear, cursed gemstone…) you can hook instead of a fish. The actual caught animals/fish aren't a weighted item table, so they're deliberately left out.",
             uniqueNote:
-                "Pools placed only by one-time structures (The Lazaret, Tobias Cave) are marked “Once per server”. An item found exclusively in such a pool is tagged “(Unique)” — exactly one exists on the whole server. Filter the rarity dropdown by “Unique” to list them all.",
+                "Pools placed only by a single, shared one-time chest (The Lazaret) are marked “Once per server”. An item found exclusively in such a pool is tagged “(Unique)” — exactly one exists on the whole server. Filter the rarity dropdown by “Unique” to list them all.",
             marketNote:
                 "The Market column flags items that have actually appeared on the Auction House, linking to their Market page for price history.",
             searchPlaceholder: "Search items…",
