@@ -14,6 +14,12 @@ Pass ``--registry`` to also upload the game registry (id -> code/name) to
 ``auction/registry.json.gz``. The API host doesn't ship the ``frontend/`` folder,
 so without this object the server-side rebuild can't resolve item names and
 publishes id-only listings.
+
+Pass ``--gamedata`` to also upload the curated GameData datasets (``item-sources``
++ ``trader-wares``) to ``auction/gamedata/<name>.json.gz``. The API host doesn't
+ship ``frontend/`` either, so without these objects the server-side rebuild can't
+augment the catalogue with never-auctioned loot/trader items (they'd only appear
+once someone lists one on the Auction House).
 """
 
 from __future__ import annotations
@@ -33,6 +39,12 @@ _DEFAULT_INPUT = (
 _DEFAULT_REGISTRY = (
     _BACKEND_DIR.parent / "frontend" / "src" / "assets" / "Auction" / "registry-tops.vintagestory.at.json"
 )
+_GAMEDATA_DIR = _BACKEND_DIR.parent / "frontend" / "src" / "assets" / "GameData"
+# name (R2 object stem) -> local source file
+_DEFAULT_GAMEDATA = {
+    "item-sources": _GAMEDATA_DIR / "item-sources.json",
+    "trader-wares": _GAMEDATA_DIR / "trader-wares.json",
+}
 
 
 def main() -> None:
@@ -48,6 +60,13 @@ def main() -> None:
         "the server-side rebuild can resolve item names. Bare flag uses the default "
         "frontend registry file.",
     )
+    ap.add_argument(
+        "--gamedata",
+        action="store_true",
+        help="Also upload the curated GameData datasets (item-sources + trader-wares) "
+        "to the private bucket so the server-side rebuild can list never-auctioned "
+        "loot/trader items in the catalogue.",
+    )
     ap.add_argument("--env-file", type=Path, default=_BACKEND_DIR / ".env.prod")
     ap.add_argument(
         "--private-bucket",
@@ -60,6 +79,10 @@ def main() -> None:
         raise SystemExit(f"input not found: {args.input}")
     if args.registry is not None and not args.registry.is_file():
         raise SystemExit(f"registry not found: {args.registry}")
+    if args.gamedata:
+        for name, path in _DEFAULT_GAMEDATA.items():
+            if not path.is_file():
+                raise SystemExit(f"gamedata '{name}' not found: {path}")
 
     # Populate R2 credentials from the env file (without clobbering a value that
     # is already exported) BEFORE importing app.config, which reads them once.
@@ -89,6 +112,15 @@ def main() -> None:
             f"seeded {auction_raw_store._registry_key()} "
             f"(registry, {len(reg_gz) / 1024:,.1f} KB gz)"
         )
+
+    if args.gamedata:
+        for name, path in _DEFAULT_GAMEDATA.items():
+            data_gz = gzip.compress(path.read_bytes(), mtime=0)
+            auction_raw_store.put_gamedata(name, data_gz)
+            print(
+                f"seeded {auction_raw_store._gamedata_key(name)} "
+                f"(gamedata, {len(data_gz) / 1024:,.1f} KB gz)"
+            )
 
 
 

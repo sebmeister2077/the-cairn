@@ -121,13 +121,46 @@ def _load_registry(pad) -> Optional[Dict[str, Any]]:
     return registry
 
 
+def _load_known_codes(pad) -> Optional[Set[str]]:
+    """Fetch the curated GameData datasets from the private bucket and derive the
+    bare item codes used to augment the catalogue with never-auctioned loot/trader
+    items. Returns None when none are seeded, so ``build_artifacts`` falls back to
+    its local-file lookup (empty on the API host, i.e. no augmentation)."""
+    datasets: List[Dict[str, Any]] = []
+    for name in ("item-sources", "trader-wares"):
+        try:
+            gz = auction_raw_store.get_gamedata_bytes(name)
+        except Exception as exc:  # noqa: BLE001 — never fail a rebuild over this
+            logger.warning("[auction-rebuild] gamedata %s fetch failed: %s", name, exc)
+            continue
+        if not gz:
+            continue
+        try:
+            datasets.append(json.loads(gzip.decompress(gz).decode("utf-8")))
+        except (OSError, ValueError) as exc:
+            logger.warning("[auction-rebuild] gamedata %s decode failed: %s", name, exc)
+    if not datasets:
+        logger.warning(
+            "[auction-rebuild] no curated GameData objects in the private bucket — "
+            "never-auctioned loot/trader items will be absent from the catalogue. "
+            "Seed them with seed_auction_raw.py --gamedata."
+        )
+        return None
+    codes = pad.known_codes_from_datasets(datasets)
+    logger.info("[auction-rebuild] curated GameData loaded: %d known item codes", len(codes))
+    return codes
+
+
 def _build_and_publish() -> Dict[str, int]:
     import auction_r2_publish  # noqa: WPS433 — backend/ module
     import process_auction_data as pad  # noqa: WPS433 — backend/ module
 
     merged = _merge()
     registry = _load_registry(pad)
-    records, summary, items = pad.build_artifacts(merged, registry=registry)
+    known_codes = _load_known_codes(pad)
+    records, summary, items = pad.build_artifacts(
+        merged, registry=registry, known_codes=known_codes
+    )
 
     with tempfile.TemporaryDirectory(prefix="auction-rebuild-") as tmp:
         out = Path(tmp)

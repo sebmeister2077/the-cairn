@@ -96,6 +96,41 @@ def get_registry_bytes() -> Optional[bytes]:
         raise
 
 
+def _gamedata_key(name: str) -> str:
+    """Key of a shared curated GameData dataset (e.g. ``item-sources``,
+    ``trader-wares``), kept OUTSIDE the raw-events prefix so ``list_raw_ids`` never
+    treats it as a contributor source. The frontend/ GameData files aren't deployed
+    to the API host, so the rebuild reads these to augment the catalogue with
+    never-auctioned loot/trader items."""
+    prefix = _prefix()
+    base = prefix.rsplit("/", 1)[0] if "/" in prefix else prefix
+    return f"{base}/gamedata/{name}.json.gz"
+
+
+def put_gamedata(name: str, gz_bytes: bytes) -> None:
+    """Store (overwrite) a gzipped curated GameData dataset used to augment the item
+    catalogue during the server-side rebuild."""
+    _client().put_object(
+        Bucket=_bucket(),
+        Key=_gamedata_key(name),
+        Body=gz_bytes,
+        ContentType="application/json",
+        ContentEncoding="gzip",
+        CacheControl="no-store",
+    )
+
+
+def get_gamedata_bytes(name: str) -> Optional[bytes]:
+    """Return a gzipped GameData dataset's bytes, or None if it hasn't been seeded."""
+    try:
+        resp = _client().get_object(Bucket=_bucket(), Key=_gamedata_key(name))
+        return resp["Body"].read()
+    except ClientError as exc:
+        if exc.response.get("Error", {}).get("Code") in ("NoSuchKey", "404"):
+            return None
+        raise
+
+
 def put_raw(source_id: str, gz_bytes: bytes) -> None:
     """Store (overwrite) a contributor's gzipped auction-events file."""
     _client().put_object(

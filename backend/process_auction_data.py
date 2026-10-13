@@ -44,7 +44,7 @@ import zlib
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 # --------------------------------------------------------------------------- #
 # Paths
@@ -477,6 +477,16 @@ def resolve_item(
 # --------------------------------------------------------------------------- #
 # Curated catalogue augmentation (rarity + trader items never auctioned)
 # --------------------------------------------------------------------------- #
+def known_codes_from_datasets(datasets: Iterable[Dict[str, Any]]) -> Set[str]:
+    """Bare item codes drawn from curated datasets (item-sources / trader-wares),
+    each keying its ``items`` map by bare code. Shared by the local-file loader and
+    the server-side rebuild (which reads the same datasets from R2)."""
+    codes: Set[str] = set()
+    for data in datasets:
+        codes.update((data.get("items") or {}).keys())
+    return codes
+
+
 def load_known_item_codes(
     item_sources_path: Path = DEFAULT_ITEM_SOURCES,
     trader_wares_path: Path = DEFAULT_TRADER_WARES,
@@ -484,14 +494,13 @@ def load_known_item_codes(
     """Bare item codes that should always appear in the catalogue: everything with a
     loot rarity (item-sources) or sold by a trader (trader-wares). Both datasets key
     their ``items`` map by bare code."""
-    codes: Set[str] = set()
+    datasets: List[Dict[str, Any]] = []
     for path in (item_sources_path, trader_wares_path):
         if not path.exists():
             print(f"[warn] known-item dataset not found at {path} — skipping")
             continue
-        data = json.loads(path.read_text(encoding="utf-8"))
-        codes.update((data.get("items") or {}).keys())
-    return codes
+        datasets.append(json.loads(path.read_text(encoding="utf-8")))
+    return known_codes_from_datasets(datasets)
 
 
 def _build_code_index(registry: Dict[str, Dict[str, str]]) -> Dict[str, Tuple[int, str]]:
@@ -1283,6 +1292,7 @@ def build_records(
     rows: List[Dict[str, Any]],
     item_map: Dict[str, Dict[str, str]],
     registry: Dict[str, Dict[str, str]],
+    known_codes: Optional[Set[str]] = None,
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     records: List[Dict[str, Any]] = []
     items_catalog: Dict[str, Dict[str, Any]] = {}
@@ -1465,7 +1475,9 @@ def build_records(
     flag_spam(records)
     flag_external_trades(records)
     compute_reference_prices(records)
-    augment_catalog_with_known_items(items_catalog, registry, load_known_item_codes())
+    if known_codes is None:
+        known_codes = load_known_item_codes()
+    augment_catalog_with_known_items(items_catalog, registry, known_codes)
     return records, items_catalog
 
 
@@ -2495,16 +2507,22 @@ def build_artifacts(
     *,
     item_map: Optional[Dict[str, Dict[str, str]]] = None,
     registry: Optional[Dict[str, Dict[str, str]]] = None,
+    known_codes: Optional[Set[str]] = None,
 ) -> "tuple[List[Dict[str, Any]], Dict[str, Any], Dict[str, Any]]":
     """Dedup + decode + summarise raw auction-event rows into the published
     artifacts. Returns ``(records, summary, items_catalog)``. Reused by both the
-    CLI and the server-side rebuild so both produce byte-identical output."""
+    CLI and the server-side rebuild so both produce byte-identical output.
+
+    ``known_codes`` are the curated bare item codes (loot/trader) to add to the
+    catalogue even when never auctioned. When None, they're loaded from the local
+    GameData files; the server-side rebuild passes codes read from R2 instead,
+    because those files aren't deployed to the API host."""
     deduped = dedup_latest(rows)
     if item_map is None:
         item_map = load_item_map(DEFAULT_ITEM_MAP)
     if registry is None:
         registry = load_registry(DEFAULT_REGISTRY)
-    records, items_catalog = build_records(deduped, item_map, registry)
+    records, items_catalog = build_records(deduped, item_map, registry, known_codes)
     summary = build_summary(records)
     return records, summary, items_catalog
 
