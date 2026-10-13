@@ -6,7 +6,8 @@
 // inside SVG presentation attributes — that silently falls back to black and
 // disappears in dark mode.
 
-import { formatGameDate, formatListingDate } from "./VirtualTable";
+import { formatListingDate } from "./VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 
 export interface AxisTickProps {
   x?: number | string;

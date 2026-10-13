@@ -425,30 +425,6 @@ export function formatListingDate(iso: string | null | undefined): string {
   return d.toLocaleDateString(undefined, { year: "2-digit", month: "short", day: "numeric" });
 }
 
-// In-game calendar for this server: 24 in-game hours per day, 30 days per
-// month, 12 months per year. `PostedTotalHours` (carried through as
-// `postedTotalHours`) is the total in-game hours since world start at the
-// moment the auction was posted, so we can reconstruct the calendar date.
-const GAME_HOURS_PER_DAY = 24;
-const GAME_DAYS_PER_MONTH = 30;
-const GAME_MONTHS_PER_YEAR = 12;
-const GAME_DAYS_PER_YEAR = GAME_DAYS_PER_MONTH * GAME_MONTHS_PER_YEAR;
-
-/**
- * Convert an in-game "total hours since world start" value into a display
- * calendar date (`Y{year} M{month} D{day}`), or "—" when unknown. Year, month
- * and day are 1-based to match how the in-game HUD counts them.
- */
-export function formatGameDate(totalHours: number | null | undefined): string {
-  if (totalHours == null || !Number.isFinite(totalHours) || totalHours <= 0) return "—";
-  const totalDays = Math.floor(totalHours / GAME_HOURS_PER_DAY);
-  const year = Math.floor(totalDays / GAME_DAYS_PER_YEAR);
-  const dayOfYear = totalDays % GAME_DAYS_PER_YEAR;
-  const month = Math.floor(dayOfYear / GAME_DAYS_PER_MONTH) + 1;
-  const day = (dayOfYear % GAME_DAYS_PER_MONTH) + 1;
-  return `Y${year} M${month} D${day}`;
-}
-
 // Smallest px width a column needs before the table should scroll rather than
 // squeeze: the min of a `minmax(a,b)` track, or a fixed `Nrem`/`Npx` value.
 function columnMinPx(width: string): number {

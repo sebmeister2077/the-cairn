@@ -58,7 +58,7 @@ import {
   type WealthEliteMode,
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
-import { formatGameDate } from "./VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import { INSIGHTS_WINDOWS } from "@/hooks/useMarketInsights";
 

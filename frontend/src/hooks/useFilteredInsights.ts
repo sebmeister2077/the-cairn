@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import type { InsightsRow } from "@/models/auction";
 import type { InsightsFilters } from "@/store/slices/insightsFilters";
 import type { MarketPriceMode } from "./useMarketPriceMode";
+import { formatGears } from "@/lib/auction";
 
 /** The volume dimension the numeric volume range filters against. */
 export type InsightsVolumeMode = "price" | "unit";
@@ -13,6 +14,14 @@ export type InsightsVolumeMode = "price" | "unit";
 /** The per-unit price a row reports under the active price mode. */
 export function rowPrice(r: InsightsRow, mode: MarketPriceMode): number | null {
     return mode === "weighted" ? r.weightedPricePerUnit : r.medianPricePerUnit;
+}
+
+/** Item volume in the currently selected mode. */
+export function volumeValue(r: InsightsRow, mode: InsightsVolumeMode): number {
+    return mode === "price" ? r.gearsTraded : r.unitsSold;
+}
+export function volumeDisplay(r: InsightsRow, mode: InsightsVolumeMode) {
+    return mode === "price" ? formatGears(r.gearsTraded) : r.unitsSold.toLocaleString();
 }
 
 function num(v: string): number | null {

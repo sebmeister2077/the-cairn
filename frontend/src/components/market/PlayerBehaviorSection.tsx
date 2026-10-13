@@ -10,7 +10,6 @@ import { Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { formatGameDate } from "./VirtualTable";
 import { PLAYER_MIN_TRADES } from "@/hooks/usePlayerProfile";
 import { PlayerDominanceTable } from "./PlayerDominanceTable";
 import type {
@@ -21,6 +20,7 @@ import type {
   SellerPricingStyle,
   SpecializationTier,
 } from "@/models/auction";
+import { formatGameDate } from "@/lib/format-duration";
 
 const ARCHETYPE: Record<PlayerArchetype, { label: string; desc: string; egg?: true }> = {
   "price-discoverer": {

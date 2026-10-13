@@ -12,7 +12,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatGears } from "@/lib/auction";
-import { formatGameDate } from "./VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
 

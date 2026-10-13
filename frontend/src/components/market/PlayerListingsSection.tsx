@@ -23,13 +23,13 @@ import { useDebounced } from "@/hooks/useDebounced";
 import {
   VirtualTable,
   formatListingDate,
-  formatGameDate,
   ListingStateBadge,
   DeliveryFeeCell,
   DurationCell,
   ListingNotesCell,
   type ListingColumn,
 } from "../../components/market/VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 
 /** Compact checkbox-popover multi-select for filtering listings by item type. */
 function TypeMultiSelect({

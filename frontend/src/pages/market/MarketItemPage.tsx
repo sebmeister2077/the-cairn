@@ -64,7 +64,6 @@ import { getTapestryImage } from "@/components/market/tapestryImages";
 import { chiselColor } from "@/components/market/chiselColors";
 import {
   formatListingDate,
-  formatGameDate,
   DeliveryFeeCell,
   CancelledCell,
   DurationCell,
@@ -72,6 +71,8 @@ import {
   ListingAttributesCell,
   type ListingColumn,
 } from "@/components/market/VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
+
 import { RecentListingsSection } from "@/components/market/RecentListingsSection";
 import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
 import {

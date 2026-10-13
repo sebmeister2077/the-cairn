@@ -1,3 +1,5 @@
+import { GAME_HOURS_PER_DAY, GAME_DAYS_PER_YEAR, GAME_DAYS_PER_MONTH } from "./constants/game-dates";
+
 /** Format seconds as a compact "Xm Ys" string (mins dropped when 0). */
 export function formatDuration(seconds: number): string {
     if (!Number.isFinite(seconds)) return "—";
@@ -33,4 +35,20 @@ export function toDatetimeLocal(iso: string | null): string {
         `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
         `T${pad(d.getHours())}:${pad(d.getMinutes())}`
     );
+}
+
+
+/**
+ * Convert an in-game "total hours since world start" value into a display
+ * calendar date (`Y{year} M{month} D{day}`), or "—" when unknown. Year, month
+ * and day are 1-based to match how the in-game HUD counts them.
+ */
+export function formatGameDate(totalHours: number | null | undefined): string {
+    if (totalHours == null || !Number.isFinite(totalHours) || totalHours <= 0) return "—";
+    const totalDays = Math.floor(totalHours / GAME_HOURS_PER_DAY);
+    const year = Math.floor(totalDays / GAME_DAYS_PER_YEAR);
+    const dayOfYear = totalDays % GAME_DAYS_PER_YEAR;
+    const month = Math.floor(dayOfYear / GAME_DAYS_PER_MONTH) + 1;
+    const day = (dayOfYear % GAME_DAYS_PER_MONTH) + 1;
+    return `Y${year} M${month} D${day}`;
 }

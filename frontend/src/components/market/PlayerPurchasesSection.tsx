@@ -9,11 +9,11 @@ import type { AuctionListing } from "@/models/auction";
 import {
   VirtualTable,
   formatListingDate,
-  formatGameDate,
   DeliveryFeeCell,
   ListingNotesCell,
   type ListingColumn,
 } from "./VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 
 /**
  * The purchases this player made (they are the buyer). Surfaces who they bought

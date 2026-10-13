@@ -25,12 +25,13 @@ import { MarketFilterBar } from "../../components/market/MarketFilterBar";
 import { ItemThumb } from "../../components/market/ItemThumb";
 import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
-  formatGameDate,
   formatListingDate,
   ListingStateBadge,
   ListingNotesCell,
 } from "../../components/market/VirtualTable";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
+import { formatGameDate } from "@/lib/format-duration";
+
 const PAGE_SIZE = 100;
 
 export function MarketListingsPage() {

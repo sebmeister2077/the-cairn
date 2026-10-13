@@ -22,7 +22,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { formatGameDate } from "../../components/market/VirtualTable";
+import { formatGameDate } from "@/lib/format-duration";
 import { percentileSorted } from "@/lib/auction";
 import type { PlayerActivityPoint, PlayerPricingHistoryPoint } from "@/models/auction";
 
