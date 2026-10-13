@@ -1,0 +1,6006 @@
+{
+  "generatedUtc": "2026-10-13T18:39:14.441437+00:00",
+  "sources": [
+    "survival/itemtypes/meta/stackrandomizer.json",
+    "survival/itemtypes/meta/stackrandomizer-clutter.json",
+    "survival/itemtypes/meta/stackrandomizer-library.json",
+    "survival/itemtypes/meta/stackrandomizer-mines.json",
+    "survival/blocktypes/clay/lootvessel.json"
+  ],
+  "poolCount": 54,
+  "oncePerServerPoolCount": 2,
+  "uniqueItemCount": 8,
+  "pools": [
+    {
+      "id": "clutter-chains-and-fences",
+      "key": "chains-and-fences",
+      "label": "Chains And Fences",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-displaycase",
+      "key": "displaycase",
+      "label": "Displaycase",
+      "category": "clutter",
+      "itemCount": 3,
+      "items": [
+        {
+          "code": "displaycase-aged1",
+          "chancePct": 33.33,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "displaycase-aged2",
+          "chancePct": 33.33,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "displaycase-aged4",
+          "chancePct": 33.33,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-furniture",
+      "key": "furniture",
+      "label": "Furniture",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-intact",
+      "key": "intact",
+      "label": "Intact",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-lab",
+      "key": "lab",
+      "label": "Lab",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-ruined-toys-clothing",
+      "key": "ruined-toys-clothing",
+      "label": "Ruined Toys Clothing",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-ruined-weapons",
+      "key": "ruined-weapons",
+      "label": "Ruined Weapons",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-science",
+      "key": "science",
+      "label": "Science",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-scribe",
+      "key": "scribe",
+      "label": "Scribe",
+      "category": "clutter",
+      "itemCount": 11,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 51.72,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "paper-parchment",
+          "chancePct": 17.24,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 5
+        },
+        {
+          "code": "book-rotten-brown",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-gray",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-green",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-purple",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-rust",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-glasses",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "inkandquill",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "omokpiece-gold",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "omokpiece-lead",
+          "chancePct": 3.45,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-tobias",
+      "key": "tobias",
+      "label": "Tobias",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ],
+      "oncePerServer": true
+    },
+    {
+      "id": "clutter-workshop-advanced",
+      "key": "workshop-advanced",
+      "label": "Workshop Advanced",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "clutter-workshop-basic",
+      "key": "workshop-basic",
+      "label": "Workshop Basic",
+      "category": "clutter",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "library-library",
+      "key": "library",
+      "label": "Library randomizer",
+      "category": "library",
+      "itemCount": 11,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 75.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "paper-parchment",
+          "chancePct": 8.93,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 5
+        },
+        {
+          "code": "book-rotten-brown",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-gray",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-green",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-purple",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-rust",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-glasses",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "inkandquill",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "omokpiece-gold",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "omokpiece-lead",
+          "chancePct": 1.79,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "mines-mines",
+      "key": "mines",
+      "label": "Mines randomizer",
+      "category": "mines",
+      "itemCount": 8,
+      "items": [
+        {
+          "code": "clutter",
+          "chancePct": 78.43,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "paper-parchment",
+          "chancePct": 9.8,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 5
+        },
+        {
+          "code": "blastingpowder",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-brown",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-gray",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-green",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-purple",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "book-rotten-rust",
+          "chancePct": 1.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-accessory-highstatus",
+      "key": "accessory-highstatus",
+      "label": "Accessory randomizer (High status)",
+      "category": "ruins",
+      "itemCount": 42,
+      "items": [
+        {
+          "code": "clothes-arm-silver-chain",
+          "chancePct": 11.76,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-gem-studded-bracelet",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-large-silver-bracelets",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-silver-bracelet",
+          "chancePct": 5.88,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-brass-ruby-brooch",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-cloak-clasp-chain",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-silver-brooch",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-silver-star",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-forgotten",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-forlorn-veil",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-gem-encrusted-fur-hat",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-gold-coronet",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-forgotten",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-forlorn-talisman",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-lunula",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-noble-necklace",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-teardrop-amulet",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face10",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face11",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face8",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face9",
+          "chancePct": 2.94,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-cloak-clasp-beads",
+          "chancePct": 1.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-starburst",
+          "chancePct": 1.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-silver-diadem",
+          "chancePct": 1.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-golden-necklace",
+          "chancePct": 1.76,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-royal-pin",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-silver-pin",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-rottenking",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-bronzebelt",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-gold-waist-chain",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-regalwrap",
+          "chancePct": 1.18,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-falcon",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-crown-byzantine",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-deep",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-fancy-cross",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-fancy-royal-collar",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gear-amulet-gold",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gear-amulet-temporal",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gorget",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gorget-vulture",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-jade-amulet",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-jambiya-belt",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-accessory-lowstatus",
+      "key": "accessory-lowstatus",
+      "label": "Accessory randomizer (Low status)",
+      "category": "ruins",
+      "itemCount": 27,
+      "items": [
+        {
+          "code": "clothes-arm-copper-bracelet",
+          "chancePct": 9.66,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-leather-bracers",
+          "chancePct": 9.66,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-rosary",
+          "chancePct": 9.66,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-copper-torc",
+          "chancePct": 9.66,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-pearl-necklace",
+          "chancePct": 9.66,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-acrobat",
+          "chancePct": 4.83,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-fortuneteller",
+          "chancePct": 4.83,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-prisoner-binds",
+          "chancePct": 4.83,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-blue-seal",
+          "chancePct": 4.83,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-marketeer",
+          "chancePct": 2.9,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-acrobat",
+          "chancePct": 2.9,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-pomander",
+          "chancePct": 2.9,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-cat",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-corroded",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-crow",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-hummingbird",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-miner",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-sheepskull",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-survivor",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-fortuneteller",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-japamala",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face16",
+          "chancePct": 1.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-japamala",
+          "chancePct": 0.97,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-rusty-wrist-manacles",
+          "chancePct": 0.97,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-rusty-ankle-manacles",
+          "chancePct": 0.97,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-pillory",
+          "chancePct": 0.97,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-rotwalker",
+          "chancePct": 0.48,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-accessory-mediumstatus",
+      "key": "accessory-mediumstatus",
+      "label": "Accessory randomizer (Medium status)",
+      "category": "ruins",
+      "itemCount": 24,
+      "items": [
+        {
+          "code": "clothes-arm-bronze-bracelet",
+          "chancePct": 20.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-merchant-amulet",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-hornedbracelet",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-merchant-bracelet",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-squire-bracers",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-cloak-clasp",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-squire-emblem",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-glasses",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-bronze-gem-necklace",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-simple-cross",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face15",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face6",
+          "chancePct": 5.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-bronzeamulet",
+          "chancePct": 3.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-bronze-armlet",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-fibula",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-lily",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-messenger-pin",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-festivecat",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-surgeon",
+          "chancePct": 2.0,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-glasses-clockmaker",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar1",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar2",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar3",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face14",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-armor",
+      "key": "armor",
+      "label": "Armor randomizer",
+      "category": "ruins",
+      "itemCount": 7,
+      "items": [
+        {
+          "code": "armor-body-antique-blackguard-broken",
+          "chancePct": 21.05,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "armor-head-antique-blackguard-broken",
+          "chancePct": 21.05,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "armor-legs-antique-blackguard-broken",
+          "chancePct": 21.05,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "armor-body-antique-forlorn-broken",
+          "chancePct": 10.53,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "armor-head-antique-forlorn-broken",
+          "chancePct": 10.53,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "armor-legs-antique-forlorn-broken",
+          "chancePct": 10.53,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-forlorn-iron",
+          "chancePct": 5.26,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-materials-building",
+      "key": "materials-building",
+      "label": "Building materials randomizer",
+      "category": "ruins",
+      "itemCount": 27,
+      "items": [
+        {
+          "code": "stone-chalk",
+          "chancePct": 17.15,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-limestone",
+          "chancePct": 17.15,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "planks-aged-ud",
+          "chancePct": 15.38,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 14
+        },
+        {
+          "code": "log-placed-aged-ud",
+          "chancePct": 14.14,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 10
+        },
+        {
+          "code": "clay-blue",
+          "chancePct": 8.11,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "clay-fire",
+          "chancePct": 6.96,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "metalnailsandstrips-copper",
+          "chancePct": 4.89,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "metal-parts",
+          "chancePct": 3.64,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "quicklime",
+          "chancePct": 3.01,
+          "rarity": "rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "claybricks-good-fire",
+          "chancePct": 1.66,
+          "rarity": "rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-andesite",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-basalt",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-bauxite",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-chalk",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-chert",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-claystone",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-conglomerate",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-granite",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-limestone",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-peridotite",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-phyllite",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-sandstone",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-shale",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "stonebricks-slate",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 8,
+          "maxQty": 16
+        },
+        {
+          "code": "padlock-bismuthbronze",
+          "chancePct": 0.21,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "padlock-blackbronze",
+          "chancePct": 0.21,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "padlock-tinbronze",
+          "chancePct": 0.21,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 2
+        }
+      ]
+    },
+    {
+      "id": "ruins-butterfly",
+      "key": "butterfly",
+      "label": "Butterfly pin randomizer",
+      "category": "ruins",
+      "itemCount": 50,
+      "items": [
+        {
+          "code": "clothes-butterflypin-largewhite",
+          "chancePct": 5.94,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-comma",
+          "chancePct": 3.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-smallheath",
+          "chancePct": 3.96,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-acadianhairstreak",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bandedpeacock",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bluekallima",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bluemorpho",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bluepansy",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bogcopper",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-bronzecopper",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-cabbagewhite",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-clipper",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-coloradohairstreak",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-commonbrimstone",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-darkbluepansy",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-desertorangetip",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-easterntigerswallowtail",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-godartsnumberwing",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-goldbandedforester",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-greatpurplehairstreak",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-greencharaxes",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-littlemetalmark",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-littlewoodsatyr",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-malachite",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-marbledwhite",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-milbertstortoiseshell",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-mourningcloak",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-oakblue",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-paintedbeauty",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-pallidnawab",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-peacock",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-pipevineswallowtail",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-purpleemperor",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-redadmiral",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-redpostman",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-resplendantforester",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-ringlet",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-rustytippedpage",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-silveryblue",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-speckledwood",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-whiteadmiral",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-whitepeacock",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-zebraheliconan",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-zebraswallowtail",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-zeredaskipper",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-alchemical",
+          "chancePct": 0.99,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-rot",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-rust",
+          "chancePct": 0.59,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-redglider",
+          "chancePct": 0.4,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-butterflypin-temporal",
+          "chancePct": 0.4,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-cloth-highstatus",
+      "key": "cloth-highstatus",
+      "label": "Cloth randomizer (High status)",
+      "category": "ruins",
+      "itemCount": 60,
+      "items": [
+        {
+          "code": "clothes-lowerbody-fine-trousers",
+          "chancePct": 6.78,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-noble-shirt",
+          "chancePct": 6.78,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-aristocrat-shoes",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-laced-handsome-gloves",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-noble-fillet",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-noble-pants",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-aristocrat-mantle",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-royal-fur",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-temptress-velvet-shirt",
+          "chancePct": 3.39,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-forgotten",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-forlorn-shoes",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-noble-shoes",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-temptress-velvet-shoes",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-tigh-high-boots",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-forgotten",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-forlorn-bracer",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-messengers-hat",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-roll-hat",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-embroideredpantaloons",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-forgotten",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-forlorn-pants",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-messenger-trousers",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-forlorn-sash",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-forgotten",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-forlorn-tunic",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-messenger-shirt",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-forgotten",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-peliconburgundy",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-peliconpurple",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-quiltedcorsage",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-quilteddoublet",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-temptress",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-forlorn-belt",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-messenger-belt",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-noble-sash",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-blanket-deepnoble",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-blanket-prince",
+          "chancePct": 1.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-noble-riding-gloves",
+          "chancePct": 1.02,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-noble-fur-collar",
+          "chancePct": 1.02,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-fancy-royal-belt",
+          "chancePct": 1.02,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-messenger-shoes",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-prince-boots",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-prince-gloves",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-temptress",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-aristocrat-leggings",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-prince-breeches",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-aristocrat-shirt",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-prince-tunic",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-aristocrat-belt",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-prince-waistband",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-rottenking",
+          "chancePct": 0.68,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-long-gem-studded-bracelet",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-deep",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-deep",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-deep",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-cloth-lowstatus",
+      "key": "cloth-lowstatus",
+      "label": "Cloth randomizer (Low status)",
+      "category": "ruins",
+      "itemCount": 98,
+      "items": [
+        {
+          "code": "clothes-lowerbody-tattered-peasent-gown",
+          "chancePct": 4.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-tattered-linen-shirt",
+          "chancePct": 4.69,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-shepherd-sandals",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-worn-leather-boots",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-dirty-linen-trousers",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-artisans-scarf",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-peasent-shirt",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-tattered-crimson-tunic",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-huntsmans-tunic",
+          "chancePct": 3.12,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-snow-goggles",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-peasent-slippers",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-wool-lined-knee-high-boots",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-peasent-head-scarf",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-shepherd-pants",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-torn-riding-pants",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-blacksmith-apron",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-hunter-poncho",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-jord-robe",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-hunter-shirt",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-rawhidemantle",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-shepherd-tunic",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-peasant-strap",
+          "chancePct": 1.56,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-litham",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-marketeer",
+          "chancePct": 0.94,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-knee-high-fur-boots",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-nomad-boots",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-prisoner-binds",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-fur-gloves",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-fortune-tellers-scarf",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-shepherds-cowl",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-acrobat",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-jester",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-nomad-trousers",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-raw-hide-trousers",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-workmans-gown",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-acrobat",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-emeraldreindeerherder",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-owlponcho",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-peasent-kaftan",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-acrobat",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-great-steppe-shirt",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-hunters-green",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-jester",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-linen-tunic",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-emeraldreindeerherder",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-fortuneteller",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-fur-coat",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-fortune-teller-hip-scarf",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-heavy-belt",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-linen-rope",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-miner",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-blanket-survivor",
+          "chancePct": 0.78,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-great-steppe-boots",
+          "chancePct": 0.62,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-great-steppe-mantle",
+          "chancePct": 0.62,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-acrobat",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-acrobat",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-fur-lined-reindeer-herder-shoes",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-hobnailboots",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-jester",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-jester",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-reindeer-herder-trousers",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-reindeer-herder-collared-shirt",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-reindeer-herder-waistband",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-sturdy-leather-belt",
+          "chancePct": 0.47,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-rotwalker",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-embroidered-coif",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-emeraldreindeerherder",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-rotwalker",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-emeraldreindeerherder",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-rotwalker",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-embroidered-collar",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-rotwalker",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-classicaltunic",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-cerise-embroidered-reindeer-herder-coat",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-rotwalker",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-cerise-embroidered-reindeer-herder-waistband",
+          "chancePct": 0.31,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-metalcap-boots",
+          "chancePct": 0.16,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-warm-woolen-pants",
+          "chancePct": 0.16,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-stained-leather-poncho",
+          "chancePct": 0.16,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-pearl-shirt",
+          "chancePct": 0.16,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-woolen-shirt",
+          "chancePct": 0.16,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-cloth-mediumstatus",
+      "key": "cloth-mediumstatus",
+      "label": "Cloth randomizer (Medium status)",
+      "category": "ruins",
+      "itemCount": 64,
+      "items": [
+        {
+          "code": "clothes-upperbody-merchant-shirt",
+          "chancePct": 3.44,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-warm-robe",
+          "chancePct": 3.44,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-sturdy-belt",
+          "chancePct": 3.44,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-minstrel-gloves",
+          "chancePct": 2.41,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-jailor-pants",
+          "chancePct": 2.41,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-minstrel-coat",
+          "chancePct": 2.41,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-jailor-tunic",
+          "chancePct": 2.41,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-jailor-boots",
+          "chancePct": 2.06,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-lackey-shoes",
+          "chancePct": 2.06,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-surgeonhood",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-high-leather-boots",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-merchant-shoes",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-lackey-gloves",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-bycocket",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-fancy-head-dress",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-jailors-hat",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-lackey-hat",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-lackey-breeches",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-merchant-pants",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-squire-pants",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-hooded-cape",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-woolen-scarf",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-lackey-shirt",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbodyover-surgeon",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-heavy-tool-belt",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-jailor-belt",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-scribe",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-blanket-alchemist",
+          "chancePct": 1.72,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-squire-boots",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-broadbrim",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-bucket",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-capotain",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-merchant-hat",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-thrumcap",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-squire-shirt",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-merchant-belt",
+          "chancePct": 1.03,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-minstrel-boots",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-soldier-boots",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-heavy-leather-gloves",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-bycocketfeather",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-minstrel-hat",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-squire-hood",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-minstrel-pants",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-squire-tunic",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-minstrel-shirt",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-squire-belt",
+          "chancePct": 0.69,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-woolen-leggings",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-earth-toned-robe",
+          "chancePct": 0.34,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-kitchen",
+      "key": "kitchen",
+      "label": "Food and kitchen tools randomizer",
+      "category": "ruins",
+      "itemCount": 9,
+      "items": [
+        {
+          "code": "rot",
+          "chancePct": 26.1,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 18
+        },
+        {
+          "code": "bone",
+          "chancePct": 21.7,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 16
+        },
+        {
+          "code": "torch-basic-extinct-up",
+          "chancePct": 15.7,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "flaxfibers",
+          "chancePct": 12.2,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "metal-scraps",
+          "chancePct": 10.4,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 20
+        },
+        {
+          "code": "bowl-blue-fired",
+          "chancePct": 7.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "crock-blue-fired",
+          "chancePct": 3.5,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "jug-gray-fired",
+          "chancePct": 2.6,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "redmeat-vintage",
+          "chancePct": 0.8,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 3
+        }
+      ]
+    },
+    {
+      "id": "ruins-fuel",
+      "key": "fuel",
+      "label": "Fuel randomizer",
+      "category": "ruins",
+      "itemCount": 10,
+      "items": [
+        {
+          "code": "drygrass",
+          "chancePct": 20.3,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 20
+        },
+        {
+          "code": "stick",
+          "chancePct": 18.3,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 18
+        },
+        {
+          "code": "thatch",
+          "chancePct": 18.3,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 16
+        },
+        {
+          "code": "firewood",
+          "chancePct": 16.4,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "peatbrick",
+          "chancePct": 15.9,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-lignite",
+          "chancePct": 5.8,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "ore-bituminouscoal",
+          "chancePct": 2.9,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 9
+        },
+        {
+          "code": "charcoal",
+          "chancePct": 1.4,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "ore-anthracite",
+          "chancePct": 0.4,
+          "rarity": "legendary",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "coke",
+          "chancePct": 0.3,
+          "rarity": "legendary",
+          "minQty": 2,
+          "maxQty": 8
+        }
+      ]
+    },
+    {
+      "id": "ruins-gear",
+      "key": "gear",
+      "label": "Gear randomizer",
+      "category": "ruins",
+      "itemCount": 3,
+      "items": [
+        {
+          "code": "gear-rusty",
+          "chancePct": 99.03,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 15
+        },
+        {
+          "code": "metal-parts",
+          "chancePct": 0.65,
+          "rarity": "very_rare",
+          "minQty": 5,
+          "maxQty": 15
+        },
+        {
+          "code": "gear-temporal",
+          "chancePct": 0.32,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 3
+        }
+      ]
+    },
+    {
+      "id": "ruins-ingot",
+      "key": "ingot",
+      "label": "Ingot randomizer",
+      "category": "ruins",
+      "itemCount": 12,
+      "items": [
+        {
+          "code": "ingot-lead",
+          "chancePct": 28.65,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-tin",
+          "chancePct": 23.96,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-zinc",
+          "chancePct": 19.79,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-copper",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 4
+        },
+        {
+          "code": "ingot-molybdochalkos",
+          "chancePct": 4.17,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "ingot-brass",
+          "chancePct": 3.65,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-bismuth",
+          "chancePct": 1.04,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "ingot-bismuthbronze",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-blackbronze",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-tinbronze",
+          "chancePct": 0.52,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-gold",
+          "chancePct": 0.26,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "ingot-silver",
+          "chancePct": 0.26,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 3
+        }
+      ]
+    },
+    {
+      "id": "ruins-jonasparts",
+      "key": "jonasparts",
+      "label": "Jonas parts randomizer",
+      "category": "ruins",
+      "itemCount": 6,
+      "items": [
+        {
+          "code": "jonasparts-connector01",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-cylinder01",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-cylinder02",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-tank01",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-tank02",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-valve01",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-alljonas",
+      "key": "alljonas",
+      "label": "Jonas Parts&Frames Stack randomizer",
+      "category": "ruins",
+      "itemCount": 13,
+      "items": [
+        {
+          "code": "jonasframes-gearbox01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gearbox02",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gears01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gears02",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-joint01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-oscillator01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-spring01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-connector01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-cylinder01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-cylinder02",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-tank01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-tank02",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasparts-valve01",
+          "chancePct": 7.69,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-jonasframes",
+      "key": "jonasframes",
+      "label": "Jonasframes randomizer",
+      "category": "ruins",
+      "itemCount": 7,
+      "items": [
+        {
+          "code": "jonasframes-gearbox01",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gearbox02",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gears01",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-gears02",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-joint01",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-oscillator01",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "jonasframes-spring01",
+          "chancePct": 14.29,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lantern",
+      "key": "lantern",
+      "label": "Lantern randomizer",
+      "category": "ruins",
+      "itemCount": 3,
+      "items": [
+        {
+          "code": "lantern-large-up",
+          "chancePct": 54.51,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "ore-quartz",
+          "chancePct": 45.43,
+          "rarity": "common",
+          "minQty": 10,
+          "maxQty": 20
+        },
+        {
+          "code": "chandelier-candle0",
+          "chancePct": 0.06,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lazaret",
+      "key": "lazaret",
+      "label": "Lazaret randomizer",
+      "category": "ruins",
+      "itemCount": 30,
+      "items": [
+        {
+          "code": "clothes-arm-japamala",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-rosary",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-rusty-wrist-manacles",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-rusty-ankle-manacles",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-japamala",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-pillory",
+          "chancePct": 7.89,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar1",
+          "chancePct": 5.26,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar2",
+          "chancePct": 5.26,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-nazar3",
+          "chancePct": 5.26,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-long-gem-studded-bracelet",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-falcon",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-glasses-clockmaker",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-fancy-cross",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gear-amulet-gold",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gorget",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gorget-vulture",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-jade-amulet",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-jambiya-belt",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face14",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoovedwearables-face-face16",
+          "chancePct": 2.63,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-crown-byzantine",
+          "chancePct": 1.32,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-gear-amulet-temporal",
+          "chancePct": 1.32,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-face-funeralmask1",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask2",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask3",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask4",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask5",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask6",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask7",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        },
+        {
+          "code": "clothes-face-funeralmask8",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1,
+          "uniquePerServer": true
+        }
+      ],
+      "oncePerServer": true
+    },
+    {
+      "id": "ruins-lore-diaries",
+      "key": "lore-diaries",
+      "label": "Lore randomizer (D)",
+      "category": "ruins",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "lore-scroll",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lore-jonas",
+      "key": "lore-jonas",
+      "label": "Lore randomizer (J)",
+      "category": "ruins",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "lore-book-aged-orangebrown",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lore-research",
+      "key": "lore-research",
+      "label": "Lore randomizer (R)",
+      "category": "ruins",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "lore-book-aged-orangebrown",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lore-tobias",
+      "key": "lore-tobias",
+      "label": "Lore randomizer (T)",
+      "category": "ruins",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "lore-paper",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-lore-villager",
+      "key": "lore-villager",
+      "label": "Lore randomizer (V)",
+      "category": "ruins",
+      "itemCount": 1,
+      "items": [
+        {
+          "code": "lore-scroll",
+          "chancePct": 100.0,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-materials-mining",
+      "key": "materials-mining",
+      "label": "Mining materials randomizer",
+      "category": "ruins",
+      "itemCount": 14,
+      "items": [
+        {
+          "code": "torch-basic-extinct-up",
+          "chancePct": 18.8,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 12
+        },
+        {
+          "code": "ore-quartz",
+          "chancePct": 17.5,
+          "rarity": "common",
+          "minQty": 4,
+          "maxQty": 18
+        },
+        {
+          "code": "stone-chalk",
+          "chancePct": 11.0,
+          "rarity": "uncommon",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-limestone",
+          "chancePct": 11.0,
+          "rarity": "uncommon",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "metal-scraps",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 20
+        },
+        {
+          "code": "blastingpowder",
+          "chancePct": 8.8,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 11
+        },
+        {
+          "code": "stone-halite",
+          "chancePct": 5.3,
+          "rarity": "uncommon",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "ore-borax",
+          "chancePct": 4.0,
+          "rarity": "rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "ore-olivine",
+          "chancePct": 4.0,
+          "rarity": "rare",
+          "minQty": 6,
+          "maxQty": 20
+        },
+        {
+          "code": "clearquartz",
+          "chancePct": 2.8,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 6
+        },
+        {
+          "code": "ore-cinnabar",
+          "chancePct": 2.8,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-lapislazuli",
+          "chancePct": 2.8,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-sulfur",
+          "chancePct": 0.9,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-sylvite",
+          "chancePct": 0.3,
+          "rarity": "legendary",
+          "minQty": 2,
+          "maxQty": 4
+        }
+      ]
+    },
+    {
+      "id": "ruins-ore",
+      "key": "ore",
+      "label": "Ore Randomizer",
+      "category": "ruins",
+      "itemCount": 11,
+      "items": [
+        {
+          "code": "ore-lignite",
+          "chancePct": 13.99,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 9
+        },
+        {
+          "code": "ore-medium-nativecopper-andesite",
+          "chancePct": 13.99,
+          "rarity": "common",
+          "minQty": 3,
+          "maxQty": 9
+        },
+        {
+          "code": "ore-poor-malachite-limestone",
+          "chancePct": 13.99,
+          "rarity": "common",
+          "minQty": 3,
+          "maxQty": 9
+        },
+        {
+          "code": "ore-quartz",
+          "chancePct": 13.99,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 10
+        },
+        {
+          "code": "ore-poor-limonite-shale",
+          "chancePct": 10.49,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 7
+        },
+        {
+          "code": "ore-medium-galena-claystone",
+          "chancePct": 8.74,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-poor-hematite-granite",
+          "chancePct": 8.74,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 7
+        },
+        {
+          "code": "ore-poor-magnetite-andesite",
+          "chancePct": 8.74,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 7
+        },
+        {
+          "code": "ore-medium-sphalerite-andesite",
+          "chancePct": 6.99,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-medium-quartz_nativegold-andesite",
+          "chancePct": 0.17,
+          "rarity": "legendary",
+          "minQty": 2,
+          "maxQty": 14
+        },
+        {
+          "code": "ore-medium-quartz_nativesilver-andesite",
+          "chancePct": 0.17,
+          "rarity": "legendary",
+          "minQty": 2,
+          "maxQty": 10
+        }
+      ]
+    },
+    {
+      "id": "ruins-painting",
+      "key": "painting",
+      "label": "Painting randomizer",
+      "category": "ruins",
+      "itemCount": 10,
+      "items": [
+        {
+          "code": "ore-quartz",
+          "chancePct": 32.79,
+          "rarity": "common",
+          "minQty": 10,
+          "maxQty": 20
+        },
+        {
+          "code": "painting-elk-north",
+          "chancePct": 19.67,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-howl-north",
+          "chancePct": 14.75,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-forestdawn-north",
+          "chancePct": 9.84,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-prey-north",
+          "chancePct": 6.56,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-underwater-north",
+          "chancePct": 4.92,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-oldvillage-north",
+          "chancePct": 3.93,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-lastday-north",
+          "chancePct": 3.28,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-sleepingwolf-north",
+          "chancePct": 2.62,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "painting-fishandtherain-north",
+          "chancePct": 1.64,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-resource",
+      "key": "resource",
+      "label": "Resource randomizer",
+      "category": "ruins",
+      "itemCount": 13,
+      "items": [
+        {
+          "code": "stick",
+          "chancePct": 18.4,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "torch-basic-extinct-up",
+          "chancePct": 14.1,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 14
+        },
+        {
+          "code": "lime",
+          "chancePct": 12.3,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 24
+        },
+        {
+          "code": "flint",
+          "chancePct": 10.5,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "rope",
+          "chancePct": 10.4,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 5
+        },
+        {
+          "code": "saltpeter",
+          "chancePct": 9.2,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 20
+        },
+        {
+          "code": "metal-scraps",
+          "chancePct": 8.0,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 20
+        },
+        {
+          "code": "flaxtwine",
+          "chancePct": 5.5,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 7
+        },
+        {
+          "code": "bandage-clean",
+          "chancePct": 4.3,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 5
+        },
+        {
+          "code": "beeswax",
+          "chancePct": 3.7,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "beenade-closed",
+          "chancePct": 1.8,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 2
+        },
+        {
+          "code": "candle",
+          "chancePct": 1.0,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "leather-normal-plain",
+          "chancePct": 0.8,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 3
+        }
+      ]
+    },
+    {
+      "id": "ruins-seed",
+      "key": "seed",
+      "label": "Seed randomizer",
+      "category": "ruins",
+      "itemCount": 11,
+      "items": [
+        {
+          "code": "seeds-spelt",
+          "chancePct": 26.49,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-rye",
+          "chancePct": 21.19,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-carrot",
+          "chancePct": 19.87,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-turnip",
+          "chancePct": 16.56,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-parsnip",
+          "chancePct": 6.62,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-onion",
+          "chancePct": 3.97,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-flax",
+          "chancePct": 2.65,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-cabbage",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-pumpkin",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-rice",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "seeds-soybean",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        }
+      ]
+    },
+    {
+      "id": "ruins-ruinedweapon",
+      "key": "ruinedweapon",
+      "label": "Stack randomizer (Ruined weapons)",
+      "category": "ruins",
+      "itemCount": 21,
+      "items": [
+        {
+          "code": "stick",
+          "chancePct": 33.33,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "axe-bardiche-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-battle-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-bearded-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-double-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-arming-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-claymore-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-gladius-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-sabre-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "club-flanged-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "club-morningstar-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "club-spiked-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "club-warhammer-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-baselard-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-dagger-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-khanjar-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-stiletto-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "spear-boar-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "spear-fork-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "spear-ranseur-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "spear-voulge-ruined",
+          "chancePct": 3.33,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-theater",
+      "key": "theater",
+      "label": "Theater randomizer",
+      "category": "ruins",
+      "itemCount": 47,
+      "items": [
+        {
+          "code": "clothes-arm-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-arm-ruralfarmer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-emblem-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-beggar",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-centurion",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-farmhand",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-ruralfarmer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-ruralhunter",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-wanderer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-foot-warrior",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-hand-beggar",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-head-ruralhunter",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-beggar",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-centurion",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-farmhand",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-wanderer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-lowerbody-warrior",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-neck-ruralfarmer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-patchwork",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-ruralhunter",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-shoulder-wanderer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-beggar",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-centurion",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-farmhand",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-ruralfarmer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-ruralhunter",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-wanderer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-upperbody-warrior",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-beggar",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-centurion",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-farmhand",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-midsummer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-popinjay",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-ruralfarmer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-ruralhunter",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-wanderer",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "clothes-waist-warrior",
+          "chancePct": 2.13,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-coppertool",
+      "key": "coppertool",
+      "label": "Tool randomizer (Copper)",
+      "category": "ruins",
+      "itemCount": 10,
+      "items": [
+        {
+          "code": "stick",
+          "chancePct": 29.9,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "shovel-copper",
+          "chancePct": 26.58,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-felling-copper",
+          "chancePct": 16.61,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hoe-copper",
+          "chancePct": 9.97,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "hammer-copper",
+          "chancePct": 7.97,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "scythe-copper",
+          "chancePct": 3.32,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "prospectingpick-copper",
+          "chancePct": 2.66,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "shears-copper",
+          "chancePct": 1.99,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "pickaxe-copper",
+          "chancePct": 0.66,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "saw-copper",
+          "chancePct": 0.33,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-tuningcylinder",
+      "key": "tuningcylinder",
+      "label": "Tuning cylinder randomizer",
+      "category": "ruins",
+      "itemCount": 10,
+      "items": [
+        {
+          "code": "tuningcylinder-1",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-10",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-2",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-3",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-4",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-5",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-6",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-7",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-8",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-9",
+          "chancePct": 10.0,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "ruins-copperweapon",
+      "key": "copperweapon",
+      "label": "Weapon randomizer (Copper)",
+      "category": "ruins",
+      "itemCount": 6,
+      "items": [
+        {
+          "code": "stick",
+          "chancePct": 41.1,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 18
+        },
+        {
+          "code": "spear-generic-copper",
+          "chancePct": 34.25,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "arrow-copper",
+          "chancePct": 10.96,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 14
+        },
+        {
+          "code": "axe-felling-copper",
+          "chancePct": 6.85,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "bow-simple",
+          "chancePct": 4.11,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-falx-copper",
+          "chancePct": 2.74,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ]
+    },
+    {
+      "id": "vessel-arcticsupplies",
+      "key": "arcticsupplies",
+      "label": "Cracked vessel (Arctic supplies)",
+      "category": "vessel",
+      "itemCount": 15,
+      "items": [
+        {
+          "code": "cattailtops",
+          "chancePct": 15.96,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 24
+        },
+        {
+          "code": "drygrass",
+          "chancePct": 15.96,
+          "rarity": "common",
+          "minQty": 6,
+          "maxQty": 16
+        },
+        {
+          "code": "flint",
+          "chancePct": 10.64,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 7
+        },
+        {
+          "code": "soil-medium-none",
+          "chancePct": 10.64,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 24
+        },
+        {
+          "code": "stick",
+          "chancePct": 10.64,
+          "rarity": "uncommon",
+          "minQty": 6,
+          "maxQty": 12
+        },
+        {
+          "code": "clay-blue",
+          "chancePct": 5.32,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 24
+        },
+        {
+          "code": "clay-fire",
+          "chancePct": 5.32,
+          "rarity": "uncommon",
+          "minQty": 4,
+          "maxQty": 24
+        },
+        {
+          "code": "flaxfibers",
+          "chancePct": 5.32,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 12
+        },
+        {
+          "code": "poultice-linen-horsetail",
+          "chancePct": 5.32,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 4
+        },
+        {
+          "code": "honeycomb",
+          "chancePct": 3.19,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "stone-andesite",
+          "chancePct": 2.66,
+          "rarity": "rare",
+          "minQty": 10,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-basalt",
+          "chancePct": 2.66,
+          "rarity": "rare",
+          "minQty": 10,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-chalk",
+          "chancePct": 2.66,
+          "rarity": "rare",
+          "minQty": 10,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-granite",
+          "chancePct": 2.66,
+          "rarity": "rare",
+          "minQty": 10,
+          "maxQty": 24
+        },
+        {
+          "code": "gear-rusty",
+          "chancePct": 1.06,
+          "rarity": "very_rare",
+          "minQty": 2,
+          "maxQty": 4
+        }
+      ],
+      "draws": 2.5
+    },
+    {
+      "id": "vessel-farming",
+      "key": "farming",
+      "label": "Cracked vessel (Farming)",
+      "category": "vessel",
+      "itemCount": 9,
+      "items": [
+        {
+          "code": "cattailtops",
+          "chancePct": 18.52,
+          "rarity": "common",
+          "minQty": 5,
+          "maxQty": 10
+        },
+        {
+          "code": "feather",
+          "chancePct": 18.52,
+          "rarity": "common",
+          "minQty": 3,
+          "maxQty": 10
+        },
+        {
+          "code": "flaxfibers",
+          "chancePct": 18.52,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "seeds-cabbage",
+          "chancePct": 18.52,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "basket-normal-reed",
+          "chancePct": 12.35,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "flaxtwine",
+          "chancePct": 8.64,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 10
+        },
+        {
+          "code": "linensack",
+          "chancePct": 2.47,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "scythe-copper",
+          "chancePct": 1.23,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "scythe-tinbronze",
+          "chancePct": 1.23,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ],
+      "draws": 2.5
+    },
+    {
+      "id": "vessel-food",
+      "key": "food",
+      "label": "Cracked vessel (Food)",
+      "category": "vessel",
+      "itemCount": 13,
+      "items": [
+        {
+          "code": "grain-flax",
+          "chancePct": 24.19,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 15
+        },
+        {
+          "code": "grain-rice",
+          "chancePct": 24.19,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 15
+        },
+        {
+          "code": "grain-rye",
+          "chancePct": 24.19,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 15
+        },
+        {
+          "code": "grain-spelt",
+          "chancePct": 24.19,
+          "rarity": "common",
+          "minQty": 8,
+          "maxQty": 15
+        },
+        {
+          "code": "tuningcylinder-1",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-2",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-3",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-4",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-5",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-6",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-7",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-8",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "tuningcylinder-9",
+          "chancePct": 0.36,
+          "rarity": "legendary",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ],
+      "draws": 1.0
+    },
+    {
+      "id": "vessel-forage",
+      "key": "forage",
+      "label": "Cracked vessel (Forage)",
+      "category": "vessel",
+      "itemCount": 17,
+      "items": [
+        {
+          "code": "cattailtops",
+          "chancePct": 11.9,
+          "rarity": "uncommon",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "drygrass",
+          "chancePct": 11.9,
+          "rarity": "uncommon",
+          "minQty": 3,
+          "maxQty": 16
+        },
+        {
+          "code": "flint",
+          "chancePct": 11.9,
+          "rarity": "uncommon",
+          "minQty": 2,
+          "maxQty": 6
+        },
+        {
+          "code": "poultice-linen-horsetail",
+          "chancePct": 11.9,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 4
+        },
+        {
+          "code": "stick",
+          "chancePct": 11.9,
+          "rarity": "uncommon",
+          "minQty": 3,
+          "maxQty": 9
+        },
+        {
+          "code": "clay-blue",
+          "chancePct": 5.95,
+          "rarity": "uncommon",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "clay-fire",
+          "chancePct": 5.95,
+          "rarity": "uncommon",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "flaxfibers",
+          "chancePct": 5.95,
+          "rarity": "uncommon",
+          "minQty": 1,
+          "maxQty": 12
+        },
+        {
+          "code": "bamboostakes",
+          "chancePct": 3.57,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 6
+        },
+        {
+          "code": "beenade-closed",
+          "chancePct": 3.57,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 6
+        },
+        {
+          "code": "honeycomb",
+          "chancePct": 3.57,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 3
+        },
+        {
+          "code": "stone-andesite",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-chalk",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-claystone",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-granite",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-sandstone",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        },
+        {
+          "code": "stone-shale",
+          "chancePct": 1.98,
+          "rarity": "rare",
+          "minQty": 3,
+          "maxQty": 24
+        }
+      ],
+      "draws": 2.5
+    },
+    {
+      "id": "vessel-ore",
+      "key": "ore",
+      "label": "Cracked vessel (Ore)",
+      "category": "vessel",
+      "itemCount": 14,
+      "items": [
+        {
+          "code": "ore-bituminouscoal",
+          "chancePct": 21.74,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 12
+        },
+        {
+          "code": "ore-lignite",
+          "chancePct": 21.74,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-galena",
+          "chancePct": 16.67,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-nativecopper",
+          "chancePct": 14.49,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "ore-quartz",
+          "chancePct": 14.49,
+          "rarity": "common",
+          "minQty": 2,
+          "maxQty": 8
+        },
+        {
+          "code": "nugget-bismuthinite",
+          "chancePct": 2.17,
+          "rarity": "rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-cassiterite",
+          "chancePct": 2.17,
+          "rarity": "rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-sphalerite",
+          "chancePct": 2.17,
+          "rarity": "rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-chromite",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-ilmenite",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-limonite",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-magnetite",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-nativegold",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        },
+        {
+          "code": "nugget-nativesilver",
+          "chancePct": 0.72,
+          "rarity": "very_rare",
+          "minQty": 4,
+          "maxQty": 12
+        }
+      ],
+      "draws": 1.35
+    },
+    {
+      "id": "vessel-seed",
+      "key": "seed",
+      "label": "Cracked vessel (Seed)",
+      "category": "vessel",
+      "itemCount": 9,
+      "items": [
+        {
+          "code": "seeds-cabbage",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-carrot",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-onion",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-pumpkin",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-rice",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-rye",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-soybean",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-spelt",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        },
+        {
+          "code": "seeds-turnip",
+          "chancePct": 11.11,
+          "rarity": "uncommon",
+          "minQty": 5,
+          "maxQty": 7
+        }
+      ],
+      "draws": 1.0
+    },
+    {
+      "id": "vessel-tool",
+      "key": "tool",
+      "label": "Cracked vessel (Tool)",
+      "category": "vessel",
+      "itemCount": 14,
+      "items": [
+        {
+          "code": "axe-flint",
+          "chancePct": 27.03,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-generic-flint",
+          "chancePct": 27.03,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "shovel-flint",
+          "chancePct": 27.03,
+          "rarity": "common",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "gear-rusty",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 2,
+          "maxQty": 4
+        },
+        {
+          "code": "pickaxe-copper",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "scythe-copper",
+          "chancePct": 2.7,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-felling-copper",
+          "chancePct": 1.8,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-falx-copper",
+          "chancePct": 1.8,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-generic-copper",
+          "chancePct": 1.8,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "shovel-copper",
+          "chancePct": 1.8,
+          "rarity": "rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "axe-felling-tinbronze",
+          "chancePct": 0.9,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "blade-falx-tinbronze",
+          "chancePct": 0.9,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "knife-generic-tinbronze",
+          "chancePct": 0.9,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        },
+        {
+          "code": "shovel-tinbronze",
+          "chancePct": 0.9,
+          "rarity": "very_rare",
+          "minQty": 1,
+          "maxQty": 1
+        }
+      ],
+      "draws": 2.2
+    }
+  ]
+}

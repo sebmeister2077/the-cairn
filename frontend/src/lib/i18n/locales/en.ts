@@ -109,6 +109,7 @@ export const en = {
                 marketPlayers: "Players",
                 marketMap: "Trade Map",
                 rarityRocks: "Rocks",
+                rarityLootPools: "Loot Pools",
             },
             chip: {
                 new: "New",
@@ -2322,6 +2323,47 @@ export const en = {
             noData: "No rock map data is available.",
             tableFootnote:
                 "Rarity is derived from the bundled TOPS rock-strata map. Map share is each rock's percentage of the total boosted surface area; rarity is its price ratio relative to granite (1.00×).",
+        },
+        lootPools: {
+            title: "Loot pool rarity",
+            subtitle:
+                "Every weighted loot pool in the game and how likely each item is to roll out of it.",
+            intro:
+                "Ruins, story structures, abandoned mines and cracked vessels all draw their loot from named weighted pools. Each item's chance is its weight within the pool, so a higher percentage means it shows up more often. Rarity tiers are derived from that drop chance — rarer items appear in warmer colours.",
+            fishingNote:
+                "Fishing basket traps aren't listed here: they catch creatures by bait and food-tag weight rather than from a fixed weighted item table, so they have no comparable rarity pool.",
+            uniqueNote:
+                "Pools placed only by one-time structures (The Lazaret, Tobias Cave) are marked “Once per server”. An item found exclusively in such a pool is tagged “(Unique)” — exactly one exists on the whole server. Filter the rarity dropdown by “Unique” to list them all.",
+            marketNote:
+                "The Market column flags items that have actually appeared on the Auction House, linking to their Market page for price history.",
+            searchPlaceholder: "Search items…",
+            allRarities: "All rarities",
+            category: {
+                all: "All",
+                ruins: "Ruins",
+                vessel: "Cracked vessels",
+                clutter: "Clutter",
+                library: "Library",
+                mines: "Mines",
+            },
+            colItem: "Item",
+            colRarity: "Rarity",
+            colMarket: "Market",
+            colChance: "Drop chance",
+            colQty: "Qty",
+            onMarket: "View on Market",
+            marketTooltip: "This item has been traded on the Auction House — view its Market page.",
+            itemsCount: {
+                one: "{count} item",
+                other: "{count} items",
+            },
+            draws: "~{draws} draws/vessel",
+            oncePerServer: "Once per server",
+            uniqueTooltip:
+                "This item only drops from a one-time chest, so exactly one exists per server.",
+            noResults: "No loot pools match your search.",
+            footnote:
+                "Showing {count} loot pools extracted from the game assets on {date}. Drop chance is each item's weight within its pool; quantities are the stack size rolled.",
         },
     },
 } as const;

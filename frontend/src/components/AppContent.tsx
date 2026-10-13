@@ -69,6 +69,7 @@ import { openCookieSettings } from "@/lib/consent";
 import { EventPromoBanner } from "@/components/other/EventPromoBanner";
 import { GeneralPage } from "@/pages/other/GeneralPage";
 import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
+import { LootPoolRarityPage } from "@/pages/rarity/LootPoolRarityPage";
 import { BlogIndexPage } from "@/pages/blog/BlogIndexPage";
 import { BlogPostPage } from "@/pages/blog/BlogPostPage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -147,6 +148,7 @@ const NavigationRoutes = {
   },
   Rarity: {
     Rocks: "/rarity/rocks",
+    LootPools: "/rarity/loot-pools",
   },
   General: {},
   Manage: {
@@ -235,6 +237,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.marketInflation"
   | "app.nav.categories.rarity"
   | "app.nav.subtabs.rarityRocks"
+  | "app.nav.subtabs.rarityLootPools"
   | "app.nav.chip.new"
   | "app.nav.chip.adminOnLeave";
 const subTabs: Subtabs = {
@@ -286,7 +289,10 @@ const subTabs: Subtabs = {
     { value: "/tools/alloy-calculator", labelKey: "app.nav.subtabs.alloyCalculator" },
     { value: "/tools/charcoal-calculator", labelKey: "app.nav.subtabs.charcoalCalculator" },
   ],
-  "/rarity": [{ value: "/rarity/rocks", labelKey: "app.nav.subtabs.rarityRocks" }],
+  "/rarity": [
+    { value: "/rarity/rocks", labelKey: "app.nav.subtabs.rarityRocks" },
+    { value: "/rarity/loot-pools", labelKey: "app.nav.subtabs.rarityLootPools" },
+  ],
   "/manage": [
     { value: "/manage/api-keys", labelKey: "app.nav.subtabs.apiKeys" },
     { value: "/manage/users", labelKey: "app.nav.subtabs.users" },
@@ -1328,6 +1334,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Rarity failed" resetKeys={[location.pathname]}>
                 <RockRarityPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/rarity/loot-pools"
+            element={
+              <ErrorBoundary title="Rarity failed" resetKeys={[location.pathname]}>
+                <LootPoolRarityPage />
               </ErrorBoundary>
             }
           />
