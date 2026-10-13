@@ -35,7 +35,7 @@ import type { AuctionListing } from "@/models/auction";
 import { capitalize } from "@/lib/utils";
 
 /** Keep drawing individual slices until at least this many are shown… */
-const MIN_INDIVIDUAL_SLICES = 6;
+const MIN_INDIVIDUAL_SLICES = 12;
 /** …after which entries contributing less than this share (%) fold into "Others". */
 const SMALL_SLICE_PCT = 2;
 
