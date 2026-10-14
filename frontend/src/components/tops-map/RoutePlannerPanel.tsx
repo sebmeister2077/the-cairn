@@ -134,7 +134,6 @@ function routeTlChain(legs: RouteLeg[]): string {
     .join("|");
 }
 
-
 /**
  * Right-anchored floating panel that hosts the full route-planner UX.
  *
@@ -329,15 +328,13 @@ export function RoutePlannerPanel() {
     planMode: "route" | "rendezvous",
   ): Record<string, number | boolean | string> {
     const settings: Record<string, number | boolean | string> = {};
-    if (walkSpeed !== DEFAULT_WALK_SPEED) settings.walk_speed = walkSpeed;
-    if (tlPenaltySeconds !== DEFAULT_TL_PENALTY_S)
-      settings.tl_penalty_seconds = tlPenaltySeconds;
-    if (kNeighbors !== DEFAULT_K_NEIGHBORS) settings.k_neighbors = kNeighbors;
+    settings.walk_speed = walkSpeed;
+    settings.tl_penalty_seconds = tlPenaltySeconds;
+    settings.k_neighbors = kNeighbors;
     if (planMode === "route") {
-      if (numberOfRoutes !== DEFAULT_NUMBER_OF_ROUTES)
-        settings.number_of_routes = numberOfRoutes;
-      if (elkFriendlyOnly) settings.elk_friendly_only = true;
-    } else if (rendezvousObjective !== DEFAULT_RENDEZVOUS_OBJECTIVE) {
+      settings.number_of_routes = numberOfRoutes;
+      settings.elk_friendly_only = elkFriendlyOnly;
+    } else {
       settings.rendezvous_objective = rendezvousObjective;
     }
     return settings;
@@ -381,14 +378,8 @@ export function RoutePlannerPanel() {
     if (filled.length < 2) return;
     const meeting = rendezvousResult.meeting;
     const allLegs = rendezvousResult.perPlayer.flatMap((pp) => pp.route.legs);
-    const walkBlocks = rendezvousResult.perPlayer.reduce(
-      (a, pp) => a + pp.route.walkBlocks,
-      0,
-    );
-    const tlHops = rendezvousResult.perPlayer.reduce(
-      (a, pp) => a + pp.route.tlHops,
-      0,
-    );
+    const walkBlocks = rendezvousResult.perPlayer.reduce((a, pp) => a + pp.route.walkBlocks, 0);
+    const tlHops = rendezvousResult.perPlayer.reduce((a, pp) => a + pp.route.tlHops, 0);
     const first = filled[0];
     routeAnalytics
       .plan({
@@ -399,15 +390,18 @@ export function RoutePlannerPanel() {
         to_label: null,
         from_source: first.source ?? null,
         to_source: null,
-        legs: allLegs.length > 0 ? toSavedLegs(allLegs) : [
-          {
-            kind: "walk",
-            from: { x: first.point.x, z: first.point.z },
-            to: { x: meeting.x, z: meeting.z },
-            seconds: Math.max(1, Math.round(rendezvousResult.totalSeconds)),
-            blocks: 0,
-          },
-        ],
+        legs:
+          allLegs.length > 0
+            ? toSavedLegs(allLegs)
+            : [
+                {
+                  kind: "walk",
+                  from: { x: first.point.x, z: first.point.z },
+                  to: { x: meeting.x, z: meeting.z },
+                  seconds: Math.max(1, Math.round(rendezvousResult.totalSeconds)),
+                  blocks: 0,
+                },
+              ],
         total_seconds: Math.max(1, rendezvousResult.totalSeconds),
         walk_blocks: walkBlocks,
         tl_hops: tlHops,
