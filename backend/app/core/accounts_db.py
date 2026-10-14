@@ -495,6 +495,43 @@ def list_users_for_ip_hash(ip_hash: str) -> List[dict]:
             return [dict(r) for r in cur.fetchall()]
 
 
+def list_users_for_ip_hash_via_usage_events(ip_hash: str) -> List[dict]:
+    """Return users who *acted* from ``ip_hash`` according to ``usage_events``.
+
+    ``api_keys.bound_identity`` is only set for a minority of keys, so the
+    binding-based :func:`list_users_for_ip_hash` often misses accounts that
+    demonstrably used an IP. The ``usage_events`` log is the reliable source:
+    it records the acting ``actor_api_key_id`` alongside the request
+    ``ip_hash``. This resolves that key back to its ``users`` row and enriches
+    each with activity stats (event count, first/last seen) for the IP.
+
+    Rows are ordered most-recently-active first. Includes deleted users.
+    """
+    if not ip_hash:
+        return []
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT u.*, ak.key AS api_key, ak.bound_identity,
+                          ue.event_count, ue.first_seen, ue.last_seen
+                   FROM (
+                            SELECT actor_api_key_id,
+                                   COUNT(*)        AS event_count,
+                                   MIN(created_at) AS first_seen,
+                                   MAX(created_at) AS last_seen
+                              FROM usage_events
+                             WHERE ip_hash = %s
+                               AND actor_api_key_id IS NOT NULL
+                          GROUP BY actor_api_key_id
+                        ) ue
+                   JOIN api_keys ak ON ak.id::text = ue.actor_api_key_id
+                   JOIN users u ON u.api_key_id = ak.id
+                   ORDER BY ue.last_seen DESC""",
+                (ip_hash,),
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
 def revoke_keys_for_ip_hash(ip_hash: str) -> int:
     """Revoke every api_key bound to ip_hash. Returns # rows updated."""
     if not ip_hash:
