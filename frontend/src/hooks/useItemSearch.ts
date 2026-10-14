@@ -11,8 +11,10 @@ export type ItemSort = "gears" | "sold" | "listings" | "name" | "rarity";
 
 export interface ItemSearchState {
     q: string;
-    /** Category value, or the `ALL_CATEGORIES` sentinel for "no category". */
+    /** In-game (raw) category value, or `ALL_CATEGORIES` for "no category". */
     category: string;
+    /** Broad custom category value, or `ALL_CATEGORIES` for "no category". */
+    customCategory: string;
     /** Rarity value, or the `ALL_RARITIES` sentinel for "any rarity". */
     rarity: string;
     sort: ItemSort;
@@ -28,6 +30,7 @@ export const ALL_RARITIES = "__all_rarities__";
 export const DEFAULT_ITEM_SEARCH: ItemSearchState = {
     q: "",
     category: ALL_CATEGORIES,
+    customCategory: ALL_CATEGORIES,
     rarity: ALL_RARITIES,
     sort: "gears",
     sortDir: "desc",
@@ -45,6 +48,10 @@ function load(): ItemSearchState {
                 q: typeof parsed.q === "string" ? parsed.q : DEFAULT_ITEM_SEARCH.q,
                 category:
                     typeof parsed.category === "string" ? parsed.category : DEFAULT_ITEM_SEARCH.category,
+                customCategory:
+                    typeof parsed.customCategory === "string"
+                        ? parsed.customCategory
+                        : DEFAULT_ITEM_SEARCH.customCategory,
                 rarity:
                     typeof parsed.rarity === "string" ? parsed.rarity : DEFAULT_ITEM_SEARCH.rarity,
                 sort: VALID_SORTS.has(parsed.sort as ItemSort)
@@ -91,6 +98,7 @@ export function isDefaultItemSearch(s: ItemSearchState): boolean {
     return (
         s.q === DEFAULT_ITEM_SEARCH.q &&
         s.category === DEFAULT_ITEM_SEARCH.category &&
+        s.customCategory === DEFAULT_ITEM_SEARCH.customCategory &&
         s.rarity === DEFAULT_ITEM_SEARCH.rarity &&
         s.sort === DEFAULT_ITEM_SEARCH.sort &&
         s.sortDir === DEFAULT_ITEM_SEARCH.sortDir

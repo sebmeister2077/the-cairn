@@ -18,7 +18,8 @@ export type AuctionSortKey =
 
 export interface AuctionFilters {
     q: string;
-    category: string; // "" = all
+    category: string; // "" = all (in-game/raw category)
+    customCategory: string; // "" = all (broad custom category)
     priceMin: string; // kept as strings so the inputs stay controlled
     priceMax: string;
     state: AuctionStateFilter;
@@ -46,6 +47,7 @@ export interface AuctionFilters {
 export const DEFAULT_AUCTION_FILTERS: AuctionFilters = {
     q: "",
     category: "",
+    customCategory: "",
     priceMin: "",
     priceMax: "",
     state: "all",

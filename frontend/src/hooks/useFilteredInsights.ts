@@ -7,6 +7,7 @@ import type { InsightsRow } from "@/models/auction";
 import type { InsightsFilters } from "@/store/slices/insightsFilters";
 import type { MarketPriceMode } from "./useMarketPriceMode";
 import { formatGears } from "@/lib/auction";
+import { customCategoryFor } from "@/lib/item-categories";
 
 /** The volume dimension the numeric volume range filters against. */
 export type InsightsVolumeMode = "price" | "unit";
@@ -49,6 +50,8 @@ export function filterInsights(
     return rows.filter((r) => {
         if (q && !r.name.toLowerCase().includes(q)) return false;
         if (f.category.length && !f.category.includes(r.category)) return false;
+        if (f.customCategory.length && !f.customCategory.includes(customCategoryFor(r.category)))
+            return false;
 
         if (f.favoritesOnly && !favorites.has(r.itemId)) return false;
 

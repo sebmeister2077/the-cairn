@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { AuctionListing } from "@/models/auction";
 import { deriveListingStatus, getLatestSweepStartMs } from "@/lib/auction";
+import { customCategoryFor } from "@/lib/item-categories";
 import type { AuctionFilters } from "@/store/slices/auctionFilters";
 
 /** Apply the current filter/sort state to the raw listings array. The
@@ -28,6 +29,7 @@ export function filterListings(
         if (f.excludeSpam && l.spam) return false;
         if (f.excludeExternalTrades && l.externalTrade) return false;
         if (f.category && l.category !== f.category) return false;
+        if (f.customCategory && customCategoryFor(l.category) !== f.customCategory) return false;
         if (f.deliveredOnly && !l.delivered) return false;
         // Admin-only: expired/cancelled listings the seller hasn't retrieved yet
         // (still present in the latest sweep) — buyable due to a game bug.

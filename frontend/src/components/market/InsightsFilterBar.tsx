@@ -132,11 +132,18 @@ function MultiSelect({
   );
 }
 
-export function InsightsFilterBar({ categories }: { categories: string[] }) {
+export function InsightsFilterBar({
+  categories,
+  customCategories,
+}: {
+  categories: string[];
+  customCategories: string[];
+}) {
   const dispatch = useAppDispatch();
   const f = useAppSelector((s) => s.insightsFilters);
   const favoritesCount = useAppSelector((s) => s.marketFavorites.ids.length);
   const categoryOptions: Option[] = categories.map((c) => ({ value: c, label: c }));
+  const customCategoryOptions: Option[] = customCategories.map((c) => ({ value: c, label: c }));
 
   return (
     <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
@@ -152,6 +159,14 @@ export function InsightsFilterBar({ categories }: { categories: string[] }) {
 
       <MultiSelect
         label="Category"
+        options={customCategoryOptions}
+        selected={f.customCategory}
+        allLabel="All categories"
+        width="w-44"
+        onChange={(v) => dispatch(patchInsightsFilters({ customCategory: v }))}
+      />
+      <MultiSelect
+        label="In-Game Category"
         options={categoryOptions}
         selected={f.category}
         allLabel="All categories"

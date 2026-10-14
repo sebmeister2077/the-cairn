@@ -48,9 +48,11 @@ const SORT_LABELS: Record<string, string> = {
 
 export function MarketFilterBar({
   categories,
+  customCategories,
   isAdmin = false,
 }: {
   categories: string[];
+  customCategories: string[];
   isAdmin?: boolean;
 }) {
   const dispatch = useAppDispatch();
@@ -70,6 +72,30 @@ export function MarketFilterBar({
 
       <div className="flex flex-col gap-1 min-h-14">
         <Label className="text-xs text-muted-foreground">Category</Label>
+        <Select
+          value={f.customCategory === "" ? ALL_CATEGORIES : f.customCategory}
+          onValueChange={(v) =>
+            dispatch(patchAuctionFilters({ customCategory: v === ALL_CATEGORIES ? "" : (v ?? "") }))
+          }
+        >
+          <SelectTrigger size="sm" className="w-48 grow">
+            <SelectValue>
+              {(value) => (value === ALL_CATEGORIES || !value ? "All categories" : value)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+            {customCategories.map((c) => (
+              <SelectItem key={c} value={c}>
+                {c}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1 min-h-14">
+        <Label className="text-xs text-muted-foreground">In-Game Category</Label>
         <Select
           value={f.category === "" ? ALL_CATEGORIES : f.category}
           onValueChange={(v) =>

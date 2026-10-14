@@ -12,7 +12,7 @@
 // latter mirrors the Inflation page's category breakdown. When grouping by item
 // a category filter narrows the pie to a single type of good.
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as ChartTooltip } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -31,8 +31,9 @@ import {
 } from "@/hooks/useMarketInsights";
 import { useMarketWindow } from "@/hooks/useMarketWindow";
 import { formatGears } from "@/lib/auction";
+import { customCategoryFor } from "@/lib/item-categories";
 import type { AuctionListing } from "@/models/auction";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n";
 
 /** Keep drawing individual slices until at least this many are shown… */
@@ -43,7 +44,7 @@ const SMALL_SLICE_PCT = 2;
 const ALL_CATEGORIES = "__all__";
 const OTHERS_KEY = "__others__";
 
-type GroupBy = "item" | "category";
+type GroupBy = "item" | "category" | "custom";
 
 // Reasonably color-blind-friendly categorical palette (matches the usage charts).
 const PALETTE = [
@@ -172,10 +173,21 @@ export function MarketEconomyPieChart({
 
     const agg = new Map<string, Entry>();
     for (const l of scoped) {
-      const key = byItem ? String(l.itemId) : l.category;
+      let key: string;
+      let name: string;
+      if (groupBy === "item") {
+        key = String(l.itemId);
+        name = l.name;
+      } else if (groupBy === "category") {
+        key = l.category;
+        name = l.category;
+      } else {
+        key = customCategoryFor(l.category);
+        name = key;
+      }
       const existing = agg.get(key);
       if (existing) existing.value += l.price;
-      else agg.set(key, { key, name: byItem ? l.name : l.category, value: l.price });
+      else agg.set(key, { key, name, value: l.price });
     }
     return buildSlices(Array.from(agg.values()), (count) =>
       byItem
@@ -186,6 +198,13 @@ export function MarketEconomyPieChart({
 
   const total = useMemo(() => slices.reduce((sum, s) => sum + s.value, 0), [slices]);
   const windowLabel = INSIGHTS_WINDOWS.find((w) => w.key === windowKey)?.label ?? windowKey;
+
+  // Drilling: clicking a real (non-"Others") in-game category switches to the
+  // per-item view scoped to that category, so you can see what's inside it.
+  const drillIntoCategory = (rawCategory: string) => {
+    setGroupBy("item");
+    setCategory(rawCategory);
+  };
 
   return (
     <Card>
@@ -209,13 +228,21 @@ export function MarketEconomyPieChart({
                 aria-pressed={groupBy === "item"}
                 onClick={() => setGroupBy("item")}
               >
-                In-Game Category
+                Items
               </Button>
               <Button
                 size="sm"
                 variant={groupBy === "category" ? "default" : "outline"}
                 aria-pressed={groupBy === "category"}
                 onClick={() => setGroupBy("category")}
+              >
+                In-Game Category
+              </Button>
+              <Button
+                size="sm"
+                variant={groupBy === "custom" ? "default" : "outline"}
+                aria-pressed={groupBy === "custom"}
+                onClick={() => setGroupBy("custom")}
               >
                 Cairn Category
               </Button>
@@ -288,22 +315,46 @@ export function MarketEconomyPieChart({
             </div>
 
             <ul className="w-full space-y-1.5 text-sm sm:w-1/2">
-              {slices.map((s) => (
-                <li key={s.key} className="flex items-center gap-2">
-                  <span
-                    className="size-3 shrink-0 rounded-sm"
-                    style={{ backgroundColor: s.color }}
-                    aria-hidden
-                  />
-                  <span className="truncate capitalize">{s.name}</span>
-                  <span className="ml-auto shrink-0 tabular-nums font-medium">
-                    {s.pct.toFixed(1)}%
-                  </span>
-                  <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
-                    {formatGears(s.value)}
-                  </span>
-                </li>
-              ))}
+              {slices.map((s) => {
+                const clickable = groupBy === "category" && s.key !== OTHERS_KEY;
+                return (
+                  <li
+                    key={s.key}
+                    className={cn(
+                      "flex items-center gap-2 rounded px-1 -mx-1",
+                      clickable &&
+                        "cursor-pointer hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none",
+                    )}
+                    {...(clickable
+                      ? {
+                          role: "button",
+                          tabIndex: 0,
+                          title: `Show items in ${s.name}`,
+                          onClick: () => drillIntoCategory(s.key),
+                          onKeyDown: (e: KeyboardEvent<HTMLLIElement>) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              drillIntoCategory(s.key);
+                            }
+                          },
+                        }
+                      : {})}
+                  >
+                    <span
+                      className="size-3 shrink-0 rounded-sm"
+                      style={{ backgroundColor: s.color }}
+                      aria-hidden
+                    />
+                    <span className="truncate capitalize">{s.name}</span>
+                    <span className="ml-auto shrink-0 tabular-nums font-medium">
+                      {s.pct.toFixed(1)}%
+                    </span>
+                    <span className="shrink-0 tabular-nums text-xs text-muted-foreground">
+                      {formatGears(s.value)}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

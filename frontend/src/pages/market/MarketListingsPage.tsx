@@ -22,6 +22,7 @@ import {
   liquidContainerShort,
 } from "@/lib/auction";
 import { MarketFilterBar } from "../../components/market/MarketFilterBar";
+import { customCategoriesFrom } from "@/lib/item-categories";
 import { ItemThumb } from "../../components/market/ItemThumb";
 import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
@@ -66,6 +67,11 @@ export function MarketListingsPage() {
     return Array.from(new Set(data.map((l) => l.category))).sort();
   }, [data]);
 
+  const customCategories = useMemo(
+    () => (data ? customCategoriesFrom(data.map((l) => l.category)) : []),
+    [data],
+  );
+
   // Reset to first page whenever the filtered result set changes size.
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const clampedPage = Math.min(page, pageCount - 1);
@@ -106,7 +112,11 @@ export function MarketListingsPage() {
         </div>
       </div>
 
-      <MarketFilterBar categories={categories} isAdmin={isAdmin} />
+      <MarketFilterBar
+        categories={categories}
+        customCategories={customCategories}
+        isAdmin={isAdmin}
+      />
 
       <div className="rounded-md border overflow-auto">
         <Table>

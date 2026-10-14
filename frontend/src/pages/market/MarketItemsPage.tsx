@@ -38,6 +38,7 @@ import {
   ALL_RARITIES,
   type ItemSort,
 } from "@/hooks/useItemSearch";
+import { customCategoryFor, customCategoriesFrom } from "@/lib/item-categories";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
@@ -111,7 +112,7 @@ export function MarketItemsPage() {
   const summaryQ = useAuctionSummary();
   const images = useItemImages();
   const search = useItemSearch();
-  const { q, category, rarity, sort, sortDir } = search;
+  const { q, category, customCategory, rarity, sort, sortDir } = search;
 
   // Master list: every catalog item, enriched with stats where we have them.
   const rows = useMemo<SearchRow[]>(() => {
@@ -147,10 +148,17 @@ export function MarketItemsPage() {
     [rows],
   );
 
+  const customCategories = useMemo(
+    () => customCategoriesFrom(rows.map((r) => r.category)),
+    [rows],
+  );
+
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const filtered = rows.filter((r) => {
       if (category !== ALL_CATEGORIES && r.category !== category) return false;
+      if (customCategory !== ALL_CATEGORIES && customCategoryFor(r.category) !== customCategory)
+        return false;
       if (rarity !== ALL_RARITIES && r.rarity !== rarity) return false;
       // Match the item name OR its category, so a search like "tapestry" surfaces
       // every grouped tapestry (named "Ambush", "Rot", …) not just a literal name.
@@ -163,7 +171,7 @@ export function MarketItemsPage() {
       return true;
     });
     return sortRows(filtered, sort, sortDir);
-  }, [rows, q, category, rarity, sort, sortDir]);
+  }, [rows, q, category, customCategory, rarity, sort, sortDir]);
 
   const isPending = catalogQ.isPending || summaryQ.isPending;
   const isError = catalogQ.isError || summaryQ.isError;
@@ -211,6 +219,28 @@ export function MarketItemsPage() {
 
         <div className="flex flex-col gap-1 min-h-14">
           <Label className="text-xs text-muted-foreground">Category</Label>
+          <Select
+            value={customCategory}
+            onValueChange={(v) => patchItemSearch({ customCategory: v ?? ALL_CATEGORIES })}
+          >
+            <SelectTrigger className="grow w-48">
+              <SelectValue>
+                {(value) => (value === ALL_CATEGORIES ? "All categories" : (value as string))}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CATEGORIES}>All categories</SelectItem>
+              {customCategories.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1 min-h-14">
+          <Label className="text-xs text-muted-foreground">In-Game Category</Label>
           <Select
             value={category}
             onValueChange={(v) => patchItemSearch({ category: v ?? ALL_CATEGORIES })}

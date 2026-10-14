@@ -22,7 +22,8 @@ export type InsightsTrendDirection = "up" | "down" | "flat";
 
 export interface InsightsFilters {
     q: string;
-    category: string[]; // empty = all
+    category: string[]; // empty = all (in-game/raw category)
+    customCategory: string[]; // empty = all (broad custom category)
     demand: DemandTier[];
     volatility: VolatilityTier[];
     liquidity: LiquidityTier[];
@@ -52,6 +53,7 @@ export interface InsightsFilters {
 export const DEFAULT_INSIGHTS_FILTERS: InsightsFilters = {
     q: "",
     category: [],
+    customCategory: [],
     demand: [],
     volatility: [],
     liquidity: [],
@@ -75,6 +77,7 @@ export const DEFAULT_INSIGHTS_FILTERS: InsightsFilters = {
 /** Multi-select (array) filter fields, so we can normalise/compare them generically. */
 const ARRAY_KEYS: (keyof InsightsFilters)[] = [
     "category",
+    "customCategory",
     "demand",
     "volatility",
     "liquidity",
@@ -138,6 +141,7 @@ export function persistInsightsFilters(
 export const INSIGHTS_FILTER_KEYS: (keyof InsightsFilters)[] = [
     "q",
     "category",
+    "customCategory",
     "demand",
     "volatility",
     "liquidity",

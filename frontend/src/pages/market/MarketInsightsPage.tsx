@@ -6,6 +6,7 @@
 // sell is shown in real-world time.
 
 import { InsightsFilterBar } from "@/components/market/InsightsFilterBar";
+import { customCategoriesFrom } from "@/lib/item-categories";
 import { MarketEconomyPieChart } from "@/components/market/MarketEconomyPieChart";
 import { ScreenerTable } from "@/components/market/InsightsScreenerTable";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
@@ -87,6 +88,10 @@ export function MarketInsightsPage() {
 
   // Categories present in the (window-scoped) screener rows, for the filter bar.
   const categories = useMemo(() => Array.from(new Set(rows.map((r) => r.category))).sort(), [rows]);
+  const customCategories = useMemo(
+    () => customCategoriesFrom(rows.map((r) => r.category)),
+    [rows],
+  );
 
   // Filters apply to the screener table only — highlight cards and window totals
   // below intentionally use the full `rows`/`insights` so they stay market-wide.
@@ -274,7 +279,7 @@ export function MarketInsightsPage() {
           <MarketInsightsColumnGlossary />
         </div>
         <div className="mb-3">
-          <InsightsFilterBar categories={categories} />
+          <InsightsFilterBar categories={categories} customCategories={customCategories} />
         </div>
         {rows.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">
