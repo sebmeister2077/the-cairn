@@ -358,15 +358,9 @@ async def create_download_link(
     license_code: Optional[str] = None
     api_key: Optional[str] = None
     if body.include_keys:
-        # 1. Mint the license (same shape as POST /admin/licenses).
-        license_code = "vsp_" + secrets.token_urlsafe(24)
-        db.create_license(
-            license_code, label, body.max_activations, body.expires_at, body.notes
-        )
-
-        # 2. Mint the API key and grant the map-export publish permission.
+        # 1. Mint the API key and grant the map-export publish permission.
         api_key = secrets.token_urlsafe(32)
-        db.create_api_key(
+        key_row = db.create_api_key(
             api_key,
             name=f"VSProxy map-export — {label or 'unlabelled'}",
             permissions="contribute",
@@ -379,6 +373,19 @@ async def create_download_link(
                 "program link: failed to grant %s to freshly minted key",
                 _MAP_FEATURES_PERMISSION,
             )
+
+        # 2. Mint the license, mapped to the key it contributes through so
+        #    moderation views (e.g. the map-features audit) can label a
+        #    contribution with this license's friendly label.
+        license_code = "vsp_" + secrets.token_urlsafe(24)
+        db.create_license(
+            license_code,
+            label,
+            body.max_activations,
+            body.expires_at,
+            body.notes,
+            api_key_id=str(key_row["id"]),
+        )
 
     # 3. Record the link. Its expiry tracks the license expiry (may be None).
     #    Links are platform-agnostic — the recipient chooses win/linux at

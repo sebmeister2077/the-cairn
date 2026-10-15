@@ -41,8 +41,8 @@ export function AdminMapFeaturesTradersPage() {
         <h2 className="text-xl font-semibold">Map-features traders</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
           The crowd-sourced traders list (<code>map-features.traders.json</code>) merged from
-          every contributor upload. Audit every change here; manage snapshots from the Backups
-          tab.
+          every contributor upload. A row appears only when the published list actually
+          changed — not on every upload. Manage snapshots from the Backups tab.
         </p>
       </div>
       <AuditCard />
@@ -57,6 +57,7 @@ function AuditCard() {
     queryKey: [...AUDIT_KEY, page],
     queryFn: () =>
       adminListMapFeaturesTradersAudit({
+        category: "traders",
         limit: AUDIT_PAGE_SIZE,
         offset: page * AUDIT_PAGE_SIZE,
       }),
@@ -148,7 +149,10 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
           )}
           {row.action === "rebuild_publish" && (
             <span>
-              merged list republished · {(row.traders_accepted ?? 0).toLocaleString()} traders total
+              traders list changed
+              {(row.count ?? row.traders_accepted) != null && (
+                <> · now {(row.count ?? row.traders_accepted)!.toLocaleString()} traders</>
+              )}
               {row.published_version && (
                 <> · v<span className="font-mono">{row.published_version.slice(0, 12)}</span></>
               )}

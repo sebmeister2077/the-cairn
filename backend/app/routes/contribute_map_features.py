@@ -188,8 +188,6 @@ async def receive_map_features(
             raise HTTPException(status_code=422, detail="body must be a MapExportDocument object")
 
         filtered, received, accepted = _filter_document(doc)
-        filtered, received, accepted = _filter_document(doc)
-        traders_received = len(doc.get("traders", []) or []) if isinstance(doc, dict) else None
         del doc, raw  # release the largest allocations before the R2 upload
         if accepted == 0:
             raise HTTPException(status_code=422, detail="no plausible features in contribution")
@@ -204,20 +202,10 @@ async def receive_map_features(
         map_features_rebuild.request_rebuild()
 
         counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
-    # Append a moderation audit row for the merged traders list. Best-effort:
-    # a logging failure must never reject an otherwise-accepted contribution.
-    try:
-        database.insert_map_features_traders_audit(
-            action="contribute",
-            actor_api_key_id=key_id,
-            actor_display_name=(x_actor_name or row.get("name") or None),
-            upstream_host=x_upstream_host,
-            traders_received=traders_received,
-            traders_accepted=counts.get("traders"),
-            total_accepted=accepted,
-        )
-    except Exception:
-        logger.exception("[map-features-ingest] failed to write traders audit row")
+    # Don't audit the upload itself — the proxy re-uploads its full export ~1/min
+    # so almost every one changes nothing. Instead remember this contributor so a
+    # later *published* change can be attributed to it (see map_features_rebuild).
+    map_features_rebuild.note_contributor(key_id, x_actor_name or row.get("name") or None)
     # Hand the freed parse buffers back to the OS (glibc keeps them in-arena).
     map_features_rebuild._malloc_trim()
     logger.info(

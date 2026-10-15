@@ -36,8 +36,9 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
 import time
-from collections import Counter
+from collections import Counter, OrderedDict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
@@ -151,6 +152,40 @@ if str(_BACKEND_DIR) not in sys.path:
 # Key that a contributor api_key must carry to count as an active source.
 _PUBLISH_PERMISSION = "map_features_publish"
 
+# Per-category lists that get their own audit row when they change at publish
+# time. Deliberately excludes the high-churn claim categories (per-observation
+# player-claim replacement would spam the feed) — add 'traderclaims' /
+# 'playerclaims' here if a moderation view for them is ever built.
+AUDITED_CATEGORIES: Tuple[str, ...] = ("translocators", "traders", "rapids")
+
+# Contributors (api_key_id -> display name, newest last) that have uploaded
+# since the last *published* change. Consumed + cleared only when a real change
+# publishes, so a change is attributed to whoever fed data into the window that
+# produced it. Guarded by a lock: ingest runs on the event loop while the
+# rebuild drains this from an executor thread.
+_contrib_lock = threading.Lock()
+_contributors_since_publish: "OrderedDict[str, Optional[str]]" = OrderedDict()
+
+
+def note_contributor(key_id: str, display_name: Optional[str]) -> None:
+    """Record an accepted contribution so the next published change can be
+    attributed to it. Cheap + thread-safe; replaces the old per-upload audit
+    row (the proxy re-uploads ~1/min, so most uploads change nothing)."""
+    if not key_id:
+        return
+    with _contrib_lock:
+        _contributors_since_publish.pop(key_id, None)
+        _contributors_since_publish[key_id] = display_name
+
+
+def _take_contributors() -> "List[Tuple[str, Optional[str]]]":
+    """Snapshot and clear the pending contributors (oldest first)."""
+    with _contrib_lock:
+        items = list(_contributors_since_publish.items())
+        _contributors_since_publish.clear()
+    return items
+
+
 _request_event: asyncio.Event | None = None
 _worker_task: asyncio.Task | None = None
 # Created lazily inside the running loop (avoids binding to the wrong loop on 3.9).
@@ -241,6 +276,10 @@ _baseline_seeded = False
 # Fingerprint (sorted id/etag pairs) of the sources behind the last rebuild, so
 # a rebuild whose sources are byte-identical can skip the merge entirely.
 _last_source_fingerprint: "Tuple[Tuple[str, str], ...] | None" = None
+# Per-category content hashes behind the last publish, so each category's audit
+# row is written only when THAT category actually changed. ``None`` until seeded
+# from the manifest or the first publish.
+_last_category_hashes: "Dict[str, str] | None" = None
 
 
 def _stable_data_hash(merged: Dict[str, Any]) -> str:
@@ -257,18 +296,38 @@ def _stable_data_hash(merged: Dict[str, Any]) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
 
 
-def _published_version_on_r2(auction_r2_publish) -> "str | None":
-    """The ``version`` of the currently-published manifest, or None if absent."""
+def _stable_category_hashes(merged: Dict[str, Any]) -> Dict[str, str]:
+    """Per-category content hash (``cat`` -> short hash), so a publish can tell
+    exactly which lists changed. Each hash covers only that category's features
+    (not ``generatedUtc``), so an unchanged list hashes identically."""
+    out: Dict[str, str] = {}
+    for doc_key, cat in map_features_merge.CATEGORIES:
+        blob = json.dumps(
+            merged.get(doc_key, []),
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        out[cat] = hashlib.sha256(blob.encode("utf-8")).hexdigest()[:12]
+    return out
+
+
+def _published_state_on_r2(auction_r2_publish) -> "Tuple[str | None, Dict[str, str]]":
+    """``(version, categoryVersions)`` from the currently-published manifest, so
+    a fresh process reseeds its baselines without republishing. Missing/legacy
+    manifests yield ``(None, {})``."""
     data = auction_r2_publish.read_bytes_from_bucket(
         bucket=settings.MAP_FEATURES_PUBLIC_BUCKET,
         key=f"{settings.MAP_FEATURES_PREFIX}/manifest.json",
     )
     if not data:
-        return None
+        return None, {}
     try:
-        return json.loads(data).get("version")
+        manifest = json.loads(data)
     except (json.JSONDecodeError, ValueError):
-        return None
+        return None, {}
+    cats = manifest.get("categoryVersions")
+    return manifest.get("version"), dict(cats) if isinstance(cats, dict) else {}
 
 
 def _feature_file(cat: str, merged: Dict[str, Any], doc_key: str, now_iso: str) -> Dict[str, Any]:
@@ -288,19 +347,23 @@ def _feature_file(cat: str, merged: Dict[str, Any], doc_key: str, now_iso: str) 
     return env
 
 
-def _do_merge_and_publish(prev_hash: "str | None") -> Tuple[Dict[str, int], str, bool]:
+def _do_merge_and_publish(
+    prev_hash: "str | None",
+) -> "Tuple[Dict[str, int], str, Dict[str, str], bool]":
     """Merge every active source and publish the per-category files + manifest.
 
     Skips the R2 write when the merged data hash equals ``prev_hash`` (the
     dataset is byte-identical to what's already published). Pure worker: reads
     no module cache and mutates none — usable from the parent process OR the
-    short-lived rebuild subprocess. Returns ``(counts, data_hash, published)``.
+    short-lived rebuild subprocess. Returns
+    ``(counts, data_hash, category_hashes, published)``.
     """
     import auction_r2_publish  # noqa: WPS433 — backend/ module (shared R2 uploader)
     import process_auction_data as pad  # noqa: WPS433 — backend/ module (write_json/manifest)
 
     merged = _merge_streaming(_active_sources())
     data_hash = _stable_data_hash(merged)
+    category_hashes = _stable_category_hashes(merged)
     counts = {c: len(merged.get(k, [])) for k, c in map_features_merge.CATEGORIES}
 
     # Change-detection: skip the R2 write when the merged features are the same
@@ -310,7 +373,7 @@ def _do_merge_and_publish(prev_hash: "str | None") -> Tuple[Dict[str, int], str,
         logger.info(
             "[map-features-rebuild] data unchanged (v=%s) — skipping R2 publish.", data_hash
         )
-        return counts, data_hash, False
+        return counts, data_hash, category_hashes, False
 
     now_iso = datetime.now(timezone.utc).isoformat()
     with tempfile.TemporaryDirectory(prefix="map-features-rebuild-") as tmp:
@@ -329,6 +392,7 @@ def _do_merge_and_publish(prev_hash: "str | None") -> Tuple[Dict[str, int], str,
             manifest_path,
             {
                 "version": data_hash,
+                "categoryVersions": category_hashes,
                 "generatedUtc": now_iso,
                 "files": sorted(p.name for p in files),
             },
@@ -345,25 +409,31 @@ def _do_merge_and_publish(prev_hash: "str | None") -> Tuple[Dict[str, int], str,
         bucket=settings.MAP_FEATURES_PUBLIC_BUCKET,
         key=f"{settings.MAP_FEATURES_PREFIX}/map-features.json",
     )
-    return counts, data_hash, True
+    return counts, data_hash, category_hashes, True
 
 
-def _parse_child_result(stdout: str) -> "Tuple[Dict[str, int], str, bool] | None":
+def _parse_child_result(
+    stdout: str,
+) -> "Tuple[Dict[str, int], str, Dict[str, str], bool] | None":
     for line in (stdout or "").splitlines():
         if line.startswith(_RESULT_PREFIX):
             try:
                 data = json.loads(line[len(_RESULT_PREFIX):])
             except (json.JSONDecodeError, ValueError):
                 return None
+            cats = data.get("category_hashes")
             return (
                 data.get("counts") or {},
                 str(data.get("hash") or ""),
+                dict(cats) if isinstance(cats, dict) else {},
                 bool(data.get("published")),
             )
     return None
 
 
-def _run_child_rebuild(prev_hash: "str | None") -> Tuple[Dict[str, int], str, bool]:
+def _run_child_rebuild(
+    prev_hash: "str | None",
+) -> "Tuple[Dict[str, int], str, Dict[str, str], bool]":
     """Run the merge/publish in a short-lived subprocess so the OS reclaims all
     transient heap on exit (glibc keeps freed arenas in-process otherwise)."""
     env = dict(os.environ)
@@ -397,15 +467,18 @@ def _build_and_publish(force: bool = False) -> Dict[str, int]:
     short-circuit, then delegates the heavy merge/publish to a subprocess (or
     in-process on fallback / when disabled)."""
     global _last_published_hash, _baseline_seeded, _last_source_fingerprint
+    global _last_category_hashes
 
     active = _active_sources()
     fingerprint = _fingerprint(active)
 
-    # Seed the baseline from whatever is already published (once per process) so
+    # Seed the baselines from whatever is already published (once per process) so
     # a restart never republishes an unchanged dataset.
     if not _baseline_seeded:
         import auction_r2_publish  # noqa: WPS433
-        _last_published_hash = _published_version_on_r2(auction_r2_publish)
+        _last_published_hash, _last_category_hashes = _published_state_on_r2(
+            auction_r2_publish
+        )
         _baseline_seeded = True
 
     # Cheap short-circuit: no source object changed since our last publish, so a
@@ -421,34 +494,83 @@ def _build_and_publish(force: bool = False) -> Dict[str, int]:
 
     if settings.MAP_FEATURES_REBUILD_SUBPROCESS and not _CHILD:
         try:
-            counts, data_hash, published = _run_child_rebuild(_last_published_hash)
+            counts, data_hash, category_hashes, published = _run_child_rebuild(
+                _last_published_hash
+            )
         except Exception as exc:  # noqa: BLE001 — fall back to in-process
             logger.warning(
                 "[map-features-rebuild] subprocess failed (%s) — running in-process.", exc
             )
-            counts, data_hash, published = _do_merge_and_publish(_last_published_hash)
+            counts, data_hash, category_hashes, published = _do_merge_and_publish(
+                _last_published_hash
+            )
     else:
-        counts, data_hash, published = _do_merge_and_publish(_last_published_hash)
+        counts, data_hash, category_hashes, published = _do_merge_and_publish(
+            _last_published_hash
+        )
 
     _last_published_hash = data_hash
     _last_source_fingerprint = fingerprint
 
-    # Record every real publish (a new merged version actually hit R2) in the
-    # traders audit trail so admins see when the list changed + its new size.
+    # A real publish hit R2. Write one audit row per audited category that
+    # actually changed (not one per upload), attributed to whoever contributed
+    # during the window — so the moderation feed shows only genuine changes.
     # Best-effort — a logging failure must never break the rebuild.
     if published:
-        try:
-            from . import database as _db
-            _db.insert_map_features_traders_audit(
-                action="rebuild_publish",
-                actor_display_name="rebuild",
-                traders_accepted=counts.get("traders"),
-                published_version=data_hash or None,
-            )
-        except Exception:
-            logger.exception("[map-features-rebuild] failed to write traders audit row")
+        # A publish incorporated these uploads — consume them now (even if only
+        # non-audited categories changed) so they can't over-attribute a later
+        # change. Attribute each changed audited category to them.
+        contributors = _take_contributors()
+        prev_cats = _last_category_hashes or {}
+        changed = [
+            cat
+            for cat in AUDITED_CATEGORIES
+            if category_hashes.get(cat) != prev_cats.get(cat)
+        ]
+        _last_category_hashes = category_hashes
+        if changed:
+            _write_publish_audit(changed, counts, data_hash, contributors)
     return counts
 
+
+def _write_publish_audit(
+    changed: "List[str]",
+    counts: Dict[str, int],
+    data_hash: str,
+    contributors: "List[Tuple[str, Optional[str]]]",
+) -> None:
+    """One audit row per changed category, attributed to the contributor(s) that
+    fed data into the window that produced this publish."""
+    actor_key_id, actor_name = _primary_contributor(contributors)
+    try:
+        from . import database as _db
+        for cat in changed:
+            _db.insert_map_features_traders_audit(
+                action="rebuild_publish",
+                category=cat,
+                actor_api_key_id=actor_key_id,
+                actor_display_name=actor_name,
+                count=counts.get(cat),
+                published_version=data_hash or None,
+            )
+    except Exception:
+        logger.exception("[map-features-rebuild] failed to write traders audit row")
+
+
+def _primary_contributor(
+    contributors: "List[Tuple[str, Optional[str]]]",
+) -> "Tuple[Optional[str], str]":
+    """Pick the api_key_id + display name to attribute a publish to: the most
+    recent contributor, suffixed with ``(+N more)`` when several uploaded in the
+    window. Falls back to ``rebuild`` for admin/forced rebuilds with no upload."""
+    if not contributors:
+        return None, "rebuild"
+    key_id, name = contributors[-1]
+    label = name or key_id or "rebuild"
+    extra = len(contributors) - 1
+    if extra > 0:
+        label = f"{label} (+{extra} more)"
+    return key_id, label
 
 
 def source_impact(key_id: str) -> Dict[str, int]:
@@ -555,13 +677,20 @@ def _main_child() -> int:
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     prev = os.environ.get("MAP_FEATURES_REBUILD_PREV_HASH") or None
     try:
-        counts, data_hash, published = _do_merge_and_publish(prev)
+        counts, data_hash, category_hashes, published = _do_merge_and_publish(prev)
     except Exception as exc:  # noqa: BLE001 — surfaced to the parent via exit code
         sys.stderr.write(f"map-features rebuild child failed: {exc}\n")
         return 1
     print(
         _RESULT_PREFIX
-        + json.dumps({"counts": counts, "hash": data_hash, "published": published}),
+        + json.dumps(
+            {
+                "counts": counts,
+                "hash": data_hash,
+                "category_hashes": category_hashes,
+                "published": published,
+            }
+        ),
         flush=True,
     )
     return 0

@@ -2193,14 +2193,16 @@ def create_license(
     max_activations: int,
     expires_at=None,
     notes: Optional[str] = None,
+    api_key_id: Optional[str] = None,
 ) -> dict:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                """INSERT INTO licenses (license_code, label, max_activations, expires_at, notes)
-                   VALUES (%s, %s, %s, %s, %s)
+                """INSERT INTO licenses
+                       (license_code, label, max_activations, expires_at, notes, api_key_id)
+                   VALUES (%s, %s, %s, %s, %s, %s)
                    RETURNING *""",
-                (license_code, label, max_activations, expires_at, notes),
+                (license_code, label, max_activations, expires_at, notes, api_key_id),
             )
             return dict(cur.fetchone())
 
@@ -4759,36 +4761,44 @@ def list_trader_claim_type_audit_paginated(
 def insert_map_features_traders_audit(
     *,
     action: str,
+    category: str = "traders",
     actor_api_key_id: Optional[str] = None,
     actor_display_name: Optional[str] = None,
     upstream_host: Optional[str] = None,
     traders_received: Optional[int] = None,
     traders_accepted: Optional[int] = None,
     total_accepted: Optional[int] = None,
+    count: Optional[int] = None,
     published_version: Optional[str] = None,
     note: Optional[str] = None,
 ) -> int:
-    """Append-only audit record for the merged ``map-features.traders.json``
-    list. ``action`` is ``contribute`` (an accepted upload), ``rebuild_publish``
-    (a new merged version was published) or ``admin_snapshot`` (manual backup).
-    Returns the new row id."""
+    """Append-only audit record for the merged map-features list.
+
+    ``action`` is ``rebuild_publish`` (a category's merged data changed and a new
+    version was published), ``admin_snapshot`` (manual backup) or
+    ``admin_restore_backup``. ``category`` names which per-category list the row
+    is about (``traders`` | ``rapids`` | ``translocators`` | …) and ``count`` is
+    that category's merged feature count after the change. Returns the new row
+    id."""
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """INSERT INTO map_features_traders_audit
-                       (action, actor_api_key_id, actor_display_name,
+                       (action, category, actor_api_key_id, actor_display_name,
                         upstream_host, traders_received, traders_accepted,
-                        total_accepted, published_version, note)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        total_accepted, count, published_version, note)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                    RETURNING id""",
                 (
                     action,
+                    category,
                     actor_api_key_id,
                     actor_display_name,
                     upstream_host,
                     int(traders_received) if traders_received is not None else None,
                     int(traders_accepted) if traders_accepted is not None else None,
                     int(total_accepted) if total_accepted is not None else None,
+                    int(count) if count is not None else None,
                     published_version,
                     note,
                 ),
@@ -4799,6 +4809,7 @@ def insert_map_features_traders_audit(
 def list_map_features_traders_audit_paginated(
     *,
     action: Optional[str] = None,
+    category: Optional[str] = None,
     actor_api_key_id: Optional[str] = None,
     limit: int = 100,
     offset: int = 0,
@@ -4808,6 +4819,9 @@ def list_map_features_traders_audit_paginated(
     if action:
         where.append("a.action = %s")
         params.append(action)
+    if category:
+        where.append("a.category = %s")
+        params.append(category)
     if actor_api_key_id:
         where.append("a.actor_api_key_id = %s")
         params.append(actor_api_key_id)
@@ -4825,9 +4839,11 @@ def list_map_features_traders_audit_paginated(
             # was mapped to. A correlated subquery (newest mapping wins) keeps
             # one row per audit entry even if several licenses share a key.
             cur.execute(
-                f"""SELECT a.id, a.action, a.actor_api_key_id, a.actor_display_name,
-                           a.upstream_host, a.traders_received, a.traders_accepted,
-                           a.total_accepted, a.published_version, a.note, a.created_at,
+                f"""SELECT a.id, a.action, a.category, a.actor_api_key_id,
+                           a.actor_display_name, a.upstream_host,
+                           a.traders_received, a.traders_accepted,
+                           a.total_accepted, a.count, a.published_version,
+                           a.note, a.created_at,
                            (SELECT l.label
                                 FROM licenses l
                                WHERE l.api_key_id = a.actor_api_key_id

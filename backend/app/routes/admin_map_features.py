@@ -31,6 +31,7 @@ def _serialise_audit(row: dict) -> dict:
     return {
         "id": row.get("id"),
         "action": row.get("action"),
+        "category": row.get("category"),
         "actor_api_key_id": row.get("actor_api_key_id"),
         "actor_display_name": row.get("actor_display_name"),
         "license_label": row.get("license_label"),
@@ -38,6 +39,7 @@ def _serialise_audit(row: dict) -> dict:
         "traders_received": row.get("traders_received"),
         "traders_accepted": row.get("traders_accepted"),
         "total_accepted": row.get("total_accepted"),
+        "count": row.get("count"),
         "published_version": row.get("published_version"),
         "note": row.get("note"),
         "created_at": (
@@ -52,10 +54,12 @@ async def list_audit(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     action: Optional[str] = Query(None),
+    category: Optional[str] = Query(None),
 ) -> dict:
     page = await asyncio.to_thread(
         db.list_map_features_traders_audit_paginated,
         action=action,
+        category=category,
         limit=limit,
         offset=offset,
     )

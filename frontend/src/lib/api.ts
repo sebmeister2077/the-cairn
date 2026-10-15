@@ -1211,6 +1211,7 @@ export async function adminRestoreGeojsonBackup(
 export interface AdminMapFeaturesTradersAuditEntry {
     id: number;
     action: string;
+    category: string | null;
     actor_api_key_id: string | null;
     actor_display_name: string | null;
     license_label: string | null;
@@ -1218,6 +1219,7 @@ export interface AdminMapFeaturesTradersAuditEntry {
     traders_received: number | null;
     traders_accepted: number | null;
     total_accepted: number | null;
+    count: number | null;
     published_version: string | null;
     note: string | null;
     created_at: string;
@@ -1231,7 +1233,7 @@ export interface MapFeaturesTradersBackupEntry {
 }
 
 export async function adminListMapFeaturesTradersAudit(
-    opts: { action?: string; limit?: number; offset?: number } = {},
+    opts: { action?: string; category?: string; limit?: number; offset?: number } = {},
 ): Promise<{
     audit: AdminMapFeaturesTradersAuditEntry[];
     total: number;
@@ -1240,6 +1242,7 @@ export async function adminListMapFeaturesTradersAudit(
 }> {
     const params = new URLSearchParams();
     if (opts.action) params.set("action", opts.action);
+    if (opts.category) params.set("category", opts.category);
     if (opts.limit != null) params.set("limit", String(opts.limit));
     if (opts.offset != null) params.set("offset", String(opts.offset));
     const qs = params.toString();
