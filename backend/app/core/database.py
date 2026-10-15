@@ -1993,6 +1993,30 @@ def set_state(key: str, value: str):
             )
 
 
+MAP_FEATURES_CONTRIB_STATE_PREFIX = "map_features_contrib:"
+
+
+def get_map_features_contrib_state(key_id: str) -> Optional[dict]:
+    """Return ``{'hash': str, 'receivedUtc': str}`` for a map-features contributor
+    key id, or None. Used to 304 an unchanged re-upload before it is decoded."""
+    raw = get_state(MAP_FEATURES_CONTRIB_STATE_PREFIX + str(key_id))
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+    except (ValueError, TypeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def set_map_features_contrib_state(key_id: str, content_hash: str, received_utc: str) -> None:
+    """Persist the last accepted content hash + receive time for a contributor."""
+    set_state(
+        MAP_FEATURES_CONTRIB_STATE_PREFIX + str(key_id),
+        json.dumps({"hash": content_hash, "receivedUtc": received_utc}),
+    )
+
+
 def get_cached_tile_count() -> int:
     val = get_state(TILE_COUNT_KEY)
     return int(val) if val else 0

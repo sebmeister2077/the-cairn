@@ -35,9 +35,10 @@ import io
 import json
 import logging
 import zlib
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 
 from ..auth import is_admin_key, verify_api_key, verify_permission
 from ..config import settings
@@ -62,6 +63,17 @@ def _get_ingest_semaphore() -> asyncio.Semaphore:
     if _ingest_semaphore is None:
         _ingest_semaphore = asyncio.Semaphore(settings.MAP_FEATURES_MAX_CONCURRENT_INGEST)
     return _ingest_semaphore
+
+
+def _normalize_etag(value: Optional[str]) -> str:
+    """Strip an optional weak-validator prefix and surrounding quotes/whitespace
+    so ``W/"abc"`` and ``abc`` compare equal to the stored hash."""
+    if not value:
+        return ""
+    v = value.strip()
+    if v.startswith("W/"):
+        v = v[2:].strip()
+    return v.strip('"').strip()
 
 
 def _check_upstream(x_upstream_host: Optional[str]) -> None:
@@ -164,7 +176,8 @@ async def receive_map_features(
     x_upstream_host: Optional[str] = Header(default=None, alias="X-Upstream-Host"),
     x_actor_name: Optional[str] = Header(default=None, alias="X-Actor-Name"),
     content_encoding: Optional[str] = Header(default=None, alias="Content-Encoding"),
-) -> Dict[str, Any]:
+    if_none_match: Optional[str] = Header(default=None, alias="If-None-Match"),
+) -> Any:
     """Ingest one contributor's full combined map export; trigger a rebuild."""
     if not (is_admin_key(x_api_key) or verify_permission(x_api_key, _PUBLISH_PERMISSION)):
         raise HTTPException(
@@ -175,6 +188,22 @@ async def receive_map_features(
         raise HTTPException(status_code=401, detail="invalid API key")
 
     _check_upstream(x_upstream_host)
+
+    key_id = str(row["id"])
+    client_hash = _normalize_etag(if_none_match)
+    # Fast path: the proxy re-uploads its full export ~1/min even when nothing
+    # changed. If the contributor's declared content hash matches what we last
+    # stored for this key, skip the whole decode/parse/re-encode — the body is
+    # never read, so the big transient allocations never happen.
+    if client_hash:
+        prev = database.get_map_features_contrib_state(key_id)
+        if prev and prev.get("hash") == client_hash:
+            logger.debug(
+                "[map-features-ingest] key=%s unchanged (304) hash=%s",
+                key_id,
+                client_hash[:12],
+            )
+            return Response(status_code=304)
 
     # Serialise the memory-heavy decode/parse/re-encode so concurrent uploads
     # can't stack multiple decompressed documents in RAM at once.
@@ -197,9 +226,13 @@ async def receive_map_features(
             gz.write(json.dumps(filtered, separators=(",", ":")).encode("utf-8"))
         gz_bytes = buf.getvalue()
 
-        key_id = str(row["id"])
+        key_id = str(row["id"])  # (already computed above for the 304 fast path)
         map_features_raw_store.put_raw(key_id, gz_bytes)
         map_features_rebuild.request_rebuild()
+        if client_hash:
+            database.set_map_features_contrib_state(
+                key_id, client_hash, datetime.now(timezone.utc).isoformat()
+            )
 
         counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
     # Don't audit the upload itself — the proxy re-uploads its full export ~1/min
@@ -224,4 +257,29 @@ async def receive_map_features(
         "accepted": accepted,
         "rejected": received - accepted,
         "counts": counts,
+    }
+
+
+@router.get("/contribute-map-features/status")
+async def map_features_status(
+    x_api_key: str = Depends(verify_api_key),
+) -> Dict[str, Any]:
+    """Report the last contribution this key successfully stored.
+
+    A client preflights this before (re)building its full export: when
+    ``lastHash`` already equals the client's current content hash, nothing
+    changed and the upload is skipped entirely. ``lastReceivedUtc`` is the UTC
+    time that stored content was last accepted (unchanged re-uploads 304 and do
+    not advance it)."""
+    if not (is_admin_key(x_api_key) or verify_permission(x_api_key, _PUBLISH_PERMISSION)):
+        raise HTTPException(
+            status_code=403, detail="This API key cannot publish map features."
+        )
+    row = database.get_api_key(x_api_key)
+    if not row or row.get("revoked"):
+        raise HTTPException(status_code=401, detail="invalid API key")
+    state = database.get_map_features_contrib_state(str(row["id"])) or {}
+    return {
+        "lastReceivedUtc": state.get("receivedUtc"),
+        "lastHash": state.get("hash"),
     }

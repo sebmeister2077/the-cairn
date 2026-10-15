@@ -379,8 +379,10 @@ class Settings:
     )
     # Max simultaneous ingest requests that may hold a decoded document in RAM.
     # Bounds peak heap = this * (decompressed + parsed) instead of unbounded.
+    # Default 1: for a handful of contributors uploads rarely overlap, so serialising
+    # them keeps only one decoded document in RAM at a time (raise for busier servers).
     MAP_FEATURES_MAX_CONCURRENT_INGEST: int = max(
-        1, int(os.environ.get("MAP_FEATURES_MAX_CONCURRENT_INGEST", "2"))
+        1, int(os.environ.get("MAP_FEATURES_MAX_CONCURRENT_INGEST", "1"))
     )
     # Rebuild coalescer timings (same shape as the auction coalescer).
     MAP_FEATURES_REBUILD_DEBOUNCE_SECONDS: int = int(
