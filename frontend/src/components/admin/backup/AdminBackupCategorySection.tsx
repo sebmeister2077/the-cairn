@@ -8,7 +8,7 @@ import {
   SelectContent,
 } from "@/components/ui/select";
 import type { BackupSchedule, BackupInterval } from "@/lib/api";
-import type { NormalizedBackup } from "@/pages/admin/AdminBackupsOverviewPage";
+import type { NormalizedBackup } from "@/pages/audit/AdminBackupsOverviewPage";
 import { formatBytes } from "@/lib/utils";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Camera, HistoryIcon } from "lucide-react";
@@ -193,8 +193,8 @@ export function AdminBackupCategorySection({
           title={`Revert ${title}?`}
           description={
             <>
-              This overwrites the live file with the selected snapshot. The current state is captured
-              as a new restore point first, so the action is reversible.
+              This overwrites the live file with the selected snapshot. The current state is
+              captured as a new restore point first, so the action is reversible.
             </>
           }
           confirmLabel="Revert"
