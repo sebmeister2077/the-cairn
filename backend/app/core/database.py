@@ -4806,10 +4806,10 @@ def list_map_features_traders_audit_paginated(
     where = []
     params: list = []
     if action:
-        where.append("action = %s")
+        where.append("a.action = %s")
         params.append(action)
     if actor_api_key_id:
-        where.append("actor_api_key_id = %s")
+        where.append("a.actor_api_key_id = %s")
         params.append(actor_api_key_id)
     where_sql = (" WHERE " + " AND ".join(where)) if where else ""
     limit = max(1, min(int(limit), 500))
@@ -4817,17 +4817,25 @@ def list_map_features_traders_audit_paginated(
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
             cur.execute(
-                f"SELECT COUNT(*) AS c FROM map_features_traders_audit {where_sql}",
+                f"SELECT COUNT(*) AS c FROM map_features_traders_audit a {where_sql}",
                 params,
             )
             total = int(cur.fetchone()["c"])
+            # Resolve the friendly license label via the api_key_id a license
+            # was mapped to. A correlated subquery (newest mapping wins) keeps
+            # one row per audit entry even if several licenses share a key.
             cur.execute(
-                f"""SELECT id, action, actor_api_key_id, actor_display_name,
-                           upstream_host, traders_received, traders_accepted,
-                           total_accepted, published_version, note, created_at
-                       FROM map_features_traders_audit
+                f"""SELECT a.id, a.action, a.actor_api_key_id, a.actor_display_name,
+                           a.upstream_host, a.traders_received, a.traders_accepted,
+                           a.total_accepted, a.published_version, a.note, a.created_at,
+                           (SELECT l.label
+                                FROM licenses l
+                               WHERE l.api_key_id = a.actor_api_key_id
+                               ORDER BY l.created_at DESC
+                               LIMIT 1) AS license_label
+                       FROM map_features_traders_audit a
                        {where_sql}
-                       ORDER BY created_at DESC, id DESC
+                       ORDER BY a.created_at DESC, a.id DESC
                        LIMIT %s OFFSET %s""",
                 params + [limit, offset],
             )

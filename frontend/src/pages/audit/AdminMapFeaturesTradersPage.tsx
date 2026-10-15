@@ -120,8 +120,13 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
   return (
     <div className="px-3 py-2 text-xs flex items-start justify-between gap-3">
       <div className="min-w-0 space-y-0.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant={actionBadgeVariant(row.action)}>{row.action}</Badge>
+          {row.license_label && (
+            <Badge variant="outline" className="font-normal" title="License label">
+              {row.license_label}
+            </Badge>
+          )}
           {row.actor_display_name && (
             <span className="font-medium truncate">{row.actor_display_name}</span>
           )}
@@ -132,14 +137,18 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
         <div className="text-muted-foreground">
           {row.action === "contribute" && (
             <span>
-              traders accepted {row.traders_accepted ?? "–"} / received{" "}
-              {row.traders_received ?? "–"}
-              {row.total_accepted != null && <> · total accepted {row.total_accepted}</>}
+              {row.traders_accepted ?? "–"} of {row.traders_received ?? "–"} traders accepted
+              {row.total_accepted != null && (
+                <>
+                  {" · "}
+                  {row.total_accepted.toLocaleString()} map features this upload (all categories)
+                </>
+              )}
             </span>
           )}
           {row.action === "rebuild_publish" && (
             <span>
-              published {row.traders_accepted ?? "–"} traders
+              merged list republished · {(row.traders_accepted ?? 0).toLocaleString()} traders total
               {row.published_version && (
                 <> · v<span className="font-mono">{row.published_version.slice(0, 12)}</span></>
               )}

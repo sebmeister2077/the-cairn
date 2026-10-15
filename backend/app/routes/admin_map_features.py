@@ -33,6 +33,7 @@ def _serialise_audit(row: dict) -> dict:
         "action": row.get("action"),
         "actor_api_key_id": row.get("actor_api_key_id"),
         "actor_display_name": row.get("actor_display_name"),
+        "license_label": row.get("license_label"),
         "upstream_host": row.get("upstream_host"),
         "traders_received": row.get("traders_received"),
         "traders_accepted": row.get("traders_accepted"),

@@ -1213,6 +1213,7 @@ export interface AdminMapFeaturesTradersAuditEntry {
     action: string;
     actor_api_key_id: string | null;
     actor_display_name: string | null;
+    license_label: string | null;
     upstream_host: string | null;
     traders_received: number | null;
     traders_accepted: number | null;
