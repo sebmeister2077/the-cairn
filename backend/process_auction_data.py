@@ -767,7 +767,7 @@ def chisel_variant(
         key = f"{base_kind}:name:l-dungeon"
         name = name_line
         # if in the list of unique materials there is an entry like "creativeglow-{number}", we might want to handle it specially
-    elif any(re.match(r"creativeglow-\d+", mat) for mat in unique_mats):
+    elif any(re.match(r"creativeglow-\d+", mat) for mat in unique_mats) and any(re.match(r"pumpkin-fruit-\d+", mat) for mat in unique_mats) and len(unique_mats) == 2:
         key = f"{base_kind}:creativeglow"
         name = "Creative Glow"
     elif name_line:
