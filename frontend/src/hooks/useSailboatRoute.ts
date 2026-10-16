@@ -134,17 +134,18 @@ function reportSailboatPlan(params: {
     const totalSeconds = Math.max(
         1,
         Math.round(walkBlocks / SAILBOAT_BLOCKS_PER_SECOND) +
-            result.tlHops * SAILBOAT_TL_HOP_SECONDS,
+        result.tlHops * SAILBOAT_TL_HOP_SECONDS,
     );
     const legs = buildSailboatLegs(result.waypoints);
     if (legs.length === 0) return;
 
     const settings: Record<string, number | string> = {};
-    if (landPenalty !== DEFAULT_SAILBOAT_OPTIONS.landPenalty)
-        settings.land_penalty = landPenalty;
-    if (tlHopCost !== DEFAULT_SAILBOAT_OPTIONS.tlHopCost)
-        settings.tl_hop_cost = tlHopCost;
-    if (searchDetail !== "auto") settings.search_detail = searchDetail;
+    // if (landPenalty !== DEFAULT_SAILBOAT_OPTIONS.landPenalty)
+    settings.land_penalty = landPenalty;
+    // if (tlHopCost !== DEFAULT_SAILBOAT_OPTIONS.tlHopCost)
+    settings.tl_hop_cost = tlHopCost;
+    // if (searchDetail !== "auto")
+    settings.search_detail = searchDetail;
 
     routeAnalytics
         .plan({
