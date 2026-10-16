@@ -205,51 +205,103 @@ def _has_publish_permission(row: Dict[str, Any]) -> bool:
     return bool(isinstance(extras, dict) and extras.get(_PUBLISH_PERMISSION))
 
 
-def _active_sources(exclude_ids: Set[str] | None = None) -> List[Tuple[str, str, Any]]:
-    """``(source_id, etag, last_modified)`` for every source a rebuild includes:
-    the seed + every non-revoked contributor that still holds the map-features
-    publish permission."""
+def _active_sources(exclude_ids: Set[str] | None = None) -> List[Dict[str, Any]]:
+    """Per-contributor source descriptors a rebuild includes: the seed + every
+    non-revoked contributor that still holds the map-features publish permission.
+
+    Each descriptor is ``{id, base_etag, last_modified, deltas}`` where ``deltas``
+    is ``[{seq, etag, last_modified}, ...]`` in apply order — so a contributor's
+    base snapshot and its append-only delta stream travel together."""
     exclude_ids = exclude_ids or set()
-    out: List[Tuple[str, str, Any]] = []
-    for obj in map_features_raw_store.list_raw_objects():
-        sid = obj["id"]
+    out: List[Dict[str, Any]] = []
+    for sid, slot in map_features_raw_store.list_grouped_objects().items():
         if sid in exclude_ids:
             continue
-        if sid == map_features_raw_store.SEED_ID:
-            out.append((sid, obj["etag"], obj["last_modified"]))
+        base = slot.get("base")
+        deltas = slot.get("deltas") or []
+        if base is None and not deltas:
             continue
-        row = database.get_api_key_by_id(sid)
-        if not row or row.get("revoked") or not _has_publish_permission(row):
-            continue
-        out.append((sid, obj["etag"], obj["last_modified"]))
+        if sid != map_features_raw_store.SEED_ID:
+            row = database.get_api_key_by_id(sid)
+            if not row or row.get("revoked") or not _has_publish_permission(row):
+                continue
+            # Only apply deltas up to the COMMITTED version — objects beyond it are
+            # orphans from a lost optimistic-update race and must be ignored.
+            if deltas:
+                state = database.get_map_features_contrib_state(sid) or {}
+                version = int(state.get("version") or 0)
+                deltas = [d for d in deltas if d["seq"] <= version]
+        out.append(
+            {
+                "id": sid,
+                "base_etag": (base or {}).get("etag"),
+                "last_modified": _slot_last_modified(base, deltas),
+                "deltas": deltas,
+            }
+        )
     return out
 
 
-def _fingerprint(active: List[Tuple[str, str, Any]]) -> Tuple[Tuple[str, str], ...]:
-    """A cheap identity of the active dataset: the sorted (id, etag) pairs. Two
-    fingerprints are equal iff the same sources with the same content are
-    present — so an unchanged fingerprint means the merge would reproduce
-    identical output and can be skipped entirely."""
-    return tuple(sorted((sid, etag) for sid, etag, _lm in active))
+def _slot_last_modified(base: Optional[Dict[str, Any]], deltas: List[Dict[str, Any]]) -> Any:
+    """Newest R2 ``LastModified`` across a contributor's base + deltas — the
+    contributor's effective upload time for the last-writer-wins ordering."""
+    times = []
+    if base and base.get("last_modified") is not None:
+        times.append(base["last_modified"])
+    for d in deltas:
+        if d.get("last_modified") is not None:
+            times.append(d["last_modified"])
+    return max(times) if times else None
 
 
-def _order_key(item: Tuple[str, str, Any]) -> Tuple[float, str]:
+def _fingerprint(active: List[Dict[str, Any]]) -> Tuple[Tuple[str, str], ...]:
+    """A cheap identity of the active dataset: sorted ``(id, etag-chain)`` pairs
+    where the chain covers the base ETag AND every delta ETag. Two fingerprints
+    are equal iff the same sources with the same base+deltas are present — so an
+    unchanged fingerprint means the merge reproduces identical output."""
+    out: List[Tuple[str, str]] = []
+    for src in active:
+        chain = (src.get("base_etag") or "") + "|" + ",".join(
+            f"{d['seq']}:{d.get('etag') or ''}" for d in src.get("deltas", [])
+        )
+        out.append((src["id"], chain))
+    return tuple(sorted(out))
+
+
+def _order_key(src: Dict[str, Any]) -> Tuple[float, str]:
     """Sort key for the last-writer-wins fold: oldest upload first. R2's
-    LastModified approximates each document's ``generatedUtc``; a missing time
+    LastModified approximates each contributor's ``generatedUtc``; a missing time
     sorts first (treated as oldest)."""
-    sid, _etag, lm = item
+    lm = src.get("last_modified")
     ts = lm.timestamp() if hasattr(lm, "timestamp") else 0.0
-    return (ts, sid)
+    return (ts, src["id"])
 
 
-def _merge_streaming(active: List[Tuple[str, str, Any]]) -> Dict[str, Any]:
-    """Fold every active source into the merge ONE AT A TIME, so peak memory is
-    a single source document plus the winners accumulator — not the sum of all
-    parsed sources at once."""
+def _reconstruct_source(src: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Fetch a contributor's base snapshot + delta objects and reconstruct its
+    current ``MapExportDocument``. Base-only sources (seed / legacy full
+    contributors) skip reconstruction and return the base directly."""
+    sid = src["id"]
+    deltas = src.get("deltas") or []
+    base = map_features_raw_store.get_document(sid) if src.get("base_etag") else None
+    if not deltas:
+        return base
+    delta_docs = []
+    for d in deltas:
+        doc = map_features_raw_store.get_delta_document(sid, d["seq"])
+        if doc is not None:
+            delta_docs.append(doc)
+    return map_features_merge.reconstruct_document(base, delta_docs)
+
+
+def _merge_streaming(active: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Fold every active source into the merge ONE AT A TIME, reconstructing each
+    contributor from its base + deltas first, so peak memory is a single
+    contributor snapshot plus the winners accumulator."""
     acc = map_features_merge.new_accumulator()
     n = 0
-    for sid, _etag, _lm in sorted(active, key=_order_key):
-        doc = map_features_raw_store.get_document(sid)
+    for src in sorted(active, key=_order_key):
+        doc = _reconstruct_source(src)
         if doc is None:
             continue
         map_features_merge.fold_document(acc, doc)

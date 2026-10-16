@@ -1993,28 +1993,135 @@ def set_state(key: str, value: str):
             )
 
 
-MAP_FEATURES_CONTRIB_STATE_PREFIX = "map_features_contrib:"
-
+# ---------------------------------------------------------------------------
+# Map-features contributor ingest state (dedicated ``map_features_contrib_state``
+# table — replaces the old ``app_state`` ``map_features_contrib:<key_id>`` blobs).
+# ``content_hash`` + ``received_utc`` drive the /status 304 fast path; ``epoch``
+# and ``version`` drive the append-only delta-upload handshake.
+# ---------------------------------------------------------------------------
 
 def get_map_features_contrib_state(key_id: str) -> Optional[dict]:
-    """Return ``{'hash': str, 'receivedUtc': str}`` for a map-features contributor
-    key id, or None. Used to 304 an unchanged re-upload before it is decoded."""
-    raw = get_state(MAP_FEATURES_CONTRIB_STATE_PREFIX + str(key_id))
-    if not raw:
+    """Return ``{'hash', 'receivedUtc', 'epoch', 'version'}`` for a map-features
+    contributor key id, or None. ``receivedUtc`` is an ISO-8601 string. Used to
+    304 an unchanged re-upload before it is decoded and to run the delta
+    epoch/version handshake."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """SELECT content_hash, received_utc, epoch, version
+                     FROM map_features_contrib_state WHERE key_id = %s""",
+                (str(key_id),),
+            )
+            row = cur.fetchone()
+    if not row:
         return None
-    try:
-        data = json.loads(raw)
-    except (ValueError, TypeError):
-        return None
-    return data if isinstance(data, dict) else None
+    content_hash, received_utc, epoch, version = row
+    return {
+        "hash": content_hash,
+        "receivedUtc": received_utc.isoformat() if received_utc else None,
+        "epoch": int(epoch or 0),
+        "version": int(version or 0),
+    }
 
 
-def set_map_features_contrib_state(key_id: str, content_hash: str, received_utc: str) -> None:
-    """Persist the last accepted content hash + receive time for a contributor."""
-    set_state(
-        MAP_FEATURES_CONTRIB_STATE_PREFIX + str(key_id),
-        json.dumps({"hash": content_hash, "receivedUtc": received_utc}),
-    )
+def set_map_features_contrib_state(
+    key_id: str,
+    content_hash: str,
+    received_utc: str,
+    *,
+    epoch: Optional[int] = None,
+    version: Optional[int] = None,
+) -> None:
+    """Upsert the content hash + receive time for a contributor. ``epoch`` and
+    ``version`` are preserved when omitted (hash-only update, e.g. the legacy
+    full-snapshot path) or set explicitly when provided."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            if epoch is None and version is None:
+                cur.execute(
+                    """INSERT INTO map_features_contrib_state
+                           (key_id, content_hash, received_utc, updated_at)
+                       VALUES (%s, %s, %s, now())
+                       ON CONFLICT (key_id) DO UPDATE
+                           SET content_hash = EXCLUDED.content_hash,
+                               received_utc = EXCLUDED.received_utc,
+                               updated_at = now()""",
+                    (str(key_id), content_hash, received_utc),
+                )
+            else:
+                cur.execute(
+                    """INSERT INTO map_features_contrib_state
+                           (key_id, content_hash, received_utc, epoch, version, updated_at)
+                       VALUES (%s, %s, %s, %s, %s, now())
+                       ON CONFLICT (key_id) DO UPDATE
+                           SET content_hash = EXCLUDED.content_hash,
+                               received_utc = EXCLUDED.received_utc,
+                               epoch = EXCLUDED.epoch,
+                               version = EXCLUDED.version,
+                               updated_at = now()""",
+                    (
+                        str(key_id),
+                        content_hash,
+                        received_utc,
+                        int(epoch or 0),
+                        int(version or 0),
+                    ),
+                )
+
+
+def replace_map_features_contrib_state(
+    key_id: str, content_hash: str, received_utc: str
+) -> int:
+    """Record a full-snapshot replace: bump ``epoch`` and reset ``version`` to 0.
+    Returns the new epoch (1 for a brand-new contributor)."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO map_features_contrib_state
+                       (key_id, content_hash, received_utc, epoch, version, updated_at)
+                   VALUES (%s, %s, %s, 1, 0, now())
+                   ON CONFLICT (key_id) DO UPDATE
+                       SET content_hash = EXCLUDED.content_hash,
+                           received_utc = EXCLUDED.received_utc,
+                           epoch = map_features_contrib_state.epoch + 1,
+                           version = 0,
+                           updated_at = now()
+                   RETURNING epoch""",
+                (str(key_id), content_hash, received_utc),
+            )
+            return int(cur.fetchone()[0])
+
+
+def bump_map_features_contrib_version(
+    key_id: str,
+    base_version: int,
+    new_version: int,
+    content_hash: str,
+    received_utc: str,
+    epoch: int,
+) -> bool:
+    """Optimistically advance a contributor's delta ``version``.
+
+    Returns True iff the stored ``(epoch, version)`` still matched
+    ``(epoch, base_version)`` — i.e. the delta appended cleanly. False means a
+    concurrent writer moved it on and the caller must force a full resync."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """UPDATE map_features_contrib_state
+                      SET version = %s, content_hash = %s,
+                          received_utc = %s, updated_at = now()
+                    WHERE key_id = %s AND epoch = %s AND version = %s""",
+                (
+                    int(new_version),
+                    content_hash,
+                    received_utc,
+                    str(key_id),
+                    int(epoch),
+                    int(base_version),
+                ),
+            )
+            return cur.rowcount == 1
 
 
 def get_cached_tile_count() -> int:

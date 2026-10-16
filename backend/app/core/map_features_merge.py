@@ -202,3 +202,98 @@ def merge_documents(sources: List[Tuple[str, Dict[str, Any]]]) -> Dict[str, Any]
     for _sid, doc in ordered:
         fold_document(acc, doc)
     return finalize(acc)
+
+
+# ---------------------------------------------------------------------------
+# Delta reconstruction
+# ---------------------------------------------------------------------------
+# A contributor may push an append-only stream of DELTA objects on top of its
+# base snapshot instead of re-uploading the whole document. Each delta carries
+# ``upserts`` (full feature objects to set) and ``removals`` (identity-only
+# objects / playerUids to delete), both keyed per category by the SAME
+# ``_KEY_FNS`` the union-merge uses — so the server derives keys itself and no
+# cross-language key logic has to stay in lock-step for correctness. The rebuild
+# reconstructs the current per-contributor snapshot from ``base`` + ordered
+# ``deltas`` and then folds it into the cross-contributor merge unchanged.
+
+
+def _removal_uid(item: Any) -> Optional[str]:
+    """A playerClaims removal entry is either a bare ``playerUid`` string or an
+    identity object carrying ``playerUid``."""
+    if isinstance(item, str):
+        return item or None
+    if isinstance(item, dict):
+        uid = item.get("playerUid")
+        return uid if isinstance(uid, str) and uid else None
+    return None
+
+
+def _apply_upserts(acc: "Accumulator", cats: Dict[str, Any]) -> None:
+    for doc_key, _cat in CATEGORIES:
+        feats = cats.get(doc_key)
+        if not isinstance(feats, list):
+            continue
+        if doc_key == "playerClaims":
+            # An upsert replaces each named player's WHOLE box set (same
+            # per-player semantics as a full fold).
+            _fold_player_claims(acc.winners[doc_key], feats)
+            continue
+        key_fn = _KEY_FNS[doc_key]
+        wmap = acc.winners[doc_key]
+        for f in feats:
+            if not isinstance(f, dict):
+                continue
+            k = key_fn(f)
+            if k is not None:
+                wmap[k] = f
+
+
+def _apply_removals(acc: "Accumulator", cats: Dict[str, Any]) -> None:
+    for doc_key, _cat in CATEGORIES:
+        feats = cats.get(doc_key)
+        if not isinstance(feats, list):
+            continue
+        wmap = acc.winners[doc_key]
+        if doc_key == "playerClaims":
+            for item in feats:
+                uid = _removal_uid(item)
+                if uid is not None:
+                    wmap.pop(uid, None)
+            continue
+        key_fn = _KEY_FNS[doc_key]
+        for f in feats:
+            if not isinstance(f, dict):
+                continue
+            k = key_fn(f)
+            if k is not None:
+                wmap.pop(k, None)
+
+
+def reconstruct_document(
+    base: Optional[Dict[str, Any]], deltas: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Rebuild a contributor's current ``MapExportDocument`` from its ``base``
+    snapshot plus an ordered list of ``deltas`` (ascending ``seq``).
+
+    Each delta is applied in order: envelope metadata (``upstream`` /
+    ``worldSpawn``) is overwritten when present, ``upserts`` set features by key,
+    and ``removals`` delete them (playerClaims per-player). The result is a
+    normal ``MapExportDocument`` ready to fold into the cross-contributor
+    accumulator."""
+    acc = new_accumulator()
+    if isinstance(base, dict):
+        fold_document(acc, base)
+    for delta in deltas:
+        if not isinstance(delta, dict):
+            continue
+        if delta.get("upstream"):
+            acc.upstream = delta.get("upstream")
+        if isinstance(delta.get("worldSpawn"), dict):
+            acc.world_spawn = delta.get("worldSpawn")
+        ups = delta.get("upserts")
+        if isinstance(ups, dict):
+            _apply_upserts(acc, ups)
+        rem = delta.get("removals")
+        if isinstance(rem, dict):
+            _apply_removals(acc, rem)
+    return finalize(acc)
