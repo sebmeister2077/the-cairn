@@ -29,7 +29,7 @@ logger = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/admin/route-planner", tags=["admin-route-planner"])
 
 
-_MAX_WINDOW_DAYS = 180
+_MAX_WINDOW_DAYS = 360
 _DEFAULT_WINDOW_DAYS = 30
 _VALID_GRANULARITIES = {"hour", "day", "week"}
 _CACHE_TTL_SECONDS = 60.0

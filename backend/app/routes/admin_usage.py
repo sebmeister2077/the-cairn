@@ -37,7 +37,7 @@ router = APIRouter(prefix="/admin/usage", tags=["admin-usage"])
 # Constants & helpers
 # ---------------------------------------------------------------------------
 
-_MAX_WINDOW_DAYS = 180
+_MAX_WINDOW_DAYS = 360
 _DEFAULT_WINDOW_DAYS = 30
 _VALID_GRANULARITIES = {"hour", "day", "week"}
 _CACHE_TTL_SECONDS = 60.0
