@@ -15,6 +15,7 @@ import { formatGears } from "@/lib/auction";
 import { formatGameDate } from "@/lib/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
+import { formatListingDate } from "./VirtualTable";
 
 // The metrics a viewer can chart over in-game time. `gears` flags currency
 // values so the axis/tooltip render with the gears formatter; `pct` flags a
@@ -274,8 +275,18 @@ export function MarketTrendsChart({
                 }}
                 labelStyle={{ color: "hsl(var(--popover-foreground))" }}
                 itemStyle={{ color: "hsl(var(--popover-foreground))" }}
-                labelFormatter={(label) => `≈ ${label}`}
-                formatter={(value) => [fmt(Number(value)), metric.label]}
+                labelFormatter={(label, props) => {
+                  const gameHours = props?.[0]?.payload?.gameHours;
+
+                  const realDateLabel =
+                    gameHours && realDateForGameHours
+                      ? ` (${formatListingDate(realDateForGameHours(gameHours))})`
+                      : "";
+                  return `≈ ${label}${realDateLabel}`;
+                }}
+                formatter={(value, name) => {
+                  return [fmt(Number(value)), metric.label];
+                }}
               />
               <Area
                 type="monotone"
