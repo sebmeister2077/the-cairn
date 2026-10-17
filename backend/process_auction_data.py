@@ -2145,10 +2145,127 @@ def _pi_confidence(ci_width_pp: float, basket: int, coverage: float) -> str:
     return "low"
 
 
+# Broad, human-friendly "Cairn" categories. The raw per-item `category` (derived
+# from the item code in `_category_from_code`, e.g. "ingot") yields 300+ granular
+# buckets — far too many for a readable breakdown. This folds those raw categories
+# into a small set of broad display groups, mirroring the frontend's
+# CUSTOM_CATEGORY_MEMBERS in frontend/src/lib/item-categories.ts. Keep the two in
+# sync: any raw category not listed here rolls up into CUSTOM_OTHER_CATEGORY.
+CUSTOM_OTHER_CATEGORY = "Other"
+
+CUSTOM_CATEGORY_MEMBERS: Dict[str, List[str]] = {
+    "Tools & Weapons": [
+        "axe", "axehead", "pickaxe", "pickaxehead", "shovel", "shovelhead",
+        "hoe", "hoehead", "scythe", "scythehead", "saw", "sawblade",
+        "hammer", "hammerhead", "chisel", "knife", "knifeblade", "cleaverhead",
+        "blade", "bladehead", "spear", "spearhead", "sword", "club", "mace",
+        "bow", "sling", "arrow", "arrowhead", "javelin", "halberd", "poleaxe",
+        "paxel", "flail", "file", "rollingpin", "shield", "bomb", "beenade",
+        "blastingpowder", "prospectingpick", "prospectingpickhead", "shears",
+        "wrench", "crowbar", "solderingiron", "firestarter", "bugnet",
+        "fishingpole", "rod", "tongsmetal", "mortar", "wateringcan", "sewingkit",
+        "trapcrate",
+    ],
+    "Metals & Ore": [
+        "ore", "crystalizedore", "ingot", "nugget", "metalplate", "crushed",
+        "metal", "metalbit", "ironbloom", "solderbar", "metalnailsandstrips",
+        "powder", "crucible", "toolmold", "ingotmold", "workitem", "meteorite",
+        "charcoal", "coal", "coke",
+    ],
+    "Stone & Masonry": [
+        "rock", "rockpolished", "polishedrockold", "stone", "stonebricks",
+        "stonebrick", "crackedstonebricks", "agedstonebricks", "cobblestone",
+        "cobblestonefan", "crackedrock", "drystone", "brickcourse", "burnedbrick",
+        "rawbrick", "refractorybrick", "refractorybricks", "claybricks",
+        "brickslabs", "claytile", "tile", "shingle", "sand", "gravel",
+        "dirtygravel", "muddygravel", "sludgygravel", "clay", "lime", "quicklime",
+        "flint", "peatbrick", "ice", "snowblock", "packeddirt", "stonepath",
+        "stonepathslab", "stonepathstairs",
+    ],
+    "Wood & Lumber": [
+        "log", "logsection", "logquad", "carvedlog", "planks", "plank",
+        "plankslab", "burnedplanks", "firewood", "agedfirewood", "stick",
+        "stackedbamboo",
+    ],
+    "Building & Mechanisms": [
+        "chiseledblock", "microblock", "door", "metaldoor", "irondoor",
+        "trapdoor", "cokeovendoor", "ladder", "glass", "glassslab", "glasspane",
+        "daub", "daubraw", "wattle", "plaster", "thatch", "slantedroofingtip",
+        "supportbeam", "claybrickchimney", "refractorybrickgrating",
+        "woodenfence", "ironfence", "drystonefence", "fencebamboo",
+        "bamboostakes", "metalchain", "padlock", "chute", "chutesection",
+        "hopper", "trough", "gear", "largegear3", "angledgears", "windmillrotor",
+        "waterwheel", "grindingwheel", "woodenaxle", "woodentoggle",
+        "pulverizerframe", "pulverizertoggle", "pounder", "poundercap",
+        "helvehammer", "helvehammerhead", "helvehammerbase", "hub", "quern",
+        "bellows", "forge", "anvil", "clayoven", "lightningrod", "fruitpress",
+    ],
+    "Containers & Storage": [
+        "storagevessel", "lootvessel", "basket", "stationarybasket", "barrel",
+        "crate", "chest", "trunk", "bowl", "jug", "crock", "claypot",
+        "dirtyclaypot", "backpack", "hunterbackpack", "linensack", "miningbag",
+        "miningbagsturdy", "woodbucket",
+    ],
+    "Clothing & Armor": [
+        "clothes", "armor", "hoovedwearables", "hide", "leather", "cloth",
+        "linen", "flaxfibers", "flaxtwine",
+    ],
+    "Food & Cooking": [
+        "fruit", "vegetable", "pickledvegetable", "redmeat", "bushmeat",
+        "fishraw", "poultry", "cheese", "bread", "pie", "pressedmash",
+        "honeymash", "mushroom", "egg", "fat", "spice", "salt", "pineapple",
+        "pumpkin", "grain", "flour", "legume", "tuleroot", "cattailroot",
+    ],
+    "Farming & Plants": [
+        "seeds", "treeseed", "sapling", "fruitingbushcutting", "fruittree",
+        "clayplanter", "flowerpot", "soil", "bonysoil", "compost", "potash",
+        "bonemeal", "hay", "drygrass", "rot", "skep", "honeycomb", "beeswax",
+        "papyrusroot", "papyrustops", "cattailtops",
+    ],
+    "Decoration & Furniture": [
+        "clutter", "tapestry", "taxidermy", "wallpaper", "smallcarpet", "rushmat",
+        "bed", "table", "chair", "shelf", "bookshelf", "clutteredbookshelf",
+        "displaycase", "talldisplaycase", "chandelier", "candle", "lantern",
+        "oillamp", "torch", "torchholder", "plaque", "sign", "antlermount",
+        "omokpiece", "omoktabletop", "instrument", "altar", "armorstand",
+        "cobbleskull", "quartzpillar", "resonator", "tuningcylinder",
+        "jonasframes",
+    ],
+    "Books & Art": [
+        "book", "lore", "painting", "letter", "paper", "inkandquill",
+        "schematic", "locatormap",
+    ],
+    "Gems & Minerals": [
+        "crystal", "gem", "amethyst", "smokyquartz", "rosequartz", "clearquartz",
+        "diamond",
+    ],
+    "Animals & Nature": [
+        "flower", "seashell", "coral", "coralchunk", "antler", "butterfly",
+        "bone", "bonyremains", "feather", "animal", "creature", "aquaticplant",
+        "waterlily", "fern", "tallfern", "silvertorchcactus", "barrelcactus",
+        "attachingplant", "locustnest", "spiderweb", "reefledge", "boss",
+    ],
+}
+
+# raw category (lowercase) -> broad custom category.
+_RAW_TO_CUSTOM_CATEGORY: Dict[str, str] = {
+    raw: group for group, members in CUSTOM_CATEGORY_MEMBERS.items() for raw in members
+}
+
+
+def custom_category_for(raw_category: Optional[str]) -> str:
+    """Broad human-friendly category a raw in-game category rolls up into. Unknown
+    or empty categories fall back to CUSTOM_OTHER_CATEGORY."""
+    if not raw_category:
+        return CUSTOM_OTHER_CATEGORY
+    return _RAW_TO_CUSTOM_CATEGORY.get(raw_category.lower(), CUSTOM_OTHER_CATEGORY)
+
+
 def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """Inflation index for summary.json: a drift-free first-vs-last headline, a
     biweekly chained trend line with a bootstrap confidence band, and a per-category
-    breakdown. Returns None when there isn't enough sold data to measure change."""
+    breakdown (grouped by broad human-friendly Cairn categories). Returns None when
+    there isn't enough sold data to measure change."""
     sold = price_index_clean_sold(records)
     if len(sold) < 100:
         return None
@@ -2223,9 +2340,11 @@ def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
     }
 
     # --- Per-category breakdown (first vs last window) ----------------------- #
+    # Group by the broad, human-friendly Cairn category rather than the raw
+    # in-game category (there are 300+ of those — far too many to be readable).
     by_cat: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
     for r in sold:
-        by_cat[r.get("category") or "unknown"].append(r)
+        by_cat[custom_category_for(r.get("category"))].append(r)
     categories = []
     for cat, recs in by_cat.items():
         b = _pi_window_cells(recs, t0, t0 + timedelta(days=win))
