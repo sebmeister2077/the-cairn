@@ -3256,6 +3256,28 @@ export async function adminGetHeavyComputeStatus(): Promise<HeavyComputeStatus> 
     return (await handleResponse(res)).json();
 }
 
+export interface AuctionRebuildResult {
+    auctions: number;
+    listings: number;
+    items: number;
+}
+
+/**
+ * Force the auction-house merge/publish flow to run immediately. The request
+ * blocks until the single-flight rebuild finishes and returns the resulting
+ * record counts. Admin only (require_admin on the backend).
+ */
+export async function adminAuctionRebuild(): Promise<{
+    status: string;
+    rebuild: AuctionRebuildResult;
+}> {
+    const res = await fetch(`${API_BASE}/admin/auction-rebuild`, {
+        method: "POST",
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
 // --- Maintenance notices ---
 
 export interface MaintenanceNotice {

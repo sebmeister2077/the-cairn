@@ -52,6 +52,7 @@ import {
   OperationalFlagCard,
 } from "@/components/admin/feature-flags/OperationalFlagCard";
 import { HeavyComputeRunner } from "@/components/admin/feature-flags/HeavyComputeRunner";
+import { AuctionRebuildRunner } from "@/components/admin/feature-flags/AuctionRebuildRunner";
 
 interface ProductFlagSpec {
   key: string;
@@ -372,6 +373,15 @@ export function AdminFeatureFlagsPage() {
       <section className="space-y-3">
         <SectionHeader title="Infrastructure" />
         <MapLockCard />
+      </section>
+
+      {/* Auction house (manual rebuild is an operational action, not a flag). */}
+      <section className="space-y-3">
+        <SectionHeader
+          title="Auction house"
+          description="Manually retrigger the auction-house processing flow — re-merges contributor submissions and republishes the public artifacts."
+        />
+        <AuctionRebuildRunner />
       </section>
 
       {/* Per-user quotas & rate limits (numeric) */}
