@@ -2261,6 +2261,29 @@ def custom_category_for(raw_category: Optional[str]) -> str:
     return _RAW_TO_CUSTOM_CATEGORY.get(raw_category.lower(), CUSTOM_OTHER_CATEGORY)
 
 
+def _pi_category_price_trend(
+    recs: List[Dict[str, Any]], t0: datetime, bin_w: timedelta, n_bins: int
+) -> List[Dict[str, Any]]:
+    """Biweekly average per-unit price for a category's sales, over the same bins
+    as the headline trend. `avgPrice` is the mean per-unit price of all sales in a
+    bin (None when the category had no sales that fortnight)."""
+    series: List[Dict[str, Any]] = []
+    for b in range(n_bins):
+        lo = t0 + b * bin_w
+        cells = _pi_window_cells(recs, lo, lo + bin_w)
+        ppus = [ppu for c in cells.values() for ppu in c.prices]
+        sales = sum(c.count for c in cells.values())
+        series.append(
+            {
+                "binIndex": b,
+                "startUtc": lo.isoformat(),
+                "medianPrice": round(percentile(sorted(ppus), 0.5), 2) if ppus else None,
+                "sales": sales,
+            }
+        )
+    return series
+
+
 def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     """Inflation index for summary.json: a drift-free first-vs-last headline, a
     biweekly chained trend line with a bootstrap confidence band, and a per-category
@@ -2358,6 +2381,9 @@ def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
                 "inflationPct": _pi_pct(_pi_factors(rels)["trimmed"]),
                 "basketItems": len(rels),
                 "gears": round(sum(g for _, _, g in rels)),
+                "salesCount": len(recs),
+                "gearsTraded": round(sum(r["price"] for r in recs)),
+                "priceTrend": _pi_category_price_trend(recs, t0, bin_w, last_full + 1),
             }
         )
     categories.sort(key=lambda c: c["gears"], reverse=True)

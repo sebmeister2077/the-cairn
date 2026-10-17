@@ -487,12 +487,29 @@ export interface PriceIndexTrendPoint {
     gearsCoverage: number;
 }
 
+/** One biweekly point in a category's average-price series. */
+export interface PriceIndexCategoryPoint {
+    binIndex: number;
+    /** ISO start of the fortnightly bin. */
+    startUtc: string;
+    /** Mean per-unit price of sales in this bin (null when there were none). */
+    medianPrice: number | null;
+    /** Number of sales in this bin. */
+    sales: number;
+}
+
 /** Inflation for one category of goods (first vs last window). */
 export interface PriceIndexCategory {
     category: string;
     inflationPct: number;
     basketItems: number;
     gears: number;
+    /** Total sold listings in this category over the whole tracked span. */
+    salesCount: number;
+    /** Total Rusty Gears traded in this category over the whole tracked span. */
+    gearsTraded: number;
+    /** Biweekly average per-unit price series for this category. */
+    priceTrend: PriceIndexCategoryPoint[];
 }
 
 export interface PriceIndex {
