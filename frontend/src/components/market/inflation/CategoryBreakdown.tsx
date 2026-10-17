@@ -3,6 +3,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip as ChartTooltip,
   XAxis,
@@ -102,14 +103,17 @@ function shortDate(iso: string): string {
 function CategoryPriceChart({ points }: { points: PriceIndexCategoryPoint[] }) {
   const rows = (points ?? []).map((p) => ({
     date: shortDate(p.startUtc),
-    medianPrice: p.medianPrice,
+    index: p.index,
+    basketItems: p.basketItems,
     sales: p.sales,
   }));
-  const hasData = rows.filter((r) => r.medianPrice != null).length >= 2;
+  const hasData = rows.length >= 2;
 
   return (
     <div className="pb-3 pt-1 pl-5">
-      <div className="mb-2 text-xs text-muted-foreground">Median price per unit (biweekly)</div>
+      <div className="mb-2 text-xs text-muted-foreground">
+        Price index (100 = category prices at the start of tracking)
+      </div>
       {hasData ? (
         <ResponsiveContainer width="100%" height={180}>
           <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
@@ -117,22 +121,23 @@ function CategoryPriceChart({ points }: { points: PriceIndexCategoryPoint[] }) {
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis
               tick={{ fontSize: 11 }}
-              width={48}
-              domain={["dataMin", "dataMax"]}
-              tickFormatter={(v: number) => formatGears(v)}
+              width={40}
+              domain={["dataMin - 5", "dataMax + 5"]}
+              tickFormatter={(v: number) => String(Math.round(v))}
             />
+            <ReferenceLine y={100} strokeDasharray="4 4" className="stroke-muted-foreground" />
             <ChartTooltip
               contentStyle={{ fontSize: 12 }}
               labelClassName="text-foreground"
               formatter={(value, _name, item) => [
-                `${formatGears(value as number)} · ${item?.payload?.sales ?? 0} sale${
-                  item?.payload?.sales === 1 ? "" : "s"
+                `${(value as number).toFixed(1)} · ${item?.payload?.basketItems ?? 0} item${
+                  item?.payload?.basketItems === 1 ? "" : "s"
                 }`,
-                "Median price",
+                "Price index",
               ]}
             />
             <Line
-              dataKey="medianPrice"
+              dataKey="index"
               stroke="#3b82f6"
               strokeWidth={2}
               dot={{ r: 2 }}

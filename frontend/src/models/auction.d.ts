@@ -492,8 +492,10 @@ export interface PriceIndexCategoryPoint {
     binIndex: number;
     /** ISO start of the fortnightly bin. */
     startUtc: string;
-    /** Mean per-unit price of sales in this bin (null when there were none). */
-    medianPrice: number | null;
+    /** Composition-neutral price index (100 = category prices at the start). */
+    index: number;
+    /** Matched items backing this step's change (0 at the base point). */
+    basketItems: number;
     /** Number of sales in this bin. */
     sales: number;
 }
@@ -508,7 +510,7 @@ export interface PriceIndexCategory {
     salesCount: number;
     /** Total Rusty Gears traded in this category over the whole tracked span. */
     gearsTraded: number;
-    /** Biweekly average per-unit price series for this category. */
+    /** Biweekly matched-model price index series for this category. */
     priceTrend: PriceIndexCategoryPoint[];
 }
 

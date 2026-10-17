@@ -2261,24 +2261,37 @@ def custom_category_for(raw_category: Optional[str]) -> str:
     return _RAW_TO_CUSTOM_CATEGORY.get(raw_category.lower(), CUSTOM_OTHER_CATEGORY)
 
 
-def _pi_category_price_trend(
-    recs: List[Dict[str, Any]], t0: datetime, bin_w: timedelta, n_bins: int
+def _pi_category_index_trend(
+    recs: List[Dict[str, Any]],
+    t0: datetime,
+    bin_w: timedelta,
+    n_bins: int,
+    min_sales: int = PRICE_INDEX_MIN_SALES,
 ) -> List[Dict[str, Any]]:
-    """Biweekly average per-unit price for a category's sales, over the same bins
-    as the headline trend. `avgPrice` is the mean per-unit price of all sales in a
-    bin (None when the category had no sales that fortnight)."""
+    """Biweekly matched-model price index for one category, over the same bins as
+    the headline trend. Each step compares items that traded in BOTH adjacent
+    fortnights (so the category's changing mix cancels out), chained from a base of
+    100 at `t0`. `index` is composition-neutral (100 = category prices at the
+    start); a step with no matched items leaves the index unchanged (factor 1.0)."""
+    cells = [
+        _pi_window_cells(recs, t0 + b * bin_w, t0 + (b + 1) * bin_w)
+        for b in range(n_bins)
+    ]
     series: List[Dict[str, Any]] = []
+    idx = 100.0
     for b in range(n_bins):
-        lo = t0 + b * bin_w
-        cells = _pi_window_cells(recs, lo, lo + bin_w)
-        ppus = [ppu for c in cells.values() for ppu in c.prices]
-        sales = sum(c.count for c in cells.values())
+        basket = 0
+        if b > 0:
+            rels = _pi_relatives(cells[b - 1], cells[b], min_sales)
+            basket = len(rels)
+            idx *= _pi_factors(rels)["trimmed"]
         series.append(
             {
                 "binIndex": b,
-                "startUtc": lo.isoformat(),
-                "medianPrice": round(percentile(sorted(ppus), 0.5), 2) if ppus else None,
-                "sales": sales,
+                "startUtc": (t0 + b * bin_w).isoformat(),
+                "index": round(idx, 2),
+                "basketItems": basket,
+                "sales": sum(c.count for c in cells[b].values()),
             }
         )
     return series
@@ -2383,7 +2396,7 @@ def build_price_index(records: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]
                 "gears": round(sum(g for _, _, g in rels)),
                 "salesCount": len(recs),
                 "gearsTraded": round(sum(r["price"] for r in recs)),
-                "priceTrend": _pi_category_price_trend(recs, t0, bin_w, last_full + 1),
+                "priceTrend": _pi_category_index_trend(recs, t0, bin_w, last_full + 1),
             }
         )
     categories.sort(key=lambda c: c["gears"], reverse=True)
