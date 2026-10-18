@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 
-export function MarketInflationExplainer() {
+export function MarketPriceIndexExplainer() {
   return (
     <Card>
       <CardContent className="py-4 text-sm text-muted-foreground space-y-2">

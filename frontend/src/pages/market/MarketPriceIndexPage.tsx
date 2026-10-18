@@ -1,13 +1,13 @@
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
-import { MarketInflationCategoryBreakdown } from "@/components/market/inflation/CategoryBreakdown";
-import { MarketInflationExplainer } from "@/components/market/inflation/Explainer";
-import { MarketInflationHeadline } from "@/components/market/inflation/Headline";
+import { MarketPriceIndexCategoryBreakdown } from "@/components/market/price-index/CategoryBreakdown";
+import { MarketPriceIndexExplainer } from "@/components/market/price-index/Explainer";
+import { MarketPriceIndexHeadline } from "@/components/market/price-index/Headline";
 import { MarketInflationChart } from "@/components/market/MarketInflationChart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuctionSummary } from "@/lib/auction";
 
-export function MarketInflationPage() {
+export function MarketPriceIndexPage() {
   const { data, isPending, isError } = useAuctionSummary();
 
   if (isPending) {
@@ -26,26 +26,26 @@ export function MarketInflationPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-semibold">Inflation</h1>
+        <h1 className="text-2xl font-semibold">Price Index</h1>
         <FreshnessBanner generatedUtc={data.generatedUtc} />
       </div>
 
       {!pi ? (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
-            Not enough sales have been recorded yet to estimate inflation.
+            Not enough sales have been recorded yet to estimate Price Index.
           </CardContent>
         </Card>
       ) : (
         <>
-          <MarketInflationHeadline h={pi.headline} />
+          <MarketPriceIndexHeadline h={pi.headline} />
           <MarketInflationChart trend={pi.trend} />
 
           {pi.categories.length > 0 && (
-            <MarketInflationCategoryBreakdown categories={pi.categories} />
+            <MarketPriceIndexCategoryBreakdown categories={pi.categories} />
           )}
 
-          <MarketInflationExplainer />
+          <MarketPriceIndexExplainer />
         </>
       )}
     </div>

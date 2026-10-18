@@ -14,7 +14,7 @@ import { formatGears } from "@/lib/auction";
 import type { PriceIndexCategory, PriceIndexCategoryPoint } from "@/models/auction";
 import { cn } from "@/lib/utils";
 
-export function MarketInflationCategoryBreakdown({
+export function MarketPriceIndexCategoryBreakdown({
   categories,
 }: {
   categories: PriceIndexCategory[];

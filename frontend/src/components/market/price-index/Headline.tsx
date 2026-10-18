@@ -20,7 +20,7 @@ const CONFIDENCE_STYLE: Record<string, { label: string; cls: string; blurb: stri
   },
 };
 
-export function MarketInflationHeadline({ h }: { h: PriceIndexHeadline }) {
+export function MarketPriceIndexHeadline({ h }: { h: PriceIndexHeadline }) {
   const up = h.inflationPct >= 0;
   const conf = CONFIDENCE_STYLE[h.confidence] ?? CONFIDENCE_STYLE.low;
   const months = Math.max(1, Math.round(h.spanDays / 30));

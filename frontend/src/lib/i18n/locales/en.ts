@@ -102,6 +102,7 @@ export const en = {
                 marketListings: "Listings",
                 marketItems: "Items",
                 marketInflation: "Inflation",
+                marketPriceIndex: "Price Index",
                 marketInsights: "Insights",
                 marketConverter: "Converter",
                 marketOrders: "Orders",
