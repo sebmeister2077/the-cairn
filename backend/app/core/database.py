@@ -4990,6 +4990,93 @@ def list_map_features_traders_audit_paginated(
     return {"items": items, "total": total}
 
 
+def insert_auction_audit(
+    *,
+    action: str,
+    actor_api_key_id: Optional[str] = None,
+    actor_display_name: Optional[str] = None,
+    source_id: Optional[str] = None,
+    upstream_host: Optional[str] = None,
+    received: Optional[int] = None,
+    accepted: Optional[int] = None,
+    auctions: Optional[int] = None,
+    listings: Optional[int] = None,
+    items: Optional[int] = None,
+    note: Optional[str] = None,
+) -> int:
+    """Append-only audit record for the merged Auction House data.
+
+    ``action`` is ``contribute`` (an accepted upload from a source),
+    ``rebuild_publish`` (a rebuild re-merged every source and published new
+    public artifacts), ``admin_rebuild`` (an admin forced a rebuild) or
+    ``admin_revoke`` (an admin revoked a contributor source). ``received`` /
+    ``accepted`` describe a contribution; ``auctions`` / ``listings`` / ``items``
+    are the merged counts after a publish. Returns the new row id."""
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO auction_audit
+                       (action, actor_api_key_id, actor_display_name, source_id,
+                        upstream_host, received, accepted, auctions, listings,
+                        items, note)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                   RETURNING id""",
+                (
+                    action,
+                    actor_api_key_id,
+                    actor_display_name,
+                    source_id,
+                    upstream_host,
+                    int(received) if received is not None else None,
+                    int(accepted) if accepted is not None else None,
+                    int(auctions) if auctions is not None else None,
+                    int(listings) if listings is not None else None,
+                    int(items) if items is not None else None,
+                    note,
+                ),
+            )
+            return int(cur.fetchone()[0])
+
+
+def list_auction_audit_paginated(
+    *,
+    action: Optional[str] = None,
+    actor_api_key_id: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+) -> dict:
+    where = []
+    params: list = []
+    if action:
+        where.append("a.action = %s")
+        params.append(action)
+    if actor_api_key_id:
+        where.append("a.actor_api_key_id = %s")
+        params.append(actor_api_key_id)
+    where_sql = (" WHERE " + " AND ".join(where)) if where else ""
+    limit = max(1, min(int(limit), 500))
+    offset = max(0, int(offset))
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"SELECT COUNT(*) AS c FROM auction_audit a {where_sql}",
+                params,
+            )
+            total = int(cur.fetchone()["c"])
+            cur.execute(
+                f"""SELECT a.id, a.action, a.actor_api_key_id, a.actor_display_name,
+                           a.source_id, a.upstream_host, a.received, a.accepted,
+                           a.auctions, a.listings, a.items, a.note, a.created_at
+                       FROM auction_audit a
+                       {where_sql}
+                       ORDER BY a.created_at DESC, a.id DESC
+                       LIMIT %s OFFSET %s""",
+                params + [limit, offset],
+            )
+            items = [dict(r) for r in cur.fetchall()]
+    return {"items": items, "total": total}
+
+
 def insert_landmark_edit_request(
     *,
     request_id: str,

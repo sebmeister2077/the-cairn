@@ -171,6 +171,18 @@ async def receive_auction_events(
         logger.warning("[auction-ingest] stat update failed (non-fatal): %s", exc)
 
     auction_rebuild.request_rebuild()
+    try:
+        database.insert_auction_audit(
+            action="contribute",
+            actor_api_key_id=key_id,
+            actor_display_name=row.get("auction_label") or row.get("name") or None,
+            source_id=key_id,
+            upstream_host=x_upstream_host,
+            received=received,
+            accepted=len(accepted),
+        )
+    except Exception as exc:  # noqa: BLE001 — audit must not fail ingest
+        logger.warning("[auction-ingest] audit write failed (non-fatal): %s", exc)
     logger.info(
         "[auction-ingest] key=%s label=%s received=%d accepted=%d rejected=%d bytes=%d",
         key_id,

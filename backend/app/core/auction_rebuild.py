@@ -176,7 +176,18 @@ def _build_and_publish() -> Dict[str, int]:
             bucket=settings.AUCTION_PUBLIC_BUCKET,
             log=lambda m: logger.info("%s", m),
         )
-    return {"auctions": len(merged), "listings": len(records), "items": len(items)}
+    result = {"auctions": len(merged), "listings": len(records), "items": len(items)}
+    try:
+        database.insert_auction_audit(
+            action="rebuild_publish",
+            actor_display_name="rebuild",
+            auctions=result["auctions"],
+            listings=result["listings"],
+            items=result["items"],
+        )
+    except Exception:  # noqa: BLE001 — audit must never fail a publish
+        logger.exception("[auction-rebuild] failed to write publish audit row")
+    return result
 
 
 def source_impact(key_id: str) -> Dict[str, int]:

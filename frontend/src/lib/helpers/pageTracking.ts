@@ -45,6 +45,8 @@ const KNOWN_ROUTES: string[] = [
     "/audit/tl-screenshots",
     "/audit/elk-walkable",
     "/audit/map-features-traders",
+    "/audit/map-features-translocators",
+    "/audit/auction-house",
     "/audit/backups",
     "/public/road-workers",
     "/tools",

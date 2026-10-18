@@ -36,6 +36,8 @@ import { AdminLandmarksPage } from "@/pages/audit/AdminLandmarksPage";
 import { AdminTranslocatorsPage } from "@/pages/audit/AdminTranslocatorsPage";
 import { AdminElkWalkablePage } from "@/pages/audit/AdminElkWalkablePage";
 import { AdminMapFeaturesTradersPage } from "@/pages/audit/AdminMapFeaturesTradersPage";
+import { AdminMapFeaturesTranslocatorsPage } from "@/pages/audit/AdminMapFeaturesTranslocatorsPage";
+import { AdminAuctionPage } from "@/pages/audit/AdminAuctionPage";
 import { AdminLicensesPage } from "@/pages/admin/AdminLicensesPage";
 import { AdminProgramDownloadsPage } from "@/pages/admin/AdminProgramDownloadsPage";
 import { AdminBackupsOverviewPage } from "@/pages/audit/AdminBackupsOverviewPage";
@@ -166,6 +168,8 @@ const NavigationRoutes = {
     Translocators: "/audit/translocators",
     Traders: "/audit/traders",
     MapFeaturesTraders: "/audit/map-features-traders",
+    MapFeaturesTranslocators: "/audit/map-features-translocators",
+    AuctionHouse: "/audit/auction-house",
     TLScreenshots: "/audit/tl-screenshots",
     ElkWalkable: "/audit/elk-walkable",
     RoutePlanner: "/audit/route-planner",
@@ -308,6 +312,11 @@ const subTabs: Subtabs = {
     { value: "/audit/translocators", labelKey: "app.nav.subtabs.translocators" },
     { value: "/audit/traders", labelKey: "app.nav.subtabs.traders" },
     { value: "/audit/map-features-traders", labelKey: "app.nav.subtabs.mapFeaturesTraders" },
+    {
+      value: "/audit/map-features-translocators",
+      labelKey: "app.nav.subtabs.mapFeaturesTranslocators",
+    },
+    { value: "/audit/auction-house", labelKey: "app.nav.subtabs.auctionHouse" },
     { value: "/audit/tl-screenshots", labelKey: "app.nav.subtabs.tlScreenshots" },
     { value: "/audit/elk-walkable", labelKey: "app.nav.subtabs.elkWalkable" },
     { value: "/audit/waypoints", labelKey: "app.nav.subtabs.waypointsBackup" },
@@ -1111,6 +1120,25 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Map-features traders failed" resetKeys={[location.pathname]}>
                 <AdminMapFeaturesTradersPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/map-features-translocators"
+            element={
+              <ErrorBoundary
+                title="Map-features Translocators failed"
+                resetKeys={[location.pathname]}
+              >
+                <AdminMapFeaturesTranslocatorsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/audit/auction-house"
+            element={
+              <ErrorBoundary title="Auction house failed" resetKeys={[location.pathname]}>
+                <AdminAuctionPage />
               </ErrorBoundary>
             }
           />

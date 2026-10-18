@@ -92,6 +92,8 @@ export const en = {
                 elkWalkable: "Elk-walkable",
                 routePlanner: "Route Planner",
                 mapFeaturesTraders: "Map-features traders",
+                mapFeaturesTranslocators: "Map-features Translocators",
+                auctionHouse: "Auction house",
                 licenses: "Licenses",
                 programDownloads: "Program Downloads",
                 tunnelPreviewer: "Tunnel Previewer",

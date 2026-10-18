@@ -9,6 +9,7 @@ its data is re-derived out of the public artifacts without touching anyone else.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import secrets
 from typing import Any, Dict, Optional
@@ -126,10 +127,77 @@ async def revoke_source(
             logger.warning("[auction] purge of %s failed: %s", key_id, exc)
 
     result = await auction_rebuild.rebuild_now()
+    try:
+        await asyncio.to_thread(
+            db.insert_auction_audit,
+            action="admin_revoke",
+            actor_display_name="admin",
+            source_id=key_id,
+            auctions=result.get("auctions"),
+            listings=result.get("listings"),
+            items=result.get("items"),
+            note=(
+                f"revoked {row.get('auction_label') or row.get('name') or key_id}"
+                f"{' + purged raw object' if purged else ''}"
+            ),
+        )
+    except Exception:  # noqa: BLE001 — audit must not fail the revoke
+        logger.warning("[auction] failed to write revoke audit row", exc_info=True)
     return {"id": key_id, "revoked": True, "purged": purged, "rebuild": result}
 
 
 @router.post("/admin/auction-rebuild")
 async def force_rebuild(_: str = Depends(require_admin)) -> Dict[str, Any]:
     result = await auction_rebuild.rebuild_now()
+    try:
+        await asyncio.to_thread(
+            db.insert_auction_audit,
+            action="admin_rebuild",
+            actor_display_name="admin",
+            auctions=result.get("auctions"),
+            listings=result.get("listings"),
+            items=result.get("items"),
+        )
+    except Exception:  # noqa: BLE001 — audit must not fail the rebuild
+        logger.warning("[auction] failed to write rebuild audit row", exc_info=True)
     return {"status": "ok", "rebuild": result}
+
+
+def _serialise_audit(row: Dict[str, Any]) -> Dict[str, Any]:
+    created = row.get("created_at")
+    return {
+        "id": row.get("id"),
+        "action": row.get("action"),
+        "actor_api_key_id": row.get("actor_api_key_id"),
+        "actor_display_name": row.get("actor_display_name"),
+        "source_id": row.get("source_id"),
+        "upstream_host": row.get("upstream_host"),
+        "received": row.get("received"),
+        "accepted": row.get("accepted"),
+        "auctions": row.get("auctions"),
+        "listings": row.get("listings"),
+        "items": row.get("items"),
+        "note": row.get("note"),
+        "created_at": (created.isoformat() if hasattr(created, "isoformat") else created),
+    }
+
+
+@router.get("/admin/auction-audit")
+async def list_auction_audit(
+    _: str = Depends(require_admin),
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    action: Optional[str] = Query(None),
+) -> Dict[str, Any]:
+    page = await asyncio.to_thread(
+        db.list_auction_audit_paginated,
+        action=action,
+        limit=limit,
+        offset=offset,
+    )
+    return {
+        "audit": [_serialise_audit(r) for r in page["items"]],
+        "total": int(page["total"]),
+        "limit": limit,
+        "offset": offset,
+    }

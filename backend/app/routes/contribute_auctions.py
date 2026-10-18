@@ -43,6 +43,7 @@ from pydantic import BaseModel, Field
 
 from ..config import settings
 from ..core import auction_raw_store, auction_rebuild
+from ..core import database as db
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -244,6 +245,16 @@ def _persist_snapshot(envelope: SnapshotEnvelope, snapshot_id_header: Optional[s
     source_id = _source_id_for(envelope.serverId)
     auction_raw_store.put_raw(source_id, buf.getvalue())
     auction_rebuild.request_rebuild()
+    try:
+        db.insert_auction_audit(
+            action="contribute",
+            actor_display_name=envelope.serverId or None,
+            source_id=source_id,
+            received=len(envelope.auctions),
+            accepted=len(accepted),
+        )
+    except Exception:  # noqa: BLE001 — audit must never fail ingest
+        logger.warning("[auctions] failed to write contribute audit row", exc_info=True)
     logger.info("[auctions] stored %d record(s) as %s; rebuild requested", len(accepted), source_id)
     return {"received": len(envelope.auctions), "accepted": len(accepted), "source": source_id}
 

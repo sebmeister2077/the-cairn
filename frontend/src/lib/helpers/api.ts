@@ -1282,6 +1282,45 @@ export async function adminRestoreMapFeaturesTradersBackup(
 }
 
 // ---------------------------------------------------------------------------
+// Auction house audit: read-only feed over the merged auction data lifecycle.
+// ---------------------------------------------------------------------------
+
+export interface AdminAuctionAuditEntry {
+    id: number;
+    action: string;
+    actor_api_key_id: string | null;
+    actor_display_name: string | null;
+    source_id: string | null;
+    upstream_host: string | null;
+    received: number | null;
+    accepted: number | null;
+    auctions: number | null;
+    listings: number | null;
+    items: number | null;
+    note: string | null;
+    created_at: string;
+}
+
+export async function adminListAuctionAudit(
+    opts: { action?: string; limit?: number; offset?: number } = {},
+): Promise<{
+    audit: AdminAuctionAuditEntry[];
+    total: number;
+    limit: number;
+    offset: number;
+}> {
+    const params = new URLSearchParams();
+    if (opts.action) params.set("action", opts.action);
+    if (opts.limit != null) params.set("limit", String(opts.limit));
+    if (opts.offset != null) params.set("offset", String(opts.offset));
+    const qs = params.toString();
+    const res = await fetch(`${API_BASE}/admin/auction-audit${qs ? `?${qs}` : ""}`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+// ---------------------------------------------------------------------------
 // Map-features rapids: list + snapshot + restore (mirrors traders).
 // ---------------------------------------------------------------------------
 
