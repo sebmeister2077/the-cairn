@@ -6,9 +6,9 @@ import { Combobox } from "@/components/ui/combobox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useLandmarksOverlay, useTranslocatorsOverlay } from "@/hooks/useOverlayData";
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
-import { computeRoutesAsync, isRouteWorkerAvailable } from "@/lib/tl-routing-client";
+import { computeRoutesAsync, isRouteWorkerAvailable } from "@/lib/routing/tl-routing-client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setRouteFrom,

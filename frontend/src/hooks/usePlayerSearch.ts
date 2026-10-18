@@ -4,7 +4,7 @@
 // back (and, via localStorage, a page reload).
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 
 export type PlayerSort = "revenue" | "spent" | "listed" | "sold" | "bought" | "activity" | "name";
 /** Which side of the market to keep. `all` keeps everyone. */

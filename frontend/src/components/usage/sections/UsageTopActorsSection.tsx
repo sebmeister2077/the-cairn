@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { adminUsage } from "@/lib/api";
+import { adminUsage } from "@/lib/helpers/api";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Loading } from "@/components/usage/Loading";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";

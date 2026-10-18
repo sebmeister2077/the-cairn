@@ -10,7 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { groupingLibrary, type LibraryHistoryEntry, type LibraryVersionSnapshot } from "@/lib/api";
+import {
+  groupingLibrary,
+  type LibraryHistoryEntry,
+  type LibraryVersionSnapshot,
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 interface GroupingHistoryDialogProps {

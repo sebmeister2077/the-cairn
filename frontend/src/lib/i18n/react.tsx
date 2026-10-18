@@ -10,7 +10,7 @@ import {
 } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setLocale } from "@/store/slices/i18n";
-import { formatWithOptions } from "@/lib/dateFormat";
+import { formatWithOptions } from "@/lib/formatting/dateFormat";
 import { translate } from "./core";
 import { DEFAULT_LOCALE, fallbackDictionary, LOCALE_LOADERS, LOCALE_META } from "./registry";
 import type {

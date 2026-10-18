@@ -5,7 +5,7 @@
 // remembers its filters.
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 
 export type ItemSort = "gears" | "sold" | "listings" | "name" | "rarity";
 

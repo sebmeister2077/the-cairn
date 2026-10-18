@@ -2,7 +2,7 @@
 // waypoints. Extracted from `RoutePlannerPanel` so the component keeps
 // only view logic. No React imports — safe to unit-test in isolation.
 
-import type { RouteResult } from "@/lib/tl-routing";
+import type { RouteResult } from "@/lib/routing/tl-routing";
 
 // Y coordinate used as a fallback when a TL endpoint has no recorded Y
 // (user-contributed TLs only carry 2D coordinates). Seeded TLs ship

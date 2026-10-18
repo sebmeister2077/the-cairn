@@ -4,7 +4,7 @@
 
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { formatRealTimeToSell, listingHasText } from "@/lib/auction";
+import { formatRealTimeToSell, listingHasText } from "@/lib/market/auction";
 import type { AuctionListing } from "@/models/auction";
 import {
   VirtualTable,
@@ -13,7 +13,7 @@ import {
   ListingNotesCell,
   type ListingColumn,
 } from "./VirtualTable";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 /**
  * The purchases this player made (they are the buyer). Surfaces who they bought

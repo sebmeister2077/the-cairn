@@ -8,9 +8,13 @@ import { DateRangeBar } from "@/components/usage/DateRangeBar";
 import { GranularityToggle } from "@/components/usage/GranularityToggle";
 import { StatCard } from "@/components/usage/StatCard";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
-import { adminRoutePlanner, type RoutePlannerEdgeRow, type UsageGranularity } from "@/lib/api";
+import {
+  adminRoutePlanner,
+  type RoutePlannerEdgeRow,
+  type UsageGranularity,
+} from "@/lib/helpers/api";
 import { MONTH_MS } from "@/lib/constants/time";
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 const SETTING_LABELS: Record<string, string> = {

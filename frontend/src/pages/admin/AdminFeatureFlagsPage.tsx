@@ -36,7 +36,7 @@ import {
   adminSetFeatureFlag,
   type FeatureFlag,
   type HeavyComputeStatus,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { CompressionSettingsPanel } from "@/components/admin/CompressionSettingsPanel";
 import { RegionOverwriteSettingsPanel } from "@/components/admin/RegionOverwriteSettingsPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

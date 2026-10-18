@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { dismissPromo, markPromoDetailsOpened } from "@/store/slices/promo";
-import { recordPromoEvent } from "@/lib/promo-analytics";
+import { recordPromoEvent } from "@/lib/helpers/promo-analytics";
 import chiselCompetitionImg from "@/assets/Promotions/halloween_chisel_competition.webp";
 
 // --- Time-limited event promo ------------------------------------------------

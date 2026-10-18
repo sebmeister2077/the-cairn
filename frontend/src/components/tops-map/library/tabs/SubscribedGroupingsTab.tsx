@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 import { Spinner } from "@/components/ui/spinner";
-import { type LibrarySubscription, type LibraryVersionSnapshot } from "@/lib/api";
+import { type LibrarySubscription, type LibraryVersionSnapshot } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
-import type { UseTLGroupingsResult } from "@/lib/tl-groupings";
+import type { UseTLGroupingsResult } from "@/lib/routing/tl-groupings";
 import { useGroupingLibraryActions, useGroupingSubscriptions } from "@/hooks/useGroupingLibrary";
 
 import { GroupingHistoryDialog } from "../GroupingHistoryDialog";

@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Copy, Loader2, Trash2 } from "lucide-react";
-import { listMyTLScreenshotRequests, withdrawTLScreenshotRequest } from "@/lib/api";
+import { listMyTLScreenshotRequests, withdrawTLScreenshotRequest } from "@/lib/helpers/api";
 import type { TLScreenshotCoords, TLScreenshotRequest } from "@/models/tlScreenshots";
 import { useCopy } from "@/hooks/useCopy";
 import { useTranslation } from "@/lib/i18n";

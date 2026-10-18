@@ -29,7 +29,7 @@ import y110WorldJson from "@/assets/Stability/tempstab_20260827_140807/tempstab_
 import y120WorldJson from "@/assets/Stability/tempstab_20260827_140807/tempstab_20260827_140807_y120.world.json";
 import y130WorldJson from "@/assets/Stability/tempstab_20260827_140807/tempstab_20260827_140807_y130.world.json";
 
-import { decodePng } from "../png";
+import { decodePng } from "../tops-map-view/png";
 import {
     decodeStability,
     type LoadedStabilityColor,

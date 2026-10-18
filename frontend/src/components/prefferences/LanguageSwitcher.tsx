@@ -1,5 +1,5 @@
 import { LOCALE_META, useTranslation, type Locale } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 const OPTIONS = [
   LOCALE_META.en,

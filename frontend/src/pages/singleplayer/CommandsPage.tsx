@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { generateCommands } from "@/lib/api";
+import { generateCommands } from "@/lib/helpers/api";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SaveFileHelp } from "@/components/other/SaveFileHelp";
 import { SafetyNotice } from "@/components/singleplayer/SafetyNotice";
 import { useTranslation } from "@/lib/i18n";
-import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
+import { VS_WAYPOINT_ICONS } from "@/lib/waypoints/vs-icons";
 
 export function CommandsPage() {
   const { t } = useTranslation();

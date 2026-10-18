@@ -7,7 +7,7 @@
 // disappears in dark mode.
 
 import { formatListingDate } from "./VirtualTable";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 export interface AxisTickProps {
   x?: number | string;

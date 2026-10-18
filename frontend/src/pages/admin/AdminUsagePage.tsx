@@ -16,7 +16,7 @@ import { PagesSection } from "@/components/usage/sections/UsagePagesSection";
 import { QueueVelocitySection } from "@/components/usage/sections/UsageQueueVelocitySection";
 import { UsageRoutePlannerSection } from "@/components/usage/sections/UsageRoutePlannerSection";
 import { TopActorsSection } from "@/components/usage/sections/UsageTopActorsSection";
-import { type UsageGranularity } from "@/lib/api";
+import { type UsageGranularity } from "@/lib/helpers/api";
 import { MONTH_MS } from "@/lib/constants/time";
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";

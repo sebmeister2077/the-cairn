@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { adminUsage, type UsageGranularity } from "@/lib/api";
+import { adminUsage, type UsageGranularity } from "@/lib/helpers/api";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Loading } from "@/components/usage/Loading";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";

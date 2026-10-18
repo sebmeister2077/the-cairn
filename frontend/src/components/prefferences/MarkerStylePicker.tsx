@@ -4,7 +4,7 @@
 // persisted via the root envelope and shared across tabs.
 
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
@@ -27,7 +27,7 @@ import {
   TERMINUS_STYLE_OPTIONS,
   TL_STYLE_OPTIONS,
   TRADER_STYLE_OPTIONS,
-} from "@/lib/markerStyles";
+} from "@/lib/tops-map-view/markerStyles";
 
 // Swatch size in device-independent pixels. The canvas is rendered at
 // devicePixelRatio for sharpness on hi-DPI displays.

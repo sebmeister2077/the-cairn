@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import type { UseTLGroupingsResult } from "@/lib/tl-groupings";
+import type { UseTLGroupingsResult } from "@/lib/routing/tl-groupings";
 
 import { BrowseLibraryTab } from "./tabs/BrowseLibraryTab";
 import { GroupingReportsAdminTab } from "./tabs/GroupingReportsAdminTab";

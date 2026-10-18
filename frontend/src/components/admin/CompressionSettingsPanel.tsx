@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { formatBytes } from "@/lib/formatting/format-bytes";
 import {
   adminEstimateCompression,
   adminGetCompressionMigrationStatus,
@@ -30,10 +31,11 @@ import {
   adminSetCompressionSettings,
   type CompressionEstimate,
   type CompressionThreadsPreset,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider, type SliderSnapMarker } from "@/components/ui/slider";
+import { formatSeconds } from "@/lib/formatting/format-duration";
 
 const SNAP_MARKERS: Required<SliderSnapMarker>[] = [
   { value: 3, label: "Fast" },
@@ -41,22 +43,6 @@ const SNAP_MARKERS: Required<SliderSnapMarker>[] = [
   { value: 15, label: "High" },
   { value: 22, label: "Max" },
 ];
-
-function formatBytes(n: number | null | undefined): string {
-  if (!n) return "—";
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KiB`;
-  if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MiB`;
-  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GiB`;
-}
-
-function formatSeconds(s: number | null | undefined): string {
-  if (s === null || s === undefined) return "—";
-  if (s < 60) return `${s.toFixed(1)} s`;
-  const m = Math.floor(s / 60);
-  const r = s - m * 60;
-  return `${m}m ${r.toFixed(0)}s`;
-}
 
 export function CompressionSettingsPanel() {
   const queryClient = useQueryClient();

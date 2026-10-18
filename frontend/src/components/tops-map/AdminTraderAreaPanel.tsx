@@ -5,8 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Crosshair, Loader2, Trash2, X } from "lucide-react";
-import { TRADER_TYPE_COLORS, TRADER_TYPE_LABELS, isTraderType } from "@/lib/trader-types";
-import type { AdminTraderInArea } from "@/lib/api";
+import {
+  TRADER_TYPE_COLORS,
+  TRADER_TYPE_LABELS,
+  isTraderType,
+} from "@/lib/tops-map-view/trader-types";
+import type { AdminTraderInArea } from "@/lib/helpers/api";
 import type { AdminTraderAreaTool } from "@/hooks/useAdminTraderAreaTool";
 
 function formatWhen(iso: string | null): string {

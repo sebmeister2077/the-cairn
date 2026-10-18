@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { adminAuctionRebuild } from "@/lib/api";
+import { adminAuctionRebuild } from "@/lib/helpers/api";
 import { useMutation } from "@tanstack/react-query";
 import { Gavel, Loader2 } from "lucide-react";
 

@@ -2,7 +2,7 @@ import { Check, History, RefreshCw, TriangleAlert } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { type LibrarySubscription } from "@/lib/api";
+import { type LibrarySubscription } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 interface SubscribedGroupingItemProps {

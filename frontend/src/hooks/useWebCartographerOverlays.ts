@@ -25,7 +25,7 @@
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
 import type { WorldLineSegment, WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
-import { API_BASE } from "@/lib/api";
+import { API_BASE } from "@/lib/helpers/api";
 import { normaliseBaseUrl } from "@/lib/tops-map-view/wc-tiles";
 import { parseLandmarks, parseTranslocators } from "./useOverlayData";
 

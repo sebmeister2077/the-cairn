@@ -35,8 +35,9 @@ import {
   adminRestoreMapFeaturesTradersBackup,
   type BackupInterval,
   type BackupSchedule,
-} from "@/lib/api";
-import { formatTimestamp } from "@/lib/utils";
+} from "@/lib/helpers/api";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const SCHEDULE_KEY = ["admin-backup-schedule"] as const;

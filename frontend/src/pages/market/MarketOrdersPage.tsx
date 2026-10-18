@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { getMyAccountSafe } from "@/lib/api";
-import { formatGears } from "@/lib/auction";
+import { getMyAccountSafe } from "@/lib/helpers/api";
+import { formatGears } from "@/lib/market/auction";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { useOrdersList, useOrdersUnreadIds } from "@/lib/orders";
 import type { Order, OrderFilters, OrderSide, OrderSort, TraderMobility } from "@/models/orders";

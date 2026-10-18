@@ -22,7 +22,7 @@ import {
     type RouteResult,
     type TLGraph,
     type WorldPoint,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 
 export interface RouteWorkerRouteRequest {

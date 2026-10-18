@@ -6,12 +6,12 @@ import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNod
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Wrench } from "lucide-react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus, listingText, listingToolAttributes } from "@/lib/auction";
-import { sanitizeHtml, looksLikeHtml } from "@/lib/sanitize-html";
+import { deriveListingStatus, listingText, listingToolAttributes } from "@/lib/market/auction";
+import { sanitizeHtml, looksLikeHtml } from "@/lib/helpers/sanitize-html";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAppSelector } from "@/store/hooks";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 /**
  * Status badge for an auction listing, shared across the market pages.

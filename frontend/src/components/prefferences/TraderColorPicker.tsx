@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { resetTraderColors, setTraderColor } from "@/store/slices/mapView";
 import { useTraderColors } from "@/hooks/useTraderColors";
-import { TRADER_TYPES, TRADER_TYPE_LABELS } from "@/lib/trader-types";
+import { TRADER_TYPES, TRADER_TYPE_LABELS } from "@/lib/tops-map-view/trader-types";
 
 export function TraderColorPicker() {
   const { t } = useTranslation();

@@ -11,8 +11,8 @@ import {
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatGears } from "@/lib/auction";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGears } from "@/lib/market/auction";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
 import { formatListingDate } from "./VirtualTable";

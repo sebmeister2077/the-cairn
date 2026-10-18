@@ -13,7 +13,7 @@ import {
     type UseQueryResult,
 } from "@tanstack/react-query";
 
-import { API_BASE, ApiError, authHeaders, handleResponse } from "@/lib/api";
+import { API_BASE, ApiError, authHeaders, handleResponse } from "@/lib/helpers/api";
 import type {
     CreateOrderPayload,
     MessageKind,

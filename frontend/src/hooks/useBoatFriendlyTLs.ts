@@ -7,7 +7,7 @@
 
 import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getBoatFriendlyTLs, toggleBoatFriendlyTL, type BoatFriendlyTLsResponse } from "@/lib/api";
+import { getBoatFriendlyTLs, toggleBoatFriendlyTL, type BoatFriendlyTLsResponse } from "@/lib/helpers/api";
 
 export const BOAT_FRIENDLY_TLS_QUERY_KEY = ["boat-friendly-tls"] as const;
 

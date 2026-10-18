@@ -10,7 +10,7 @@ import {
   Legend,
   CartesianGrid,
 } from "recharts";
-import type { UsageGranularity } from "@/lib/api";
+import type { UsageGranularity } from "@/lib/helpers/api";
 
 /**
  * Generic bucketed bar chart for usage data.

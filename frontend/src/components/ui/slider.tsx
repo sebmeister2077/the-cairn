@@ -12,7 +12,7 @@
 
 import * as React from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 export interface SliderSnapMarker {
   /** Value at which to render the tick. Must lie within [min, max]. */

@@ -5,7 +5,7 @@
 
 import { useMemo } from "react";
 import { useReduxState } from "@/store/hooks";
-import { resolveTraderColors, type TraderType } from "@/lib/trader-types";
+import { resolveTraderColors, type TraderType } from "@/lib/tops-map-view/trader-types";
 
 export function useTraderColors(): Record<TraderType, string> {
     const overrides = useReduxState("mapView.traderColors");

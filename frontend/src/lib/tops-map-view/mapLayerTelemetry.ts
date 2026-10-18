@@ -16,8 +16,8 @@
  * send nothing.
  */
 
-import { API_BASE, getStoredApiKey } from "@/lib/api";
-import { hasAcceptedStorage } from "@/lib/consent";
+import { API_BASE, getStoredApiKey } from "@/lib/helpers/api";
+import { hasAcceptedStorage } from "@/lib/helpers/consent";
 
 export type LayerId =
     | "oceans"

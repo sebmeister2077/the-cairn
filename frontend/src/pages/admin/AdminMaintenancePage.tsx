@@ -10,7 +10,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
-import { adminListMaintenanceNotices } from "@/lib/api";
+import { adminListMaintenanceNotices } from "@/lib/helpers/api";
 import { MaintenanceNoticeCard } from "@/components/admin/maintenance/MaintenanceNoticeCard";
 
 export function AdminMaintenancePage() {

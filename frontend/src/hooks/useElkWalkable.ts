@@ -16,9 +16,9 @@ import {
     getElkWalkableUrl,
     submitElkWalkable,
     type ElkWalkableSubmitPayload,
-} from "@/lib/api";
-import type { ElkWalkableEdge, ElkWalkableFile } from "@/lib/elk-walkable";
-import { canonicalEdgeKey } from "@/lib/elk-walkable";
+} from "@/lib/helpers/api";
+import type { ElkWalkableEdge, ElkWalkableFile } from "@/lib/tops-map-view/elk-walkable";
+import { canonicalEdgeKey } from "@/lib/tops-map-view/elk-walkable";
 import {
     setElkSubmitStatus,
     setElkWalkableEdges,

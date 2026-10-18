@@ -1,4 +1,4 @@
-import type { UserFlag } from "@/lib/api";
+import type { UserFlag } from "@/lib/helpers/api";
 import { useDateFormat } from "@/hooks/useDateFormat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

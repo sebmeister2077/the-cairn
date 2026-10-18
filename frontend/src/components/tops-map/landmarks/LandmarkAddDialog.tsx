@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { addLandmark } from "@/lib/api";
+import { addLandmark } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
 import { useMutation } from "@tanstack/react-query";

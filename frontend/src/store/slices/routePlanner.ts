@@ -9,7 +9,7 @@
 // ephemeral; on reload From/To are re-hydrated only from URL params.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { RendezvousObjective, RendezvousResult, RouteResult, WorldPoint } from "@/lib/tl-routing";
+import type { RendezvousObjective, RendezvousResult, RouteResult, WorldPoint } from "@/lib/routing/tl-routing";
 import {
     DEFAULT_K_NEIGHBORS,
     DEFAULT_NUMBER_OF_ROUTES,
@@ -17,7 +17,7 @@ import {
     DEFAULT_WALK_SPEED,
     MAX_NUMBER_OF_ROUTES,
     MIN_NUMBER_OF_ROUTES,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 
 /** A picked endpoint, plus a human-readable label (e.g. landmark name). */
 export interface EndpointPick {

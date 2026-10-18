@@ -1,7 +1,7 @@
 import type { RouteOverlay, WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
-import { walkLegEdgeRef, classifyWalkLeg } from "@/lib/elk-walkable";
-import type { ElkWalkableEdge } from "@/lib/elk-walkable";
-import type { RendezvousResult, RouteResult } from "@/lib/tl-routing";
+import { walkLegEdgeRef, classifyWalkLeg } from "@/lib/tops-map-view/elk-walkable";
+import type { ElkWalkableEdge } from "@/lib/tops-map-view/elk-walkable";
+import type { RendezvousResult, RouteResult } from "@/lib/routing/tl-routing";
 
 interface EndpointLike {
     point: { x: number; z: number };

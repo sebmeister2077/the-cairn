@@ -1,4 +1,4 @@
-import type { ServerMapResult } from "@/lib/identify-maps";
+import type { ServerMapResult } from "@/lib/tops-map-view/identify-maps";
 import {
   Table,
   TableBody,

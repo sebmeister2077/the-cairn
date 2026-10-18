@@ -38,7 +38,7 @@ import {
   adminWebauthnAuthBegin,
   adminWebauthnAuthComplete,
   setAdminSession,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 export type PasskeyDialogMode = "register" | "assert";

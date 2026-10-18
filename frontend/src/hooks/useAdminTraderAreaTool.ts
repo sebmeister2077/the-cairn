@@ -4,7 +4,7 @@ import {
     adminBulkDeleteTraders,
     adminListTradersInArea,
     type AdminTraderInArea,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 
 export interface AreaBox {
     min_x: number;

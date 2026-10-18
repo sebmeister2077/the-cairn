@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { Label } from "../ui/label";
 import { Switch } from "../ui/switch";
 import { Slider } from "../ui/slider";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 export type AuctionLayer = "off" | "sell" | "buy" | "both";
 

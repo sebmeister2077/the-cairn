@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
-import { useAuctionSummary, formatGears } from "@/lib/auction";
+import { useAuctionSummary, formatGears } from "@/lib/market/auction";
 import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
 import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
 import { MarketWealthChart } from "@/components/market/MarketWealthChart";

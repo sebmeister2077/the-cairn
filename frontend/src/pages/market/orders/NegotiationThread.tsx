@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { ApiError } from "@/lib/api";
-import { formatGears } from "@/lib/auction";
+import { ApiError } from "@/lib/helpers/api";
+import { formatGears } from "@/lib/market/auction";
 import { ordersApi, useInvalidateOrders } from "@/lib/orders";
 import type { MessageKind, NegotiationMessage, Order, OrderRequest } from "@/models/orders";
 

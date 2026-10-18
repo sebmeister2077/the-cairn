@@ -1,6 +1,6 @@
 import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
 import { useTranslation } from "@/lib/i18n";
-import { formatTimestamp } from "@/lib/utils";
 
 export function MapStatsHeader({
   stats,

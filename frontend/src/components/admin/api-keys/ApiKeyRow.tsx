@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Check, Copy, Trash2, ShieldCheck, Crown } from "lucide-react";
-import { type ApiKeyRecord } from "@/lib/api";
+import { type ApiKeyRecord } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { fmt } from "@/lib/dateFormat";
+import { fmt } from "@/lib/formatting/dateFormat";
 import { useCopy } from "@/hooks/useCopy";
 import {
   Dialog,
@@ -230,11 +230,7 @@ export function KeyRow({
               }}
             >
               <Crown className="size-4" />
-              {adminPending
-                ? "Working…"
-                : record.is_admin
-                  ? "Remove admin"
-                  : "Make admin"}
+              {adminPending ? "Working…" : record.is_admin ? "Remove admin" : "Make admin"}
             </Button>
           </DialogFooter>
         </DialogContent>

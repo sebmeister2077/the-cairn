@@ -47,7 +47,7 @@ import { PEN_PALETTE, TEXT_FONTS, drawingActions } from "@/store/slices/drawing"
 import type { DrawTool, ShapeKind } from "@/lib/drawing/types";
 import { STAMP_ICONS, type IconPrim } from "@/lib/drawing/stampIcons";
 import { useDrawingBoards } from "@/hooks/useDrawingBoards";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 const TOOLS: {
   tool: DrawTool;

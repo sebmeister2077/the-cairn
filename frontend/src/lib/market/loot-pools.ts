@@ -3,7 +3,7 @@
 // counterpart to `item-sources.ts`; reuses its rarity colours/labels.
 
 import raw from "@/assets/GameData/loot-pools.json";
-import { RARITY_COLORS, RARITY_LABELS, RARITY_RANK } from "@/lib/item-sources";
+import { RARITY_COLORS, RARITY_LABELS, RARITY_RANK } from "@/lib/market/item-sources";
 import type { LootPool, LootPoolCategory, LootPoolsData } from "@/models/loot-pools";
 
 const DATA = raw as unknown as LootPoolsData;

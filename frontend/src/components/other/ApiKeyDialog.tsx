@@ -18,7 +18,7 @@ import {
   setStoredCanContribute,
   adminWebauthnStatus,
   clearAdminSession,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 
 export function ApiKeyDialog({
   open,

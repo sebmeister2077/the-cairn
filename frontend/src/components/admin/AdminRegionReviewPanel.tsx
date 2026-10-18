@@ -29,7 +29,7 @@ import {
   adminEditContributionRegion,
   normalizeContributionRegion,
   type ContributionRegion,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { contributeQueries } from "@/lib/constants/react-query";
 import { ContributionBeforeAfter } from "../contributions/ContributionBeforeAfter";
 import type { ContributeInfo, PendingContribution } from "@/models/contributions";

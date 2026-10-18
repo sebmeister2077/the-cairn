@@ -29,19 +29,19 @@ import {
   ApiError,
   type TraderContributionItem,
   type MyTraderContribution,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import {
   extractTradersFromChatLog,
   blankTraderCandidate,
   averageInferredConfidence,
-} from "@/lib/trader-parser";
+} from "@/lib/tops-map-view/trader-parser";
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
   isTraderType,
   type TraderCandidate,
   type TraderType,
-} from "@/lib/trader-types";
+} from "@/lib/tops-map-view/trader-types";
 import { TRADERS_QUERY_KEY, useTradersOverlay, type TraderMarker } from "@/hooks/useOverlayData";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";

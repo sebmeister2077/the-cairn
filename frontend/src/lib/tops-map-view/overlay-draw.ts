@@ -3,7 +3,7 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
-} from "@/lib/markerStyles";
+} from "@/lib/tops-map-view/markerStyles";
 import { rgbaFromHex } from "@/lib/color";
 import type { RouteOverlay } from "@/components/tops-map-viewer/MapViewer";
 

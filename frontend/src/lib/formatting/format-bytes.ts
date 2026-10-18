@@ -1,4 +1,4 @@
-export function fmtBytes(n: number | null | undefined): string {
+export function formatBytes(n: number | null | undefined): string {
     if (!n || n <= 0) return "";
     const units = ["B", "KB", "MB", "GB"];
     let v = n;

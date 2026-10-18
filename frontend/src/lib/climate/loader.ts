@@ -21,7 +21,7 @@ import geoactivityRawPngUrl from "@/assets/Climate/climate_20260807_151525/clima
 import geoactivityWorldJson from "@/assets/Climate/climate_20260807_151525/climate_20260807_151525.geoactivity.world.json";
 
 import { decodeKindFor, decoderFor } from "./decode";
-import { decodePng } from "../png";
+import { decodePng } from "../tops-map-view/png";
 import type {
     ClimateLayerKind,
     ClimateLayerMeta,

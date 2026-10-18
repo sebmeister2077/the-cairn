@@ -21,7 +21,7 @@ import {
   adminSoftDeleteUser,
   type AdminUserListItem,
   type AdminUserStats,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search } from "lucide-react";
 import { useCallback, useState } from "react";

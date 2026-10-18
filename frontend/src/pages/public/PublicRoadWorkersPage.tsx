@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
-import { publicRoadWorkers } from "@/lib/api";
-import { formatDuration } from "@/lib/format-duration";
+import { publicRoadWorkers } from "@/lib/helpers/api";
+import { formatDuration } from "@/lib/formatting/format-duration";
 
 /**
  * Always-public, unlisted page that surfaces the road-worker analytics

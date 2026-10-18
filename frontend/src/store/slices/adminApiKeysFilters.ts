@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { hydrateRoot } from "../rootActions";
-import type { ApiKeySort } from "@/lib/api";
+import type { ApiKeySort } from "@/lib/helpers/api";
 
 
 

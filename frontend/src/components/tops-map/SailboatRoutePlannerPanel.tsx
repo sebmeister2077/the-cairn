@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { parseCoordsInput } from "./EndpointPicker";
 import type { EndpointPick } from "@/store/slices/routePlanner";
@@ -460,9 +460,7 @@ export function SailboatRoutePlannerPanel({
                   snapMarkers={[1.5, 2, 5].map((v) => ({
                     value: nearestLandPenaltyIndex(v),
                   }))}
-                  onValueChange={(i) =>
-                    dispatch(setSailboatLandPenalty(LAND_PENALTY_STEPS[i]))
-                  }
+                  onValueChange={(i) => dispatch(setSailboatLandPenalty(LAND_PENALTY_STEPS[i]))}
                 />
                 <p className="text-[10px] text-muted-foreground">
                   {t("sailboatPlanner.landPenaltyHelp")}

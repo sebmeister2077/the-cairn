@@ -4,7 +4,7 @@ import {
   type HeavyComputeStatus,
   adminGetHeavyComputeStatus,
   adminRunHeavyComputeNow,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";

@@ -1,7 +1,7 @@
 import { Coins } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { lookupTraderInfo } from "@/lib/trader-wares";
-import { TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import { lookupTraderInfo } from "@/lib/tops-map-view/trader-wares";
+import { TRADER_TYPE_LABELS, type TraderType } from "@/lib/tops-map-view/trader-types";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import type { TraderWarePrice } from "@/models/trader-wares";
 

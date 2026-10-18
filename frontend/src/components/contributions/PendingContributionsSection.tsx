@@ -7,7 +7,7 @@ import { ContributionBeforeAfter } from "./ContributionBeforeAfter";
 import { AdminRegionReviewPanel } from "../admin/AdminRegionReviewPanel";
 import { MatchScoreBadge } from "./MatchScoreBadge";
 import { useTranslation } from "@/lib/i18n";
-import { normalizeContributionRegion } from "@/lib/api";
+import { normalizeContributionRegion } from "@/lib/helpers/api";
 
 export function PendingContributionsSection({
   contribution,

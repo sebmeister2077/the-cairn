@@ -8,8 +8,8 @@ import { MarketInsightsTrendCell } from "@/components/market/insights/MarketInsi
 import { MarketInsightsRecencyCell } from "@/components/market/insights/RecencyCell";
 import { MarketInsightsVolatilityBadge } from "@/components/market/insights/VolatilityBadge";
 import type { ScreenerColumn } from "@/components/market/InsightsScreenerTable";
-import { formatGears, formatRealTimeToSell } from "@/lib/auction";
-import { RARITY_COLORS, RARITY_LABELS, RARITY_RANK } from "@/lib/item-sources";
+import { formatGears, formatRealTimeToSell } from "@/lib/market/auction";
+import { RARITY_COLORS, RARITY_LABELS, RARITY_RANK } from "@/lib/market/item-sources";
 import type { InsightsRow } from "@/models/auction";
 import { useMemo } from "react";
 import { rowPrice, volumeDisplay, volumeValue } from "../useFilteredInsights";

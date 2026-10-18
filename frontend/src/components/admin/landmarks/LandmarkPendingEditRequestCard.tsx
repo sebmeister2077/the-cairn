@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { adminListLandmarkEditRequests } from "@/lib/api";
+import { adminListLandmarkEditRequests } from "@/lib/helpers/api";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { LandmarkPendingEditRequestRow } from "./LandmarkPendingEditRequestRow";

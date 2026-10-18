@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface IntegerFieldProps {
   id: string;

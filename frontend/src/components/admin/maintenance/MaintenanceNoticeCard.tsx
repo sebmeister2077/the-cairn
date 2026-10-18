@@ -13,8 +13,8 @@ import {
   adminUpsertMaintenanceNotice,
   type KnownMaintenanceComponent,
   type MaintenanceNotice,
-} from "@/lib/api";
-import { formatDurationMs, toDatetimeLocal } from "@/lib/format-duration";
+} from "@/lib/helpers/api";
+import { formatDurationMs, toDatetimeLocal } from "@/lib/formatting/format-duration";
 
 const QUICK_DURATIONS_HOURS: { label: string; hours: number }[] = [
   { label: "30 min", hours: 0.5 },

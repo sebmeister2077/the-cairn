@@ -10,9 +10,9 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatGears } from "@/lib/auction";
+import { formatGears } from "@/lib/market/auction";
 import type { PriceIndexCategory, PriceIndexCategoryPoint } from "@/models/auction";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 export function MarketPriceIndexCategoryBreakdown({
   categories,

@@ -37,9 +37,9 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/api";
-import { buildRouteShareUrl } from "@/lib/route-share";
-import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
+import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/helpers/api";
+import { buildRouteShareUrl } from "@/lib/routing/route-share";
+import { tlIdFor, useTLGroupings } from "@/lib/routing/tl-groupings";
 
 import { useTLRendezvous } from "@/hooks/useTLRendezvous";
 import { useElkWalkable, useElkWalkableSubmit } from "@/hooks/useElkWalkable";
@@ -48,7 +48,7 @@ import {
   walkLegEdgeRef,
   type EdgeEndpointRef,
   type WalkLegElkState,
-} from "@/lib/elk-walkable";
+} from "@/lib/tops-map-view/elk-walkable";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
   addRoutePlayer,
@@ -72,9 +72,9 @@ import {
   toggleElkPendingUnattest,
 } from "@/store/slices/elkWalkable";
 
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 import { EndpointPicker } from "./EndpointPicker";
 import { PlayerPicker } from "./PlayerPicker";
@@ -91,14 +91,14 @@ import {
   RoutePlannerCommandBuilder,
 } from "./routeplanner/RoutePlannerCommandBuilder";
 import { SaveRouteForRoadWorkersSection } from "./routeplanner/SaveRouteForRoadWorkersSection";
-import { renderTemplate, routeWaypointChain } from "@/lib/route-waypoints";
-import type { RouteLeg, RouteResult } from "@/lib/tl-routing";
+import { renderTemplate, routeWaypointChain } from "@/lib/routing/route-waypoints";
+import type { RouteLeg, RouteResult } from "@/lib/routing/tl-routing";
 import {
   DEFAULT_WALK_SPEED,
   DEFAULT_TL_PENALTY_S,
   DEFAULT_K_NEIGHBORS,
   DEFAULT_NUMBER_OF_ROUTES,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 
 const LS_TEMPLATE_KEY = "routePlanner.waypointLabelTemplate";
 

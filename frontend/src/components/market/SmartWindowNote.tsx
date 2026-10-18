@@ -1,5 +1,5 @@
 import { Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { SMART_WINDOW_HINT } from "@/hooks/useMarketInsights";
 
 /**

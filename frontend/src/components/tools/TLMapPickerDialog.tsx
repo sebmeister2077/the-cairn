@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { useLandmarksOverlay } from "@/hooks/useOverlayData";
 import { useTranslation } from "@/lib/i18n";
-import type { Block3 } from "@/lib/tunnel-share";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { IntegerField } from "./IntegerField";
 

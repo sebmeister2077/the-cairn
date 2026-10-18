@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { adminUsage } from "@/lib/api";
+import { adminUsage } from "@/lib/helpers/api";
 import { Loading } from "@/components/usage/Loading";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
-import type { UsageGranularity } from "@/lib/api";
+import type { UsageGranularity } from "@/lib/helpers/api";
 import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------

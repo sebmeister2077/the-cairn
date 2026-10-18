@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { KOFI_URL } from "@/lib/support-links";
+import { KOFI_URL } from "@/lib/helpers/support-links";
 import { useTranslation } from "@/lib/i18n";
 
 interface SupportDialogProps {

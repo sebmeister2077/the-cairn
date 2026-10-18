@@ -5,7 +5,7 @@ import {
   saveThemePreference,
   type ResolvedTheme,
   type ThemePreference,
-} from "@/lib/theme";
+} from "@/lib/helpers/theme";
 import { useAppSelector } from "@/store/hooks";
 
 interface ThemeContextValue {

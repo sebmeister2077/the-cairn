@@ -5,7 +5,7 @@
 // persisted to localStorage. The "Item" column is never hideable.
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 
 // v2 bumped when `rarity` was added as a default-hidden column; the migration in
 // `load()` folds any legacy (v1) hidden set in and forces rarity off by default.

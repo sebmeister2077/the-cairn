@@ -9,7 +9,7 @@
 // absolute world height and is not used for positioning.
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { loadMapFeatures } from "@/lib/mapFeatures";
+import { loadMapFeatures } from "@/lib/tops-map-view/mapFeatures";
 
 interface RawVec3 {
     x: number;

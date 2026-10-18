@@ -2,7 +2,7 @@
 // price movement in the Insights screener. No axes or labels; the accompanying
 // trend percentage carries the exact figure and screen-reader text.
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface SparklineProps {
   data: number[];

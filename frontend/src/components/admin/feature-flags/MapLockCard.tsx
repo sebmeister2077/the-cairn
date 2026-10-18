@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { HelpTip } from "@/components/ui/help-tip";
-import { adminGetMapLock, adminForceReleaseMapLock } from "@/lib/api";
+import { adminGetMapLock, adminForceReleaseMapLock } from "@/lib/helpers/api";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Unlock, RefreshCw, Lock } from "lucide-react";
 import { useState } from "react";

@@ -39,16 +39,16 @@ import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/api";
-import { buildRouteShareUrl } from "@/lib/route-share";
-import { buildTunnelToolPath, type Block3 } from "@/lib/tunnel-share";
-import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
+import { getMyAccountSafe, routeAnalytics, type SavedRouteLeg } from "@/lib/helpers/api";
+import { buildRouteShareUrl } from "@/lib/routing/route-share";
+import { buildTunnelToolPath, type Block3 } from "@/lib/tops-map-view/tunnel-share";
+import { tlIdFor, useTLGroupings } from "@/lib/routing/tl-groupings";
 import type {
   RendezvousObjective,
   RendezvousResult,
   RouteLeg,
   RouteResult,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 import { useTLRendezvous } from "@/hooks/useTLRendezvous";
 import { useElkWalkable, useElkWalkableSubmit } from "@/hooks/useElkWalkable";
 import {
@@ -56,7 +56,7 @@ import {
   walkLegEdgeRef,
   type EdgeEndpointRef,
   type WalkLegElkState,
-} from "@/lib/elk-walkable";
+} from "@/lib/tops-map-view/elk-walkable";
 import { ReportElkEdgeDialog } from "./ReportElkEdgeDialog";
 import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import {
@@ -80,14 +80,14 @@ import {
   toggleElkPendingUnattest,
 } from "@/store/slices/elkWalkable";
 
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
-import { FALLBACK_WAYPOINT_Y } from "@/lib/route-waypoints";
+import { cn } from "@/lib/helpers/utils";
+import { FALLBACK_WAYPOINT_Y } from "@/lib/routing/route-waypoints";
 
 /** Per-walk-leg attestation controls accepted by {@link RouteSummary}. */
 interface ElkRouteSummaryProps {
-  edges: Record<string, import("@/lib/elk-walkable").ElkWalkableEdge>;
+  edges: Record<string, import("@/lib/tops-map-view/elk-walkable").ElkWalkableEdge>;
   pendingAttestKeys: ReadonlySet<string>;
   pendingUnattestKeys: ReadonlySet<string>;
   selfUserId: string | null;

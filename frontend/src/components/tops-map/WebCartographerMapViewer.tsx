@@ -12,10 +12,7 @@ import { ZoomIn, ZoomOut, RotateCcw, Crosshair, Maximize2 } from "lucide-react";
 import { TLLegendButton } from "@/components/tops-map-viewer/TLLegendButton";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { setShowFullscreen as setShowFullscreenAction } from "@/store/slices/mapView";
-import {
-  drawClaimDot,
-  drawEmptyClaimMarker,
-} from "@/lib/markerStyles";
+import { drawClaimDot, drawEmptyClaimMarker } from "@/lib/tops-map-view/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -23,7 +20,7 @@ import {
   TRADER_TYPE_LABELS,
   CLAIM_UNCLASSIFIED_COLOR,
   type TraderType,
-} from "@/lib/trader-types";
+} from "@/lib/tops-map-view/trader-types";
 import type { TraderClaimMarker } from "@/hooks/useTraderClaims";
 import type { PlayerClaim, PlayerClaimDensity } from "@/hooks/usePlayerClaims";
 import type { MovementOverlayData } from "@/lib/tops-map-view/movement-overlay";
@@ -40,8 +37,8 @@ import {
   submitTraderClaimEmpty,
   type ClaimTypeSubmitItem,
   type EmptyClaimSubmitItem,
-} from "@/lib/api";
-import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/wcTileCache";
+} from "@/lib/helpers/api";
+import { registerWCTileServiceWorker, disableWCTileCache } from "@/lib/tops-map-view/wcTileCache";
 import type {
   MapStats,
   RouteOverlay,
@@ -1650,7 +1647,12 @@ export function WebCartographerMapViewer({
         octx.fillText(label, cx, cy - pinRadius);
       };
       if (projectedWaterPins.from)
-        drawPin(projectedWaterPins.from.x, projectedWaterPins.from.y, "rgba(34, 197, 94, 0.98)", "A");
+        drawPin(
+          projectedWaterPins.from.x,
+          projectedWaterPins.from.y,
+          "rgba(34, 197, 94, 0.98)",
+          "A",
+        );
       if (projectedWaterPins.to)
         drawPin(projectedWaterPins.to.x, projectedWaterPins.to.y, "rgba(239, 68, 68, 0.98)", "B");
     }

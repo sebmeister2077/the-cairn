@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
-import { API_BASE, getStoredApiKey } from "@/lib/api";
-import { hasAcceptedStorage } from "@/lib/consent";
-import { describePath, type PathDescriptor } from "@/lib/pageTracking";
+import { API_BASE, getStoredApiKey } from "@/lib/helpers/api";
+import { hasAcceptedStorage } from "@/lib/helpers/consent";
+import { describePath, type PathDescriptor } from "@/lib/helpers/pageTracking";
 
 /**
  * Best-effort page-view recorder for the admin Usage "Pages" dashboard.

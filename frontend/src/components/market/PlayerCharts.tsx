@@ -22,8 +22,8 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from "recharts";
-import { formatGameDate } from "@/lib/format-duration";
-import { percentileSorted } from "@/lib/auction";
+import { formatGameDate } from "@/lib/formatting/format-duration";
+import { percentileSorted } from "@/lib/market/auction";
 import type { PlayerActivityPoint, PlayerPricingHistoryPoint } from "@/models/auction";
 
 /** Track the app's dark/light theme (a `dark` class on `<html>`). */

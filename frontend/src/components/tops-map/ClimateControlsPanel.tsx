@@ -27,7 +27,7 @@ import {
 } from "@/lib/climate/types";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { CLIMATE_SEA_LEVEL } from "@/lib/climate/altitude";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface ClimateControlsPanelProps {
   /** Per-layer metadata (anchors + stats) for the active layer.

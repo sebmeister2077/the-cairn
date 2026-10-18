@@ -14,7 +14,7 @@ import { ThemeSwitcher } from "@/components/prefferences/ThemeSwitcher";
 import { AdminPasskeyDialog, type PasskeyDialogMode } from "@/components/admin/AdminPasskeyDialog";
 import { ContactDialog, useContactDialog } from "@/components/other/ContactDialog";
 import { SupportDialog, useSupportDialog } from "@/components/other/SupportDialog";
-import { hasSupport } from "@/lib/support-links";
+import { hasSupport } from "@/lib/helpers/support-links";
 import { ExtractPage } from "@/pages/singleplayer/ExtractPage";
 import { ImportPage } from "@/pages/singleplayer/ImportPage";
 import { CommandsPage } from "@/pages/singleplayer/CommandsPage";
@@ -65,7 +65,7 @@ import { PrivacyPage } from "@/pages/other/PrivacyPage";
 import { TermsPage } from "@/pages/other/TermsPage";
 import { NotFoundPage } from "@/pages/other/NotFoundPage";
 import { CookieConsent } from "@/components/other/CookieConsent";
-import { openCookieSettings } from "@/lib/consent";
+import { openCookieSettings } from "@/lib/helpers/consent";
 import { EventPromoBanner } from "@/components/other/EventPromoBanner";
 import { GeneralPage } from "@/pages/other/GeneralPage";
 import { RockRarityPage } from "@/pages/rarity/RockRarityPage";
@@ -89,13 +89,13 @@ import {
   type AccountMeResponse,
   type AdminPendingCounts,
   type DefaultInviteRecord,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { AuthRejectedBanner } from "./other/AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useOrdersUnread } from "@/lib/orders";
 import { useReduxState } from "@/store/hooks";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { ErrorBoundary } from "./other/ErrorBoundary";
 import { ToolsAlloyCalculatorPage } from "@/pages/tools/ToolsAlloyCalculatorPage";
 import { ToolsCharcoalCalculatorPage } from "@/pages/tools/ToolsCharcoalCalculatorPage";

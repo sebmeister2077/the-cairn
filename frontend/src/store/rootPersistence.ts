@@ -38,8 +38,8 @@ import {
     isTerminusStyle,
     isTLStyle,
     isTraderStyle,
-} from "@/lib/markerStyles";
-import { sanitizeTraderColors } from "@/lib/trader-types";
+} from "@/lib/tops-map-view/markerStyles";
+import { sanitizeTraderColors } from "@/lib/tops-map-view/trader-types";
 
 export const PERSIST_KEY = "vsw:state:v1";
 const ENVELOPE_VERSION = 1;

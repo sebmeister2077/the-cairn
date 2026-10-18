@@ -5,7 +5,7 @@ import { MarketPriceIndexHeadline } from "@/components/market/price-index/Headli
 import { MarketInflationChart } from "@/components/market/MarketInflationChart";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { useAuctionSummary } from "@/lib/auction";
+import { useAuctionSummary } from "@/lib/market/auction";
 
 export function MarketPriceIndexPage() {
   const { data, isPending, isError } = useAuctionSummary();

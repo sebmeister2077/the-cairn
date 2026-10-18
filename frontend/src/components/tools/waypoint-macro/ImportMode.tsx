@@ -15,15 +15,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import {
   useLandmarksOverlay,
   useTradersOverlay,
   useTranslocatorsOverlay,
 } from "@/hooks/useOverlayData";
-import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  type TraderType,
+} from "@/lib/tops-map-view/trader-types";
 import { useTraderColors } from "@/hooks/useTraderColors";
-import { buildAddCommands, DEFAULT_WAYPOINT_Y, type WaypointRecord } from "@/lib/waypoint-macro";
+import {
+  buildAddCommands,
+  DEFAULT_WAYPOINT_Y,
+  type WaypointRecord,
+} from "@/lib/waypoints/waypoint-macro";
 import { WaypointRecordTable } from "./WaypointRecordTable";
 
 type ImportSource = "landmarks" | "traders" | "translocators";

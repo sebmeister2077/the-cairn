@@ -11,7 +11,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PromptDialog } from "./PromptDialog";
 import { Plus, Pencil, Trash2, Check, X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 type PromptState = { kind: "create" } | { kind: "rename"; id: string; current: string } | null;
 

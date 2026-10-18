@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { adminUsage, type UsageGranularity } from "@/lib/api";
+import { adminUsage, type UsageGranularity } from "@/lib/helpers/api";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/usage/Loading";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";

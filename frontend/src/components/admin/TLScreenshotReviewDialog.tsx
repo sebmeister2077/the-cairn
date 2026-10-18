@@ -20,7 +20,7 @@ import {
   patchAdminTLScreenshotRequest,
   rejectAdminTLScreenshotRequest,
   retryAdminTLScreenshotAnalysis,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import type { TLScreenshotRequest } from "@/models/tlScreenshots";
 
 interface Props {

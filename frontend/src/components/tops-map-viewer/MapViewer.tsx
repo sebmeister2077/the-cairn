@@ -9,7 +9,7 @@ import {
   drawTLEndpoint,
   drawTerminusMarker,
   drawRapidsMarker,
-} from "@/lib/markerStyles";
+} from "@/lib/tops-map-view/markerStyles";
 import { useTranslation } from "@/lib/i18n";
 import { rgbaFromHex } from "@/lib/color";
 

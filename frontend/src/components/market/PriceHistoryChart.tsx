@@ -15,10 +15,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { formatGears, percentileSorted } from "@/lib/auction";
+import { formatGears, percentileSorted } from "@/lib/market/auction";
 import { formatListingDate } from "../../components/market/VirtualTable";
 import { createGameDateTick, makeRealDateLookup } from "./DualDateAxisTick";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 /** One sold sale: its in-game conclusion time, per-unit price, quantity, total
  * gears, and the real-world timestamp it was observed at (for the tooltip). */

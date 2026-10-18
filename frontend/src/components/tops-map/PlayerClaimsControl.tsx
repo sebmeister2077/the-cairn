@@ -13,7 +13,7 @@ import {
 } from "@/store/slices/mapView";
 import { usePlayerClaims } from "@/hooks/usePlayerClaims";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface PlayerClaimsControlProps {
   /**
@@ -112,7 +112,10 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
         }}
       >
         <div
-          className={cn("min-h-0", playerClaimsPanelExpanded ? "overflow-visible" : "overflow-hidden")}
+          className={cn(
+            "min-h-0",
+            playerClaimsPanelExpanded ? "overflow-visible" : "overflow-hidden",
+          )}
         >
           <div className="flex flex-col gap-2 pt-1">
             <div className="flex rounded-md border p-0.5">
@@ -145,9 +148,7 @@ export function PlayerClaimsControl({ variant = "card" }: PlayerClaimsControlPro
                 onClick={() => setPlayerClaimsMode("all")}
                 className={cn(
                   "flex-1 rounded px-2 py-1 text-xs transition-colors",
-                  playerClaimsMode === "all"
-                    ? "bg-foreground text-background"
-                    : "hover:bg-muted",
+                  playerClaimsMode === "all" ? "bg-foreground text-background" : "hover:bg-muted",
                 )}
               >
                 {t("topsMap.playerClaimsAllMode")}

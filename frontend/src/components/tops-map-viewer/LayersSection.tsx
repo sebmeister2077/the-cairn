@@ -5,11 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { CollapsibleSection } from "@/components/tops-map/CollapsibleSection";
 import { GroupEditingInfo } from "@/components/tops-map-viewer/GroupEditingInfo";
-import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
-import { formatDuration } from "@/lib/format-duration";
-import type { RouteResult } from "@/lib/tl-routing";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  type TraderType,
+} from "@/lib/tops-map-view/trader-types";
+import { formatDuration } from "@/lib/formatting/format-duration";
+import type { RouteResult } from "@/lib/routing/tl-routing";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface LayersSectionProps {
   showTranslocators: boolean;

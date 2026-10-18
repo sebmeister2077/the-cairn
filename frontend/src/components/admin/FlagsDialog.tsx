@@ -1,4 +1,9 @@
-import { adminListFlags, adminResolveFlag, type AdminUserListItem, type UserFlag } from "@/lib/api";
+import {
+  adminListFlags,
+  adminResolveFlag,
+  type AdminUserListItem,
+  type UserFlag,
+} from "@/lib/helpers/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../ui/dialog";
 import { HelpTip } from "../ui/help-tip";

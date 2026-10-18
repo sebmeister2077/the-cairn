@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/helpers/api";
 import { ordersApi, useInvalidateOrders } from "@/lib/orders";
 import type { Order } from "@/models/orders";
 import { priceUnitLabel, SELL_UNIT_MANY, SELL_UNIT_ONE } from "./ordersShared";

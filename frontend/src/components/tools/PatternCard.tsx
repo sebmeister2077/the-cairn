@@ -30,10 +30,19 @@ import {
   type Axis,
   type TunnelMode,
   type TunnelPattern,
-} from "@/lib/tunnel-pattern";
-import { HUB_ID, type EdgeKey, type MultiSegment, type SegmentSpec } from "@/lib/tunnel-multi";
-import type { TLEndpoint } from "@/lib/tunnel-multi";
-import { JUNCTION_COLOR, SEGMENT_BLOCK_FALLBACK, endpointColor } from "@/lib/tunnel-colors";
+} from "@/lib/tops-map-view/tunnel-pattern";
+import {
+  HUB_ID,
+  type EdgeKey,
+  type MultiSegment,
+  type SegmentSpec,
+} from "@/lib/tops-map-view/tunnel-multi";
+import type { TLEndpoint } from "@/lib/tops-map-view/tunnel-multi";
+import {
+  JUNCTION_COLOR,
+  SEGMENT_BLOCK_FALLBACK,
+  endpointColor,
+} from "@/lib/tops-map-view/tunnel-colors";
 
 import { IntegerField } from "./IntegerField";
 

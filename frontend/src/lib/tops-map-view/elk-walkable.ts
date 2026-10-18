@@ -96,7 +96,7 @@ export function parseEdgeKey(
  * worker — it does NOT need the underlying graph, only the segment
  * geometry to figure out which endpoint of each TL the walk touches.
  */
-import type { RouteLeg } from "@/lib/tl-routing";
+import type { RouteLeg } from "@/lib/routing/tl-routing";
 
 export function walkLegEdgeRef(
     legs: ReadonlyArray<RouteLeg>,

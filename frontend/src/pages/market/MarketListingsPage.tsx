@@ -20,9 +20,9 @@ import {
   useItemImages,
   liquidContainerLabel,
   liquidContainerShort,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import { MarketFilterBar } from "../../components/market/MarketFilterBar";
-import { customCategoriesFrom } from "@/lib/item-categories";
+import { customCategoriesFrom } from "@/lib/market/item-categories";
 import { ItemThumb } from "../../components/market/ItemThumb";
 import { useFilteredListings } from "@/hooks/useFilteredListings";
 import {
@@ -31,7 +31,7 @@ import {
   ListingNotesCell,
 } from "../../components/market/VirtualTable";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 const PAGE_SIZE = 100;
 

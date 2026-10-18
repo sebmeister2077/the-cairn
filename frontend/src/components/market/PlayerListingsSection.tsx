@@ -11,13 +11,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import {
   useItemCatalog,
   useCurrentGameHours,
   formatRealTimeToSell,
   listingHasText,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import type { AuctionListing } from "@/models/auction";
 import { useDebounced } from "@/hooks/useDebounced";
 import {
@@ -29,7 +29,7 @@ import {
   ListingNotesCell,
   type ListingColumn,
 } from "../../components/market/VirtualTable";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 /** Compact checkbox-popover multi-select for filtering listings by item type. */
 function TypeMultiSelect({

@@ -4,7 +4,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { I18nProvider } from "./lib/i18n";
 import { ThemeProvider } from "./components/prefferences/ThemeProvider.tsx";
-import { setPrototypes } from "./lib/prototypes.ts";
+import { setPrototypes } from "./lib/helpers/prototypes.ts";
 import { store } from "./store";
 
 setPrototypes();

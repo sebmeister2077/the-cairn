@@ -7,9 +7,9 @@ import {
   SelectItem,
   SelectContent,
 } from "@/components/ui/select";
-import type { BackupSchedule, BackupInterval } from "@/lib/api";
+import type { BackupSchedule, BackupInterval } from "@/lib/helpers/api";
 import type { NormalizedBackup } from "@/pages/audit/AdminBackupsOverviewPage";
-import { formatBytes } from "@/lib/utils";
+import { formatBytes } from "@/lib/formatting/format-bytes";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2, Camera, HistoryIcon } from "lucide-react";
 import { useState } from "react";

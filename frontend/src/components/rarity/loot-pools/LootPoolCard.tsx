@@ -11,9 +11,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useTranslation } from "@/lib/i18n";
-import { prettifyItemCode, RARITY_COLORS, RARITY_LABELS, formatQuantity } from "@/lib/loot-pools";
+import {
+  prettifyItemCode,
+  RARITY_COLORS,
+  RARITY_LABELS,
+  formatQuantity,
+} from "@/lib/market/loot-pools";
 import { Link } from "react-router-dom";
 
 export const RARITY_LEGEND: Rarity[] = [

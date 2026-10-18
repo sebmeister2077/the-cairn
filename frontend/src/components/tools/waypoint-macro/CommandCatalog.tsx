@@ -1,7 +1,7 @@
 // Reference panel listing the available /waypoint commands.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WAYPOINT_COMMAND_CATALOG } from "@/lib/waypoint-macro";
+import { WAYPOINT_COMMAND_CATALOG } from "@/lib/waypoints/waypoint-macro";
 
 export function CommandCatalog() {
   return (

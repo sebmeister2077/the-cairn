@@ -6,7 +6,7 @@ import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
 import { StatCard } from "@/components/usage/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/auction";
+import { useAuctionListings, useAuctionSummary, formatGears } from "@/lib/market/auction";
 import {
   INSIGHTS_WINDOWS,
   filterListingsByWindow,

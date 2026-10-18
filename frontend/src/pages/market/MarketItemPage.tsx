@@ -57,7 +57,7 @@ import {
   animalListingMatches,
   titleCase,
   type AnimalSelection,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import type { PriceTrend } from "@/models/auction";
 import type { ChiselDesign } from "@/models/auction";
 import { getTapestryImage } from "@/components/market/tapestryImages";
@@ -71,7 +71,7 @@ import {
   ListingAttributesCell,
   type ListingColumn,
 } from "@/components/market/VirtualTable";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 import { RecentListingsSection } from "@/components/market/RecentListingsSection";
 import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";

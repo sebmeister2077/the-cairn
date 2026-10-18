@@ -1,5 +1,5 @@
 import { Check, MailOpen, Link } from "lucide-react";
-import { type InviteLinkRecord } from "@/lib/api";
+import { type InviteLinkRecord } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useCopy } from "@/hooks/useCopy";
-import { fmt } from "@/lib/dateFormat";
+import { fmt } from "@/lib/formatting/dateFormat";
 
 export function CreatedInviteLinkDialog({
   record,

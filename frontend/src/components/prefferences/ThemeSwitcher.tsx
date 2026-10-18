@@ -1,8 +1,8 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { useTheme } from "@/components/prefferences/ThemeProvider";
-import type { ThemePreference } from "@/lib/theme";
-import { cn } from "@/lib/utils";
+import type { ThemePreference } from "@/lib/helpers/theme";
+import { cn } from "@/lib/helpers/utils";
 
 interface ThemeSwitcherProps {
   className?: string;

@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { Info } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { listingHasText, percentileSorted, weightedMedian, type MetalForm } from "@/lib/auction";
+import {
+  listingHasText,
+  percentileSorted,
+  weightedMedian,
+  type MetalForm,
+} from "@/lib/market/auction";
 import type { AuctionListing } from "@/models/auction";
 
 /** Price-per-unit-of-metal formatter: keep two decimals for the small values

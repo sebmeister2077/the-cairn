@@ -2,7 +2,7 @@ import type { InsightsRow } from "@/models/auction";
 import { Badge } from "@/components/ui/badge";
 import { MarketInsightsHint } from "./Hint";
 import { DASH } from "./Dash";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { Flame, TriangleAlert } from "lucide-react";
 
 export function MarketInsightsDemandCell({ row }: { row: InsightsRow }) {

@@ -8,9 +8,9 @@ import { RotateCcw, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import { TUNNEL_MAX_BLOCKS } from "@/lib/tunnel-pattern";
-import type { MultiSegment, TLEndpoint, EdgeKey } from "@/lib/tunnel-multi";
-import type { Block3 } from "@/lib/tunnel-share";
+import { TUNNEL_MAX_BLOCKS } from "@/lib/tops-map-view/tunnel-pattern";
+import type { MultiSegment, TLEndpoint, EdgeKey } from "@/lib/tops-map-view/tunnel-multi";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { CompassLabels, useCompassRefs } from "./CompassOverlay";
 import { TunnelScene } from "./TunnelScene";

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Input as InputPrimitive } from "@base-ui/react/input";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 // Hide the browser's native number spinner arrows on `type="number"` inputs.
 const NO_SPINNER =

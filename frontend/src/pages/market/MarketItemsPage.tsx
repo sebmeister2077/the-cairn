@@ -25,8 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuctionSummary, useItemCatalog, useItemImages, formatGears } from "@/lib/auction";
-import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/item-sources";
+import {
+  useAuctionSummary,
+  useItemCatalog,
+  useItemImages,
+  formatGears,
+} from "@/lib/market/auction";
+import { marketRarity, RARITY_LABELS, RARITY_COLORS, RARITY_RANK } from "@/lib/market/item-sources";
 import { ItemThumb } from "@/components/market/ItemThumb";
 import type { Rarity } from "@/models/item-sources";
 import {
@@ -38,7 +43,7 @@ import {
   ALL_RARITIES,
   type ItemSort,
 } from "@/hooks/useItemSearch";
-import { customCategoryFor, customCategoriesFrom } from "@/lib/item-categories";
+import { customCategoryFor, customCategoriesFrom } from "@/lib/market/item-categories";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
@@ -148,10 +153,7 @@ export function MarketItemsPage() {
     [rows],
   );
 
-  const customCategories = useMemo(
-    () => customCategoriesFrom(rows.map((r) => r.category)),
-    [rows],
-  );
+  const customCategories = useMemo(() => customCategoriesFrom(rows.map((r) => r.category)), [rows]);
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();

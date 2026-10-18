@@ -22,7 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/helpers/api";
 import { ordersApi, useInvalidateOrders } from "@/lib/orders";
 import type { CreateOrderPayload, Order, OrderLocation, TraderMobility } from "@/models/orders";
 import { MOBILITY_LABELS, priceUnitLabel, SELL_UNIT_MANY } from "./ordersShared";

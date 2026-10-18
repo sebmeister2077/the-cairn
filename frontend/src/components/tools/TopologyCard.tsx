@@ -25,8 +25,8 @@ import {
   type EdgeKey,
   type TLEndpoint,
   type Topology,
-} from "@/lib/tunnel-multi";
-import type { Block3 } from "@/lib/tunnel-share";
+} from "@/lib/tops-map-view/tunnel-multi";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { BlockEditor } from "./BlockEditor";
 

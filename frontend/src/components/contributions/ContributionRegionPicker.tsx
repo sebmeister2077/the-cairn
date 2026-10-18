@@ -32,7 +32,7 @@ import {
   type ContributionRegion,
   type TopsMapLevelChunks,
   type TopsMapResolutionMeta,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import {
   MapViewer,
   type MapStats,

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { AuctionListing } from "@/models/auction";
-import { deriveListingStatus, getLatestSweepStartMs } from "@/lib/auction";
-import { customCategoryFor } from "@/lib/item-categories";
+import { deriveListingStatus, getLatestSweepStartMs } from "@/lib/market/auction";
+import { customCategoryFor } from "@/lib/market/item-categories";
 import type { AuctionFilters } from "@/store/slices/auctionFilters";
 
 /** Apply the current filter/sort state to the raw listings array. The

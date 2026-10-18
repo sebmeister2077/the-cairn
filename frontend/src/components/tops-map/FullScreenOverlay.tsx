@@ -44,14 +44,11 @@ import {
   setFullscreenControlsCollapsed as setFullscreenControlsCollapsedAction,
 } from "@/store/slices/mapView";
 import { setRoutePlannerOpen, setRouteShowMovementHeatmap } from "@/store/slices/routePlanner";
-import {
-  setSailboatOpen,
-  setSailboatBoatTLEditMode,
-} from "@/store/slices/sailboatRoute";
+import { setSailboatOpen, setSailboatBoatTLEditMode } from "@/store/slices/sailboatRoute";
 import { useRecordedMapFeatures } from "@/hooks/useRecordedMapFeatures";
 import { useRapidsOverlay } from "@/hooks/useRapidsOverlay";
 import { useTraderClaims } from "@/hooks/useTraderClaims";
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
 
 // Static count of ocean bodies in the canonical server snapshot
@@ -59,7 +56,11 @@ import { useTranslation } from "@/lib/i18n";
 // because server size is fixed and we don't want to ship the ~1 MB JSON
 // to clients just to read its length.
 export const OCEANS_TOTAL_COUNT = 1236;
-import { TRADER_TYPES, TRADER_TYPE_LABELS, type TraderType } from "@/lib/trader-types";
+import {
+  TRADER_TYPES,
+  TRADER_TYPE_LABELS,
+  type TraderType,
+} from "@/lib/tops-map-view/trader-types";
 import { useTraderColors } from "@/hooks/useTraderColors";
 import { HomePositionControls } from "./HomePositionControls";
 import { ClimateControlsPanel } from "./ClimateControlsPanel";
@@ -70,7 +71,7 @@ import { AuctionHeatmapControl, type AuctionLayer } from "./AuctionHeatmapContro
 import type { LegendEntry } from "@/lib/rockstrata/types";
 import type { ClimateLayerMeta } from "@/lib/climate/types";
 import type { StabilitySliceMeta } from "@/lib/stability/types";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 type FullscreenControlsOverlayProps = {
   translocatorCount: number;

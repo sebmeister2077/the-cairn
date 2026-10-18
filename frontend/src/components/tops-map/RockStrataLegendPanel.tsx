@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 import type { LegendEntry, RockStrataLayerKind } from "@/lib/rockstrata/types";
 import { isLayerAvailable } from "@/lib/rockstrata/loader";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useReduxState } from "@/store/hooks";
+import { Spinner } from "../ui/spinner";
 
 interface RockStrataLegendPanelProps {
   enabled: boolean;
@@ -83,7 +84,9 @@ export function RockStrataLegendPanel({
         />
         <Label>{t("topsMap.rockStrata")}</Label>
         {status === "loading" && enabled && (
-          <span className="text-xs text-muted-foreground ml-2">…</span>
+          <span className="text-xs text-muted-foreground ml-2">
+            <Spinner className="w-3 h-3" />
+          </span>
         )}
         {status === "error" && error && (
           <span className="text-xs text-red-500 ml-2 truncate" title={error}>
@@ -100,7 +103,7 @@ export function RockStrataLegendPanel({
         <div className="overflow-hidden min-h-0">
           <div className="flex flex-col gap-3 pt-1">
             {/* Layer kind */}
-            <div className="flex items-center gap-3 text-xs">
+            {/* <div className="flex items-center gap-3 text-xs">
               <span className="text-muted-foreground">{t("topsMap.rockStrataKind")}</span>
               <label className="flex items-center gap-1 cursor-pointer">
                 <input
@@ -127,7 +130,7 @@ export function RockStrataLegendPanel({
                 />
                 <span>{t("topsMap.rockStrataKindGeo")}</span>
               </label>
-            </div>
+            </div> */}
 
             {/* Half-size slider */}
             <div className="flex flex-col gap-1">

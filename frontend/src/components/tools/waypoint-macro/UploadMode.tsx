@@ -14,13 +14,13 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { useReduxState } from "@/store/hooks";
-import { parseChatLogWaypoints } from "@/lib/tl-parser";
-import { applyFilters, type WaypointFilter } from "@/lib/waypoint-filters";
+import { parseChatLogWaypoints } from "@/lib/routing/tl-parser";
+import { applyFilters, type WaypointFilter } from "@/lib/waypoints/waypoint-filters";
 import {
   buildAddCommands,
   buildRemoveByIdsCommands,
   type WaypointRecord,
-} from "@/lib/waypoint-macro";
+} from "@/lib/waypoints/waypoint-macro";
 import { FilterEditor } from "./FilterEditor";
 import { WaypointRecordTable } from "./WaypointRecordTable";
 

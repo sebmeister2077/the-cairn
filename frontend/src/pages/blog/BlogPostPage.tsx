@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { useFormat, useTranslation } from "@/lib/i18n";
 import { ArrowLeft } from "lucide-react";
 import { getPostBySlug } from "./posts";
+import { useDateFormat } from "@/hooks/useDateFormat";
 
 export function BlogPostPage() {
   const { locale, t } = useTranslation();
-  const { dateTime } = useFormat();
+  const { formatDate } = useDateFormat();
   const { slug } = useParams<{ slug: string }>();
   const post = slug ? getPostBySlug(locale, slug) : undefined;
 
@@ -45,7 +46,7 @@ export function BlogPostPage() {
       <header className="space-y-3">
         <h1 className="text-2xl font-semibold leading-tight">{post.title}</h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>{formatDate(post.date, dateTime)}</span>
+          <span>{formatDate(post.date)}</span>
           <span aria-hidden>·</span>
           <span>{t("blog.meta.readTime", { count: post.readingMinutes })}</span>
           {post.tags.length > 0 && (
@@ -68,17 +69,4 @@ export function BlogPostPage() {
       </div>
     </article>
   );
-}
-
-function formatDate(
-  iso: string,
-  dateTime: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) => string,
-): string {
-  const d = new Date(iso + "T00:00:00Z");
-  if (Number.isNaN(d.getTime())) return iso;
-  return dateTime(d, {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
 }

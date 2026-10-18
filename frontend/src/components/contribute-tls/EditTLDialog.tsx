@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setEditingTLId, updateUserTL, removeUserTL } from "@/store/slices/contributeTLs";
-import { reclassifyUserTL } from "@/lib/tl-matching";
+import { reclassifyUserTL } from "@/lib/routing/tl-matching";
 import type { UserTL, UserTLEndpoint } from "@/models/contributeTLs";
 import {
   Dialog,

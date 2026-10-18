@@ -27,7 +27,7 @@ import {
   type License,
   type LicenseActivation,
   type LicenseAttempt,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

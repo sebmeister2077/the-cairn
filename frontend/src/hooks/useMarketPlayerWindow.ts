@@ -8,7 +8,7 @@
 // localStorage pattern, just under its own key.
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 import { INSIGHTS_WINDOWS, type InsightsWindowKey } from "@/hooks/useMarketInsights";
 
 const STORAGE_KEY = "market.playerWindowKey";

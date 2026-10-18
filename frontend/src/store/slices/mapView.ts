@@ -12,14 +12,14 @@ import {
     type TerminusStyle,
     type TLStyle,
     type TraderStyle,
-} from "@/lib/markerStyles";
+} from "@/lib/tops-map-view/markerStyles";
 import {
     isHexColor,
     isTraderType,
     sanitizeTraderColors,
     type TraderColorOverrides,
     type TraderType,
-} from "@/lib/trader-types";
+} from "@/lib/tops-map-view/trader-types";
 import type {
     ClimateSubToggle,
     ClimateTempVariant,

@@ -22,16 +22,17 @@ import {
   adminRevertTraderAudit,
   type AdminTraderRow,
   type AdminTraderAuditRow,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { TRADERS_QUERY_KEY } from "@/hooks/useOverlayData";
-import { formatTimestamp } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
+
 import {
   TRADER_TYPES,
   TRADER_TYPE_LABELS,
   TRADER_TYPE_COLORS,
   isTraderType,
   type TraderType,
-} from "@/lib/trader-types";
+} from "@/lib/tops-map-view/trader-types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

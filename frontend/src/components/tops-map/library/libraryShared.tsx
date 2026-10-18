@@ -1,4 +1,4 @@
-import type { LibraryInstallResult } from "@/lib/api";
+import type { LibraryInstallResult } from "@/lib/helpers/api";
 
 export function Centered({ children }: { children: React.ReactNode }) {
   return <div className="flex justify-center py-10">{children}</div>;

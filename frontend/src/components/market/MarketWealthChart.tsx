@@ -48,8 +48,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { StatCard } from "@/components/usage/StatCard";
-import { formatGears } from "@/lib/auction";
-import { cn } from "@/lib/utils";
+import { formatGears } from "@/lib/market/auction";
+import { cn } from "@/lib/helpers/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setWealthMode,
@@ -58,7 +58,7 @@ import {
   type WealthEliteMode,
 } from "@/store/slices/marketWealth";
 import type { WealthConcentration, WealthPlayer } from "@/models/auction";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import { INSIGHTS_WINDOWS } from "@/hooks/useMarketInsights";
 

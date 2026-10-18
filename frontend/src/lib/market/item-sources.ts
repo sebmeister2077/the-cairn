@@ -2,7 +2,7 @@
 // (bundled JSON extracted from the game's stackrandomizer loot pools).
 
 import raw from "@/assets/GameData/item-sources.json";
-import { bareItemCode, lookupTraderInfo } from "@/lib/trader-wares";
+import { bareItemCode, lookupTraderInfo } from "@/lib/tops-map-view/trader-wares";
 import type { ItemSourceInfo, ItemSourcesData, Rarity } from "@/models/item-sources";
 
 const DATA = raw as unknown as ItemSourcesData;

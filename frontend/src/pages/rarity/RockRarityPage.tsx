@@ -25,7 +25,7 @@ import {
   setRockCurve,
   setRockPolished,
 } from "@/store/slices/rockPricing";
-import { formatGears } from "@/lib/auction";
+import { formatGears } from "@/lib/market/auction";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const CURVES: RarityCurve[] = ["linear", "sqrt", "log"];

@@ -3,7 +3,7 @@ import {
   type BanReasonCode,
   adminBanPreview,
   adminBanUser,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Separator } from "@base-ui/react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";

@@ -16,9 +16,9 @@ import {
   clearPersistedQueryCache,
   ApiError,
   type AccountMeResponse,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
-import { setStoredConsent } from "@/lib/consent";
+import { setStoredConsent } from "@/lib/helpers/consent";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";

@@ -30,9 +30,9 @@ import {
   type PreviewWalkSegment,
 } from "@/store/slices/topsMapPreview";
 import { useTranslation } from "@/lib/i18n";
-import { tlIdFor, type TLGrouping } from "@/lib/tl-groupings";
+import { tlIdFor, type TLGrouping } from "@/lib/routing/tl-groupings";
 import { ELK_WALKABLE_QUERY_KEY, useElkWalkable } from "@/hooks/useElkWalkable";
-import { getMyAccountSafe, submitElkWalkable } from "@/lib/api";
+import { getMyAccountSafe, submitElkWalkable } from "@/lib/helpers/api";
 import {
   classifyGroupingEdges,
   enumerateGroupingEdges,
@@ -44,8 +44,8 @@ import {
   MIN_EPICENTER_RADIUS,
   type ClassifiedGroupingEdge,
   type ElkGroupingMode,
-} from "@/lib/elk-grouping";
-import type { WalkLegElkState } from "@/lib/elk-walkable";
+} from "@/lib/tops-map-view/elk-grouping";
+import type { WalkLegElkState } from "@/lib/tops-map-view/elk-walkable";
 import { Slider } from "@/components/ui/slider";
 import { ReportElkEdgeDialog } from "./routeplanner/ReportElkEdgeDialog";
 

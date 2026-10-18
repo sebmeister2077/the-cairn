@@ -29,7 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { submitElkWalkableReport, type ElkWalkableReportReason } from "@/lib/api";
+import { submitElkWalkableReport, type ElkWalkableReportReason } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 interface ReportElkEdgeDialogProps {

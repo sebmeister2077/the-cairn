@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useItemCatalog } from "@/lib/auction";
+import { useItemCatalog } from "@/lib/market/auction";
 import { useTranslation } from "@/lib/i18n";
 import {
   getLootPools,
@@ -26,8 +26,8 @@ import {
   prettifyItemCode,
   RARITY_COLORS,
   RARITY_LABELS,
-} from "@/lib/loot-pools";
-import { bareItemCode } from "@/lib/trader-wares";
+} from "@/lib/market/loot-pools";
+import { bareItemCode } from "@/lib/tops-map-view/trader-wares";
 import type { LootPoolCategory, Rarity } from "@/models/loot-pools";
 
 type CategoryFilter = "all" | LootPoolCategory;

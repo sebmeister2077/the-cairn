@@ -27,11 +27,11 @@ import {
   tlIdFor,
   type TLGrouping,
   type UseTLGroupingsResult,
-} from "@/lib/tl-groupings";
+} from "@/lib/routing/tl-groupings";
 import { useGroupingSubscriptions } from "@/hooks/useGroupingLibrary";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { consumeDialogStateSnapshot } from "@/store/slices/topsMapPreview";
-import { setStoredConsent } from "@/lib/consent";
+import { setStoredConsent } from "@/lib/helpers/consent";
 import { Trans, useTranslation } from "@/lib/i18n";
 import { GroupingLibraryDialog } from "./library/GroupingLibraryDialog";
 import { PublishGroupingDialog } from "./library/PublishGroupingDialog";

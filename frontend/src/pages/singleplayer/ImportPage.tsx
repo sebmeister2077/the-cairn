@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { importWaypoints } from "@/lib/api";
+import { importWaypoints } from "@/lib/helpers/api";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

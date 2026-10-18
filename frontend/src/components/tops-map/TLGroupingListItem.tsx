@@ -5,9 +5,9 @@ import { useDebounceCallback } from "@react-hook/debounce";
 import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import type { TLGrouping } from "@/lib/tl-groupings";
+import type { TLGrouping } from "@/lib/routing/tl-groupings";
 import { useTranslation } from "@/lib/i18n";
-import { classifyGroupingEdges, enumerateGroupingEdges } from "@/lib/elk-grouping";
+import { classifyGroupingEdges, enumerateGroupingEdges } from "@/lib/tops-map-view/elk-grouping";
 import { useAppSelector } from "@/store/hooks";
 
 /** How long to wait after the last color-picker change before propagating

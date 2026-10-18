@@ -20,7 +20,7 @@ import {
   getStoredApiKey,
   getTopsMapStats,
   type ContributionRegion,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { contributeQueries } from "@/lib/constants/react-query";

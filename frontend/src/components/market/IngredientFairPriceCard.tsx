@@ -12,10 +12,10 @@ import {
   resolveItemFamily,
   metalUnitsForEntry,
   METAL_FAMILY_KEYS,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import { filterListingsByWindow, confidenceFor } from "@/hooks/useMarketInsights";
-import { lookupRecipes, type RecipeDef } from "@/lib/recipes";
-import { cn } from "@/lib/utils";
+import { lookupRecipes, type RecipeDef } from "@/lib/market/recipes";
+import { cn } from "@/lib/helpers/utils";
 import type { AuctionListing, ItemCatalog, ConfidenceTier } from "@/models/auction";
 import type { MarketPriceMode } from "@/hooks/useMarketPriceMode";
 

@@ -3,6 +3,7 @@
 // disclosure expands a per-segment table.
 
 import { useMemo, useState } from "react";
+import { formatDuration } from "@/lib/formatting/format-duration";
 
 import { useTranslation } from "@/lib/i18n";
 import {
@@ -11,21 +12,9 @@ import {
   type MultiPathStats,
   type MultiSegment,
   type TLEndpoint,
-} from "@/lib/tunnel-multi";
+} from "@/lib/tops-map-view/tunnel-multi";
 
 const SPRINT_BLOCKS_PER_SEC = 7;
-
-function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds <= 0) return "0s";
-  const total = Math.round(seconds);
-  if (total < 60) return `${total}s`;
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  if (m < 60) return s === 0 ? `${m}m` : `${m}m ${s}s`;
-  const h = Math.floor(m / 60);
-  const mm = m % 60;
-  return mm === 0 ? `${h}h` : `${h}h ${mm}m`;
-}
 
 function StatRow({
   label,

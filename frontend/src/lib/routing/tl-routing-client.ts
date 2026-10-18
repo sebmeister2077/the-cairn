@@ -20,7 +20,7 @@ import type {
     RouteOptions,
     RouteResult,
     WorldPoint,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 import type { WorldLineSegment } from "@/components/tops-map-viewer/MapViewer";
 
 // Vite's `?worker` import returns a constructor for a module worker.

@@ -8,7 +8,7 @@ import {
     computePlayerMetrics,
     evaluateAchievements,
     type AchievementProgress,
-} from "@/lib/achievements";
+} from "@/lib/market/achievements";
 import type { AuctionListing } from "@/models/auction";
 
 export function usePlayerAchievements(

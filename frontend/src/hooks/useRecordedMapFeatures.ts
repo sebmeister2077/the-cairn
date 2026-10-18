@@ -16,8 +16,8 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
-import { TRADER_TYPE_COLORS, mapExportTraderType, type TraderType } from "@/lib/trader-types";
-import { loadMapFeatures } from "@/lib/mapFeatures";
+import { TRADER_TYPE_COLORS, mapExportTraderType, type TraderType } from "@/lib/tops-map-view/trader-types";
+import { loadMapFeatures } from "@/lib/tops-map-view/mapFeatures";
 
 interface RecordedVec3 {
     x: number;

@@ -1,4 +1,4 @@
-import { GAME_HOURS_PER_DAY, GAME_DAYS_PER_YEAR, GAME_DAYS_PER_MONTH } from "./constants/game-dates";
+import { GAME_HOURS_PER_DAY, GAME_DAYS_PER_YEAR, GAME_DAYS_PER_MONTH } from "@/lib/constants/game-dates";
 
 /** Format seconds as a compact "Xm Ys" string (mins dropped when 0). */
 export function formatDuration(seconds: number): string {
@@ -51,4 +51,12 @@ export function formatGameDate(totalHours: number | null | undefined): string {
     const month = Math.floor(dayOfYear / GAME_DAYS_PER_MONTH) + 1;
     const day = (dayOfYear % GAME_DAYS_PER_MONTH) + 1;
     return `Y${year} M${month} D${day}`;
+}
+
+export function formatSeconds(s: number | null | undefined): string {
+    if (s == null) return "—";
+    if (s < 60) return `${s.toFixed(0)}s`;
+    if (s < 3600) return `${(s / 60).toFixed(1)}m`;
+    if (s < 86400) return `${(s / 3600).toFixed(1)}h`;
+    return `${(s / 86400).toFixed(1)}d`;
 }

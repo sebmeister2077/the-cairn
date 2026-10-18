@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { LandmarkEditRequest, LandmarkFeature } from "@/lib/api";
+import type { LandmarkEditRequest, LandmarkFeature } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 import { Pencil, Trash2 } from "lucide-react";
 

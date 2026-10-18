@@ -33,8 +33,8 @@ import {
   useAuctionSummary,
   formatGears,
   formatRealTimeToSell,
-} from "@/lib/auction";
-import { cn } from "@/lib/utils";
+} from "@/lib/market/auction";
+import { cn } from "@/lib/helpers/utils";
 import { useAppSelector } from "@/store/hooks";
 import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
 import { SmartWindowNote } from "@/components/market/SmartWindowNote";

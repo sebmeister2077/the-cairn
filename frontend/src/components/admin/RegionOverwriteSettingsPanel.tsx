@@ -25,7 +25,7 @@ import {
   adminGetRegionOverwriteSettings,
   adminSetRegionOverwriteSettings,
   type RegionOverwriteSettings,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 
 // VS chunk side length in blocks. Matches the backend constant

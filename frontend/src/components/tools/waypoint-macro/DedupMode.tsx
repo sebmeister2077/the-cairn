@@ -11,16 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload } from "@/components/ui/FileUpload";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useReduxState } from "@/store/hooks";
-import { parseChatLogWaypoints } from "@/lib/tl-parser";
-import { buildRemoveByIdsCommands, type WaypointRecord } from "@/lib/waypoint-macro";
+import { parseChatLogWaypoints } from "@/lib/routing/tl-parser";
+import { buildRemoveByIdsCommands, type WaypointRecord } from "@/lib/waypoints/waypoint-macro";
 import {
   DEFAULT_DEDUP_CONFIG,
   defaultDeletionIds,
   findDuplicateClusters,
   type DedupConfig,
-} from "@/lib/waypoint-dedup";
+} from "@/lib/waypoints/waypoint-dedup";
 
 interface DedupModeProps {
   onCommandsChange: (commands: string[]) => void;

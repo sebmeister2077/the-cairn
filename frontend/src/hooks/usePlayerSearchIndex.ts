@@ -10,7 +10,7 @@ import {
     getLatestObservedUtc,
     refreshMarketReferences,
     specializationGroupFor,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import type { AuctionListing } from "@/models/auction";
 
 /** Whether a player shows up mainly as a seller, a buyer, or does both. */
@@ -128,12 +128,12 @@ export function usePlayerSearchIndex(listings: AuctionListing[] | undefined): Pl
                 (l.observedUtc ? Date.parse(l.observedUtc) : 0);
             const saleMs = l.sold
                 ? realMsFromGameHours(
-                      l.postedTotalHours != null && l.timeToSellHours != null
-                          ? l.postedTotalHours + l.timeToSellHours
-                          : null,
-                  ) ||
-                  (l.lastObservedUtc ? Date.parse(l.lastObservedUtc) : 0) ||
-                  postedMs
+                    l.postedTotalHours != null && l.timeToSellHours != null
+                        ? l.postedTotalHours + l.timeToSellHours
+                        : null,
+                ) ||
+                (l.lastObservedUtc ? Date.parse(l.lastObservedUtc) : 0) ||
+                postedMs
                 : 0;
 
             if (l.sellerUid) {

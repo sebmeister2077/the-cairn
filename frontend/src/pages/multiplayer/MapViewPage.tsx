@@ -1,5 +1,5 @@
 import { useState, useCallback, type FormEvent } from "react";
-import { getMapStats, renderMap } from "@/lib/api";
+import { getMapStats, renderMap } from "@/lib/helpers/api";
 import { MapViewer, type MapStats } from "@/components/tops-map-viewer/MapViewer";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { MapDbFileHelp } from "@/components/singleplayer/MapDbFileHelp";

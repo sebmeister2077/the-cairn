@@ -26,8 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { ApiError } from "@/lib/api";
-import { setStoredConsent } from "@/lib/consent";
+import { ApiError } from "@/lib/helpers/api";
+import { setStoredConsent } from "@/lib/helpers/consent";
 import { ORDERS_KEY, ordersApi, useTraderProfile } from "@/lib/orders";
 import { useAppSelector } from "@/store/hooks";
 import type { CreateOrderPayload, OrderLocation, OrderSide, TraderMobility } from "@/models/orders";

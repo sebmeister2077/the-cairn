@@ -21,7 +21,7 @@ import {
   type ContributionRegion,
   type ContributionRegionTuple,
   normalizeContributionRegion,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 import { Loader2 } from "lucide-react";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";

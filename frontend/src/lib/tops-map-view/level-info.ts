@@ -1,5 +1,5 @@
 import type { MapStats, MapTileSet } from "@/components/tops-map-viewer/MapViewer";
-import type { TopsMapLevelChunks, TopsMapResolutionMeta } from "@/lib/api";
+import type { TopsMapLevelChunks, TopsMapResolutionMeta } from "@/lib/helpers/api";
 
 export const STALE_TIME = 12 * 60 * 60 * 1000; // 12 hours
 // "Recently added" window for the favourites+recent filter (request #6 from

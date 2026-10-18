@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { formatGears } from "@/lib/auction";
+import { formatGears } from "@/lib/market/auction";
 import { Info } from "lucide-react";
 
 export function MetalBlendedStatCard({

@@ -4,7 +4,7 @@ import { History, Trash2, TriangleAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { type LibraryGroupingCard } from "@/lib/api";
+import { type LibraryGroupingCard } from "@/lib/helpers/api";
 import { Trans, useTranslation } from "@/lib/i18n";
 
 import { GroupingCardHeader } from "./GroupingCardHeader";

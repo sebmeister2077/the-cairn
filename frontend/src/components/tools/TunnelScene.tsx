@@ -16,14 +16,19 @@ import { useThree } from "@react-three/fiber";
 import { Color, Vector3 } from "three";
 
 import { useTranslation } from "@/lib/i18n";
-import { TUNNEL_MAX_BLOCKS, type PathBlock } from "@/lib/tunnel-pattern";
-import { HUB_ID, type EdgeKey, type MultiSegment, type TLEndpoint } from "@/lib/tunnel-multi";
+import { TUNNEL_MAX_BLOCKS, type PathBlock } from "@/lib/tops-map-view/tunnel-pattern";
+import {
+  HUB_ID,
+  type EdgeKey,
+  type MultiSegment,
+  type TLEndpoint,
+} from "@/lib/tops-map-view/tunnel-multi";
 import {
   JUNCTION_COLOR,
   SEGMENT_BLOCK_FALLBACK,
   endpointColor,
-} from "@/lib/tunnel-colors";
-import type { Block3 } from "@/lib/tunnel-share";
+} from "@/lib/tops-map-view/tunnel-colors";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { CompassTracker, type CompassRefs } from "./CompassOverlay";
 

@@ -5,7 +5,7 @@ import { MapSourceSelector } from "@/components/tops-map/MapSourceSelector";
 import { useReduxState } from "@/store/hooks";
 import { CAIRN_BACKUP_MAP_URL, WEBCARTOGRAPHER_PRESETS } from "@/store/slices/mapView";
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface MapSourceStatusProps {
   className?: string;

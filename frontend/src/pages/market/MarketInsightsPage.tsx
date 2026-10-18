@@ -6,7 +6,7 @@
 // sell is shown in real-world time.
 
 import { InsightsFilterBar } from "@/components/market/InsightsFilterBar";
-import { customCategoriesFrom } from "@/lib/item-categories";
+import { customCategoriesFrom } from "@/lib/market/item-categories";
 import { MarketEconomyPieChart } from "@/components/market/MarketEconomyPieChart";
 import { ScreenerTable } from "@/components/market/InsightsScreenerTable";
 import { PriceModeInfo } from "@/components/market/PriceModeInfo";
@@ -33,8 +33,8 @@ import {
   useAuctionListings,
   useAuctionSummary,
   useItemCatalog,
-} from "@/lib/auction";
-import { marketRarity } from "@/lib/item-sources";
+} from "@/lib/market/auction";
+import { marketRarity } from "@/lib/market/item-sources";
 import type { Rarity } from "@/models/item-sources";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { patchInsightsFilters } from "@/store/slices/insightsFilters";
@@ -88,10 +88,7 @@ export function MarketInsightsPage() {
 
   // Categories present in the (window-scoped) screener rows, for the filter bar.
   const categories = useMemo(() => Array.from(new Set(rows.map((r) => r.category))).sort(), [rows]);
-  const customCategories = useMemo(
-    () => customCategoriesFrom(rows.map((r) => r.category)),
-    [rows],
-  );
+  const customCategories = useMemo(() => customCategoriesFrom(rows.map((r) => r.category)), [rows]);
 
   // Filters apply to the screener table only — highlight cards and window totals
   // below intentionally use the full `rows`/`insights` so they stay market-wide.

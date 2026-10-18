@@ -3,7 +3,7 @@
 
 import { useMemo } from "react";
 
-import { useItemCatalog } from "@/lib/auction";
+import { useItemCatalog } from "@/lib/market/auction";
 import type { OrderSide, SellUnit, TraderMobility } from "@/models/orders";
 
 export const MOBILITY_LABELS: Record<TraderMobility, string> = {

@@ -11,9 +11,13 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTranslation } from "@/lib/i18n";
-import { MULTI_TUNNEL_SOFT_CAP, endpointCentroid, type TLEndpoint } from "@/lib/tunnel-multi";
-import { endpointColor } from "@/lib/tunnel-colors";
-import type { Block3 } from "@/lib/tunnel-share";
+import {
+  MULTI_TUNNEL_SOFT_CAP,
+  endpointCentroid,
+  type TLEndpoint,
+} from "@/lib/tops-map-view/tunnel-multi";
+import { endpointColor } from "@/lib/tops-map-view/tunnel-colors";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { BlockEditor } from "./BlockEditor";
 

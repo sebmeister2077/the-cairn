@@ -4,7 +4,8 @@ import {
   adminApproveLandmarkEditRequest,
   adminRejectLandmarkEditRequest,
   type LandmarkEditRequest,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2, X, Check } from "lucide-react";
 import { useState } from "react";
@@ -83,11 +84,4 @@ export function LandmarkPendingEditRequestRow({
       </div>
     </div>
   );
-}
-
-function formatTimestamp(s: string | null | undefined): string {
-  if (!s) return "—";
-  const d = new Date(s);
-  if (Number.isNaN(d.getTime())) return s;
-  return d.toLocaleString();
 }

@@ -1,7 +1,7 @@
 import { useTranslation } from "@/lib/i18n";
 import { useDateFormat } from "@/hooks/useDateFormat";
-import type { DateFormatPref } from "@/lib/dateFormat";
-import { cn } from "@/lib/utils";
+import type { DateFormatPref } from "@/lib/formatting/dateFormat";
+import { cn } from "@/lib/helpers/utils";
 
 interface DateFormatSwitcherProps {
   className?: string;

@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
-import { listAdminTLScreenshotRequests } from "@/lib/api";
+import { listAdminTLScreenshotRequests } from "@/lib/helpers/api";
 import type { TLScreenshotRequest } from "@/models/tlScreenshots";
 import { TLScreenshotReviewDialog } from "@/components/admin/TLScreenshotReviewDialog";
 

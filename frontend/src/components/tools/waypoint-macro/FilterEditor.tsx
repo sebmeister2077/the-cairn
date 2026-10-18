@@ -11,7 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-import { makeDefaultFilter, type FilterType, type WaypointFilter } from "@/lib/waypoint-filters";
+import {
+  makeDefaultFilter,
+  type FilterType,
+  type WaypointFilter,
+} from "@/lib/waypoints/waypoint-filters";
 
 interface FilterEditorProps {
   filters: WaypointFilter[];

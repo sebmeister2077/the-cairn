@@ -1,5 +1,5 @@
 import type { InsightsRow } from "@/models/auction";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import type { ReactNode } from "react";
 import { Sparkline } from "../Sparkline";

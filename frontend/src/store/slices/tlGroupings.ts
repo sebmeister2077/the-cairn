@@ -3,7 +3,7 @@
 // byte-compatible with the legacy implementation.
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { loadGroupings, saveGroupings, type TLGrouping } from "@/lib/tl-groupings";
+import { loadGroupings, saveGroupings, type TLGrouping } from "@/lib/routing/tl-groupings";
 import { hydrateRoot } from "../rootActions";
 
 export interface TLGroupingsState {

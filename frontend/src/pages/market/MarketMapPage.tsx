@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useAuctionSummary } from "@/lib/auction";
+import { useAuctionSummary } from "@/lib/market/auction";
 
 /**
  * Trade Map launcher. The interactive heatmap now lives on the TOPS map

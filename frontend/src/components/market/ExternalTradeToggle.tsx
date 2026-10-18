@@ -1,7 +1,7 @@
 import { Info } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 

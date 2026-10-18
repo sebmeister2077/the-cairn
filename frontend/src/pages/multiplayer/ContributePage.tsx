@@ -19,7 +19,7 @@ import {
   revertContribution,
   withdrawContribution,
   type ApiErrorDetail,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { RecentContributionsGridMemo } from "@/lib/component-helpers/contribute/memoiseContributionsGrid";
 import { contributeQueries } from "@/lib/constants/react-query";
 import { useTranslation } from "@/lib/i18n";

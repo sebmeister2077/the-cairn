@@ -13,8 +13,8 @@
 // useTraderClaimTypesOverlay) and the proxy's authoritative submissions.
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { claimIdFromCenter } from "@/lib/trader-types";
-import { loadMapFeatures } from "@/lib/mapFeatures";
+import { claimIdFromCenter } from "@/lib/tops-map-view/trader-types";
+import { loadMapFeatures } from "@/lib/tops-map-view/mapFeatures";
 
 interface RecordedVec3 {
     x: number;

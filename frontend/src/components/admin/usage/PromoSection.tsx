@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { adminUsage, type PromoAction, type UsageGranularity } from "@/lib/api";
+import { adminUsage, type PromoAction, type UsageGranularity } from "@/lib/helpers/api";
 import { StatCard } from "@/components/usage/StatCard";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 

@@ -27,7 +27,7 @@ import {
   adminWebauthnLogout,
   adminWebauthnSetStrictMode,
   getAdminSession,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Switch } from "@/components/ui/switch";
 import { AdminPasskeyDialog, useAdminSessionExpiry } from "@/components/admin/AdminPasskeyDialog";
 import { Trans, useFormat, useTranslation } from "@/lib/i18n";

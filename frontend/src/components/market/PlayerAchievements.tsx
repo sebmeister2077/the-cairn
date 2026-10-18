@@ -8,9 +8,9 @@
 import { Trophy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { usePlayerAchievements } from "@/hooks/usePlayerAchievements";
-import type { AchievementProgress } from "@/lib/achievements";
+import type { AchievementProgress } from "@/lib/market/achievements";
 import type { AuctionListing } from "@/models/auction";
 
 /** Roman-ish tier marker (I / II / III …) for the reached tier. */

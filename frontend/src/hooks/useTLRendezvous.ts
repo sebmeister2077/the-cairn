@@ -14,11 +14,11 @@ import type {
     RendezvousResult,
     RouteOptions,
     WorldPoint,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 import {
     computeRendezvousAsync,
     isRouteWorkerAvailable,
-} from "@/lib/tl-routing-client";
+} from "@/lib/routing/tl-routing-client";
 import {
     setRendezvousComputing,
     setRendezvousError,

@@ -15,8 +15,8 @@ import {
   type SegmentSpec,
   type TLEndpoint,
   type Topology,
-} from "@/lib/tunnel-multi";
-import { buildMultiTunnelUrl, type Block3 } from "@/lib/tunnel-share";
+} from "@/lib/tops-map-view/tunnel-multi";
+import { buildMultiTunnelUrl, type Block3 } from "@/lib/tops-map-view/tunnel-share";
 
 import { EndpointsCard } from "./EndpointsCard";
 import { PatternCard } from "./PatternCard";

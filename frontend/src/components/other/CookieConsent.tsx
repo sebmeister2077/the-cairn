@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { clearPersistedQueryCache } from "@/lib/api";
-import { getStoredConsent, setStoredConsent, type ConsentValue } from "@/lib/consent";
+import { clearPersistedQueryCache } from "@/lib/helpers/api";
+import { getStoredConsent, setStoredConsent, type ConsentValue } from "@/lib/helpers/consent";
 
 interface CookieConsentProps {
   /**

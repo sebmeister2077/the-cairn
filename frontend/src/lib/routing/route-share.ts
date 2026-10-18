@@ -30,7 +30,7 @@ import {
     MAX_NUMBER_OF_ROUTES,
     MIN_NUMBER_OF_ROUTES,
     type RendezvousObjective,
-} from "@/lib/tl-routing";
+} from "@/lib/routing/tl-routing";
 import type { EndpointPick, RoutePlannerMode } from "@/store/slices/routePlanner";
 
 /** Keys the encoder owns. Used to strip the share params from the URL

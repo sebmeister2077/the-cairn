@@ -1,5 +1,5 @@
 import { createQueryKeys, createQueryKeyStore } from '@lukemorales/query-key-factory'
-import { API_BASE, authHeaders, getContributeInfo, getLandmarksUrl, handleResponse, listApiKeys, listMyLandmarkEditRequests, type LandmarkFeature } from '../api'
+import { API_BASE, authHeaders, getContributeInfo, getLandmarksUrl, handleResponse, listApiKeys, listMyLandmarkEditRequests, type LandmarkFeature } from '../helpers/api'
 import type { QueryFunctionContext } from '@tanstack/react-query';
 import type { AdminApiKeysFilters } from '@/store/slices/adminApiKeysFilters';
 

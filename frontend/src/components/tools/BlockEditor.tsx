@@ -1,7 +1,7 @@
 // Single (X, Y, Z) input row used by both From and To editors.
 
 import { useTranslation } from "@/lib/i18n";
-import type { Block3 } from "@/lib/tunnel-share";
+import type { Block3 } from "@/lib/tops-map-view/tunnel-share";
 import { IntegerField } from "./IntegerField";
 
 interface BlockEditorProps {

@@ -18,8 +18,8 @@
  * geojson so the on-disk file matches the landmarks/translocators convention.
  */
 
-import { parseChatLogWaypoints } from "@/lib/tl-parser";
-import { inferTraderType, type TraderCandidate, type TraderType } from "@/lib/trader-types";
+import { parseChatLogWaypoints } from "@/lib/routing/tl-parser";
+import { inferTraderType, type TraderCandidate, type TraderType } from "@/lib/tops-map-view/trader-types";
 
 let _localIdCounter = 0;
 function nextLocalId(): string {

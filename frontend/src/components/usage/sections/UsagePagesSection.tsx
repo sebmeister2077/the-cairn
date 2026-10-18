@@ -1,4 +1,4 @@
-import { adminUsage, type UsageGranularity } from "@/lib/api";
+import { adminUsage, type UsageGranularity } from "@/lib/helpers/api";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   setPagesSelectedPath,

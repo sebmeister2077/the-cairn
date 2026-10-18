@@ -30,7 +30,7 @@ import {
   listMyLandmarkEditRequests,
   type LandmarkEditRequest,
   type LandmarkFeature,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 import { useReduxState } from "@/store/hooks";
 import { LandmarkAddDialog } from "./LandmarkAddDialog";

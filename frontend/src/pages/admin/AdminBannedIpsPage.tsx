@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { adminListIpBans, adminUnbanIp, type IpBan } from "@/lib/api";
+import { adminListIpBans, adminUnbanIp, type IpBan } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -52,7 +52,9 @@ export function AdminBannedIpsPage() {
                 {b.admin_notes && (
                   <div className="text-xs text-muted-foreground italic">{b.admin_notes}</div>
                 )}
-                <div className="text-[10px] font-mono text-muted-foreground break-all">{b.ip_hash}</div>
+                <div className="text-[10px] font-mono text-muted-foreground break-all">
+                  {b.ip_hash}
+                </div>
               </div>
               <Button
                 size="sm"

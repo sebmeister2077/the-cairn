@@ -3,11 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { NavLink } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
-import { walkLegEdgeRef } from "@/lib/elk-walkable";
-import type { RouteResult } from "@/lib/tl-routing";
+import { walkLegEdgeRef } from "@/lib/tops-map-view/elk-walkable";
+import type { RouteResult } from "@/lib/routing/tl-routing";
 
 import { useTranslation } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 /**
  * Draft + submission UI for the user's pending elk-walkable contributions.
@@ -27,9 +27,9 @@ export function ElkWalkableDraftSection({
   onRemove,
 }: {
   route: RouteResult;
-  edges: Record<string, import("@/lib/elk-walkable").ElkWalkableEdge>;
-  pendingAttest: import("@/lib/elk-walkable").PendingEdgeChange[];
-  pendingUnattest: import("@/lib/elk-walkable").PendingEdgeChange[];
+  edges: Record<string, import("@/lib/tops-map-view/elk-walkable").ElkWalkableEdge>;
+  pendingAttest: import("@/lib/tops-map-view/elk-walkable").PendingEdgeChange[];
+  pendingUnattest: import("@/lib/tops-map-view/elk-walkable").PendingEdgeChange[];
   submitStatus: import("@/store/slices/elkWalkable").SubmitStatus;
   canSubmit: boolean;
   onSubmit: () => void;

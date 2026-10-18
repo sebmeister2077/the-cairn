@@ -5,7 +5,7 @@
 // localStorage so the choice survives reloads.
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 import type { InsightsVolumeMode } from "@/hooks/useFilteredInsights";
 
 const STORAGE_KEY = "market.volumeMode";

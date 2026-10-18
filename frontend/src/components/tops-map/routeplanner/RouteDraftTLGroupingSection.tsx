@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
-import type { RouteResult } from "@/lib/tl-routing";
+import type { RouteResult } from "@/lib/routing/tl-routing";
 import { BookmarkPlus, Check, Share2 } from "lucide-react";
 
 export function RouteDraftTLGroupingSection({

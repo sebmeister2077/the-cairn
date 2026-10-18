@@ -16,8 +16,9 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   adminListMapFeaturesTradersAudit,
   type AdminMapFeaturesTradersAuditEntry,
-} from "@/lib/api";
-import { formatTimestamp } from "@/lib/utils";
+} from "@/lib/helpers/api";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,9 +27,7 @@ import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 const AUDIT_KEY = ["admin-map-features-traders-audit"] as const;
 const AUDIT_PAGE_SIZE = 25;
 
-function actionBadgeVariant(
-  action: string,
-): "default" | "secondary" | "destructive" | "outline" {
+function actionBadgeVariant(action: string): "default" | "secondary" | "destructive" | "outline" {
   if (action === "contribute") return "secondary";
   if (action === "rebuild_publish") return "default";
   return "outline";
@@ -40,9 +39,9 @@ export function AdminMapFeaturesTradersPage() {
       <div>
         <h2 className="text-xl font-semibold">Map-features traders</h2>
         <p className="text-sm text-muted-foreground mt-0.5">
-          The crowd-sourced traders list (<code>map-features.traders.json</code>) merged from
-          every contributor upload. A row appears only when the published list actually
-          changed — not on every upload. Manage snapshots from the Backups tab.
+          The crowd-sourced traders list (<code>map-features.traders.json</code>) merged from every
+          contributor upload. A row appears only when the published list actually changed — not on
+          every upload. Manage snapshots from the Backups tab.
         </p>
       </div>
       <AuditCard />
@@ -72,9 +71,7 @@ function AuditCard() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="text-base">Recent audit</CardTitle>
-        {total > 0 && (
-          <span className="text-xs text-muted-foreground">{total} total</span>
-        )}
+        {total > 0 && <span className="text-xs text-muted-foreground">{total} total</span>}
       </CardHeader>
       <CardContent className="space-y-2">
         {isLoading && (
@@ -154,7 +151,10 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
                 <> · now {(row.count ?? row.traders_accepted)!.toLocaleString()} traders</>
               )}
               {row.published_version && (
-                <> · v<span className="font-mono">{row.published_version.slice(0, 12)}</span></>
+                <>
+                  {" "}
+                  · v<span className="font-mono">{row.published_version.slice(0, 12)}</span>
+                </>
               )}
             </span>
           )}

@@ -21,7 +21,7 @@ import {
     type EdgeEndpointRef,
     type ElkWalkableEdge,
     type PendingEdgeChange,
-} from "@/lib/elk-walkable";
+} from "@/lib/tops-map-view/elk-walkable";
 
 export type SubmitStatus =
     | { kind: "idle" }

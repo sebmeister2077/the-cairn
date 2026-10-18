@@ -12,7 +12,7 @@
 // "underseller"). We describe habits, we don't judge them.
 
 import { useMemo } from "react";
-import { percentileSorted, listingHasText, specializationGroupFor } from "@/lib/auction";
+import { percentileSorted, listingHasText, specializationGroupFor } from "@/lib/market/auction";
 import { filterListingsByWindow } from "./useMarketInsights";
 import type {
     AuctionListing,

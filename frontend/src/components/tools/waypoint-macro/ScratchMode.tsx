@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
-import { buildBulkRemoveCommands, removeCommand } from "@/lib/waypoint-macro";
+import { buildBulkRemoveCommands, removeCommand } from "@/lib/waypoints/waypoint-macro";
 import { CommandCatalog } from "./CommandCatalog";
 
 type StepKind = "bulkRemove" | "removeOne" | "loop";

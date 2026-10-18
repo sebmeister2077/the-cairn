@@ -2,10 +2,10 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Download, Loader2, PackageOpen, XCircle } from "lucide-react";
-import { getProgramDownloadInfo, programDownloadUrl } from "@/lib/api";
+import { getProgramDownloadInfo, programDownloadUrl } from "@/lib/helpers/api";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { fmtBytes } from "@/lib/format-bytes";
+import { formatBytes } from "@/lib/formatting/format-bytes";
 
 export function DownloadPage() {
   const { token = "" } = useParams();
@@ -63,7 +63,7 @@ export function DownloadPage() {
                     const disabled = startedPlatform !== null;
                     const meta = [
                       p.version_label ? `v${p.version_label}` : "",
-                      fmtBytes(p.size_bytes),
+                      formatBytes(p.size_bytes),
                     ]
                       .filter(Boolean)
                       .join(" · ");

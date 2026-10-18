@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { createApiKey, type ApiKeyRecord } from "@/lib/api";
+import { createApiKey, type ApiKeyRecord } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -48,7 +48,10 @@ export function GenerateKeyDialog({
   });
 
   function handleSubmit() {
-    if (!name.trim()) { setError("Name is required"); return; }
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
     setError("");
     mutation.mutate({ name: name.trim(), permissions, consume_once: consumeOnce });
   }
@@ -63,7 +66,9 @@ export function GenerateKeyDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="key-name">Name / Note <span className="text-destructive">*</span></Label>
+            <Label htmlFor="key-name">
+              Name / Note <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="key-name"
               placeholder="e.g. Server regulars, Friend Alex"
@@ -75,7 +80,10 @@ export function GenerateKeyDialog({
 
           <div className="space-y-1.5">
             <Label>Permissions</Label>
-            <Select value={permissions} onValueChange={(v) => setPermissions(v as "read" | "contribute")}>
+            <Select
+              value={permissions}
+              onValueChange={(v) => setPermissions(v as "read" | "contribute")}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -93,17 +101,16 @@ export function GenerateKeyDialog({
                 Binds to the first user's IP; rejects others.
               </p>
             </div>
-            <Switch
-              checked={consumeOnce}
-              onCheckedChange={setConsumeOnce}
-            />
+            <Switch checked={consumeOnce} onCheckedChange={setConsumeOnce} />
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
           <Button onClick={handleSubmit} disabled={mutation.isPending} className="flex-1">
             {mutation.isPending ? "Generating…" : "Generate"}
           </Button>

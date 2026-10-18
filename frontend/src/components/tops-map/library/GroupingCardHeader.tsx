@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { type LibraryGroupingCard } from "@/lib/api";
+import { type LibraryGroupingCard } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 import { ReputationBadge } from "./ReputationBadge";

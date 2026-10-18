@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useAuctionSummary, getCurrentGameHours, getLatestObservedUtc } from "@/lib/auction";
+import { useAuctionSummary, getCurrentGameHours, getLatestObservedUtc } from "@/lib/market/auction";
 import { GAME_HOURS_PER_REAL_DAY } from "@/hooks/useMarketInsights";
 import { makeGameHoursToRealIso } from "@/components/market/DualDateAxisTick";
 

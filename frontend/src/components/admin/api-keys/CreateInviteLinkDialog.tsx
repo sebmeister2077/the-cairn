@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { createInviteLink, type InviteLinkRecord } from "@/lib/api";
+import { createInviteLink, type InviteLinkRecord } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,7 +54,10 @@ export function CreateInviteLinkDialog({
   });
 
   function handleSubmit() {
-    if (!name.trim()) { setError("Name is required"); return; }
+    if (!name.trim()) {
+      setError("Name is required");
+      return;
+    }
     const maxUsesVal = maxUsesEnabled ? parseInt(maxUses, 10) : null;
     if (maxUsesEnabled && (isNaN(maxUsesVal!) || maxUsesVal! < 1)) {
       setError("Max uses must be at least 1");
@@ -86,7 +89,9 @@ export function CreateInviteLinkDialog({
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="invite-name">Label <span className="text-destructive">*</span></Label>
+            <Label htmlFor="invite-name">
+              Label <span className="text-destructive">*</span>
+            </Label>
             <Input
               id="invite-name"
               placeholder="e.g. Server regulars, Discord friends"
@@ -98,7 +103,10 @@ export function CreateInviteLinkDialog({
 
           <div className="space-y-1.5">
             <Label>Permissions for claimed keys</Label>
-            <Select value={permissions} onValueChange={(v) => setPermissions(v as "read" | "contribute")}>
+            <Select
+              value={permissions}
+              onValueChange={(v) => setPermissions(v as "read" | "contribute")}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -113,7 +121,9 @@ export function CreateInviteLinkDialog({
             <div className="flex items-center justify-between rounded-lg border px-3 py-2.5">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">Limit total claims</p>
-                <p className="text-xs text-muted-foreground">Maximum number of people who can claim a key.</p>
+                <p className="text-xs text-muted-foreground">
+                  Maximum number of people who can claim a key.
+                </p>
               </div>
               <Switch checked={maxUsesEnabled} onCheckedChange={setMaxUsesEnabled} />
             </div>
@@ -157,7 +167,9 @@ export function CreateInviteLinkDialog({
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
+          <Button variant="outline" onClick={onClose} className="flex-1">
+            Cancel
+          </Button>
           <Button onClick={handleSubmit} disabled={mutation.isPending} className="flex-1">
             {mutation.isPending ? "Creating…" : "Create Link"}
           </Button>

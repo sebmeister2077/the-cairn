@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Switch } from "@/components/ui/switch";
 import { useDateFormat } from "@/hooks/useDateFormat";
-import type { FeatureFlag } from "@/lib/api";
+import type { FeatureFlag } from "@/lib/helpers/api";
 import {
   Info,
   AlertTriangle,

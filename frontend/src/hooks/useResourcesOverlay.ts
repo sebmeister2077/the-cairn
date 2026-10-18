@@ -5,7 +5,7 @@ import {
     getResourcesDeposits,
     type ResourceDeposit,
     type ResourcesManifest,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { store } from "@/store";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {

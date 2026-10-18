@@ -7,7 +7,7 @@ import {
   getMyAccountSafe,
   adminRoutePlanner,
   type TopsMapLevelChunks,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import {
   STALE_TIME,
   RECENT_TL_WINDOW_MS,
@@ -56,7 +56,7 @@ import {
   WC_DOWN_SNOOZE_MS,
   inferWCTileFormat,
 } from "@/store/slices/mapView";
-import { stitchChunksToBlob } from "@/lib/stitch-chunks";
+import { stitchChunksToBlob } from "@/lib/tops-map-view/stitch-chunks";
 import {
   MapViewer,
   type MapStats,
@@ -111,13 +111,9 @@ import { useElkWalkable } from "@/hooks/useElkWalkable";
 import { useMapLayerTelemetry } from "@/hooks/useMapLayerTelemetry";
 import { useBoatFriendlyTLs, useToggleBoatFriendlyTL } from "@/hooks/useBoatFriendlyTLs";
 import { SailboatRoutePlannerPanel } from "@/components/tops-map/SailboatRoutePlannerPanel";
-import { tlIdForSegment } from "@/lib/tl-routing";
+import { tlIdForSegment } from "@/lib/routing/tl-routing";
 import type { SailboatTL } from "@/lib/sailboat/sailboat-routing";
-import {
-  setSailboatFrom,
-  setSailboatPickMode,
-  setSailboatTo,
-} from "@/store/slices/sailboatRoute";
+import { setSailboatFrom, setSailboatPickMode, setSailboatTo } from "@/store/slices/sailboatRoute";
 import {
   setRouteFrom,
   setRoutePickMode,
@@ -138,7 +134,7 @@ import { ResourcesOverlayLayer } from "@/components/tops-map/ResourcesOverlayLay
 import { OceansOverlayLayer } from "@/components/tops-map/OceansOverlayLayer";
 import { AuctionHeatmapOverlayLayer } from "@/components/tops-map/AuctionHeatmapOverlayLayer";
 import { type AuctionLayer } from "@/components/tops-map/AuctionHeatmapControl";
-import { useAuctionSummary } from "@/lib/auction";
+import { useAuctionSummary } from "@/lib/market/auction";
 import { RockStrataOverlayLayer } from "@/components/tops-map/RockStrataOverlayLayer";
 import { useRockStrataOverlay } from "@/hooks/useRockStrataOverlay";
 import { ClimateOverlayLayer } from "@/components/tops-map/ClimateOverlayLayer";
@@ -171,10 +167,10 @@ import {
   useWebCartographerTranslocators,
   WebCartographerOverlayError,
 } from "@/hooks/useWebCartographerOverlays";
-import { notifyWCTileCacheVersion } from "@/lib/wcTileCache";
-import { type TraderType } from "@/lib/trader-types";
-import type { ResourceDeposit } from "@/lib/api";
-import { tlIdFor, useTLGroupings } from "@/lib/tl-groupings";
+import { notifyWCTileCacheVersion } from "@/lib/tops-map-view/wcTileCache";
+import { type TraderType } from "@/lib/tops-map-view/trader-types";
+import type { ResourceDeposit } from "@/lib/helpers/api";
+import { tlIdFor, useTLGroupings } from "@/lib/routing/tl-groupings";
 import { MapStatsHeader } from "@/components/tops-map-viewer/MapStats";
 import { SelectedTranslocatorHeader } from "@/components/tops-map-viewer/SelectedTranslocator";
 import { ResolutionSelector } from "@/components/tops-map-viewer/ResolutionSelector";
@@ -191,7 +187,7 @@ import { useDrawingViewerProps } from "@/components/tops-map/drawing/useDrawingV
 import { MapDrawingUi } from "@/components/tops-map/drawing/MapDrawingUi";
 import { useTranslation } from "@/lib/i18n";
 import { RoutePlannerPanel } from "@/components/tops-map/RoutePlannerPanel";
-import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/route-share";
+import { decodeRouteShareParams, ROUTE_SHARE_PARAM_KEYS } from "@/lib/routing/route-share";
 import { GoToDialog } from "@/components/tops-map-viewer/GoToDialog";
 import { ExitPreviewButton } from "@/components/tops-map-viewer/ExitPreviewButton";
 import { AdvancedLayersSection } from "@/components/tops-map-viewer/AdvancedLayersSection";
@@ -2424,9 +2420,7 @@ export function TOPSMapViewPage() {
               waterRouteFrom={waterRouteFrom}
               waterRouteTo={waterRouteTo}
               debugTileOutlines={sailboatDebugTiles}
-              debugScannedTiles={
-                sailboatDebugTiles ? sailboatScannedTileSet : undefined
-              }
+              debugScannedTiles={sailboatDebugTiles ? sailboatScannedTileSet : undefined}
               debugScannedTilesZoom={sailboatScannedTilesZoom}
               onHoverCoords={setClimateHoverCoords}
               drawing={drawingProps}

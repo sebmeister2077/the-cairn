@@ -21,9 +21,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, ArrowLeft, CheckCircle2, Clipboard, ClipboardCheck } from "lucide-react";
-import { contributeTLs, ApiError } from "@/lib/api";
+import { contributeTLs, ApiError } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
-import { matchedServerSegmentKeys, segmentKey } from "@/lib/tl-matching";
+import { matchedServerSegmentKeys, segmentKey } from "@/lib/routing/tl-matching";
 import type { TLContributionPayload, TLContributionResult } from "@/models/contributeTLs";
 
 /**

@@ -7,7 +7,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { getMyTranslocatorContributions } from "@/lib/api";
+import { getMyTranslocatorContributions } from "@/lib/helpers/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useFormat, useTranslation } from "@/lib/i18n";
 

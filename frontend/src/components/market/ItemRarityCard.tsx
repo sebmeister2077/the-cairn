@@ -1,7 +1,7 @@
 import { BookOpen, Gem, Hammer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { lookupItemSources, RARITY_COLORS, RARITY_LABELS } from "@/lib/item-sources";
+import { lookupItemSources, RARITY_COLORS, RARITY_LABELS } from "@/lib/market/item-sources";
 
 /** Shows an item's rarity tier and the loot sources it drops from (with drop
  *  chances). Renders nothing for items that aren't loot-table drops. */

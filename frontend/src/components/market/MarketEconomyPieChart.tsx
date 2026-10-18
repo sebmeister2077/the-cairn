@@ -30,10 +30,10 @@ import {
   resolveWindowDays,
 } from "@/hooks/useMarketInsights";
 import { useMarketWindow } from "@/hooks/useMarketWindow";
-import { formatGears } from "@/lib/auction";
-import { customCategoryFor } from "@/lib/item-categories";
+import { formatGears } from "@/lib/market/auction";
+import { customCategoryFor } from "@/lib/market/item-categories";
 import type { AuctionListing } from "@/models/auction";
-import { capitalize, cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/helpers/utils";
 import { useTranslation } from "@/lib/i18n";
 
 /** Keep drawing individual slices until at least this many are shown… */

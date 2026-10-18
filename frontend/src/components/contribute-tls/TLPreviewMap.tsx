@@ -27,8 +27,12 @@ import {
   setDragMode,
   setShowCandidates,
 } from "@/store/slices/contributeTLs";
-import { reclassifyUserTL, EXACT_MATCH_RADIUS, APPROX_MATCH_RADIUS } from "@/lib/tl-matching";
-import { parseLabelCoords } from "@/lib/tl-parser";
+import {
+  reclassifyUserTL,
+  EXACT_MATCH_RADIUS,
+  APPROX_MATCH_RADIUS,
+} from "@/lib/routing/tl-matching";
+import { parseLabelCoords } from "@/lib/routing/tl-parser";
 import type { UserTL, UserTLEndpoint, TLStatus } from "@/models/contributeTLs";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";

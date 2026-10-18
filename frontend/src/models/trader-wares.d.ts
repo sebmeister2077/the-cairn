@@ -2,7 +2,7 @@
 // `backend/extract_trader_wares.py` (served from
 // `frontend/src/assets/GameData/trader-wares.json`). Keyed by bare item code.
 
-import type { TraderType } from "@/lib/trader-types";
+import type { TraderType } from "@/lib/tops-map-view/trader-types";
 
 /** One trader profession's price interval (in gears) for an item. */
 export interface TraderWarePrice {

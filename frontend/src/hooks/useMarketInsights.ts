@@ -24,7 +24,7 @@ import {
     percentileSorted,
     refreshMarketReferences,
     weightedMedian,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import type {
     AuctionListing,
     ConcentrationTier,

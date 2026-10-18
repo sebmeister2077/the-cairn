@@ -1,4 +1,8 @@
-import { adminGetKeyPermissions, adminSetKeyPermission, type KeyPermission } from "@/lib/api";
+import {
+  adminGetKeyPermissions,
+  adminSetKeyPermission,
+  type KeyPermission,
+} from "@/lib/helpers/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,

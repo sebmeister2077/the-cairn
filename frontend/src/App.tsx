@@ -11,8 +11,8 @@ import {
   clearPersistedQueryCache,
   PERSISTED_QUERY_CACHE_KEY,
   ApiError,
-} from "@/lib/api";
-import { hasAcceptedStorage } from "@/lib/consent";
+} from "@/lib/helpers/api";
+import { hasAcceptedStorage } from "@/lib/helpers/consent";
 import "./index.css";
 
 const TWO_WEEKS = 2 * 7 * 24 * 60 * 60 * 1000;

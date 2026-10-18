@@ -13,13 +13,13 @@
 //      that's already invalid.
 
 import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-query";
-import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, getTraderClaimTypesUrl, getTraderClaimEmptyUrl, type MarkerFileUrlResponse, type TradersUrlResponse, type TraderClaimTypesUrlResponse, type TraderClaimEmptyUrlResponse } from "@/lib/api";
+import { getLandmarksUrl, getTranslocatorsUrl, getTradersUrl, getTraderClaimTypesUrl, getTraderClaimEmptyUrl, type MarkerFileUrlResponse, type TradersUrlResponse, type TraderClaimTypesUrlResponse, type TraderClaimEmptyUrlResponse } from "@/lib/helpers/api";
 import type {
     LandmarkProperty,
     WorldLineSegment,
     WorldPointMarker,
 } from "@/components/tops-map-viewer/MapViewer";
-import { TRADER_TYPE_COLORS, isTraderType, type TraderType } from "@/lib/trader-types";
+import { TRADER_TYPE_COLORS, isTraderType, type TraderType } from "@/lib/tops-map-view/trader-types";
 
 export interface CachedOverlay<T> {
     etag: string;

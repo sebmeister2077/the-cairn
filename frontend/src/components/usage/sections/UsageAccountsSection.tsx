@@ -1,10 +1,10 @@
-import { adminUsage } from "@/lib/api";
+import { adminUsage } from "@/lib/helpers/api";
 import { useQuery } from "@tanstack/react-query";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAccountsMinActivityGap } from "@/store/slices/adminUsageFilters";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { UsageGranularity } from "@/lib/api";
+import type { UsageGranularity } from "@/lib/helpers/api";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
 import { Loading } from "@/components/usage/Loading";
 import { Label } from "@/components/ui/label";
@@ -59,8 +59,7 @@ export function AccountsSection(props: {
       ),
   });
 
-  const selectedLabel =
-    MIN_GAP_OPTIONS.find((o) => o.value === minGap)?.label ?? "No minimum";
+  const selectedLabel = MIN_GAP_OPTIONS.find((o) => o.value === minGap)?.label ?? "No minimum";
 
   const merged = q.data
     ? [
@@ -76,8 +75,8 @@ export function AccountsSection(props: {
           <div className="space-y-1.5">
             <CardTitle>Accounts</CardTitle>
             <CardDescription>
-              New accounts created vs. accounts that made at least one request, per bucket.
-              Accounts that never made a request are excluded.
+              New accounts created vs. accounts that made at least one request, per bucket. Accounts
+              that never made a request are excluded.
               {minGapSeconds > 0 && (
                 <>
                   {" "}

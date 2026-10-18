@@ -20,7 +20,7 @@ import type {
   SellerPricingStyle,
   SpecializationTier,
 } from "@/models/auction";
-import { formatGameDate } from "@/lib/format-duration";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 const ARCHETYPE: Record<PlayerArchetype, { label: string; desc: string; egg?: true }> = {
   "price-discoverer": {

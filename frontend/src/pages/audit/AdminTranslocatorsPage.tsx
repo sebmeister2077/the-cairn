@@ -19,9 +19,9 @@ import {
   adminListTranslocators,
   type AdminTranslocatorEntry,
   type TranslocatorAuditEntry,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { TRANSLOCATORS_QUERY_KEY } from "@/hooks/useOverlayData";
-import { formatTimestamp } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

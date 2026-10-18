@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { API_BASE, getStoredApiKey } from "@/lib/api";
+import { API_BASE, getStoredApiKey } from "@/lib/helpers/api";
 
 // Session-scoped guard: only report a given (template, ref) label once per
 // page load, no matter how many times the component re-renders or remounts.

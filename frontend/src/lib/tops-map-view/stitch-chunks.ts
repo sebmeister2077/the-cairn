@@ -7,7 +7,7 @@
  * canvas progressively.
  */
 
-import type { TopsMapLevelChunks, TopsMapChunkRef } from "./api";
+import type { TopsMapLevelChunks, TopsMapChunkRef } from "@/lib/helpers/api";
 
 export interface StitchProgress {
     completed: number;

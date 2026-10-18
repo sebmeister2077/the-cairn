@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download } from "lucide-react";
-import { downloadMacro, macroFileName, type MacroMeta } from "@/lib/waypoint-macro";
+import { downloadMacro, macroFileName, type MacroMeta } from "@/lib/waypoints/waypoint-macro";
 
 interface OutputPanelProps {
   commands: string[];

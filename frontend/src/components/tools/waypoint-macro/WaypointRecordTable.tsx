@@ -5,8 +5,8 @@
 import { useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
-import type { WaypointRecord } from "@/lib/waypoint-macro";
+import { cn } from "@/lib/helpers/utils";
+import type { WaypointRecord } from "@/lib/waypoints/waypoint-macro";
 
 interface WaypointRecordTableProps {
   records: WaypointRecord[];

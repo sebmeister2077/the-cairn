@@ -25,7 +25,7 @@ import {
     type LibrarySubscription,
     type PopularTag,
     type PublishGroupingPayload,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useAppSelector } from "@/store/hooks";
 
 export const GROUPING_LIBRARY_KEY = ["grouping-library"] as const;

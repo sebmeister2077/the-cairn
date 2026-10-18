@@ -12,34 +12,16 @@ import {
   uploadResourcesBundle,
   type ResourcesStatus,
   type ResourcesUploadJob,
-} from "@/lib/api";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ["KiB", "MiB", "GiB"];
-  let value = bytes / 1024;
-  let unitIdx = 0;
-  while (value >= 1024 && unitIdx < units.length - 1) {
-    value /= 1024;
-    unitIdx += 1;
-  }
-  return `${value.toFixed(value < 10 ? 2 : 1)} ${units[unitIdx]}`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
+} from "@/lib/helpers/api";
+import { formatBytes } from "@/lib/formatting/format-bytes";
+import { useDateFormat } from "@/hooks/useDateFormat";
 
 function isJobActive(job: ResourcesUploadJob | null | undefined): boolean {
   return !!job && (job.status === "unpacking" || job.status === "swapping");
 }
 
 export function AdminResourcesPage() {
+  const { formatDate } = useDateFormat();
   const queryClient = useQueryClient();
   const [file, setFile] = useState<File | null>(null);
   const [uploadPercent, setUploadPercent] = useState<number>(0);

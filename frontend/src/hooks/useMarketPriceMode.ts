@@ -7,7 +7,7 @@
 // them, and persisted to localStorage so it survives reloads.
 
 import { useSyncExternalStore } from "react";
-import { writeIfConsented } from "@/lib/consent";
+import { writeIfConsented } from "@/lib/helpers/consent";
 
 export type MarketPriceMode = "median" | "weighted";
 

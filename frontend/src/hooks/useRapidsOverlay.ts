@@ -14,7 +14,7 @@
 
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import type { WorldPointMarker } from "@/components/tops-map-viewer/MapViewer";
-import { loadMapFeatures } from "@/lib/mapFeatures";
+import { loadMapFeatures } from "@/lib/tops-map-view/mapFeatures";
 
 /** Fill colour for a rapid source that is inside a land claim ("taken"). */
 export const RAPIDS_CLAIMED_COLOR = "rgba(249, 115, 22, 0.95)"; // orange-500

@@ -1,4 +1,4 @@
-import type { TLGrouping } from "@/lib/tl-groupings";
+import type { TLGrouping } from "@/lib/routing/tl-groupings";
 import { Button } from "../ui/button";
 
 export function GroupEditingInfo({

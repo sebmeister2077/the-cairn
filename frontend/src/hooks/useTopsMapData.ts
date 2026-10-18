@@ -15,7 +15,7 @@ import {
     getTopsMapLevel,
     type TopsMapLevelChunks,
     type TopsMapResolutionMeta,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import type { MapStats, MapTileSet } from "@/components/tops-map-viewer/MapViewer";
 
 const STALE_TIME = 12 * 60 * 60 * 1000;

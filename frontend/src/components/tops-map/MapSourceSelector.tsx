@@ -17,7 +17,7 @@ import {
   setWebCartographerUrl,
   type MapSource,
 } from "@/store/slices/mapView";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 
 interface MapSourceSelectorProps {
   /** Optional className applied to the wrapping container. */

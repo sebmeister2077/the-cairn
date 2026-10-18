@@ -1,6 +1,6 @@
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { ResourceDeposit } from "@/lib/api";
+import type { ResourceDeposit } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 
 interface AdminSelectedDepositBarProps {

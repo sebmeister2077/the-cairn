@@ -8,9 +8,9 @@ import {
   type GroupingLibrarySort,
   type LibraryGroupingCard,
   type LibraryVersionSnapshot,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
-import type { UseTLGroupingsResult } from "@/lib/tl-groupings";
+import type { UseTLGroupingsResult } from "@/lib/routing/tl-groupings";
 import { useGroupingLibraryActions, useGroupingLibraryBrowse } from "@/hooks/useGroupingLibrary";
 
 import { BrowseGroupingCard } from "../BrowseGroupingCard";

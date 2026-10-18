@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { formatBytes } from "@/lib/formatting/format-bytes";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   activateAllPendingMapLevels,
@@ -12,7 +13,7 @@ import {
   stopMapGeneration,
   type MapGenerationStatus,
   type MapGenerationLevelStatus,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
@@ -29,6 +30,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useDateFormat } from "@/hooks/useDateFormat";
+import { formatDurationMs } from "@/lib/formatting/format-duration";
 
 const STATUS_QUERY_KEY = ["admin-tops-map-generation-status"];
 const POLL_INTERVAL_MS = 2000;
@@ -36,36 +38,6 @@ const POLL_INTERVAL_MS = 2000;
 interface ResolutionPanelProps {
   /** Optional callback fired when generation completes for any level. */
   onLevelComplete?: () => void;
-}
-
-function formatBytes(bytes: number | null | undefined): string {
-  if (!bytes) return "—";
-  const mb = bytes / (1024 * 1024);
-  return mb >= 1 ? `${mb.toFixed(2)} MB` : `${(bytes / 1024).toFixed(1)} KB`;
-}
-
-function formatTimestamp(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
-
-/** Format a duration in milliseconds as a short human string (e.g. "2m 30s"). */
-function formatDuration(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) return "—";
-  const totalSeconds = Math.round(ms / 1000);
-  if (totalSeconds < 60) return `${totalSeconds}s`;
-  const totalMinutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  if (totalMinutes < 60) {
-    return seconds > 0 ? `${totalMinutes}m ${seconds}s` : `${totalMinutes}m`;
-  }
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
 }
 
 /**
@@ -474,7 +446,7 @@ export function AdminResolutionPanel({ onLevelComplete }: ResolutionPanelProps) 
                             className="text-xs text-muted-foreground"
                             title="Estimated time remaining (client-side estimate based on chunks completed since start)"
                           >
-                            · ETA ~{formatDuration(etaMs)}
+                            · ETA ~{formatDurationMs(etaMs)}
                           </span>
                         )}
                       </div>

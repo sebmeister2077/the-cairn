@@ -22,9 +22,9 @@ import {
   type AdminElkWalkableAuditEntry,
   type AdminElkWalkableReport,
   type AdminResolveElkReportAction,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { ELK_WALKABLE_QUERY_KEY } from "@/hooks/useElkWalkable";
-import { formatTimestamp } from "@/lib/utils";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

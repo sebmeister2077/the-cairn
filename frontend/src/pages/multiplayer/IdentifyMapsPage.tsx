@@ -7,7 +7,11 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n";
-import { extractDBFromLogs, type MapFileInfo, type ServerMapResult } from "@/lib/identify-maps";
+import {
+  extractDBFromLogs,
+  type MapFileInfo,
+  type ServerMapResult,
+} from "@/lib/tops-map-view/identify-maps";
 import { useRef, useState, type FormEvent } from "react";
 
 export function IdentifyMapsPage() {

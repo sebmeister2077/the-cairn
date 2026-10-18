@@ -17,7 +17,7 @@ import {
     resumeOpenDwell,
     flush,
     type AdvancedLayersState,
-} from "@/lib/mapLayerTelemetry";
+} from "@/lib/tops-map-view/mapLayerTelemetry";
 import type { AuctionLayer } from "@/components/tops-map/AuctionHeatmapControl";
 
 export function useMapLayerTelemetry(auctionLayer: AuctionLayer): void {

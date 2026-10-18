@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { RendezvousObjective, RendezvousResult } from "@/lib/tl-routing";
+import type { RendezvousObjective, RendezvousResult } from "@/lib/routing/tl-routing";
 import { useAppDispatch } from "@/store/hooks";
 import {
   addRoutePlayer,
@@ -15,12 +15,12 @@ import {
   type EndpointPick,
 } from "@/store/slices/routePlanner";
 
-import { formatDuration } from "@/lib/format-duration";
+import { formatDuration } from "@/lib/formatting/format-duration";
 import { useTranslation } from "@/lib/i18n";
 
 import { copyTextToClipboard } from "@/lib/component-helpers/copyToClipboard";
 import { PlayerPicker } from "../PlayerPicker";
-import { FALLBACK_WAYPOINT_Y } from "@/lib/route-waypoints";
+import { FALLBACK_WAYPOINT_Y } from "@/lib/routing/route-waypoints";
 
 type TranslateFn = ReturnType<typeof useTranslation>["t"];
 

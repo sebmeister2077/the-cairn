@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAuctionListings, formatGears } from "@/lib/auction";
+import { useAuctionListings, formatGears } from "@/lib/market/auction";
 import { formatListingDate } from "@/components/market/VirtualTable";
 import { usePlayerSearchIndex, type PlayerIndexRow } from "@/hooks/usePlayerSearchIndex";
 import {

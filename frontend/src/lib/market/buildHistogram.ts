@@ -24,7 +24,7 @@ import {
     liquidContainerLabel,
     liquidContainerShort,
     useItemImages,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 
 
 /** Build a price histogram plus a fitted log-normal density curve. `markerValue`

@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { getMyAccountSafe } from "@/lib/api";
+import { getMyAccountSafe } from "@/lib/helpers/api";
 import { ordersApi, useInvalidateOrders, useMarkOrderSeen, useOrderDetail } from "@/lib/orders";
 import {
   MOBILITY_LABELS,
@@ -26,7 +26,7 @@ import { NegotiationThread } from "./orders/NegotiationThread";
 import { OrderRequestDialog } from "./orders/OrderRequestDialog";
 import { ReopenOrderDialog } from "./orders/ReopenOrderDialog";
 import { OrderAnalyticsPanel } from "./orders/OrderAnaliticsPanel";
-import { formatGears } from "@/lib/auction";
+import { formatGears } from "@/lib/market/auction";
 
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();

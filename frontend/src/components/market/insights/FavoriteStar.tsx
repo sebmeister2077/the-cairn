@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/helpers/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { Star } from "lucide-react";
 import { toggleFavorite } from "@/store/slices/marketFavorites";

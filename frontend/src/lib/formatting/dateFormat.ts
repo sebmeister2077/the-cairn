@@ -143,3 +143,11 @@ export function fmt(iso: string | null): string {
     const { i18n, dateFormat } = store.getState();
     return formatDateTime(iso, dateFormat.pref, LOCALE_META[i18n.locale].intlCode);
 }
+
+
+export function formatTimestamp(s: string | number | null | undefined): string {
+    if (!s) return "—";
+    const { i18n, dateFormat } = store.getState();
+    return formatDateTime(s, dateFormat.pref, LOCALE_META[i18n.locale].intlCode);
+}
+

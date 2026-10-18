@@ -7,7 +7,7 @@ import {
   type AnimalGroup,
   type AnimalSelection,
   animalListingMatches,
-} from "@/lib/auction";
+} from "@/lib/market/auction";
 import type { AnimalInfo } from "@/models/auction";
 
 /** A minimal view of the item-images hook (see `useItemImages`). */

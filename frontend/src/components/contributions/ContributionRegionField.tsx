@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
 import { ContributionRegionPicker } from "@/components/contributions/ContributionRegionPicker";
 import type { ContributeInfo } from "@/models/contributions";
-import type { ContributionRegion, TopsMapResolutionMeta } from "@/lib/api";
+import type { ContributionRegion, TopsMapResolutionMeta } from "@/lib/helpers/api";
 
 export type ContributionMode = "gap_fill" | "overwrite";
 

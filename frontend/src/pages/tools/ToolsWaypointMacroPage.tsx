@@ -7,7 +7,7 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/lib/i18n";
-import type { MacroMeta } from "@/lib/waypoint-macro";
+import type { MacroMeta } from "@/lib/waypoints/waypoint-macro";
 import { UploadMode } from "@/components/tools/waypoint-macro/UploadMode";
 import { ImportMode } from "@/components/tools/waypoint-macro/ImportMode";
 import { ScratchMode } from "@/components/tools/waypoint-macro/ScratchMode";

@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, groupingLibrary } from "@/lib/api";
+import { ApiError, groupingLibrary } from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
-import type { TLGrouping } from "@/lib/tl-groupings";
+import type { TLGrouping } from "@/lib/routing/tl-groupings";
 import { GROUPING_LIBRARY_KEY, useGroupingLibraryActions } from "@/hooks/useGroupingLibrary";
 
 import { TagInput } from "./TagInput";

@@ -1,4 +1,4 @@
-import type { UsageGranularity } from "@/lib/api";
+import type { UsageGranularity } from "@/lib/helpers/api";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface GranularityToggleProps {

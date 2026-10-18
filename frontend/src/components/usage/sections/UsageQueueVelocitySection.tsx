@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { formatSeconds } from "@/lib/utils";
-import { adminUsage } from "@/lib/api";
+import { formatSeconds } from "@/lib/formatting/format-duration";
+import { adminUsage } from "@/lib/helpers/api";
 import { useQuery } from "@tanstack/react-query";
 import { ErrorMsg } from "../ErrorMsg";
 import { Loading } from "../Loading";

@@ -25,7 +25,7 @@ import {
   completeTLScreenshotUpload,
   requestTLScreenshotUploadUrls,
   uploadScreenshotToR2,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { useTranslation } from "@/lib/i18n";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 import { MB } from "@/lib/constants/file-size";

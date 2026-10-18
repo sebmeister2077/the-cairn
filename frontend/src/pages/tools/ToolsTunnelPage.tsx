@@ -28,8 +28,8 @@ import {
   type SegmentSpec,
   type TLEndpoint,
   type Topology,
-} from "@/lib/tunnel-multi";
-import { parseMultiTunnelParams, type Block3 } from "@/lib/tunnel-share";
+} from "@/lib/tops-map-view/tunnel-multi";
+import { parseMultiTunnelParams, type Block3 } from "@/lib/tops-map-view/tunnel-share";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 const TunnelViewer3D = lazy(() => import("@/components/tools/TunnelViewer3D"));

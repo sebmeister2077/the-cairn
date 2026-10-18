@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { listActiveMaintenanceNotices, type MaintenanceNotice } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { listActiveMaintenanceNotices, type MaintenanceNotice } from "@/lib/helpers/api";
+import { cn } from "@/lib/helpers/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatDuration } from "@/lib/formatting/format-duration";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // refresh notice list every 5 minutes
 
@@ -93,22 +94,4 @@ export function MaintenanceChip({ component, className }: MaintenanceChipProps) 
       <TooltipContent>{title}</TooltipContent>
     </Tooltip>
   );
-}
-
-/**
- * Human-readable duration. Always positive — caller decides the prefix.
- */
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  if (days >= 1) {
-    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
-  }
-  if (hours >= 1) {
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-  if (minutes >= 1) return `${minutes}m`;
-  return "<1m";
 }

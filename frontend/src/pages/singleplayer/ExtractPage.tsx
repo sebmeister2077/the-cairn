@@ -1,5 +1,5 @@
 import { useState, useMemo, type FormEvent } from "react";
-import { extractWaypoints } from "@/lib/api";
+import { extractWaypoints } from "@/lib/helpers/api";
 import { FileUpload } from "@/components/ui/FileUpload";
 import { WaypointTable } from "@/components/singleplayer/WaypointTable";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { SaveFileHelp } from "@/components/other/SaveFileHelp";
 import { SafetyNotice } from "@/components/singleplayer/SafetyNotice";
 import { useTranslation } from "@/lib/i18n";
-import { VS_WAYPOINT_ICONS } from "@/lib/vs-icons";
+import { VS_WAYPOINT_ICONS } from "@/lib/waypoints/vs-icons";
 
 export function ExtractPage() {
   const { t } = useTranslation();

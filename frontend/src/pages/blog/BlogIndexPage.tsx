@@ -2,11 +2,13 @@ import { NavLink } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useFormat, useTranslation } from "@/lib/i18n";
+import { useDateFormat } from "@/hooks/useDateFormat";
 import { getBlogPosts } from "./posts";
 
 export function BlogIndexPage() {
   const { locale, t } = useTranslation();
-  const { dateTime } = useFormat();
+  const { formatDate } = useDateFormat();
+
   const posts = getBlogPosts(locale);
 
   return (
@@ -31,7 +33,7 @@ export function BlogIndexPage() {
                 <div className="flex items-baseline justify-between gap-3 flex-wrap">
                   <h2 className="text-base font-semibold leading-snug">{post.title}</h2>
                   <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {formatDate(post.date, dateTime)} ·{" "}
+                    {formatDate(post.date)} ·{" "}
                     {t("blog.meta.readTime", { count: post.readingMinutes })}
                   </span>
                 </div>
@@ -52,17 +54,4 @@ export function BlogIndexPage() {
       </ul>
     </div>
   );
-}
-
-function formatDate(
-  iso: string,
-  dateTime: (value: string | number | Date, options?: Intl.DateTimeFormatOptions) => string,
-): string {
-  const d = new Date(iso + "T00:00:00Z");
-  if (Number.isNaN(d.getTime())) return iso;
-  return dateTime(d, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }

@@ -4,7 +4,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { hydrateRoot } from "../rootActions";
-import type { DateFormatPref } from "@/lib/dateFormat";
+import type { DateFormatPref } from "@/lib/formatting/dateFormat";
 
 export interface DateFormatState {
     pref: DateFormatPref;

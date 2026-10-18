@@ -3534,7 +3534,7 @@ export async function adminListBackupDownloadLinks(): Promise<{ links: BackupDow
 // Traders (user-contributed POIs) — viewer, contribute, account stats, admin
 // ---------------------------------------------------------------------------
 
-import type { TraderType } from "@/lib/trader-types";
+import type { TraderType } from "@/lib/tops-map-view/trader-types";
 
 /**
  * Response shape for ``GET /api/traders/url``. ``url`` is null when the

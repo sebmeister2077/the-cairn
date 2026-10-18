@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { adminUsage } from "@/lib/api";
+import { adminUsage } from "@/lib/helpers/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loading } from "@/components/usage/Loading";
 import { ErrorMsg } from "@/components/usage/ErrorMsg";
-import { useItemCatalog } from "@/lib/auction";
+import { useItemCatalog } from "@/lib/market/auction";
 import type { UsageSectionProps } from "@/pages/admin/AdminUsagePage";
 
 // ---------------------------------------------------------------------------

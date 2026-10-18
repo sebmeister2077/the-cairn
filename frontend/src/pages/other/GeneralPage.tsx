@@ -2,7 +2,7 @@ import { Heart, Map, Route, Store, Upload, Waypoints, type LucideIcon } from "lu
 import { NavLink } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { KOFI_URL, hasSupport } from "@/lib/support-links";
+import { KOFI_URL, hasSupport } from "@/lib/helpers/support-links";
 import {
   Trans,
   useTranslation,

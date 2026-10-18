@@ -18,9 +18,9 @@ import {
     type EdgeEndpointRef,
     type ElkWalkableEdge,
     type WalkLegElkState,
-} from "@/lib/elk-walkable";
-import type { TLGrouping } from "@/lib/tl-groupings";
-import { tlIdFor } from "@/lib/tl-groupings";
+} from "@/lib/tops-map-view/elk-walkable";
+import type { TLGrouping } from "@/lib/routing/tl-groupings";
+import { tlIdFor } from "@/lib/routing/tl-groupings";
 
 export interface GroupingElkEdge {
     a: EdgeEndpointRef;

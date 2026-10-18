@@ -1,8 +1,8 @@
 import { MarketInsightsHint } from "@/components/market/insights/Hint";
 import { DASH } from "./Dash";
 import type { InsightsRow } from "@/models/auction";
-import { cn } from "@/lib/utils";
-import { formatGameDate } from "@/lib/format-duration";
+import { cn } from "@/lib/helpers/utils";
+import { formatGameDate } from "@/lib/formatting/format-duration";
 
 export function MarketInsightsRecencyCell({ row }: { row: InsightsRow }) {
   if (row.lastSaleGameHours == null) return DASH;

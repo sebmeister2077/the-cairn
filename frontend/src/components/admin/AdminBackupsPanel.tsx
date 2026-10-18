@@ -42,7 +42,7 @@ import {
   adminRevokeBackupDownloadLink,
   type BackupRecord,
   type BackupDownloadLink,
-} from "@/lib/api";
+} from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -66,18 +66,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let size = n / 1024;
-  let unit = 0;
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024;
-    unit++;
-  }
-  return `${size.toFixed(size >= 100 ? 0 : 1)} ${units[unit]}`;
-}
+import { formatBytes } from "@/lib/formatting/format-bytes";
 
 export function AdminBackupsPanel() {
   const queryClient = useQueryClient();

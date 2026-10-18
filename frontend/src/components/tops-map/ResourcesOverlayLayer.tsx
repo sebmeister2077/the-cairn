@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 
 import type { MapStats } from "@/components/tops-map-viewer/MapViewer";
-import type { ResourceDeposit } from "@/lib/api";
+import type { ResourceDeposit } from "@/lib/helpers/api";
 import type { ResourcesOverlayState } from "@/hooks/useResourcesOverlay";
 
 const VS_CHUNK_SIZE = 32;
