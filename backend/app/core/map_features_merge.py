@@ -10,15 +10,20 @@ The result is deterministic and order-independent: sources are sorted by
 ``(generatedUtc, source_id)`` and applied in ascending order, so the newest
 observation of any given feature is the one that survives.
 
-**Player claims are special-cased.** A player's land claims change over time —
-areas get resized, moved, split, or released — so keying each box by its exact
-``(playerUid, min, max)`` geometry (as the other categories key by position)
-would accumulate *every box a player ever owned*: a box that no longer exists
-keeps its old key forever and is never evicted, making the dataset effectively
-append-only. Instead player claims are keyed per **player**: the newest source
-that observed a given ``playerUid`` REPLACES that player's entire set of boxes,
-so the published claims always reflect the latest observation of each player
-(see ``_fold_player_claims``).
+**Player claims are special-cased and NOT merged across sources.** A player's
+land claims change over time — areas get resized, moved, split, or released —
+and every source is an independent full observation of the *same* pinned game
+server, so an older source only ever carries a *staler* view of the whole
+claim map. Unioning player claims across sources (even keyed per player) lets a
+stale source keep contributing boxes for players the newest source has since
+seen change or release, inflating the published set with claims that no longer
+exist. Instead the whole ``playerClaims`` category is taken verbatim from the
+**single newest source that reports any player claims** — the last contribution
+wins outright and earlier contributions are discarded, so the published claims
+always reflect exactly the latest observation of the server (see
+``_replace_player_claims``). A source that reports an empty claim list is
+treated as a non-observation and left to the previous good source rather than
+wiping the map.
 
 The per-feature ``firstSeenUtc`` timestamp is intentionally dropped from the
 merged output so the published dataset cannot be used to chronologically trace
@@ -83,8 +88,9 @@ def _player_claim_key(f: Dict[str, Any]) -> Optional[FeatureKey]:
     return (uid, mn, mx)
 
 
-# Player claims are folded per-PLAYER (see _fold_player_claims), not per-box, so
-# this doc key is not listed in _KEY_FNS — the fold special-cases it.
+# Player claims are taken wholesale from the newest source (see
+# _replace_player_claims), never keyed/merged per-box across sources, so this
+# doc key is not listed in _KEY_FNS.
 
 
 _KEY_FNS: Dict[str, Callable[[Dict[str, Any]], Optional[FeatureKey]]] = {
@@ -95,15 +101,11 @@ _KEY_FNS: Dict[str, Callable[[Dict[str, Any]], Optional[FeatureKey]]] = {
 }
 
 
-def _fold_player_claims(
-    wmap: Dict[str, List[Dict[str, Any]]], feats: List[Any]
-) -> None:
-    """Fold one source's player-claim boxes, keyed per PLAYER (not per box).
-
-    Because sources are folded oldest-first, every player observed in this
-    source is newer than any earlier observation, so this source's set of boxes
-    for a player REPLACES whatever was stored before. This evicts boxes the
-    player has since resized/moved/released instead of accumulating them."""
+def _group_player_claims_by_uid(
+    feats: List[Any],
+) -> Dict[str, Dict[FeatureKey, Dict[str, Any]]]:
+    """Group a source's player-claim boxes by ``playerUid`` (deduping identical
+    boxes reported twice in one source)."""
     by_uid: Dict[str, Dict[FeatureKey, Dict[str, Any]]] = {}
     for f in feats:
         if not isinstance(f, dict):
@@ -113,7 +115,38 @@ def _fold_player_claims(
             continue
         # k == (uid, min, max); dedup identical boxes reported twice in one source.
         by_uid.setdefault(k[0], {})[k] = f
+    return by_uid
+
+
+def _replace_player_claims(
+    wmap: Dict[str, List[Dict[str, Any]]], feats: List[Any]
+) -> None:
+    """Replace the ENTIRE player-claims set with this source's observation.
+
+    Sources are folded oldest-first, so the newest source carrying any player
+    claims is applied last and its set becomes the published truth — the whole
+    category is the *last contribution*, never merged with earlier (staler)
+    sources. A source that reports no usable claims is treated as a
+    non-observation and leaves the previous good set untouched instead of wiping
+    the map."""
+    by_uid = _group_player_claims_by_uid(feats)
+    if not by_uid:
+        return
+    wmap.clear()
     for uid, boxes in by_uid.items():
+        wmap[uid] = list(boxes.values())
+
+
+def _fold_player_claims(
+    wmap: Dict[str, List[Dict[str, Any]]], feats: List[Any]
+) -> None:
+    """Fold player-claim boxes keyed per PLAYER (not per box), replacing each
+    observed player's whole box set while leaving unobserved players in place.
+
+    Used only for intra-contributor DELTA upserts, where a delta names just the
+    players that changed: those players are replaced and everyone else is kept.
+    Cross-source full folds use ``_replace_player_claims`` instead."""
+    for uid, boxes in _group_player_claims_by_uid(feats).items():
         wmap[uid] = list(boxes.values())
 
 
@@ -155,8 +188,9 @@ def fold_document(acc: Accumulator, doc: Dict[str, Any]) -> None:
         if not isinstance(feats, list):
             continue
         if doc_key == "playerClaims":
-            # Per-player replacement, not per-box union (see _fold_player_claims).
-            _fold_player_claims(acc.winners[doc_key], feats)
+            # Whole-category replacement by the last contribution, NOT a per-box
+            # or per-player union across sources (see _replace_player_claims).
+            _replace_player_claims(acc.winners[doc_key], feats)
             continue
         key_fn = _KEY_FNS[doc_key]
         wmap = acc.winners[doc_key]
@@ -234,8 +268,8 @@ def _apply_upserts(acc: "Accumulator", cats: Dict[str, Any]) -> None:
         if not isinstance(feats, list):
             continue
         if doc_key == "playerClaims":
-            # An upsert replaces each named player's WHOLE box set (same
-            # per-player semantics as a full fold).
+            # An upsert replaces each named player's WHOLE box set, leaving other
+            # players in this contributor's snapshot untouched (per-player).
             _fold_player_claims(acc.winners[doc_key], feats)
             continue
         key_fn = _KEY_FNS[doc_key]

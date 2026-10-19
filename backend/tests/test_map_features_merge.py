@@ -1,8 +1,10 @@
 """Unit tests for the N-way map-features merge, focused on player claims.
 
 Player land claims change over time (areas are resized, moved, split, or
-released). The merge must publish the LATEST observation of each player's set of
-claim boxes rather than accumulating every box ever seen (append-only).
+released) and every source is an independent full observation of the same
+server. The merge must publish the player claims from the LATEST contribution
+alone, never a union across sources, so stale boxes from older sources cannot
+leak into the published set.
 """
 
 from app.core import map_features_merge as m
@@ -80,13 +82,56 @@ def test_latest_wins_regardless_of_source_order():
     assert boxes[0]["max"]["x"] == 10
 
 
-def test_distinct_players_are_unioned_across_sources():
-    """Different players observed by different sources all survive."""
+def test_distinct_players_from_older_sources_are_dropped():
+    """Player claims come wholesale from the newest source only: players seen
+    just by older sources are NOT unioned in (they may be stale)."""
     a = _doc("2026-01-01T00:00:00Z", [_claim("UID1", "A", 0, 0, -5, -5, 5, 5)])
     b = _doc("2026-01-02T00:00:00Z", [_claim("UID2", "B", 50, 50, 45, 45, 55, 55)])
 
     merged = m.merge_documents([("srcA", a), ("srcB", b)])
+    assert len(_player_boxes(merged, "UID1")) == 0
+    assert len(_player_boxes(merged, "UID2")) == 1
+
+
+def test_last_contribution_is_source_of_truth_not_merged():
+    """Regression: a player who released claims (19 boxes seen by an older
+    source, 8 by the newest) must publish only the newest count, never the union.
+    """
+    def _boxes(uid, n):
+        return [_claim(uid, "P", i, i, i - 1, i - 1, i + 1, i + 1) for i in range(n)]
+
+    stale = _doc("2026-01-01T00:00:00Z", _boxes("UIDX", 19))
+    latest = _doc("2026-02-01T00:00:00Z", _boxes("UIDX", 8))
+
+    merged = m.merge_documents([("srcStale", stale), ("srcLatest", latest)])
+    assert len(_player_boxes(merged, "UIDX")) == 8
+
+
+def test_empty_latest_source_does_not_wipe_last_good_claims():
+    """A newest source reporting no player claims is a non-observation: it leaves
+    the previous good set in place rather than clearing the map."""
+    good = _doc("2026-01-01T00:00:00Z", [_claim("UID1", "P", 0, 0, -5, -5, 5, 5)])
+    empty = _doc("2026-02-01T00:00:00Z", [])
+
+    merged = m.merge_documents([("srcGood", good), ("srcEmpty", empty)])
     assert len(_player_boxes(merged, "UID1")) == 1
+
+
+def test_player_missing_from_newest_nonempty_source_is_released():
+    """If the newest source reports claims for other players but not this one,
+    this player's claims are released (dropped), matching the latest server view.
+    """
+    old = _doc(
+        "2026-01-01T00:00:00Z",
+        [
+            _claim("UID1", "A", 0, 0, -5, -5, 5, 5),
+            _claim("UID2", "B", 50, 50, 45, 45, 55, 55),
+        ],
+    )
+    new = _doc("2026-02-01T00:00:00Z", [_claim("UID2", "B", 50, 50, 45, 45, 55, 55)])
+
+    merged = m.merge_documents([("srcA", old), ("srcB", new)])
+    assert len(_player_boxes(merged, "UID1")) == 0
     assert len(_player_boxes(merged, "UID2")) == 1
 
 
