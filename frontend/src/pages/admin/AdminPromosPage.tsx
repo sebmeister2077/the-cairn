@@ -6,27 +6,24 @@
  * ``manage_promos`` permission.
  */
 
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import {
-  adminCreatePromo,
   adminDeletePromo,
   adminListPromos,
   adminUpdatePromo,
-  adminUploadPromoImage,
   promoImageSrc,
-  type PromoContent,
   type PromoEvent,
-  type PromoScheduleRow,
 } from "@/lib/helpers/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
 
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PromoEditorDialog } from "@/components/admin/promos/PromoEditorDialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatTimestamp } from "@/lib/formatting/dateFormat";
 
 // --- Page --------------------------------------------------------------------
 
@@ -114,9 +111,10 @@ export function AdminPromosPage() {
                       {expired ? <Badge variant="secondary">Expired</Badge> : null}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {p.expires_at
-                        ? `Expires ${new Date(p.expires_at).toLocaleString()}`
-                        : "No expiry"}
+                      {p.expires_at ? `Expires ${formatTimestamp(p.expires_at)}` : "No expiry"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {p.updated_at ? `Updated ${formatTimestamp(p.updated_at)}` : "Never updated"}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
