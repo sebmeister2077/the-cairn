@@ -202,7 +202,7 @@ async def create_promo(
     api_key: str = Depends(require_permission(_MANAGE_PERM)),
 ) -> dict:
     content = _validate_content(body.content)
-    promo_id = uuid.uuid4().hex
+    promo_id = f"{datetime.utcnow():%Y_%m_%d}_{uuid.uuid4().hex}"
     row = db.create_promo_event(
         promo_id,
         body.title.strip(),
