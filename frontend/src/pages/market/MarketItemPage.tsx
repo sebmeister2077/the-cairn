@@ -246,6 +246,7 @@ export function MarketItemPage() {
     const all = listingsQ.data ?? [];
     let base = all.filter((l) => l.itemId === id && l.animal);
     if (excludeExternalTrades) base = base.filter((l) => !l.externalTrade);
+
     return base;
   }, [listingsQ.data, id, excludeExternalTrades]);
   const animalGroup = useMemo(() => computeAnimalGroup(animalBaseListings), [animalBaseListings]);
@@ -763,12 +764,13 @@ export function MarketItemPage() {
     return sigs.size > 1;
   }, [itemListings]);
 
-  // Trader/loot datasets key clutter & tapestry by their `category:base` group
-  // (e.g. only some tapestries are sold), not the shared block code every variant
-  // reports, so those must look up by the same group key the market grouped on.
+  // Trader/loot datasets key clutter, tapestry & crate by their `category:base`
+  // group (e.g. only some tapestries are sold, crates split per wood species),
+  // not the shared block code every variant reports, so those must look up by the
+  // same group key the market grouped on.
   const lookupCode = useMemo(() => {
     const cat = itemListings[0]?.category;
-    if ((cat === "tapestry" || cat === "clutter") && variantCodes.length > 0) {
+    if ((cat === "tapestry" || cat === "clutter" || cat === "crate") && variantCodes.length > 0) {
       return `${cat}:${variantBase(variantCodes[0])}`;
     }
     return currentEntry?.code ?? null;
@@ -785,7 +787,7 @@ export function MarketItemPage() {
               cell: (l) => (
                 <span
                   className="text-xs font-medium"
-                  title={`In-game clutter object(${l.variant ?? "—"})`}
+                  title={`In-game variant (${l.variant ?? "—"})`}
                 >
                   {l.variant ?? "—"}
                 </span>

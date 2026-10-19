@@ -8,9 +8,10 @@ const DATA = raw as unknown as TraderWaresData;
 
 /** Bare item code: drop the asset domain prefix (`game:ingot-copper` -> `ingot-copper`). */
 export function bareItemCode(code: string): string {
-    // Clutter/tapestry group keys (`tapestry:ambush`) use a colon too — keep those
-    // verbatim and only strip a real asset domain prefix (`game:`, mod domains).
-    if (/^(clutter|tapestry):/.test(code)) return code;
+    // Clutter/tapestry/crate group keys (`tapestry:ambush`, `crate:wood-ebony`)
+    // use a colon too — keep those verbatim and only strip a real asset domain
+    // prefix (`game:`, mod domains).
+    if (/^(clutter|tapestry|crate):/.test(code)) return code;
     return code.split(":", 2).pop()!.trim();
 }
 

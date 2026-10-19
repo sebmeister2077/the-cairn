@@ -266,9 +266,10 @@ export function liquidContainerShort(container: string | null | undefined): stri
 }
 
 /**
- * Group base for a clutter/tapestry variant code: the `type` with any trailing
- * number stripped (e.g. "toy7" -> "toy", "ambush3" -> "ambush",
- * "rotbeast11" -> "rotbeast"). Mirrors the backend's `_variant_base`.
+ * Group base for a clutter/tapestry/crate variant code: the `type` with any
+ * trailing number stripped (e.g. "toy7" -> "toy", "ambush3" -> "ambush",
+ * "rotbeast11" -> "rotbeast", "wood-ebony" -> "wood-ebony"). Mirrors the
+ * backend's `_variant_base`.
  */
 export function variantBase(variant: string): string {
     return variant.replace(/\d+$/, "").replace(/[-_/]+$/, "") || variant;

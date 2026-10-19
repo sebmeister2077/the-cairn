@@ -84,11 +84,12 @@ def bare_code(code: str) -> str:
 
 
 # Generic multi-variant blocks whose real object lives in ``attributes.type``
-# (`tapestry-north` sells 20 distinct artworks, `clutter` many objects). The
-# market groups these by ``category:base`` (see process_auction_data.type_variant),
-# so we key their wares the same way instead of the shared block code — otherwise
-# every tapestry/clutter group matches the one collapsed entry.
-SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry"}
+# (`tapestry-north` sells 20 distinct artworks, `clutter` many objects, `crate`
+# one block id per wood species). The market groups these by ``category:base``
+# (see process_auction_data.type_variant), so we key their wares the same way
+# instead of the shared block code — otherwise every tapestry/clutter/crate group
+# matches the one collapsed entry.
+SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry", "crate"}
 
 
 def _variant_base(variant: str) -> str:

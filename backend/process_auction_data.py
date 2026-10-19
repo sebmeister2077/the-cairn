@@ -558,26 +558,36 @@ def augment_catalog_with_known_items(
 
 
 # --------------------------------------------------------------------------- #
-# Type-variant splitting (clutter, tapestry)
+# Type-variant splitting (clutter, tapestry, crate)
 # --------------------------------------------------------------------------- #
 # Some in-game objects are a single block id whose actual object lives in the
 # stack's `type` attribute:
 #   * "clutter"  — e.g. "toy7", "pile-cloth2", "chains/chain-ceiling-hook".
 #   * "tapestry" — e.g. "ambush1", "rotbeast11", "schematic-c-bloody2" (big
 #                  tapestries are split into numbered pieces of one artwork).
-# The market treats each as one item ("Clutter" / "Tapestry"), hiding that
-# they're really dozens of distinct objects. We split them into grouped items
-# keyed by the variant's base name (the `type` with any trailing number stripped,
-# e.g. "toy7" -> "toy", "ambush3" -> "ambush", "rotbeast11" -> "rotbeast"), so
-# every piece of the same object aggregates under one item (a single median
-# price) while each listing still carries its exact variant ("toy7", "ambush3").
+#   * "crate"    — one block id for every wood species, the real material in
+#                  `type`, e.g. "wood-ebony", "wood-aged", "wood-purpleheart".
+#                  (The `lidState` attribute — open/closed — is ignored: it's a
+#                  per-listing state, not a distinct item.)
+# The market treats each as one item ("Clutter" / "Tapestry" / "Crate"), hiding
+# that they're really dozens of distinct objects. We split them into grouped
+# items keyed by the variant's base name (the `type` with any trailing number
+# stripped, e.g. "toy7" -> "toy", "ambush3" -> "ambush", "rotbeast11" ->
+# "rotbeast", "wood-ebony" -> "wood-ebony"), so every piece of the same object
+# aggregates under one item (a single median price) while each listing still
+# carries its exact variant ("toy7", "ambush3", "wood-ebony").
 #
 # A grouped item needs a stable, collision-free numeric id (the whole explorer is
 # keyed by numeric itemId). Real item/block ids are small (< ~15k), so we map each
 # group into a high range via a stable hash, probing on the rare clash. Groups are
 # namespaced by category so a clutter and a tapestry base of the same spelling can
 # never merge into one item.
-SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry"}
+SPLIT_TYPE_CATEGORIES = {"clutter", "tapestry", "crate"}
+
+# Categories whose split items keep the base item name in their display (so a
+# crate stays recognisably a "Crate (Ebony)" rather than collapsing to the bare
+# material "Wood ebony"). Clutter/tapestry types ARE the object, so they don't.
+NAMED_TYPE_CATEGORIES = {"crate"}
 VARIANT_ID_BASE = 90_000_000
 _variant_synth_ids: Dict[str, int] = {}
 _variant_used_ids: set = set()
@@ -616,12 +626,14 @@ def _variant_synth_id(key: str) -> int:
 
 
 def type_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optional[Tuple[int, str, str]]:
-    """If this item is a clutter/tapestry block whose real object lives in
+    """If this item is a clutter/tapestry/crate block whose real object lives in
     `attrs.type`, return ``(synthetic_item_id, group_display_name,
     variant_label)``; else ``None``.
 
     Generic fallbacks that already resolve to their own id (e.g. clutter
     "art/bottle", "skull/humanoid" with no `type` attribute) are left untouched.
+    For crates (and other NAMED_TYPE_CATEGORIES) the base item name is kept, so a
+    "wood-ebony" crate becomes "Crate (Ebony)" instead of the bare "Wood ebony".
     """
     category = item.get("category")
     if category not in SPLIT_TYPE_CATEGORIES or not attrs:
@@ -631,7 +643,14 @@ def type_variant(item: Dict[str, Any], attrs: Optional[Dict[str, Any]]) -> Optio
         return None
     variant = variant.strip()
     base = _variant_base(variant)
-    return _variant_synth_id(f"{category}:{base}"), _humanize_variant(base), variant
+    if category in NAMED_TYPE_CATEGORIES:
+        # Material types are commonly "wood-<species>"; drop the generic "wood-"
+        # prefix for the label, keeping the base item name as the anchor.
+        label_src = re.sub(r"^wood-", "", base) or base
+        name = f"{item.get('name') or category.title()} ({_humanize_variant(label_src)})"
+    else:
+        name = _humanize_variant(base)
+    return _variant_synth_id(f"{category}:{base}"), name, variant
 
 
 # --------------------------------------------------------------------------- #
@@ -1308,9 +1327,11 @@ def build_records(
         item = resolve_item(stack, row.get("Item") or {}, item_map, registry)
         attrs = stack["attributes"] or None
 
-        # Clutter and tapestry are one block id hiding many distinct objects (the
-        # real one is in `attrs.type`). Split them into per-object groups so each
-        # aggregates separately, while the listing keeps its exact variant label.
+        # Clutter, tapestry and crate are one block id hiding many distinct
+        # objects (the real one is in `attrs.type`: an object for clutter/
+        # tapestry, a wood species for a crate). Split them into per-object
+        # groups so each aggregates separately, while the listing keeps its exact
+        # variant label.
         variant = None
         cv = type_variant(item, attrs)
         if cv is not None:
