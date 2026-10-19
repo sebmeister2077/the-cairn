@@ -564,6 +564,13 @@ export interface ItemCatalogEntry {
     code: string | null;
     classType: "Item" | "Block";
     /**
+     * Image-only code override used to resolve this item's icon, when it differs
+     * from `code`. Set for per-wood crate groups (e.g. `crate-wood-ebony`): they
+     * all share the real block code `crate` (so recipe/trader/category lookups
+     * still resolve), but each gets its own recoloured icon keyed by this.
+     */
+    iconCode?: string | null;
+    /**
      * The item's real in-game maximum stack size (from the game registry,
      * sniffed off the server join handshake). Null when unknown — e.g. synthetic
      * clutter/tapestry variant groups that don't map to a single registry id.

@@ -1336,6 +1336,13 @@ def build_records(
         cv = type_variant(item, attrs)
         if cv is not None:
             item["itemId"], item["name"], variant = cv
+            # Crates share one block id (and so one `block-crate` icon) across
+            # every wood species. Keep the real `code` ("crate") so recipe/trader/
+            # category lookups still resolve, but tag the group with a per-wood
+            # `iconCode` so it gets its own recoloured icon (built by
+            # build_item_icons) wherever icons are shown.
+            if item.get("category") == "crate":
+                item["iconCode"] = f"crate-{_variant_base(variant)}"
 
         # Chiseled/microblocks are one block id hiding player-built voxel designs.
         # Split them per design (named designs group by name, unnamed by geometry
@@ -1392,6 +1399,8 @@ def build_records(
             items_catalog[str(item["itemId"])]["liquid"] = True
         if animal is not None:
             items_catalog[str(item["itemId"])]["animal"] = True
+        if item.get("iconCode"):
+            items_catalog[str(item["itemId"])]["iconCode"] = item["iconCode"]
 
         price = float(row.get("Price") or 0)
         stack_size = stack["stackSize"]

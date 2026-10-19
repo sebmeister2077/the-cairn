@@ -64,6 +64,7 @@ interface SearchRow {
   name: string;
   category: string;
   code: string | null;
+  iconCode?: string | null;
   classType: "Item" | "Block";
   listings: number;
   unitsSold: number;
@@ -134,6 +135,7 @@ export function MarketItemsPage() {
         name: entry.name,
         category: entry.category,
         code: entry.code,
+        iconCode: entry.iconCode,
         classType: entry.classType,
         listings: st?.listings ?? 0,
         unitsSold: st?.unitsSold ?? 0,
@@ -358,7 +360,7 @@ export function MarketItemsPage() {
               <TableRow key={it.itemId}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
-                    <ItemThumb url={images.url(it.code, it.classType)} alt={it.name} />
+                    <ItemThumb url={images.url(it.iconCode ?? it.code, it.classType)} alt={it.name} />
                     <Link to={`/market/items/${it.itemId}`} className="hover:underline">
                       {it.name}
                     </Link>

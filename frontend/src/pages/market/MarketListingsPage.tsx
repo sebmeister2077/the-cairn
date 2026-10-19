@@ -143,7 +143,7 @@ export function MarketListingsPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <ItemThumb
-                        url={entry ? images.url(entry.code, entry.classType) : null}
+                        url={entry ? images.url(entry.iconCode ?? entry.code, entry.classType) : null}
                         alt={l.name}
                       />
                       <div className="min-w-0">

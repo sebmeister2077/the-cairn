@@ -753,7 +753,7 @@ export function MarketItemPage() {
     // Caught-animal species items have no species-level render; resolve a
     // representative creature image by falling back across breed/age/sex.
     if (currentEntry.category === "animal") return itemImages.creatureImage(currentEntry.code);
-    return itemImages.url(currentEntry.code, currentEntry.classType);
+    return itemImages.url(currentEntry.iconCode ?? currentEntry.code, currentEntry.classType);
   }, [currentEntry, tapestryImage, chiselDesign, itemImages]);
 
   // Distinct builds within this item's listings — a named group like "l-dungeon"
