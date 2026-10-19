@@ -256,142 +256,142 @@ export function PromoEditorDialog({
           <PromoPreview title={form.title} content={previewContent} imageSrc={previewImageSrc} />
         ) : (
           <div className="space-y-4">
-          <Field label="Title">
-            <Input
-              value={form.title}
-              onChange={(e) => patch("title", e.target.value)}
-              placeholder="TOPS Halloween Chiseling Event"
-            />
-          </Field>
+            <Field label="Title">
+              <Input
+                value={form.title}
+                onChange={(e) => patch("title", e.target.value)}
+                placeholder="TOPS Halloween Chiseling Event"
+              />
+            </Field>
 
-          <Field label="Banner subtitle" hint="Appended after the title in the banner (desktop).">
-            <Input
-              value={form.subtitle}
-              onChange={(e) => patch("subtitle", e.target.value)}
-              placeholder="— a TOPS community event. Register by Sep 30."
-            />
-          </Field>
+            <Field label="Banner subtitle" hint="Appended after the title in the banner (desktop).">
+              <Input
+                value={form.subtitle}
+                onChange={(e) => patch("subtitle", e.target.value)}
+                placeholder="— a TOPS community event. Register by Sep 30."
+              />
+            </Field>
 
-          <Field label="Summary">
-            <TextArea
-              rows={3}
-              value={form.summary}
-              onChange={(e) => patch("summary", e.target.value)}
-              placeholder="What the event is about…"
-            />
-          </Field>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Prize">
+            <Field label="Summary">
               <TextArea
-                rows={2}
-                value={form.prize}
-                onChange={(e) => patch("prize", e.target.value)}
+                rows={7}
+                value={form.summary}
+                onChange={(e) => patch("summary", e.target.value)}
+                placeholder="What the event is about…"
               />
             </Field>
-            <Field label="Registration / rules location">
-              <TextArea
-                rows={2}
-                value={form.registration}
-                onChange={(e) => patch("registration", e.target.value)}
-              />
-            </Field>
-            <Field label="Hosts / judges">
-              <Input value={form.hosts} onChange={(e) => patch("hosts", e.target.value)} />
-            </Field>
-            <Field label="Hosted by (venue)">
-              <Input value={form.hostedBy} onChange={(e) => patch("hostedBy", e.target.value)} />
-            </Field>
-            <Field label="Announcement URL" hint="External link (e.g. Discord).">
-              <Input
-                value={form.discordUrl}
-                onChange={(e) => patch("discordUrl", e.target.value)}
-                placeholder="https://discord.com/…"
-              />
-            </Field>
-            <Field label="In-app map link" hint="e.g. /multiplayer/tops-map?x=-1390&z=-20&zoom=4">
-              <Input value={form.mapUrl} onChange={(e) => patch("mapUrl", e.target.value)} />
-            </Field>
-          </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Schedule</Label>
-              <Button type="button" size="xs" variant="secondary" onClick={addScheduleRow}>
-                <Plus className="size-3" /> Add row
-              </Button>
-            </div>
-            {form.schedule.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No schedule rows.</p>
-            ) : (
-              <div className="space-y-2">
-                {form.schedule.map((row, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input
-                      className="flex-1"
-                      value={row.label}
-                      placeholder="Registration"
-                      onChange={(e) => updateScheduleRow(i, "label", e.target.value)}
-                    />
-                    <Input
-                      className="flex-1"
-                      value={row.value}
-                      placeholder="Sep 26 – Sep 30, 2026"
-                      onChange={(e) => updateScheduleRow(i, "value", e.target.value)}
-                    />
-                    <Button
-                      type="button"
-                      size="icon-xs"
-                      variant="ghost"
-                      aria-label="Remove row"
-                      onClick={() => removeScheduleRow(i)}
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Expires at"
-              hint="Banner auto-hides after this moment. Leave empty to never expire."
-            >
-              <Input
-                type="datetime-local"
-                value={form.expiresLocal}
-                onChange={(e) => patch("expiresLocal", e.target.value)}
-              />
-            </Field>
-            <Field label="Banner image" hint="PNG / JPEG / WebP / GIF, max 5 MB.">
-              <Input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
-                onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-              />
-              {imageFile ? (
-                <p className="text-xs text-muted-foreground">Selected: {imageFile.name}</p>
-              ) : existingImage ? (
-                <img
-                  src={existingImage}
-                  alt="Current banner"
-                  className="mt-1 max-h-24 rounded border border-border"
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Prize">
+                <TextArea
+                  rows={3}
+                  value={form.prize}
+                  onChange={(e) => patch("prize", e.target.value)}
                 />
-              ) : null}
-            </Field>
-          </div>
-
-          <label className="flex items-center justify-between gap-3 rounded border p-2">
-            <div>
-              <div className="text-sm font-medium">Active</div>
-              <p className="text-xs text-muted-foreground">
-                Activating this promo deactivates any other active one.
-              </p>
+              </Field>
+              <Field label="Registration / rules location">
+                <TextArea
+                  rows={3}
+                  value={form.registration}
+                  onChange={(e) => patch("registration", e.target.value)}
+                />
+              </Field>
+              <Field label="Hosts / judges">
+                <Input value={form.hosts} onChange={(e) => patch("hosts", e.target.value)} />
+              </Field>
+              <Field label="Hosted by (venue)">
+                <Input value={form.hostedBy} onChange={(e) => patch("hostedBy", e.target.value)} />
+              </Field>
+              <Field label="Announcement URL" hint="External link (e.g. Discord).">
+                <Input
+                  value={form.discordUrl}
+                  onChange={(e) => patch("discordUrl", e.target.value)}
+                  placeholder="https://discord.com/…"
+                />
+              </Field>
+              <Field label="In-app map link" hint="e.g. /multiplayer/tops-map?x=-1390&z=-20&zoom=4">
+                <Input value={form.mapUrl} onChange={(e) => patch("mapUrl", e.target.value)} />
+              </Field>
             </div>
-            <Switch checked={form.active} onCheckedChange={(v) => patch("active", Boolean(v))} />
-          </label>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Schedule</Label>
+                <Button type="button" size="xs" variant="secondary" onClick={addScheduleRow}>
+                  <Plus className="size-3" /> Add row
+                </Button>
+              </div>
+              {form.schedule.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No schedule rows.</p>
+              ) : (
+                <div className="space-y-2">
+                  {form.schedule.map((row, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Input
+                        className="flex-1"
+                        value={row.label}
+                        placeholder="Registration"
+                        onChange={(e) => updateScheduleRow(i, "label", e.target.value)}
+                      />
+                      <Input
+                        className="flex-1"
+                        value={row.value}
+                        placeholder="Sep 26 – Sep 30, 2026"
+                        onChange={(e) => updateScheduleRow(i, "value", e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        size="icon-xs"
+                        variant="ghost"
+                        aria-label="Remove row"
+                        onClick={() => removeScheduleRow(i)}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field
+                label="Expires at"
+                hint="Banner auto-hides after this moment. Leave empty to never expire."
+              >
+                <Input
+                  type="datetime-local"
+                  value={form.expiresLocal}
+                  onChange={(e) => patch("expiresLocal", e.target.value)}
+                />
+              </Field>
+              <Field label="Banner image" hint="PNG / JPEG / WebP / GIF, max 5 MB.">
+                <Input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+                />
+                {imageFile ? (
+                  <p className="text-xs text-muted-foreground">Selected: {imageFile.name}</p>
+                ) : existingImage ? (
+                  <img
+                    src={existingImage}
+                    alt="Current banner"
+                    className="mt-1 max-h-24 rounded border border-border"
+                  />
+                ) : null}
+              </Field>
+            </div>
+
+            <label className="flex items-center justify-between gap-3 rounded border p-2">
+              <div>
+                <div className="text-sm font-medium">Active</div>
+                <p className="text-xs text-muted-foreground">
+                  Activating this promo deactivates any other active one.
+                </p>
+              </div>
+              <Switch checked={form.active} onCheckedChange={(v) => patch("active", Boolean(v))} />
+            </label>
           </div>
         )}
 

@@ -18,6 +18,7 @@ import type { TLGrouping } from "@/lib/routing/tl-groupings";
 import { GROUPING_LIBRARY_KEY, useGroupingLibraryActions } from "@/hooks/useGroupingLibrary";
 
 import { TagInput } from "./TagInput";
+import { TextArea } from "@/components/ui/textarea";
 
 interface PublishGroupingDialogProps {
   open: boolean;
@@ -233,14 +234,13 @@ export function PublishGroupingDialog({
             <Label htmlFor="publish-desc">
               {t("topsMap.groupingsDrawer.library.descriptionLabel")}
             </Label>
-            <textarea
+            <TextArea
               id="publish-desc"
               value={description}
               maxLength={500}
               rows={3}
               placeholder={t("topsMap.groupingsDrawer.library.descriptionPlaceholder")}
               onChange={(e) => setDescription(e.target.value)}
-              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             />
           </div>
           <div className="grid gap-1.5">
