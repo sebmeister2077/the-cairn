@@ -43,7 +43,7 @@ export function MarketPriceIndexCategoryBreakdown({
           time.
         </p>
         <ul className="divide-y divide-border text-sm">
-          {visible.map((c) => {
+          {visible.sortBy(["gearsTraded"], true).map((c) => {
             const open = expanded.has(c.category);
             return (
               <li key={c.category}>
