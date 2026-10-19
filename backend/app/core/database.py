@@ -109,531 +109,532 @@ def get_conn():
 # ---------------------------------------------------------------------------
 # THIS WILL NOT BE UPDATED ANYMORE, USE THE ALEMBIC MIGRATION SYSTEM FOR FUTURE CHANGES TO THE DATABASE
 
-_SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS contributions (
-    id              TEXT PRIMARY KEY,
-    contributor     TEXT NOT NULL DEFAULT 'Anonymous',
-    tile_count      INTEGER NOT NULL DEFAULT 0,
-    status          TEXT NOT NULL DEFAULT 'pending',
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    approved_at     TIMESTAMPTZ,
-    tiles_new       INTEGER,
-    tiles_existing  INTEGER,
-    combined_total  INTEGER
-);
+# _SCHEMA_SQL = """
+# CREATE TABLE IF NOT EXISTS contributions (
+#     id              TEXT PRIMARY KEY,
+#     contributor     TEXT NOT NULL DEFAULT 'Anonymous',
+#     tile_count      INTEGER NOT NULL DEFAULT 0,
+#     status          TEXT NOT NULL DEFAULT 'pending',
+#     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     approved_at     TIMESTAMPTZ,
+#     tiles_new       INTEGER,
+#     tiles_existing  INTEGER,
+#     combined_total  INTEGER
+# );
 
-CREATE TABLE IF NOT EXISTS contribution_log (
-    id              TEXT PRIMARY KEY,
-    contributor     TEXT NOT NULL,
-    approved_at     TIMESTAMPTZ NOT NULL,
-    tiles_new       INTEGER NOT NULL DEFAULT 0,
-    tiles_existing  INTEGER NOT NULL DEFAULT 0,
-    combined_total  INTEGER NOT NULL DEFAULT 0
-);
+# CREATE TABLE IF NOT EXISTS contribution_log (
+#     id              TEXT PRIMARY KEY,
+#     contributor     TEXT NOT NULL,
+#     approved_at     TIMESTAMPTZ NOT NULL,
+#     tiles_new       INTEGER NOT NULL DEFAULT 0,
+#     tiles_existing  INTEGER NOT NULL DEFAULT 0,
+#     combined_total  INTEGER NOT NULL DEFAULT 0
+# );
 
-CREATE TABLE IF NOT EXISTS app_state (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-);
+# CREATE TABLE IF NOT EXISTS app_state (
+#     key   TEXT PRIMARY KEY,
+#     value TEXT NOT NULL
+# );
 
-CREATE TABLE IF NOT EXISTS api_keys (
-    key             TEXT PRIMARY KEY,
-    name            TEXT NOT NULL DEFAULT '',
-    permissions     TEXT NOT NULL DEFAULT 'read',
-    consume_once    BOOLEAN NOT NULL DEFAULT FALSE,
-    bound_identity  TEXT,
-    revoked         BOOLEAN NOT NULL DEFAULT FALSE,
-    usage_count     BIGINT NOT NULL DEFAULT 0,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_used_at    TIMESTAMPTZ
-);
+# CREATE TABLE IF NOT EXISTS api_keys (
+#     key             TEXT PRIMARY KEY,
+#     name            TEXT NOT NULL DEFAULT '',
+#     permissions     TEXT NOT NULL DEFAULT 'read',
+#     consume_once    BOOLEAN NOT NULL DEFAULT FALSE,
+#     bound_identity  TEXT,
+#     revoked         BOOLEAN NOT NULL DEFAULT FALSE,
+#     usage_count     BIGINT NOT NULL DEFAULT 0,
+#     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     last_used_at    TIMESTAMPTZ
+# );
 
-CREATE TABLE IF NOT EXISTS invite_links (
-    token       TEXT PRIMARY KEY,
-    name        TEXT NOT NULL DEFAULT '',
-    permissions TEXT NOT NULL DEFAULT 'read',
-    max_uses    INTEGER,
-    use_count   INTEGER NOT NULL DEFAULT 0,
-    expires_at  TIMESTAMPTZ,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    revoked     BOOLEAN NOT NULL DEFAULT FALSE
-);
+# CREATE TABLE IF NOT EXISTS invite_links (
+#     token       TEXT PRIMARY KEY,
+#     name        TEXT NOT NULL DEFAULT '',
+#     permissions TEXT NOT NULL DEFAULT 'read',
+#     max_uses    INTEGER,
+#     use_count   INTEGER NOT NULL DEFAULT 0,
+#     expires_at  TIMESTAMPTZ,
+#     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     revoked     BOOLEAN NOT NULL DEFAULT FALSE
+# );
 
-CREATE TABLE IF NOT EXISTS tops_map_chunk_urls (
-    level       INTEGER NOT NULL,
-    cx          INTEGER NOT NULL,
-    cy          INTEGER NOT NULL,
-    url         TEXT NOT NULL,
-    expires_at  TIMESTAMPTZ NOT NULL,
-    PRIMARY KEY (level, cx, cy)
-);
-CREATE INDEX IF NOT EXISTS idx_tops_map_chunk_urls_expires_at
-    ON tops_map_chunk_urls (expires_at);
+# CREATE TABLE IF NOT EXISTS tops_map_chunk_urls (
+#     level       INTEGER NOT NULL,
+#     cx          INTEGER NOT NULL,
+#     cy          INTEGER NOT NULL,
+#     url         TEXT NOT NULL,
+#     expires_at  TIMESTAMPTZ NOT NULL,
+#     PRIMARY KEY (level, cx, cy)
+# );
+# CREATE INDEX IF NOT EXISTS idx_tops_map_chunk_urls_expires_at
+#     ON tops_map_chunk_urls (expires_at);
 
--- Pending TOPS-map regeneration requests. The background worker drains this
--- table at the start of every generation cycle so that approvals which arrive
--- while a job is already running are not lost.
---
--- A row with full_regen=TRUE (and bbox columns NULL) means "rebuild every
--- chunk for the listed levels". Otherwise the bbox is a world-block bounding
--- box that should be re-rendered. ``levels`` is a JSON array of resolution
--- level numbers; NULL means "all configured levels".
-CREATE TABLE IF NOT EXISTS regen_queue (
-    id          BIGSERIAL PRIMARY KEY,
-    min_x       INTEGER,
-    max_x       INTEGER,
-    min_z       INTEGER,
-    max_z       INTEGER,
-    levels      TEXT,
-    full_regen  BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_regen_queue_created_at
-    ON regen_queue (created_at);
+# -- Pending TOPS-map regeneration requests. The background worker drains this
+# -- table at the start of every generation cycle so that approvals which arrive
+# -- while a job is already running are not lost.
+# --
+# -- A row with full_regen=TRUE (and bbox columns NULL) means "rebuild every
+# -- chunk for the listed levels". Otherwise the bbox is a world-block bounding
+# -- box that should be re-rendered. ``levels`` is a JSON array of resolution
+# -- level numbers; NULL means "all configured levels".
+# CREATE TABLE IF NOT EXISTS regen_queue (
+#     id          BIGSERIAL PRIMARY KEY,
+#     min_x       INTEGER,
+#     max_x       INTEGER,
+#     min_z       INTEGER,
+#     max_z       INTEGER,
+#     levels      TEXT,
+#     full_regen  BOOLEAN NOT NULL DEFAULT FALSE,
+#     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+# );
+# CREATE INDEX IF NOT EXISTS idx_regen_queue_created_at
+#     ON regen_queue (created_at);
 
--- Single-row table acting as a global mutex around mutations of the
--- combined map .db (approve / revert / restore). The application enforces
--- that ``id`` is always 'globalservermap'. ``expires_at`` lets a crashed
--- worker auto-release its lock after the TTL.
-CREATE TABLE IF NOT EXISTS map_lock (
-    id              TEXT PRIMARY KEY,
-    holder_token    TEXT NOT NULL,
-    holder_action   TEXT NOT NULL,
-    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at      TIMESTAMPTZ NOT NULL
-);
+# -- Single-row table acting as a global mutex around mutations of the
+# -- combined map .db (approve / revert / restore). The application enforces
+# -- that ``id`` is always 'globalservermap'. ``expires_at`` lets a crashed
+# -- worker auto-release its lock after the TTL.
+# CREATE TABLE IF NOT EXISTS map_lock (
+#     id              TEXT PRIMARY KEY,
+#     holder_token    TEXT NOT NULL,
+#     holder_action   TEXT NOT NULL,
+#     acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     expires_at      TIMESTAMPTZ NOT NULL
+# );
 
--- Per-resource mutex for the small geojson files served from R2
--- (translocators, traders, landmarks). The contribute + admin routes do
--- a read-modify-upload of the geojson; with multiple server replicas the
--- in-process ``asyncio.Lock`` is insufficient so we additionally take a
--- short DB-backed lease around the critical section. ``resource`` is the
--- bare resource name ('translocators' | 'traders' | 'landmarks').
-CREATE TABLE IF NOT EXISTS geojson_lock (
-    resource        TEXT PRIMARY KEY,
-    holder_token    TEXT NOT NULL,
-    holder_action   TEXT NOT NULL,
-    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at      TIMESTAMPTZ NOT NULL
-);
+# -- Per-resource mutex for the small geojson files served from R2
+# -- (translocators, traders, landmarks). The contribute + admin routes do
+# -- a read-modify-upload of the geojson; with multiple server replicas the
+# -- in-process ``asyncio.Lock`` is insufficient so we additionally take a
+# -- short DB-backed lease around the critical section. ``resource`` is the
+# -- bare resource name ('translocators' | 'traders' | 'landmarks').
+# CREATE TABLE IF NOT EXISTS geojson_lock (
+#     resource        TEXT PRIMARY KEY,
+#     holder_token    TEXT NOT NULL,
+#     holder_action   TEXT NOT NULL,
+#     acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     expires_at      TIMESTAMPTZ NOT NULL
+# );
 
--- Single-row leader-election table. Periodic scheduled jobs that touch
--- shared R2 keys (weekly backups, history cleanup) only run on the
--- instance currently holding this lease. Followers refresh ``is_leader``
--- in-memory from a background loop; a crashed leader auto-releases via
--- ``expires_at``.
-CREATE TABLE IF NOT EXISTS instance_leader (
-    id              TEXT PRIMARY KEY,
-    holder_token    TEXT NOT NULL,
-    instance_label  TEXT NOT NULL,
-    acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at      TIMESTAMPTZ NOT NULL
-);
+# -- Single-row leader-election table. Periodic scheduled jobs that touch
+# -- shared R2 keys (weekly backups, history cleanup) only run on the
+# -- instance currently holding this lease. Followers refresh ``is_leader``
+# -- in-memory from a background loop; a crashed leader auto-releases via
+# -- ``expires_at``.
+# CREATE TABLE IF NOT EXISTS instance_leader (
+#     id              TEXT PRIMARY KEY,
+#     holder_token    TEXT NOT NULL,
+#     instance_label  TEXT NOT NULL,
+#     acquired_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     expires_at      TIMESTAMPTZ NOT NULL
+# );
 
--- Feature flags consulted by both backend (gating endpoints) and frontend
--- (gating UI). A flag is OFF by default if its row is missing.
-CREATE TABLE IF NOT EXISTS feature_flags (
-    key             TEXT PRIMARY KEY,
-    enabled         BOOLEAN NOT NULL DEFAULT FALSE,
-    -- Optional numeric override for admin-tunable quotas (per-day caps,
-    -- max batch sizes, dedupe radii, cooldowns). NULL means "use the
-    -- default baked into the route handler"; see ``feature_flags.get_int``
-    -- and alembic 0018_feature_flag_value_int.
-    value_int       INTEGER,
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by_key  TEXT
-);
+# -- Feature flags consulted by both backend (gating endpoints) and frontend
+# -- (gating UI). A flag is OFF by default if its row is missing.
+# CREATE TABLE IF NOT EXISTS feature_flags (
+#     key             TEXT PRIMARY KEY,
+#     enabled         BOOLEAN NOT NULL DEFAULT FALSE,
+#     -- Optional numeric override for admin-tunable quotas (per-day caps,
+#     -- max batch sizes, dedupe radii, cooldowns). NULL means "use the
+#     -- default baked into the route handler"; see ``feature_flags.get_int``
+#     -- and alembic 0018_feature_flag_value_int.
+#     value_int       INTEGER,
+#     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     updated_by_key  TEXT
+# );
 
--- Seed the well-known flags as disabled. Idempotent â€” won't overwrite
--- explicit toggles. New flags can be added by future migrations.
-INSERT INTO feature_flags (key, enabled) VALUES
-    ('match_score', FALSE),
-    ('region_overwrite', FALSE),
-    ('public_history', FALSE),
-    ('weekly_backups', FALSE),
-    ('per_contribution_revert', FALSE),
-    ('backup_restore', FALSE),
-    -- Operational kill switches. These exist so the row is visible in the
-    -- admin UI; their effective default when the row is *missing* is set in
-    -- the application code (see ``feature_flags.is_feature_enabled_default``).
-    ('maintenance_mode', FALSE),
-    ('uploads_enabled', TRUE),
-    ('registration_enabled', TRUE),
-    -- Heavy-compute kill switch. ON = previews + validation + match-score
-    -- run normally for everyone. OFF = those operations are blocked for
-    -- non-admin callers (admin bypasses the flag) so a small server can
-    -- keep serving the read-only API while heavy work waits for an admin
-    -- with a beefy machine to drain it via the bulk-run button.
-    ('heavy_compute_enabled', TRUE),
-    -- Auto map-cache regeneration after a contribution merge. ON = the
-    -- approval / revert workflow kicks ``generate_map_levels`` so chunks
-    -- intersecting the contributed area are re-rendered immediately.
-    -- OFF = the regen request is suppressed entirely; an admin must
-    -- trigger regeneration manually from the TOPS map admin panel.
-    ('auto_regen_after_approval', TRUE),
-    -- zstd compression for the combined map .db, weekly/manual backups,
-    -- and per-contribution archives. OFF = today's behaviour (raw .db
-    -- everywhere). ON = combined DB keeps a raw + .zst pair (readers
-    -- prefer .zst when its x-amz-meta-source-etag matches), backups and
-    -- archives are written as .zst only. See plans/zstd-compression-plan.
-    ('compress_artefacts', FALSE),
-    -- User-contributed translocators. ON = POST /api/contribute-tls
-    -- accepts submissions and merges them live into translocators.geojson;
-    -- OFF = the endpoint returns 503 (frontend Contribute TLs page degrades
-    -- gracefully). Audit + admin endpoints work regardless of this flag.
-    ('translocator_contributions', FALSE),
-    -- Manual TL entry path (typed coordinates). Independent of the
-    -- chat-log flag: ON = POST /api/contribute-tls/manual accepts typed
-    -- pairs and merges them live (no admin review); OFF = the endpoint
-    -- returns 503 and the Manual entry tab surfaces a disabled message.
-    ('manual_translocators', FALSE),
-    -- Screenshot-based translocator contribution path. Independent of
-    -- ``translocator_contributions``: ON = POST
-    -- /api/contribute-tls/screenshots/* accepts uploads and queues OCR +
-    -- minimap analysis; OFF = those endpoints return 404 and the
-    -- frontend tab hides the form.
-    ('translocator_screenshot_contributions', FALSE),
-    -- Quota-only rows: ``enabled`` is unused for these (the actual
-    -- feature gate is a separate boolean flag like
-    -- ``traders_manual_contributions``). ``value_int`` is NULL → handler
-    -- default applies; admins can override from the Feature Flags page.
-    ('traders_chatlog_daily_cap', TRUE),
-    ('traders_manual_daily_cap', TRUE),
-    ('traders_max_batch', TRUE),
-    ('traders_dedupe_radius', TRUE),
-    -- Trader-claim type overlay (static claim boxes get a user/proxy type).
-    -- Boolean gates default OFF; the daily-cap is a quota (value_int) row.
-    ('trader_claims_viewer', FALSE),
-    ('trader_claims_manual', FALSE),
-    ('trader_claims_authoritative', FALSE),
-    ('trader_claims_manual_daily_cap', TRUE),
-    ('translocators_chatlog_daily_cap', TRUE),
-    ('translocators_manual_daily_cap', TRUE),
-    ('translocators_max_batch', TRUE),
-    ('translocators_dedupe_radius', TRUE),
-    ('translocator_screenshots_max_pending', TRUE),
-    ('map_contribution_cooldown_days', TRUE)
-ON CONFLICT (key) DO NOTHING;
+# -- Seed the well-known flags as disabled. Idempotent â€” won't overwrite
+# -- explicit toggles. New flags can be added by future migrations.
+# INSERT INTO feature_flags (key, enabled) VALUES
+#     ('match_score', FALSE),
+#     ('region_overwrite', FALSE),
+#     ('public_history', FALSE),
+#     ('weekly_backups', FALSE),
+#     ('per_contribution_revert', FALSE),
+#     ('backup_restore', FALSE),
+#     -- Operational kill switches. These exist so the row is visible in the
+#     -- admin UI; their effective default when the row is *missing* is set in
+#     -- the application code (see ``feature_flags.is_feature_enabled_default``).
+#     ('maintenance_mode', FALSE),
+#     ('uploads_enabled', TRUE),
+#     ('registration_enabled', TRUE),
+#     -- Heavy-compute kill switch. ON = previews + validation + match-score
+#     -- run normally for everyone. OFF = those operations are blocked for
+#     -- non-admin callers (admin bypasses the flag) so a small server can
+#     -- keep serving the read-only API while heavy work waits for an admin
+#     -- with a beefy machine to drain it via the bulk-run button.
+#     ('heavy_compute_enabled', TRUE),
+#     -- Auto map-cache regeneration after a contribution merge. ON = the
+#     -- approval / revert workflow kicks ``generate_map_levels`` so chunks
+#     -- intersecting the contributed area are re-rendered immediately.
+#     -- OFF = the regen request is suppressed entirely; an admin must
+#     -- trigger regeneration manually from the TOPS map admin panel.
+#     ('auto_regen_after_approval', TRUE),
+#     -- zstd compression for the combined map .db, weekly/manual backups,
+#     -- and per-contribution archives. OFF = today's behaviour (raw .db
+#     -- everywhere). ON = combined DB keeps a raw + .zst pair (readers
+#     -- prefer .zst when its x-amz-meta-source-etag matches), backups and
+#     -- archives are written as .zst only. See plans/zstd-compression-plan.
+#     ('compress_artefacts', FALSE),
+#     -- User-contributed translocators. ON = POST /api/contribute-tls
+#     -- accepts submissions and merges them live into translocators.geojson;
+#     -- OFF = the endpoint returns 503 (frontend Contribute TLs page degrades
+#     -- gracefully). Audit + admin endpoints work regardless of this flag.
+#     ('translocator_contributions', FALSE),
+#     -- Manual TL entry path (typed coordinates). Independent of the
+#     -- chat-log flag: ON = POST /api/contribute-tls/manual accepts typed
+#     -- pairs and merges them live (no admin review); OFF = the endpoint
+#     -- returns 503 and the Manual entry tab surfaces a disabled message.
+#     ('manual_translocators', FALSE),
+#     -- Screenshot-based translocator contribution path. Independent of
+#     -- ``translocator_contributions``: ON = POST
+#     -- /api/contribute-tls/screenshots/* accepts uploads and queues OCR +
+#     -- minimap analysis; OFF = those endpoints return 404 and the
+#     -- frontend tab hides the form.
+#     ('translocator_screenshot_contributions', FALSE),
+#     -- Quota-only rows: ``enabled`` is unused for these (the actual
+#     -- feature gate is a separate boolean flag like
+#     -- ``traders_manual_contributions``). ``value_int`` is NULL → handler
+#     -- default applies; admins can override from the Feature Flags page.
+#     ('traders_chatlog_daily_cap', TRUE),
+#     ('traders_manual_daily_cap', TRUE),
+#     ('traders_max_batch', TRUE),
+#     ('traders_dedupe_radius', TRUE),
+#     -- Trader-claim type overlay (static claim boxes get a user/proxy type).
+#     -- Boolean gates default OFF; the daily-cap is a quota (value_int) row.
+#     ('trader_claims_viewer', FALSE),
+#     ('trader_claims_manual', FALSE),
+#     ('trader_claims_authoritative', FALSE),
+#     ('trader_claims_manual_daily_cap', TRUE),
+#     ('translocators_chatlog_daily_cap', TRUE),
+#     ('translocators_manual_daily_cap', TRUE),
+#     ('translocators_max_batch', TRUE),
+#     ('translocators_dedupe_radius', TRUE),
+#     ('translocator_screenshots_max_pending', TRUE),
+#     ('map_contribution_cooldown_days', TRUE)
+# ON CONFLICT (key) DO NOTHING;
 
--- Generic key/value settings table for non-boolean admin-tunable values
--- (compression level, thread preset, future runtime knobs). Distinct from
--- ``feature_flags`` which is bool-only. Values are JSONB so callers can
--- store small structured documents without schema churn.
-CREATE TABLE IF NOT EXISTS app_settings (
-    key            TEXT PRIMARY KEY,
-    value          JSONB NOT NULL,
-    updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by_key TEXT
-);
-"""
+# -- Generic key/value settings table for non-boolean admin-tunable values
+# -- (compression level, thread preset, future runtime knobs). Distinct from
+# -- ``feature_flags`` which is bool-only. Values are JSONB so callers can
+# -- store small structured documents without schema churn.
+# CREATE TABLE IF NOT EXISTS app_settings (
+#     key            TEXT PRIMARY KEY,
+#     value          JSONB NOT NULL,
+#     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     updated_by_key TEXT
+# );
 
-_MIGRATIONS_SQL = """
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS usage_count BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS submitted_by_key TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
-ALTER TABLE IF EXISTS users
-ADD COLUMN IF NOT EXISTS show_contributions BOOLEAN NOT NULL DEFAULT FALSE;
--- Granular per-key permission flags (e.g. 'region_overwrite'). The existing
--- TEXT ``permissions`` column ('read'/'contribute') stays as the coarse tier;
--- this JSONB carries fine-grained boolean toggles set by admins.
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS extra_permissions JSONB NOT NULL DEFAULT '{}'::jsonb;
+# """
 
--- Phase 4d: DB-backed multiple admins. The env-var ``ADMIN_API_KEY`` stays the
--- bootstrap/super-admin (marked TRUE on every startup); additional admins can
--- be promoted from the admin panel once the acting admin has a passkey.
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
-CREATE INDEX IF NOT EXISTS idx_api_keys_is_admin
-    ON api_keys (is_admin) WHERE is_admin;
+# _MIGRATIONS_SQL = """
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS usage_count BIGINT NOT NULL DEFAULT 0;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS submitted_by_key TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS withdrawn_at TIMESTAMPTZ;
+# ALTER TABLE IF EXISTS users
+# ADD COLUMN IF NOT EXISTS show_contributions BOOLEAN NOT NULL DEFAULT FALSE;
+# -- Granular per-key permission flags (e.g. 'region_overwrite'). The existing
+# -- TEXT ``permissions`` column ('read'/'contribute') stays as the coarse tier;
+# -- this JSONB carries fine-grained boolean toggles set by admins.
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS extra_permissions JSONB NOT NULL DEFAULT '{}'::jsonb;
 
--- Phase 1: async match-score result storage on contributions.
--- ``match_score_status`` is one of ('pending', 'ready', 'failed') or NULL
--- (legacy / feature disabled at submit-time). ``match_score_json`` carries
--- the full result payload when status='ready', and the failure reason when
--- status='failed'. ``match_score_attempts`` is bumped each time the worker
--- picks the row up (caps retries at the worker level).
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS match_score_status   TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS match_score_json     JSONB;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS match_score_attempts INT NOT NULL DEFAULT 0;
-CREATE INDEX IF NOT EXISTS idx_contributions_match_score_status
-    ON contributions (match_score_status)
-    WHERE match_score_status = 'pending';
+# -- Phase 4d: DB-backed multiple admins. The env-var ``ADMIN_API_KEY`` stays the
+# -- bootstrap/super-admin (marked TRUE on every startup); additional admins can
+# -- be promoted from the admin panel once the acting admin has a passkey.
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE;
+# CREATE INDEX IF NOT EXISTS idx_api_keys_is_admin
+#     ON api_keys (is_admin) WHERE is_admin;
 
--- Phase 3: per-contribution preview retention. The approval flow promotes
--- pending preview PNGs into the public history bucket and stamps an expiry
--- here. As of the all-time history change, this column governs only the
--- per-contribution archived .db lifetime (used for revert) — the history
--- preview PNG is now kept forever and is tracked by
--- ``history_preview_uploaded_at`` below. NULL ⇒ no archive retention
--- configured (legacy rows, withdrawn contributions, or rows whose archive
--- has already been swept).
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS preview_retained_until TIMESTAMPTZ;
-CREATE INDEX IF NOT EXISTS idx_contributions_preview_retained_until
-    ON contributions (preview_retained_until)
-    WHERE preview_retained_until IS NOT NULL;
+# -- Phase 1: async match-score result storage on contributions.
+# -- ``match_score_status`` is one of ('pending', 'ready', 'failed') or NULL
+# -- (legacy / feature disabled at submit-time). ``match_score_json`` carries
+# -- the full result payload when status='ready', and the failure reason when
+# -- status='failed'. ``match_score_attempts`` is bumped each time the worker
+# -- picks the row up (caps retries at the worker level).
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS match_score_status   TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS match_score_json     JSONB;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS match_score_attempts INT NOT NULL DEFAULT 0;
+# CREATE INDEX IF NOT EXISTS idx_contributions_match_score_status
+#     ON contributions (match_score_status)
+#     WHERE match_score_status = 'pending';
 
--- All-time history: timestamp at which the preview PNG was promoted into
--- the ``history/<id>.png`` bucket. Drives visibility in the "Recent
--- contributions" grid (set ⇒ row appears, no time window). The PNG itself
--- is kept indefinitely; the daily cleanup task no longer touches it.
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS history_preview_uploaded_at TIMESTAMPTZ;
-CREATE INDEX IF NOT EXISTS idx_contributions_history_preview_uploaded_at
-    ON contributions (history_preview_uploaded_at)
-    WHERE history_preview_uploaded_at IS NOT NULL;
--- Backfill from rows that currently have a non-null preview_retained_until
--- (those are the rows whose preview is still in R2 at migration time).
-UPDATE contributions
-   SET history_preview_uploaded_at = COALESCE(approved_at, withdrawn_at, now())
- WHERE history_preview_uploaded_at IS NULL
-   AND preview_retained_until IS NOT NULL;
+# -- Phase 3: per-contribution preview retention. The approval flow promotes
+# -- pending preview PNGs into the public history bucket and stamps an expiry
+# -- here. As of the all-time history change, this column governs only the
+# -- per-contribution archived .db lifetime (used for revert) — the history
+# -- preview PNG is now kept forever and is tracked by
+# -- ``history_preview_uploaded_at`` below. NULL ⇒ no archive retention
+# -- configured (legacy rows, withdrawn contributions, or rows whose archive
+# -- has already been swept).
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS preview_retained_until TIMESTAMPTZ;
+# CREATE INDEX IF NOT EXISTS idx_contributions_preview_retained_until
+#     ON contributions (preview_retained_until)
+#     WHERE preview_retained_until IS NOT NULL;
 
--- Phase 4a: TOTP 2FA enrolment for admin keys. The secret is stored
--- encrypted (Fernet, key from TOTP_ENCRYPTION_KEY env var). NULL means
--- the admin has not enrolled yet — destructive operations gated by TOTP
--- will respond with 401 totp_required until they enrol.
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS totp_enrolled_at TIMESTAMPTZ;
+# -- All-time history: timestamp at which the preview PNG was promoted into
+# -- the ``history/<id>.png`` bucket. Drives visibility in the "Recent
+# -- contributions" grid (set ⇒ row appears, no time window). The PNG itself
+# -- is kept indefinitely; the daily cleanup task no longer touches it.
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS history_preview_uploaded_at TIMESTAMPTZ;
+# CREATE INDEX IF NOT EXISTS idx_contributions_history_preview_uploaded_at
+#     ON contributions (history_preview_uploaded_at)
+#     WHERE history_preview_uploaded_at IS NOT NULL;
+# -- Backfill from rows that currently have a non-null preview_retained_until
+# -- (those are the rows whose preview is still in R2 at migration time).
+# UPDATE contributions
+#    SET history_preview_uploaded_at = COALESCE(approved_at, withdrawn_at, now())
+#  WHERE history_preview_uploaded_at IS NULL
+#    AND preview_retained_until IS NOT NULL;
 
--- Phase 4b: per-contribution revert. The capture metadata records what
--- was written to R2 ``undo/<id>.added.bin`` (positions inserted by this
--- contribution) and ``undo/<id>.replaced.db`` (positions overwritten in
--- region/overwrite mode). ``revert_supported`` is FALSE when the capture
--- could not be persisted (e.g. the added.bin would have exceeded the
--- size cap) or for legacy contributions that pre-date the feature.
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_supported BOOLEAN;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_added_count INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_replaced_count INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS reverted_at TIMESTAMPTZ;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS reverted_by_key TEXT;
--- Affected world-block bounds, captured on approval and reused by the
--- revert endpoint to enqueue a partial TOPS regen.
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS affected_min_x INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS affected_max_x INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS affected_min_z INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS affected_max_z INTEGER;
+# -- Phase 4a: TOTP 2FA enrolment for admin keys. The secret is stored
+# -- encrypted (Fernet, key from TOTP_ENCRYPTION_KEY env var). NULL means
+# -- the admin has not enrolled yet — destructive operations gated by TOTP
+# -- will respond with 401 totp_required until they enrol.
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS totp_enrolled_at TIMESTAMPTZ;
 
--- Phase 2: region-restricted updates. NULL on all four columns ⇒ legacy
--- gap-fill mode (the default). Otherwise ``(min_x, max_x, min_z, max_z)``
--- is a world-block bounding box; on approval the merge replaces every tile
--- inside the region with the upload's version (and captures the previous
--- bytes into ``undo/<id>.replaced.db`` so revert remains surgical). Tiles
--- outside the region are untouched.
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS update_region_min_x INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS update_region_max_x INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS update_region_min_z INTEGER;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS update_region_max_z INTEGER;
-CREATE INDEX IF NOT EXISTS idx_contributions_update_region
-    ON contributions (update_region_min_x)
-    WHERE update_region_min_x IS NOT NULL;
+# -- Phase 4b: per-contribution revert. The capture metadata records what
+# -- was written to R2 ``undo/<id>.added.bin`` (positions inserted by this
+# -- contribution) and ``undo/<id>.replaced.db`` (positions overwritten in
+# -- region/overwrite mode). ``revert_supported`` is FALSE when the capture
+# -- could not be persisted (e.g. the added.bin would have exceeded the
+# -- size cap) or for legacy contributions that pre-date the feature.
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_supported BOOLEAN;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_added_count INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_replaced_count INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS reverted_at TIMESTAMPTZ;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS reverted_by_key TEXT;
+# -- Affected world-block bounds, captured on approval and reused by the
+# -- revert endpoint to enqueue a partial TOPS regen.
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS affected_min_x INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS affected_max_x INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS affected_min_z INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS affected_max_z INTEGER;
 
--- Per-submitter archive dedupe: when a user uploads an updated full-map
--- gap-fill that strictly supersedes their previous approved upload, the
--- ``dedupe_archive`` worker deletes the older ``archived/<id>.db[.zst]``
--- and records the supersession here so the audit trail and history grid
--- can render it. ``archive_deleted_at`` is non-NULL exactly when the R2
--- object was intentionally removed by dedupe (distinct from cleanup-
--- history's retention sweep, which clears preview_retained_until).
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS superseded_by_cid TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS superseded_at TIMESTAMPTZ;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS archive_deleted_at TIMESTAMPTZ;
-CREATE INDEX IF NOT EXISTS idx_contributions_supersedable
-    ON contributions (submitted_by_key_id, approved_at DESC)
-    WHERE status = 'approved'
-      AND superseded_by_cid IS NULL
-      AND archive_deleted_at IS NULL
-      AND archived_is_region_pruned IS NOT TRUE
-      AND update_region_min_x IS NULL;
+# -- Phase 2: region-restricted updates. NULL on all four columns ⇒ legacy
+# -- gap-fill mode (the default). Otherwise ``(min_x, max_x, min_z, max_z)``
+# -- is a world-block bounding box; on approval the merge replaces every tile
+# -- inside the region with the upload's version (and captures the previous
+# -- bytes into ``undo/<id>.replaced.db`` so revert remains surgical). Tiles
+# -- outside the region are untouched.
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS update_region_min_x INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS update_region_max_x INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS update_region_min_z INTEGER;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS update_region_max_z INTEGER;
+# CREATE INDEX IF NOT EXISTS idx_contributions_update_region
+#     ON contributions (update_region_min_x)
+#     WHERE update_region_min_x IS NOT NULL;
 
--- Invite-link traceability: record which invite minted each API key so
--- admins can audit who claimed a given link. NULL for keys created via
--- the admin route or the legacy paths that pre-date this column.
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS source_invite_token TEXT
-    REFERENCES invite_links(token) ON DELETE SET NULL;
-CREATE INDEX IF NOT EXISTS idx_api_keys_source_invite_token
-    ON api_keys (source_invite_token)
-    WHERE source_invite_token IS NOT NULL;
+# -- Per-submitter archive dedupe: when a user uploads an updated full-map
+# -- gap-fill that strictly supersedes their previous approved upload, the
+# -- ``dedupe_archive`` worker deletes the older ``archived/<id>.db[.zst]``
+# -- and records the supersession here so the audit trail and history grid
+# -- can render it. ``archive_deleted_at`` is non-NULL exactly when the R2
+# -- object was intentionally removed by dedupe (distinct from cleanup-
+# -- history's retention sweep, which clears preview_retained_until).
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS superseded_by_cid TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS superseded_at TIMESTAMPTZ;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS archive_deleted_at TIMESTAMPTZ;
+# CREATE INDEX IF NOT EXISTS idx_contributions_supersedable
+#     ON contributions (submitted_by_key_id, approved_at DESC)
+#     WHERE status = 'approved'
+#       AND superseded_by_cid IS NULL
+#       AND archive_deleted_at IS NULL
+#       AND archived_is_region_pruned IS NOT TRUE
+#       AND update_region_min_x IS NULL;
 
--- Phase 4c: WebAuthn (passkey) credentials for admin keys. Acts as a second
--- factor on top of the API key: an admin must complete a passkey assertion
--- after pasting their key before they can call admin routes. One admin key
--- may register multiple passkeys (e.g. laptop + YubiKey + phone). The
--- credential ID and public key come straight from the authenticator; we
--- never see or store any private material.
-CREATE TABLE IF NOT EXISTS webauthn_credentials (
-    id              BIGSERIAL PRIMARY KEY,
-    api_key         TEXT NOT NULL,
-    name            TEXT NOT NULL DEFAULT '',
-    credential_id   BYTEA NOT NULL UNIQUE,
-    public_key      BYTEA NOT NULL,
-    sign_count      BIGINT NOT NULL DEFAULT 0,
-    transports      TEXT,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_used_at    TIMESTAMPTZ
-);
-CREATE INDEX IF NOT EXISTS idx_webauthn_api_key
-    ON webauthn_credentials (api_key);
+# -- Invite-link traceability: record which invite minted each API key so
+# -- admins can audit who claimed a given link. NULL for keys created via
+# -- the admin route or the legacy paths that pre-date this column.
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS source_invite_token TEXT
+#     REFERENCES invite_links(token) ON DELETE SET NULL;
+# CREATE INDEX IF NOT EXISTS idx_api_keys_source_invite_token
+#     ON api_keys (source_invite_token)
+#     WHERE source_invite_token IS NOT NULL;
 
--- Async upload validation. The /contribute/complete handler used to
--- synchronously download the entire pending .db (potentially multi-GB) and
--- run SELECT COUNT(*) before returning, which blew through Render's request
--- timeout on small instances. Now /complete only does a cheap range-read of
--- the SQLite header and returns immediately; the heavy table-existence
--- check, tile count, and region-tile count are done by the
--- ``backend.app.tasks.validate_uploads`` worker.
---
--- ``validation_status`` is one of ('pending', 'valid') or NULL. NULL means
--- "legacy / already validated" (existing rows pre-dating this column are
--- treated as valid). On invalid uploads the row is deleted entirely (and
--- the R2 object with it), so 'invalid' is never persisted. ``attempts`` is
--- bumped each time the worker picks the row up so we can stop after a cap.
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS validation_status   TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS validation_attempts INT NOT NULL DEFAULT 0;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS validation_error    TEXT;
-CREATE INDEX IF NOT EXISTS idx_contributions_validation_status
-    ON contributions (validation_status)
-    WHERE validation_status = 'pending';
+# -- Phase 4c: WebAuthn (passkey) credentials for admin keys. Acts as a second
+# -- factor on top of the API key: an admin must complete a passkey assertion
+# -- after pasting their key before they can call admin routes. One admin key
+# -- may register multiple passkeys (e.g. laptop + YubiKey + phone). The
+# -- credential ID and public key come straight from the authenticator; we
+# -- never see or store any private material.
+# CREATE TABLE IF NOT EXISTS webauthn_credentials (
+#     id              BIGSERIAL PRIMARY KEY,
+#     api_key         TEXT NOT NULL,
+#     name            TEXT NOT NULL DEFAULT '',
+#     credential_id   BYTEA NOT NULL UNIQUE,
+#     public_key      BYTEA NOT NULL,
+#     sign_count      BIGINT NOT NULL DEFAULT 0,
+#     transports      TEXT,
+#     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     last_used_at    TIMESTAMPTZ
+# );
+# CREATE INDEX IF NOT EXISTS idx_webauthn_api_key
+#     ON webauthn_credentials (api_key);
 
--- Async approval. The merge of a pending contribution into the combined map
--- can take longer than Render's edge HTTP timeout (~100 s) on large
--- combined maps, since it needs to download globalservermap.db, run the
--- SQLite merge, and upload it back. /contribute/{id}/approve therefore
--- enqueues by setting ``approval_status='queued'`` and returns 202; the
--- ``backend.app.tasks.approve_contribution`` worker drains queued rows and
--- performs the actual merge.
---
--- Values: NULL (legacy / never queued), 'queued', 'running', 'failed'.
--- Successful approval clears these (or sets them to NULL implicitly via
--- the existing ``mark_approved`` flip of ``status``).
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS approval_status   TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS approval_attempts INT NOT NULL DEFAULT 0;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS approval_error    TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS approval_requested_by_key TEXT;
-CREATE INDEX IF NOT EXISTS idx_contributions_approval_status
-    ON contributions (approval_status)
-    WHERE approval_status IN ('queued', 'running');
+# -- Async upload validation. The /contribute/complete handler used to
+# -- synchronously download the entire pending .db (potentially multi-GB) and
+# -- run SELECT COUNT(*) before returning, which blew through Render's request
+# -- timeout on small instances. Now /complete only does a cheap range-read of
+# -- the SQLite header and returns immediately; the heavy table-existence
+# -- check, tile count, and region-tile count are done by the
+# -- ``backend.app.tasks.validate_uploads`` worker.
+# --
+# -- ``validation_status`` is one of ('pending', 'valid') or NULL. NULL means
+# -- "legacy / already validated" (existing rows pre-dating this column are
+# -- treated as valid). On invalid uploads the row is deleted entirely (and
+# -- the R2 object with it), so 'invalid' is never persisted. ``attempts`` is
+# -- bumped each time the worker picks the row up so we can stop after a cap.
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS validation_status   TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS validation_attempts INT NOT NULL DEFAULT 0;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS validation_error    TEXT;
+# CREATE INDEX IF NOT EXISTS idx_contributions_validation_status
+#     ON contributions (validation_status)
+#     WHERE validation_status = 'pending';
 
--- Per-contribution revert is also async: the merge re-uploads
--- ``globalservermap.db`` and on a multi-GB combined map that easily
--- exceeds Render's edge HTTP timeout (~100 s). The admin endpoint
--- ``/api/admin/contributions/{id}/revert`` therefore enqueues by setting
--- ``revert_status='queued'`` and returns 202; the
--- ``backend.app.tasks.revert_contribution`` worker drains the queue and
--- performs the actual undo. A backend restart mid-revert is recovered by
--- ``reset_running_reverts()`` (the merge holds ``map_lock`` for the
--- duration so resuming after a crash is safe).
---
--- Values: NULL (never reverted), 'queued', 'running', 'failed'.
--- Successful revert clears these (or leaves them NULL via the existing
--- ``mark_reverted`` flip of ``status``).
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_status   TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_attempts INT NOT NULL DEFAULT 0;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_error    TEXT;
-ALTER TABLE contributions
-ADD COLUMN IF NOT EXISTS revert_requested_by_key TEXT;
-CREATE INDEX IF NOT EXISTS idx_contributions_revert_status
-    ON contributions (revert_status)
-    WHERE revert_status IN ('queued', 'running');
+# -- Async approval. The merge of a pending contribution into the combined map
+# -- can take longer than Render's edge HTTP timeout (~100 s) on large
+# -- combined maps, since it needs to download globalservermap.db, run the
+# -- SQLite merge, and upload it back. /contribute/{id}/approve therefore
+# -- enqueues by setting ``approval_status='queued'`` and returns 202; the
+# -- ``backend.app.tasks.approve_contribution`` worker drains queued rows and
+# -- performs the actual merge.
+# --
+# -- Values: NULL (legacy / never queued), 'queued', 'running', 'failed'.
+# -- Successful approval clears these (or sets them to NULL implicitly via
+# -- the existing ``mark_approved`` flip of ``status``).
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS approval_status   TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS approval_attempts INT NOT NULL DEFAULT 0;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS approval_error    TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS approval_requested_by_key TEXT;
+# CREATE INDEX IF NOT EXISTS idx_contributions_approval_status
+#     ON contributions (approval_status)
+#     WHERE approval_status IN ('queued', 'running');
 
--- Maintenance notices. One row per known component (e.g. ``tops_map_viewer``).
--- Active=TRUE means the public chip should be shown; ``eta_at`` is the
--- admin's best guess for when the maintenance will be over and is used by
--- the frontend to render a live countdown (or "X minutes ago" once it's
--- elapsed). The row is preserved when the admin turns the notice off so
--- the previous message/eta are still visible in the admin history.
-CREATE TABLE IF NOT EXISTS maintenance_notices (
-    component       TEXT PRIMARY KEY,
-    active          BOOLEAN NOT NULL DEFAULT FALSE,
-    message         TEXT NOT NULL DEFAULT '',
-    started_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    eta_at          TIMESTAMPTZ,
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by_key  TEXT
-);
-CREATE INDEX IF NOT EXISTS idx_maintenance_notices_active
-    ON maintenance_notices (active) WHERE active;
+# -- Per-contribution revert is also async: the merge re-uploads
+# -- ``globalservermap.db`` and on a multi-GB combined map that easily
+# -- exceeds Render's edge HTTP timeout (~100 s). The admin endpoint
+# -- ``/api/admin/contributions/{id}/revert`` therefore enqueues by setting
+# -- ``revert_status='queued'`` and returns 202; the
+# -- ``backend.app.tasks.revert_contribution`` worker drains the queue and
+# -- performs the actual undo. A backend restart mid-revert is recovered by
+# -- ``reset_running_reverts()`` (the merge holds ``map_lock`` for the
+# -- duration so resuming after a crash is safe).
+# --
+# -- Values: NULL (never reverted), 'queued', 'running', 'failed'.
+# -- Successful revert clears these (or leaves them NULL via the existing
+# -- ``mark_reverted`` flip of ``status``).
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_status   TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_attempts INT NOT NULL DEFAULT 0;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_error    TEXT;
+# ALTER TABLE contributions
+# ADD COLUMN IF NOT EXISTS revert_requested_by_key TEXT;
+# CREATE INDEX IF NOT EXISTS idx_contributions_revert_status
+#     ON contributions (revert_status)
+#     WHERE revert_status IN ('queued', 'running');
 
--- Public landing page can offer to claim a key from a single "default"
--- invite link when a visitor lands on the site without an invite URL or a
--- saved API key (and after they've accepted browser-storage consent). At
--- most one invite link can be marked default-public at a time; the partial
--- unique index below enforces that. Toggled via PATCH /admin/invite-links.
-ALTER TABLE invite_links
-ADD COLUMN IF NOT EXISTS is_default_public BOOLEAN NOT NULL DEFAULT FALSE;
-CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
-    ON invite_links ((is_default_public)) WHERE is_default_public = TRUE;
+# -- Maintenance notices. One row per known component (e.g. ``tops_map_viewer``).
+# -- Active=TRUE means the public chip should be shown; ``eta_at`` is the
+# -- admin's best guess for when the maintenance will be over and is used by
+# -- the frontend to render a live countdown (or "X minutes ago" once it's
+# -- elapsed). The row is preserved when the admin turns the notice off so
+# -- the previous message/eta are still visible in the admin history.
+# CREATE TABLE IF NOT EXISTS maintenance_notices (
+#     component       TEXT PRIMARY KEY,
+#     active          BOOLEAN NOT NULL DEFAULT FALSE,
+#     message         TEXT NOT NULL DEFAULT '',
+#     started_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     eta_at          TIMESTAMPTZ,
+#     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     updated_by_key  TEXT
+# );
+# CREATE INDEX IF NOT EXISTS idx_maintenance_notices_active
+#     ON maintenance_notices (active) WHERE active;
 
--- Admin-tunable numeric overrides for ``feature_flags`` (per-day caps on
--- contribution submissions, max batch sizes, dedupe radii, cooldowns).
--- NULL means "use the default baked into the route handler" — see
--- ``feature_flags.get_int`` and alembic 0018_feature_flag_value_int.
-ALTER TABLE feature_flags
-ADD COLUMN IF NOT EXISTS value_int INTEGER;
+# -- Public landing page can offer to claim a key from a single "default"
+# -- invite link when a visitor lands on the site without an invite URL or a
+# -- saved API key (and after they've accepted browser-storage consent). At
+# -- most one invite link can be marked default-public at a time; the partial
+# -- unique index below enforces that. Toggled via PATCH /admin/invite-links.
+# ALTER TABLE invite_links
+# ADD COLUMN IF NOT EXISTS is_default_public BOOLEAN NOT NULL DEFAULT FALSE;
+# CREATE UNIQUE INDEX IF NOT EXISTS idx_invite_links_default_public
+#     ON invite_links ((is_default_public)) WHERE is_default_public = TRUE;
 
--- Auction contributor keys: a client-side VSProxy that POSTs its full
--- auction-events.jsonl to /api/contribute-auction-events. The raw file lives
--- in the PRIVATE R2 bucket at ``auction/raw/<key_id>.jsonl.gz``; the server is
--- the only holder of R2 credentials. ``auction_hmac_secret`` is the per-key
--- shared secret used to sign the request body (never derived from public
--- values like the upstream host). ``auction_trusted`` marks a fully-trusted
--- source; untrusted sources still merge but are tagged and can be revoked +
--- re-derived. The last four columns are ingest telemetry for the admin view.
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_contributor BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_trusted BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_hmac_secret TEXT;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_label TEXT;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_last_utc TIMESTAMPTZ;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_id_count INTEGER NOT NULL DEFAULT 0;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_size_bytes BIGINT NOT NULL DEFAULT 0;
-ALTER TABLE api_keys
-ADD COLUMN IF NOT EXISTS auction_fingerprint JSONB;
-CREATE INDEX IF NOT EXISTS idx_api_keys_auction_contributor
-    ON api_keys (auction_contributor) WHERE auction_contributor;
-"""
+# -- Admin-tunable numeric overrides for ``feature_flags`` (per-day caps on
+# -- contribution submissions, max batch sizes, dedupe radii, cooldowns).
+# -- NULL means "use the default baked into the route handler" — see
+# -- ``feature_flags.get_int`` and alembic 0018_feature_flag_value_int.
+# ALTER TABLE feature_flags
+# ADD COLUMN IF NOT EXISTS value_int INTEGER;
+
+# -- Auction contributor keys: a client-side VSProxy that POSTs its full
+# -- auction-events.jsonl to /api/contribute-auction-events. The raw file lives
+# -- in the PRIVATE R2 bucket at ``auction/raw/<key_id>.jsonl.gz``; the server is
+# -- the only holder of R2 credentials. ``auction_hmac_secret`` is the per-key
+# -- shared secret used to sign the request body (never derived from public
+# -- values like the upstream host). ``auction_trusted`` marks a fully-trusted
+# -- source; untrusted sources still merge but are tagged and can be revoked +
+# -- re-derived. The last four columns are ingest telemetry for the admin view.
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_contributor BOOLEAN NOT NULL DEFAULT FALSE;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_trusted BOOLEAN NOT NULL DEFAULT FALSE;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_hmac_secret TEXT;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_label TEXT;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_last_utc TIMESTAMPTZ;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_id_count INTEGER NOT NULL DEFAULT 0;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_size_bytes BIGINT NOT NULL DEFAULT 0;
+# ALTER TABLE api_keys
+# ADD COLUMN IF NOT EXISTS auction_fingerprint JSONB;
+# CREATE INDEX IF NOT EXISTS idx_api_keys_auction_contributor
+#     ON api_keys (auction_contributor) WHERE auction_contributor;
+# """
 
 # ---------------------------------------------------------------------------
 # Account system schema (users, ip_bans, user_flags, admin_audit_log).
@@ -642,156 +643,157 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_auction_contributor
 # ---------------------------------------------------------------------------
 # THIS WILL NOT BE UPDATED ANYMORE, USE THE ALEMBIC MIGRATION SYSTEM FOR FUTURE CHANGES TO THE DATABASE
 
-_ACCOUNT_SCHEMA_SQL = """
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+# _ACCOUNT_SCHEMA_SQL = """
+# CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
-CREATE TABLE IF NOT EXISTS users (
-    api_key                TEXT PRIMARY KEY REFERENCES api_keys(key) ON DELETE CASCADE,
-    display_name           TEXT NOT NULL,
-    in_game_name           TEXT,
-    use_in_game_name       BOOLEAN NOT NULL DEFAULT FALSE,
-    is_hireable            BOOLEAN NOT NULL DEFAULT FALSE,
-    is_leaderboard_visible BOOLEAN NOT NULL DEFAULT FALSE,
-    show_contributions     BOOLEAN NOT NULL DEFAULT FALSE,
-    genesis_for_ip         BOOLEAN NOT NULL DEFAULT FALSE,
-    joined_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
-    terms_accepted_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    terms_version          TEXT NOT NULL DEFAULT 'unknown',
-    deleted_at             TIMESTAMPTZ,
-    name_regen_count       INT NOT NULL DEFAULT 0,
-    last_name_change_at    TIMESTAMPTZ
-);
+# CREATE TABLE IF NOT EXISTS users (
+#     api_key                TEXT PRIMARY KEY REFERENCES api_keys(key) ON DELETE CASCADE,
+#     display_name           TEXT NOT NULL,
+#     in_game_name           TEXT,
+#     use_in_game_name       BOOLEAN NOT NULL DEFAULT FALSE,
+#     is_hireable            BOOLEAN NOT NULL DEFAULT FALSE,
+#     is_leaderboard_visible BOOLEAN NOT NULL DEFAULT FALSE,
+#     show_contributions     BOOLEAN NOT NULL DEFAULT FALSE,
+#     genesis_for_ip         BOOLEAN NOT NULL DEFAULT FALSE,
+#     joined_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     terms_accepted_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     terms_version          TEXT NOT NULL DEFAULT 'unknown',
+#     deleted_at             TIMESTAMPTZ,
+#     name_regen_count       INT NOT NULL DEFAULT 0,
+#     last_name_change_at    TIMESTAMPTZ
+# );
 
-CREATE INDEX IF NOT EXISTS idx_users_joined_at         ON users (joined_at DESC);
-CREATE INDEX IF NOT EXISTS idx_users_hireable          ON users (is_hireable) WHERE is_hireable;
-CREATE INDEX IF NOT EXISTS idx_users_display_name_trgm ON users USING gin (display_name gin_trgm_ops);
-CREATE INDEX IF NOT EXISTS idx_users_ingame_trgm       ON users USING gin (in_game_name gin_trgm_ops);
+# CREATE INDEX IF NOT EXISTS idx_users_joined_at         ON users (joined_at DESC);
+# CREATE INDEX IF NOT EXISTS idx_users_hireable          ON users (is_hireable) WHERE is_hireable;
+# CREATE INDEX IF NOT EXISTS idx_users_display_name_trgm ON users USING gin (display_name gin_trgm_ops);
+# CREATE INDEX IF NOT EXISTS idx_users_ingame_trgm       ON users USING gin (in_game_name gin_trgm_ops);
 
-CREATE TABLE IF NOT EXISTS ip_bans (
-    ip_hash      TEXT PRIMARY KEY,
-    reason_code  TEXT NOT NULL,
-    reason       TEXT NOT NULL,
-    admin_notes  TEXT,
-    banned_by    TEXT NOT NULL,
-    banned_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at   TIMESTAMPTZ NOT NULL
-);
+# CREATE TABLE IF NOT EXISTS ip_bans (
+#     ip_hash      TEXT PRIMARY KEY,
+#     reason_code  TEXT NOT NULL,
+#     reason       TEXT NOT NULL,
+#     admin_notes  TEXT,
+#     banned_by    TEXT NOT NULL,
+#     banned_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     expires_at   TIMESTAMPTZ NOT NULL
+# );
 
-CREATE INDEX IF NOT EXISTS idx_ip_bans_expires_at ON ip_bans (expires_at);
+# CREATE INDEX IF NOT EXISTS idx_ip_bans_expires_at ON ip_bans (expires_at);
 
-CREATE TABLE IF NOT EXISTS user_flags (
-    id            BIGSERIAL PRIMARY KEY,
-    flagged_user  TEXT NOT NULL REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE CASCADE,
-    related_user  TEXT REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE SET NULL,
-    reason        TEXT NOT NULL,
-    metadata      JSONB,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    resolved_at   TIMESTAMPTZ,
-    resolved_by   TEXT,
-    resolution    TEXT
-);
+# CREATE TABLE IF NOT EXISTS user_flags (
+#     id            BIGSERIAL PRIMARY KEY,
+#     flagged_user  TEXT NOT NULL REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE CASCADE,
+#     related_user  TEXT REFERENCES users(api_key) ON UPDATE CASCADE ON DELETE SET NULL,
+#     reason        TEXT NOT NULL,
+#     metadata      JSONB,
+#     created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     resolved_at   TIMESTAMPTZ,
+#     resolved_by   TEXT,
+#     resolution    TEXT
+# );
 
--- NOTE: the legacy ``flagged_user`` text column was replaced by
--- ``flagged_user_id`` (UUID FK -> users.id) in alembic 0010 and the
--- text column was dropped. The unresolved-flag index now lives on
--- ``flagged_user_id``; recreating the legacy index here would fail
--- with "column flagged_user does not exist" against a migrated DB.
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1 FROM information_schema.columns
-         WHERE table_name = 'user_flags' AND column_name = 'flagged_user'
-    ) THEN
-        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_user_flags_unresolved
-                     ON user_flags (flagged_user) WHERE resolved_at IS NULL';
-    END IF;
-END$$;
-CREATE INDEX IF NOT EXISTS idx_user_flags_created
-    ON user_flags (created_at DESC);
+# -- NOTE: the legacy ``flagged_user`` text column was replaced by
+# -- ``flagged_user_id`` (UUID FK -> users.id) in alembic 0010 and the
+# -- text column was dropped. The unresolved-flag index now lives on
+# -- ``flagged_user_id``; recreating the legacy index here would fail
+# -- with "column flagged_user does not exist" against a migrated DB.
+# DO $$
+# BEGIN
+#     IF EXISTS (
+#         SELECT 1 FROM information_schema.columns
+#          WHERE table_name = 'user_flags' AND column_name = 'flagged_user'
+#     ) THEN
+#         EXECUTE 'CREATE INDEX IF NOT EXISTS idx_user_flags_unresolved
+#                      ON user_flags (flagged_user) WHERE resolved_at IS NULL';
+#     END IF;
+# END$$;
+# CREATE INDEX IF NOT EXISTS idx_user_flags_created
+#     ON user_flags (created_at DESC);
 
-CREATE TABLE IF NOT EXISTS admin_audit_log (
-    id         BIGSERIAL PRIMARY KEY,
-    admin_key  TEXT NOT NULL,
-    action     TEXT NOT NULL,
-    target     TEXT,
-    metadata   JSONB,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+# CREATE TABLE IF NOT EXISTS admin_audit_log (
+#     id         BIGSERIAL PRIMARY KEY,
+#     admin_key  TEXT NOT NULL,
+#     action     TEXT NOT NULL,
+#     target     TEXT,
+#     metadata   JSONB,
+#     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+# );
 
-CREATE INDEX IF NOT EXISTS idx_audit_created_at ON admin_audit_log (created_at DESC);
+# CREATE INDEX IF NOT EXISTS idx_audit_created_at ON admin_audit_log (created_at DESC);
 
--- Shareable, time-limited download links for R2 backup objects. Each link
--- is multi-use until it expires or is revoked; per-redeem details live in
--- backup_download_log so the admin UI can surface who has been pulling
--- the file.
-CREATE TABLE IF NOT EXISTS backup_download_links (
-    id          BIGSERIAL PRIMARY KEY,
-    token       TEXT NOT NULL UNIQUE,
-    backup_key  TEXT NOT NULL,
-    created_by  TEXT NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at  TIMESTAMPTZ NOT NULL,
-    revoked_at  TIMESTAMPTZ,
-    revoked_by  TEXT,
-    label       TEXT
-);
+# -- Shareable, time-limited download links for R2 backup objects. Each link
+# -- is multi-use until it expires or is revoked; per-redeem details live in
+# -- backup_download_log so the admin UI can surface who has been pulling
+# -- the file.
+# CREATE TABLE IF NOT EXISTS backup_download_links (
+#     id          BIGSERIAL PRIMARY KEY,
+#     token       TEXT NOT NULL UNIQUE,
+#     backup_key  TEXT NOT NULL,
+#     created_by  TEXT NOT NULL,
+#     created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     expires_at  TIMESTAMPTZ NOT NULL,
+#     revoked_at  TIMESTAMPTZ,
+#     revoked_by  TEXT,
+#     label       TEXT
+# );
 
-CREATE INDEX IF NOT EXISTS idx_bdl_token  ON backup_download_links (token);
-CREATE INDEX IF NOT EXISTS idx_bdl_active ON backup_download_links (expires_at)
-    WHERE revoked_at IS NULL;
+# CREATE INDEX IF NOT EXISTS idx_bdl_token  ON backup_download_links (token);
+# CREATE INDEX IF NOT EXISTS idx_bdl_active ON backup_download_links (expires_at)
+#     WHERE revoked_at IS NULL;
 
-CREATE TABLE IF NOT EXISTS backup_download_log (
-    id             BIGSERIAL PRIMARY KEY,
-    link_id        BIGINT NOT NULL REFERENCES backup_download_links(id) ON DELETE CASCADE,
-    redeemed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-    ip_hash        TEXT,
-    user_agent     TEXT,
-    success        BOOLEAN NOT NULL,
-    failure_reason TEXT
-);
+# CREATE TABLE IF NOT EXISTS backup_download_log (
+#     id             BIGSERIAL PRIMARY KEY,
+#     link_id        BIGINT NOT NULL REFERENCES backup_download_links(id) ON DELETE CASCADE,
+#     redeemed_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     ip_hash        TEXT,
+#     user_agent     TEXT,
+#     success        BOOLEAN NOT NULL,
+#     failure_reason TEXT
+# );
 
-CREATE INDEX IF NOT EXISTS idx_bdlog_link ON backup_download_log (link_id, redeemed_at DESC);
+# CREATE INDEX IF NOT EXISTS idx_bdlog_link ON backup_download_log (link_id, redeemed_at DESC);
 
--- Resources-overlay async upload jobs.
---
--- ``POST /admin/resources/upload`` returns immediately after the .zip is
--- spooled to local disk. A daemon thread then unpacks it into R2 and
--- mutates this row so the FE can poll for live progress (file count + bytes
--- + phase) instead of staring at a stuck 95% bar while the server fans
--- thousands of small PUTs out to R2.
---
--- ``status`` is one of: 'unpacking' | 'swapping' | 'complete' | 'failed'.
--- ``phase`` is a free-form human-readable string for the UI.
-CREATE TABLE IF NOT EXISTS resources_upload_jobs (
-    id              TEXT PRIMARY KEY,
-    seed            TEXT NOT NULL,
-    vs_version      TEXT NOT NULL,
-    status          TEXT NOT NULL DEFAULT 'unpacking',
-    phase           TEXT,
-    total_files     INTEGER NOT NULL DEFAULT 0,
-    processed_files INTEGER NOT NULL DEFAULT 0,
-    total_bytes     BIGINT NOT NULL DEFAULT 0,
-    uploaded_bytes  BIGINT NOT NULL DEFAULT 0,
-    error           TEXT,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    completed_at    TIMESTAMPTZ
-);
+# -- Resources-overlay async upload jobs.
+# --
+# -- ``POST /admin/resources/upload`` returns immediately after the .zip is
+# -- spooled to local disk. A daemon thread then unpacks it into R2 and
+# -- mutates this row so the FE can poll for live progress (file count + bytes
+# -- + phase) instead of staring at a stuck 95% bar while the server fans
+# -- thousands of small PUTs out to R2.
+# --
+# -- ``status`` is one of: 'unpacking' | 'swapping' | 'complete' | 'failed'.
+# -- ``phase`` is a free-form human-readable string for the UI.
+# CREATE TABLE IF NOT EXISTS resources_upload_jobs (
+#     id              TEXT PRIMARY KEY,
+#     seed            TEXT NOT NULL,
+#     vs_version      TEXT NOT NULL,
+#     status          TEXT NOT NULL DEFAULT 'unpacking',
+#     phase           TEXT,
+#     total_files     INTEGER NOT NULL DEFAULT 0,
+#     processed_files INTEGER NOT NULL DEFAULT 0,
+#     total_bytes     BIGINT NOT NULL DEFAULT 0,
+#     uploaded_bytes  BIGINT NOT NULL DEFAULT 0,
+#     error           TEXT,
+#     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+#     completed_at    TIMESTAMPTZ
+# );
 
-CREATE INDEX IF NOT EXISTS idx_resources_jobs_recent
-    ON resources_upload_jobs (created_at DESC);
-"""
+# CREATE INDEX IF NOT EXISTS idx_resources_jobs_recent
+#     ON resources_upload_jobs (created_at DESC);
+# """
 
 
 def ensure_schema():
     """Create tables if they don't exist. Safe to call multiple times."""
     with get_conn() as conn:
         with conn.cursor() as cur:
-            cur.execute(_SCHEMA_SQL)
+            # THESE ARE DEPRECATED RAW IDEMPOTENT SCHEMA CREATION SCRIPTS. USE ALEMBIC MIGRATIONS INSTEAD.
+            # cur.execute(_SCHEMA_SQL)
             # Backfill schema changes for existing deployments.
-            cur.execute(_MIGRATIONS_SQL)
+            # cur.execute(_MIGRATIONS_SQL)
             # Account-system tables (users, ip_bans, user_flags, audit log).
-            cur.execute(_ACCOUNT_SCHEMA_SQL)
+            # cur.execute(_ACCOUNT_SCHEMA_SQL)
             # Migration: ensure user_flags FKs have ON UPDATE CASCADE so admin
             # rekey (which updates users.api_key) does not violate the FK.
             # Only relevant on pre-0010 schemas where the legacy
@@ -3743,6 +3745,146 @@ def get_feature_flag(key: str) -> Optional[dict]:
 
 
 # ---------------------------------------------------------------------------
+# Promo events (admin-managed promotion banners)
+#
+# Backs the site-wide event banner. Exactly one row may be ``active`` at a
+# time (DB-enforced via a partial unique index); the public reader additionally
+# drops rows whose ``expires_at`` has passed. ``content`` is a free-form JSONB
+# document so the rich dialog fields evolve without schema churn.
+# ---------------------------------------------------------------------------
+
+# Columns an admin (or ``manage_promos`` holder) may set directly. Kept narrow
+# so the dynamic UPDATE below can't be coaxed into writing arbitrary columns.
+_PROMO_MUTABLE_FIELDS = {
+    "title",
+    "content",
+    "image_key",
+    "image_content_type",
+    "expires_at",
+}
+
+
+def list_promo_events() -> List[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM promo_events ORDER BY active DESC, created_at DESC"
+            )
+            return [dict(r) for r in cur.fetchall()]
+
+
+def get_promo_event(promo_id: str) -> Optional[dict]:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT * FROM promo_events WHERE id = %s", (promo_id,))
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def get_active_promo_event() -> Optional[dict]:
+    """Return the currently active, non-expired promotion (or None)."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """SELECT * FROM promo_events
+                       WHERE active
+                         AND (expires_at IS NULL OR expires_at > now())
+                       LIMIT 1"""
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def create_promo_event(
+    promo_id: str,
+    title: str,
+    *,
+    content: Optional[dict] = None,
+    image_key: Optional[str] = None,
+    image_content_type: Optional[str] = None,
+    expires_at: Optional[datetime] = None,
+    created_by_key_id=None,
+) -> dict:
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """INSERT INTO promo_events
+                       (id, title, content, image_key, image_content_type,
+                        expires_at, created_by_key_id)
+                   VALUES (%s, %s, %s::jsonb, %s, %s, %s, %s)
+                   RETURNING *""",
+                (
+                    promo_id,
+                    title,
+                    json.dumps(content or {}),
+                    image_key,
+                    image_content_type,
+                    expires_at,
+                    str(created_by_key_id) if created_by_key_id else None,
+                ),
+            )
+            return dict(cur.fetchone())
+
+
+def update_promo_event(promo_id: str, **fields) -> Optional[dict]:
+    """Patch mutable fields on a promo. Unknown keys are ignored. Returns the
+    updated row, or None if the promo does not exist / nothing to update."""
+    sets: List[str] = []
+    params: List = []
+    for key, value in fields.items():
+        if key not in _PROMO_MUTABLE_FIELDS:
+            continue
+        if key == "content":
+            sets.append("content = %s::jsonb")
+            params.append(json.dumps(value or {}))
+        else:
+            sets.append(f"{key} = %s")
+            params.append(value)
+    if not sets:
+        return get_promo_event(promo_id)
+    sets.append("updated_at = now()")
+    params.append(promo_id)
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                f"UPDATE promo_events SET {', '.join(sets)} WHERE id = %s RETURNING *",
+                params,
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def set_promo_event_active(promo_id: str, active: bool) -> Optional[dict]:
+    """Activate / deactivate a promo. Activating first clears any other active
+    promo (only one may be active at a time) in the same transaction."""
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute("SELECT 1 FROM promo_events WHERE id = %s", (promo_id,))
+            if cur.fetchone() is None:
+                return None
+            if active:
+                cur.execute(
+                    "UPDATE promo_events SET active = FALSE, updated_at = now() "
+                    "WHERE active AND id <> %s",
+                    (promo_id,),
+                )
+            cur.execute(
+                "UPDATE promo_events SET active = %s, updated_at = now() "
+                "WHERE id = %s RETURNING *",
+                (active, promo_id),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
+def delete_promo_event(promo_id: str) -> bool:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM promo_events WHERE id = %s", (promo_id,))
+            return (cur.rowcount or 0) > 0
+
+
+# ---------------------------------------------------------------------------
 # Resources-overlay async upload jobs
 # ---------------------------------------------------------------------------
 #
@@ -5415,7 +5557,14 @@ def get_api_key_extra_permissions(key: str) -> dict:
 
 
 def set_api_key_extra_permission(key: str, perm_name: str, enabled: bool) -> bool:
-    """Toggle a single permission flag on an API key. Returns True on update."""
+    """Toggle a single permission flag on an API key. Returns True on update.
+
+    Invalidates the api_key cache so the next request re-reads the row and
+    sees the new permission immediately (otherwise ``extra_permissions`` on
+    the cached record stays stale — e.g. ``/account/me`` and
+    ``verify_permission`` keep returning the old value until the entry ages
+    out).
+    """
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -5429,7 +5578,14 @@ def set_api_key_extra_permission(key: str, perm_name: str, enabled: bool) -> boo
                        WHERE key = %s""",
                 ('{' + perm_name + '}', enabled, key),
             )
-            return (cur.rowcount or 0) > 0
+            updated = (cur.rowcount or 0) > 0
+    if updated:
+        try:
+            from . import api_key_cache
+            api_key_cache.invalidate(key)
+        except Exception:
+            pass
+    return updated
 
 
 def set_api_key_admin(key: str, is_admin: bool) -> bool:

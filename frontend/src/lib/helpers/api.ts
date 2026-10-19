@@ -2793,6 +2793,8 @@ export interface AccountUser {
 export interface AccountMeResponse {
     user: AccountUser | null;
     is_admin: boolean;
+    /** Granular per-key permission flags (e.g. ``manage_promos``). */
+    extra_permissions?: Record<string, boolean>;
     terms_version_current: string;
     terms_accepted_current: boolean;
 }
@@ -3390,7 +3392,7 @@ export async function adminClearMaintenanceNotice(
 
 // --- Admin: per-key granular permissions (Phase 0c) ---
 
-export type KeyPermission = "region_overwrite" | "map_features_publish";
+export type KeyPermission = "region_overwrite" | "map_features_publish" | "manage_promos";
 
 export async function adminGetKeyPermissions(
     apiKey: string,
@@ -3415,6 +3417,133 @@ export async function adminSetKeyPermission(
             body: JSON.stringify({ permission, enabled }),
         },
     );
+    return (await handleResponse(res)).json();
+}
+
+// --- Promo events (admin-managed promotion banners) ---
+
+export interface PromoScheduleRow {
+    label: string;
+    value: string;
+}
+
+/**
+ * Free-form rich content for a promo's banner + details dialog. Every field is
+ * optional — the banner renders whatever is present. Mirrors the backend's
+ * ``content`` JSONB document.
+ */
+export interface PromoContent {
+    /** Short line appended after the title in the banner (desktop only). */
+    subtitle?: string;
+    summary?: string;
+    prize?: string;
+    hosts?: string;
+    hostedBy?: string;
+    registration?: string;
+    /** External announcement link (e.g. Discord). */
+    discordUrl?: string;
+    /** In-app deep link (e.g. the TOPS map centered on a spot). */
+    mapUrl?: string;
+    schedule?: PromoScheduleRow[];
+}
+
+export interface PromoEvent {
+    id: string;
+    title: string;
+    content: PromoContent;
+    active: boolean;
+    /** ISO-8601 string, or null for "never auto-expires". */
+    expires_at: string | null;
+    has_image: boolean;
+    /**
+     * Cache-busted path relative to {@link API_BASE} (or null when no image).
+     * Use {@link promoImageSrc} to build the full ``<img src>``.
+     */
+    image_url: string | null;
+    created_at: string;
+    updated_at: string;
+    created_by_suffix: string | null;
+}
+
+/** Full ``<img src>`` for a promo's banner image, or null when it has none. */
+export function promoImageSrc(promo: Pick<PromoEvent, "image_url">): string | null {
+    return promo.image_url ? `${API_BASE}${promo.image_url}` : null;
+}
+
+export interface PromoCreateBody {
+    title: string;
+    content?: PromoContent;
+    expires_at?: string | null;
+    active?: boolean;
+}
+
+export interface PromoPatchBody {
+    title?: string;
+    content?: PromoContent;
+    expires_at?: string | null;
+    active?: boolean;
+}
+
+/** Public: the currently active, non-expired promo (requires an API key). */
+export async function getActivePromo(): Promise<{ promo: PromoEvent | null }> {
+    const res = await fetch(`${API_BASE}/promos/active`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminListPromos(): Promise<{ promos: PromoEvent[] }> {
+    const res = await fetch(`${API_BASE}/admin/promos`, {
+        headers: authHeaders(),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminCreatePromo(
+    body: PromoCreateBody,
+): Promise<{ promo: PromoEvent }> {
+    const res = await fetch(`${API_BASE}/admin/promos`, {
+        method: "POST",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(body),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminUpdatePromo(
+    id: string,
+    patch: PromoPatchBody,
+): Promise<{ promo: PromoEvent }> {
+    const res = await fetch(`${API_BASE}/admin/promos/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: authHeaders({ "Content-Type": "application/json" }),
+        body: JSON.stringify(patch),
+    });
+    return (await handleResponse(res)).json();
+}
+
+export async function adminUploadPromoImage(
+    id: string,
+    file: File,
+): Promise<{ promo: PromoEvent }> {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(
+        `${API_BASE}/admin/promos/${encodeURIComponent(id)}/image`,
+        {
+            method: "POST",
+            headers: authHeaders(),
+            body: form,
+        },
+    );
+    return (await handleResponse(res)).json();
+}
+
+export async function adminDeletePromo(id: string): Promise<{ deleted: boolean }> {
+    const res = await fetch(`${API_BASE}/admin/promos/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders(),
+    });
     return (await handleResponse(res)).json();
 }
 

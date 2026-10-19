@@ -96,6 +96,7 @@ export const en = {
                 auctionHouse: "Auction house",
                 licenses: "Licenses",
                 programDownloads: "Program Downloads",
+                promos: "Promos",
                 tunnelPreviewer: "Tunnel Previewer",
                 waypointMacro: "Waypoint Macros",
                 alloyCalculator: "Alloy Calculator",

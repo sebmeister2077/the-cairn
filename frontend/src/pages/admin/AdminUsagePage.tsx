@@ -73,14 +73,20 @@ function defaultWindow(): Pick<UsageSectionProps, "from" | "to"> {
 
 const VALID_SECTIONS = new Set<string>(SECTIONS.map((s) => s.key));
 
-export function AdminUsagePage() {
+export function AdminUsagePage({ promoOnly = false }: { promoOnly?: boolean }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  // When restricted to promo analytics (e.g. a non-admin ``manage_promos``
+  // holder), only the Promo tab is available.
+  const sections = promoOnly ? SECTIONS.filter((s) => s.key === "promo") : SECTIONS;
   // The active tab lives in the URL (?tab=…) so a refresh or shared link
   // lands on the same section. Falls back to "overview" for missing/unknown
   // values.
   const tabParam = searchParams.get("tab");
-  const section: SectionKey =
-    tabParam && VALID_SECTIONS.has(tabParam) ? (tabParam as SectionKey) : "overview";
+  const section: SectionKey = promoOnly
+    ? "promo"
+    : tabParam && VALID_SECTIONS.has(tabParam)
+      ? (tabParam as SectionKey)
+      : "overview";
   const setSection = (next: SectionKey) => {
     setSearchParams(
       (prev) => {
@@ -111,7 +117,7 @@ export function AdminUsagePage() {
 
       <Tabs value={section} onValueChange={(v) => setSection(v as SectionKey)}>
         <TabsList className="flex gap-1 h-auto flex-nowrap">
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <TabsTrigger key={s.key} value={s.key} className="flex-none">
               {s.label}
             </TabsTrigger>

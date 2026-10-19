@@ -12,48 +12,19 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { dismissPromo, markPromoDetailsOpened } from "@/store/slices/promo";
 import { recordPromoEvent } from "@/lib/helpers/promo-analytics";
-import chiselCompetitionImg from "@/assets/Promotions/halloween_chisel_competition.webp";
+import { useActivePromo } from "@/hooks/useActivePromo";
+import { promoImageSrc, type PromoEvent } from "@/lib/helpers/api";
 
 // --- Time-limited event promo ------------------------------------------------
-// This is intentionally self-contained: a single component with the event data
-// inline so it can be dropped in and later deleted without touching i18n or
-// backend config. When the event is over, either delete this file + its mount
-// in AppContent, or bump PROMO to the next event.
-
-const PROMO = {
-  id: "tops-halloween-chiseling-2026-10",
-  title: "TOPS Halloween Chiseling Event",
-  // The banner (and its dialog) stop rendering after this moment. Registration
-  // closes Sep 30, 2026 11:59 PM, so the promo auto-removes itself then.
-  endsAt: new Date("2026-09-30T23:59:00"),
-  image: chiselCompetitionImg,
-  hosts: "DuStPaInFuL, Yoma22K & Nudge",
-  hostedBy: "The Community Centre",
-  discordUrl:
-    "https://discord.com/channels/1482111581549629745/1484173234160140319/1553263253575176243",
-  registration:
-    "Chests under the trees, next to the staircase to Travelers Rest TL at -1390, -20 (between Perch Point and Sandwich)",
-  // Deep-link into the TOPS map viewer centered on the registration building.
-  // (`zoom` is pixels-per-block; ~4 frames the surrounding blocks nicely.)
-  mapUrl: "/multiplayer/tops-map?x=-1390&z=-20&zoom=4",
-  summary:
-    'The TOPS Halloween chiseling event! Build a spooky piece of chisel art with visible creative glow blocks. Size: min 8 blocks, max 216 blocks, with no side longer than 6 blocks. Name each block "player name"-"title"-"block position" (e.g. Nudge-Snuggles the Bear-1.1). No explicit, derogatory, or offensive designs — that means instant disqualification.',
-  prize:
-    "First, second and third place prize pools — RG, ingots, clothes, clutter and more (viewable at the chiseling entry point). RG donation crates go to the runner-ups.",
-  schedule: [
-    { label: "Registration", value: "Sep 26 – Sep 30, 2026" },
-    { label: "Chiseling", value: "Oct 1 – Oct 23, 2026" },
-    { label: "Voting", value: "Oct 26 – Oct 28, 2026" },
-    { label: "Winners announced", value: "Oct 30, 2026" },
-  ],
-} as const;
+// The banner is now fully admin-driven: an active promotion is fetched from the
+// backend (see `useActivePromo`) and its rich content rendered below. Admins
+// (and holders of the `manage_promos` permission) create / activate / expire
+// promos from the "Promos" management page.
 
 // One impression per browser session (not per page load), so refreshing while
 // ignoring the banner doesn't inflate the count. `distinct visitors` in the
 // admin dashboard still reflects true unique reach.
-const impressionSessionKey = `promo-impression:${PROMO.id}`;
-
-function shouldCountImpression(): boolean {
+function shouldCountImpression(impressionSessionKey: string): boolean {
   try {
     if (window.sessionStorage.getItem(impressionSessionKey) === "1") return false;
     window.sessionStorage.setItem(impressionSessionKey, "1");
@@ -66,44 +37,59 @@ function shouldCountImpression(): boolean {
 }
 
 /**
- * Slim, dismissible site-wide banner for a time-limited community event.
+ * Slim, dismissible site-wide banner for the currently-active community event.
  *
- * Renders nothing once the event has ended (``PROMO.endsAt``) or after the
- * visitor dismisses it (remembered per-browser via localStorage). The banner
- * itself stays out of the way; a "Details" button opens a dialog with the
- * poster, rules summary, prize, schedule, registration spot and a link to the
- * official Discord announcement.
+ * Renders nothing when there is no active promo, once the event has expired, or
+ * after the visitor dismisses it (remembered per-browser via localStorage, keyed
+ * by promo id). A "Details" button opens a dialog with the poster, rules summary,
+ * prize, schedule, registration spot and a link to the official announcement.
  */
 export function EventPromoBanner() {
+  const promo = useActivePromo();
+  if (!promo) return null;
+  // Defensive client-side expiry check (the backend already filters expired
+  // promos, but a locally-cached one could tick past its deadline between
+  // refetches). Keyed on the promo so the inner component resets cleanly when
+  // the active promo changes.
+  const expired = promo.expires_at != null && Date.now() >= Date.parse(promo.expires_at);
+  if (expired) return null;
+  return <PromoBanner key={promo.id} promo={promo} />;
+}
+
+function PromoBanner({ promo }: { promo: PromoEvent }) {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const dismissed = useAppSelector((s) => s.promo.dismissed?.[PROMO.id] ?? false);
+  const dismissed = useAppSelector((s) => s.promo.dismissed?.[promo.id] ?? false);
   // Persisted so the "dismissed after reading" split survives a refresh
   // between opening the details and dismissing the banner.
-  const detailsOpened = useAppSelector((s) => s.promo.detailsOpened?.[PROMO.id] ?? false);
+  const detailsOpened = useAppSelector((s) => s.promo.detailsOpened?.[promo.id] ?? false);
   const [open, setOpen] = useState(false);
   const impressionSentRef = useRef(false);
 
-  const expired = Date.now() >= PROMO.endsAt.getTime();
+  const content = promo.content ?? {};
+  const imageSrc = promoImageSrc(promo);
+  const schedule = content.schedule ?? [];
 
   // Count one impression per browser session while the banner is visible.
   useEffect(() => {
-    if (expired || dismissed || impressionSentRef.current) return;
+    if (dismissed || impressionSentRef.current) return;
     impressionSentRef.current = true;
-    if (shouldCountImpression()) recordPromoEvent("impression", PROMO.id);
-  }, [expired, dismissed]);
+    if (shouldCountImpression(`promo-impression:${promo.id}`)) {
+      recordPromoEvent("impression", promo.id);
+    }
+  }, [dismissed, promo.id]);
 
-  if (expired || dismissed) return null;
+  if (dismissed) return null;
 
   function openDetails() {
-    dispatch(markPromoDetailsOpened(PROMO.id));
+    dispatch(markPromoDetailsOpened(promo.id));
     setOpen(true);
-    recordPromoEvent("details_open", PROMO.id);
+    recordPromoEvent("details_open", promo.id);
   }
 
   function dismiss() {
-    recordPromoEvent("dismiss", PROMO.id, { afterDetails: detailsOpened });
-    dispatch(dismissPromo(PROMO.id));
+    recordPromoEvent("dismiss", promo.id, { afterDetails: detailsOpened });
+    dispatch(dismissPromo(promo.id));
   }
 
   return (
@@ -111,11 +97,13 @@ export function EventPromoBanner() {
       <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100">
         <Hammer className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
         <div className="min-w-0 flex-1">
-          <span className="font-medium">{PROMO.title}</span>
-          <span className="hidden sm:inline text-amber-800 dark:text-amber-200/90">
-            {" "}
-            — a TOPS community event. Register by Sep 30.
-          </span>
+          <span className="font-medium">{promo.title}</span>
+          {content.subtitle ? (
+            <span className="hidden sm:inline text-amber-800 dark:text-amber-200/90">
+              {" "}
+              {content.subtitle}
+            </span>
+          ) : null}
         </div>
         <Button size="xs" variant="secondary" className="shrink-0" onClick={openDetails}>
           Details
@@ -136,86 +124,107 @@ export function EventPromoBanner() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Hammer className="size-5 text-amber-600 dark:text-amber-400" />
-              {PROMO.title}
+              {promo.title}
             </DialogTitle>
-            <DialogDescription>
-              Hosted at {PROMO.hostedBy} by {PROMO.hosts}.
-            </DialogDescription>
+            {content.hostedBy || content.hosts ? (
+              <DialogDescription>
+                {content.hostedBy ? `Hosted at ${content.hostedBy}` : "Hosted"}
+                {content.hosts ? ` by ${content.hosts}` : ""}.
+              </DialogDescription>
+            ) : null}
           </DialogHeader>
 
-          <img
-            src={PROMO.image}
-            alt="The Community Centre — Halloween Chiseling Event"
-            className="w-full rounded-lg border border-border"
-            loading="lazy"
-          />
+          {imageSrc ? (
+            <img
+              src={imageSrc}
+              alt={promo.title}
+              className="w-full rounded-lg border border-border"
+              loading="lazy"
+            />
+          ) : null}
 
-          <p className="text-sm text-foreground">{PROMO.summary}</p>
+          {content.summary ? (
+            <p className="text-sm text-foreground">{content.summary}</p>
+          ) : null}
 
-          <ul className="space-y-2 text-sm">
-            <li className="flex items-start gap-2">
-              <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span>
-                <span className="font-medium text-foreground">Register &amp; rules: </span>
-                {PROMO.registration}{" "}
-                <button
-                  type="button"
-                  className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
-                  onClick={() => {
-                    recordPromoEvent("map_click", PROMO.id);
-                    setOpen(false);
-                    navigate(PROMO.mapUrl);
-                  }}
-                >
-                  Show on map
-                </button>
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Trophy className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span>
-                <span className="font-medium text-foreground">Prizes: </span>
-                {PROMO.prize}
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-              <span>
-                <span className="font-medium text-foreground">Judges: </span>
-                {PROMO.hosts}
-              </span>
-            </li>
-          </ul>
+          {content.registration || content.prize || content.hosts ? (
+            <ul className="space-y-2 text-sm">
+              {content.registration ? (
+                <li className="flex items-start gap-2">
+                  <MapPin className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    <span className="font-medium text-foreground">Register &amp; rules: </span>
+                    {content.registration}{" "}
+                    {content.mapUrl ? (
+                      <button
+                        type="button"
+                        className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+                        onClick={() => {
+                          recordPromoEvent("map_click", promo.id);
+                          setOpen(false);
+                          navigate(content.mapUrl!);
+                        }}
+                      >
+                        Show on map
+                      </button>
+                    ) : null}
+                  </span>
+                </li>
+              ) : null}
+              {content.prize ? (
+                <li className="flex items-start gap-2">
+                  <Trophy className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    <span className="font-medium text-foreground">Prizes: </span>
+                    {content.prize}
+                  </span>
+                </li>
+              ) : null}
+              {content.hosts ? (
+                <li className="flex items-start gap-2">
+                  <Users className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                  <span>
+                    <span className="font-medium text-foreground">Judges: </span>
+                    {content.hosts}
+                  </span>
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
 
-          <div className="rounded-lg border border-border bg-muted/40 p-3">
-            <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
-              <CalendarDays className="size-4 text-muted-foreground" />
-              Schedule
+          {schedule.length > 0 ? (
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                <CalendarDays className="size-4 text-muted-foreground" />
+                Schedule
+              </div>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
+                {schedule.map((row, i) => (
+                  <div key={`${row.label}-${i}`} className="contents">
+                    <dt className="text-muted-foreground">{row.label}</dt>
+                    <dd className="text-foreground">{row.value}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-              {PROMO.schedule.map((row) => (
-                <div key={row.label} className="contents">
-                  <dt className="text-muted-foreground">{row.label}</dt>
-                  <dd className="text-foreground">{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          ) : null}
 
-          <Button
-            className="w-full"
-            render={
-              <a
-                href={PROMO.discordUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => recordPromoEvent("announcement_click", PROMO.id)}
-              >
-                <ExternalLink className="size-4" />
-                Read the full announcement on Discord
-              </a>
-            }
-          />
+          {content.discordUrl ? (
+            <Button
+              className="w-full"
+              render={
+                <a
+                  href={content.discordUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => recordPromoEvent("announcement_click", promo.id)}
+                >
+                  <ExternalLink className="size-4" />
+                  Read the full announcement
+                </a>
+              }
+            />
+          ) : null}
           <p className="text-center text-xs italic text-muted-foreground">
             Unofficial community event
           </p>

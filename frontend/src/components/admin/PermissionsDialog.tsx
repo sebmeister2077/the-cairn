@@ -24,6 +24,11 @@ const KEY_PERMISSIONS: { key: KeyPermission; label: string; help: string }[] = [
     label: "Map features export (VsProxy)",
     help: "Allow this key to publish the general map-features export (translocators, traders, land claims and authoritative trader-claim types) via the VsProxy.",
   },
+  {
+    key: "manage_promos",
+    label: "Manage promo events",
+    help: "Allow this user to create, edit, activate and expire promotion banners, and to view the promo analytics on the Usage page.",
+  },
 ];
 
 export function PermissionsDialog({

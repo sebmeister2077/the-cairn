@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import psycopg2.extras
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..auth import require_admin, resolve_key_id
+from ..auth import require_admin, require_permission, resolve_key_id
 from ..core import database as db
 
 
@@ -1162,7 +1162,9 @@ _PROMO_ACTIONS = (
 
 @router.get("/promo")
 async def usage_promo(
-    _: str = Depends(require_admin),
+    # Readable by admins AND non-admin holders of the ``manage_promos``
+    # permission, so promo managers can see analytics for their banners.
+    _: str = Depends(require_permission("manage_promos")),
     frm: Optional[str] = Query(None, alias="from"),
     to: Optional[str] = Query(None),
     granularity: str = Query("day"),

@@ -45,6 +45,7 @@ import { DownloadPage } from "@/pages/other/DownloadPage";
 import { AdminTradersPage } from "@/pages/audit/AdminTradersPage";
 import { AdminTLScreenshotsPage } from "@/pages/audit/AdminTLScreenshotsPage";
 import { AdminUsagePage } from "@/pages/admin/AdminUsagePage";
+import { AdminPromosPage } from "@/pages/admin/AdminPromosPage";
 import { PublicRoadWorkersPage } from "@/pages/public/PublicRoadWorkersPage";
 import { ToolsTunnelPage } from "@/pages/tools/ToolsTunnelPage";
 import { ToolsWaypointMacroPage } from "@/pages/tools/ToolsWaypointMacroPage";
@@ -163,6 +164,7 @@ const NavigationRoutes = {
     Resources: "/manage/resources",
     Licenses: "/manage/licenses",
     ProgramDownloads: "/manage/program-downloads",
+    Promos: "/manage/promos",
   },
   Audit: {
     Translocators: "/audit/translocators",
@@ -229,6 +231,7 @@ type StaticNavLabelKey =
   | "app.nav.subtabs.routePlanner"
   | "app.nav.subtabs.licenses"
   | "app.nav.subtabs.programDownloads"
+  | "app.nav.subtabs.promos"
   | "app.nav.subtabs.tunnelPreviewer"
   | "app.nav.subtabs.waypointMacro"
   | "app.nav.subtabs.marketOverview"
@@ -307,6 +310,7 @@ const subTabs: Subtabs = {
     { value: "/manage/resources", labelKey: "app.nav.subtabs.resources" },
     { value: "/manage/licenses", labelKey: "app.nav.subtabs.licenses" },
     { value: "/manage/program-downloads", labelKey: "app.nav.subtabs.programDownloads" },
+    { value: "/manage/promos", labelKey: "app.nav.subtabs.promos" },
   ],
   "/audit": [
     { value: "/audit/translocators", labelKey: "app.nav.subtabs.translocators" },
@@ -463,11 +467,23 @@ export function AppContent() {
     refetchOnMount: false,
   });
   const ordersUnread = useOrdersUnread(hasApiKey);
+  // Non-admin users granted the ``manage_promos`` permission get a slim slice
+  // of the admin surface: the Promos management page and the promo analytics
+  // tab on the Usage dashboard. Admins always have everything.
+  const canManagePromos = isAdmin || Boolean(accountData?.extra_permissions?.manage_promos);
   const categories = isAdmin
     ? [...BASE_CATEGORIES, ADMIN_CATEGORY, AUDIT_CATEGORY, USAGE_CATEGORY]
-    : BASE_CATEGORIES;
+    : canManagePromos
+      ? [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]
+      : BASE_CATEGORIES;
   const activeCategory = getActiveCategory(location.pathname);
-  const activeSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
+  const allActiveSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
+  // A promo-manager (without full admin) only sees the Promos entry under the
+  // Manage category — the rest of the admin tooling stays hidden.
+  const activeSubs =
+    !isAdmin && canManagePromos && activeCategory === "/manage"
+      ? allActiveSubs.filter((t) => t.value === "/manage/promos")
+      : allActiveSubs;
   const activeSub = activeSubs.find((t) => location.pathname === t.value)?.value ?? "";
 
   const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
@@ -1025,7 +1041,10 @@ export function AppContent() {
               </ErrorBoundary>
             }
           />
-          <Route path="/manage" element={<Navigate to="/manage/api-keys" replace />} />
+          <Route
+            path="/manage"
+            element={<Navigate to={isAdmin ? "/manage/api-keys" : "/manage/promos"} replace />}
+          />
           <Route
             path="/manage/api-keys"
             element={
@@ -1095,6 +1114,14 @@ export function AppContent() {
             element={
               <ErrorBoundary title="Program Downloads failed" resetKeys={[location.pathname]}>
                 <AdminProgramDownloadsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/manage/promos"
+            element={
+              <ErrorBoundary title="Promos failed" resetKeys={[location.pathname]}>
+                <AdminPromosPage />
               </ErrorBoundary>
             }
           />
@@ -1208,7 +1235,7 @@ export function AppContent() {
             path="/usage"
             element={
               <ErrorBoundary title="Usage failed" resetKeys={[location.pathname]}>
-                <AdminUsagePage />
+                <AdminUsagePage promoOnly={!isAdmin} />
               </ErrorBoundary>
             }
           />

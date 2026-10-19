@@ -28,11 +28,11 @@ from alembic import op
 # Pull the SQL blocks straight from the legacy module so this migration
 # stays in lockstep with what older deployments built. Once Phase 4 lands
 # and the legacy blocks are deleted, inline the SQL here.
-from app.core.database import (
-    _ACCOUNT_SCHEMA_SQL,
-    _MIGRATIONS_SQL,
-    _SCHEMA_SQL,
-)
+# from app.core.database import (
+#     _ACCOUNT_SCHEMA_SQL,
+#     _MIGRATIONS_SQL,
+#     _SCHEMA_SQL,
+# )
 
 # revision identifiers, used by Alembic.
 revision: str = "0001_baseline"
@@ -42,9 +42,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.execute(_SCHEMA_SQL)
-    op.execute(_MIGRATIONS_SQL)
-    op.execute(_ACCOUNT_SCHEMA_SQL)
+    # op.execute(_SCHEMA_SQL)
+    # op.execute(_MIGRATIONS_SQL)
+    # op.execute(_ACCOUNT_SCHEMA_SQL)
     # Mirror the user_flags FK repair from ensure_schema().
     op.execute(
         """

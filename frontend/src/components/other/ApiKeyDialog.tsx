@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +38,7 @@ export function ApiKeyDialog({
 }) {
   const [key, setKey] = useState(getStoredApiKey());
   const [loading, setLoading] = useState(false);
+  const [showKey, setShowKey] = useState(false);
   const queryClient = useQueryClient();
 
   // The dialog stays mounted in <AppContent/>, so the initial useState value
@@ -44,7 +46,10 @@ export function ApiKeyDialog({
   // opens so flows that write the key elsewhere (invite claim, ?key= URL
   // param, etc.) don't show a misleadingly empty input.
   useEffect(() => {
-    if (open) setKey(getStoredApiKey());
+    if (open) {
+      setKey(getStoredApiKey());
+      setShowKey(false);
+    }
   }, [open]);
 
   async function handleSave() {
@@ -97,13 +102,25 @@ export function ApiKeyDialog({
         </DialogHeader>
         <div className="grid gap-2">
           <Label htmlFor="apikey">API Key</Label>
-          <Input
-            id="apikey"
-            type="password"
-            value={key}
-            onChange={(e) => setKey(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSave()}
-          />
+          <div className="relative">
+            <Input
+              id="apikey"
+              type={showKey ? "text" : "password"}
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSave()}
+              className="pr-10"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 size-7 -translate-y-1/2 text-muted-foreground"
+              onClick={() => setShowKey((v) => !v)}
+            >
+              {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </Button>
+          </div>
           {/* Copy button */}
           <Button
             type="button"

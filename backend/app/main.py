@@ -66,6 +66,7 @@ from .routes import orders as orders_routes
 from .routes import licenses as licenses_routes
 from .routes import admin_program as admin_program_routes
 from .routes import public_program_download
+from .routes import promos as promos_routes
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -834,6 +835,8 @@ app.include_router(orders_routes.router, prefix="/api")
 app.include_router(licenses_routes.router, prefix="/api")
 app.include_router(admin_program_routes.router, prefix="/api")
 app.include_router(public_program_download.router, prefix="/api")
+app.include_router(promos_routes.public_router, prefix="/api")
+app.include_router(promos_routes.admin_router, prefix="/api")
 app.include_router(maintenance.admin_router, prefix="/api")
 
 

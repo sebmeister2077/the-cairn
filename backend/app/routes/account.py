@@ -156,13 +156,18 @@ async def get_me(ctx: dict = Depends(require_active_user)) -> dict:
         return {
             "user": None,
             "is_admin": True,
+            "extra_permissions": {},
             "terms_version_current": settings.TERMS_VERSION,
             "terms_accepted_current": True,
         }
     fresh = accounts_db.get_user_with_key(ctx["key"]) or user
+    extra_permissions = ctx["info"].get("extra_permissions") or {}
+    if not isinstance(extra_permissions, dict):
+        extra_permissions = {}
     return {
         "user": _serialise_user(fresh),
         "is_admin": bool(ctx["info"].get("is_admin")),
+        "extra_permissions": extra_permissions,
         "terms_version_current": settings.TERMS_VERSION,
         "terms_accepted_current": (fresh.get("terms_version") == settings.TERMS_VERSION),
     }
