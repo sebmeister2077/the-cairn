@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { adminUsage, type PromoAction, type UsageGranularity } from "@/lib/helpers/api";
 import { StatCard } from "@/components/usage/StatCard";
 import { TimeSeriesChart } from "@/components/usage/TimeSeriesChart";
+import { useAppSelector } from "@/store/hooks";
 
 const ACTION_LABELS: Record<PromoAction, string> = {
   impression: "Impressions",
@@ -43,6 +44,7 @@ function pct(numerator: number, denominator: number): string {
  * promotion when more than one has been shown in the window.
  */
 export function PromoSection(props: { from: string; to: string; granularity: UsageGranularity }) {
+  const isAdmin = useAppSelector((state) => state.auth.isAdmin);
   const [promoId, setPromoId] = useState<string | null>(null);
 
   const q = useQuery({
@@ -86,6 +88,17 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
   const { summary, dismiss_split, by_promo, recent, promo_ids } = q.data;
   const impressions = summary.impression.count;
   const nothingYet = FUNNEL_ORDER.every((a) => summary[a].count === 0);
+  function hashVisitor(visitor: string | null): string {
+    if (!visitor) return "—";
+    if (isAdmin) return visitor;
+    let hash = 0;
+    for (let i = 0; i < visitor.length; i++) {
+      const chr = visitor.charCodeAt(i);
+      hash = (hash << 5) - hash + chr;
+      hash |= 0; // Convert to 32bit integer
+    }
+    return `visitor-${hash}`;
+  }
 
   return (
     <div className="space-y-4">
@@ -239,6 +252,7 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
                 <th className="px-3 py-2">Action</th>
                 <th className="px-3 py-2">Details</th>
                 <th className="px-3 py-2">Visitor</th>
+                <th className="px-3 py-2">Visitor</th>
                 {promoId == null && <th className="px-3 py-2">Promo</th>}
               </tr>
             </thead>
@@ -263,7 +277,7 @@ export function PromoSection(props: { from: string; to: string; granularity: Usa
                           : "outright"
                         : "—"}
                     </td>
-                    <td className="px-3 py-2 text-xs">{r.actor ?? "—"}</td>
+                    <td className="px-3 py-2 text-xs">{hashVisitor(r.actor)}</td>
                     {promoId == null && (
                       <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">
                         {r.promo_id ?? "—"}

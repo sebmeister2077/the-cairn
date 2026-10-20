@@ -14,6 +14,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { lsRead, lsRemove, lsWrite } from "../persistence";
 import { hydrateRoot } from "../rootActions";
+import type { AuthStatus } from "@/lib/helpers/api";
 
 const API_KEY_LS = "api_key";
 const IS_ADMIN_LS = "is_admin";
@@ -25,6 +26,7 @@ export interface AuthState {
     apiKey: string;
     isAdmin: boolean;
     canContribute: boolean;
+    canManagePromos: boolean;
     /** Opaque WebAuthn-bound session token returned by the backend. */
     adminSessionToken: string | null;
     /** Epoch milliseconds at which `adminSessionToken` becomes invalid. */
@@ -51,6 +53,7 @@ export function loadInitialAuthState(): AuthState {
         isAdmin: lsRead(IS_ADMIN_LS) === "true",
         canContribute:
             lsRead(CAN_CONTRIBUTE_LS) === "true" || lsRead(IS_ADMIN_LS) === "true",
+        canManagePromos: false,
         adminSessionToken: !tokenRaw || expired ? null : tokenRaw,
         adminSessionExpiresAt: !tokenRaw || expired ? null : expRaw || null,
         rejectedApiKey: null,
@@ -68,6 +71,7 @@ export function apiKeyOnlyAuthState(apiKey: string): AuthState {
         apiKey,
         isAdmin: false,
         canContribute: false,
+        canManagePromos: false,
         adminSessionToken: null,
         adminSessionExpiresAt: null,
         rejectedApiKey: null,
@@ -94,9 +98,19 @@ export const authSlice = createSlice({
         setCanContribute(state, action: PayloadAction<boolean>) {
             state.canContribute = action.payload;
         },
+        setCanManagePromos(state, action: PayloadAction<boolean>) {
+            state.canManagePromos = action.payload;
+        },
+        setAuthStatus(state, action: PayloadAction<AuthStatus>) {
+            const { is_admin, can_contribute, can_manage_promos } = action.payload;
+            state.isAdmin = is_admin;
+            state.canContribute = can_contribute;
+            state.canManagePromos = can_manage_promos;
+        },
         clearAuthFlags(state) {
             state.isAdmin = false;
             state.canContribute = false;
+            state.canManagePromos = false;
         },
         setAdminSession(
             state,
@@ -129,6 +143,8 @@ export const {
     setApiKey,
     setIsAdmin,
     setCanContribute,
+    setCanManagePromos,
+    setAuthStatus,
     clearAuthFlags,
     setAdminSession,
     clearAdminSession,

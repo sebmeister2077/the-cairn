@@ -83,7 +83,7 @@ export class ApiError extends Error {
                 : null;
     }
 }
-
+export const API_KEY_CHANGE_EVENT = "api-key-change";
 export function setApiKey(key: string) {
     const previous = store.getState().auth.apiKey;
     if (previous && previous !== key) {
@@ -99,7 +99,7 @@ export function setApiKey(key: string) {
         // (Phase 4 cleanup: drop this once every consumer reads via the
         // store; kept for parity with the legacy contract.)
         try {
-            window.dispatchEvent(new CustomEvent("api-key-change", { detail: { key } }));
+            window.dispatchEvent(new CustomEvent(API_KEY_CHANGE_EVENT, { detail: { key } }));
         } catch {
             // Older browsers / non-window environments — ignore.
         }
@@ -163,25 +163,12 @@ export function getStoredIsAdmin(): boolean {
     return store.getState().auth.isAdmin;
 }
 
-export function setStoredIsAdmin(value: boolean) {
-    store.dispatch(setIsAdminAction(value));
-}
-
-export function setStoredCanContribute(value: boolean) {
-    store.dispatch(setCanContributeAction(value));
-}
-
 /**
  * Storage key used by the React Query persister (kept in sync with App.tsx).
  * Exposed here so logout / 401 / account-deletion paths can wipe the
  * persisted cache without pulling in a react-query dependency.
  */
 export const PERSISTED_QUERY_CACHE_KEY = "vs-waypoints-query-cache";
-
-/** Remove cached admin / contributor flags from localStorage. */
-export function clearStoredAuthFlags() {
-    store.dispatch(clearAuthFlagsAction());
-}
 
 /** Wipe the persisted React Query cache from localStorage. */
 export function clearPersistedQueryCache() {
@@ -192,9 +179,10 @@ export function clearPersistedQueryCache() {
     }
 }
 
-export interface AuthStatus {
+export type AuthStatus = {
     is_admin: boolean;
     can_contribute: boolean;
+    can_manage_promos: boolean;
 }
 
 export async function checkAuthStatus(): Promise<AuthStatus> {
@@ -203,15 +191,16 @@ export async function checkAuthStatus(): Promise<AuthStatus> {
             headers: authHeaders(),
         });
         if (!res.ok) {
-            return { is_admin: false, can_contribute: false };
+            return { is_admin: false, can_contribute: false, can_manage_promos: false };
         }
         const data = await res.json();
         return {
             is_admin: !!data.is_admin,
             can_contribute: !!data.can_contribute,
+            can_manage_promos: !!data.can_manage_promos,
         };
     } catch {
-        return { is_admin: false, can_contribute: false };
+        return { is_admin: false, can_contribute: false, can_manage_promos: false };
     }
 }
 
@@ -2794,7 +2783,7 @@ export interface AccountMeResponse {
     user: AccountUser | null;
     is_admin: boolean;
     /** Granular per-key permission flags (e.g. ``manage_promos``). */
-    extra_permissions?: Record<string, boolean>;
+    extra_permissions?: { manage_promos?: boolean };
     terms_version_current: string;
     terms_accepted_current: boolean;
 }

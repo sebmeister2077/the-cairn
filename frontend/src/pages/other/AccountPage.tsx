@@ -11,7 +11,6 @@ import {
   registerAccount,
   getStoredApiKey,
   setApiKey,
-  clearStoredAuthFlags,
   clearAdminSession,
   clearPersistedQueryCache,
   ApiError,
@@ -37,6 +36,7 @@ import { MyTranslocatorContributionsCard } from "@/components/account/MyTransloc
 import { Trans, useTranslation } from "@/lib/i18n";
 import { useAppDispatch, useReduxState } from "@/store/hooks";
 import { clearRejectedMarker } from "@/store/slices/auth";
+import { clearAuthFlags as clearAuthFlagsAction } from "@/store/slices/auth";
 
 // localStorage keys preserved when the user clicks "Clear local cache":
 // the API key and the cached auth flags / passkey session that keep them
@@ -128,7 +128,7 @@ export function AccountPage() {
       // key is rehydrated on the next load and every request 401s.
       setApiKey("");
       localStorage.removeItem("api_key");
-      clearStoredAuthFlags();
+      dispatch(clearAuthFlagsAction());
       clearAdminSession();
       queryClient.clear();
       clearPersistedQueryCache();

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useAppDispatch } from "@/store/hooks";
+import { setAuthStatus as setAuthStatusAction } from "@/store/slices/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { Eye, EyeOff } from "lucide-react";
 import {
@@ -15,8 +17,6 @@ import {
   setApiKey,
   getStoredApiKey,
   checkAuthStatus,
-  setStoredIsAdmin,
-  setStoredCanContribute,
   adminWebauthnStatus,
   clearAdminSession,
 } from "@/lib/helpers/api";
@@ -24,18 +24,17 @@ import {
 export function ApiKeyDialog({
   open,
   onClose,
-  onAdminStatusChange,
   onAdminPasskeyNeeded,
 }: {
   open: boolean;
   onClose: () => void;
-  onAdminStatusChange: (isAdmin: boolean) => void;
   /** Called after a successful admin login when the next step is a passkey
    *  ceremony. ``mode`` is "assert" if the admin has at least one passkey
    *  registered and must verify, or "register" when the server offers
    *  WebAuthn but the admin hasn't enrolled yet (treated as a soft prompt). */
   onAdminPasskeyNeeded?: (mode: "assert" | "register") => void;
 }) {
+  const dispatch = useAppDispatch();
   const [key, setKey] = useState(getStoredApiKey());
   const [loading, setLoading] = useState(false);
   const [showKey, setShowKey] = useState(false);
@@ -58,9 +57,8 @@ export function ApiKeyDialog({
     const previous = getStoredApiKey();
     setApiKey(trimmed);
     const status = await checkAuthStatus();
-    setStoredIsAdmin(status.is_admin);
-    setStoredCanContribute(status.can_contribute);
-    onAdminStatusChange(status.is_admin);
+    console.log("🚀 ~ handleSave ~ status:", status);
+    dispatch(setAuthStatusAction(status));
     if (trimmed !== previous) {
       // The new key may have different permissions (or be valid where the old
       // one was not). Drop every cached query — including ones currently in an

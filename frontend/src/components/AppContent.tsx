@@ -80,8 +80,6 @@ import {
   getStoredIsAdmin,
   setApiKey,
   checkAuthStatus,
-  setStoredIsAdmin,
-  setStoredCanContribute,
   getStoredApiKey,
   getAdminSession,
   adminWebauthnStatus,
@@ -92,11 +90,23 @@ import {
   type AccountMeResponse,
   type AdminPendingCounts,
   type DefaultInviteRecord,
+  API_KEY_CHANGE_EVENT,
 } from "@/lib/helpers/api";
+import {
+  setApiKey as setApiKeyAction,
+  setIsAdmin as setIsAdminAction,
+  setCanContribute as setCanContributeAction,
+  clearAuthFlags as clearAuthFlagsAction,
+  setAdminSession as setAdminSessionAction,
+  clearAdminSession as clearAdminSessionAction,
+  markCurrentKeyRejected,
+  setCanManagePromos as setCanManagePromosAction,
+  setAuthStatus as setAuthStatusAction,
+} from "@/store/slices/auth";
 import { AuthRejectedBanner } from "./other/AuthRejectedBanner";
 import { useEffectWithAbort } from "@/hooks/useEffectWithAbort";
 import { useOrdersUnread } from "@/lib/orders";
-import { useReduxState } from "@/store/hooks";
+import { useAppDispatch, useAppSelector, useReduxState } from "@/store/hooks";
 import { useTranslation, type PathOf, type TranslationSchema } from "@/lib/i18n";
 import { cn } from "@/lib/helpers/utils";
 import { ErrorBoundary } from "./other/ErrorBoundary";
@@ -112,9 +122,21 @@ const BASE_CATEGORIES = [
   { value: "/tools", labelKey: "app.nav.categories.tools" },
 ] as const;
 
-const ADMIN_CATEGORY = { value: "/manage", labelKey: "app.nav.categories.manage" } as const;
-const AUDIT_CATEGORY = { value: "/audit", labelKey: "app.nav.categories.audit" } as const;
-const USAGE_CATEGORY = { value: "/usage", labelKey: "app.nav.categories.usage" } as const;
+const ADMIN_CATEGORY = {
+  value: "/manage",
+  labelKey: "app.nav.categories.manage",
+  shownToPromosPermission: true,
+} as const;
+const AUDIT_CATEGORY = {
+  value: "/audit",
+  labelKey: "app.nav.categories.audit",
+  shownToPromosPermission: false,
+} as const;
+const USAGE_CATEGORY = {
+  value: "/usage",
+  labelKey: "app.nav.categories.usage",
+  shownToPromosPermission: true,
+} as const;
 
 const NavigationRoutes = {
   // Singleplayer: {
@@ -188,6 +210,7 @@ type SubTab<V extends any = string> = {
   chip?: PathOf<TranslationSchema>;
   chipShownUntil?: string;
   disabled?: boolean;
+  shownToPromosPermission?: boolean;
 };
 type SubtabKey = keyof typeof NavigationRoutes;
 type SubtabKeyToValue<K extends SubtabKey> =
@@ -310,7 +333,7 @@ const subTabs: Subtabs = {
     { value: "/manage/resources", labelKey: "app.nav.subtabs.resources" },
     { value: "/manage/licenses", labelKey: "app.nav.subtabs.licenses" },
     { value: "/manage/program-downloads", labelKey: "app.nav.subtabs.programDownloads" },
-    { value: "/manage/promos", labelKey: "app.nav.subtabs.promos" },
+    { value: "/manage/promos", labelKey: "app.nav.subtabs.promos", shownToPromosPermission: true },
   ],
   "/audit": [
     { value: "/audit/translocators", labelKey: "app.nav.subtabs.translocators" },
@@ -399,10 +422,12 @@ function formatPendingCount(n: number): string {
 
 export function AppContent() {
   const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const tStatic = t as (path: StaticNavLabelKey) => string;
   const [keyOpen, setKeyOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(getStoredIsAdmin);
+  const isAdmin = useAppSelector((state) => state.auth.isAdmin);
+  const canManagePromos = useAppSelector((state) => state.auth.canManagePromos);
   const [passkeyDialog, setPasskeyDialog] = useState<{
     mode: PasskeyDialogMode;
     required: boolean;
@@ -452,6 +477,12 @@ export function AppContent() {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  useEffect(() => {
+    if (!accountData) return;
+    dispatch(setCanManagePromosAction(accountData?.extra_permissions?.manage_promos ?? false));
+  }, [accountData, dispatch]);
+
   const needsRegister = !!apiKey && accountData?.user === null && !accountData?.is_admin;
   // Fetch pending admin review counts once when an admin enters the site so
   // the relevant nav items can show a badge ("you have things to review").
@@ -460,7 +491,8 @@ export function AppContent() {
   const { data: pendingCounts } = useQuery<AdminPendingCounts>({
     queryKey: ["admin-pending-counts", apiKey ?? ""],
     queryFn: getAdminPendingCounts,
-    enabled: !!isAdmin && !!apiKey,
+    // enabled: !!isAdmin && !!apiKey,
+    enabled: false,
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -470,12 +502,12 @@ export function AppContent() {
   // Non-admin users granted the ``manage_promos`` permission get a slim slice
   // of the admin surface: the Promos management page and the promo analytics
   // tab on the Usage dashboard. Admins always have everything.
-  const canManagePromos = isAdmin || Boolean(accountData?.extra_permissions?.manage_promos);
-  const categories = isAdmin
-    ? [...BASE_CATEGORIES, ADMIN_CATEGORY, AUDIT_CATEGORY, USAGE_CATEGORY]
-    : canManagePromos
-      ? [...BASE_CATEGORIES, ADMIN_CATEGORY, USAGE_CATEGORY]
-      : BASE_CATEGORIES;
+  const nonPublicCategories = [ADMIN_CATEGORY, AUDIT_CATEGORY, USAGE_CATEGORY];
+  const nonPublicButCanViewCategories = nonPublicCategories.filter(
+    (c) => (c.shownToPromosPermission && canManagePromos) || isAdmin,
+  );
+  const categories = [...BASE_CATEGORIES, ...nonPublicButCanViewCategories];
+
   const activeCategory = getActiveCategory(location.pathname);
   const allActiveSubs = activeCategory ? (subTabs[activeCategory] ?? []) : [];
   // A promo-manager (without full admin) only sees the Promos entry under the
@@ -488,20 +520,6 @@ export function AppContent() {
 
   const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
   const isToolsPage = activeCategory === "/tools";
-
-  // useEffect(() => {
-  //   const pagesWithMapAssets = ["/multiplayer/map-viewer", "/multiplayer/tops-map"];
-  //   const isPageWithMapAssets = pagesWithMapAssets.some((p) => location.pathname.startsWith(p));
-  //   if (isPageWithMapAssets) {
-  //     const linkEl = document.createElement("link");
-  //     linkEl.rel = "preconnect";
-  //     linkEl.href = import.meta.env.VITE_ASSETS_BASE_URL;
-  //     document.head.appendChild(linkEl);
-  //     return () => {
-  //       document.head.removeChild(linkEl);
-  //     };
-  //   }
-  // }, [location.pathname]);
 
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
@@ -534,9 +552,7 @@ export function AppContent() {
     if (keyParam) {
       setApiKey(keyParam.trim());
       checkAuthStatus().then((status) => {
-        setStoredIsAdmin(status.is_admin);
-        setStoredCanContribute(status.can_contribute);
-        setIsAdmin(status.is_admin);
+        dispatch(setAuthStatusAction(status));
       });
       window.history.replaceState({}, "", window.location.pathname);
       return;
@@ -592,10 +608,10 @@ export function AppContent() {
     function syncFromStorage() {
       setHasApiKey(!!getStoredApiKey());
     }
-    window.addEventListener("api-key-change", syncFromStorage);
+    window.addEventListener(API_KEY_CHANGE_EVENT, syncFromStorage);
     window.addEventListener("storage", syncFromStorage);
     return () => {
-      window.removeEventListener("api-key-change", syncFromStorage);
+      window.removeEventListener(API_KEY_CHANGE_EVENT, syncFromStorage);
       window.removeEventListener("storage", syncFromStorage);
     };
   }, []);
@@ -611,9 +627,8 @@ export function AppContent() {
       const hadKey = !!getStoredApiKey();
       // 401 means the backend rejected this key. Drop the cached
       // admin/contributor flags so the UI no longer thinks we're admin.
-      setIsAdmin(false);
-      setStoredIsAdmin(false);
-      setStoredCanContribute(false);
+      dispatch(setIsAdminAction(false));
+      dispatch(setCanContributeAction(false));
       // Only surface the banner if the user actually had a key that got
       // rejected (revoked / banned / account deleted). Anonymous visitors
       // get a 401 simply because they have no key yet — that's the normal
@@ -642,9 +657,7 @@ export function AppContent() {
           setApiKey(result.key);
           const status = await checkAuthStatus();
           if (signal.aborted) return;
-          setStoredIsAdmin(status.is_admin);
-          setStoredCanContribute(status.can_contribute);
-          setIsAdmin(status.is_admin);
+          dispatch(setAuthStatusAction(status));
           // Success: silently dismiss the splash. The api-key-change event
           // already updated ``hasApiKey`` so the rest of the UI lights up.
           setInviteClaim(null);
@@ -1520,7 +1533,6 @@ export function AppContent() {
       <ApiKeyDialog
         open={keyOpen}
         onClose={() => setKeyOpen(false)}
-        onAdminStatusChange={setIsAdmin}
         onAdminPasskeyNeeded={(mode) => setPasskeyDialog({ mode, required: mode === "assert" })}
       />
 
