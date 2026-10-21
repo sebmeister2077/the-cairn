@@ -232,7 +232,15 @@ export function PromoEditorDialog({
     <Dialog open={open} onOpenChange={(v) => !v && !save.isPending && onClose()}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{promo ? "Edit promo" : "New promo"}</DialogTitle>
+          <DialogTitle>
+            {promo ? (
+              <>
+                Edit promo <span className="font-normal text-muted-foreground">({promo.id})</span>
+              </>
+            ) : (
+              "New promo"
+            )}
+          </DialogTitle>
           <DialogDescription>
             The active promo (one at a time) is shown to every visitor in the site-wide banner.
           </DialogDescription>
