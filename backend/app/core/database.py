@@ -57,6 +57,33 @@ def _emit_usage_event(
         pass
 
 
+def _mirror_trader_claim_to_traders_audit(
+    action: str,
+    *,
+    actor_api_key_id: Optional[str] = None,
+    actor_display_name: Optional[str] = None,
+    note: Optional[str] = None,
+) -> None:
+    """Fire-and-forget mirror of a trader-claim mutation into the map-features
+    traders audit feed.
+
+    Trader claims are part of the same crowd-sourced traders system, so their
+    add/remove actions are surfaced on the Map-features traders audit page
+    (``category="traders"``). ``action`` is the full event name, e.g.
+    ``trader_claim.add`` or ``trader_claim_empty.remove``. Never raises.
+    """
+    try:
+        insert_map_features_traders_audit(
+            action=action,
+            category="traders",
+            actor_api_key_id=actor_api_key_id,
+            actor_display_name=actor_display_name,
+            note=note,
+        )
+    except Exception:  # pragma: no cover — mirror must not block the write
+        pass
+
+
 def init_db():
     """Create a simple connection pool. Call once at startup."""
     global _pool
@@ -4874,6 +4901,20 @@ def insert_trader_claim_type_audit(
             "trader_type": trader_type,
         },
     )
+    _mirror_trader_claim_to_traders_audit(
+        f"trader_claim.{action}",
+        actor_api_key_id=actor_api_key_id,
+        actor_display_name=actor_display_name,
+        note=" · ".join(
+            p
+            for p in (
+                f"claim {claim_id}",
+                f"type {trader_type}" if trader_type else None,
+                f"source {source}" if source else None,
+            )
+            if p
+        ),
+    )
     return audit_row_id
 
 
@@ -4949,6 +4990,19 @@ def insert_trader_claim_empty_audit(
             "claim_id": claim_id,
             "source": source,
         },
+    )
+    _mirror_trader_claim_to_traders_audit(
+        f"trader_claim_empty.{action}",
+        actor_api_key_id=actor_api_key_id,
+        actor_display_name=actor_display_name,
+        note=" · ".join(
+            p
+            for p in (
+                f"claim {claim_id}",
+                f"source {source}" if source else None,
+            )
+            if p
+        ),
     )
     return audit_row_id
 

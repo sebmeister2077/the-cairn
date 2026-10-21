@@ -30,7 +30,18 @@ const AUDIT_PAGE_SIZE = 25;
 function actionBadgeVariant(action: string): "default" | "secondary" | "destructive" | "outline" {
   if (action === "contribute") return "secondary";
   if (action === "rebuild_publish") return "default";
+  if (action.startsWith("trader_claim")) return "outline";
   return "outline";
+}
+
+function actionLabel(action: string): string {
+  if (action.startsWith("trader_claim_empty.")) {
+    return `empty marker ${action.slice("trader_claim_empty.".length)}`;
+  }
+  if (action.startsWith("trader_claim.")) {
+    return `claim ${action.slice("trader_claim.".length)}`;
+  }
+  return action;
 }
 
 export function AdminMapFeaturesTradersPage() {
@@ -119,7 +130,7 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
     <div className="px-3 py-2 text-xs flex items-start justify-between gap-3">
       <div className="min-w-0 space-y-0.5">
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant={actionBadgeVariant(row.action)}>{row.action}</Badge>
+          <Badge variant={actionBadgeVariant(row.action)}>{actionLabel(row.action)}</Badge>
           {row.license_label && (
             <Badge variant="outline" className="font-normal" title="License label">
               {row.license_label}
@@ -158,9 +169,11 @@ function AuditRow({ row }: { row: AdminMapFeaturesTradersAuditEntry }) {
               )}
             </span>
           )}
-          {row.action !== "contribute" && row.action !== "rebuild_publish" && row.note && (
-            <span className="font-mono break-all">{row.note}</span>
-          )}
+          {row.action.startsWith("trader_claim") && row.note && <span>{row.note}</span>}
+          {row.action !== "contribute" &&
+            row.action !== "rebuild_publish" &&
+            !row.action.startsWith("trader_claim") &&
+            row.note && <span className="font-mono break-all">{row.note}</span>}
         </div>
       </div>
       <div className="shrink-0 text-muted-foreground whitespace-nowrap">
