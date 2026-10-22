@@ -12,7 +12,13 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from .auth import verify_api_key_info, is_admin_key
 from .config import settings
-from .core.database import init_db, ensure_schema, close_db
+from .core.database import (
+    init_db,
+    ensure_schema,
+    close_db,
+    is_available as database_is_available,
+    DatabaseUnavailable,
+)
 from .core import api_key_cache
 from .core import accounts_db
 from . import migrations as _migrations
@@ -265,31 +271,50 @@ async def lifespan(app: FastAPI):
             "webmap served from external API"
         )
 
-    # Startup: initialise Supabase connection pool + schema
+    # Startup: initialise Supabase connection pool + schema. Non-fatal — the
+    # database being down must not take the whole app offline. If it's
+    # unreachable we start anyway and reconnect lazily on first use.
     step_started = perf_counter()
     try:
         init_db()
-    except RuntimeError as exc:
-        # Most commonly the paused dev database (see init_db). Log a clean,
-        # single-line message so it's readable without digging through the
-        # nested lifespan traceback, then re-raise to abort startup.
-        logger.error("Startup aborted: %s", exc)
-        raise
-    logger.info("Startup step init_db completed in %.3fs", perf_counter() - step_started)
+    except Exception as exc:  # pragma: no cover — startup must not crash
+        logger.error(
+            "Startup step init_db failed (non-fatal) — continuing without a "
+            "database; connections will be retried on demand: %s", exc,
+        )
+    db_available = database_is_available()
+    if db_available:
+        logger.info("Startup step init_db completed in %.3fs", perf_counter() - step_started)
+    else:
+        logger.warning(
+            "Database is not reachable at startup — schema migrations and "
+            "DB-backed startup workers will be skipped. The API will still "
+            "serve requests and recover automatically once the database is back."
+        )
 
     step_started = perf_counter()
-    if _migrations.is_enabled():
-        _migrations.upgrade_to_head()
-        logger.info(
-            "Startup step alembic upgrade head completed in %.3fs",
-            perf_counter() - step_started,
-        )
+    if not db_available:
+        logger.warning("Skipping schema migration / ensure_schema — database unavailable.")
     else:
-        ensure_schema()
-        logger.info(
-            "Startup step ensure_schema completed in %.3fs (legacy; set USE_ALEMBIC=true to switch)",
-            perf_counter() - step_started,
-        )
+        try:
+            if _migrations.is_enabled():
+                _migrations.upgrade_to_head()
+                logger.info(
+                    "Startup step alembic upgrade head completed in %.3fs",
+                    perf_counter() - step_started,
+                )
+            else:
+                ensure_schema()
+                logger.info(
+                    "Startup step ensure_schema completed in %.3fs (legacy; set USE_ALEMBIC=true to switch)",
+                    perf_counter() - step_started,
+                )
+        except Exception as exc:  # pragma: no cover — startup must not crash
+            logger.error(
+                "Schema migration / ensure_schema failed (non-fatal) — "
+                "continuing; it will run on a later restart once the DB is healthy: %s",
+                exc,
+            )
 
     # Make sure env-var ADMIN_API_KEY / API_KEYS exist as rows in api_keys
     # so audit columns (FK to api_keys.id) can be populated for actions
@@ -607,6 +632,20 @@ app.add_middleware(
     # geojson proxy so the frontend can read the upstream snapshot date.
     expose_headers=["Last-Modified"],
 )
+
+
+@app.exception_handler(DatabaseUnavailable)
+async def _database_unavailable_handler(request: Request, exc: DatabaseUnavailable):
+    """Return a clean 503 (instead of a 500 / crash) when a request needs the
+    database but it is temporarily unreachable."""
+    logger.warning(
+        "Database unavailable for %s %s: %s", request.method, request.url.path, exc
+    )
+    return JSONResponse(
+        status_code=503,
+        content={"detail": str(exc) or "Database is temporarily unavailable."},
+        headers={"Retry-After": "30"},
+    )
 
 
 # ---------------------------------------------------------------------------

@@ -9,6 +9,7 @@ Tables:
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
+import logging
 from typing import List, Optional
 
 import psycopg2
@@ -17,7 +18,19 @@ from psycopg2 import pool as pg_pool
 
 from ..config import settings
 
+logger = logging.getLogger("uvicorn.error")
+
 _pool = None
+
+
+class DatabaseUnavailable(RuntimeError):
+    """Raised when a database connection is needed but the pool could not be
+    established — e.g. the database is down, the credentials are wrong, or the
+    provider's circuit breaker has temporarily blocked new connections.
+
+    Callers (and the FastAPI exception handler) should treat this as a
+    transient ``503`` condition rather than let it crash the process.
+    """
 
 
 def _resolve_key_id(api_key: Optional[str]) -> Optional[str]:
@@ -84,29 +97,100 @@ def _mirror_trader_claim_to_traders_audit(
         pass
 
 
-def init_db():
-    """Create a simple connection pool. Call once at startup."""
-    global _pool
-    if not settings.SUPABASE_DB_URL:
-        raise RuntimeError("SUPABASE_DB_URL is not configured")
-    try:
-        _pool = pg_pool.SimpleConnectionPool(
-            minconn=1,
-            maxconn=5,
-            dsn=settings.SUPABASE_DB_URL,
+def _describe_connection_error(exc: Exception) -> str:
+    """Turn a raw psycopg2 connection error into a short, actionable message.
+
+    Distinguishes the common failure modes (wrong password, provider circuit
+    breaker, auto-paused dev database) so the logs point at the real cause
+    instead of guessing.
+    """
+    text = str(exc).strip() or exc.__class__.__name__
+    lowered = text.lower()
+    if "ecircuitbreaker" in lowered or "too many authentication failures" in lowered:
+        return (
+            "the database temporarily blocked new connections after repeated "
+            "authentication failures (circuit breaker). This usually means "
+            "SUPABASE_DB_URL has the wrong password — fix it, then stop "
+            "restarting and wait a few minutes for the breaker to reset. "
+            f"(original error: {text})"
         )
+    if "authentication failed" in lowered or "password" in lowered:
+        return (
+            "database authentication failed — check the SUPABASE_DB_URL "
+            f"password. (original error: {text})"
+        )
+    return (
+        "could not connect to the database. If this is the dev "
+        "(Supabase/Neon) database, it may have auto-paused after inactivity "
+        f"— open the project dashboard and resume/restore it. (original error: {text})"
+    )
+
+
+def _build_pool():
+    return pg_pool.SimpleConnectionPool(
+        minconn=1,
+        maxconn=5,
+        dsn=settings.SUPABASE_DB_URL,
+    )
+
+
+def init_db():
+    """Create a simple connection pool. Call once at startup.
+
+    Non-fatal: if the database is unreachable the app still starts. The pool
+    is (re)created lazily on first use (see :func:`_ensure_pool`), so the
+    server recovers automatically once the database comes back — no restart
+    required.
+    """
+    global _pool
+    if _pool is not None:
+        return
+    if not settings.SUPABASE_DB_URL:
+        logger.error(
+            "SUPABASE_DB_URL is not configured — starting without a database; "
+            "database-backed endpoints will return 503 until it is set."
+        )
+        return
+    try:
+        _pool = _build_pool()
     except psycopg2.OperationalError as exc:
-        # Free-tier Supabase/Neon dev databases auto-pause after a period of
-        # inactivity, and the raw psycopg2 traceback (buried under FastAPI's
-        # nested lifespan frames) is hard to read. Surface a short, actionable
-        # message instead.
-        raise RuntimeError(
-            "Could not connect to the database. If this is the dev "
-            "(Supabase/Neon) database, it has most likely auto-paused after "
-            "inactivity — open the project dashboard and resume/restore it, "
-            "then start the backend again. "
-            f"(original error: {str(exc).strip() or exc.__class__.__name__})"
-        ) from exc
+        # Don't abort startup — the database being down (paused dev DB, wrong
+        # password, provider circuit breaker, …) must not take the whole app
+        # offline. Log a clean, actionable line and keep going; connections
+        # are retried on demand.
+        _pool = None
+        logger.error(
+            "Database unavailable at startup — continuing without it; "
+            "connections will be retried on demand: %s",
+            _describe_connection_error(exc),
+        )
+
+
+def _ensure_pool() -> bool:
+    """Lazily (re)create the connection pool if it isn't up yet.
+
+    Returns ``True`` when a usable pool exists, ``False`` when the database is
+    still unreachable. Safe to call on every request — it's a cheap check once
+    the pool is established.
+    """
+    global _pool
+    if _pool is not None:
+        return True
+    if not settings.SUPABASE_DB_URL:
+        return False
+    try:
+        _pool = _build_pool()
+        logger.info("Database connection pool (re)established.")
+        return True
+    except psycopg2.OperationalError as exc:
+        _pool = None
+        logger.warning("Database still unavailable: %s", _describe_connection_error(exc))
+        return False
+
+
+def is_available() -> bool:
+    """Return ``True`` if a database connection pool is (or can be) established."""
+    return _ensure_pool()
 
 
 def close_db():
@@ -119,7 +203,16 @@ def close_db():
 
 @contextmanager
 def get_conn():
-    """Yield a connection from the pool; auto-returns on exit."""
+    """Yield a connection from the pool; auto-returns on exit.
+
+    Raises :class:`DatabaseUnavailable` if the pool can't be established, so
+    callers get a clean, retryable error (handled as ``503``) instead of
+    crashing the process.
+    """
+    if not _ensure_pool():
+        raise DatabaseUnavailable(
+            "Database is temporarily unavailable. Please try again shortly."
+        )
     conn = _pool.getconn()
     try:
         yield conn
