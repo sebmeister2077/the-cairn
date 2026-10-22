@@ -15,6 +15,8 @@ import {
   Search,
   RefreshCw,
   ShieldAlert,
+  Settings2,
+  Save,
 } from "lucide-react";
 import {
   adminListLicenses,
@@ -24,12 +26,14 @@ import {
   adminRevokeLicense,
   adminRevokeLicenseActivation,
   adminDismissActivationFlag,
+  adminSetLicenseParameters,
   type License,
   type LicenseActivation,
   type LicenseAttempt,
 } from "@/lib/helpers/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TextArea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -350,10 +354,98 @@ function AttemptsPanel({ licenseCode }: { licenseCode: string }) {
   );
 }
 
+function OverridesPanel({ lic }: { lic: License }) {
+  const queryClient = useQueryClient();
+  const initial = lic.parameter_overrides ? JSON.stringify(lic.parameter_overrides, null, 2) : "";
+  const [text, setText] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+
+  const saveMut = useMutation({
+    mutationFn: (parameters: Record<string, unknown> | null) =>
+      adminSetLicenseParameters(lic.license_code, parameters),
+    onSuccess: () => {
+      setError(null);
+      queryClient.invalidateQueries({ queryKey: ["admin-licenses"] });
+    },
+  });
+
+  function parseOverrides(): Record<string, unknown> | null | undefined {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(trimmed);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Invalid JSON");
+      return undefined;
+    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setError('Overrides must be a JSON object, e.g. { "ThrottleMs": 25 }');
+      return undefined;
+    }
+    setError(null);
+    return parsed as Record<string, unknown>;
+  }
+
+  function onSave() {
+    const parsed = parseOverrides();
+    if (parsed === undefined) return; // parse error already surfaced
+    saveMut.mutate(parsed);
+  }
+
+  function onClear() {
+    setText("");
+    setError(null);
+    saveMut.mutate(null);
+  }
+
+  return (
+    <div className="space-y-2 py-1">
+      <p className="text-xs text-muted-foreground">
+        Pushed to every machine on this key and applied the next time the client checks its license
+        (within ~24h). A JSON object of ProxyConfig keys, e.g.{" "}
+        <code className="font-mono">{`{ "ThrottleMs": 25, "ClayFlowCount": 32 }`}</code>. Unknown
+        and licensing-secret keys are ignored by the client.
+      </p>
+      <TextArea
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          if (error) setError(null);
+        }}
+        placeholder={'{\n  "ThrottleMs": 25\n}'}
+        rows={6}
+        className="font-mono text-xs"
+      />
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Button size="xs" disabled={saveMut.isPending} onClick={onSave}>
+          <Save className="size-3" /> Save overrides
+        </Button>
+        <Button
+          size="xs"
+          variant="outline"
+          disabled={saveMut.isPending || (!text.trim() && !lic.parameter_overrides)}
+          onClick={onClear}
+        >
+          <Ban className="size-3" /> Clear
+        </Button>
+        {saveMut.isPending && <Loader2 className="size-4 animate-spin" />}
+        <span className="text-xs text-muted-foreground">
+          {lic.overrides_updated_at
+            ? `updated ${fmtDate(lic.overrides_updated_at)}`
+            : "no overrides set"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function LicenseCard({ lic }: { lic: License }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [showAttempts, setShowAttempts] = useState(false);
+  const [showParams, setShowParams] = useState(false);
   const [confirmRevoke, setConfirmRevoke] = useState(false);
   const revoked = lic.status !== "active";
 
@@ -395,6 +487,13 @@ function LicenseCard({ lic }: { lic: License }) {
               {expanded ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
               Machines
             </Button>
+            <Button
+              size="sm"
+              variant={lic.parameter_overrides ? "default" : "outline"}
+              onClick={() => setShowParams((v) => !v)}
+            >
+              <Settings2 className="size-3" /> Parameters
+            </Button>
             {lic.over_limit_attempts > 0 && (
               <Button size="sm" variant="outline" onClick={() => setShowAttempts((v) => !v)}>
                 <ShieldAlert className="size-3" /> Over-limit
@@ -412,6 +511,13 @@ function LicenseCard({ lic }: { lic: License }) {
           <>
             <Separator />
             <ActivationsPanel licenseCode={lic.license_code} />
+          </>
+        )}
+
+        {showParams && (
+          <>
+            <Separator />
+            <OverridesPanel lic={lic} />
           </>
         )}
 

@@ -66,6 +66,11 @@ def _sign_token(license_row: dict, fingerprint: str, platform: Optional[str] = N
     # Version-gate + auto-update advertisement (all optional). Signed into the
     # token so the client trusts and can enforce them even offline.
     _add_version_policy(payload, platform)
+    # Admin-pushed runtime parameter overrides (optional). Signed in so the
+    # client trusts and applies them on its next check, even offline.
+    overrides = license_row.get("parameter_overrides")
+    if isinstance(overrides, dict) and overrides:
+        payload["parameter_overrides"] = overrides
     try:
         signed = license_signing.sign_payload(payload)
     except license_signing.LicenseSigningUnavailable as exc:
@@ -253,6 +258,7 @@ async def list_licenses(
     for it in items:
         it["expires_at"] = _iso(it.get("expires_at"))
         it["created_at"] = _iso(it.get("created_at"))
+        it["overrides_updated_at"] = _iso(it.get("overrides_updated_at"))
     total = result["total"]
     next_offset = offset + len(items) if offset + len(items) < total else None
     return {"items": items, "total": total, "next_offset": next_offset}
@@ -301,6 +307,32 @@ async def revoke_license(
         raise HTTPException(status_code=404, detail="Unknown license")
     db.revoke_license(license_code)
     return {"ok": True, "license_code": license_code, "status": "revoked"}
+
+
+class SetParametersRequest(BaseModel):
+    # Runtime parameter overrides pushed to every machine on this license. Pass
+    # null or {} to clear them. Keys/values mirror the client's ProxyConfig; the
+    # client silently ignores unknown keys and refuses licensing-secret keys.
+    parameters: Optional[dict] = None
+
+
+@router.put("/admin/licenses/{license_code}/parameters")
+async def set_license_parameters(
+    license_code: str,
+    req: SetParametersRequest,
+    _admin: str = Depends(require_admin),
+) -> dict:
+    if db.get_license(license_code) is None:
+        raise HTTPException(status_code=404, detail="Unknown license")
+    row = db.set_license_parameter_overrides(license_code, req.parameters)
+    if row is None:
+        raise HTTPException(status_code=404, detail="Unknown license")
+    return {
+        "ok": True,
+        "license_code": license_code,
+        "parameter_overrides": row.get("parameter_overrides"),
+        "overrides_updated_at": _iso(row.get("overrides_updated_at")),
+    }
 
 
 @router.post("/admin/licenses/{license_code}/activations/{fingerprint}/revoke")

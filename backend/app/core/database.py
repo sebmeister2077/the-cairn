@@ -2590,6 +2590,32 @@ def revoke_license(license_code: str) -> None:
             )
 
 
+def set_license_parameter_overrides(
+    license_code: str, overrides: Optional[dict]
+) -> Optional[dict]:
+    """Store (or clear) the admin-pushed runtime parameter overrides for a license.
+
+    An empty/``None`` ``overrides`` clears any existing override set and resets
+    ``overrides_updated_at``. The overrides are handed to the client, signed into
+    its license token, on the next ``activate``/``validate`` call.
+    """
+    has_overrides = bool(overrides)
+    payload = psycopg2.extras.Json(overrides) if has_overrides else None
+    updated_at = datetime.now(timezone.utc) if has_overrides else None
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                """UPDATE licenses
+                      SET parameter_overrides = %s,
+                          overrides_updated_at = %s
+                    WHERE license_code = %s
+                    RETURNING *""",
+                (payload, updated_at, license_code),
+            )
+            row = cur.fetchone()
+            return dict(row) if row else None
+
+
 def list_license_activations(license_code: str) -> List[dict]:
     with get_conn() as conn:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:

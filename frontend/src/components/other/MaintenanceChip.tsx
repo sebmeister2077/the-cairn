@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { listActiveMaintenanceNotices, type MaintenanceNotice } from "@/lib/helpers/api";
 import { cn } from "@/lib/helpers/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatDuration } from "@/lib/formatting/format-duration";
+import { formatDuration, formatDurationMs } from "@/lib/formatting/format-duration";
 
 const POLL_INTERVAL_MS = 5 * 60 * 1000; // refresh notice list every 5 minutes
 
@@ -59,12 +59,12 @@ export function MaintenanceChip({ component, className }: MaintenanceChipProps) 
   let label = "Maintenance";
   let overdue = false;
   if (etaMs != null && Number.isFinite(etaMs)) {
-    const diff = etaMs - nowMs;
-    if (diff > 0) {
-      label = `Maintenance — fix in ${formatDuration(diff)}`;
+    const diffMs = etaMs - nowMs;
+    if (diffMs > 0) {
+      label = `Maintenance — fix in ${formatDurationMs(diffMs)}`;
     } else {
       overdue = true;
-      label = `Maintenance — overdue by ${formatDuration(-diff)}`;
+      label = `Maintenance — overdue by ${formatDurationMs(-diffMs)}`;
     }
   }
 

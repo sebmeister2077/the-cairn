@@ -85,10 +85,14 @@ export function GeneralPage() {
           </p>
           <div className="flex flex-wrap gap-2">
             {QUICK_LINKS.map(({ to, icon: Icon, labelKey }) => (
-              <Button key={to} size="sm" variant="secondary" render={<NavLink to={to} />}>
+              <NavLink
+                to={to}
+                className="bg-secondary flex items-center cursor-pointer text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground h-8 gap-1 rounded-[min(var(--radius-md),12px)] px-3 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 [&_svg:not([class*='size-'])]:size-3.5"
+                key={to}
+              >
                 <Icon className="size-4 mr-1.5" />
                 {t(labelKey)}
-              </Button>
+              </NavLink>
             ))}
           </div>
           <div className="rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200">

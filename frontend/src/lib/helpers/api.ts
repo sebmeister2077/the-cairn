@@ -2312,6 +2312,8 @@ export interface License {
     active_activations: number;
     over_limit_attempts: number;
     notes: string | null;
+    parameter_overrides: Record<string, unknown> | null;
+    overrides_updated_at: string | null;
 }
 
 export interface LicenseActivation {
@@ -2432,6 +2434,26 @@ export async function adminDismissActivationFlag(
         { method: "POST", headers: authHeaders() },
     );
     await handleResponse(res);
+}
+
+export async function adminSetLicenseParameters(
+    licenseCode: string,
+    parameters: Record<string, unknown> | null,
+): Promise<{
+    ok: boolean;
+    license_code: string;
+    parameter_overrides: Record<string, unknown> | null;
+    overrides_updated_at: string | null;
+}> {
+    const res = await fetch(
+        `${API_BASE}/admin/licenses/${encodeURIComponent(licenseCode)}/parameters`,
+        {
+            method: "PUT",
+            headers: authHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ parameters }),
+        },
+    );
+    return (await handleResponse(res)).json();
 }
 
 // ---------------------------------------------------------------------------

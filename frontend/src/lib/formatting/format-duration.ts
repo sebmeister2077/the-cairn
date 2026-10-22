@@ -7,7 +7,12 @@ export function formatDuration(seconds: number): string {
     const m = Math.floor(total / 60);
     const s = total % 60;
     if (m === 0) return `${s}s`;
-    return `${m}m ${s}s`;
+    if (m < 60) return `${m}m ${s}s`;
+    const h = Math.floor(m / 60);
+    const days = Math.floor(h / 24);
+    const min = m % 60;
+    if (days < 1) return `${h}h ${min}m`;
+    return `${days}d ${h % 24}h`;
 }
 
 /** Format a duration in ms to a compact "1d 4h" / "12h 5m" / "5m" string. */
