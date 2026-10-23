@@ -521,6 +521,34 @@ export function AppContent() {
   const isTopsPage = activeSub === NavigationRoutes.Multiplayer.TOPSMap;
   const isToolsPage = activeCategory === "/tools";
 
+  useEffect(() => {
+    if (!isTopsPage) return;
+
+    // Warm the TLS connection to the WebCartographer tile host so the first
+    // tiles don't each pay the ~400ms cold handshake. The tiles are fetched
+    // by the tile service worker with `credentials: 'omit'` (an *anonymous*
+    // connection), and browsers keep separate socket pools for credentialed
+    // vs anonymous requests — so the preconnect MUST be `crossorigin`
+    // ("anonymous") to warm the pool the SW actually reuses. A bare
+    // dns-prefetch is added as a cheap fallback for engines that ignore
+    // preconnect.
+    const dnsPrefetch = document.createElement("link");
+    dnsPrefetch.rel = "dns-prefetch";
+    dnsPrefetch.href = "https://map.tops.vintagestory.at";
+
+    const linkEl = document.createElement("link");
+    linkEl.rel = "preconnect";
+    linkEl.href = "https://map.tops.vintagestory.at";
+    linkEl.crossOrigin = "anonymous";
+
+    document.head.appendChild(dnsPrefetch);
+    document.head.appendChild(linkEl);
+    return () => {
+      document.head.removeChild(dnsPrefetch);
+      document.head.removeChild(linkEl);
+    };
+  }, [isTopsPage]);
+
   // On boot (or after a hot reload) if we already think we're admin but have
   // no live X-Admin-Session token, ask the user to verify their passkey.
   // This covers: page reload, opening a new tab, or session TTL expiry.

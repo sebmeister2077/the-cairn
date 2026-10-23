@@ -64,6 +64,7 @@ import {
   WC_TILE_SIZE_PX,
   WC_RESOLUTIONS,
   WC_MAX_ZOOM,
+  wcZoomLevelForPpb,
   INITIAL_PIXELS_PER_BLOCK,
   MIN_PIXELS_PER_BLOCK,
   MAX_PIXELS_PER_BLOCK,
@@ -590,20 +591,11 @@ export function WebCartographerMapViewer({
   }, [cursorMode]);
 
   // ── Pyramid level selection ──────────────────────────────────────────────
-  // WC_RESOLUTIONS[z] = world blocks per source pixel at level z.
-  // We're drawing each block as `pixelsPerBlock` screen px, so 1 source
-  // pixel covers `res * ppb` screen px. To avoid upsampling (blurry) we
-  // want `res * ppb <= 1` ⇒ `res <= 1/ppb`. Picking the COARSEST level
-  // that still satisfies this minimises bandwidth and tile count without
-  // sacrificing crispness; only when ppb exceeds the highest level's
-  // native scale (max zoom-in) do we accept some upsampling at WC_MAX_ZOOM.
-  const currentZoomLevel = useMemo(() => {
-    const targetRes = 1 / Math.max(pixelsPerBlock, 1e-6);
-    for (let z = 0; z <= WC_MAX_ZOOM; z++) {
-      if (WC_RESOLUTIONS[z] <= targetRes) return z;
-    }
-    return WC_MAX_ZOOM;
-  }, [pixelsPerBlock]);
+  // Pick the level whose native resolution is nearest the current on-screen
+  // scale (see `wcZoomLevelForPpb`), matching the upstream WebCartographer's
+  // constrained-resolution tile economy so the viewport is covered by roughly
+  // the same tile count instead of up to 4x more.
+  const currentZoomLevel = useMemo(() => wcZoomLevelForPpb(pixelsPerBlock), [pixelsPerBlock]);
 
   // ── Tile loading ─────────────────────────────────────────────────────────
   /**
@@ -696,14 +688,7 @@ export function WebCartographerMapViewer({
       const ppb = pixelsPerBlockRef.current;
       const cWx = centerWorldXRef.current;
       const cWz = centerWorldZRef.current;
-      const targetRes = 1 / Math.max(ppb, 1e-6);
-      let level = WC_MAX_ZOOM;
-      for (let z = 0; z <= WC_MAX_ZOOM; z++) {
-        if (WC_RESOLUTIONS[z] <= targetRes) {
-          level = z;
-          break;
-        }
-      }
+      const level = wcZoomLevelForPpb(ppb);
       const resolution = WC_RESOLUTIONS[level];
       const tileSpanBlocks = WC_TILE_SIZE_PX * resolution;
       const tilesPerSide = Math.ceil(WC_WORLD_BLOCKS / resolution / WC_TILE_SIZE_PX);

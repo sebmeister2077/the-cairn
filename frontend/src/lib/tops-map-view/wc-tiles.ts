@@ -16,6 +16,37 @@ export const WC_RESOLUTIONS = [512, 256, 128, 64, 32, 16, 8, 4, 2, 1] as const;
 export const WC_MAX_ZOOM = WC_RESOLUTIONS.length - 1;
 
 /**
+ * Select the pyramid level whose native resolution is CLOSEST (in log space)
+ * to the requested on-screen scale `pixelsPerBlock`.
+ *
+ * `WC_RESOLUTIONS[z]` is the number of world blocks a single source pixel
+ * covers at level `z`; drawing each block as `pixelsPerBlock` screen px means
+ * one source pixel spans `res * ppb` screen px, so a 256px tile is drawn at
+ * `256 * res * ppb` screen px.
+ *
+ * The upstream WebCartographer viewer runs OpenLayers with
+ * `constrainResolution: true`, which snaps the view to an exact pyramid
+ * resolution and therefore always paints tiles at their native 256px. To
+ * mirror that tile economy without giving up this viewer's smooth continuous
+ * zoom, we round to the NEAREST level (OpenLayers' default
+ * `getZForResolution` behaviour) instead of always to the finer one. Rounding
+ * down to the finer level kept `res * ppb` in `(0.5, 1]`, shrinking tiles to
+ * as little as 128px and covering the viewport with up to 4x the tiles;
+ * rounding to nearest keeps `res * ppb` in `[1/√2, √2]` (tiles ~181–362px),
+ * so the viewport needs roughly the same tile count as the official map.
+ */
+export function wcZoomLevelForPpb(pixelsPerBlock: number): number {
+  const targetRes = 1 / Math.max(pixelsPerBlock, 1e-6);
+  // Accept a level up to √2 coarser than the exact target (the geometric
+  // midpoint between adjacent levels) before stepping to the next finer one.
+  const threshold = targetRes * Math.SQRT2;
+  for (let z = 0; z <= WC_MAX_ZOOM; z++) {
+    if (WC_RESOLUTIONS[z] <= threshold) return z;
+  }
+  return WC_MAX_ZOOM;
+}
+
+/**
  * On-screen pixels-per-block at which we'd like the viewer to start so a
  * meaningful chunk of the explored world is visible without first having to
  * zoom out. ~0.004 px/block = ~4000 blocks per 16px = comfortable overview
@@ -39,10 +70,15 @@ export const WHEEL_ZOOM_FACTOR = 1.3;
 export const BUTTON_ZOOM_FACTOR = 1.75;
 
 /**
- * Render this many extra tile widths around the viewport so panning never
- * exposes empty edges before the next request lands.
+ * Render this many extra tile widths around the viewport. The upstream
+ * WebCartographer (OpenLayers) loads essentially only the tiles that cover
+ * the viewport and leans on already-cached coarser tiles while panning, so
+ * we match it with `0` — any momentary gap at the edge while a fresh tile
+ * loads is already filled by the parent/child fallback-draw passes in the
+ * render loop. Bump this back to `1` if you'd rather trade extra tile
+ * requests for a pre-loaded buffer that hides edge pop-in during fast pans.
  */
-export const TILE_OVERSCAN_TILES = 1;
+export const TILE_OVERSCAN_TILES = 0;
 
 /**
  * Maximum number of decoded tile bitmaps to keep alive at once. Each
