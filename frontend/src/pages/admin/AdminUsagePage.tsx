@@ -9,7 +9,7 @@ import { AdminActivitySection } from "@/components/usage/sections/UsageAdminActi
 import { ContributionsSection } from "@/components/usage/sections/UsageContributionsSection";
 import { DownloadsSection } from "@/components/usage/sections/UsageDownloadSection";
 import { EntitiesSection } from "@/components/usage/sections/UsageItemPlayerSection";
-import { MapLayersSection } from "@/components/usage/sections/UsageMapLayersSection";
+import { UsageMapLayersSection } from "@/components/usage/sections/UsageMapLayersSection";
 import { ModerationSection } from "@/components/usage/sections/UsageModerationSection";
 import { OverviewSection } from "@/components/usage/sections/UsageOverviewSection";
 import { PagesSection } from "@/components/usage/sections/UsagePagesSection";
@@ -141,7 +141,7 @@ export function AdminUsagePage({ promoOnly = false }: { promoOnly?: boolean }) {
         <EntitiesSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "map_layers" && (
-        <MapLayersSection from={range.from} to={range.to} granularity={granularity} />
+        <UsageMapLayersSection from={range.from} to={range.to} granularity={granularity} />
       )}
       {section === "saved_routes" && (
         <SavedRoutesSection from={range.from} to={range.to} granularity={granularity} />

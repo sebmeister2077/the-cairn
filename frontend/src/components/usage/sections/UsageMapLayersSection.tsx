@@ -64,7 +64,7 @@ function layerLabel(id: string): string {
   return MAP_LAYER_LABELS[id] ?? id;
 }
 
-export function MapLayersSection(props: UsageSectionProps) {
+export function UsageMapLayersSection(props: UsageSectionProps) {
   const [showTrend, setShowTrend] = useState(true);
   // "enables" counts switch-on events; "snapshots" counts how many daily
   // config snapshots had the layer on (reflects sustained, not just new, use).

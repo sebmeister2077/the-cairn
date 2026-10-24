@@ -61,7 +61,7 @@ export function TimeSeriesChart({
   granularity = "day",
   height = 280,
   showTrend = false,
-  trendWindow = 7,
+  trendWindow = 30,
 }: TimeSeriesChartProps) {
   const { wide, series, effectiveWindow } = useMemo(() => {
     const seriesSet = new Set<string>();
