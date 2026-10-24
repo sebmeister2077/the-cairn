@@ -121,6 +121,7 @@ export function AccountsSection(props: {
             yKey="count"
             seriesKey="series"
             granularity={props.granularity}
+            showTrend
           />
         )}
       </CardContent>
