@@ -15,7 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { formatGears, percentileSorted } from "@/lib/market/auction";
+import { formatGears, percentileSorted, weightedMedian } from "@/lib/market/auction";
 import { formatListingDate } from "@/components/market/VirtualTable";
 import { createGameDateTick, makeRealDateLookup } from "@/components/market/DualDateAxisTick";
 import { formatGameDate } from "@/lib/formatting/format-duration";
@@ -42,6 +42,7 @@ export function PriceHistoryChart({
   expiredPoints,
   stackSize,
   defaultPerUnit,
+  weighted = false,
   showUnsold,
   onShowUnsoldChange,
   realDateForGameHours,
@@ -53,6 +54,10 @@ export function PriceHistoryChart({
   stackSize: number;
   /** Seed the per-unit vs per-stack toggle from the page's own decision. */
   defaultPerUnit: boolean;
+  /** When set, the fair-price reference line follows the quantity-weighted
+   * median (each sale weighted by the quantity it moved) instead of the plain
+   * median, matching the page's active price mode. */
+  weighted?: boolean;
   /** Controlled "show unsold" state; when omitted the component keeps its own. */
   showUnsold?: boolean;
   onShowUnsoldChange?: (v: boolean) => void;
@@ -69,8 +74,9 @@ export function PriceHistoryChart({
     onShowUnsoldChange ? onShowUnsoldChange(v) : setInternalShowExpired(v);
   const hasExpired = (expiredPoints?.length ?? 0) > 0;
   const saleAverageLabel = `${MOVING_AVERAGE_WINDOW}-sale avg`;
+  const fairLabel = weighted ? "Weighted" : "Median";
 
-  const { chartData, median, min, max, cap, clampedCount } = useMemo(() => {
+  const { chartData, fair, min, max, cap, clampedCount } = useMemo(() => {
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
     const ma = movingAverage(scaled, MOVING_AVERAGE_WINDOW);
@@ -83,6 +89,14 @@ export function PriceHistoryChart({
     }));
     const sorted = [...scaled].sort((a, b) => a - b);
     const medianVal = percentileSorted(sorted, 0.5);
+    // The fair-price reference line honours the page's price mode: the plain
+    // median by default, or the quantity-weighted median (each sale weighted by
+    // the quantity it moved) so a few bulk trades don't get the same say as
+    // one-off sales. Falls back to the plain median when no positive-weight
+    // sample exists.
+    const fairVal = weighted
+      ? (weightedMedian(points.map((p, i) => ({ value: scaled[i], weight: p.qty }))) ?? medianVal)
+      : medianVal;
     const maxSale = sorted[sorted.length - 1] ?? 0;
     // A wildly overpriced expired listing (e.g. 12× the median) would otherwise
     // crush every real sale into a flat line. Cap the axis at a multiple of the
@@ -109,13 +123,13 @@ export function PriceHistoryChart({
     const chartData = [...rows, ...expiredRows].sort((a, b) => a.t - b.t);
     return {
       chartData,
-      median: medianVal,
+      fair: fairVal,
       min: sorted[0] ?? 0,
       max: maxSale,
       cap,
       clampedCount,
     };
-  }, [points, expiredPoints, showExpired, perUnit, stackSize]);
+  }, [points, expiredPoints, showExpired, perUnit, stackSize, weighted]);
 
   const unit = perUnit ? "unit" : "stack";
 
@@ -232,7 +246,7 @@ export function PriceHistoryChart({
                 // ];
               }}
             />
-            <ReferenceLine y={median} stroke="#10b981" strokeDasharray="4 4" />
+            <ReferenceLine y={fair} stroke="#10b981" strokeDasharray="4 4" />
             <ReferenceLine y={min} stroke="#94a3b8" strokeDasharray="2 3" />
             <ReferenceLine y={max} stroke="#94a3b8" strokeDasharray="2 3" />
             {showExpired && (
@@ -294,7 +308,7 @@ export function PriceHistoryChart({
         <li className="flex items-center gap-2">
           <span className="inline-block h-0 w-3 shrink-0 border-t-2 border-dashed border-[#10b981]" />
           <span>
-            <span className="text-foreground">Median</span> {formatGears(median)} · range{" "}
+            <span className="text-foreground">{fairLabel}</span> {formatGears(fair)} · range{" "}
             {formatGears(min)}–{formatGears(max)} / {unit}.
           </span>
         </li>

@@ -1460,6 +1460,7 @@ export function MarketItemPage() {
                     expiredPoints={expiredSalePoints}
                     stackSize={stackSize}
                     defaultPerUnit={perUnitUseful}
+                    weighted={priceModeWeighted}
                     showUnsold={showUnsoldPriceHistory}
                     onShowUnsoldChange={(v) =>
                       dispatch(patchAuctionFilters({ showUnsoldPriceHistory: v }))
