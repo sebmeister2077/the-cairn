@@ -16,6 +16,11 @@ import { formatGameDate } from "@/lib/formatting/format-duration";
 import { createLabelRealDateTick } from "./DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
 import { formatListingDate } from "./VirtualTable";
+import {
+  GAME_MONTHS_PER_YEAR,
+  GAME_DAYS_PER_MONTH,
+  GAME_HOURS_PER_DAY,
+} from "@/lib/constants/game-dates";
 
 // The metrics a viewer can chart over in-game time. `gears` flags currency
 // values so the axis/tooltip render with the gears formatter; `pct` flags a
@@ -105,9 +110,6 @@ function compactNumber(v: number): string {
 // The in-game moment every seller becomes capped at 100 concurrent auctions
 // (previously unlimited): year 11, month 12, day 1. Expressed as total in-game
 // hours since world start to line up with the series' `gameHours`.
-const GAME_HOURS_PER_DAY = 24;
-const GAME_DAYS_PER_MONTH = 30;
-const GAME_MONTHS_PER_YEAR = 12;
 const AUCTION_LIMIT_GAME_HOURS =
   ((11 - 1) * GAME_MONTHS_PER_YEAR * GAME_DAYS_PER_MONTH + (12 - 1) * GAME_DAYS_PER_MONTH) *
   GAME_HOURS_PER_DAY;

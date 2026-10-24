@@ -47,6 +47,7 @@ function movingAverage(values: number[], window: number): number[] {
 // sale price (never below the highest real sale). Extreme asking prices above
 // this are pinned to the top instead of stretching the whole chart.
 const EXPIRED_CAP_MULTIPLE = 5;
+const MOVING_AVERAGE_WINDOW = 21;
 
 export function PriceHistoryChart({
   points,
@@ -83,7 +84,7 @@ export function PriceHistoryChart({
   const { chartData, median, min, max, cap, clampedCount } = useMemo(() => {
     const scale = perUnit ? 1 : stackSize || 1;
     const scaled = points.map((p) => p.ppu * scale);
-    const ma = movingAverage(scaled, 7);
+    const ma = movingAverage(scaled, MOVING_AVERAGE_WINDOW);
     const rows = points.map((p, i) => ({
       t: p.t,
       price: scaled[i],
