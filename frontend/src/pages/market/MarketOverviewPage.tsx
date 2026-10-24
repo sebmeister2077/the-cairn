@@ -8,6 +8,8 @@ import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
 import { MarketWealthChart } from "@/components/market/MarketWealthChart";
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
+import { MarketOverviewNavigationCards } from "@/components/market/overview/NavigationCards";
+import { MarketOverviewMostTradedItems } from "@/components/market/overview/MostTradedItems";
 
 export function MarketOverviewPage() {
   const { data, isPending, isError } = useAuctionSummary();
@@ -85,114 +87,9 @@ export function MarketOverviewPage() {
         realDateForGameHours={realDateForGameHours}
       />
 
-      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-        {data.priceIndex && (
-          <Link to="/market/inflation">
-            <Card className="hover:border-primary transition-colors h-full">
-              <CardContent className="py-4">
-                <div className="font-medium">Inflation</div>
-                <p className="text-sm text-muted-foreground">
-                  Prices are about{" "}
-                  <strong>
-                    {data.priceIndex.headline.inflationPct >= 0 ? "+" : ""}
-                    {data.priceIndex.headline.inflationPct.toFixed(0)}%
-                  </strong>{" "}
-                  vs {Math.max(1, Math.round(data.priceIndex.headline.spanDays / 30))} months ago.
-                </p>
-              </CardContent>
-            </Card>
-          </Link>
-        )}
-        <Link to="/market/listings">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Browse listings</div>
-              <p className="text-sm text-muted-foreground">
-                Filter {t.totalAuctions.toLocaleString()} auctions by item, price, category and
-                more.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/items">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Items</div>
-              <p className="text-sm text-muted-foreground">
-                Search every item on the market and jump to its price history.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/insights">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Insights</div>
-              <p className="text-sm text-muted-foreground">
-                Screen items by demand, volatility, liquidity and deals over any time window.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/converter">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Converter</div>
-              <p className="text-sm text-muted-foreground">
-                Work out fair barter rates between any two items from their gear prices.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/leaderboards">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Leaderboards</div>
-              <p className="text-sm text-muted-foreground">
-                Top seraphs, buyers and the most valuable items on the market.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/map">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Trade map</div>
-              <p className="text-sm text-muted-foreground">
-                Heatmaps of where items are sold and delivered across the world.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link to="/market/orders">
-          <Card className="hover:border-primary transition-colors h-full">
-            <CardContent className="py-4">
-              <div className="font-medium">Orders</div>
-              <p className="text-sm text-muted-foreground">
-                Community buy &amp; sell orders — post what you have or want and negotiate directly.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-      </div>
+      <MarketOverviewNavigationCards />
 
-      <div>
-        <h2 className="text-lg font-semibold mb-2">Most traded items</h2>
-        <div className="rounded-md border divide-y">
-          {data.itemStats.slice(0, 10).map((it) => (
-            <Link
-              key={it.itemId}
-              to={`/market/items/${it.itemId}`}
-              className="flex items-center justify-between px-3 py-2 hover:bg-muted/50"
-            >
-              <span className="font-medium">{it.name}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                {it.unitsSold.toLocaleString()} sold · {formatGears(it.gearsTraded)}
-              </span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <MarketOverviewMostTradedItems />
     </div>
   );
 }

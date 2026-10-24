@@ -21,6 +21,7 @@ import type {
     ItemCatalog,
     ItemCatalogEntry,
 } from "@/models/auction";
+import { DAY_MS, HOUR_MS } from "../constants/time";
 
 const publicBucketOrigin = import.meta.env.VITE_PUBLIC_BUCKET_ORIGIN?.replace(/\/+$/, "");
 // When the public bucket origin is configured, fetch the market data straight
@@ -90,13 +91,14 @@ async function fetchJson<T>(path: string, version?: string, signal?: AbortSignal
     if (!res.ok) {
         throw new Error(`Failed to load ${path}: ${res.status}`);
     }
-    return (await res.json()) as T;
+    const data = (await res.json()) as T;
+    return data;
 }
 
 // Market data is static per deploy/refresh — cache aggressively.
 const STATIC_QUERY = {
-    staleTime: 1000 * 60 * 60, // 1h
-    gcTime: 1000 * 60 * 60 * 24,
+    staleTime: 1 * HOUR_MS,
+    gcTime: 1 * DAY_MS,
     refetchOnWindowFocus: false,
     meta: { persist: true },
 } as const;

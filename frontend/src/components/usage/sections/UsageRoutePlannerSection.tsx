@@ -63,6 +63,7 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
     }
     return rows;
   }, [q.data?.timeline]);
+  const isRanksEmpty = q.data?.selected_rank_breakdown.ranks.length === 0;
 
   return (
     <div className="space-y-6">
@@ -207,7 +208,7 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
                   </tr>
                 </thead>
                 <tbody>
-                  {q.data.selected_rank_breakdown.ranks.length === 0 ? (
+                  {isRanksEmpty ? (
                     <tr>
                       <td colSpan={3} className="px-3 py-4 text-center text-muted-foreground">
                         No plans in this window.
@@ -216,6 +217,7 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
                   ) : (
                     q.data.selected_rank_breakdown.ranks.map((r) => {
                       const total = q.data!.selected_rank_breakdown.total_plans || 1;
+                      const share = Math.round((r.plans / total) * 100);
                       return (
                         <tr key={r.rank} className="border-t">
                           <td className="px-3 py-2">
@@ -224,9 +226,7 @@ export function UsageRoutePlannerSection({ from, to, granularity }: UsageSection
                           <td className="px-3 py-2 text-right font-mono">
                             {r.plans.toLocaleString()}
                           </td>
-                          <td className="px-3 py-2 text-right">
-                            {Math.round((r.plans / total) * 100)}%
-                          </td>
+                          <td className="px-3 py-2 text-right">{share < 1 ? "<1" : share}%</td>
                         </tr>
                       );
                     })
