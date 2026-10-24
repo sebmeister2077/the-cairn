@@ -14,11 +14,11 @@ import {
 } from "@/hooks/useMarketInsights";
 import { usePlayerWindow } from "@/hooks/useMarketPlayerWindow";
 import { usePlayerProfile } from "@/hooks/usePlayerProfile";
-import { PlayerPricingChart, PlayerActivityChart } from "@/components/market/PlayerCharts";
-import { PlayerListingsSection } from "@/components/market/PlayerListingsSection";
-import { PlayerPurchasesSection } from "@/components/market/PlayerPurchasesSection";
-import { PlayerBehaviorSection } from "@/components/market/PlayerBehaviorSection";
-import { PlayerAchievementsBar } from "@/components/market/PlayerAchievements";
+import { PlayerPricingChart, PlayerActivityChart } from "@/components/market/player/PlayerCharts";
+import { PlayerListingsSection } from "@/components/market/player/PlayerListingsSection";
+import { PlayerPurchasesSection } from "@/components/market/player/PlayerPurchasesSection";
+import { PlayerBehaviorSection } from "@/components/market/player/PlayerBehaviorSection";
+import { PlayerAchievementsBar } from "@/components/market/player/PlayerAchievements";
 import { SmartWindowNote } from "@/components/market/SmartWindowNote";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 

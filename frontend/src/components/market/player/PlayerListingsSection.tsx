@@ -28,7 +28,7 @@ import {
   DurationCell,
   ListingNotesCell,
   type ListingColumn,
-} from "../../components/market/VirtualTable";
+} from "@/components/market/VirtualTable";
 import { formatGameDate } from "@/lib/formatting/format-duration";
 
 /** Compact checkbox-popover multi-select for filtering listings by item type. */

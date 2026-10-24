@@ -12,7 +12,7 @@ import {
   DeliveryFeeCell,
   ListingNotesCell,
   type ListingColumn,
-} from "./VirtualTable";
+} from "@/components/market/VirtualTable";
 import { formatGameDate } from "@/lib/formatting/format-duration";
 
 /**

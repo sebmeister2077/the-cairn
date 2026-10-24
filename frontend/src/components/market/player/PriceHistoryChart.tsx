@@ -16,8 +16,8 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { formatGears, percentileSorted } from "@/lib/market/auction";
-import { formatListingDate } from "../../components/market/VirtualTable";
-import { createGameDateTick, makeRealDateLookup } from "./DualDateAxisTick";
+import { formatListingDate } from "@/components/market/VirtualTable";
+import { createGameDateTick, makeRealDateLookup } from "@/components/market/DualDateAxisTick";
 import { formatGameDate } from "@/lib/formatting/format-duration";
 import { movingAverage } from "@/lib/market/chart";
 

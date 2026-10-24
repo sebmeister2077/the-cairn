@@ -4,7 +4,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { StatCard } from "@/components/usage/StatCard";
 import { useAuctionSummary, formatGears } from "@/lib/market/auction";
 import { useRealDateForGameHours } from "@/hooks/useRealDateForGameHours";
-import { MarketTrendsChart } from "@/components/market/MarketTrendsChart";
+import { MarketOverviewTrendsChart } from "@/components/market/overview/MarketTrendsChart";
 import { MarketWealthChart } from "@/components/market/MarketWealthChart";
 import { FreshnessBanner } from "@/components/market/FreshnessBanner";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
@@ -75,7 +75,7 @@ export function MarketOverviewPage() {
         <StatCard label="Buyers" value={t.uniqueBuyers} />
       </div>
 
-      <MarketTrendsChart
+      <MarketOverviewTrendsChart
         series={data.timeSeries ?? []}
         recordingStart={data.recordingStartGameHours}
         realDateForGameHours={realDateForGameHours}

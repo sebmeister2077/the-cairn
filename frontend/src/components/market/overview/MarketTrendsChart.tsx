@@ -14,9 +14,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatGears } from "@/lib/market/auction";
 import { formatGameDate } from "@/lib/formatting/format-duration";
-import { createLabelRealDateTick } from "./DualDateAxisTick";
+import { createLabelRealDateTick } from "../DualDateAxisTick";
 import type { MarketTimePoint } from "@/models/auction";
-import { formatListingDate } from "./VirtualTable";
+import { formatListingDate } from "../VirtualTable";
 import {
   GAME_MONTHS_PER_YEAR,
   GAME_DAYS_PER_MONTH,
@@ -116,7 +116,7 @@ const AUCTION_LIMIT_GAME_HOURS =
   ((11 - 1) * GAME_MONTHS_PER_YEAR * GAME_DAYS_PER_MONTH + (12 - 1) * GAME_DAYS_PER_MONTH) *
   GAME_HOURS_PER_DAY;
 
-export function MarketTrendsChart({
+export function MarketOverviewTrendsChart({
   series,
   recordingStart,
   realDateForGameHours,

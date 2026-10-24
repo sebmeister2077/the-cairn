@@ -92,7 +92,7 @@ import { ItemConcentrationSection } from "@/components/market/ItemConcentrationS
 import { TraderAvailabilityCard } from "@/components/market/TraderAvailabilityCard";
 import { ItemRarityCard } from "@/components/market/ItemRarityCard";
 import { Sparkline } from "@/components/market/Sparkline";
-import { PriceHistoryChart, type SalePoint } from "@/components/market/PriceHistoryChart";
+import { PriceHistoryChart, type SalePoint } from "@/components/market/player/PriceHistoryChart";
 import { ExternalTradeToggle } from "@/components/market/ExternalTradeToggle";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { patchAuctionFilters } from "@/store/slices/auctionFilters";
