@@ -30,9 +30,8 @@ export interface SalePoint {
   observedUtc: string | null;
 }
 
-/** Simple trailing moving average over the last `window` samples, so the line
- * smooths out single-sale noise without lagging a fixed calendar period. */
-function movingAverage(values: number[], window: number): number[] {
+/** Trailing moving average over the last `window` samples. */
+function trailingAverage(values: number[], window: number): number[] {
   const out: number[] = [];
   let sum = 0;
   for (let i = 0; i < values.length; i++) {
@@ -41,6 +40,14 @@ function movingAverage(values: number[], window: number): number[] {
     out.push(sum / Math.min(i + 1, window));
   }
   return out;
+}
+
+/** Triangular (double-pass) moving average: a plain trailing average still steps
+ * sharply as a single outlier enters and later drops out of the window, leaving
+ * visible spikes. Averaging the averaged series over the same `window` softens
+ * those step edges — smoothing out single-sale noise without widening the span. */
+function movingAverage(values: number[], window: number): number[] {
+  return trailingAverage(trailingAverage(values, window), window);
 }
 
 // Y-axis ceiling for the expired-listings overlay, as a multiple of the median
@@ -80,6 +87,7 @@ export function PriceHistoryChart({
   const setShowExpired = (v: boolean) =>
     onShowUnsoldChange ? onShowUnsoldChange(v) : setInternalShowExpired(v);
   const hasExpired = (expiredPoints?.length ?? 0) > 0;
+  const saleAverageLabel = `${MOVING_AVERAGE_WINDOW}-sale avg`;
 
   const { chartData, median, min, max, cap, clampedCount } = useMemo(() => {
     const scale = perUnit ? 1 : stackSize || 1;
@@ -215,31 +223,32 @@ export function PriceHistoryChart({
               itemStyle={{ color: "hsl(var(--popover-foreground))" }}
               labelFormatter={(label) => formatGameDate(Number(label))}
               formatter={(value, name, item) => {
-                if (name === "7-sale avg")
-                  return [`${formatGears(Number(value))} / ${unit}`, "7-sale avg"];
-                const p = item?.payload as
-                  | {
-                      qty?: number;
-                      observedUtc?: string | null;
-                      expiredReal?: number;
-                      clamped?: boolean;
-                    }
-                  | undefined;
-                const obs = p?.observedUtc ? ` · seen ${formatListingDate(p.observedUtc)}` : "";
-                if (name === "Unsold (expired)") {
-                  // Show the true asking price even when the point is pinned to
-                  // the capped ceiling.
-                  const real = p?.expiredReal ?? Number(value);
-                  const flag = p?.clamped ? " · capped" : "";
-                  return [
-                    `${formatGears(real)} / ${unit} · ×${p?.qty ?? "?"}${flag}${obs}`,
-                    "Unsold",
-                  ];
-                }
-                return [
-                  `${formatGears(Number(value))} / ${unit} · ×${p?.qty ?? "?"}${obs}`,
-                  "Sale",
-                ];
+                if (name === saleAverageLabel)
+                  return [`${formatGears(Number(value))} / ${unit}`, saleAverageLabel];
+                return null;
+                // const p = item?.payload as
+                //   | {
+                //       qty?: number;
+                //       observedUtc?: string | null;
+                //       expiredReal?: number;
+                //       clamped?: boolean;
+                //     }
+                //   | undefined;
+                // const obs = p?.observedUtc ? ` · seen ${formatListingDate(p.observedUtc)}` : "";
+                // if (name === "Unsold (expired)") {
+                //   // Show the true asking price even when the point is pinned to
+                //   // the capped ceiling.
+                //   const real = p?.expiredReal ?? Number(value);
+                //   const flag = p?.clamped ? " · capped" : "";
+                //   return [
+                //     `${formatGears(real)} / ${unit} · ×${p?.qty ?? "?"}${flag}${obs}`,
+                //     "Unsold",
+                //   ];
+                // }
+                // return [
+                //   `${formatGears(Number(value))} / ${unit} · ×${p?.qty ?? "?"}${obs}`,
+                //   "Sale",
+                // ];
               }}
             />
             <ReferenceLine y={median} stroke="#10b981" strokeDasharray="4 4" />
@@ -263,7 +272,7 @@ export function PriceHistoryChart({
               strokeWidth={2}
               dot={false}
               connectNulls
-              name="7-sale avg"
+              name={saleAverageLabel}
               isAnimationActive={false}
             />
           </ComposedChart>
@@ -297,7 +306,8 @@ export function PriceHistoryChart({
         <li className="flex items-center gap-2">
           <span className="inline-block h-0.5 w-3 shrink-0 bg-[#f59e0b]" />
           <span>
-            <span className="text-foreground">7-sale avg</span> — trailing average, smoothing noise.
+            <span className="text-foreground">{saleAverageLabel}</span> — trailing average,
+            smoothing noise.
           </span>
         </li>
         <li className="flex items-center gap-2">
