@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
+  Line,
 } from "recharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   GAME_DAYS_PER_MONTH,
   GAME_HOURS_PER_DAY,
 } from "@/lib/constants/game-dates";
+import { movingAverage } from "@/lib/market/chart";
 
 // The metrics a viewer can chart over in-game time. `gears` flags currency
 // values so the axis/tooltip render with the gears formatter; `pct` flags a
@@ -130,9 +132,14 @@ export function MarketTrendsChart({
 
   const metric = METRICS.find((m) => m.key === metricKey) ?? METRICS[0];
   const showCumulative = cumulative && !metric.noCumulative;
+  const MOVING_AVERAGE_WINDOW = 21;
 
   const data = useMemo(() => {
     let running = 0;
+    const ma = movingAverage(
+      series.map((p) => metric.value(p) ?? 0),
+      MOVING_AVERAGE_WINDOW,
+    );
     return series.map((p) => {
       const raw = metric.value(p);
       let v = raw ?? 0;
@@ -140,10 +147,12 @@ export function MarketTrendsChart({
         running += v;
         v = running;
       }
+
       return {
         gameHours: p.gameHours,
         label: formatGameDate(p.gameHours),
         value: raw == null && !showCumulative ? null : v,
+        ma: ma[series.indexOf(p)],
       };
     });
   }, [series, metric, showCumulative]);
@@ -287,6 +296,9 @@ export function MarketTrendsChart({
                   return `≈ ${label}${realDateLabel}`;
                 }}
                 formatter={(value, name) => {
+                  if (name === "ma") {
+                    return [fmt(Number(value)), `${MOVING_AVERAGE_WINDOW}-day Average`];
+                  }
                   return [fmt(Number(value)), metric.label];
                 }}
               />
@@ -335,6 +347,15 @@ export function MarketTrendsChart({
                   }}
                 />
               )}
+              <Line
+                type="monotone"
+                dataKey="ma"
+                stroke="currentColor"
+                opacity={0.56}
+                strokeDasharray="5 4"
+                strokeWidth={2}
+                dot={false}
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>

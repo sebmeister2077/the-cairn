@@ -19,6 +19,7 @@ import { formatGears, percentileSorted } from "@/lib/market/auction";
 import { formatListingDate } from "../../components/market/VirtualTable";
 import { createGameDateTick, makeRealDateLookup } from "./DualDateAxisTick";
 import { formatGameDate } from "@/lib/formatting/format-duration";
+import { movingAverage } from "@/lib/market/chart";
 
 /** One sold sale: its in-game conclusion time, per-unit price, quantity, total
  * gears, and the real-world timestamp it was observed at (for the tooltip). */
@@ -28,26 +29,6 @@ export interface SalePoint {
   qty: number;
   price: number;
   observedUtc: string | null;
-}
-
-/** Trailing moving average over the last `window` samples. */
-function trailingAverage(values: number[], window: number): number[] {
-  const out: number[] = [];
-  let sum = 0;
-  for (let i = 0; i < values.length; i++) {
-    sum += values[i];
-    if (i >= window) sum -= values[i - window];
-    out.push(sum / Math.min(i + 1, window));
-  }
-  return out;
-}
-
-/** Triangular (double-pass) moving average: a plain trailing average still steps
- * sharply as a single outlier enters and later drops out of the window, leaving
- * visible spikes. Averaging the averaged series over the same `window` softens
- * those step edges — smoothing out single-sale noise without widening the span. */
-function movingAverage(values: number[], window: number): number[] {
-  return trailingAverage(trailingAverage(values, window), window);
 }
 
 // Y-axis ceiling for the expired-listings overlay, as a multiple of the median
