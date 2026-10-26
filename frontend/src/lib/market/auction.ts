@@ -1441,6 +1441,62 @@ export function listingToolAttributes(l: {
     return out;
 }
 
+/** A single "buffs" entry on a quenched tool's stack. */
+function quenchBuffBoost(
+    buffs: unknown,
+    predicate: (statcode: string) => boolean,
+): number | null {
+    if (!buffs || typeof buffs !== "object") return null;
+    for (const buff of Object.values(buffs as Record<string, unknown>)) {
+        if (!buff || typeof buff !== "object") continue;
+        const b = buff as Record<string, unknown>;
+        if (b.code !== "hardened") continue;
+        const statcode = typeof b.statcode === "string" ? b.statcode : "";
+        if (!predicate(statcode)) continue;
+        const mult = attrToNumber(b.multiplier);
+        if (mult != null && mult > 1) return mult - 1;
+    }
+    return null;
+}
+
+/**
+ * The "quench power" (temper boost) a quenched tool or tool head carries, as a
+ * fraction of its base stats (0.25 = +25%), or `null` when the listing isn't a
+ * quenched tool/weapon. Quenching a hot item while smithing rolls a permanent
+ * boost whose magnitude both forms store differently but mean the same thing:
+ *
+ *  - Finished tools expose it as a `hardened` buff multiplier. The attackpower
+ *    and miningspeed buffs always share that single quench roll, so either is
+ *    the representative figure (maxdurability rolls on its own scale and would
+ *    overstate it, so it's only a last-resort fallback).
+ *  - Tool heads haven't been assembled into a tool yet, so they carry the raw
+ *    boost in `powervalue` (and a matching `durationbonus`) instead of buffs.
+ */
+export function listingQuenchPower(l: {
+    category: string;
+    attrs?: Record<string, unknown> | null;
+}): number | null {
+    if (!isToolCategory(l.category)) return null;
+    const a = l.attrs;
+    if (!a) return null;
+
+    // Finished tools: the quench roll shared by the attack/mining buffs.
+    const buffBoost = quenchBuffBoost(
+        a.buffs,
+        (s) => s === "miningspeed" || s === "attackpower",
+    );
+    if (buffBoost != null) return buffBoost;
+
+    // Tool heads (and tools without attack/mining buffs): the raw power value.
+    const powerValue = attrToNumber(a.powervalue);
+    if (powerValue != null && powerValue > 0) return powerValue;
+
+    // Fallbacks for tools that only rolled a duration/durability-style boost.
+    const durationBonus = attrToNumber(a.durationbonus);
+    if (durationBonus != null && durationBonus > 0) return durationBonus;
+    return quenchBuffBoost(a.buffs, () => true);
+}
+
 /** Linear-interpolated percentile over an already-sorted ascending array. */
 export function percentileSorted(sorted: number[], p: number): number {
     if (sorted.length === 0) return 0;

@@ -20,6 +20,7 @@ import { formatListingDate } from "@/components/market/VirtualTable";
 import { createGameDateTick, makeRealDateLookup } from "@/components/market/DualDateAxisTick";
 import { formatGameDate } from "@/lib/formatting/format-duration";
 import { movingAverage } from "@/lib/market/chart";
+import { quenchColor, QUENCH_TIERS } from "@/components/market/quenchColors";
 
 /** One sold sale: its in-game conclusion time, per-unit price, quantity, total
  * gears, and the real-world timestamp it was observed at (for the tooltip). */
@@ -29,6 +30,9 @@ export interface SalePoint {
   qty: number;
   price: number;
   observedUtc: string | null;
+  /** Quench power (temper boost) of the tool sold, as a fraction (0.25 = +25%),
+   * when this is a quenched tool/weapon. Used to colour the sale dot. */
+  quench?: number | null;
 }
 
 // Y-axis ceiling for the expired-listings overlay, as a multiple of the median
@@ -86,6 +90,7 @@ export function PriceHistoryChart({
       ma: ma[i],
       qty: p.qty,
       observedUtc: p.observedUtc,
+      quench: p.quench ?? null,
     }));
     const sorted = [...scaled].sort((a, b) => a - b);
     const medianVal = percentileSorted(sorted, 0.5);
@@ -132,6 +137,31 @@ export function PriceHistoryChart({
   }, [points, expiredPoints, showExpired, perUnit, stackSize, weighted]);
 
   const unit = perUnit ? "unit" : "stack";
+
+  // When the item is a quenched tool/weapon, each sale carries a quench power so
+  // the dot can be coloured by temper boost (heat scale). Only show the legend
+  // and colouring when at least one sale actually has a quench value.
+  const hasQuench = useMemo(() => points.some((p) => p.quench != null), [points]);
+  const quenchTiersPresent = useMemo(() => {
+    if (!hasQuench) return [];
+    const seen = new Set<string>();
+    for (const p of points) if (p.quench != null) seen.add(quenchColor(p.quench));
+    return QUENCH_TIERS.filter((t) => seen.has(t.color));
+  }, [points, hasQuench]);
+
+  const renderSaleDot = useMemo(() => {
+    return (props: {
+      cx?: number;
+      cy?: number;
+      payload?: { quench?: number | null };
+    }) => {
+      const { cx, cy, payload } = props;
+      if (cx == null || cy == null) return <g />;
+      const q = payload?.quench;
+      const color = hasQuench && typeof q === "number" ? quenchColor(q) : "#6366f1";
+      return <circle cx={cx} cy={cy} r={3} fill={color} />;
+    };
+  }, [hasQuench]);
 
   // Ticks sit at in-game times (`t`), not real timestamps. Prefer the shared
   // game-hours→real-date anchor when provided (consistent with the overview
@@ -259,7 +289,13 @@ export function PriceHistoryChart({
                 isAnimationActive={false}
               />
             )}
-            <Scatter dataKey="price" fill="#6366f1" name="Sale" isAnimationActive={false} />
+            <Scatter
+              dataKey="price"
+              fill="#6366f1"
+              name="Sale"
+              isAnimationActive={false}
+              shape={renderSaleDot}
+            />
             <Line
               type="monotone"
               dataKey="ma"
@@ -274,12 +310,27 @@ export function PriceHistoryChart({
         </ResponsiveContainer>
       </div>
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <li className="flex items-center gap-2">
-          <span className="inline-block size-2 shrink-0 rounded-full bg-[#6366f1]" />
-          <span>
-            <span className="text-foreground">Sales</span> — each recorded sale, per {unit}.
-          </span>
-        </li>
+        {hasQuench ? (
+          <li className="flex items-center gap-2">
+            <span className="text-foreground">Sales by quench power:</span>
+            {quenchTiersPresent.map((t) => (
+              <span key={t.label} className="flex items-center gap-1">
+                <span
+                  className="inline-block size-2 shrink-0 rounded-full"
+                  style={{ backgroundColor: t.color }}
+                />
+                <span>{t.label}</span>
+              </span>
+            ))}
+          </li>
+        ) : (
+          <li className="flex items-center gap-2">
+            <span className="inline-block size-2 shrink-0 rounded-full bg-[#6366f1]" />
+            <span>
+              <span className="text-foreground">Sales</span> — each recorded sale, per {unit}.
+            </span>
+          </li>
+        )}
         {showExpired && (
           <li className="flex items-center gap-2">
             <span className="inline-block size-2 shrink-0 rotate-45 bg-[#ef4444]/60" />

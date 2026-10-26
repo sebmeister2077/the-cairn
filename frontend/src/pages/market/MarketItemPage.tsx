@@ -40,6 +40,7 @@ import {
   humanizeItemCode,
   listingHasText,
   listingToolAttributes,
+  listingQuenchPower,
   listingMetalType,
   listingLining,
   computeRelatedItems,
@@ -98,6 +99,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { patchAuctionFilters } from "@/store/slices/auctionFilters";
 import { ItemVolumeOverTimeSection } from "@/components/market/item/ItemVolumeOverTimeSection";
 import { ItemPriceStatsSection } from "@/components/market/item/ItemPriceStatsSection";
+import { QuenchPriceChart, type QuenchPoint } from "@/components/market/item/QuenchPriceChart";
 import { buildHistogram } from "@/lib/market/buildHistogram";
 import { ItemTrendBadge } from "@/components/market/item/ItemTrendBadge";
 import { UpperBoundUnknownBadge } from "@/components/market/item/UpperBoundUnknownBadge";
@@ -477,6 +479,7 @@ export function MarketItemPage() {
         qty: l.qty,
         price: l.price,
         observedUtc: l.observedUtc ?? l.lastObservedUtc ?? null,
+        quench: listingQuenchPower(l),
       }))
       .sort((a, b) => a.t - b.t);
   }, [pricedWindowListings]);
@@ -498,6 +501,24 @@ export function MarketItemPage() {
       }))
       .filter((p) => p.t > 0)
       .sort((a, b) => a.t - b.t);
+  }, [pricedWindowListings]);
+
+  // Quenched tools/weapons in the window (sold and unsold) keyed by their quench
+  // power (temper boost), feeding the collapsible "Price by quench level" chart.
+  // Empty for non-tools and tools that were never quenched.
+  const quenchPoints = useMemo<QuenchPoint[]>(() => {
+    const out: QuenchPoint[] = [];
+    for (const l of pricedWindowListings) {
+      const q = listingQuenchPower(l);
+      if (q == null) continue;
+      out.push({
+        quench: q,
+        ppu: l.pricePerUnit,
+        sold: l.sold,
+        expired: l.state === "Expired" && !l.cancelled,
+      });
+    }
+    return out;
   }, [pricedWindowListings]);
 
   // The market never revealed a price ceiling when no expired listing was ever
@@ -1691,6 +1712,10 @@ export function MarketItemPage() {
         chartPrices={chartPrices}
         markerValue={markerValue}
       />
+
+      {quenchPoints.some((p) => p.sold) && quenchPoints.length >= 3 && (
+        <QuenchPriceChart points={quenchPoints} />
+      )}
 
       <ItemVolumeOverTimeSection
         volumeMode={volumeMode}
