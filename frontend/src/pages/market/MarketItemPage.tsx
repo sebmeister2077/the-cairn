@@ -1,7 +1,8 @@
-import { useMemo, useState, useCallback, lazy, Suspense } from "react";
+import { useMemo, useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router-dom";
 import { ExternalLink, Info, ArrowLeft, ArrowUp, TriangleAlert, ChevronDown } from "lucide-react";
 import { useReportEntityLabel } from "@/hooks/useReportEntityLabel";
+import { recordRecentItem } from "@/store/slices/recentItems";
 import {
   ComposedChart,
   Bar,
@@ -1146,6 +1147,13 @@ export function MarketItemPage() {
     itemListings[0]?.name ??
     null;
   useReportEntityLabel("/market/items/:itemId", itemId ?? null, reportableName);
+
+  // Remember this item as recently visited so the Item Search page can offer a
+  // quick-jump chip back to it. Keyed on the numeric id + resolved name.
+  useEffect(() => {
+    if (!Number.isFinite(id) || !reportableName) return;
+    dispatch(recordRecentItem({ itemId: id, name: reportableName }));
+  }, [dispatch, id, reportableName]);
 
   if (listingsQ.isLoading) {
     return (

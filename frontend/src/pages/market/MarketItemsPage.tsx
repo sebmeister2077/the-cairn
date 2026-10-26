@@ -44,6 +44,8 @@ import {
   type ItemSort,
 } from "@/hooks/useItemSearch";
 import { customCategoryFor, customCategoriesFrom } from "@/lib/market/item-categories";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { clearRecentItems } from "@/store/slices/recentItems";
 import { MaintenanceChip } from "@/components/other/MaintenanceChip";
 
 // Cap the rendered rows so a broad search doesn't paint thousands of rows.
@@ -118,6 +120,8 @@ export function MarketItemsPage() {
   const summaryQ = useAuctionSummary();
   const images = useItemImages();
   const search = useItemSearch();
+  const recentItems = useAppSelector((s) => s.recentItems.items);
+  const dispatch = useAppDispatch();
   const { q, category, customCategory, rarity, sort, sortDir } = search;
 
   // Master list: every catalog item, enriched with stats where we have them.
@@ -156,6 +160,11 @@ export function MarketItemsPage() {
   );
 
   const customCategories = useMemo(() => customCategoriesFrom(rows.map((r) => r.category)), [rows]);
+
+  // Lookup for the recently-visited chips: resolve each remembered item to its
+  // catalog row so the chip can show a thumbnail (falling back to the stored
+  // name when the item isn't in the current catalog).
+  const rowsById = useMemo(() => new Map(rows.map((r) => [r.itemId, r] as const)), [rows]);
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -205,6 +214,41 @@ export function MarketItemsPage() {
           listed on the Auction House, so you can check rarity before hunting them down.
         </p>
       </div>
+
+      {recentItems.length > 0 && (
+        <div className="rounded-md border p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <Label className="text-xs text-muted-foreground">Recently viewed</Label>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs text-muted-foreground"
+              onClick={() => dispatch(clearRecentItems())}
+            >
+              Clear
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {recentItems.map((it) => {
+              const row = rowsById.get(it.itemId);
+              return (
+                <Link
+                  key={it.itemId}
+                  to={`/market/items/${it.itemId}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 py-1 pl-1 pr-3 text-sm hover:bg-muted"
+                >
+                  <ItemThumb
+                    url={row ? images.url(row.iconCode ?? row.code, row.classType) : null}
+                    alt={it.name}
+                    className="size-5"
+                  />
+                  {row?.name ?? it.name}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-md border p-3 flex flex-wrap items-end gap-3">
         <div className="flex flex-col gap-1">

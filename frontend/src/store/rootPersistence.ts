@@ -29,6 +29,7 @@ import { initialElkWalkableState } from "./slices/elkWalkable";
 import { normalizeInsightsFilters } from "./slices/insightsFilters";
 import { normalizeMarketConcentration } from "./slices/marketConcentration";
 import { normalizeMarketFavorites } from "./slices/marketFavorites";
+import { normalizeRecentItems } from "./slices/recentItems";
 import {
     DEFAULT_RAPIDS_STYLE,
     DEFAULT_TERMINUS_STYLE,
@@ -186,6 +187,8 @@ const NORMALIZE_ON_READ: {
     marketConcentration: (s) => normalizeMarketConcentration(s),
     // Dedupe / drop malformed IDs from a stored favorites list.
     marketFavorites: (s) => normalizeMarketFavorites(s),
+    // Dedupe / drop malformed entries and cap the recently-viewed items list.
+    recentItems: (s) => normalizeRecentItems(s),
     // `detailsOpened` was added after the first promo envelope shipped;
     // backfill it (and `dismissed`) so older stored state doesn't
     // destructure to `undefined` and crash the banner selector.

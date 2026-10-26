@@ -42,6 +42,7 @@ import { insightsFiltersSlice } from "./slices/insightsFilters";
 import { marketConcentrationSlice } from "./slices/marketConcentration";
 import { marketWealthSlice } from "./slices/marketWealth";
 import { marketFavoritesSlice } from "./slices/marketFavorites";
+import { recentItemsSlice } from "./slices/recentItems";
 import { rockPricingSlice } from "./slices/rockPricing";
 import { dateFormatSlice } from "./slices/dateFormat";
 import { drawingSlice } from "./slices/drawing";
@@ -73,6 +74,7 @@ const rootReducer = combineReducers({
     marketConcentration: marketConcentrationSlice.reducer,
     marketWealth: marketWealthSlice.reducer,
     marketFavorites: marketFavoritesSlice.reducer,
+    recentItems: recentItemsSlice.reducer,
     rockPricing: rockPricingSlice.reducer,
     dateFormat: dateFormatSlice.reducer,
     drawing: drawingSlice.reducer,
