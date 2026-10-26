@@ -1041,6 +1041,11 @@ const TOOL_HEAD_STEMS: [string, string, string][] = [
     ["knifeblade", "knife-generic", "Knife"],
 ];
 
+const WEAPON_STEMS: [string, string, string][] = [
+    ["bladehead-falx", "blade-falx", "Falx"],
+    ["blade-blackguard", "bladehead", "Short sword"],
+];
+
 const COMBINE_GROUPS: CombineGroupRule[] = [
     ...TOOL_HEAD_STEMS.map(([head, tool, label]) => ({
         key: `tool-${tool}`,
@@ -1048,6 +1053,14 @@ const COMBINE_GROUPS: CombineGroupRule[] = [
         members: [
             { code: `${head}-{v}`, label: "Head" },
             { code: `${tool}-{v}`, label: "Full tool" },
+        ],
+    })),
+    ...WEAPON_STEMS.map(([head, tool, label]) => ({
+        key: tool,
+        label,
+        members: [
+            { code: `${head}-{v}`, label: "Head" },
+            { code: `${tool}-{v}`, label: "Full weapon" },
         ],
     })),
     // Sulfur: one ore chunk grinds into two powders, so powder is worth half a
@@ -1121,7 +1134,8 @@ function matchCombineMember(entry: { code: string | null; category: string }): C
             const { re, hasVar } = combinePatternRegex(member.code);
             for (const c of codes) {
                 const m = re.exec(c);
-                if (m) return { rule, member, variant: hasVar ? (m[1] ?? null) : null };
+                if (!m) continue;
+                return { rule, member, variant: hasVar ? (m[1] ?? null) : null };
             }
         }
     }
