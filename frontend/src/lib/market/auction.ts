@@ -1502,7 +1502,7 @@ export function listingQuenchPower(l: {
 }): number | null {
     if (!isToolCategory(l.category)) return null;
     const a = l.attrs;
-    if (!a) return null;
+    if (!a) return 0;
 
     // Finished tools: the quench roll shared by the attack/mining buffs.
     const buffBoost = quenchBuffBoost(
