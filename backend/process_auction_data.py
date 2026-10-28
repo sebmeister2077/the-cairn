@@ -2193,14 +2193,14 @@ CUSTOM_CATEGORY_MEMBERS: Dict[str, List[str]] = {
         "paxel", "flail", "file", "rollingpin", "shield", "bomb", "beenade",
         "blastingpowder", "prospectingpick", "prospectingpickhead", "shears",
         "wrench", "crowbar", "solderingiron", "firestarter", "bugnet",
-        "fishingpole", "rod", "tongsmetal", "mortar", "wateringcan", "sewingkit",
+        "fishingpole","tongsmetal", "wateringcan", "sewingkit",
         "trapcrate",
     ],
     "Metals & Ore": [
         "ore", "crystalizedore", "ingot", "nugget", "metalplate", "crushed",
         "metal", "metalbit", "ironbloom", "solderbar", "metalnailsandstrips",
         "powder", "crucible", "toolmold", "ingotmold", "workitem", "meteorite",
-        "charcoal", "coal", "coke",
+        "charcoal", "coal", "coke", "rod", 
     ],
     "Stone & Masonry": [
         "rock", "rockpolished", "polishedrockold", "stone", "stonebricks",
@@ -2210,7 +2210,7 @@ CUSTOM_CATEGORY_MEMBERS: Dict[str, List[str]] = {
         "brickslabs", "claytile", "tile", "shingle", "sand", "gravel",
         "dirtygravel", "muddygravel", "sludgygravel", "clay", "lime", "quicklime",
         "flint", "peatbrick", "ice", "snowblock", "packeddirt", "stonepath",
-        "stonepathslab", "stonepathstairs",
+        "stonepathslab", "stonepathstairs", "mortar",
     ],
     "Wood & Lumber": [
         "log", "logsection", "logquad", "carvedlog", "planks", "plank",
@@ -2250,7 +2250,7 @@ CUSTOM_CATEGORY_MEMBERS: Dict[str, List[str]] = {
         "seeds", "treeseed", "sapling", "fruitingbushcutting", "fruittree",
         "clayplanter", "flowerpot", "soil", "bonysoil", "compost", "potash",
         "bonemeal", "hay", "drygrass", "rot", "skep", "honeycomb", "beeswax",
-        "papyrusroot", "papyrustops", "cattailtops",
+        "papyrusroot", "papyrustops", "cattailtops","resin"
     ],
     "Decoration & Furniture": [
         "clutter", "tapestry", "taxidermy", "wallpaper", "smallcarpet", "rushmat",
@@ -2275,6 +2275,10 @@ CUSTOM_CATEGORY_MEMBERS: Dict[str, List[str]] = {
         "waterlily", "fern", "tallfern", "silvertorchcactus", "barrelcactus",
         "attachingplant", "locustnest", "spiderweb", "reefledge", "boss",
     ],
+    "Jonas Machines": [
+        'corpsereturnteleporter', "nightvisiondevice", "jonasparts", "riftward", "tobtlocatorpart", "nightvisionupgrades",
+        "tobtlocator", "basereturnteleporter"
+    ]
 }
 
 # raw category (lowercase) -> broad custom category.

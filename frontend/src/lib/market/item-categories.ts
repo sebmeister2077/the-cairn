@@ -28,14 +28,14 @@ const CUSTOM_CATEGORY_MEMBERS: Record<string, string[]> = {
         "paxel", "flail", "file", "rollingpin", "shield", "bomb", "beenade",
         "blastingpowder", "prospectingpick", "prospectingpickhead", "shears",
         "wrench", "crowbar", "solderingiron", "firestarter", "bugnet",
-        "fishingpole", "rod", "tongsmetal", "mortar", "wateringcan", "sewingkit",
+        "fishingpole", "tongsmetal", "wateringcan", "sewingkit",
         "trapcrate",
     ],
     "Metals & Ore": [
         "ore", "crystalizedore", "ingot", "nugget", "metalplate", "crushed",
         "metal", "metalbit", "ironbloom", "solderbar", "metalnailsandstrips",
         "powder", "crucible", "toolmold", "ingotmold", "workitem", "meteorite",
-        "charcoal", "coal", "coke",
+        "charcoal", "coal", "coke", "rod"
     ],
     "Stone & Masonry": [
         "rock", "rockpolished", "polishedrockold", "stone", "stonebricks",
@@ -45,7 +45,7 @@ const CUSTOM_CATEGORY_MEMBERS: Record<string, string[]> = {
         "brickslabs", "claytile", "tile", "shingle", "sand", "gravel",
         "dirtygravel", "muddygravel", "sludgygravel", "clay", "lime", "quicklime",
         "flint", "peatbrick", "ice", "snowblock", "packeddirt", "stonepath",
-        "stonepathslab", "stonepathstairs",
+        "stonepathslab", "stonepathstairs", "mortar"
     ],
     "Wood & Lumber": [
         "log", "logsection", "logquad", "carvedlog", "planks", "plank",
@@ -85,7 +85,7 @@ const CUSTOM_CATEGORY_MEMBERS: Record<string, string[]> = {
         "seeds", "treeseed", "sapling", "fruitingbushcutting", "fruittree",
         "clayplanter", "flowerpot", "soil", "bonysoil", "compost", "potash",
         "bonemeal", "hay", "drygrass", "rot", "skep", "honeycomb", "beeswax",
-        "papyrusroot", "papyrustops", "cattailtops",
+        "papyrusroot", "papyrustops", "cattailtops", "resin",
     ],
     "Decoration & Furniture": [
         "clutter", "tapestry", "taxidermy", "wallpaper", "smallcarpet", "rushmat",
@@ -110,6 +110,10 @@ const CUSTOM_CATEGORY_MEMBERS: Record<string, string[]> = {
         "waterlily", "fern", "tallfern", "silvertorchcactus", "barrelcactus",
         "attachingplant", "locustnest", "spiderweb", "reefledge", "boss",
     ],
+    "Jonas Machines": [
+        'corpsereturnteleporter', "nightvisiondevice", "jonasparts", "riftward", "tobtlocatorpart", "nightvisionupgrades",
+        "tobtlocator", "basereturnteleporter"
+    ]
 };
 
 /** Canonical display order for the custom categories (with "Other" last). */
