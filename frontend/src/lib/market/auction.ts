@@ -482,6 +482,7 @@ const MATERIAL_FAMILIES: MaterialFamily[] = [
     { key: "meteoriciron", label: "Meteoric iron", tokens: ["meteoriciron", "meteorite", "meteoric"] },
     { key: "iron", label: "Iron", tokens: ["iron", "ironbloom", "hematite", "magnetite", "limonite"] },
     { key: "copper", label: "Copper", tokens: ["copper", "nativecopper", "malachite", "cuprite", "tetrahedrite"] },
+    { key: "cupronickel", label: "Cupronickel", tokens: ["cupronickel"] },
     { key: "tin", label: "Tin", tokens: ["tin", "cassiterite"] },
     { key: "zinc", label: "Zinc", tokens: ["zinc", "sphalerite"] },
     { key: "lead", label: "Lead", tokens: ["lead", "galena"] },
@@ -526,6 +527,7 @@ const RELATED_FORM_CATEGORIES = new Set([
     "gem",
     "metalbit",
     "metalplate",
+    "rod",
     // Raw mineral rock/stone forms (e.g. "stone-halite" = rock salt, "rock-halite").
     // Scoped by the material-family filter, so only family-matching stones/rocks
     // (not granite, basalt, …) ever surface as related.
@@ -1140,6 +1142,14 @@ function matchCombineMember(entry: { code: string | null; category: string }): C
         }
     }
     return null;
+}
+
+export type OreGroup = {
+    base: string;
+    name: string;
+    ids: Set<number>;
+    rockByItemId: Map<number, string | null>;
+    hostRockSplit: boolean;
 }
 
 /**
