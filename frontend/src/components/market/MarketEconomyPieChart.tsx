@@ -141,7 +141,7 @@ export function MarketEconomyPieChart({
   recordingStartGameHours?: number | null;
 }) {
   const [windowKey, setWindowKey] = useMarketWindow();
-  const [groupBy, setGroupBy] = useState<GroupBy>("item");
+  const [groupBy, setGroupBy] = useState<GroupBy>("custom");
   const [category, setCategory] = useState<string>(ALL_CATEGORIES);
   const { t } = useTranslation();
 
