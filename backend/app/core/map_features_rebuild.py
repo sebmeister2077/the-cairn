@@ -45,6 +45,7 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ..config import settings
 from . import map_features_merge, map_features_raw_store, database
+from .rebuild_memory import REBUILD_MEMORY_LOCK
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -546,20 +547,23 @@ def _build_and_publish(force: bool = False) -> Dict[str, int]:
 
     if settings.MAP_FEATURES_REBUILD_SUBPROCESS and not _CHILD:
         try:
-            counts, data_hash, category_hashes, published = _run_child_rebuild(
-                _last_published_hash
-            )
+            with REBUILD_MEMORY_LOCK:
+                counts, data_hash, category_hashes, published = _run_child_rebuild(
+                    _last_published_hash
+                )
         except Exception as exc:  # noqa: BLE001 — fall back to in-process
             logger.warning(
                 "[map-features-rebuild] subprocess failed (%s) — running in-process.", exc
             )
+            with REBUILD_MEMORY_LOCK:
+                counts, data_hash, category_hashes, published = _do_merge_and_publish(
+                    _last_published_hash
+                )
+    else:
+        with REBUILD_MEMORY_LOCK:
             counts, data_hash, category_hashes, published = _do_merge_and_publish(
                 _last_published_hash
             )
-    else:
-        counts, data_hash, category_hashes, published = _do_merge_and_publish(
-            _last_published_hash
-        )
 
     _last_published_hash = data_hash
     _last_source_fingerprint = fingerprint

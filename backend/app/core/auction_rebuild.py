@@ -25,6 +25,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from ..config import settings
 from . import auction_merge, auction_raw_store, database
+from .rebuild_memory import REBUILD_MEMORY_LOCK, reclaim
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -155,28 +156,46 @@ def _build_and_publish() -> Dict[str, int]:
     import auction_r2_publish  # noqa: WPS433 — backend/ module
     import process_auction_data as pad  # noqa: WPS433 — backend/ module
 
-    merged = _merge()
-    registry = _load_registry(pad)
-    known_codes = _load_known_codes(pad)
-    records, summary, items = pad.build_artifacts(
-        merged, registry=registry, known_codes=known_codes
-    )
-
-    with tempfile.TemporaryDirectory(prefix="auction-rebuild-") as tmp:
-        out = Path(tmp)
-        listings_path = out / "listings.json"
-        summary_path = out / "summary.json"
-        items_path = out / "items.json"
-        pad.write_json(listings_path, records)
-        pad.write_json(summary_path, summary)
-        pad.write_json(items_path, items)
-        manifest_path = pad.write_manifest(out, [listings_path, summary_path, items_path])
-        auction_r2_publish.publish_files_to_bucket(
-            [listings_path, summary_path, items_path, manifest_path],
-            bucket=settings.AUCTION_PUBLIC_BUCKET,
-            log=lambda m: logger.info("%s", m),
+    # Serialize the heavy section against the map-features rebuild: both briefly
+    # allocate large in-memory artifacts and their peaks must not overlap on the
+    # 1GB container, or the combined RSS trips the cgroup OOM-killer.
+    with REBUILD_MEMORY_LOCK:
+        merged = _merge()
+        registry = _load_registry(pad)
+        known_codes = _load_known_codes(pad)
+        records, summary, items = pad.build_artifacts(
+            merged, registry=registry, known_codes=known_codes
         )
-    result = {"auctions": len(merged), "listings": len(records), "items": len(items)}
+        # Snapshot the counts up front so the big object graphs can be released
+        # before the publish step (which only reads the files back from disk).
+        result = {
+            "auctions": len(merged),
+            "listings": len(records),
+            "items": len(items),
+        }
+        del merged, registry, known_codes
+
+        with tempfile.TemporaryDirectory(prefix="auction-rebuild-") as tmp:
+            out = Path(tmp)
+            listings_path = out / "listings.json"
+            summary_path = out / "summary.json"
+            items_path = out / "items.json"
+            # Encode each artifact to disk then drop it immediately: the full
+            # listings graph alone is ~80MB+ of live objects, and nothing needs
+            # to stay resident while we gzip-upload the files.
+            pad.write_json(listings_path, records)
+            del records
+            pad.write_json(summary_path, summary)
+            del summary
+            pad.write_json(items_path, items)
+            del items
+            reclaim()
+            manifest_path = pad.write_manifest(out, [listings_path, summary_path, items_path])
+            auction_r2_publish.publish_files_to_bucket(
+                [listings_path, summary_path, items_path, manifest_path],
+                bucket=settings.AUCTION_PUBLIC_BUCKET,
+                log=lambda m: logger.info("%s", m),
+            )
     try:
         database.insert_auction_audit(
             action="rebuild_publish",
@@ -242,6 +261,10 @@ async def _worker() -> None:
                 break
         try:
             result = await rebuild_now()
+            # Release any residual encode/merge graph and hand the freed heap
+            # back to the OS — glibc otherwise keeps it in-arena and RSS ratchets
+            # up across rebuilds.
+            reclaim()
             logger.info("[auction-rebuild] published %s", result)
         except Exception as exc:  # noqa: BLE001 — never crash the worker loop
             logger.warning("[auction-rebuild] failed (will retry on next request): %s", exc)
