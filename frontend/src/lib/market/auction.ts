@@ -820,6 +820,7 @@ export const METAL_FAMILY_KEYS = new Set<string>([
     "chromium",
     "nickel",
     "platinum",
+    "electrum"
 ]);
 
 /**
