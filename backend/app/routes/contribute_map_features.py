@@ -42,12 +42,18 @@ Wire contract (produced by the proxy's ``MapFeaturesContributor.cs``):
 from __future__ import annotations
 
 import asyncio
+import functools
 import gzip
 import io
 import json
 import logging
+import os
+import subprocess
+import sys
+import tempfile
 import zlib
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
@@ -59,6 +65,12 @@ from ..core import map_features_merge, map_features_raw_store, map_features_rebu
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter(tags=["contribute-map-features"])
+
+# backend/ dir — cwd for the short-lived ingest subprocess so ``app`` imports.
+_BACKEND_DIR = Path(__file__).resolve().parents[2]
+
+# Machine-readable result line the ingest subprocess prints on its stdout.
+_INGEST_RESULT_PREFIX = "__MFINGEST__ "
 
 _PUBLISH_PERMISSION = "map_features_publish"
 
@@ -132,7 +144,10 @@ def _decompress_gzip_capped(raw: bytes, cap: int) -> bytes:
     return bytes(out)
 
 
-async def _read_body(request: Request, content_encoding: Optional[str]) -> bytes:
+async def _read_compressed_body(request: Request) -> bytes:
+    """Buffer the raw (still-compressed) request body in the parent, enforcing
+    the size cap. Decompression + parsing happen later in the ingest subprocess
+    so their large transient allocations never touch the long-lived process."""
     cap = settings.MAP_FEATURES_MAX_BODY_BYTES
     # Reject before buffering the whole body when the client declares its size.
     clen = request.headers.get("content-length")
@@ -142,8 +157,6 @@ async def _read_body(request: Request, content_encoding: Optional[str]) -> bytes
     # Bound the compressed payload too (request.body() buffers it entirely).
     if len(raw) > cap:
         raise HTTPException(status_code=413, detail="contribution body too large")
-    if content_encoding and "gzip" in content_encoding.lower():
-        raw = _decompress_gzip_capped(raw, cap)
     return raw
 
 
@@ -277,30 +290,48 @@ async def receive_map_features(
     # Serialise the memory-heavy decode/parse/re-encode so concurrent uploads
     # can't stack multiple decompressed documents in RAM at once.
     async with _get_ingest_semaphore():
-        raw = await _read_body(request, content_encoding)
+        raw = await _read_compressed_body(request)
+        loop = asyncio.get_running_loop()
         try:
-            payload = json.loads(raw.decode("utf-8", errors="replace"))
-        except (json.JSONDecodeError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=f"invalid JSON body: {exc}")
-        if not isinstance(payload, dict):
-            raise HTTPException(
-                status_code=422, detail="body must be a JSON object"
-            )
-
-        now_iso = datetime.now(timezone.utc).isoformat()
-        is_delta = payload.get("type") == "delta"
-        if is_delta:
-            result = _ingest_delta(key_id, payload, client_hash, now_iso)
-        else:
-            result = _ingest_full(key_id, payload, client_hash, now_iso)
-        del payload, raw  # release the largest allocations before returning
+            if settings.MAP_FEATURES_INGEST_SUBPROCESS:
+                try:
+                    result = await loop.run_in_executor(
+                        None,
+                        functools.partial(
+                            _run_ingest_child, raw, content_encoding, key_id, client_hash
+                        ),
+                    )
+                except _IngestSubprocessError as exc:
+                    logger.warning(
+                        "[map-features-ingest] subprocess failed (%s) — running in-process.",
+                        exc,
+                    )
+                    result = await loop.run_in_executor(
+                        None,
+                        functools.partial(
+                            _process_ingest_body, raw, content_encoding, key_id, client_hash
+                        ),
+                    )
+            else:
+                result = await loop.run_in_executor(
+                    None,
+                    functools.partial(
+                        _process_ingest_body, raw, content_encoding, key_id, client_hash
+                    ),
+                )
+        finally:
+            del raw  # release the compressed body before returning
 
     actor = x_actor_name or row.get("name") or None
     # Don't audit the upload itself — the proxy re-uploads ~1/min so almost every
     # one changes nothing. Instead remember this contributor so a later *published*
     # change can be attributed to it (see map_features_rebuild).
     map_features_rebuild.note_contributor(key_id, actor)
-    # Hand the freed parse buffers back to the OS (glibc keeps them in-arena).
+    # Signal the debounced rebuild from the event-loop thread (the ingest itself
+    # may have run in a subprocess, whose request_rebuild() can't reach this loop).
+    map_features_rebuild.request_rebuild()
+    # Hand any freed parse buffers back to the OS (glibc keeps them in-arena).
+    # When the ingest ran in a subprocess the parent never allocated them.
     map_features_rebuild._malloc_trim()
     logger.info(
         "[map-features-ingest] key=%s actor=%s %s rss=%.0fMB",
@@ -310,6 +341,103 @@ async def receive_map_features(
         map_features_rebuild._rss_mb(),
     )
     return result
+
+
+class _IngestSubprocessError(RuntimeError):
+    """The ingest subprocess failed for an infrastructure reason (couldn't spawn,
+    crashed, or produced no result) — distinct from an HTTPException, which is a
+    legitimate 4xx the client must see. The former triggers the in-process
+    fallback; the latter propagates unchanged."""
+
+
+def _process_ingest_body(
+    raw: bytes, content_encoding: Optional[str], key_id: str, client_hash: str
+) -> Dict[str, Any]:
+    """Decompress + parse + validate + store one contribution. Runs in the ingest
+    subprocess (or in-process on fallback). Raises HTTPException on a bad body so
+    the caller answers the right 4xx. Does NOT trigger the rebuild — the parent
+    event loop does that after a successful ingest."""
+    cap = settings.MAP_FEATURES_MAX_BODY_BYTES
+    if content_encoding and "gzip" in content_encoding.lower():
+        raw = _decompress_gzip_capped(raw, cap)
+    try:
+        payload = json.loads(raw.decode("utf-8", errors="replace"))
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=f"invalid JSON body: {exc}")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=422, detail="body must be a JSON object")
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    is_delta = payload.get("type") == "delta"
+    if is_delta:
+        result = _ingest_delta(key_id, payload, client_hash, now_iso)
+    else:
+        result = _ingest_full(key_id, payload, client_hash, now_iso)
+    del payload, raw  # release the largest allocations before returning
+    return result
+
+
+def _run_ingest_child(
+    raw: bytes, content_encoding: Optional[str], key_id: str, client_hash: str
+) -> Dict[str, Any]:
+    """Process one contribution in a short-lived subprocess so the heavy parse/
+    filter/re-encode heap — and the arena fragmentation it leaves behind — is
+    fully reclaimed by the OS on exit. The compressed body is handed over via a
+    temp file (it can be several MB). Returns the ingest result dict; re-raises a
+    client-facing HTTPException, or :class:`_IngestSubprocessError` on infra
+    failure (so the caller can fall back to in-process)."""
+    tmp = tempfile.NamedTemporaryFile(prefix="mf-ingest-", suffix=".bin", delete=False)
+    try:
+        tmp.write(raw)
+        tmp.close()
+        env = dict(os.environ)
+        env["MAP_FEATURES_INGEST_RUN_CHILD"] = "1"
+        env["MAP_FEATURES_INGEST_BODY_PATH"] = tmp.name
+        env["MAP_FEATURES_INGEST_CONTENT_ENCODING"] = content_encoding or ""
+        env["MAP_FEATURES_INGEST_KEY_ID"] = key_id
+        env["MAP_FEATURES_INGEST_CLIENT_HASH"] = client_hash or ""
+        try:
+            proc = subprocess.run(
+                [sys.executable, "-m", "app.routes.map_features_ingest_child"],
+                cwd=str(_BACKEND_DIR),
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=max(60, settings.MAP_FEATURES_REBUILD_MAX_INTERVAL_SECONDS),
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise _IngestSubprocessError(f"could not run ingest subprocess: {exc}")
+    finally:
+        try:
+            os.unlink(tmp.name)
+        except OSError:
+            pass
+
+    result_obj: Optional[Dict[str, Any]] = None
+    for stream in (proc.stdout, proc.stderr):
+        for line in (stream or "").splitlines():
+            line = line.rstrip()
+            if line.startswith(_INGEST_RESULT_PREFIX):
+                try:
+                    result_obj = json.loads(line[len(_INGEST_RESULT_PREFIX):])
+                except (json.JSONDecodeError, ValueError):
+                    result_obj = None
+            elif line:
+                logger.info("%s", line)
+
+    if result_obj is None:
+        if proc.returncode != 0:
+            raise _IngestSubprocessError(
+                f"ingest subprocess exit {proc.returncode}: "
+                f"{(proc.stderr or '').strip()[-300:]}"
+            )
+        raise _IngestSubprocessError("ingest subprocess produced no result line")
+    if not result_obj.get("ok"):
+        raise HTTPException(
+            status_code=int(result_obj.get("status") or 400),
+            detail=result_obj.get("detail") or "ingest failed",
+        )
+    return result_obj.get("result") or {}
 
 
 def _as_int(v: Any) -> Optional[int]:
@@ -338,7 +466,6 @@ def _ingest_full(
     map_features_raw_store.delete_deltas(key_id)
     result_hash = client_hash or _str_or_none(doc.get("resultHash"))
     epoch = database.replace_map_features_contrib_state(key_id, result_hash, now_iso)
-    map_features_rebuild.request_rebuild()
 
     counts = {c: len(filtered.get(k, [])) for k, c in map_features_merge.CATEGORIES}
     return {
@@ -403,7 +530,6 @@ def _ingest_delta(
         raise HTTPException(
             status_code=409, detail="resync required — send a full snapshot"
         )
-    map_features_rebuild.request_rebuild()
 
     return {
         "status": "ok",

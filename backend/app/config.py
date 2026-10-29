@@ -398,6 +398,15 @@ class Settings:
         "MAP_FEATURES_REBUILD_SUBPROCESS", "1"
     ).strip().lower() not in ("0", "false", "no", "")
 
+    # Decode/filter/re-encode each ingested contribution in a short-lived
+    # subprocess so the heavy transient heap (a full export is tens of MB of
+    # parsed objects) — and the arena fragmentation it leaves behind — never
+    # accumulates in the long-lived API process. Falls back to in-process
+    # automatically if the subprocess can't be spawned.
+    MAP_FEATURES_INGEST_SUBPROCESS: bool = os.environ.get(
+        "MAP_FEATURES_INGEST_SUBPROCESS", "1"
+    ).strip().lower() not in ("0", "false", "no", "")
+
 
     # Supabase PostgreSQL
     SUPABASE_DB_URL: str = os.environ.get("SUPABASE_DB_URL", "")

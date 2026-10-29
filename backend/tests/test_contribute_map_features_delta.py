@@ -192,3 +192,76 @@ def test_stored_base_and_deltas_reconstruct_correctly(backend):
     out = m.reconstruct_document(base, deltas)
     coords = {(round(f["abs"]["x"]), round(f["abs"]["z"])) for f in out["translocators"]}
     assert coords == {(1, 2), (7, 8)}
+
+
+# --- _process_ingest_body: the decode/dispatch the subprocess child wraps ----
+def _gz(obj):
+    import gzip
+    import json
+    return gzip.compress(json.dumps(obj).encode("utf-8"), mtime=0)
+
+
+def test_process_ingest_body_full_gzip(backend):
+    """A gzip-encoded full body is decompressed, parsed and ingested as a full."""
+    raw = _gz(_full_doc([_tl(1, 2)]))
+    res = cmf._process_ingest_body(raw, "gzip", KEY, "hashA")
+    assert res["type"] == "full"
+    assert res["epoch"] == 1 and res["version"] == 0
+    assert backend.state[KEY]["hash"] == "hashA"
+
+
+def test_process_ingest_body_delta_uncompressed(backend):
+    """An uncompressed delta body dispatches to the delta path on top of a base."""
+    cmf._process_ingest_body(_gz(_full_doc([_tl(1, 2)])), "gzip", KEY, "h0")
+    delta = {
+        "type": "delta",
+        "baseEpoch": 1,
+        "baseVersion": 0,
+        "upserts": {"translocators": [_tl(3, 4)]},
+    }
+    import json
+    res = cmf._process_ingest_body(json.dumps(delta).encode("utf-8"), None, KEY, "h1")
+    assert res["type"] == "delta" and res["version"] == 1
+
+
+def test_process_ingest_body_invalid_json_is_400(backend):
+    with pytest.raises(HTTPException) as ei:
+        cmf._process_ingest_body(b"not json", None, KEY, "")
+    assert ei.value.status_code == 400
+
+
+def test_process_ingest_body_non_object_is_422(backend):
+    import json
+    with pytest.raises(HTTPException) as ei:
+        cmf._process_ingest_body(json.dumps([1, 2, 3]).encode("utf-8"), None, KEY, "")
+    assert ei.value.status_code == 422
+
+
+# --- _run_ingest_child: relaying the child's result/error back to the caller --
+class _FakeProc:
+    def __init__(self, stdout="", stderr="", returncode=0):
+        self.stdout, self.stderr, self.returncode = stdout, stderr, returncode
+
+
+def test_run_ingest_child_relays_success(monkeypatch):
+    ok_line = cmf._INGEST_RESULT_PREFIX + '{"ok": true, "result": {"type": "full", "epoch": 2}}'
+    monkeypatch.setattr(cmf.subprocess, "run", lambda *a, **k: _FakeProc(stdout=ok_line))
+    res = cmf._run_ingest_child(b"body", "gzip", KEY, "h")
+    assert res == {"type": "full", "epoch": 2}
+
+
+def test_run_ingest_child_relays_http_error(monkeypatch):
+    err_line = cmf._INGEST_RESULT_PREFIX + '{"ok": false, "status": 409, "detail": "resync"}'
+    monkeypatch.setattr(cmf.subprocess, "run", lambda *a, **k: _FakeProc(stdout=err_line))
+    with pytest.raises(HTTPException) as ei:
+        cmf._run_ingest_child(b"body", None, KEY, "h")
+    assert ei.value.status_code == 409 and ei.value.detail == "resync"
+
+
+def test_run_ingest_child_infra_failure_raises_subprocess_error(monkeypatch):
+    """No result line + non-zero exit => _IngestSubprocessError (parent falls back)."""
+    monkeypatch.setattr(
+        cmf.subprocess, "run", lambda *a, **k: _FakeProc(stderr="boom", returncode=1)
+    )
+    with pytest.raises(cmf._IngestSubprocessError):
+        cmf._run_ingest_child(b"body", None, KEY, "h")
